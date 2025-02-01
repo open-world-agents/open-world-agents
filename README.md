@@ -1,5 +1,7 @@
 # Installation
 
+1.
+
 To deal with lacking feature in `uv` compared to `poetry`, following monkey-patch is needed to enable `uv install`. see [this issue](https://github.com/astral-sh/uv/issues/11152)
 
 ```
@@ -17,4 +19,12 @@ uv() {
     command uv "$@"
   fi
 }
+```
+
+2.
+
+set your own `UV_PROJECT_ENVIRONMENT` variable as **absolute path**
+
+```
+export UV_PROJECT_ENVIRONMENT=(absolute path of open-world-agents cloned)
 ```
