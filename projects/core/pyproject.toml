@@ -10,3 +10,7 @@ dependencies = [
     "pyobjc-framework-ApplicationServices; sys_platform == 'Darwin'",
     "pynput>=1.7.7",
 ]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
