@@ -1,0 +1,12 @@
+[project]
+name = "data-collection"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "owa",
+]
+
+[tool.uv.sources]
+owa = { path = "../core", editable = true }

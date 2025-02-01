@@ -1,0 +1,5 @@
+line-length = 119
+indent-width = 4
+
+[lint.isort]
+known-first-party = ["owa"]
