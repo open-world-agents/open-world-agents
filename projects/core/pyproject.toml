@@ -9,6 +9,7 @@ dependencies = [
     "pyobjc-framework-Quartz; sys_platform == 'Darwin'",
     "pyobjc-framework-ApplicationServices; sys_platform == 'Darwin'",
     "pynput>=1.7.7",
+    "bettercam>=1.0.0",
 ]
 
 [build-system]

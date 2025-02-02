@@ -42,12 +42,12 @@ class Node:
         """The constructor of the Node class. This must be called by the subclass."""
         self.state = NodeStates.UNCONFIGURED
 
-    def configure(self):
+    def configure(self, *args, **kwargs):
         if self.state != NodeStates.UNCONFIGURED:
             raise InvalidStateTransitionError("Can only configure from Unconfigured state.")
         self.state = TransitionStates.CONFIGURING
         try:
-            if not self.on_configure():
+            if not self.on_configure(*args, **kwargs):
                 raise LifecycleError("Configuration failed.")
         except Exception as e:
             print(f"Error in on_configure: {e}")
@@ -56,12 +56,12 @@ class Node:
         self.state = NodeStates.INACTIVE
         return True
 
-    def activate(self):
+    def activate(self, *args, **kwargs):
         if self.state != NodeStates.INACTIVE:
             raise InvalidStateTransitionError("Can only activate from Inactive state.")
         self.state = TransitionStates.ACTIVATING
         try:
-            if not self.on_activate():
+            if not self.on_activate(*args, **kwargs):
                 raise LifecycleError("Activation failed.")
         except Exception as e:
             print(f"Error in on_activate: {e}")
@@ -70,12 +70,12 @@ class Node:
         self.state = NodeStates.ACTIVE
         return True
 
-    def deactivate(self):
+    def deactivate(self, *args, **kwargs):
         if self.state != NodeStates.ACTIVE:
             raise InvalidStateTransitionError("Can only deactivate from Active state.")
         self.state = TransitionStates.DEACTIVATING
         try:
-            if not self.on_deactivate():
+            if not self.on_deactivate(*args, **kwargs):
                 raise LifecycleError("Deactivation failed.")
         except Exception as e:
             print(f"Error in on_deactivate: {e}")
@@ -84,12 +84,12 @@ class Node:
         self.state = NodeStates.INACTIVE
         return True
 
-    def cleanup(self):
+    def cleanup(self, *args, **kwargs):
         if self.state not in [NodeStates.INACTIVE, TransitionStates.ERROR_PROCESSING]:
             raise InvalidStateTransitionError("Can only clean up from Inactive or Error Processing state.")
         self.state = TransitionStates.CLEANING_UP
         try:
-            if not self.on_cleanup():
+            if not self.on_cleanup(*args, **kwargs):
                 raise LifecycleError("Cleanup failed.")
         except Exception as e:
             print(f"Error in on_cleanup: {e}")
@@ -98,11 +98,11 @@ class Node:
         self.state = NodeStates.UNCONFIGURED
         return True
 
-    def shutdown(self):
+    def shutdown(self, *args, **kwargs):
         if self.state in [NodeStates.UNCONFIGURED, NodeStates.INACTIVE, NodeStates.ACTIVE]:
             self.state = TransitionStates.SHUTTING_DOWN
             try:
-                if not self.on_shutdown():
+                if not self.on_shutdown(*args, **kwargs):
                     raise LifecycleError("Shutdown failed.")
             except Exception as e:
                 print(f"Error in on_shutdown: {e}")
