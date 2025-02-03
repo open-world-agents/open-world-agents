@@ -1,11 +1,11 @@
 # Installation
 
-1. Install uv, following [installation guide](https://docs.astral.sh/uv/getting-started/installation/)
+1. Install `uv`, following [installation guide](https://docs.astral.sh/uv/getting-started/installation/)
 
-2. 
+2. Setup `uv install`. This stage is optional.
 
 - To use `uv install`: To deal with lacking feature in `uv` compared to `poetry`, following monkey-patch is needed to enable `uv install`. see [this issue](https://github.com/astral-sh/uv/issues/11152)
-- You may use `uv sync --inexact` instead of `uv install`, but if you omit `--inexact` argument by mistake, your virtual env(e.g. `conda`)'s package may be accidentally deleted.
+- You may use `uv sync --inexact` instead of `uv install`, but be careful not to omit `--inexact` arg. Without this, existing package of your virtual environment may be deleted accidentally.
 
 ```
 uv() {
@@ -35,4 +35,4 @@ UV_PROJECT_ENVIRONMENT=(absolute path of open-world-agents cloned)
 
 4.
 
-At project root(under `open-world-agents`), run `uv install --group dev`
+At project root(under `open-world-agents`), run `uv install --group dev` or `uv sync --inexact --group dev`
