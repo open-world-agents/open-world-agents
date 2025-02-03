@@ -4,43 +4,50 @@
 # - https://mmengine.readthedocs.io/en/latest/advanced_tutorials/registry.html
 
 from enum import StrEnum
+from typing import Callable, Dict, Generic, Optional, TypeVar
+
+from .env import Callable as CallableCls
+from .env import Listener as ListenerCls
 
 
 class RegistryType(StrEnum):
     CALLABLES = "callables"
     LISTENERS = "listeners"
-    PACKAGES = "packages"
     UNKNOWN = "unknown"
 
 
-class Registry:
+T = TypeVar("T")
+
+
+class Registry(Generic[T]):
     def __init__(self, registry_type: RegistryType = RegistryType.UNKNOWN):
-        self._registry = {}
+        self._registry: Dict[str, T] = {}
         self.registry_type = registry_type
 
-    def register(self, name: str):
-        def decorator(cls):
-            self._registry[name] = cls
-            return cls
+    def register(self, name: str) -> Callable[[T], T]:
+        def decorator(obj: T) -> T:
+            self._registry[name] = obj
+            return obj
 
         return decorator
 
-    def extend(self, other: "Registry"):
+    def extend(self, other: "Registry[T]") -> None:
         self._registry.update(other._registry)
 
-    def __getitem__(self, name: str):
+    def __getitem__(self, name: str) -> T:
         return self._registry[name]
 
-    def get(self, name: str):
+    def get(self, name: str) -> Optional[T]:
         return self._registry.get(name)
 
-    # list all the registered items
-    def __repr__(self):
-        return self._registry.__repr__()
+    # List all the registered items
+    def __repr__(self) -> str:
+        return repr(self._registry)
 
 
-CALLABLES = Registry()
-LISTENERS = Registry()
+# Now specify the types of the registries
+CALLABLES: Registry[CallableCls] = Registry(registry_type=RegistryType.CALLABLES)
+LISTENERS: Registry[ListenerCls] = Registry(registry_type=RegistryType.LISTENERS)
 
 
 def activate_module(entrypoint):

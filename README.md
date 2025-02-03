@@ -23,8 +23,9 @@ uv() {
 
 2.
 
-set your own `UV_PROJECT_ENVIRONMENT` variable as **absolute path**
+set your own `UV_PROJECT_ENVIRONMENT` variable as **absolute path**. 
 
+We recommend you to setup `.env` file as followed.
 ```
-export UV_PROJECT_ENVIRONMENT=(absolute path of open-world-agents cloned)
+UV_PROJECT_ENVIRONMENT=(absolute path of open-world-agents cloned)
 ```

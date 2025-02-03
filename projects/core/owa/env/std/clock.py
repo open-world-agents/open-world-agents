@@ -18,7 +18,7 @@ class ClockTickListener(Node):
 
     def on_activate(self):
         self._stop_event.clear()
-        self._thread = threading.Thread(target=self._run)
+        self._thread = threading.Thread(target=self._run, daemon=True)
         self._thread.start()
         return True
 
@@ -28,12 +28,6 @@ class ClockTickListener(Node):
             time.sleep(self.interval)
 
     def on_deactivate(self):
-        self._stop_event.set()
-        self._thread.join()
-        del self._thread
-        return True
-
-    def on_shutdown(self):
         self._stop_event.set()
         self._thread.join()
         del self._thread
