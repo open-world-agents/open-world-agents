@@ -5,11 +5,14 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "pygetwindow>=0.0.9 ; sys_platform == 'Windows'",
+    "pygetwindow>=0.0.9 ; sys_platform == 'win32'",
     "pyobjc-framework-Quartz; sys_platform == 'Darwin'",
     "pyobjc-framework-ApplicationServices; sys_platform == 'Darwin'",
     "pynput>=1.7.7",
     "bettercam>=1.0.0",
+    "opencv-python>=4.11.0.86",
+    "loguru>=0.7.3",
+    "pydantic>=2.10.6",
 ]
 
 [build-system]

@@ -55,8 +55,15 @@ def activate_module(entrypoint):
 
     try:
         entrypoint_module = importlib.import_module(entrypoint)
+    except ModuleNotFoundError as e:
+        if e.name == entrypoint:
+            print(f"Module '{entrypoint}' not found.")
+        else:
+            raise e
+    try:
         entrypoint_module.activate()
-    except ModuleNotFoundError:
-        print(f"Module {entrypoint} not found.")
-    except AttributeError:
-        print(f"Module {entrypoint} does not have the `activate` function. You must define it.")
+    except AttributeError as e:
+        if e.args[0] == f"module '{entrypoint}' has no attribute 'activate'":
+            print(f"Module '{entrypoint}' has no attribute 'activate'. Please define it.")
+        else:
+            raise e

@@ -28,9 +28,9 @@ uv() {
 
 set your own `UV_PROJECT_ENVIRONMENT` variable as **absolute path**. 
 
-We recommend you to setup `.env` file as followed.
+We recommend you to setup `.env` file as followed. You may use existing virtual environment's path, e.g. `C:\Users\you\miniforge3\envs\agent`. Just ensure that your virtual env use python 3.11!
 ```
-UV_PROJECT_ENVIRONMENT=(absolute path of open-world-agents cloned)
+UV_PROJECT_ENVIRONMENT=(path to virtual environment you want.)
 ```
 
 4.
