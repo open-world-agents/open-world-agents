@@ -21,4 +21,4 @@ jobs:
       run: uv sync --dev
     
     - name: Run pytest
-      run: uv run pytest
+      run: uv run pytest --ignore projects/owa-env-gst

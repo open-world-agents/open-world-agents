@@ -6,7 +6,6 @@ gi.require_version("Gst", "1.0")
 
 # To suppress the warning for E402, waiting for https://github.com/astral-sh/ruff/issues/3711
 import queue
-import threading
 import time
 
 import numpy as np
