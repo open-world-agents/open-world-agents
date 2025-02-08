@@ -9,16 +9,25 @@ jobs:
     runs-on: windows-latest
     
     steps:
-    - name: Check out repository
-      uses: actions/checkout@v3
+      - name: Check out repository
+        uses: actions/checkout@v4
 
-    - name: Install the latest version of uv
-      uses: astral-sh/setup-uv@v5
-      with:
-        version: "latest"
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
 
-    - name: Install dependencies
-      run: uv sync --dev
-    
-    - name: Run pytest
-      run: uv run pytest --ignore projects/owa-env-gst
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          environment-file: etc/example-environment.yml
+          miniforge-version: latest
+          mamba-version: "*"
+
+      - name: Write environment into .env
+        run: echo "UV_PROJECT_ENVIRONMENT=(conda env)" >> .env
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Run pytest
+        run: uv run pytest

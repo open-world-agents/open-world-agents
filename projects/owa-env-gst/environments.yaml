@@ -1,0 +1,14 @@
+name: anaconda-client-env
+
+channels:
+  - conda-forge
+
+dependencies:
+  - pygobject
+  - gst-python
+  - gst-libav
+  - gstreamer
+  - gst-plugins-base
+  - gst-plugins-good
+  - gst-plugins-bad
+  - gst-plugins-ugly
