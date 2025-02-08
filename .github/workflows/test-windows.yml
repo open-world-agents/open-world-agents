@@ -8,6 +8,10 @@ jobs:
   test:
     runs-on: windows-latest
     
+    # 1) Define environment variable UV_PROJECT_ENVIRONMENT at the job level
+    env:
+      UV_PROJECT_ENVIRONMENT: "C:\\Users\\runneradmin\\miniconda3\\envs\\owa"
+    
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -25,12 +29,8 @@ jobs:
           environment-file: projects/owa-env-gst/environment.yml
           activate-environment: owa
 
-      - name: Write environment into .env
-        run: echo "UV_PROJECT_ENVIRONMENT=C:\Users\runneradmin\miniconda3\envs\owa" >> .env
-
-      - name: Install dependencies
-        shell: cmd
+      - name: Install dependencies (will pick up UV_PROJECT_ENVIRONMENT automatically)
         run: uv sync --dev
 
-      - name: Run pytest
+      - name: Run pytest (will also pick it up)
         run: uv run pytest
