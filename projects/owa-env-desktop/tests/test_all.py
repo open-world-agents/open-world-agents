@@ -16,9 +16,10 @@ def test_screen_capture():
     # Test that the screen capture returns an image with the expected dimensions.
     capture_func = CALLABLES["screen.capture"]
     image = capture_func()
-    # Adjust the expected shape if needed.
-    expected_shape = (1080, 1920, 3)
-    assert image.shape == expected_shape, f"Expected image shape {expected_shape}, got {image.shape}"
+    # Check the color channel count. shape should be (H, W, 3)
+    assert image.ndim == 3 and image.shape[2] == 3, "Expected 3-color channel image"
+
+    # in github workflow, the screen capture will be 768x1024
 
 
 def test_get_active_window():
@@ -29,7 +30,11 @@ def test_get_active_window():
 
 def test_get_window_by_title():
     # Test retrieving a window by a specific title.
-    window_instance = CALLABLES["window.get_window_by_title"]("open-world-agents")
+    try:
+        window_instance = CALLABLES["window.get_window_by_title"]("open-world-agents")
+    except ValueError:
+        window_instance = None
+
     if window_instance is None:
         pytest.skip("Window with title 'open-world-agents' not found; skipping test.")
     else:

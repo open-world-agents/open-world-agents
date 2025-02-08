@@ -160,7 +160,7 @@ class ScreenListener(Listener):
         self.pipeline.send_event(Gst.Event.new_eos())
         bus = self.pipeline.get_bus()
         while True:
-            msg = bus.timed_pop_filtered(Gst.CLOCK_TIME_NONE, Gst.MessageType.EOS | Gst.MessageType.ERROR)
+            msg = bus.timed_pop_filtered(1.0 * Gst.SECOND, Gst.MessageType.EOS | Gst.MessageType.ERROR)
             if msg:
                 if msg.type == Gst.MessageType.EOS:
                     print("Received EOS signal, shutting down gracefully.")
@@ -193,6 +193,8 @@ class ScreenListener(Listener):
         # Calculate elapsed time since the pipeline went to PLAYING state.
         elapsed = clock.get_time() - self.pipeline.get_base_time()
         latency = elapsed - pts
+        if self._metric_queue.full():
+            self._metric_queue.get()
         self._metric_queue.put((time.time_ns(), latency))
         # Adjust current system time by the computed latency.
         return time.time_ns() - latency

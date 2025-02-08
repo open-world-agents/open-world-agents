@@ -12,7 +12,7 @@ def activate_owa_desktop():
     activate_module("owa.env.std")
 
 
-@pytest.mark.timeout(1 * 1.10)
+@pytest.mark.timeout(3)
 def test_clock():
     assert "clock.time_ns" in CALLABLES
     assert "clock/tick" in LISTENERS
@@ -27,7 +27,7 @@ def test_clock():
     tick.configure(interval=1)
     tick.start()
 
-    time.sleep(3)
+    time.sleep(2)
 
     tick.stop()
     tick.join()
