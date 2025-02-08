@@ -9,14 +9,14 @@ from typing import Callable, Dict, Generic, Optional, TypeVar
 
 from .callable import Callable as CallableCls
 from .listener import Listener as ListenerCls
-from .node import Node as NodeCls
 from .owa_env_interface import OwaEnvInterface
+from .runnable import Runnable
 
 
 class RegistryType(StrEnum):
     CALLABLES = "callables"
     LISTENERS = "listeners"
-    NODES = "nodes"
+    RUNNABLES = "runnables"
     MODULES = "modules"
     UNKNOWN = "unknown"
 
@@ -56,7 +56,7 @@ class Registry(Generic[T]):
 # Now specify the types of the registries
 CALLABLES: Registry[CallableCls] = Registry(registry_type=RegistryType.CALLABLES)
 LISTENERS: Registry[ListenerCls] = Registry(registry_type=RegistryType.LISTENERS)
-NODES: Registry[NodeCls] = Registry(registry_type=RegistryType.NODES)
+RUNNABLES: Registry[Runnable] = Registry(registry_type=RegistryType.RUNNABLES)
 
 # _MODULES is managed by the activate_module function
 _MODULES: Registry[OwaEnvInterface] = Registry(registry_type=RegistryType.MODULES)

@@ -26,7 +26,8 @@ def screen_src(*, fps: float = 60, window_name: Optional[str] = None, monitor_id
     if monitor_idx is not None:
         src_parameter += f" monitor-index={monitor_idx}"
 
-    framerate = f"framerate=0/1,max-framerate={Fraction(fps).limit_denominator()}"
+    frac = Fraction(fps).limit_denominator()
+    framerate = f"framerate=0/1,max-framerate={frac.numerator}/{frac.denominator}"
 
     return (
         f"d3d11screencapturesrc show-cursor=true {src_parameter} do-timestamp=true ! "

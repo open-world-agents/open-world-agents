@@ -1,3 +1,5 @@
-# Callable implements `__call__` method, which allows the object to be called as a function.
+"""
+Callable implements `__call__` method, which allows the object to be called as a function.
+"""
 
 from typing import Callable

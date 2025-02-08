@@ -6,14 +6,32 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "owa",
+    "owa-env-desktop",
+    "owa-env-gst",
 ]
 
 [dependency-groups]
 dev = [
     "ipython>=8.32.0",
     "pytest>=8.3.4",
-    "ruff>=0.9.4",
+    "ruff>=0.9.5",
 ]
 
 [tool.uv.sources]
 owa = { path = "projects/core", editable = true }
+owa-env-desktop = { path = "projects/owa-env-desktop", editable = true }
+owa-env-gst = { path = "projects/owa-env-gst", editable = true }
+
+[tool.ruff]
+line-length = 119
+
+[tool.ruff.lint.isort]
+known-first-party = ["owa", "owa_env_desktop", "owa_env_gst"]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+testpaths = [
+  "projects/core",
+  "projects/owa-env-desktop",
+  "projects/owa-env-gst"
+]

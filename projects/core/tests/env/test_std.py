@@ -1,28 +1,36 @@
 import time
 
+import pytest
+
+from owa.listener import Listener
 from owa.registry import CALLABLES, LISTENERS, activate_module
 
-activate_module("owa.env.std")
+
+# Automatically activate the desktop module for all tests in this session.
+@pytest.fixture(scope="session", autouse=True)
+def activate_owa_desktop():
+    activate_module("owa.env.std")
 
 
+@pytest.mark.timeout(1 * 1.10)
 def test_clock():
     assert "clock.time_ns" in CALLABLES
     assert "clock/tick" in LISTENERS
 
-    tick = LISTENERS["clock/tick"](callback)
-
-    called_time = []
-
     def callback():
         called_time.append(CALLABLES["clock.time_ns"]())
 
+    tick: Listener = LISTENERS["clock/tick"](callback)
+
+    called_time = []
+
     tick.configure(interval=1)
-    tick.activate()
+    tick.start()
 
     time.sleep(3)
 
-    tick.deactivate()
-    tick.shutdown()
+    tick.stop()
+    tick.join()
 
     assert len(called_time) >= 1
     # check if time is not far from the expected time, within 5% error

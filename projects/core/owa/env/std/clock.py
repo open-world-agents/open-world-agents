@@ -10,24 +10,15 @@ CALLABLES.register("clock.time_ns")(time.time_ns)
 # tick listener
 @LISTENERS.register("clock/tick")
 class ClockTickListener(Listener):
-    def on_configure(self, *, interval=1):
+    def configure(self, *, interval=1):
         self.interval = interval
-        self._stop_event = threading.Event()
-        return True
 
-    def on_activate(self):
-        self._stop_event.clear()
-        self._thread = threading.Thread(target=self._run, daemon=True)
-        self._thread.start()
-        return True
-
-    def _run(self):
+    def loop(self):
+        self._last_called = time.time()
         while not self._stop_event.is_set():
             self.callback()
-            time.sleep(self.interval)
+            to_sleep = self.interval - (time.time() - self._last_called)
+            if to_sleep > 0:
+                self._stop_event.wait(to_sleep)
 
-    def on_deactivate(self):
-        self._stop_event.set()
-        self._thread.join()
-        del self._thread
-        return True
+    def cleanup(self): ...  # nothing to clean up

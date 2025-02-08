@@ -12,45 +12,20 @@
 
 
 from .callable import Callable
-from .node import Node
+from .runnable import RunnableMixin, RunnableThread
 
 
-class Listener(Node):
-    """
-    The Listener class is a subclass of the Node class. It is used to define the listener objects that listen to the input.
+class ListenerMixin(RunnableMixin):
+    """ListenerMixin provides the interface for the environment to call the user-defined function."""
 
-    Example:
-    ```python
-    class CustomListener(Listener):
-        def __init__(self, callback: Callable):
-            super().__init__()
-            self.callback = callback
-            (add your code here)
-    ```
-    """
-
-    def __init__(self, callback: Callable):
-        super().__init__()
+    def __init__(self, callback: Callable, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.callback = callback
 
-    # Override these methods in a subclass
-    def on_configure(self):
-        return True
 
-    def on_activate(self):
-        return True
+class ListenerThread(ListenerMixin, RunnableThread): ...
 
-    def on_deactivate(self):
-        return True
 
-    def on_cleanup(self):
-        return True
-
-    def on_shutdown(self):
-        return True
-
-    def on_error(self):
-        return True
-
+Listener = ListenerThread  # Default to ListenerThread
 
 # TODO: Synchronous event listening design, as https://pynput.readthedocs.io/en/latest/keyboard.html#synchronous-event-listening-for-the-keyboard-listener

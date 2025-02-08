@@ -1,4 +1,4 @@
-from owa import Listener
+from owa.listener import Listener
 from owa.registry import LISTENERS
 from pynput.keyboard import Listener as KeyboardListener
 from pynput.mouse import Listener as MouseListener
@@ -6,9 +6,8 @@ from pynput.mouse import Listener as MouseListener
 
 @LISTENERS.register("keyboard")
 class KeyboardListenerWrapper(Listener):
-    def on_configure(self):
+    def configure(self):
         self.listener = KeyboardListener(on_press=self.on_press, on_release=self.on_release)
-        return True
 
     def on_press(self, key):
         self.callback("keyboard.press", key)
@@ -16,19 +15,18 @@ class KeyboardListenerWrapper(Listener):
     def on_release(self, key):
         self.callback("keyboard.release", key)
 
-    def on_activate(self):
+    def loop(self):
         self.listener.start()
-        return True
 
-    def on_deactivate(self):
+    def cleanup(self): ...  # nothing to clean up
+
+    def stop(self):
         self.listener.stop()
-        return True
 
 
 @LISTENERS.register("mouse")
 class MouseListenerWrapper(Listener):
-    def on_configure(self, callback):
-        self.callback = callback
+    def on_configure(self):
         self.listener = MouseListener(on_move=self.on_move, on_click=self.on_click, on_scroll=self.on_scroll)
         return True
 
@@ -41,10 +39,10 @@ class MouseListenerWrapper(Listener):
     def on_scroll(self, x, y, dx, dy):
         self.callback("mouse.scroll", x, y, dx, dy)
 
-    def on_activate(self):
+    def loop(self):
         self.listener.start()
-        return True
 
-    def on_deactivate(self):
+    def cleanup(self): ...  # nothing to clean up
+
+    def stop(self):
         self.listener.stop()
-        return True

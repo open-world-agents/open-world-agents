@@ -14,13 +14,12 @@ print(CALLABLES, LISTENERS)
 # now, let's test the clock/tick listener
 tick = LISTENERS["clock/tick"](lambda: print(CALLABLES["clock.time_ns"]()))
 tick.configure(interval=1)
-tick.activate()
+tick.start()
 
 time.sleep(1)  # during this time, the tick listener will print the time in nanoseconds 1 or 2 time
 # e.g. 1738595523202614300
 
-tick.deactivate()
-tick.shutdown()
+tick.stop(), tick.join()
 
 # ========================================
 
@@ -47,7 +46,7 @@ def on_keyboard_event(event_type, key):
 a = LISTENERS["keyboard"]
 keyboard_listener = LISTENERS["keyboard"](on_keyboard_event)
 keyboard_listener.configure()
-keyboard_listener.activate()
+keyboard_listener.start()
 
 time.sleep(5)
 
