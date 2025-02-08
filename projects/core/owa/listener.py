@@ -11,9 +11,8 @@
 #     - while the Listener class provides the interface for the environment to call the user-defined function.
 
 
-from typing import Callable
-
-from ..node import Node
+from .callable import Callable
+from .node import Node
 
 
 class Listener(Node):
@@ -29,6 +28,29 @@ class Listener(Node):
             (add your code here)
     ```
     """
+
+    def __init__(self, callback: Callable):
+        super().__init__()
+        self.callback = callback
+
+    # Override these methods in a subclass
+    def on_configure(self):
+        return True
+
+    def on_activate(self):
+        return True
+
+    def on_deactivate(self):
+        return True
+
+    def on_cleanup(self):
+        return True
+
+    def on_shutdown(self):
+        return True
+
+    def on_error(self):
+        return True
 
 
 # TODO: Synchronous event listening design, as https://pynput.readthedocs.io/en/latest/keyboard.html#synchronous-event-listening-for-the-keyboard-listener

@@ -12,8 +12,8 @@ print(CALLABLES, LISTENERS)
 # {'clock.time_ns': <built-in function time_ns>} {'clock/tick': <class 'owa.env.std.clock.ClockTickListener'>}
 
 # now, let's test the clock/tick listener
-tick = LISTENERS["clock/tick"]()
-tick.configure(callback=lambda: print(CALLABLES["clock.time_ns"]()), interval=1)
+tick = LISTENERS["clock/tick"](lambda: print(CALLABLES["clock.time_ns"]()))
+tick.configure(interval=1)
 tick.activate()
 
 time.sleep(1)  # during this time, the tick listener will print the time in nanoseconds 1 or 2 time
@@ -25,7 +25,7 @@ tick.shutdown()
 # ========================================
 
 # activate the desktop module, which contains the keyboard/mouse, screen, window modules
-activate_module("owa.env.desktop")
+activate_module("owa_env_desktop")
 
 print(CALLABLES, LISTENERS)
 
@@ -45,8 +45,8 @@ def on_keyboard_event(event_type, key):
 
 
 a = LISTENERS["keyboard"]
-keyboard_listener = LISTENERS["keyboard"]()
-keyboard_listener.configure(on_keyboard_event)
+keyboard_listener = LISTENERS["keyboard"](on_keyboard_event)
+keyboard_listener.configure()
 keyboard_listener.activate()
 
 time.sleep(5)

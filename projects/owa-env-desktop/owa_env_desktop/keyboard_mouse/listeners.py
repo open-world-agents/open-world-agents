@@ -1,14 +1,12 @@
+from owa import Listener
+from owa.registry import LISTENERS
 from pynput.keyboard import Listener as KeyboardListener
 from pynput.mouse import Listener as MouseListener
-
-from owa.env import Listener
-from owa.registry import LISTENERS
 
 
 @LISTENERS.register("keyboard")
 class KeyboardListenerWrapper(Listener):
-    def on_configure(self, callback):
-        self.callback = callback
+    def on_configure(self):
         self.listener = KeyboardListener(on_press=self.on_press, on_release=self.on_release)
         return True
 

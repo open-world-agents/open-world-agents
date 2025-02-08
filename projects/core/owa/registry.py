@@ -3,16 +3,21 @@
 # - https://github.com/open-mmlab/mmdetection/blob/main/mmdet/registry.py
 # - https://mmengine.readthedocs.io/en/latest/advanced_tutorials/registry.html
 
+import importlib
 from enum import StrEnum
 from typing import Callable, Dict, Generic, Optional, TypeVar
 
-from .env import Callable as CallableCls
-from .env import Listener as ListenerCls
+from .callable import Callable as CallableCls
+from .listener import Listener as ListenerCls
+from .node import Node as NodeCls
+from .owa_env_interface import OwaEnvInterface
 
 
 class RegistryType(StrEnum):
     CALLABLES = "callables"
     LISTENERS = "listeners"
+    NODES = "nodes"
+    MODULES = "modules"
     UNKNOWN = "unknown"
 
 
@@ -34,6 +39,9 @@ class Registry(Generic[T]):
     def extend(self, other: "Registry[T]") -> None:
         self._registry.update(other._registry)
 
+    def __contains__(self, name: str) -> bool:
+        return name in self._registry
+
     def __getitem__(self, name: str) -> T:
         return self._registry[name]
 
@@ -48,10 +56,18 @@ class Registry(Generic[T]):
 # Now specify the types of the registries
 CALLABLES: Registry[CallableCls] = Registry(registry_type=RegistryType.CALLABLES)
 LISTENERS: Registry[ListenerCls] = Registry(registry_type=RegistryType.LISTENERS)
+NODES: Registry[NodeCls] = Registry(registry_type=RegistryType.NODES)
+
+# _MODULES is managed by the activate_module function
+_MODULES: Registry[OwaEnvInterface] = Registry(registry_type=RegistryType.MODULES)
 
 
 def activate_module(entrypoint):
-    import importlib
+    """
+    Activate a module by its entrypoint. Modules are expected to have an `activate` function, following OwaEnvInterface.
+    """
+    if entrypoint in _MODULES:
+        return _MODULES[entrypoint]
 
     try:
         entrypoint_module = importlib.import_module(entrypoint)
@@ -60,6 +76,7 @@ def activate_module(entrypoint):
             print(f"Module '{entrypoint}' not found.")
         else:
             raise e
+
     try:
         entrypoint_module.activate()
     except AttributeError as e:
@@ -67,3 +84,6 @@ def activate_module(entrypoint):
             print(f"Module '{entrypoint}' has no attribute 'activate'. Please define it.")
         else:
             raise e
+
+    _MODULES.register(entrypoint)(entrypoint_module)
+    return entrypoint_module

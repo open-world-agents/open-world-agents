@@ -1,7 +1,7 @@
 import threading
 import time
 
-from owa.node import Node
+from owa import Listener
 from owa.registry import CALLABLES, LISTENERS
 
 CALLABLES.register("clock.time_ns")(time.time_ns)
@@ -9,9 +9,8 @@ CALLABLES.register("clock.time_ns")(time.time_ns)
 
 # tick listener
 @LISTENERS.register("clock/tick")
-class ClockTickListener(Node):
-    def on_configure(self, callback, *, interval=1):
-        self.callback = callback
+class ClockTickListener(Listener):
+    def on_configure(self, *, interval=1):
         self.interval = interval
         self._stop_event = threading.Event()
         return True
