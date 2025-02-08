@@ -26,6 +26,7 @@ jobs:
           miniforge-version: latest
           mamba-version: "*"
           channels: conda-forge
+          conda-remove-defaults: "true"
           environment-file: projects/owa-env-gst/environment.yml
           activate-environment: owa
 
