@@ -11,6 +11,7 @@ jobs:
     # 1) Define environment variable UV_PROJECT_ENVIRONMENT at the job level
     env:
       UV_PROJECT_ENVIRONMENT: "C:\\Users\\runneradmin\\miniconda3\\envs\\owa"
+      GST_PLUGIN_PATH: "D:\\a\\open-world-agents\\open-world-agents\\projects\\owa-env-gst\\gst-plugins"
     
     steps:
       - name: Check out repository
