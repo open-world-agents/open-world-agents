@@ -7,12 +7,7 @@ on:
 jobs:
   test:
     runs-on: windows-latest
-    
-    # 1) Define environment variable UV_PROJECT_ENVIRONMENT at the job level
-    env:
-      UV_PROJECT_ENVIRONMENT: "C:\\Users\\runneradmin\\miniconda3\\envs\\owa"
-      GST_PLUGIN_PATH: "D:\\a\\open-world-agents\\open-world-agents\\projects\\owa-env-gst\\gst-plugins"
-    
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -22,7 +17,9 @@ jobs:
         with:
           version: "latest"
 
-      - uses: conda-incubator/setup-miniconda@v3
+      - name: Set up Miniconda
+        id: conda_setup
+        uses: conda-incubator/setup-miniconda@v3
         with:
           miniforge-version: latest
           mamba-version: "*"
@@ -31,8 +28,14 @@ jobs:
           environment-file: projects/owa-env-gst/environment.yml
           activate-environment: owa
 
-      - name: Install dependencies (will pick up UV_PROJECT_ENVIRONMENT automatically)
+      - name: Export environment variables
+        # This step writes dynamic variables to $GITHUB_ENV so subsequent steps can use them
+        run: |
+          echo "UV_PROJECT_ENVIRONMENT=${{ steps.conda_setup.outputs.base-conda-dir }}\\envs\\owa" >> $GITHUB_ENV
+          echo "GST_PLUGIN_PATH=${{ github.workspace }}\\projects\\owa-env-gst\\gst-plugins" >> $GITHUB_ENV
+
+      - name: Install dependencies using uv
         run: uv sync --dev
 
-      - name: Run pytest (will also pick it up)
+      - name: Run pytest
         run: uv run pytest
