@@ -100,7 +100,7 @@ class ScreenListener(Listener):
         """
         if self._metric_queue is None:
             return 0.0
-        if self._metric_queue.empty():
+        if len(self._metric_queue.queue) < 2:
             return 0.0
         start_time, _ = self._metric_queue.queue[0]
         end_time, _ = self._metric_queue.queue[-1]
