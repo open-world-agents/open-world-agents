@@ -19,14 +19,17 @@ jobs:
 
       - uses: conda-incubator/setup-miniconda@v3
         with:
-          environment-file: projects/owa-env-gst/environment.yml
           miniforge-version: latest
           mamba-version: "*"
+          channels: conda-forge
+          environment-file: projects/owa-env-gst/environment.yml
+          activate-environment: owa
 
       - name: Write environment into .env
-        run: echo "UV_PROJECT_ENVIRONMENT=(conda env)" >> .env
+        run: echo "UV_PROJECT_ENVIRONMENT=C:\Users\runneradmin\miniconda3\envs\owa" >> .env
 
       - name: Install dependencies
+        shell: cmd
         run: uv sync --dev
 
       - name: Run pytest
