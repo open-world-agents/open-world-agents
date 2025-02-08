@@ -1,4 +1,4 @@
-name: anaconda-client-env
+name: owa
 
 channels:
   - conda-forge

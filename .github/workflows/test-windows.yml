@@ -19,7 +19,7 @@ jobs:
 
       - uses: conda-incubator/setup-miniconda@v3
         with:
-          environment-file: etc/example-environment.yml
+          environment-file: projects/owa-env-gst/environment.yml
           miniforge-version: latest
           mamba-version: "*"
 
