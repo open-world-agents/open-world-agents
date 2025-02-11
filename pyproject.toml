@@ -1,7 +1,7 @@
 [project]
 name = "open-world-agents"
 version = "0.1.0"
-description = "Add your description here"
+description = "A modular agent system with dynamic module registration and real-time event processing"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -9,7 +9,21 @@ dependencies = [
     "owa-env-desktop",
     "owa-env-gst",
     "pytest-timeout>=2.3.1",
+    "opencv-python>=4.11.0.86",
+    "loguru>=0.7.3",
+    "pydantic>=2.10.6",
 ]
+
+[project.optional-dependencies]
+docs = [
+    "mkdocs-material>=9.5.3",
+    "mkdocstrings[python]>=0.24.0",
+    "mkdocs-git-revision-date-localized-plugin>=1.2.1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
