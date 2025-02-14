@@ -12,6 +12,7 @@ dependencies = [
     "opencv-python>=4.11.0.86",
     "loguru>=0.7.3",
     "pydantic>=2.10.6",
+    "mkdocs>=1.6.1",
 ]
 
 [project.optional-dependencies]
@@ -19,6 +20,7 @@ docs = [
     "mkdocs-material>=9.5.3",
     "mkdocstrings[python]>=0.24.0",
     "mkdocs-git-revision-date-localized-plugin>=1.2.1",
+    "mkdocs-mermaid2-plugin>=1.1.1"
 ]
 
 [build-system]
@@ -50,3 +52,6 @@ testpaths = [
   "projects/owa-env-desktop",
   "projects/owa-env-gst"
 ]
+
+[tool.hatch.build.targets.wheel]
+packages = ["projects/core", "projects/owa-env-desktop", "projects/owa-env-gst"]

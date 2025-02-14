@@ -40,7 +40,7 @@ plugins:
             show_source: true
   - git-revision-date-localized:
       type: datetime
-  - mermaid
+  - mermaid2
 
 markdown_extensions:
   - pymdownx.highlight:
