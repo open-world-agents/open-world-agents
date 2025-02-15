@@ -1,3 +1,14 @@
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#     "open-world-agents[envs]",
+#     "orjson",
+#     "typer",
+# ]
+#
+# [tool.uv.sources]
+# open-world-agents = { path = "../" }
+# ///
 import time
 from typing import Optional
 
@@ -7,6 +18,8 @@ from pydantic import BaseModel
 from typing_extensions import Annotated
 
 from owa.registry import CALLABLES, LISTENERS, RUNNABLES, activate_module
+
+app = typer.Typer()
 
 
 class BagEvent(BaseModel):
@@ -41,6 +54,7 @@ def configure():
     activate_module("owa_env_gst")
 
 
+@app.command()
 def main(
     file_location: Annotated[str, typer.Argument(help="The location of the output file, use `.mkv` extension.")],
     *,
@@ -54,6 +68,7 @@ def main(
 ):
     assert file_location.endswith(".mkv"), "The output file must have `.mkv` extension."
 
+    configure()
     recorder = RUNNABLES["screen/recorder"]()
     keyboard_listener = LISTENERS["keyboard"](control_publisher_callback)
     mouse_listener = LISTENERS["mouse"](control_publisher_callback)
@@ -83,5 +98,4 @@ def main(
 
 
 if __name__ == "__main__":
-    configure()
-    typer.run(main)
+    app()
