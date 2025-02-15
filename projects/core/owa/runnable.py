@@ -56,6 +56,18 @@ class RunnableThread(threading.Thread, RunnableMixin):
     def stop(self):
         self._stop_event.set()
 
+    # What user implements
+    def configure(self):
+        """Optional method for configuration."""
+
+    @abstractmethod
+    def loop(self):
+        """Main loop. This method must be interruptable by calling stop(), which sets the self._stop_event."""
+
+    @abstractmethod
+    def cleanup(self):
+        """Clean up resources. This method is called after loop() exits."""
+
 
 class RunnableProcess(multiprocessing.Process, RunnableMixin):
     def __init__(self, *args, **kwargs):
@@ -70,6 +82,18 @@ class RunnableProcess(multiprocessing.Process, RunnableMixin):
 
     def stop(self):
         self._stop_event.set()
+
+    # What user implements
+    def configure(self):
+        """Optional method for configuration."""
+
+    @abstractmethod
+    def loop(self):
+        """Main loop. This method must be interruptable by calling stop(), which sets the self._stop_event."""
+
+    @abstractmethod
+    def cleanup(self):
+        """Clean up resources. This method is called after loop() exits."""
 
 
 Runnable = RunnableThread  # Default to RunnableThread
