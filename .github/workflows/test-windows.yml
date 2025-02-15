@@ -34,7 +34,9 @@ jobs:
           activate-environment: owa
 
       - name: Install dependencies (will pick up UV_PROJECT_ENVIRONMENT automatically)
-        run: uv sync --inexact --dev # turn on --inexact to prevent removing gst packages
+        run: uv sync --inexact --dev --extras env # turn on --inexact to prevent removing gst packages
 
       - name: Run pytest (will also pick it up)
-        run: uv run pytest
+        run: |
+          pytest projects/core
+          pytest projects/owa-env-desktop
