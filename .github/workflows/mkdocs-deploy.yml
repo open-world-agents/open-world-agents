@@ -27,7 +27,7 @@ jobs:
           enable-cache: true
 
       - name: Install Dependencies
-        run: uv sync --extras docs
+        run: uv sync --extra docs
 
       - name: Configure Git
         run: |
