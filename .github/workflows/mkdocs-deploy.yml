@@ -39,4 +39,4 @@ jobs:
 
       - name: Deploy to GitHub Pages
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: mkdocs gh-deploy
+        run: uv run mkdocs gh-deploy
