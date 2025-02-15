@@ -3,6 +3,8 @@ name: Pytest on Windows
 on:
   push:
     branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
 
 jobs:
   test:
@@ -20,6 +22,7 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           version: "latest"
+          enable-cache: true
 
       - uses: conda-incubator/setup-miniconda@v3
         with:
