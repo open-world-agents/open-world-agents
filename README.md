@@ -37,3 +37,5 @@ GST_PLUGIN_PATH=(repository directory)\projects\owa-env-gst\gst-plugins
 4.
 
 At project root(under `open-world-agents`), run `uv install --group dev` or `uv sync --inexact --group dev`
+
+To install `envs` along with, run `uv sync --inexact --extra envs`
