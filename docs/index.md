@@ -12,20 +12,30 @@ Open World Agents is a powerful modular agent system that enables dynamic module
 
 ## Quick Start
 
-1. Install the required dependencies:
+1. Setup your virtual environments. Following example shows how to setup conda environment, but you may utilize other venv solutions.
 
-```bash
-uv install --group dev
+```
+conda create -n owa python=3.11 -y
+conda activate owa
 ```
 
-2. Set up your environment variables:
+2. Install `uv`, following [installation guide](https://docs.astral.sh/uv/getting-started/installation/)
+
+
+3. Install the required dependencies:
+
+```bash
+uv sync --inexact --extras env
+```
+
+4. Refer to `.env.example` and set up your environment variables:
 
 ```bash
 UV_PROJECT_ENVIRONMENT=(path to virtual environment)
 GST_PLUGIN_PATH=(repository directory)/projects/owa-env-gst/gst-plugins
 ```
 
-3. Import and use the core functionality:
+5. Import and use the core functionality:
 
 ```python
 from owa.registry import CALLABLES, LISTENERS, activate_module
