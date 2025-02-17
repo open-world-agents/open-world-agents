@@ -34,6 +34,9 @@ owa = { path = "projects/core", editable = true }
 owa-env-desktop = { path = "projects/owa-env-desktop", editable = true }
 owa-env-gst = { path = "projects/owa-env-gst", editable = true }
 
+[tool.uv.workspace]
+members = ["projects/recorder"]
+
 [tool.ruff]
 line-length = 119
 

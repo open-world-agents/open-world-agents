@@ -1,5 +1,8 @@
 .env
 
+# Temporary directory
+/tmp/
+
 # documentation site
 /site/
 

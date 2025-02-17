@@ -5,7 +5,7 @@
 
 import importlib
 from enum import StrEnum
-from typing import Callable, Dict, Generic, Optional, TypeVar
+from typing import Callable, Dict, Generic, Optional, Type, TypeVar
 
 from .callable import Callable as CallableCls
 from .listener import Listener as ListenerCls
@@ -42,10 +42,10 @@ class Registry(Generic[T]):
     def __contains__(self, name: str) -> bool:
         return name in self._registry
 
-    def __getitem__(self, name: str) -> T:
+    def __getitem__(self, name: str) -> Type[T]:
         return self._registry[name]
 
-    def get(self, name: str) -> Optional[T]:
+    def get(self, name: str) -> Optional[Type[T]]:
         return self._registry.get(name)
 
     # List all the registered items

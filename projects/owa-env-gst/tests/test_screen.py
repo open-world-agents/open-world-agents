@@ -2,7 +2,7 @@ import time
 
 import pytest
 
-from owa.registry import CALLABLES, LISTENERS, activate_module
+from owa.registry import LISTENERS, activate_module
 
 
 # Automatically activate the desktop module for all tests in this session.

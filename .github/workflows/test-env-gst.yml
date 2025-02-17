@@ -1,4 +1,4 @@
-name: Pytest on Windows (common)
+name: Pytest on Windows (owa-env-gst)
 
 on:
   push:
@@ -58,5 +58,4 @@ jobs:
 
       - name: Run pytest (will also pick it up)
         run: |
-          pytest projects/core
-          pytest projects/owa-env-desktop
+          pytest projects/owa-env-gst

@@ -5,8 +5,21 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "orjson>=3.10.15",
     "owa",
+    "owa-env-desktop",
+    "owa-env-gst",
+    "typer>=0.15.1",
 ]
 
 [tool.uv.sources]
 owa = { path = "../core", editable = true }
+owa-env-desktop = { path = "../owa-env-desktop" }
+owa-env-gst = { path = "../owa-env-gst" }
+
+[build-system]
+requires = ["setuptools>=66"]
+build-backend = "setuptools.build_meta"
+
+[project.scripts]
+recorder = "recorder:app"
