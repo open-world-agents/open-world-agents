@@ -59,4 +59,5 @@ jobs:
       - name: Run pytest (will also pick it up)
         run: |
           pytest projects/core
+          pytest projects/owa-env-example
           pytest projects/owa-env-desktop
