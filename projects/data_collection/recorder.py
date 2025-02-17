@@ -66,8 +66,6 @@ def main(
     ] = None,
     monitor_idx: Annotated[Optional[int], typer.Option(help="The index of the monitor to capture")] = None,
 ):
-    assert file_location.endswith(".mkv"), "The output file must have `.mkv` extension."
-
     configure()
     recorder = RUNNABLES["screen/recorder"]()
     keyboard_listener = LISTENERS["keyboard"](control_publisher_callback)

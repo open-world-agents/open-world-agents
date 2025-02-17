@@ -19,13 +19,13 @@ class MyProcessTest(RunnableProcess):
     def cleanup(self): ...
 
 
-@pytest.mark.timeout(3)
+@pytest.mark.timeout(2)
 def test_my_thread():
     """Test creation, start, and stop of a RunnableThread."""
     t = MyThreadTest()
     t.start()
     # Wait a few seconds to confirm it is in the running state
-    t.join(2)
+    t.join(1)
     assert t.is_alive(), "Thread should be running."
     # Now stop it
     t.stop()
@@ -33,13 +33,13 @@ def test_my_thread():
     assert not t.is_alive(), "Thread should have stopped."
 
 
-@pytest.mark.timeout(3)
+@pytest.mark.timeout(2)
 def test_my_process():
     """Test creation, start, and stop of a RunnableProcess."""
     p = MyProcessTest()
     p.start()
     # Wait a few seconds to confirm it is in the running state
-    p.join(2)
+    p.join(1)
     assert p.is_alive(), "Process should be running."
     # Now stop it
     p.stop()
