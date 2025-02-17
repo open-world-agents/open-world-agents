@@ -13,7 +13,7 @@ def activate_owa_desktop():
 
 def test_screen_capture():
     recorder = RUNNABLES["screen/recorder"]()
-    recorder.configure(filesink_location="output.mkv", window_name="open-world-agents")
+    recorder.configure(filesink_location="tmp/output.mkv", window_name="open-world-agents")
     recorder.start()
     time.sleep(2)
     recorder.stop()

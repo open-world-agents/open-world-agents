@@ -4,6 +4,7 @@ import time
 from typing import Optional
 
 from loguru import logger
+from pathlib import Path
 
 from owa import Runnable
 from owa.registry import RUNNABLES
@@ -57,6 +58,11 @@ class ScreenRecorder(Runnable):
         self.monitor_idx = monitor_idx
         self._process = None  # This will hold the subprocess running the pipeline
         self._pipeline_cmd = None  # The pipeline command to execute
+
+        # if filesink_location does not exist, create it and warn the user
+        if not Path(filesink_location).parent.exists():
+            Path(filesink_location).parent.mkdir(parents=True, exist_ok=True)
+            logger.warning(f"Output directory {filesink_location} does not exist. Creating it.")
 
         pipeline_description = recorder_pipeline(
             filesink_location=self.filesink_location,

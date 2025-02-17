@@ -8,7 +8,7 @@ from owa.registry import CALLABLES, activate_module
 
 def matroskamux(srcs: list[str]):
     muxer_name = "mux"  # be aware that the name of the muxer is hardcoded
-    return " ".join((src + "queue ! mux. ") for src in srcs) + f"matroskamux name={muxer_name} ! "
+    return " ".join((src + "queue ! mux.") for src in srcs) + f" matroskamux name={muxer_name} ! "
 
 
 def tee(src: str, sinks: list[str]):
@@ -17,20 +17,21 @@ def tee(src: str, sinks: list[str]):
 
 
 def screen_src(*, fps: float = 60, window_name: Optional[str] = None, monitor_idx: Optional[int] = None):
-    src_parameter = ""
+    src_parameter = ["show-cursor=true", "do-timestamp=true"]
     if window_name is not None:
         activate_module("owa_env_desktop")
         window = CALLABLES["window.get_window_by_title"](window_name)
-        src_parameter = f" window-handle={window.hWnd}"
+        src_parameter += [f"window-handle={window.hWnd}"]
 
     if monitor_idx is not None:
-        src_parameter += f" monitor-index={monitor_idx}"
+        src_parameter += [f"monitor-index={monitor_idx}"]
 
+    src_parameter = " ".join(src_parameter)
     frac = Fraction(fps).limit_denominator()
     framerate = f"framerate=0/1,max-framerate={frac.numerator}/{frac.denominator}"
 
     return (
-        f"d3d11screencapturesrc show-cursor=true {src_parameter} do-timestamp=true ! "
+        f"d3d11screencapturesrc {src_parameter} ! "
         f"videorate drop-only=true ! video/x-raw(memory:D3D11Memory),{framerate} ! "
     )
 
@@ -83,6 +84,8 @@ def recorder_pipeline(
         window_name: The name of the window to capture. If None, the entire screen will be captured.
         monitor_idx: The index of the monitor to capture. If None, the primary monitor will be captured.
     """
+    assert filesink_location.endswith(".mkv"), "Only Matroska (.mkv) files are supported now."
+
     srcs = []
     if record_video:
         _screen_src = screen_src(fps=fps, window_name=window_name, monitor_idx=monitor_idx)
@@ -99,7 +102,7 @@ def recorder_pipeline(
     if record_timestamp:
         srcs.append(utctimestampsrc())
 
-    return f"{matroskamux(srcs)} filesink location={filesink_location}"
+    return f"{matroskamux(srcs)}filesink location={filesink_location}"
 
 
 def screen_capture_pipeline(
