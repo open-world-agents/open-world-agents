@@ -1,4 +1,5 @@
 version = 1
+revision = 1
 requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version >= '3.12' and sys_platform == 'darwin'",
@@ -637,6 +638,7 @@ requires-dist = [
     { name = "owa-env-desktop", marker = "extra == 'envs'", editable = "projects/owa-env-desktop" },
     { name = "owa-env-gst", marker = "extra == 'envs'", editable = "projects/owa-env-gst" },
 ]
+provides-extras = ["docs", "envs"]
 
 [package.metadata.requires-dev]
 dev = [

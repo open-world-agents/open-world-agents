@@ -12,30 +12,22 @@ Open World Agents is a powerful modular agent system that enables dynamic module
 
 ## Quick Start
 
-1. Setup your virtual environments. Following example shows how to setup conda environment, but you may utilize other venv solutions.
+1. Install `uv` following [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/) and install `conda & mamba` following [miniforge installation guide](https://github.com/conda-forge/miniforge?tab=readme-ov-file#install)
+
+2. Setup your virtual environments. Be aware that in Windows, you must use `cmd` to use `mamba activate`.
 
 ```
-conda create -n owa python=3.11 -y
-conda activate owa
+mamba env create -n owa -f .\projects\owa-env-gst\environment.yml
+mamba activate owa
 ```
 
-2. Install `uv`, following [installation guide](https://docs.astral.sh/uv/getting-started/installation/)
-
-
-3. Install the required dependencies:
+3. Install the required dependencies. To prevent `uv` from separating virtuale environment's across sub-repositories in mono-repo, you MUST use `python uv_wrapper.py` instead of `uv`.
 
 ```bash
-uv sync --inexact --extras env
+python uv_wrapper.py sync --inexact --extra envs
 ```
 
-4. Refer to `.env.example` and set up your environment variables:
-
-```bash
-UV_PROJECT_ENVIRONMENT=(path to virtual environment)
-GST_PLUGIN_PATH=(repository directory)/projects/owa-env-gst/gst-plugins
-```
-
-5. Import and use the core functionality:
+4. Import and use the core functionality:
 
 ```python
 from owa.registry import CALLABLES, LISTENERS, activate_module
@@ -55,6 +47,9 @@ open-world-agents/
 ├── projects/
 │   ├── core/           # Core functionality
 │   ├── data_collection/# Data collection agents
+│   ├── owa-env-desktop/
+|   ├── owa-env-example/
+|   ├── owa-env-gst/
 │   └── minecraft_env/  # Minecraft integration
 ├── docs/              # Documentation
 └── README.md         # Project overview
