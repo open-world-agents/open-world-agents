@@ -21,10 +21,10 @@ mamba env create -n owa -f .\projects\owa-env-gst\environment.yml
 mamba activate owa
 ```
 
-3. Install the required dependencies. To prevent `uv` from separating virtuale environment's across sub-repositories in mono-repo, you MUST use `python uv_wrapper.py` instead of `uv`.
+3. Install the required dependencies. To prevent `uv` from separating virtuale environment's across sub-repositories in mono-repo, you MUST use `python vuv.py` instead of `uv`.
 
 ```bash
-python uv_wrapper.py sync --inexact --extra envs
+python vuv.py sync --inexact --extra envs
 ```
 
 4. Import and use the core functionality:
