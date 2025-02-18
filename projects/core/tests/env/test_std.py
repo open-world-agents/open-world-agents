@@ -12,13 +12,14 @@ def activate_owa_desktop():
     activate_module("owa.env.std")
 
 
-@pytest.mark.timeout(3)
+@pytest.mark.timeout(2)
 def test_clock():
     assert "clock.time_ns" in CALLABLES
     assert "clock/tick" in LISTENERS
 
     def callback():
         called_time.append(CALLABLES["clock.time_ns"]())
+        print(called_time)
 
     tick: Listener = LISTENERS["clock/tick"](callback)
 
@@ -27,12 +28,12 @@ def test_clock():
     tick.configure(interval=1)
     tick.start()
 
-    time.sleep(2)
+    time.sleep(1.5)
 
     tick.stop()
     tick.join()
 
-    assert len(called_time) >= 1
+    assert len(called_time) == 2  # t=0 and t=1
     # check if time is not far from the expected time, within 5% error
     now = called_time[-1]
     for ct in called_time[-1::-1]:
