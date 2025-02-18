@@ -1,4 +1,3 @@
-import threading
 import time
 
 from owa import Listener

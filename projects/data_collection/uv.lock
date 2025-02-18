@@ -78,8 +78,8 @@ dependencies = [
 requires-dist = [
     { name = "orjson", specifier = ">=3.10.15" },
     { name = "owa", editable = "../core" },
-    { name = "owa-env-desktop", directory = "../owa-env-desktop" },
-    { name = "owa-env-gst", directory = "../owa-env-gst" },
+    { name = "owa-env-desktop", editable = "../owa-env-desktop" },
+    { name = "owa-env-gst", editable = "../owa-env-gst" },
     { name = "typer", specifier = ">=0.15.1" },
 ]
 
@@ -255,7 +255,7 @@ requires-dist = [
 [[package]]
 name = "owa-env-desktop"
 version = "0.1.0"
-source = { directory = "../owa-env-desktop" }
+source = { editable = "../owa-env-desktop" }
 dependencies = [
     { name = "bettercam" },
     { name = "opencv-python" },
@@ -280,7 +280,7 @@ requires-dist = [
 [[package]]
 name = "owa-env-gst"
 version = "0.1.0"
-source = { directory = "../owa-env-gst" }
+source = { editable = "../owa-env-gst" }
 dependencies = [
     { name = "owa" },
 ]

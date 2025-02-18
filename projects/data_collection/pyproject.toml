@@ -14,8 +14,8 @@ dependencies = [
 
 [tool.uv.sources]
 owa = { path = "../core", editable = true }
-owa-env-desktop = { path = "../owa-env-desktop" }
-owa-env-gst = { path = "../owa-env-gst" }
+owa-env-desktop = { path = "../owa-env-desktop", editable = true }
+owa-env-gst = { path = "../owa-env-gst", editable = true }
 
 [build-system]
 requires = ["setuptools>=66"]
