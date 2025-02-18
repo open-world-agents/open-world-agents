@@ -10,3 +10,6 @@ from . import gst_factory
 def activate():
     from . import screen  # noqa
     from . import recorder  # noqa
+
+
+__all__ = ["gst_factory", "activate"]

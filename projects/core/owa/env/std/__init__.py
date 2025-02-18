@@ -1,2 +1,2 @@
 def activate():
-    from . import clock
+    from . import clock  # noqa
