@@ -10,16 +10,19 @@
 # open-world-agents = { path = "../" }
 # ///
 import time
+from pathlib import Path
 from typing import Optional
 
 import orjson
 import typer
+from loguru import logger
 from pydantic import BaseModel
 from typing_extensions import Annotated
 
 from owa.registry import CALLABLES, LISTENERS, RUNNABLES, activate_module
 
 app = typer.Typer()
+output_file = None
 
 
 class BagEvent(BaseModel):
@@ -29,10 +32,11 @@ class BagEvent(BaseModel):
 
 
 def write_event_into_jsonl(event, source=None):
+    global output_file
     # you can find where the event is coming from. e.g. where the calling this function
     # frame = inspect.currentframe().f_back
 
-    with open("event.jsonl", "ab") as f:
+    with open(output_file, "ab") as f:
         if isinstance(event, BaseModel):
             event_data = event.model_dump_json().encode("utf-8")
         else:
@@ -66,6 +70,12 @@ def main(
     ] = None,
     monitor_idx: Annotated[Optional[int], typer.Option(help="The index of the monitor to capture")] = None,
 ):
+    global output_file
+    output_file = Path(file_location).with_suffix(".jsonl")
+    if not output_file.parent.exists():
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+        logger.warning(f"Created directory {output_file.parent}")
+
     configure()
     recorder = RUNNABLES["screen/recorder"]()
     keyboard_listener = LISTENERS["keyboard"](control_publisher_callback)
