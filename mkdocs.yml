@@ -64,17 +64,36 @@ markdown_extensions:
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
 
 nav:
-  - Home: index.md
+  - Get Started:
+    - Welcome to OWA: index.md
+    - Why use OWA: why.md
+    # 전체 독스에서 자신이 필요한 정보를 찾는 방법 & 컨택 방법 써놓기
+    # 초기에는, 이 레포를 시험삼아 써보는 연구자들 타겟으로 공개하고,
+    # 저와 윤성님에게 편하게 DM하라고 메시지를 적어둡니다
+    - Help with OWA: help_with_owa.md
+    - Installation: install.md
+    - Contributing: contributing.md 
+    - Changelog: changelog.md # Later
   - Project Overview: project_overview.md
-  - Architecture:
-      - Core Components: architecture/core_components.md
-      - Registry Pattern: architecture/registry_pattern.md
-      - Event System: architecture/event_system.md
-  - Modules:
-      - Standard Environment: modules/std_env.md
-      - Desktop Environment: modules/desktop_env.md
-  - Examples:
-      - Basic Usage: examples/basic_usage.md
-      - Custom Extensions: examples/custom_extensions.md
-  - Contributing: contributing.md
-  - API Reference: api_reference.md
+  - OWA-Env:
+    - Why use OWA Env: env/why.md
+    - Architecture of OWA Env: env/architecture.md
+    - Installation & Usage: env/install_and_usage.md
+    # owa-env-examples 참고하라고 써둘 예정
+    - Custom Extensions: env/custom_extensions.md
+  - Lists of OWA-Env:
+    - Standard Environment: modules/std_env.md
+    - Desktop Environment: modules/desktop_env.md
+    - Gstreamer Environment: modules/gstreamer_env.md
+    - Omniparser: modules/omniparser.md
+  - OWA-Recorder:
+    - Why use OWA Recorder: recorder/why.md
+    - Install & Usage: recorder/install_and_usage.md
+    - Data format & Conversion: recorder/data_format.md
+  - 🚀 Awesome Examples:
+    - Multimodal Game Agent: examples/multimodal_game_agent/overview.md
+    - Omniparse + InternLM GUI Agent: examples/gui_agent/overview.md
+    - Interactve World Model: examples/interactive_world_model/overview.md
+    - Usage with transformers: examples/usage_with_transformers.md
+    - Usage with LLM Inference Engines(ollama, ...): examples/usage_with_llm.md
+  - API Reference: api_reference.md # Later
