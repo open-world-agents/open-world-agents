@@ -1,3 +1,10 @@
+"""
+This module provides a set of functions to construct GStreamer pipelines
+for screen capturing and recording.
+
+TODO: implement macOS and Linux support, as https://github.com/open-world-agents/desktop-env/blob/31b44e759a22dee20f08a5c61a345e6d76b383a2/src/desktop_env/windows_capture/gst_pipeline.py
+"""
+
 from fractions import Fraction
 from typing import Optional
 
