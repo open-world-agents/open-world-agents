@@ -17,7 +17,7 @@ Open World Agents is a powerful modular agent system that enables dynamic module
 2. Setup your virtual environments. Be aware that in Windows, you must use `cmd` to use `mamba activate`.
 
 ```
-mamba env create -n owa -f .\projects\owa-env-gst\environment.yml
+mamba env create -n owa -f .\projects\owa-env-gst\environment_detail.yml
 mamba activate owa
 ```
 

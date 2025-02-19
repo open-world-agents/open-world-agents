@@ -10,29 +10,14 @@ import time
 
 import numpy as np
 from gi.repository import GLib, Gst
-from pydantic import BaseModel
 
 from owa import Callable, Listener
 from owa.registry import LISTENERS
 
 from ..gst_factory import screen_capture_pipeline
+from .msg import FrameStamped
 
 Gst.init(None)
-
-"""
-(function) def screen_capture_pipeline(
-    fps: float = 60,
-    window_name: str | None = None,
-    monitor_idx: int | None = None
-) -> str
-"""
-
-
-class FrameStamped(BaseModel):
-    model_config = {"arbitrary_types_allowed": True}
-
-    timestamp_ns: int
-    frame_arr: np.ndarray  # [W, H, BGRA]
 
 
 @LISTENERS.register("screen")
