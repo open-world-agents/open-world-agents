@@ -4,41 +4,47 @@ Open World Agents is a powerful modular agent system that enables dynamic module
 
 ## Key Features
 
-- **Dynamic Module Registration**: Modules can be registered and activated at runtime
-- **Event-Driven Architecture**: Real-time event processing with listeners
-- **Extensible Design**: Easy to add custom modules and extend functionality
-- **Desktop Integration**: Built-in support for screen capture, window management, and input handling
-- **Cross-Platform**: Works on Windows and macOS
+- **Dynamic Module Registration**: Modules can be registered and activated at runtime.
+- **Event-Driven Architecture**: Real-time event processing with listeners.
+- **Extensible Design**: Easy to add custom modules and extend functionality.
+- **Desktop Integration**: Built-in support for screen capture, window management, and input handling.
+- **Cross-Platform**: Works on Windows and macOS.
 
 ## Quick Start
 
-1. Install `uv` following [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/) and install `conda & mamba` following [miniforge installation guide](https://github.com/conda-forge/miniforge?tab=readme-ov-file#install)
+1. **Install package managers**:
+    - Follow the [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/).
+    - Follow the [miniforge installation guide](https://github.com/conda-forge/miniforge?tab=readme-ov-file#install) to install `conda` and `mamba`.
 
-2. Setup your virtual environments. Be aware that in Windows, you must use `cmd` to use `mamba activate`.
+2. **Setup virtual environments**:
+    - On Windows, use `cmd` to activate the environment.
+    ```sh
+    mamba env create -n owa -f projects/owa-env-gst/environment_detail.yml
+    mamba activate owa
+    ```
+    - if you want to install conda packages in existing environment, run following:
+    ```sh
+    mamba env update --name (your-env-name-here) --file projects/owa-env-gst/environment_detail.yml
+    ```
 
-```
-mamba env create -n owa -f .\projects\owa-env-gst\environment_detail.yml
-mamba activate owa
-```
+3. **Install required dependencies**:
+    - Use `python vuv.py` instead of `uv` for all `uv` commands to prevent `uv` from separating virtual environments across sub-repositories in a mono-repo.
+    ```sh
+    python vuv.py sync --inexact --extra envs
+    ```
+    - To use raw `uv` binary, you must setup `UV_PROJECT_ENVIRONMENT` environment variable. see [here](https://docs.astral.sh/uv/configuration/environment/#uv_project_environment)
 
-3. Install the required dependencies. To prevent `uv` from separating virtual environment's across sub-repositories in mono-repo, you **must** use `python vuv.py` instead of `uv` for **every** `uv` command.
+4. **Import and use core functionality**:
+    ```python
+    from owa.registry import CALLABLES, LISTENERS, activate_module
 
-```bash
-python vuv.py sync --inexact --extra envs
-```
+    # Activate standard environment
+    activate_module("owa.env.std")
 
-4. Import and use the core functionality:
-
-```python
-from owa.registry import CALLABLES, LISTENERS, activate_module
-
-# Activate standard environment
-activate_module("owa.env.std")
-
-# Use registered functions
-time_ns = CALLABLES["clock.time_ns"]()
-print(f"Current time in nanoseconds: {time_ns}")
-```
+    # Use registered functions
+    time_ns = CALLABLES["clock.time_ns"]()
+    print(f"Current time in nanoseconds: {time_ns}")
+    ```
 
 ## Project Structure
 
@@ -48,8 +54,8 @@ open-world-agents/
 │   ├── core/           # Core functionality
 │   ├── data_collection/# Data collection agents
 │   ├── owa-env-desktop/
-|   ├── owa-env-example/
-|   ├── owa-env-gst/
+│   ├── owa-env-example/
+│   ├── owa-env-gst/
 │   └── minecraft_env/  # Minecraft integration
 ├── docs/              # Documentation
 └── README.md         # Project overview
@@ -57,12 +63,12 @@ open-world-agents/
 
 ## Contributing
 
-We welcome contributions! Please see our [Contributing Guide](contributing.md) for details on how to:
+We welcome contributions! Please see our Contributing Guide for details on how to:
 
-- Set up your development environment
-- Submit bug reports
-- Propose new features
-- Create pull requests
+- Set up your development environment.
+- Submit bug reports.
+- Propose new features.
+- Create pull requests.
 
 ## License
 
