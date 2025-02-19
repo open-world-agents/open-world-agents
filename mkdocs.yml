@@ -6,7 +6,7 @@ repo_name: open-world-agents
 theme:
   name: material
   features:
-    - navigation.tabs
+    # - navigation.tabs # I think omitting this is better to show Awesome Examples
     - navigation.sections
     - navigation.top
     - search.suggest
@@ -80,12 +80,12 @@ nav:
     - Architecture of OWA Env: env/architecture.md
     - Installation & Usage: env/install_and_usage.md
     # owa-env-examples 참고하라고 써둘 예정
-    - Custom Extensions: env/custom_extensions.md
-  - Lists of OWA-Env:
-    - Standard Environment: modules/std_env.md
-    - Desktop Environment: modules/desktop_env.md
-    - Gstreamer Environment: modules/gstreamer_env.md
-    - Omniparser: modules/omniparser.md
+    - Custom Plugins: env/custom_plugins.md
+    - Lists of Plugins:
+      - Standard Environment: env/plugins/std.md
+      - Desktop Environment: env/plugins/desktop_env.md
+      - Gstreamer Environment: env/plugins/gstreamer_env.md
+      - Omniparser: env/plugins/omniparser.md
   - OWA-Recorder:
     - Why use OWA Recorder: recorder/why.md
     - Install & Usage: recorder/install_and_usage.md

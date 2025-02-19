@@ -28,7 +28,7 @@ Open World Agents is a powerful modular agent system that enables dynamic module
     ```
 
 3. **Install required dependencies**:
-    - Use `python vuv.py` instead of `uv` for all `uv` commands to prevent `uv` from separating virtual environments across sub-repositories in a mono-repo.
+    - Use `python vuv.py` instead of `uv` for all `uv` commands to prevent `uv` from separating virtual environments across sub-repositories in a mono-repo. Argument `--inexact` is needed to prevent `uv` from deleting non-dependency packages and `--extra envs` is needed to install OWA Env Plugins.
     ```sh
     python vuv.py sync --inexact --extra envs
     ```
