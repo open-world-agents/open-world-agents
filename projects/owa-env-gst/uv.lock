@@ -1,4 +1,5 @@
 version = 1
+revision = 1
 requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version >= '3.12' and sys_platform == 'darwin'",
@@ -106,7 +107,7 @@ wheels = [
 ]
 
 [[package]]
-name = "owa"
+name = "owa-core"
 version = "0.1.0"
 source = { editable = "../core" }
 dependencies = [
@@ -127,11 +128,11 @@ name = "owa-env-gst"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "owa" },
+    { name = "owa-core" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "owa", editable = "../core" }]
+requires-dist = [{ name = "owa-core", editable = "../core" }]
 
 [[package]]
 name = "pydantic"

@@ -5,7 +5,7 @@ description = "A modular agent system with dynamic module registration and real-
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "owa",
+    "owa-core",
 ]
 
 [project.optional-dependencies]
@@ -30,7 +30,7 @@ dev = [
 ]
 
 [tool.uv.sources]
-owa = { path = "projects/core", editable = true }
+owa-core = { path = "projects/core", editable = true }
 owa-env-desktop = { path = "projects/owa-env-desktop", editable = true }
 owa-env-gst = { path = "projects/owa-env-gst", editable = true }
 

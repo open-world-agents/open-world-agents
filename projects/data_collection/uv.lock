@@ -68,7 +68,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "orjson" },
-    { name = "owa" },
+    { name = "owa-core" },
     { name = "owa-env-desktop" },
     { name = "owa-env-gst" },
     { name = "typer" },
@@ -77,7 +77,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "orjson", specifier = ">=3.10.15" },
-    { name = "owa", editable = "../core" },
+    { name = "owa-core", editable = "../core" },
     { name = "owa-env-desktop", editable = "../owa-env-desktop" },
     { name = "owa-env-gst", editable = "../owa-env-gst" },
     { name = "typer", specifier = ">=0.15.1" },
@@ -236,7 +236,7 @@ wheels = [
 ]
 
 [[package]]
-name = "owa"
+name = "owa-core"
 version = "0.1.0"
 source = { editable = "../core" }
 dependencies = [
@@ -259,7 +259,7 @@ source = { editable = "../owa-env-desktop" }
 dependencies = [
     { name = "bettercam" },
     { name = "opencv-python" },
-    { name = "owa" },
+    { name = "owa-core" },
     { name = "pygetwindow", marker = "sys_platform == 'win32'" },
     { name = "pynput" },
     { name = "pyobjc-framework-applicationservices", marker = "sys_platform == 'Darwin'" },
@@ -270,7 +270,7 @@ dependencies = [
 requires-dist = [
     { name = "bettercam", specifier = ">=1.0.0" },
     { name = "opencv-python", specifier = ">=4.11.0.86" },
-    { name = "owa", editable = "../core" },
+    { name = "owa-core", editable = "../core" },
     { name = "pygetwindow", marker = "sys_platform == 'win32'", specifier = ">=0.0.9" },
     { name = "pynput", specifier = ">=1.7.7" },
     { name = "pyobjc-framework-applicationservices", marker = "sys_platform == 'Darwin'", specifier = ">=11.0" },
@@ -282,11 +282,11 @@ name = "owa-env-gst"
 version = "0.1.0"
 source = { editable = "../owa-env-gst" }
 dependencies = [
-    { name = "owa" },
+    { name = "owa-core" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "owa", editable = "../core" }]
+requires-dist = [{ name = "owa-core", editable = "../core" }]
 
 [[package]]
 name = "pydantic"

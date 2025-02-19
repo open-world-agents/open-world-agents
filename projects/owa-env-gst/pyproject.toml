@@ -5,11 +5,11 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "owa"
+    "owa-core"
 ]
 
 [tool.uv.sources]
-owa = { path = "../core", editable = true }
+owa-core = { path = "../core", editable = true }
 
 [build-system]
 requires = ["hatchling"]
