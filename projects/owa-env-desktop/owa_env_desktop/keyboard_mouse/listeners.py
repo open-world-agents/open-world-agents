@@ -1,4 +1,5 @@
 from pynput.keyboard import Listener as KeyboardListener
+from pynput.mouse import Button
 from pynput.mouse import Listener as MouseListener
 
 from owa.listener import Listener
@@ -37,8 +38,8 @@ class MouseListenerWrapper(Listener):
     def on_move(self, x, y):
         self.callback("mouse.move", x, y)
 
-    def on_click(self, x, y, button, pressed):
-        self.callback("mouse.click", x, y, button, pressed)
+    def on_click(self, x, y, button: Button, pressed):
+        self.callback("mouse.click", x, y, button.name, pressed)
 
     def on_scroll(self, x, y, dx, dy):
         self.callback("mouse.scroll", x, y, dx, dy)
