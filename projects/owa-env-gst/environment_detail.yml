@@ -29,7 +29,7 @@ dependencies:
   - gst-plugins-base=1.24.6=hb0a98b8_0
   - gst-plugins-good=1.24.6=h3b23867_0
   - gst-plugins-ugly=1.24.6=ha7af72c_0
-  - gst-python=1.24.7=py311hb98fefa_0
+  - gst-python=1.24.6=py311hb98fefa_0
   - gstreamer=1.24.6=h5006eae_0
   - harfbuzz=10.2.0=h885c0d4_0
   - icu=75.1=he0c23c2_0

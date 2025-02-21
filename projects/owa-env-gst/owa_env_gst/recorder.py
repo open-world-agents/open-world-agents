@@ -1,10 +1,10 @@
 import signal
 import subprocess
 import time
+from pathlib import Path
 from typing import Optional
 
 from loguru import logger
-from pathlib import Path
 
 from owa import Runnable
 from owa.registry import RUNNABLES
@@ -94,7 +94,10 @@ class ScreenRecorder(Runnable):
             time.sleep(0.5)
         # Wait for the process to terminate fully
         rt = self._process.wait(5)
-        logger.info(f"ScreenRecorder process terminated with return code {rt}")
+        if rt == 0:
+            logger.info("ScreenRecorder process terminated successfully.")
+        else:
+            logger.error(f"ScreenRecorder process terminated with return code {rt}")
 
     def cleanup(self):
         """Clean up resources. This method is called after loop() exits."""
