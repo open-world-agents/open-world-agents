@@ -66,22 +66,19 @@ markdown_extensions:
 nav:
   - Get Started:
     - Welcome to OWA: index.md
-    - Why use OWA: why.md
-    # 전체 독스에서 자신이 필요한 정보를 찾는 방법 & 컨택 방법 써놓기
-    # 초기에는, 이 레포를 시험삼아 써보는 연구자들 타겟으로 공개하고,
-    # 저와 윤성님에게 편하게 DM하라고 메시지를 적어둡니다
+    # - Why use OWA: why.md
     - Help with OWA: help_with_owa.md
     - Installation: install.md
     - Contributing: contributing.md 
-    - Changelog: changelog.md # Later
-  - Project Overview: project_overview.md
+    # - Changelog: changelog.md # Later
   - OWA-Env:
-    - Why use OWA Env: env/why.md
-    - Architecture of OWA Env: env/architecture.md
-    - Installation & Usage: env/install_and_usage.md
+    - Introducing OWA-Env: env/index.md
+    # - Why use OWA Env: env/why.md
+    # - Architecture of OWA Env: env/architecture.md
+    # - Installation & Usage: env/install_and_usage.md
     # owa-env-examples 참고하라고 써둘 예정
-    - Custom Plugins: env/custom_plugins.md
-    - Lists of Plugins:
+    - Custom EnvPlugins: env/custom_plugins.md
+    - Lists of EnvPlugins:
       - Standard Environment: env/plugins/std.md
       - Desktop Environment: env/plugins/desktop_env.md
       - Gstreamer Environment: env/plugins/gstreamer_env.md
