@@ -34,7 +34,7 @@ With open-world-agents, you can:
 3. **Install required dependencies**:
     - Use `python vuv.py` instead of `uv` for all `uv` commands to prevent `uv` from separating virtual environments across sub-repositories in a mono-repo. Argument `--inexact` is needed to prevent `uv` from deleting non-dependency packages and `--extra envs` is needed to install EnvPlugin.
     ```sh
-    python vuv.py sync --inexact --extra envs
+    python vuv.py sync --inexact
     ```
     - To use raw `uv` binary, you must setup `UV_PROJECT_ENVIRONMENT` environment variable. see [here](https://docs.astral.sh/uv/configuration/environment/#uv_project_environment)
 
