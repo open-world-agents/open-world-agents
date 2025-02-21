@@ -1,6 +1,6 @@
 site_name: Open World Agents
 site_description: A modular agent system with dynamic module registration and real-time event processing
-repo_url: https://github.com/yourusername/open-world-agents
+repo_url: https://github.com/open-world-agents/open-world-agents
 repo_name: open-world-agents
 
 theme:
