@@ -2,9 +2,9 @@ import gi
 
 gi.require_version("Gst", "1.0")
 
-from gi.repository import Gst
+from gi.repository import Gst  # noqa: E402
 
-from owa_env_gst import gst_factory
+from owa_env_gst import gst_factory  # noqa: E402
 
 Gst.init(None)
 

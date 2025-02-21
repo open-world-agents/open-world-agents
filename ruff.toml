@@ -1,0 +1,14 @@
+exclude = [
+    "projects/owa-env-gst/owa_env_gst/gst-plugins/python/py_utctimestampsrc.py",
+    "projects/owa-env-gst/scripts",
+    "poc",
+]
+
+line-length = 119
+
+[lint.isort]
+known-first-party = [
+    "owa",
+    "owa_env_desktop",
+    "owa_env_gst",
+]

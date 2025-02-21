@@ -2,7 +2,7 @@ import os
 
 try:
     os.system("gst-inspect-1.0.exe d3d11")
-except Exception as e:
+except Exception as e:  # noqa: F841
     raise ImportError(
         "GStreamer is not properly installed or not in PATH."
         "Please install conda packages in `projects/owa-env-gst/environment_detail.yml`"

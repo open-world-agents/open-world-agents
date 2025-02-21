@@ -260,7 +260,7 @@ def capture_pyqt5(frames=30):
 
     now = time.time()
     for _ in range(frames):
-        img = screen.grabWindow(0, rect.x(), rect.y(), rect.width(), rect.height())
+        img = screen.grabWindow(0, rect.x(), rect.y(), rect.width(), rect.height())  # noqa: F841
     elapsed = time.time() - now
     return elapsed
 
