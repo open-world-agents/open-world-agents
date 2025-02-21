@@ -4,8 +4,7 @@ This guide will help you install and use the OWA Recorder for high-performance s
 
 ## Installation
 
-1. **Install core**:
-    - see [here](../index.md)
+1. **Install `owa`**: following [OWA's Installation Guide](../install.md), install `owa`.
 
 2. **Install data_collection**:
     ```sh
@@ -20,16 +19,26 @@ The OWA Recorder can be used to capture screen, audio, and various desktop event
 
 To start recording, use the following command:
 ```sh
-recorder output.mkv
+recorder --help
+                                                                                                                                                
+ Usage: recorder [OPTIONS] FILE_LOCATION                                                                                                        
+
+╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ *    file_location      TEXT  The location of the output file, use `.mkv` extension. [default: None] [required]                              │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --record-audio          --no-record-audio                 Whether to record audio [default: record-audio]                                    │
+│ --record-video          --no-record-video                 Whether to record video [default: record-video]                                    │
+│ --record-timestamp      --no-record-timestamp             Whether to record timestamp [default: record-timestamp]                            │
+│ --window-name                                    TEXT     The name of the window to capture, substring of window name is supported           │
+│                                                           [default: None]                                                                    │
+│ --monitor-idx                                    INTEGER  The index of the monitor to capture [default: None]                                │
+│ --install-completion                                      Install completion for the current shell.                                          │
+│ --show-completion                                         Show completion for the current shell, to copy it or customize the installation.   │
+│ --help                                                    Show this message and exit.                                                        │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
 ```
-
-### Options
-
-- **--record-audio / --no-record-audio**: Enable or disable audio recording. Default is to record audio.
-- **--record-video / --no-record-video**: Enable or disable video recording. Default is to record video.
-- **--record-timestamp / --no-record-timestamp**: Enable or disable timestamp recording. Default is to record timestamps.
-- **--window-name TEXT**: Capture a specific window by name (supports substring matches).
-- **--monitor-idx INTEGER**: Specify the monitor index to capture.
 
 ### Example Usage
 
@@ -57,27 +66,15 @@ recorder output.mkv
 
 To stop the recording, simply press `Ctrl+C`.
 
-## Advanced Usage
-
-For more advanced usage and options, refer to the help command:
-```sh
-recorder --help
-```
-
-This will display all available options and their descriptions.
 
 ## Additional Information
 
 - **Output Files**:
-  - The main recording will be saved as a Matroska (`.mkv`) file.
-  - Events such as keyboard, mouse, and window events will be logged in an `event.jsonl` file.
+    - For the format of output file, see [Data Format Guide](data_format.md)
 
 - **Performance**:
-  - OWA Recorder is optimized for high performance with minimal CPU/GPU usage.
-  - It supports high-frequency capture (144+ FPS) and real-time performance with sub-1ms latency.
+    - OWA Recorder is optimized for high performance with minimal CPU/GPU usage.
+    - It supports high-frequency capture (144+ FPS) and real-time performance with sub-1ms latency.
 
-For more details on the features and performance of OWA Recorder, refer to the Why use OWA Recorder section.
+For more details on the features and performance of OWA Recorder, refer to the [Why use OWA Recorder](why.md) section.
 
----
-
-Happy recording!

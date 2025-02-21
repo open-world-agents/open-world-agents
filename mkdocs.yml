@@ -71,6 +71,7 @@ nav:
     - Installation: install.md
     - Contributing: contributing.md 
     # - Changelog: changelog.md # Later
+  - Project Overview: project_overview.md
   - OWA-Env:
     - Introducing OWA-Env: env/index.md
     # - Why use OWA Env: env/why.md

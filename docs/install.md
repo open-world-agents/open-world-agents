@@ -1,79 +1,62 @@
-Installation is as simple as:
-
-=== "pip"
-
-    ```bash
-    pip install owa
-    ```
-
-=== "uv"
-
-    ```bash
-    uv add owa
-    ```
-
-Pydantic has a few dependencies:
-
-* [`pydantic-core`](https://pypi.org/project/pydantic-core/): Core validation logic for Pydantic written in Rust.
-* [`typing-extensions`](https://pypi.org/project/typing-extensions/): Backport of the standard library [typing][] module.
-* [`annotated-types`](https://pypi.org/project/annotated-types/): Reusable constraint types to use with [`typing.Annotated`][].
-
-If you've got Python 3.9+ and `pip` installed, you're good to go.
-
-Pydantic is also available on [conda](https://www.anaconda.com) under the [conda-forge](https://conda-forge.org)
-channel:
-
-```bash
-conda install pydantic -c conda-forge
-```
-
-## Optional dependencies
-
-Pydantic has the following optional dependencies:
-
-* `email`: Email validation provided by the [email-validator](https://pypi.org/project/email-validator/) package.
-* `timezone`: Fallback IANA time zone database provided by the [tzdata](https://pypi.org/project/tzdata/) package.
-
-To install optional dependencies along with Pydantic:
-
-
-=== "pip"
-
-    ```bash
-    # with the `email` extra:
-    pip install 'pydantic[email]'
-    # or with `email` and `timezone` extras:
-    pip install 'pydantic[email,timezone]'
-    ```
-
-=== "uv"
-
-    ```bash
-    # with the `email` extra:
-    uv add 'pydantic[email]'
-    # or with `email` and `timezone` extras:
-    uv add 'pydantic[email,timezone]'
-    ```
-
-Of course, you can also install requirements manually with `pip install email-validator tzdata`.
-
 ## Install from repository
 
-And if you prefer to install Pydantic directly from the repository:
+1. **Install package managers, uv and conda**:
+    - Follow the [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/).
+    - Follow the [miniforge installation guide](https://github.com/conda-forge/miniforge?tab=readme-ov-file#install) to install `conda` and `mamba`.
 
-
-=== "pip"
-
-    ```bash
-    pip install 'git+https://github.com/pydantic/pydantic@main'
-    # or with `email` and `timezone` extras:
-    pip install 'git+https://github.com/pydantic/pydantic@main#egg=pydantic[email,timezone]'
+2. **Setup virtual environments**:
+    - (Recommended) Create new environment with dependencies.
+    ```sh
+    mamba env create -n owa -f projects/owa-env-gst/environment_detail.yml
+    conda activate owa
+    ```
+    - If you want to install conda packages in existing environment, run following:
+    ```sh
+    mamba env update --name (your-env-name-here) --file projects/owa-env-gst/environment_detail.yml
     ```
 
-=== "uv"
-
-    ```bash
-    uv add 'git+https://github.com/pydantic/pydantic@main'
-    # or with `email` and `timezone` extras:
-    uv add 'git+https://github.com/pydantic/pydantic@main#egg=pydantic[email,timezone]'
+3. **Install required dependencies**:
+    - Use `python vuv.py` instead of `uv` for all `uv` commands to prevent `uv` from separating virtual environments across sub-repositories in a mono-repo. Argument `--inexact` is needed to prevent `uv` from deleting non-dependency packages and `--extra envs` is needed to install EnvPlugin.
+    ```sh
+    python vuv.py sync --inexact
     ```
+    - To use raw `uv` binary, you must setup `UV_PROJECT_ENVIRONMENT` environment variable. see [here](https://docs.astral.sh/uv/configuration/environment/#uv_project_environment)
+
+4. **Import and use core functionality**:
+    ```python
+    import time
+
+    from owa.registry import CALLABLES, LISTENERS, activate_module
+
+    # Activate the standard environment module
+    activate_module("owa.env.std")
+
+    def callback():
+        # Get current time in nanoseconds
+        time_ns = CALLABLES["clock.time_ns"]()
+        print(f"Current time in nanoseconds: {time_ns}")
+
+    # Create a listener for clock/tick event
+    tick = LISTENERS["clock/tick"](callback)
+
+    # Set listener to trigger every 1 second
+    tick.configure(interval=1)
+    # Start the listener
+    tick.start()
+
+    # Allow the listener to run for 2 seconds
+    time.sleep(2)
+
+    # Stop the listener and wait for it to finish
+    tick.stop(), tick.join()
+    ```
+
+
+## Install from pypi & conda-forge (With-In-Progress!)
+
+- pypi packages
+    - `owa-core`: this package contains only the core logic to manage OWA's EnvPlugin.
+    - `owa`: this package contains several base EnvPlugin along with `owa-core`. You must install `gstramer`-related packages in your own.
+- conda packages
+    - `owa`: this package contains several base EnvPlugin along with `owa-core`.
+
