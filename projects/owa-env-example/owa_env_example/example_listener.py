@@ -16,10 +16,10 @@ class ExampleListener(Listener):
 
     def loop(self):
         """Main loop. This method must be interruptable by calling stop(), which sets the self._stop_event."""
-        # Implement here
+        # Implement here!
         pass
 
     def cleanup(self):
         """Clean up resources. This method is called after loop() exits."""
-        # Implement here
+        # Implement here!
         pass

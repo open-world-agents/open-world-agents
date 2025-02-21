@@ -9,7 +9,7 @@ class ExampleCallable:
     """
 
     def __call__(self):
-        # Replace the following line with your actual implementation.
+        # Implement here!
         pass
 
 

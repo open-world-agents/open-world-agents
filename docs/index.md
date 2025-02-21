@@ -2,7 +2,7 @@
 
 ### Everything you need to build state-of-the-art foundation multimodal desktop agent, end-to-end.
 
-Streamline your agent's lifecycle with Open World Agents. From data capture to real-time evaluation, everything is designed for flexibility and performance.
+Streamline your agent's lifecycle with Open World Agents. From data capture to model training and real-time evaluation, everything is designed for flexibility and performance.
 
 With open-world-agents, you can:
 
@@ -16,7 +16,76 @@ With open-world-agents, you can:
 
 ## Quick Start
 
-(TODO)
+1. Simple example of using `Callables` and `Listeners`. [Learn more...](env)
+    ```python
+    import time
+
+    from owa.registry import CALLABLES, LISTENERS, activate_module
+
+    # Activate the standard environment module
+    activate_module("owa.env.std")
+
+    def callback():
+        # Get current time in nanoseconds
+        time_ns = CALLABLES["clock.time_ns"]()
+        print(f"Current time in nanoseconds: {time_ns}")
+
+    # Create a listener for clock/tick event
+    tick = LISTENERS["clock/tick"](callback)
+
+    # Set listener to trigger every 1 second
+    tick.configure(interval=1)
+    # Start the listener
+    tick.start()
+
+    # Allow the listener to run for 2 seconds
+    time.sleep(2)
+
+    # Stop the listener and wait for it to finish
+    tick.stop(), tick.join()
+    ```
+
+2. Record your own desktop usage data by just running `recorder.exe output.mkv`. [Learn more...](recorder/install_and_usage.md)
+
+
+3. How to register your custom EnvPlugin. [Learn more...](env/custom_plugins.md)
+    1. Write your own code
+```python
+from owa import Listener
+from owa.registry import LISTENERS
+
+
+@LISTENERS.register("my/listener")
+class MyEventListener(Listener):
+    def loop(self):
+        """Main loop. This method must be interruptable by calling stop(), which sets the self._stop_event."""
+        while not self._stop_event.is_set():
+            event = wait_and_get_event()
+            self.callback(event)
+
+    def cleanup(self):
+        """Clean up resources. This method is called after loop() exits."""
+        clean_up()
+```
+    2. Use it!
+```python
+from owa.registry import LISTENERS, activate_module
+
+activate_module("your-own-envplugin")
+
+def callback(event):
+    print(f"Captured event: {event}")
+
+listener = LISTENERS["my/listener"](callback)
+listener.configure(), listener.start()
+
+... # Run any your own logic here. listener is being executed in background as thread(ListenerThread) or process(ListenerProcess).
+
+# Finish it by calling stop and join
+listener.stop(), listener.join()
+```
+
+<!-- TODO: add agent training lifecycle example -->
 
 ## Contributing
 
