@@ -75,6 +75,10 @@ def main(
     if not output_file.parent.exists():
         output_file.parent.mkdir(parents=True, exist_ok=True)
         logger.warning(f"Created directory {output_file.parent}")
+    # delete the file if it exists
+    if output_file.exists():
+        output_file.unlink()
+        logger.warning(f"Deleted existing file {output_file}")
 
     configure()
     recorder = RUNNABLES["screen/recorder"]()
