@@ -1,12 +1,12 @@
 site_name: Open World Agents
 site_description: A modular agent system with dynamic module registration and real-time event processing
-repo_url: https://github.com/yourusername/open-world-agents
+repo_url: https://github.com/open-world-agents/open-world-agents
 repo_name: open-world-agents
 
 theme:
   name: material
   features:
-    - navigation.tabs
+    # - navigation.tabs # I think omitting this is better to show Awesome Examples
     - navigation.sections
     - navigation.top
     - search.suggest
@@ -64,17 +64,34 @@ markdown_extensions:
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
 
 nav:
-  - Home: index.md
+  - Get Started:
+    - Welcome to OWA: index.md
+    # - Why use OWA: why.md
+    - Help with OWA: help_with_owa.md
+    - Installation: install.md
+    - Contributing: contributing.md 
+    # - Changelog: changelog.md # Later
   - Project Overview: project_overview.md
-  - Architecture:
-      - Core Components: architecture/core_components.md
-      - Registry Pattern: architecture/registry_pattern.md
-      - Event System: architecture/event_system.md
-  - Modules:
-      - Standard Environment: modules/std_env.md
-      - Desktop Environment: modules/desktop_env.md
-  - Examples:
-      - Basic Usage: examples/basic_usage.md
-      - Custom Extensions: examples/custom_extensions.md
-  - Contributing: contributing.md
-  - API Reference: api_reference.md
+  - OWA-Env:
+    - Introducing OWA-Env: env/index.md
+    # - Why use OWA Env: env/why.md
+    # - Architecture of OWA Env: env/architecture.md
+    # - Installation & Usage: env/install_and_usage.md
+    # owa-env-examples 참고하라고 써둘 예정
+    - Custom EnvPlugins: env/custom_plugins.md
+    - Lists of EnvPlugins:
+      - Standard Environment: env/plugins/std.md
+      - Desktop Environment: env/plugins/desktop_env.md
+      - Gstreamer Environment: env/plugins/gstreamer_env.md
+      - Omniparser: env/plugins/omniparser.md
+  - OWA-Recorder:
+    - Why use OWA Recorder: recorder/why.md
+    - Install & Usage: recorder/install_and_usage.md
+    - Data format & Conversion: recorder/data_format.md
+  - 🚀 Awesome Examples:
+    - Multimodal Game Agent: examples/multimodal_game_agent/overview.md
+    - Omniparse + InternLM GUI Agent: examples/gui_agent/overview.md
+    - Interactve World Model: examples/interactive_world_model/overview.md
+    - Usage with transformers: examples/usage_with_transformers.md
+    - Usage with LLM Inference Engines(ollama, ...): examples/usage_with_llm.md
+  - API Reference: api_reference.md # Later

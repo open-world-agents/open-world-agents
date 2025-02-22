@@ -44,7 +44,13 @@ def screen_src(*, fps: float = 60, window_name: Optional[str] = None, monitor_id
 
 
 def screen_enc():
-    return "d3d11convert ! mfh264enc ! h264parse ! "
+    # TODO: supports various encoder depending on the platform and hardware
+
+    # BUG: mfh264enc only takes even-sized input, which causes d3d11convert to resize, which causes a char to be vague
+    # return "d3d11convert ! mfh264enc ! h264parse ! "
+
+    # CAUTION: If your desktop suffer with resource consumption, you may try h264 instead of h265.
+    return "d3d11convert ! video/x-raw(memory:D3D11Memory),format=NV12 ! nvd3d11h265enc ! h265parse ! "
 
 
 def screen_to_fpsdisplaysink():
@@ -60,7 +66,10 @@ def audio_src():
 
 
 def audio_enc():
-    return "mfaacenc ! "
+    # BUG: using mfaacenc along with nvd3d11h265enc causes a crash
+    # return "mfaacenc ! "
+
+    return "avenc_aac ! "
 
 
 def utctimestampsrc():
@@ -109,7 +118,7 @@ def recorder_pipeline(
     if record_timestamp:
         srcs.append(utctimestampsrc())
 
-    return f"{matroskamux(srcs)}filesink location={filesink_location}"
+    return matroskamux(srcs) + f"filesink location={filesink_location}"
 
 
 def screen_capture_pipeline(
@@ -125,4 +134,5 @@ def screen_capture_pipeline(
 
     src = screen_src(fps=fps, window_name=window_name, monitor_idx=monitor_idx)
     sinks = ["queue leaky=downstream ! " + screen_to_appsink()]
-    return tee(src, sinks)
+    # return tee(src, sinks)
+    return src + sinks[0]

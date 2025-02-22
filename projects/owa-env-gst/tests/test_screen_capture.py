@@ -31,7 +31,7 @@ def test_screen_capture_timing(screen_capture):
     """Test the elapsed time for capturing 30 frames."""
     now = time.time()
     for _ in range(30):
-        frame_msg = screen_capture.grab()
+        frame_msg = screen_capture.grab()  # noqa: F841
     elapsed_time = time.time() - now
     print(f"Elapsed time to capture 30 frames: {elapsed_time:.3f}s")
     assert elapsed_time < 1.0, "Capturing 30 frames took longer than expected."
