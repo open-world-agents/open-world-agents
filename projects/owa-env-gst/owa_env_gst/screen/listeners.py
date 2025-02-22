@@ -11,6 +11,7 @@ import time
 
 import numpy as np
 from gi.repository import GLib, Gst
+from loguru import logger
 
 from owa import Callable, Listener
 from owa.registry import LISTENERS
@@ -63,7 +64,7 @@ class ScreenListener(Listener):
             return (min_lat + max_lat) / 2 / Gst.SECOND
 
         except Exception as e:
-            print(f"Failed to query latency: {e}")
+            logger.warning(f"Failed to query latency: {e}")
             return 0.0
 
     @property
@@ -103,6 +104,7 @@ class ScreenListener(Listener):
         """
         # Construct the pipeline description
         pipeline_description = screen_capture_pipeline(fps, window_name, monitor_idx)
+        logger.debug(f"Constructed pipeline: {pipeline_description}")
         self.pipeline = Gst.parse_launch(pipeline_description)
 
         # Get the appsink element by name and set its properties (redundant if already set in pipeline desc.)
@@ -125,7 +127,7 @@ class ScreenListener(Listener):
             msg = bus.timed_pop_filtered(Gst.CLOCK_TIME_NONE, Gst.MessageType.ERROR)
             if msg:
                 err, debug = msg.parse_error()
-                print(f"Failed to set pipeline to PLAYING state: {err} ({debug})")
+                logger.error(f"Failed to set pipeline to PLAYING state: {err} ({debug})")
             return
         self._loop.run()
 
@@ -149,11 +151,11 @@ class ScreenListener(Listener):
             msg = bus.timed_pop_filtered(1.0 * Gst.SECOND, Gst.MessageType.EOS | Gst.MessageType.ERROR)
             if msg:
                 if msg.type == Gst.MessageType.EOS:
-                    print("Received EOS signal, shutting down gracefully.")
+                    logger.info("Received EOS signal, shutting down gracefully.")
                     break
                 elif msg.type == Gst.MessageType.ERROR:
                     err, debug = msg.parse_error()
-                    print("Error received:", err, debug)
+                    logger.error("Error received:", err, debug)
                     break
         self.pipeline.set_state(Gst.State.NULL)
 
@@ -197,7 +199,7 @@ class ScreenListener(Listener):
         """
         sample = sink.emit("pull-sample")
         if sample is None:
-            print("Received null sample.")
+            logger.error("Received null sample.")
             return Gst.FlowReturn.ERROR
 
         buf = sample.get_buffer()
@@ -207,7 +209,7 @@ class ScreenListener(Listener):
         height = structure.get_value("height")
         format_ = structure.get_value("format")
         if format_ != "BGRA":
-            print(f"Unsupported format: {format_}")
+            logger.error(f"Unsupported format: {format_}")
             return Gst.FlowReturn.ERROR
 
         success, mapinfo = buf.map(Gst.MapFlags.READ)
@@ -229,7 +231,7 @@ class ScreenListener(Listener):
                 # Callback also expects the listener object
                 self.callback(message, self)
             else:
-                print("Warning: Callback signature does not match expected 1 or 2 parameters.")
+                logger.warning("Warning: Callback signature does not match expected 1 or 2 parameters.")
         finally:
             buf.unmap(mapinfo)
 
