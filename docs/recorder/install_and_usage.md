@@ -4,12 +4,12 @@ This guide will help you install and use the OWA Recorder for high-performance s
 
 ## Installation
 
-1. **Install `owa`**: following [OWA's Installation Guide](../install.md), install `owa`.
+If you have installed [uv](https://docs.astral.sh/uv/), you can install `recorder` very easily by simply running:
 
-2. **Install data_collection**:
-    ```sh
-    python vuv.py pip install -e projects/data_collection
-    ```
+```sh
+uv pip install -e projects/data_collection
+# `pip install -e projects/data_collection` may work, but not tested.
+```
 
 ## Usage
 
