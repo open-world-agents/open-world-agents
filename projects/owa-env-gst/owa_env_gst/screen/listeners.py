@@ -37,7 +37,6 @@ class ScreenListener(Listener):
         self.pipeline = None
         self.appsink = None
         self._loop = None
-        self._loop_thread = None
         self._metric_queue = None
 
     @property
@@ -154,7 +153,6 @@ class ScreenListener(Listener):
         self.pipeline = None
         self.appsink = None
         self._loop = None
-        self._loop_thread = None
 
     def stop(self):
         """
@@ -176,8 +174,6 @@ class ScreenListener(Listener):
         self.pipeline.set_state(Gst.State.NULL)
 
         self._loop.quit()
-        if hasattr(self, "_loop_thread") and self._loop_thread is not None:
-            self._loop_thread.join()
         return True
 
     def __get_frame_time_ns(self, pts: int) -> int:
@@ -203,7 +199,7 @@ class ScreenListener(Listener):
         # Adjust current system time by the computed latency.
         return time.time_ns() - latency
 
-    def __on_new_sample(self, sink) -> Gst.FlowReturn:
+    def __on_new_sample(self, sink: Gst.Pad) -> Gst.FlowReturn:
         """
         This callback is connected to the appsink 'new-sample' signal.
         It extracts the data from the sample, converts it into a numpy array,
@@ -213,7 +209,7 @@ class ScreenListener(Listener):
         instance, (e.g. def callback(message: FrameStamped, listener: ScreenListener)),
         then this method will pass 'self' as well.
         """
-        sample = sink.emit("pull-sample")
+        sample: Gst.Sample = sink.emit("pull-sample")
         if sample is None:
             logger.error("Received null sample.")
             return Gst.FlowReturn.ERROR
