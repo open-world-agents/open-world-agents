@@ -93,17 +93,33 @@ class ScreenListener(Listener):
         elapsed_time = end_time - start_time
         return len(self._metric_queue.queue) / (elapsed_time / Gst.SECOND)
 
-    def configure(self, *, fps: float = 60, window_name: str | None = None, monitor_idx: int | None = None):
+    def configure(
+        self,
+        *,
+        show_cursor: bool = True,
+        fps: float = 60,
+        window_name: str | None = None,
+        monitor_idx: int | None = None,
+        additional_args: str | None = None,
+    ) -> bool:
         """
         Configure the GStreamer pipeline for screen capture.
 
         Keyword Arguments:
+            show_cursor (bool): Whether to show the cursor in the capture.
             fps (float): Frames per second.
             window_name (str | None): (Optional) specific window to capture.
             monitor_idx (int | None): (Optional) specific monitor index.
+            additional_args (str | None): (Optional) additional arguments to pass to the pipeline.
         """
         # Construct the pipeline description
-        pipeline_description = screen_capture_pipeline(fps, window_name, monitor_idx)
+        pipeline_description = screen_capture_pipeline(
+            show_cursor=show_cursor,
+            fps=fps,
+            window_name=window_name,
+            monitor_idx=monitor_idx,
+            additional_args=additional_args,
+        )
         logger.debug(f"Constructed pipeline: {pipeline_description}")
         self.pipeline = Gst.parse_launch(pipeline_description)
 

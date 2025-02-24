@@ -42,20 +42,13 @@ class ScreenRecorder(Runnable):
         record_timestamp: bool = True,
         enable_appsink: bool = False,
         enable_fpsdisplaysink: bool = True,
+        show_cursor: bool = True,
         fps: float = 60,
         window_name: Optional[str] = None,
         monitor_idx: Optional[int] = None,
+        additional_args: Optional[str] = None,
     ):
         """Prepare the GStreamer pipeline command."""
-        self.filesink_location = filesink_location
-        self.record_audio = record_audio
-        self.record_video = record_video
-        self.record_timestamp = record_timestamp
-        self.enable_appsink = enable_appsink
-        self.enable_fpsdisplaysink = enable_fpsdisplaysink
-        self.fps = fps
-        self.window_name = window_name
-        self.monitor_idx = monitor_idx
         self._process = None  # This will hold the subprocess running the pipeline
         self._pipeline_cmd = None  # The pipeline command to execute
 
@@ -65,15 +58,17 @@ class ScreenRecorder(Runnable):
             logger.warning(f"Output directory {filesink_location} does not exist. Creating it.")
 
         pipeline_description = recorder_pipeline(
-            filesink_location=self.filesink_location,
-            record_audio=self.record_audio,
-            record_video=self.record_video,
-            record_timestamp=self.record_timestamp,
-            enable_appsink=self.enable_appsink,
-            enable_fpsdisplaysink=self.enable_fpsdisplaysink,
-            fps=self.fps,
-            window_name=self.window_name,
-            monitor_idx=self.monitor_idx,
+            filesink_location=filesink_location,
+            record_audio=record_audio,
+            record_video=record_video,
+            record_timestamp=record_timestamp,
+            enable_appsink=enable_appsink,
+            enable_fpsdisplaysink=enable_fpsdisplaysink,
+            show_cursor=show_cursor,
+            fps=fps,
+            window_name=window_name,
+            monitor_idx=monitor_idx,
+            additional_args=additional_args,
         )
         self._pipeline_cmd = f"gst-launch-1.0.exe -e -v {pipeline_description}"
 

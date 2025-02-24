@@ -65,10 +65,17 @@ def main(
     record_audio: Annotated[bool, typer.Option(help="Whether to record audio")] = True,
     record_video: Annotated[bool, typer.Option(help="Whether to record video")] = True,
     record_timestamp: Annotated[bool, typer.Option(help="Whether to record timestamp")] = True,
+    show_cursor: Annotated[bool, typer.Option(help="Whether to show the cursor in the capture")] = True,
     window_name: Annotated[
         Optional[str], typer.Option(help="The name of the window to capture, substring of window name is supported")
     ] = None,
     monitor_idx: Annotated[Optional[int], typer.Option(help="The index of the monitor to capture")] = None,
+    additional_args: Annotated[
+        Optional[str],
+        typer.Option(
+            help="Additional arguments to pass to the pipeline. For detail, see https://gstreamer.freedesktop.org/documentation/d3d11/d3d11screencapturesrc.html"
+        ),
+    ] = None,
 ):
     global output_file
     output_file = Path(file_location).with_suffix(".jsonl")
@@ -89,8 +96,10 @@ def main(
         record_audio=record_audio,
         record_video=record_video,
         record_timestamp=record_timestamp,
+        show_cursor=show_cursor,
         window_name=window_name,
         monitor_idx=monitor_idx,
+        additional_args=additional_args,
     )
     keyboard_listener.configure()
     mouse_listener.configure()

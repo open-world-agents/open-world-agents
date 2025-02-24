@@ -10,8 +10,6 @@ from typing import Optional
 
 from owa.registry import CALLABLES, activate_module
 
-# src, convert, enc, mux
-
 
 def matroskamux(srcs: list[str]):
     muxer_name = "mux"  # be aware that the name of the muxer is hardcoded
@@ -23,8 +21,15 @@ def tee(src: str, sinks: list[str]):
     return f"{src}tee name={tee_name} " + " ".join((f"t. ! {sink}" for sink in sinks))
 
 
-def screen_src(*, fps: float = 60, window_name: Optional[str] = None, monitor_idx: Optional[int] = None):
-    src_parameter = ["show-cursor=true", "do-timestamp=true"]
+def screen_src(
+    *,
+    show_cursor: bool = True,
+    fps: float = 60,
+    window_name: Optional[str] = None,
+    monitor_idx: Optional[int] = None,
+    additional_args: Optional[str] = None,
+):
+    src_parameter = [f"show-cursor={str(show_cursor).lower()}", "do-timestamp=true"]
     if window_name is not None:
         activate_module("owa_env_desktop")
         window = CALLABLES["window.get_window_by_title"](window_name)
@@ -34,6 +39,9 @@ def screen_src(*, fps: float = 60, window_name: Optional[str] = None, monitor_id
         src_parameter += [f"monitor-index={monitor_idx}"]
 
     src_parameter = " ".join(src_parameter)
+    if additional_args is not None:
+        src_parameter += " " + additional_args
+
     frac = Fraction(fps).limit_denominator()
     framerate = f"framerate=0/1,max-framerate={frac.numerator}/{frac.denominator}"
 
@@ -84,9 +92,11 @@ def recorder_pipeline(
     record_timestamp: bool = True,
     enable_appsink: bool = False,
     enable_fpsdisplaysink: bool = True,
+    show_cursor: bool = True,
     fps: float = 60,
     window_name: Optional[str] = None,
     monitor_idx: Optional[int] = None,
+    additional_args: Optional[str] = None,
 ) -> str:
     """Construct a GStreamer pipeline for screen capturing.
     Args:
@@ -104,7 +114,13 @@ def recorder_pipeline(
 
     srcs = []
     if record_video:
-        _screen_src = screen_src(fps=fps, window_name=window_name, monitor_idx=monitor_idx)
+        _screen_src = screen_src(
+            show_cursor=show_cursor,
+            fps=fps,
+            window_name=window_name,
+            monitor_idx=monitor_idx,
+            additional_args=additional_args,
+        )
         sinks = []
         if enable_appsink:
             sinks.append("queue leaky=downstream ! " + screen_to_appsink())
@@ -122,7 +138,11 @@ def recorder_pipeline(
 
 
 def screen_capture_pipeline(
-    fps: float = 60, window_name: Optional[str] = None, monitor_idx: Optional[int] = None
+    show_cursor: bool = True,
+    fps: float = 60,
+    window_name: Optional[str] = None,
+    monitor_idx: Optional[int] = None,
+    additional_args: Optional[str] = None,
 ) -> str:
     """
     Construct a GStreamer pipeline for screen capturing with appsink.
@@ -132,7 +152,13 @@ def screen_capture_pipeline(
         monitor_idx: The index of the monitor to capture. If None, the primary monitor will be captured.
     """
 
-    src = screen_src(fps=fps, window_name=window_name, monitor_idx=monitor_idx)
+    src = screen_src(
+        show_cursor=show_cursor,
+        fps=fps,
+        window_name=window_name,
+        monitor_idx=monitor_idx,
+        additional_args=additional_args,
+    )
     sinks = ["queue leaky=downstream ! " + screen_to_appsink()]
     # return tee(src, sinks)
     return src + sinks[0]
