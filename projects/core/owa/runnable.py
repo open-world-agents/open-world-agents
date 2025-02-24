@@ -41,6 +41,7 @@ class RunnableMixin(ABC):
 
     def configure(self, *args, **kwargs) -> Self:
         self.on_configure(*args, **kwargs)
+        self._configured = True
         return self
 
     # What user implements
@@ -62,6 +63,8 @@ class RunnableThread(threading.Thread, RunnableMixin):
         self._stop_event = threading.Event()
 
     def run(self):
+        if not getattr(self, "_configured", False):
+            raise RuntimeError("RunnableThread is not configured. Call configure() before start().")
         try:
             self.loop()
         finally:
@@ -89,6 +92,8 @@ class RunnableProcess(multiprocessing.Process, RunnableMixin):
         self._stop_event = multiprocessing.Event()
 
     def run(self):
+        if not getattr(self, "_configured", False):
+            raise RuntimeError("RunnableProcess is not configured. Call configure() before start().")
         try:
             self.loop()
         finally:

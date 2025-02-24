@@ -34,7 +34,7 @@ class ListenerMixin(RunnableMixin):
     def configure(self, *args, callback: Callable, **kwargs) -> Self:
         """Configure the listener with a callback function. `callback` keyword argument is reserved for the callback function."""
         self.register_callback(callback)
-        self.on_configure(*args, **kwargs)
+        super().configure(*args, **kwargs)
         return self
 
 
