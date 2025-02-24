@@ -1,6 +1,7 @@
 import multiprocessing
 import threading
 from abc import ABC, abstractmethod
+from typing import Self
 
 
 class RunnableMixin(ABC):
@@ -29,9 +30,22 @@ class RunnableMixin(ABC):
     @abstractmethod
     def is_alive(self): ...
 
+    # What is implemented
+    def __enter__(self):
+        self.start()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stop()
+        self.join()
+
+    def configure(self, *args, **kwargs) -> Self:
+        self.on_configure(*args, **kwargs)
+        return self
+
     # What user implements
-    def configure(self):
-        """Optional method for configuration."""
+    def on_configure(self):
+        """Optional method for configuration. This method is called when self.configure() is called."""
 
     @abstractmethod
     def loop(self):
@@ -57,8 +71,8 @@ class RunnableThread(threading.Thread, RunnableMixin):
         self._stop_event.set()
 
     # What user implements
-    def configure(self):
-        """Optional method for configuration."""
+    def on_configure(self):
+        """Optional method for configuration. This method is called when self.configure() is called."""
 
     @abstractmethod
     def loop(self):
@@ -84,8 +98,8 @@ class RunnableProcess(multiprocessing.Process, RunnableMixin):
         self._stop_event.set()
 
     # What user implements
-    def configure(self):
-        """Optional method for configuration."""
+    def on_configure(self):
+        """Optional method for configuration. This method is called when self.configure() is called."""
 
     @abstractmethod
     def loop(self):

@@ -9,6 +9,7 @@ from loguru import logger
 from owa import Runnable
 from owa.registry import RUNNABLES
 
+from . import get_executable_path
 from .gst_factory import recorder_pipeline
 
 
@@ -34,7 +35,7 @@ def disable_ctrl_c_once():
 class ScreenRecorder(Runnable):
     """A ScreenRecorder Runnable that records video and/or audio using a GStreamer pipeline."""
 
-    def configure(
+    def on_configure(
         self,
         filesink_location: str,
         record_audio: bool = True,

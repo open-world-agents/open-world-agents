@@ -12,7 +12,7 @@ print(CALLABLES, LISTENERS)
 # {'clock.time_ns': <built-in function time_ns>} {'clock/tick': <class 'owa.env.std.clock.ClockTickListener'>}
 
 # now, let's test the clock/tick listener
-tick = LISTENERS["clock/tick"](lambda: print(CALLABLES["clock.time_ns"]()))
+tick = LISTENERS["clock/tick"]().configure(callback=lambda: print(CALLABLES["clock.time_ns"]()))
 tick.configure(interval=1)
 tick.start()
 

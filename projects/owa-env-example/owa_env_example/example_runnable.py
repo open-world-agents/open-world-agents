@@ -8,8 +8,8 @@ class ExampleRunnable(Runnable):
     Runnable must implement the `loop` and `cleanup` methods.
     """
 
-    def configure(self):
-        """Optional method for configuration."""
+    def on_configure(self):
+        """Optional method for configuration. This method is called when self.configure() is called."""
 
     def loop(self):
         """Main loop. This method must be interruptable by calling stop(), which sets the self._stop_event."""

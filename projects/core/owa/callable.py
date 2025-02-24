@@ -3,8 +3,9 @@ Callable implements `__call__` method, which allows the object to be called as a
 """
 
 from typing import Callable  # noqa
+from abc import ABC, abstractmethod
 
 
-class CallableMixin:
-    def __call__(self):
-        raise NotImplementedError
+class CallableMixin(ABC):
+    @abstractmethod
+    def __call__(self): ...

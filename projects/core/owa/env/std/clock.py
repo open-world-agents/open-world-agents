@@ -11,7 +11,7 @@ S_TO_NS = 1_000_000_000
 # tick listener
 @LISTENERS.register("clock/tick")
 class ClockTickListener(Listener):
-    def configure(self, *, interval=1):
+    def on_configure(self, *, interval=1):
         self.interval = interval * S_TO_NS
 
     def loop(self):

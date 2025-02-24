@@ -32,13 +32,6 @@ class ScreenListener(Listener):
     the second one will be this ScreenListener instance.
     """
 
-    def __init__(self, callback: Callable[[FrameStamped], None]):
-        super().__init__(callback=callback)
-        self.pipeline = None
-        self.appsink = None
-        self._loop = None
-        self._metric_queue = None
-
     @property
     def gst_latency(self):
         """
@@ -92,7 +85,7 @@ class ScreenListener(Listener):
         elapsed_time = end_time - start_time
         return len(self._metric_queue.queue) / (elapsed_time / Gst.SECOND)
 
-    def configure(
+    def on_configure(
         self,
         *,
         show_cursor: bool = True,

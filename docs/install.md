@@ -41,7 +41,7 @@
         print(f"Current time in nanoseconds: {time_ns}")
 
     # Create a listener for clock/tick event
-    tick = LISTENERS["clock/tick"](callback)
+    tick = LISTENERS["clock/tick"]().configure(callback=callback)
 
     # Set listener to trigger every 1 second
     tick.configure(interval=1)

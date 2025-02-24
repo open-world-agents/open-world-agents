@@ -71,7 +71,7 @@ def tick_callback():
     print(f"Tick at {CALLABLES['clock.time_ns']()}")
 
 # Configure and start the tick listener
-tick_listener = LISTENERS["clock/tick"](tick_callback)
+tick_listener = LISTENERS["clock/tick"]().configure(callback=tick_callback)
 tick_listener.configure(interval=1)
 tick_listener.start()
 
