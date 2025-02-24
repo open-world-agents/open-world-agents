@@ -40,7 +40,7 @@ def test_screen_capture():
         "d3d11screencapturesrc show-cursor=true do-timestamp=true ! "
         "videorate drop-only=true ! "
         "video/x-raw(memory:D3D11Memory),framerate=0/1,max-framerate=60/1 ! "
-        "tee name=t t. ! queue leaky=downstream ! d3d11download ! videoconvert ! "
+        "queue leaky=downstream ! d3d11download ! videoconvert ! "
         "video/x-raw,format=BGRA ! appsink name=appsink sync=true max-buffers=1 "
         "drop=true emit-signals=true"
     )
