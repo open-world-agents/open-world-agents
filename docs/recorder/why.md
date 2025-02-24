@@ -1,76 +1,67 @@
-## ⚡ Blazing Performance
+# Why You Should Use OWA's Recorder  
 
-OWA Recorder significantly outperforms other Python screen capture libraries in both speed and resource efficiency:
-
-| **Library**         | **Avg. Time per Frame** | **Relative Speed**    |
-|---------------------|-------------------------|-----------------------|
-| **OWA Recorder**    | **5.7 ms**              | ⚡ **1× (Fastest)**    |
-| `pyscreenshot`     | 33 ms                   | 🚶‍♂️ 5.8× slower       |
-| `PIL`              | 34 ms                   | 🚶‍♂️ 6.0× slower       |
-| `MSS`              | 37 ms                   | 🚶‍♂️ 6.5× slower       |
-| `PyQt5`            | 137 ms                  | 🐢 24× slower          |
-
-*Measurement Environment: i5-11400, GTX 1650.*  
-
-OWA Recorder not only delivers higher FPS but also ensures **significantly lower CPU/GPU usage**, making it the optimal choice for high-performance screen recording.
-
-## 🔑 Key Features
-
-- ⚡ **Real-Time Performance**: Experience **sub-1ms latency** in screen capture for seamless real-time applications.
-- 🎥 **High-Frequency Capture**: Record screen at **144+ FPS** with **minimal CPU/GPU usage**.
-    - Powered by Windows APIs (`DXGI/WGC`) and the robust [GStreamer](https://gstreamer.freedesktop.org/) framework, ensuring superior performance compared to alternatives like `PIL.ImageGrab` and `mss`.
-
-### Supported Desktop Events & Interfaces
-
-- 📺 **Screen Capture**: 
-    - Capture entire monitor or specific monitors by index.
-    - Specify window name and adjust framerate as needed.
-- ⌨️🖱️ **Input Handling**: 
-    - Capture and inject keyboard and mouse events effortlessly.
-- 🪟 **Window Management**: 
-    - Retrieve active window details, including name, bounding box, and handle (`hWnd`).
-
-### ✨ Supported Operating Systems
-
-- **Windows**: Full-featured with optimized Direct3D11 integration.
-- **macOS**: Comprehensive support utilizing AVFoundation for efficient screen capture.
-- **Linux**: Basic functionality available, with ongoing enhancements.
-
-## 🚀 Why Choose OWA Recorder?
-
-OWA Recorder stands out as the most efficient Python-based screen recorder, offering unmatched performance and ease of use:
-
-- **Simplicity**: 
-    - Start recording with a single command: `recorder FILE_LOCATION`.
-    - Stop seamlessly using `Ctrl+C`.
-- **Optimized Performance**: 
-    - Near-zero CPU/GPU load, comparable to commercial screen recording and broadcasting solutions.
-    - Leverages advanced Windows APIs and the GStreamer framework for superior efficiency.
-- **Comprehensive Recording**:
-    - Simultaneously records screen, audio, and timestamps in a single Matroska (`.mkv`) file.
-      - Timestamps are embedded as video subtitles.
-    - Captures keyboard, mouse, and window events in an `event.jsonl` file for detailed event logging.
-
-For detailed options and configurations, run `recorder --help`!
-
-### 📋 Usage
-
-```bash
-Usage: recorder.py [OPTIONS] FILE_LOCATION
-
-Arguments:
-  FILE_LOCATION        The output file path with `.mkv` extension. [required]
-
-Options:
-    --record-audio / --no-record-audio        Enable or disable audio recording. [default: record-audio]
-    --record-video / --no-record-video        Enable or disable video recording. [default: record-video]
-    --record-timestamp / --no-record-timestamp  Enable or disable timestamp recording. [default: record-timestamp]
-    --window-name TEXT                        Capture a specific window by name (supports substring matches).
-    --monitor-idx INTEGER                     Specify the monitor index to capture.
-    --help                                    Show this message and exit.
-```
+OWA's Recorder is a **powerful, efficient, and easy-to-use** screen recording tool designed for modern workflows. Whether you need precise event tracking, high-performance screen capture, or seamless audio synchronization, it delivers everything in a lightweight yet robust package.  
 
 ---
 
+## ✅ Key Features  
 
+- **🔹 Simple & Intuitive** — Start recording with:  
+    ```sh
+    recorder FILE_LOCATION
+    ```  
+    Stop with `Ctrl+C`. [Learn more...](install_and_usage.md)  
+
+- **🎥 All-in-One Recording** — Captures **screen, audio, and timestamps** in a single `.mkv` file.  
+    - Timestamps are embedded as subtitles.  
+    - Logs **keyboard, mouse, and window events** in `event.jsonl`. For data format, [Learn more...](data_format.md)  
+
+- **🎯 Flexible Capture Options** — Supports `fps`, `window-name`, `monitor-index`, `show-cursor`, and more. [Learn more...](https://gstreamer.freedesktop.org/documentation/d3d11/d3d11screencapturesrc.html)
+
+- **⚡ Optimized Performance** — Hardware-accelerated pipeline ensures high FPS with low CPU/GPU usage.  
+    - Uses Windows APIs (`DXGI/WGC` for screen, `WASAPI` for audio).  
+
+---
+
+## 📊 Feature Comparison  
+
+| **Feature**                           | **OWA's Recorder** | **[wcap](https://github.com/mmozeiko/wcap)** | **[pillow](https://github.com/python-pillow/Pillow)/[mss](https://github.com/BoboTiG/python-mss)** |
+|---------------------------------------|--------------------|--------------------------------|----------------------------|
+| Timestamp embedding (subtitles)    | ✅ Yes             | ❌ No                          | ❌ No                       |
+| Python API support                 | ✅ Yes             | ❌ No                          | ❌ No                       |
+| Audio + Window + Keyboard + Mouse  | ✅ Yes             | ❌ No                          | ❌ No                       |
+| Supports latest Windows APIs       | ✅ Yes             | ✅ Yes                     | ❌ No (legacy APIs only)    |
+| Hardware-accelerated encoder        | ✅ Yes             | ✅ Yes                         | ❌ No                       |
+| Optional mouse cursor capture      | ✅ Yes             | ✅ Yes                         | ❌ No                       |
+
+
+---
+
+## ⚡ Performance Benchmark  
+
+OWA's Recorder significantly **outperforms** other Python screen capture tools:  
+
+| **Library**        | **Avg. Time per Frame** | **Relative Speed**    |
+|--------------------|------------------------|-----------------------|
+| **OWA Recorder**   | **5.7 ms**              | ⚡ **1× (Fastest)**    |
+| `pyscreenshot`    | 33 ms                   | 🚶‍♂️ 5.8× slower       |
+| `PIL`             | 34 ms                   | 🚶‍♂️ 6.0× slower       |
+| `MSS`             | 37 ms                   | 🚶‍♂️ 6.5× slower       |
+| `PyQt5`           | 137 ms                  | 🐢 24× slower         |
+
+📌 **Tested on:** Intel i5-11400, GTX 1650  
+
+Not only does OWA Recorder **achieve higher FPS**, but it also maintains **lower CPU/GPU usage**, making it the ideal choice for screen recording.  
+
+---
+
+## 🖥 Supported Operating Systems  
+
+- **Windows**: Fully optimized with Direct3D 11 integration.  
+- **macOS**: Work in progress.  
+- **Linux**: Work in progress.  
+
+**⚠️ Recommended Setup:**  
+- **OS:** Windows  
+- **GPU:** NVIDIA (Recommended for optimal performance, supports for w/o NVIDIA GPU is in TODO)  
 

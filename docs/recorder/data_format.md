@@ -70,3 +70,12 @@ for sub in subs:
     print(f"Start: {sub.start}, End: {sub.end}")
     print(f"Text: {sub.text}\n")
 ```
+
+### 💡 Why `.mkv` Instead of `.mp4`?  
+
+OWA's Recorder records in **Matroska (`.mkv`)** instead of `.mp4` to ensure **reliability in case of crashes or power failures**.  
+
+- If a recording is **unexpectedly interrupted** (e.g., power outage, OBS crash), `.mkv` files remain **recoverable**.  
+- `.mp4` files, by contrast, **may become corrupted or completely lost** if not properly finalized.  
+
+For **safety and data integrity**, `.mkv` is the **preferred format**—you can always convert it later as needed.  
