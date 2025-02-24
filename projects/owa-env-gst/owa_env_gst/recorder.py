@@ -9,7 +9,6 @@ from loguru import logger
 from owa import Runnable
 from owa.registry import RUNNABLES
 
-from . import get_executable_path
 from .gst_factory import recorder_pipeline
 
 
