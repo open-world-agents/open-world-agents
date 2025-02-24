@@ -30,8 +30,8 @@ print(f"Current time (ns): {current_time_ns}")
 def on_tick():
     print(f"Tick at {CALLABLES['clock.time_ns']()}")
 
-tick_listener = LISTENERS["clock/tick"](on_tick)
-tick_listener.configure(interval=1)  # Tick every second
+tick_listener = LISTENERS["clock/tick"]()
+tick_listener.configure(callback=on_tick, interval=1)  # Tick every second
 tick_listener.start()
 
 # Run for a few seconds to see the tick listener in action
@@ -71,8 +71,7 @@ def tick_callback():
     print(f"Tick at {CALLABLES['clock.time_ns']()}")
 
 # Configure and start the tick listener
-tick_listener = LISTENERS["clock/tick"]().configure(callback=tick_callback)
-tick_listener.configure(interval=1)
+tick_listener = LISTENERS["clock/tick"]().configure(callback=tick_callback, interval=1)
 tick_listener.start()
 
 # Let the listener run for 5 seconds

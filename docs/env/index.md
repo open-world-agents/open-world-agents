@@ -69,7 +69,7 @@ def on_keyboard_event(event_type, key):
     print(f"Keyboard event: {event_type}, {key}")
 
 keyboard_listener = LISTENERS["keyboard"]()
-keyboard_listener.configure(on_keyboard_event)
+keyboard_listener.configure(callback=on_keyboard_event)
 keyboard_listener.activate()
 
 time.sleep(5)
