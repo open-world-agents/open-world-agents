@@ -21,6 +21,10 @@
     python vuv.py sync --inexact
     ```
     - To use raw `uv` binary, you must setup `UV_PROJECT_ENVIRONMENT` environment variable. see [here](https://docs.astral.sh/uv/configuration/environment/#uv_project_environment)
+    ```sh
+    $ $env:UV_PROJECT_ENVIRONMENT="C:\Users\MilkClouds\miniforge3\envs\owa"
+    $ uv sync --inexact
+    ```
 
 4. **Import and use core functionality**:
     ```python
