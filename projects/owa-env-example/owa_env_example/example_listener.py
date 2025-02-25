@@ -8,7 +8,7 @@ class ExampleListener(Listener):
     This listener must implement the `loop` and `cleanup` methods.
 
     Within the listener, call `self.callback` to notify the environment of an event.
-    The `callback` function is provided as an argument to `__init__` and stored as `self.callback`.
+    The `callback` function is provided as an argument to `configure` and stored as `self.callback`.
     """
 
     def on_configure(self):
