@@ -89,8 +89,8 @@ def main(
 
     configure()
     recorder = RUNNABLES["screen/recorder"]()
-    keyboard_listener = LISTENERS["keyboard"](control_publisher_callback)
-    mouse_listener = LISTENERS["mouse"](control_publisher_callback)
+    keyboard_listener = LISTENERS["keyboard"]().configure(callback=control_publisher_callback)
+    mouse_listener = LISTENERS["mouse"]().configure(callback=control_publisher_callback)
     recorder.configure(
         filesink_location=file_location,
         record_audio=record_audio,
@@ -101,8 +101,6 @@ def main(
         monitor_idx=monitor_idx,
         additional_args=additional_args,
     )
-    keyboard_listener.configure()
-    mouse_listener.configure()
 
     try:
         # TODO?: add `wait` method to Runnable, which waits until the Runnable is ready to operate well.

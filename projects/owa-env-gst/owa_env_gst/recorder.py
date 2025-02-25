@@ -57,6 +57,9 @@ class ScreenRecorder(Runnable):
             Path(filesink_location).parent.mkdir(parents=True, exist_ok=True)
             logger.warning(f"Output directory {filesink_location} does not exist. Creating it.")
 
+        # convert to posix path. this is required for gstreamer executable.
+        filesink_location = Path(filesink_location).as_posix()
+
         pipeline_description = recorder_pipeline(
             filesink_location=filesink_location,
             record_audio=record_audio,

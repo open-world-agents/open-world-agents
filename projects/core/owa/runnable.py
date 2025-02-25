@@ -64,7 +64,9 @@ class RunnableThread(threading.Thread, RunnableMixin):
 
     def run(self):
         if not getattr(self, "_configured", False):
-            raise RuntimeError("RunnableThread is not configured. Call configure() before start().")
+            raise RuntimeError(
+                "RunnableThread is not configured. Call configure() before start(). Or you may have overriden the configure method, not on_configure."
+            )
         try:
             self.loop()
         finally:

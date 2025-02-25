@@ -132,7 +132,7 @@ class ScreenListener(Listener):
         ret = self.pipeline.set_state(Gst.State.PLAYING)
         if ret == Gst.StateChangeReturn.FAILURE:
             bus = self.pipeline.get_bus()
-            msg = bus.timed_pop_filtered(Gst.CLOCK_TIME_NONE, Gst.MessageType.ERROR)
+            msg = bus.timed_pop_filtered(Gst.SECOND * 1.0, Gst.MessageType.ERROR)
             if msg:
                 err, debug = msg.parse_error()
                 logger.error(f"Failed to set pipeline to PLAYING state: {err} ({debug})")
