@@ -13,7 +13,7 @@ import numpy as np
 from gi.repository import GLib, Gst
 from loguru import logger
 
-from owa import Callable, Listener
+from owa import Listener
 from owa.registry import LISTENERS
 
 from ..gst_factory import screen_capture_pipeline

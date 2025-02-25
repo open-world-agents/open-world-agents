@@ -2,7 +2,6 @@ import time
 
 import pytest
 
-from owa.listener import Listener
 from owa.registry import CALLABLES, LISTENERS, activate_module
 
 
