@@ -1,7 +1,7 @@
 import subprocess
 from pathlib import Path
 
-ENV_NAME = "owa_deploy"
+ENV_NAME = "owa"
 
 
 # Step 1: Replace all `editable = true` with `editable = false` in all `pyproject.toml` files
@@ -24,7 +24,7 @@ def install_project():
 
 # Step 3: Run `conda pack -n owa`
 def pack_conda_env():
-    subprocess.run(["conda", "pack", "-n", ENV_NAME, "--output", "env.tar.gz"], check=True)
+    subprocess.run(["conda-pack", "-n", ENV_NAME, "--output", "env.tar.gz"], check=True)
     print("Packed conda environment.")
 
 
