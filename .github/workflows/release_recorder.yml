@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  test:
+  release_recorder:
     runs-on: windows-latest
 
     env:

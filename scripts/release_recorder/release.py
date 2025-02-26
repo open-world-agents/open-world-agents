@@ -18,7 +18,7 @@ def update_pyproject_toml(revert=False):
 
 # Step 2: Run `uv pip install .`
 def install_project():
-    subprocess.run(["uv", "pip", "install", "."], check=True)
+    subprocess.run(["uv", "pip", "install", "projects/data_collection"], check=True)
     print("Installed project dependencies.")
 
 
