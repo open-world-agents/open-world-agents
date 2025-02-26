@@ -4,7 +4,17 @@ This guide will help you install and use the OWA Recorder for high-performance s
 
 ## Installation
 
-If you have installed [uv](https://docs.astral.sh/uv/), you can install `recorder` very easily by simply running:
+### Quick-Start Guide
+
+1. Download `recorder.zip` in https://github.com/open-world-agents/open-world-agents/releases
+2. unzip `recorder.zip`
+3. on `cmd` or `PowerShell`, run `entrypoint.bat --help`. `entrypoint.bat` unzip `env.tar.gz`, which is `conda` env, and run `recorder.py` with given arguments.
+    - e.g. `entrypoint.bat output.mkv` is equivalent to `recorder.py output.mkv`
+4. It's all!
+
+### Manual Installation Guide
+
+If you have followed [OWA Installation Guide](../install.md), you can install `recorder` very easily by simply running:
 
 ```sh
 uv pip install -e projects/data_collection
