@@ -2,8 +2,11 @@ name: Auto Release
 
 on:
   push:
-    tags:
-      - 'v*'  # Trigger only when a tag (e.g., v1.0.0) is pushed
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   test:
