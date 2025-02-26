@@ -65,7 +65,8 @@ if exist ".\Scripts\conda-unpack.exe" (
 echo Running recorder.exe with argument: %ARG%
 
 :: Method 1: Direct execution (best for color support)
-recorder.exe "%ARG%"
+@REM recorder.exe "%ARG%"
+python .\Lib\site-packages\data_collection\cli\recorder.py "%ARG%"
 set ERR=%errorlevel%
 
 :: Alternative Method 2: Use start /wait if the output is still not fully visible
