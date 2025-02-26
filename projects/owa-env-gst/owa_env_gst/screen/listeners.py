@@ -13,7 +13,7 @@ import numpy as np
 from gi.repository import GLib, Gst
 from loguru import logger
 
-from owa import Callable, Listener
+from owa import Listener
 from owa.registry import LISTENERS
 
 from ..gst_factory import screen_capture_pipeline
@@ -31,14 +31,6 @@ class ScreenListener(Listener):
     instantiation) is then called with the FrameStamped object. If the callback accepts two arguments,
     the second one will be this ScreenListener instance.
     """
-
-    def __init__(self, callback: Callable[[FrameStamped], None]):
-        super().__init__(callback=callback)
-        self.pipeline = None
-        self.appsink = None
-        self._loop = None
-        self._loop_thread = None
-        self._metric_queue = None
 
     @property
     def gst_latency(self):
@@ -93,7 +85,7 @@ class ScreenListener(Listener):
         elapsed_time = end_time - start_time
         return len(self._metric_queue.queue) / (elapsed_time / Gst.SECOND)
 
-    def configure(
+    def on_configure(
         self,
         *,
         show_cursor: bool = True,
@@ -140,7 +132,7 @@ class ScreenListener(Listener):
         ret = self.pipeline.set_state(Gst.State.PLAYING)
         if ret == Gst.StateChangeReturn.FAILURE:
             bus = self.pipeline.get_bus()
-            msg = bus.timed_pop_filtered(Gst.CLOCK_TIME_NONE, Gst.MessageType.ERROR)
+            msg = bus.timed_pop_filtered(Gst.SECOND * 1.0, Gst.MessageType.ERROR)
             if msg:
                 err, debug = msg.parse_error()
                 logger.error(f"Failed to set pipeline to PLAYING state: {err} ({debug})")
@@ -154,7 +146,6 @@ class ScreenListener(Listener):
         self.pipeline = None
         self.appsink = None
         self._loop = None
-        self._loop_thread = None
 
     def stop(self):
         """
@@ -176,8 +167,6 @@ class ScreenListener(Listener):
         self.pipeline.set_state(Gst.State.NULL)
 
         self._loop.quit()
-        if hasattr(self, "_loop_thread") and self._loop_thread is not None:
-            self._loop_thread.join()
         return True
 
     def __get_frame_time_ns(self, pts: int) -> int:
@@ -203,7 +192,7 @@ class ScreenListener(Listener):
         # Adjust current system time by the computed latency.
         return time.time_ns() - latency
 
-    def __on_new_sample(self, sink) -> Gst.FlowReturn:
+    def __on_new_sample(self, sink: Gst.Pad) -> Gst.FlowReturn:
         """
         This callback is connected to the appsink 'new-sample' signal.
         It extracts the data from the sample, converts it into a numpy array,
@@ -213,7 +202,7 @@ class ScreenListener(Listener):
         instance, (e.g. def callback(message: FrameStamped, listener: ScreenListener)),
         then this method will pass 'self' as well.
         """
-        sample = sink.emit("pull-sample")
+        sample: Gst.Sample = sink.emit("pull-sample")
         if sample is None:
             logger.error("Received null sample.")
             return Gst.FlowReturn.ERROR

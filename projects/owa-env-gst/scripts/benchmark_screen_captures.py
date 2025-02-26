@@ -217,8 +217,8 @@ def capture_owa_listener():
         nonlocal count
         count += 1
 
-    screen_capture = LISTENERS["screen"](callback)
-    screen_capture.configure(**owa_args)
+    screen_capture = LISTENERS["screen"]()
+    screen_capture.configure(**owa_args, callback=callback)
     screen_capture.start()
 
     # Warm-up period

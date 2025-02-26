@@ -31,7 +31,7 @@ With open-world-agents, you can:
         print(f"Current time in nanoseconds: {time_ns}")
 
     # Create a listener for clock/tick event
-    tick = LISTENERS["clock/tick"](callback)
+    tick = LISTENERS["clock/tick"]().configure(callback=callback)
 
     # Set listener to trigger every 1 second
     tick.configure(interval=1)
@@ -76,7 +76,7 @@ activate_module("your-own-envplugin")
 def callback(event):
     print(f"Captured event: {event}")
 
-listener = LISTENERS["my/listener"](callback)
+listener = LISTENERS["my/listener"]().configure(callback=callback)
 listener.configure(), listener.start()
 
 ... # Run any your own logic here. listener is being executed in background as thread(ListenerThread) or process(ListenerProcess).

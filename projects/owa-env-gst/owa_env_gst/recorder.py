@@ -34,7 +34,7 @@ def disable_ctrl_c_once():
 class ScreenRecorder(Runnable):
     """A ScreenRecorder Runnable that records video and/or audio using a GStreamer pipeline."""
 
-    def configure(
+    def on_configure(
         self,
         filesink_location: str,
         record_audio: bool = True,
@@ -56,6 +56,9 @@ class ScreenRecorder(Runnable):
         if not Path(filesink_location).parent.exists():
             Path(filesink_location).parent.mkdir(parents=True, exist_ok=True)
             logger.warning(f"Output directory {filesink_location} does not exist. Creating it.")
+
+        # convert to posix path. this is required for gstreamer executable.
+        filesink_location = Path(filesink_location).as_posix()
 
         pipeline_description = recorder_pipeline(
             filesink_location=filesink_location,
