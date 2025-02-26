@@ -22,13 +22,7 @@ def install_project():
     print("Installed project dependencies.")
 
 
-# Step 3: Run `uv pip install conda-pack`
-def install_conda_pack():
-    subprocess.run(["uv", "pip", "install", "conda-pack"], check=True)
-    print("Installed conda-pack.")
-
-
-# Step 4: Run `conda pack -n owa`
+# Step 3: Run `conda pack -n owa`
 def pack_conda_env():
     subprocess.run(["conda", "pack", "-n", ENV_NAME, "--output", "env.tar.gz"], check=True)
     print("Packed conda environment.")
@@ -37,7 +31,6 @@ def pack_conda_env():
 def main():
     update_pyproject_toml()
     install_project()
-    install_conda_pack()
     pack_conda_env()
     update_pyproject_toml(revert=True)
     print("Process completed successfully!")

@@ -54,6 +54,10 @@ jobs:
           environment-file: projects/owa-env-gst/environment_detail.yml
           pkgs-dirs: D:\conda_pkgs_dir
           activate-environment: owa
+      
+      # install `conda-pack`
+      - name: Install conda-pack
+        run: uv pip install conda-pack
 
       - name: Generate Release Files
         run: python scripts/release_recorder/release.py
