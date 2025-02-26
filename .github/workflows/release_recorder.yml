@@ -60,13 +60,13 @@ jobs:
         run: uv pip install conda-pack
 
       - name: Generate Release Files
-        run: python scripts/release_recorder/release.py
+        run: python release.py
+        working-directory: scripts/release_recorder
 
-      # files: env.tar.gz, scripts/release_recorder/entrypoint.bat
       - name: Upload Release Files
         uses: actions/upload-artifact@v4
         with:
           name: release-files
           path: |
-            env.tar.gz
+            scripts/release_recorder/env.tar.gz
             scripts/release_recorder/entrypoint.bat
