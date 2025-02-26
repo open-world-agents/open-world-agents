@@ -60,8 +60,7 @@ jobs:
         run: uv pip install conda-pack
 
       - name: Generate Release Files
-        run: python release.py
-        working-directory: scripts/release_recorder
+        run: python scripts/release_recorder/release.py
 
       - name: Upload Release Files
         uses: actions/upload-artifact@v4

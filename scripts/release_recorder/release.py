@@ -24,7 +24,7 @@ def install_project():
 
 # Step 3: Run `conda pack -n owa`
 def pack_conda_env():
-    subprocess.run(["conda-pack", "-n", ENV_NAME, "--output", "env.tar.gz"], check=True)
+    subprocess.run(["conda-pack", "-n", ENV_NAME, "--output", "scripts/release_recorder/env.tar.gz"], check=True)
     print("Packed conda environment.")
 
 
