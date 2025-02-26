@@ -62,11 +62,11 @@ jobs:
       - name: Generate Release Files
         run: python scripts/release_recorder/release.py
 
-      # files: scripts/release_recorder/env.tar.gz, scripts/release_recorder/entrypoint.bat
+      # files: env.tar.gz, scripts/release_recorder/entrypoint.bat
       - name: Upload Release Files
         uses: actions/upload-artifact@v4
         with:
           name: release-files
           path: |
-            scripts/release_recorder/env.tar.gz
+            env.tar.gz
             scripts/release_recorder/entrypoint.bat
