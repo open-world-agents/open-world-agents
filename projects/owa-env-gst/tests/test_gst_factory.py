@@ -6,7 +6,8 @@ from gi.repository import Gst  # noqa: E402
 
 from owa_env_gst import gst_factory  # noqa: E402
 
-Gst.init(None)
+if not Gst.is_initialized():
+    Gst.init(None)
 
 
 def test_recorder():

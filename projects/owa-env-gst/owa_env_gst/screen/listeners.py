@@ -1,11 +1,11 @@
 # ruff: noqa: E402
+# To suppress the warning for E402, waiting for https://github.com/astral-sh/ruff/issues/3711
 import inspect
 
 import gi
 
 gi.require_version("Gst", "1.0")
 
-# To suppress the warning for E402, waiting for https://github.com/astral-sh/ruff/issues/3711
 import queue
 import time
 
@@ -19,7 +19,8 @@ from owa.registry import LISTENERS
 from ..gst_factory import screen_capture_pipeline
 from .msg import FrameStamped
 
-Gst.init(None)
+if not Gst.is_initialized():
+    Gst.init(None)
 
 
 @LISTENERS.register("screen")

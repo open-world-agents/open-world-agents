@@ -25,7 +25,8 @@ from loguru import logger
 
 # Initialize GObject and Gst
 
-Gst.init(None)
+if not Gst.is_initialized():
+    Gst.init(None)
 
 OCAPS = Gst.Caps.from_string("application/x-subtitle")
 

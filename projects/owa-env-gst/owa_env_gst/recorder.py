@@ -13,10 +13,15 @@ from .gst_factory import recorder_pipeline
 
 
 def disable_ctrl_c_once():
-    """Disable Ctrl+C once. This function must be called before sending Ctrl+C to a process.
+    """
+    DO NOT USE THIS FUNCTION.
+    Pass CREATE_NEW_PROCESS_GROUP to the subprocess.Popen() function
+    and send CTRL_BREAK_EVENT signal instead of CTRL_C_EVENT(it does NOT work).
+
+    ===
+    Disable Ctrl+C once. This function must be called before sending Ctrl+C to a process.
     Utilizing this function is not preferred, as this function must be called in main thread, which is not guaranteed in common.
 
-    Otherwise, you may pass CREATE_NEW_PROCESS_GROUP to the subprocess.Popen() function. After that, you must pass CTRL_BREAK_EVENT instead of CTRL_C_EVENT(it does NOT work).
     Related issues:
         - https://github.com/robotframework/robotframework/issues/3924
         - https://stackoverflow.com/a/60795888
