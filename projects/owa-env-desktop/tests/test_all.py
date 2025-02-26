@@ -73,8 +73,7 @@ def test_keyboard_listener():
         received_events.append((event_type, key))
 
     # Create and configure the listener.
-    keyboard_listener = LISTENERS["keyboard"](on_keyboard_event)
-    keyboard_listener.configure()
+    keyboard_listener = LISTENERS["keyboard"]().configure(callback=on_keyboard_event)
     keyboard_listener.start()
 
     # In a real-world scenario, the listener would capture actual events.

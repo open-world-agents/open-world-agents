@@ -10,7 +10,7 @@ Open World Agents leverages a registration pattern that allows multiple modules 
 
 - **Registry:**
   - **CALLABLES:** Stores module-provided functionalities as key-value pairs (e.g., registered as `clock.time_ns`). What developer must implement is just `__call__` function.
-  - **LISTENERS:** Manages classes responsible for event handling by storing them under designated keys (e.g., registered as `clock/tick`). This class takes `callback` as argument in `__init__` and otherwise it's same as `Runnables`.
+  - **LISTENERS:** Manages classes responsible for event handling by storing them under designated keys (e.g., registered as `clock/tick`). This class takes `callback` as argument in `configure` and otherwise it's same as `Runnables`.
   - **RUNNABLES:** This is parent class of `Listeners` and it supports `start/stop/join` operations in user side and developer must implement `loop/cleanup` methods.
 
 Modules are activated via the `activate_module` function, during which their functions and listeners are systematically added to the global registry.
@@ -69,7 +69,7 @@ def on_keyboard_event(event_type, key):
     print(f"Keyboard event: {event_type}, {key}")
 
 keyboard_listener = LISTENERS["keyboard"]()
-keyboard_listener.configure(on_keyboard_event)
+keyboard_listener.configure(callback=on_keyboard_event)
 keyboard_listener.activate()
 
 time.sleep(5)

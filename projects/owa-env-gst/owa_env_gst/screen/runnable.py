@@ -33,7 +33,7 @@ class ScreenCapture(RunnableThread):
         self.queue = Queue(maxsize=1)  # Holds the most recent frame
         self.listener = None  # Listener for capturing screen frames
 
-    def configure(self, *, fps: float = 60, window_name: str | None = None, monitor_idx: int | None = None):
+    def on_configure(self, *, fps: float = 60, window_name: str | None = None, monitor_idx: int | None = None):
         """
         Configure and start the screen listener.
 
@@ -42,8 +42,8 @@ class ScreenCapture(RunnableThread):
             window_name (str | None): Name of the window to capture (optional).
             monitor_idx (int | None): Index of the monitor to capture (optional).
         """
-        self.listener = ScreenListener(callback=self.on_frame)
-        self.listener.configure(fps=fps, window_name=window_name, monitor_idx=monitor_idx)
+        self.listener = ScreenListener()
+        self.listener.configure(fps=fps, window_name=window_name, monitor_idx=monitor_idx, callback=self.on_frame)
         self.listener.start()
 
     def on_frame(self, frame):

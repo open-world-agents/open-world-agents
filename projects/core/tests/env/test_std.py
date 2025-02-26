@@ -2,7 +2,6 @@ import time
 
 import pytest
 
-from owa.listener import Listener
 from owa.registry import CALLABLES, LISTENERS, activate_module
 
 
@@ -21,11 +20,9 @@ def test_clock():
         called_time.append(CALLABLES["clock.time_ns"]())
         print(called_time)
 
-    tick: Listener = LISTENERS["clock/tick"](callback)
+    tick = LISTENERS["clock/tick"]().configure(callback=callback, interval=1)
 
     called_time = []
-
-    tick.configure(interval=1)
     tick.start()
 
     time.sleep(1.5)

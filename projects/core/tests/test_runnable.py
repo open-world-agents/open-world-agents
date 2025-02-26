@@ -22,7 +22,7 @@ class MyProcessTest(RunnableProcess):
 @pytest.mark.timeout(2)
 def test_my_thread():
     """Test creation, start, and stop of a RunnableThread."""
-    t = MyThreadTest()
+    t = MyThreadTest().configure()
     t.start()
     # Wait a few seconds to confirm it is in the running state
     t.join(1)
@@ -36,7 +36,7 @@ def test_my_thread():
 @pytest.mark.timeout(2)
 def test_my_process():
     """Test creation, start, and stop of a RunnableProcess."""
-    p = MyProcessTest()
+    p = MyProcessTest().configure()
     p.start()
     # Wait a few seconds to confirm it is in the running state
     p.join(1)

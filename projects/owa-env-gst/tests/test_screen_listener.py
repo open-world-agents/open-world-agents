@@ -17,8 +17,7 @@ def test_screen_capture():
         assert frame.frame_arr.ndim == 3 and frame.frame_arr.shape[2] == 4, "Expected 4-color channel image"
         print(frame.frame_arr.shape, listener.fps, listener.latency)
 
-    screen_listener = LISTENERS["screen"](callback)
-    screen_listener.configure()
+    screen_listener = LISTENERS["screen"]().configure(callback=callback)
     screen_listener.start()
     time.sleep(2)
     screen_listener.stop()
