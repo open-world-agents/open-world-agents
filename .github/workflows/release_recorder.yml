@@ -65,7 +65,7 @@ jobs:
       - name: Upload Release Files
         uses: actions/upload-artifact@v4
         with:
-          name: release-files
+          name: recorder
           path: |
             scripts/release_recorder/env.tar.gz
             scripts/release_recorder/entrypoint.bat
