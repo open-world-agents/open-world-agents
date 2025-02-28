@@ -74,21 +74,16 @@ nav:
   - Project Overview: project_overview.md
   - OWA-Env:
     - Introducing OWA-Env: env/index.md
-    # - Why use OWA Env: env/why.md
-    # - Architecture of OWA Env: env/architecture.md
-    # - Installation & Usage: env/install_and_usage.md
-    # owa-env-examples 참고하라고 써둘 예정
     - Custom EnvPlugins: env/custom_plugins.md
-    - Lists of EnvPlugins:
+    - Lists of EnvPlugins (Docs WIP):
       - Standard Environment: env/plugins/std.md
       - Desktop Environment: env/plugins/desktop_env.md
       - Gstreamer Environment: env/plugins/gstreamer_env.md
-      - Omniparser: env/plugins/omniparser.md
   - OWA-Recorder:
     - Why use OWA Recorder: recorder/why.md
     - Install & Usage: recorder/install_and_usage.md
     - Data format & Conversion: recorder/data_format.md
-  - 🚀 Awesome Examples:
+  - 🚀 Awesome Examples (WIP):
     - Multimodal Game Agent: examples/multimodal_game_agent/overview.md
     - Omniparse + InternLM GUI Agent: examples/gui_agent/overview.md
     - Interactve World Model: examples/interactive_world_model/overview.md
