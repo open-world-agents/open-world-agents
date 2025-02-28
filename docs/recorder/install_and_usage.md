@@ -18,7 +18,7 @@ If you have followed [OWA Installation Guide](../install.md), you can install `r
 
 ```sh
 uv pip install -e projects/data_collection
-# `pip install -e projects/data_collection` may work, but not tested.
+# `pip install -e projects/data_collection` also work, but slower
 ```
 
 ## Usage

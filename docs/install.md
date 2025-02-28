@@ -1,11 +1,11 @@
 ## Install from repository
 
 1. **Install package managers, uv and conda**:
-    - Follow the [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/).
-    - Follow the [miniforge installation guide](https://github.com/conda-forge/miniforge?tab=readme-ov-file#install) to install `conda` and `mamba`.
+    - Follow the [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/). If you do prefer quick start, you may `pip install uv`
+    - Follow the [miniforge installation guide](https://github.com/conda-forge/miniforge?tab=readme-ov-file#install) to install `conda` and `mamba`. `mamba` is just a faster `conda`. If you've already installed `conda`, you may skip and go ahead. You may use `conda` instead of `mamba`.
 
 2. **Setup virtual environments**:
-    - (Recommended) Create new environment with dependencies.
+    - (Recommended) Create new environment with dependencies. `gstreamer` related conda packages are installed.
     ```sh
     mamba env create -n owa -f projects/owa-env-gst/environment_detail.yml
     conda activate owa
@@ -56,7 +56,7 @@
     ```
 
 
-## Install from pypi & conda-forge (With-In-Progress!)
+## Install from pypi & conda-forge (WIP)
 
 - pypi packages
     - `owa-core`: this package contains only the core logic to manage OWA's EnvPlugin.
