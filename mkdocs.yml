@@ -75,10 +75,10 @@ nav:
   - OWA-Env:
     - Introducing OWA-Env: env/index.md
     - Custom EnvPlugins: env/custom_plugins.md
-    - Lists of EnvPlugins (Docs WIP):
+    - Lists of EnvPlugins:
       - Standard Environment: env/plugins/std.md
       - Desktop Environment: env/plugins/desktop_env.md
-      - Gstreamer Environment: env/plugins/gstreamer_env.md
+      - Gstreamer Environment (Docs=WIP): env/plugins/gstreamer_env.md
   - OWA-Recorder:
     - Why use OWA Recorder: recorder/why.md
     - Install & Usage: recorder/install_and_usage.md
