@@ -4,7 +4,7 @@ This guide will help you install and use the OWA Recorder for high-performance s
 
 ## 🖥 Supported OS & HW
 
-- **Windows**: Fully optimized with Direct3D 11 integration.  
+- **Windows 10+** (Tier 1): Fully optimized with Direct3D 11 integration.  
     - **GPU:** NVIDIA (supports for w/o NVIDIA GPU is in TODO)  
 - **macOS**: Work in progress.  
 - **Linux**: Work in progress.
