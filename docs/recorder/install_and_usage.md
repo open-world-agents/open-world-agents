@@ -15,7 +15,7 @@ This guide will help you install and use the OWA Recorder for high-performance s
 
 ### Quick-Start Guide
 
-1. Download `recorder.zip` in https://github.com/open-world-agents/open-world-agents/releases
+1. Download `recorder.zip` in [OWA releases](https://github.com/open-world-agents/open-world-agents/releases)
 2. unzip `recorder.zip`
 3. on `cmd` or `PowerShell`, run `entrypoint.bat --help`. `entrypoint.bat` unzip `env.tar.gz`, which is `conda` env, and run `recorder.py` with given arguments.
     - e.g. `entrypoint.bat output.mkv` is equivalent to `recorder.py output.mkv`
