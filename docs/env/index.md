@@ -34,14 +34,13 @@ print(CALLABLES, LISTENERS)
 # Example: 'clock.time_ns' is registered in CALLABLES and 'clock/tick' in LISTENERS
 
 # Testing the clock/tick listener
-tick = LISTENERS["clock/tick"]()
-tick.configure(callback=lambda: print(CALLABLES["clock.time_ns"]()), interval=1)
-tick.activate()
+tick = LISTENERS["clock/tick"]().configure(callback=lambda: print(CALLABLES["clock.time_ns"]()), interval=1)
+tick.start()
 
 time.sleep(1)  # The listener prints the current time in nanoseconds a few times
 
-tick.deactivate()
-tick.shutdown()
+tick.stop()
+tick.join()
 ```
 
 This code demonstrates how activating the standard module registers clock-related functions and listeners, enabling real-time time display.
@@ -73,6 +72,12 @@ keyboard_listener.configure(callback=on_keyboard_event)
 keyboard_listener.activate()
 
 time.sleep(5)
+
+# Capture screen dimensions
+print(CALLABLES["screen.capture"]().shape)
+
+# Retrieve active window
+print(CALLABLES["window.get_active_window"])()
 ```
 
 This snippet illustrates functionalities such as capturing the screen, managing windows, handling mouse clicks, and responding to keyboard events.
