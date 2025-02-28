@@ -574,14 +574,13 @@
 <a href="#__codelineno-0-10" id="__codelineno-0-10" name="__codelineno-0-10"></a><span class="c1"># Example: 'clock.time_ns' is registered in CALLABLES and 'clock/tick' in LISTENERS</span>
 <a href="#__codelineno-0-11" id="__codelineno-0-11" name="__codelineno-0-11"></a>
 <a href="#__codelineno-0-12" id="__codelineno-0-12" name="__codelineno-0-12"></a><span class="c1"># Testing the clock/tick listener</span>
-<a href="#__codelineno-0-13" id="__codelineno-0-13" name="__codelineno-0-13"></a><span class="n">tick</span> <span class="o">=</span> <span class="n">LISTENERS</span><span class="p">[</span><span class="s2">"clock/tick"</span><span class="p">]()</span>
-<a href="#__codelineno-0-14" id="__codelineno-0-14" name="__codelineno-0-14"></a><span class="n">tick</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">callback</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="n">CALLABLES</span><span class="p">[</span><span class="s2">"clock.time_ns"</span><span class="p">]()),</span> <span class="n">interval</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-<a href="#__codelineno-0-15" id="__codelineno-0-15" name="__codelineno-0-15"></a><span class="n">tick</span><span class="o">.</span><span class="n">activate</span><span class="p">()</span>
-<a href="#__codelineno-0-16" id="__codelineno-0-16" name="__codelineno-0-16"></a>
-<a href="#__codelineno-0-17" id="__codelineno-0-17" name="__codelineno-0-17"></a><span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># The listener prints the current time in nanoseconds a few times</span>
-<a href="#__codelineno-0-18" id="__codelineno-0-18" name="__codelineno-0-18"></a>
-<a href="#__codelineno-0-19" id="__codelineno-0-19" name="__codelineno-0-19"></a><span class="n">tick</span><span class="o">.</span><span class="n">deactivate</span><span class="p">()</span>
-<a href="#__codelineno-0-20" id="__codelineno-0-20" name="__codelineno-0-20"></a><span class="n">tick</span><span class="o">.</span><span class="n">shutdown</span><span class="p">()</span>
+<a href="#__codelineno-0-13" id="__codelineno-0-13" name="__codelineno-0-13"></a><span class="n">tick</span> <span class="o">=</span> <span class="n">LISTENERS</span><span class="p">[</span><span class="s2">"clock/tick"</span><span class="p">]()</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">callback</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="n">CALLABLES</span><span class="p">[</span><span class="s2">"clock.time_ns"</span><span class="p">]()),</span> <span class="n">interval</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<a href="#__codelineno-0-14" id="__codelineno-0-14" name="__codelineno-0-14"></a><span class="n">tick</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+<a href="#__codelineno-0-15" id="__codelineno-0-15" name="__codelineno-0-15"></a>
+<a href="#__codelineno-0-16" id="__codelineno-0-16" name="__codelineno-0-16"></a><span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># The listener prints the current time in nanoseconds a few times</span>
+<a href="#__codelineno-0-17" id="__codelineno-0-17" name="__codelineno-0-17"></a>
+<a href="#__codelineno-0-18" id="__codelineno-0-18" name="__codelineno-0-18"></a><span class="n">tick</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+<a href="#__codelineno-0-19" id="__codelineno-0-19" name="__codelineno-0-19"></a><span class="n">tick</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
 </code></pre></div>
 <p>This code demonstrates how activating the standard module registers clock-related functions and listeners, enabling real-time time display.</p>
 <h3 id="32-desktop-environment-owaenvdesktop">3.2. Desktop Environment (owa.env.desktop)</h3>
@@ -608,6 +607,12 @@
 <a href="#__codelineno-1-20" id="__codelineno-1-20" name="__codelineno-1-20"></a><span class="n">keyboard_listener</span><span class="o">.</span><span class="n">activate</span><span class="p">()</span>
 <a href="#__codelineno-1-21" id="__codelineno-1-21" name="__codelineno-1-21"></a>
 <a href="#__codelineno-1-22" id="__codelineno-1-22" name="__codelineno-1-22"></a><span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<a href="#__codelineno-1-23" id="__codelineno-1-23" name="__codelineno-1-23"></a>
+<a href="#__codelineno-1-24" id="__codelineno-1-24" name="__codelineno-1-24"></a><span class="c1"># Capture screen dimensions</span>
+<a href="#__codelineno-1-25" id="__codelineno-1-25" name="__codelineno-1-25"></a><span class="nb">print</span><span class="p">(</span><span class="n">CALLABLES</span><span class="p">[</span><span class="s2">"screen.capture"</span><span class="p">]()</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+<a href="#__codelineno-1-26" id="__codelineno-1-26" name="__codelineno-1-26"></a>
+<a href="#__codelineno-1-27" id="__codelineno-1-27" name="__codelineno-1-27"></a><span class="c1"># Retrieve active window</span>
+<a href="#__codelineno-1-28" id="__codelineno-1-28" name="__codelineno-1-28"></a><span class="nb">print</span><span class="p">(</span><span class="n">CALLABLES</span><span class="p">[</span><span class="s2">"window.get_active_window"</span><span class="p">])()</span>
 </code></pre></div>
 <p>This snippet illustrates functionalities such as capturing the screen, managing windows, handling mouse clicks, and responding to keyboard events.</p>
 <h3 id="33-custom-extensions">3.3. Custom Extensions</h3>
@@ -647,7 +652,7 @@
 <span class="md-icon" title="Last update">
 <svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"></path></svg>
 </span>
-<span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime">February 28, 2025 13:34:46</span>
+<span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime">February 28, 2025 14:15:21</span>
 </span>
 </aside>
 </article>
