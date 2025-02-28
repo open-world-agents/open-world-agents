@@ -76,7 +76,7 @@ keyboard_listener.stop(), keyboard_listener.join()
 
 This snippet illustrates functionalities such as capturing the screen, managing windows, handling mouse clicks, and responding to keyboard events.
 
-### 3.3. Custom Extensions
+### 3.3. Custom EnvPlugins
 
 The framework also supports custom modules. For instance, a module that integrates with Minecraft can be activated and used as shown below:
 
@@ -86,7 +86,7 @@ activate_module("owa_minecraft")
 inventory = CALLABLES["minecraft.get_inventory"](player="Steve")
 ```
 
-This flexibility allows developers to extend system capabilities without altering the core codebase.
+This flexibility allows developers to extend system capabilities without altering the core codebase. [Learn more...](custom_plugins.md)
 
 ## 4. Advanced Features and Extension Points
 
