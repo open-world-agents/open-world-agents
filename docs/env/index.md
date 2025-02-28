@@ -67,17 +67,11 @@ mouse_click("left", 2)
 def on_keyboard_event(event_type, key):
     print(f"Keyboard event: {event_type}, {key}")
 
-keyboard_listener = LISTENERS["keyboard"]()
-keyboard_listener.configure(callback=on_keyboard_event)
-keyboard_listener.activate()
+keyboard_listener = LISTENERS["keyboard"]().configure(callback=on_keyboard_event)
+keyboard_listener.startt()
 
 time.sleep(5)
-
-# Capture screen dimensions
-print(CALLABLES["screen.capture"]().shape)
-
-# Retrieve active window
-print(CALLABLES["window.get_active_window"])()
+keyboard_listener.stop(), keyboard_listener.join()
 ```
 
 This snippet illustrates functionalities such as capturing the screen, managing windows, handling mouse clicks, and responding to keyboard events.
