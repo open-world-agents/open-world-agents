@@ -9,7 +9,7 @@ This guide will help you install and use the OWA Recorder for high-performance s
 - **macOS**: Work in progress.  
 - **Linux**: Work in progress.
 
-- **⚠️ Recommended Setup:** The load from the recorder is similar to OBS recording. To run games and recording simultaneously, you'll need hardware specifications similar to what would be required when streaming the same game using OBS.
+- **⚠️ Recommended Setup:** The load from the recorder is similar to [OBS](https://obsproject.com/) recording. To run games and recording simultaneously, you'll need hardware specifications similar to what would be required when streaming the same game using OBS.
 
 ## Installation
 
