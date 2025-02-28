@@ -2,6 +2,15 @@
 
 This guide will help you install and use the OWA Recorder for high-performance screen recording and event capturing.
 
+## 🖥 Supported OS & HW
+
+- **Windows**: Fully optimized with Direct3D 11 integration.  
+    - **GPU:** NVIDIA (supports for w/o NVIDIA GPU is in TODO)  
+- **macOS**: Work in progress.  
+- **Linux**: Work in progress.
+
+- **⚠️ Recommended Setup:** The load from the recorder is similar to OBS recording. To run games and recording simultaneously, you'll need hardware specifications similar to what would be required when streaming the same game using OBS.
+
 ## Installation
 
 ### Quick-Start Guide
