@@ -4,7 +4,7 @@ You may write & contribute your own EnvPlugin.
 
 1. Copy & Paste [owa-env-example](https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-env-example) directory. This directory contains following:
     ```sh
-    .
+    owa-env-example
     ├── owa_env_example
     │   ├── example_callable.py
     │   ├── example_listener.py

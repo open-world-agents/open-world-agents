@@ -53,15 +53,3 @@ OWA's Recorder significantly **outperforms** other Python screen capture tools:
 
 Not only does OWA Recorder **achieve higher FPS**, but it also maintains **lower CPU/GPU usage**, making it the ideal choice for screen recording.  
 
----
-
-## 🖥 Supported Operating Systems  
-
-- **Windows**: Fully optimized with Direct3D 11 integration.  
-- **macOS**: Work in progress.  
-- **Linux**: Work in progress.  
-
-**⚠️ Recommended Setup:**  
-- **OS:** Windows  
-- **GPU:** NVIDIA (Recommended for optimal performance, supports for w/o NVIDIA GPU is in TODO)  
-

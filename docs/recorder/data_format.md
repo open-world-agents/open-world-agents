@@ -7,7 +7,7 @@
 
 ### Example Data
 
-- `example.jsonl`
+- `example.jsonl` [[link to file]](https://github.com/open-world-agents/open-world-agents/blob/main/docs/recorder/example.jsonl)
 ```
 {"timestamp_ns":1740134045272214800,"event_src":"control_publisher","event_data":"[\"mouse.click\",1446,1107,left,true]"}
 {"timestamp_ns":1740134045347404600,"event_src":"control_publisher","event_data":"[\"mouse.click\",1446,1107,left,false]"}
@@ -29,7 +29,7 @@
 {"timestamp_ns":1740134048514651700,"event_src":"control_publisher","event_data":"[\"mouse.move\",1467,1153]"}
 {"timestamp_ns":1740134048519005500,"event_src":"control_publisher","event_data":"[\"keyboard.release\",69]"}
 ```
-- `example.mkv`: (width, height) = (502, 557). Note that timestamp is embedded as subtitle.
+- `example.mkv`: (width, height) = (502, 557). Note that timestamp is embedded as subtitle. [[link to file]](https://github.com/open-world-agents/open-world-agents/blob/main/docs/recorder/example.mkv)
 <video controls>
 <source src="../example.mkv" type="video/mp4">
 </video>

@@ -2,13 +2,32 @@
 
 This guide will help you install and use the OWA Recorder for high-performance screen recording and event capturing.
 
+## 🖥 Supported OS & HW
+
+- **Windows 10+** (Tier 1): Fully optimized with Direct3D 11 integration.  
+    - **GPU:** NVIDIA (supports for w/o NVIDIA GPU is in TODO)  
+- **macOS**: Work in progress.  
+- **Linux**: Work in progress.
+
+- **⚠️ Recommended Setup:** The load from the recorder is similar to [OBS](https://obsproject.com/) recording. To run games and recording simultaneously, you'll need hardware specifications similar to what would be required when streaming the same game using OBS.
+
 ## Installation
 
-If you have installed [uv](https://docs.astral.sh/uv/), you can install `recorder` very easily by simply running:
+### Quick-Start Guide
+
+1. Download `recorder.zip` in [OWA releases](https://github.com/open-world-agents/open-world-agents/releases)
+2. unzip `recorder.zip`
+3. on `cmd` or `PowerShell`, run `entrypoint.bat --help`. `entrypoint.bat` unzip `env.tar.gz`, which is `conda` env, and run `recorder.py` with given arguments.
+    - e.g. `entrypoint.bat output.mkv` is equivalent to `recorder.py output.mkv`
+4. It's all!
+
+### Manual Installation Guide
+
+If you have followed [OWA Installation Guide](../install.md), you can install `recorder` very easily by simply running:
 
 ```sh
 uv pip install -e projects/data_collection
-# `pip install -e projects/data_collection` may work, but not tested.
+# `pip install -e projects/data_collection` also work, but slower
 ```
 
 ## Usage
