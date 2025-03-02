@@ -1,6 +1,5 @@
 import signal
 import subprocess
-import time
 from pathlib import Path
 from typing import Optional
 
@@ -76,7 +75,12 @@ class ScreenRecorder(Runnable):
         self._pipeline_cmd = f"gst-launch-1.0.exe -e -v {pipeline_description}"
 
     def loop(self):
-        """Main loop. This method must be interruptible by calling stop(), which sets the self._stop_event."""
+        try:
+            self._loop()
+        finally:
+            self.cleanup()
+
+    def _loop(self):
         if self._pipeline_cmd is None:
             self.configure()
         # Start the GStreamer pipeline process with the modified environment
@@ -89,7 +93,8 @@ class ScreenRecorder(Runnable):
                 self._process.send_signal(signal.CTRL_BREAK_EVENT)
                 break
             # Sleep briefly to avoid busy waiting
-            time.sleep(0.5)
+            self._stop_event.wait(0.5)
+            # time.sleep(0.5)
         # Wait for the process to terminate fully
         rt = self._process.wait(5)
         if rt == 0:

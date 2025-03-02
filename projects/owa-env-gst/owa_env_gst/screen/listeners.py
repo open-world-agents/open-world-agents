@@ -123,11 +123,17 @@ class ScreenListener(Listener):
         self.appsink.connect("new-sample", self.__on_new_sample)
 
         # Create a GLib mainloop to handle the GStreamer bus events
-        self._loop = GLib.MainLoop()
+        self.main_loop = GLib.MainLoop()
         self._metric_queue = queue.Queue(maxsize=int(fps))
         return True
 
     def loop(self):
+        try:
+            self._loop()
+        finally:
+            self.cleanup()
+
+    def _loop(self):
         """Internal run method that sets the pipeline to PLAYING and starts the GLib main loop."""
         ret = self.pipeline.set_state(Gst.State.PLAYING)
         if ret == Gst.StateChangeReturn.FAILURE:
@@ -137,7 +143,7 @@ class ScreenListener(Listener):
                 err, debug = msg.parse_error()
                 logger.error(f"Failed to set pipeline to PLAYING state: {err} ({debug})")
             return
-        self._loop.run()
+        self.main_loop.run()
 
     def cleanup(self):
         """
@@ -145,7 +151,7 @@ class ScreenListener(Listener):
         """
         self.pipeline = None
         self.appsink = None
-        self._loop = None
+        self.main_loop = None
 
     def stop(self):
         """
@@ -166,7 +172,7 @@ class ScreenListener(Listener):
                     break
         self.pipeline.set_state(Gst.State.NULL)
 
-        self._loop.quit()
+        self.main_loop.quit()
         return True
 
     def __get_frame_time_ns(self, pts: int) -> int:

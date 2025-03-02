@@ -57,15 +57,10 @@ from owa.registry import LISTENERS
 
 @LISTENERS.register("my/listener")
 class MyEventListener(Listener):
-    def loop(self):
-        """Main loop. This method must be interruptable by calling stop(), which sets the self._stop_event."""
-        while not self._stop_event.is_set():
+    def loop(self, *, stop_event, callback):
+        while not stop_event.is_set():
             event = wait_and_get_event()
-            self.callback(event)
-
-    def cleanup(self):
-        """Clean up resources. This method is called after loop() exits."""
-        clean_up()
+            callback(event)
 ```
     2. Use it!
 ```python

@@ -8,7 +8,7 @@ from owa.registry import RUNNABLES, activate_module
 @pytest.fixture(scope="module")
 def screen_capture():
     activate_module("owa_env_gst")
-    capture = RUNNABLES["screen_capture"]().configure(fps=30)
+    capture = RUNNABLES["screen_capture"]().configure(fps=60)
     capture.start()
     yield capture
     capture.stop()

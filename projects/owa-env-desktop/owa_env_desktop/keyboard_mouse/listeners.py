@@ -24,8 +24,6 @@ class KeyboardListenerWrapper(Listener):
     def loop(self):
         self.listener.start()
 
-    def cleanup(self): ...  # nothing to clean up
-
     def stop(self):
         self.listener.stop()
 
@@ -46,8 +44,6 @@ class MouseListenerWrapper(Listener):
 
     def loop(self):
         self.listener.start()
-
-    def cleanup(self): ...  # nothing to clean up
 
     def stop(self):
         self.listener.stop()
