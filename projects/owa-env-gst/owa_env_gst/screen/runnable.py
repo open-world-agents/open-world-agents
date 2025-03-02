@@ -59,6 +59,12 @@ class ScreenCapture(RunnableThread):
         self.queue.put(frame)
 
     def loop(self):
+        try:
+            self._loop()
+        finally:
+            self.cleanup()
+
+    def _loop(self):
         """
         Keep the thread running until stopped.
         This loop does not process frames but keeps the thread alive.
