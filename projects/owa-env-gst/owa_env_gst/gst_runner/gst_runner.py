@@ -53,7 +53,7 @@ class BaseGstPipelineRunner(Runnable):
         """
         self.pipeline_description = pipeline_description
         self.pipeline = None
-        self._loop = None
+        self.main_loop = None
         self.appsinks = []
 
         try:
@@ -66,30 +66,36 @@ class BaseGstPipelineRunner(Runnable):
             logger.error("Failed to create pipeline from description.")
             return False
 
-        self._loop = GLib.MainLoop()
+        self.main_loop = GLib.MainLoop()
 
         # Setup bus message handling
         bus = self.pipeline.get_bus()
         bus.add_signal_watch()
-        bus.connect("message", on_message, self._loop)
+        bus.connect("message", on_message, self.main_loop)
 
         return True
 
     def loop(self):
+        try:
+            self._loop()
+        finally:
+            self.cleanup()
+
+    def _loop(self):
         """Run the main GLib loop."""
         try_set_state(self.pipeline, Gst.State.PLAYING)
-        self._loop.run()
+        self.main_loop.run()
 
     def cleanup(self):
         """Clean up pipeline resources."""
-        if self._loop:
-            self._loop.quit()
+        if self.main_loop:
+            self.main_loop.quit()
         if self.pipeline:
             self.pipeline.set_state(Gst.State.NULL)
 
         self.pipeline = None
         self.appsinks = []
-        self._loop = None
+        self.main_loop = None
 
     def stop(self):
         """Stop the pipeline gracefully."""
