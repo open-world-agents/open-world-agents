@@ -18,7 +18,7 @@ if not Gst.is_initialized():
 
 def on_message(bus: Gst.Bus, message: Gst.Message, loop: GLib.MainLoop):
     """
-    Handle GStreamer bus messages.
+    Handle GStreamer bus messages. Useful for handling EOS event which is not expectable(e.g. filesrc's end)
 
     Args:
         bus: GStreamer bus object
@@ -40,7 +40,7 @@ class BaseGstPipelineRunner(Runnable):
     A generalized GStreamer pipeline runner that manages pipeline lifecycle and callbacks.
     """
 
-    def on_configure(self, pipeline_description: str) -> bool:
+    def on_configure(self, pipeline_description: str, *, do_not_modify_appsink_properties: bool = False) -> bool:
         """
         Configure the GStreamer pipeline.
 
@@ -52,6 +52,8 @@ class BaseGstPipelineRunner(Runnable):
             bool: Configuration success status
         """
         self.pipeline_description = pipeline_description
+        self._do_not_modify_appsink_properties = do_not_modify_appsink_properties
+
         self.pipeline = None
         self.main_loop = None
         self.appsinks = []
@@ -113,7 +115,7 @@ class BaseGstPipelineRunner(Runnable):
         Returns:
             list[Gst.Element]: List of elements found
         """
-        elements = []
+        elements: list[Gst.Element] = []
         try:
             iter = self.pipeline.iterate_sinks()
             while True:

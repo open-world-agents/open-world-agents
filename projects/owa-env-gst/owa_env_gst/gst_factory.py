@@ -66,7 +66,7 @@ def screen_to_fpsdisplaysink():
 
 
 def screen_to_appsink():
-    return "d3d11download ! videoconvert ! video/x-raw,format=BGRA ! appsink name=appsink sync=false max-buffers=1 drop=true emit-signals=true"
+    return "d3d11download ! videoconvert ! video/x-raw,format=BGRA ! appsink name=appsink sync=false max-buffers=1 drop=true emit-signals=true wait-on-eos=false"
 
 
 def audio_src():

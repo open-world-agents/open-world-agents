@@ -6,8 +6,8 @@ import gi
 
 gi.require_version("Gst", "1.0")
 
-import queue
 import time
+from collections import deque
 
 import numpy as np
 from gi.repository import GLib, Gst
@@ -17,78 +17,97 @@ from owa import Listener
 from owa.registry import LISTENERS
 
 from ..gst_factory import screen_capture_pipeline
+from ..gst_runner import GstPipelineRunner
+from ..utils import sample_to_ndarray
 from .msg import FrameStamped
 
 if not Gst.is_initialized():
     Gst.init(None)
 
 
-@LISTENERS.register("screen")
-class ScreenListener(Listener):
-    """
-    A self-contained screen listener that captures the screen using a GStreamer pipeline.
-    When a frame is captured (via the appsink 'new-sample' signal), it is converted into a numpy
-    array and then wrapped with a FrameStamped object. The user-provided callback (passed during
-    instantiation) is then called with the FrameStamped object. If the callback accepts two arguments,
-    the second one will be this ScreenListener instance.
-    """
+class MetricManager:
+    def __init__(self):
+        """Initialize the metric manager with empty history."""
+        self._timestamps = []
+        self._latencies = []
+        # Keep a reasonable history length to avoid memory issues
+        self._max_history = 100
 
-    @property
-    def gst_latency(self):
+    def append(self, timestamp_ns: int, latency: float):
         """
-        Returns the pipeline latency in seconds by sending a latency query to the pipeline.
-        If the pipeline or latency values are unavailable, returns 0.0.
+        Add a new frame timestamp and latency measurement.
+
+        Args:
+            timestamp_ns: Frame timestamp in nanoseconds
+            latency: Processing latency in milliseconds
         """
-        if self.pipeline is None:
-            return 0.0
-        try:
-            query = Gst.Query.new_latency()
-            if not self.pipeline.query(query):
-                # If the query call fails, we simply treat it as zero latency.
-                return 0.0
+        self._timestamps.append(timestamp_ns)
+        self._latencies.append(latency)
 
-            is_live, min_lat, max_lat = query.parse_latency()
-            # If GStreamer returns CLOCK_TIME_NONE for either latency
-            # value, then we consider it zero.
-            if min_lat == Gst.CLOCK_TIME_NONE or max_lat == Gst.CLOCK_TIME_NONE:
-                return 0.0
-
-            # Convert nanoseconds to seconds.
-            return (min_lat + max_lat) / 2 / Gst.SECOND
-
-        except Exception as e:
-            logger.warning(f"Failed to query latency: {e}")
-            return 0.0
+        # Maintain history size limit
+        if len(self._timestamps) > self._max_history:
+            self._timestamps.pop(0)
+            self._latencies.pop(0)
 
     @property
     def latency(self):
         """
-        Returns the average pipeline latency in seconds.
+        Returns the average latency in seconds.
+
+        Returns:
+            float: Average latency or 0.0 if no data
         """
-        if self._metric_queue is None:
+        if not self._latencies:
             return 0.0
-        if self._metric_queue.empty():
-            return 0.0
-        latencies = [latency for _, latency in self._metric_queue.queue]
-        return sum(latencies) / len(latencies) / Gst.SECOND
+        return sum(self._latencies) / len(self._latencies) / Gst.SECOND
 
     @property
     def fps(self):
         """
-        Returns the frame rate of the pipeline.
-        """
-        if self._metric_queue is None:
-            return 0.0
-        if len(self._metric_queue.queue) < 2:
-            return 0.0
-        start_time, _ = self._metric_queue.queue[0]
-        end_time, _ = self._metric_queue.queue[-1]
-        elapsed_time = end_time - start_time
-        return len(self._metric_queue.queue) / (elapsed_time / Gst.SECOND)
+        Calculate frames per second based on recorded timestamps.
 
+        Returns:
+            float: Calculated FPS or 0.0 if insufficient data
+        """
+        if len(self._timestamps) < 2:
+            return 0.0
+
+        # Calculate time difference between first and last frame in seconds
+        # Convert from nanoseconds to seconds
+        time_diff_sec = (self._timestamps[-1] - self._timestamps[0]) / 1e9
+
+        if time_diff_sec <= 0:
+            return 0.0
+
+        # Calculate frames per second
+        return (len(self._timestamps) - 1) / time_diff_sec
+
+
+def build_screen_callback(callback):
+    metric_manager = MetricManager()
+
+    def screen_callback(sample: Gst.Sample, pipeline: Gst.Pipeline, metadata: dict):
+        frame_arr = sample_to_ndarray(sample)
+        latency = metadata["latency"]
+        timestamp_ns = metadata["frame_time_ns"]
+        metric_manager.append(timestamp_ns, latency)
+
+        message = FrameStamped(timestamp_ns=timestamp_ns, frame_arr=frame_arr)
+        params = inspect.signature(callback).parameters
+        if len(params) == 1:
+            callback(message)
+        else:
+            callback(message, metric_manager)
+
+    return screen_callback
+
+
+@LISTENERS.register("screen")
+class ScreenListener(GstPipelineRunner):
     def on_configure(
         self,
         *,
+        callback,
         show_cursor: bool = True,
         fps: float = 60,
         window_name: str | None = None,
@@ -114,137 +133,7 @@ class ScreenListener(Listener):
             additional_args=additional_args,
         )
         logger.debug(f"Constructed pipeline: {pipeline_description}")
-        self.pipeline = Gst.parse_launch(pipeline_description)
+        super().on_configure(pipeline_description)
 
-        # Get the appsink element by name and set its properties (redundant if already set in pipeline desc.)
-        self.appsink = self.pipeline.get_by_name("appsink")
-        self.appsink.set_property("emit-signals", True)
-        self.appsink.set_property("sync", True)
-        # Connect the "new-sample" signal to our callback
-        self.appsink.connect("new-sample", self.__on_new_sample)
-
-        # Create a GLib mainloop to handle the GStreamer bus events
-        self.main_loop = GLib.MainLoop()
-        self._metric_queue = queue.Queue(maxsize=int(fps))
-        return True
-
-    def loop(self):
-        try:
-            self._loop()
-        finally:
-            self.cleanup()
-
-    def _loop(self):
-        """Internal run method that sets the pipeline to PLAYING and starts the GLib main loop."""
-        ret = self.pipeline.set_state(Gst.State.PLAYING)
-        if ret == Gst.StateChangeReturn.FAILURE:
-            bus = self.pipeline.get_bus()
-            msg = bus.timed_pop_filtered(Gst.SECOND * 1.0, Gst.MessageType.ERROR)
-            if msg:
-                err, debug = msg.parse_error()
-                logger.error(f"Failed to set pipeline to PLAYING state: {err} ({debug})")
-            return
-        self.main_loop.run()
-
-    def cleanup(self):
-        """
-        Cleanup any references after the loop exits and the pipeline is fully stopped.
-        """
-        self.pipeline = None
-        self.appsink = None
-        self.main_loop = None
-
-    def stop(self):
-        """
-        Stop the pipeline gracefully.
-        """
-        # Send End-Of-Stream event to the pipeline.
-        self.pipeline.send_event(Gst.Event.new_eos())
-        bus = self.pipeline.get_bus()
-        while True:
-            msg = bus.timed_pop_filtered(1.0 * Gst.SECOND, Gst.MessageType.EOS | Gst.MessageType.ERROR)
-            if msg:
-                if msg.type == Gst.MessageType.EOS:
-                    logger.info("Received EOS signal, shutting down gracefully.")
-                    break
-                elif msg.type == Gst.MessageType.ERROR:
-                    err, debug = msg.parse_error()
-                    logger.error("Error received:", err, debug)
-                    break
-        self.pipeline.set_state(Gst.State.NULL)
-
-        self.main_loop.quit()
-        return True
-
-    def __get_frame_time_ns(self, pts: int) -> int:
-        """
-        Calculate the frame timestamp in ns adjusted by pipeline latency.
-        This mimics the latency correction from the legacy code.
-
-        Parameters:
-            pts (int): The presentation timestamp of the buffer.
-
-        Returns:
-            int: A corrected timestamp in nanoseconds.
-        """
-        if pts == Gst.CLOCK_TIME_NONE:
-            return time.time_ns()
-        clock = self.pipeline.get_clock()
-        # Calculate elapsed time since the pipeline went to PLAYING state.
-        elapsed = clock.get_time() - self.pipeline.get_base_time()
-        latency = elapsed - pts
-        if self._metric_queue.full():
-            self._metric_queue.get()
-        self._metric_queue.put((time.time_ns(), latency))
-        # Adjust current system time by the computed latency.
-        return time.time_ns() - latency
-
-    def __on_new_sample(self, sink: Gst.Pad) -> Gst.FlowReturn:
-        """
-        This callback is connected to the appsink 'new-sample' signal.
-        It extracts the data from the sample, converts it into a numpy array,
-        and then calls the user-supplied callback with a FrameStamped message.
-
-        If the callback function can also accept a second argument for the listener
-        instance, (e.g. def callback(message: FrameStamped, listener: ScreenListener)),
-        then this method will pass 'self' as well.
-        """
-        sample: Gst.Sample = sink.emit("pull-sample")
-        if sample is None:
-            logger.error("Received null sample.")
-            return Gst.FlowReturn.ERROR
-
-        buf = sample.get_buffer()
-        caps = sample.get_caps()
-        structure = caps.get_structure(0)
-        width = structure.get_value("width")
-        height = structure.get_value("height")
-        format_ = structure.get_value("format")
-        if format_ != "BGRA":
-            logger.error(f"Unsupported format: {format_}")
-            return Gst.FlowReturn.ERROR
-
-        success, mapinfo = buf.map(Gst.MapFlags.READ)
-        if not success:
-            return Gst.FlowReturn.ERROR
-
-        try:
-            frame_data = mapinfo.data
-            frame_arr = np.frombuffer(frame_data, dtype=np.uint8).reshape((height, width, 4))
-            timestamp_ns = self.__get_frame_time_ns(buf.pts)
-            message = FrameStamped(timestamp_ns=timestamp_ns, frame_arr=frame_arr)
-
-            # Inspect callback signature to see if we pass 'self' or not.
-            params = inspect.signature(self.callback).parameters
-            if len(params) == 1:
-                # Callback expects just the FrameStamped
-                self.callback(message)
-            elif len(params) == 2:
-                # Callback also expects the listener object
-                self.callback(message, self)
-            else:
-                logger.warning("Warning: Callback signature does not match expected 1 or 2 parameters.")
-        finally:
-            buf.unmap(mapinfo)
-
-        return Gst.FlowReturn.OK
+        wrapped_callback = build_screen_callback(callback)
+        self.register_appsink_callback(wrapped_callback)

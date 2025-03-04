@@ -30,7 +30,8 @@ def video_callback(sample: Gst.Sample, appsink: Gst.Element):
     arr = sample_to_ndarray(sample)
     logger.info(f"[Video] Received frame of shape {arr.shape} from appsink '{appsink.get_name()}'")
     video_callback.count = getattr(video_callback, "count", 0) + 1
-    cv2.imwrite(f"video_frame_{video_callback.count}.png", arr)
+    if video_callback.count < 5:
+        cv2.imwrite(f"video_frame_{video_callback.count}.png", arr)
 
 
 def audio_callback(sample: Gst.Sample, appsink: Gst.Element):
@@ -98,59 +99,51 @@ if __name__ == "__main__":
     pipeline_description = f"""
     filesrc location={mkv_file_path} ! matroskademux name=demux
     demux.video_0 ! queue ! decodebin ! videorate ! video/x-raw(memory:D3D11Memory),framerate=6/1 ! tee name=t
-    t. ! queue ! d3d11download ! videoconvert ! video/x-raw,format=BGRA ! appsink name=video_sink
-    t. ! queue ! fpsdisplaysink video-sink=fakesink
-    demux.audio_0 ! queue ! decodebin ! audioconvert ! audioresample ! appsink name=audio_sink
-    demux.subtitle_0 ! queue ! decodebin ! appsink name=subtitle_sink
+    t. ! queue ! d3d11download ! videoconvert ! video/x-raw,format=BGRA ! appsink name=video_sink sync=false
+    t. ! queue ! fpsdisplaysink video-sink=fakesink sync=false
+    demux.audio_0 ! queue ! decodebin ! audioconvert ! audioresample ! appsink name=audio_sink sync=false
+    demux.subtitle_0 ! queue ! decodebin ! appsink name=subtitle_sink sync=false
     """
 
     pipeline_description = f"""
     filesrc location={mkv_file_path} ! matroskademux name=demux
-    demux.video_0 ! queue ! decodebin ! videorate drop-only=true ! video/x-raw(memory:D3D11Memory),framerate=6/1 ! tee name=t
-    t. ! queue ! d3d11download ! videoconvert ! video/x-raw,format=BGRA ! appsink name=video_sink sync=false
-    t. ! queue ! fpsdisplaysink video-sink=fakesink sync=false
+    
+    demux.video_0 ! queue ! 
+        decodebin ! videoconvert ! videorate ! 
+        video/x-raw,framerate=6/1 ! videoconvert ! 
+        video/x-raw,format=BGRA ! appsink name=video_sink
+    
+    demux.audio_0 ! queue ! 
+        decodebin ! audioconvert ! audioresample quality=4 ! 
+        audio/x-raw,rate=44100,channels=2 ! 
+        appsink name=audio_sink
+    
+    demux.subtitle_0 ! queue ! 
+        decodebin ! appsink name=subtitle_sink
     """
-
     # pipeline_description = f"""
     # filesrc location={mkv_file_path} ! matroskademux name=demux
-    # demux.video_0 ! queue ! decodebin ! video/x-raw(memory:D3D11Memory),framerate=6/1 ! tee name=t
-    # t. ! queue ! d3d11download ! videoconvert ! video/x-raw,format=BGRA ! appsink name=video_sink
-    # t. ! queue ! fpsdisplaysink video-sink=fakesink
-    # demux.audio_0 ! queue ! decodebin ! audioconvert ! audioresample ! appsink name=audio_sink
-    # demux.subtitle_0 ! queue ! decodebin ! appsink name=subtitle_sink
+    # demux.video_0 ! queue ! decodebin ! videorate drop-only=true ! video/x-raw(memory:D3D11Memory),framerate=6/1 ! tee name=t
+    # t. ! queue ! d3d11download ! videoconvert ! video/x-raw,format=BGRA ! appsink name=video_sink sync=false
+    # t. ! queue ! fpsdisplaysink video-sink=fakesink sync=false
     # """
 
-    # /GstPipeline:pipeline0/GstFPSDisplaySink:fpsdisplaysink0.GstGhostPad:sink: caps = video/x-raw(memory:D3D11Memory), format=(string)NV12, width=(int)2560, height=(int)1440, interlace-mode=(string)progressive, multiview-mode=(string)mono, multiview-flags=(GstVideoMultiviewFlagsSet)0:ffffffff:/right-view-first/left-flipped/left-flopped/right-flipped/right-flopped/half-aspect/mixed-mono, pixel-aspect-ratio=(fraction)1/1, colorimetry=(string)2:4:7:1, framerate=(fraction)0/1
-    # /GstPipeline:pipeline0/GstFakeSink:fakesink0.GstPad:sink: caps = video/x-raw, width=(int)2560, height=(int)1440, interlace-mode=(string)progressive, multiview-mode=(string)mono, multiview-flags=(GstVideoMultiviewFlagsSet)0:ffffffff:/right-view-first/left-flipped/left-flopped/right-flipped/right-flopped/half-aspect/mixed-mono, pixel-aspect-ratio=(fraction)1/1, framerate=(fraction)0/1, format=(string)BGRA, colorimetry=(string)sRGB
-
-    # d3d11download ! videoconvert ! video/x-raw,format=BGRA ! fakesink
-
-    # pipeline_description = f"""
-    # filesrc location={mkv_file_path} ! matroskademux name=demux
-    # demux.video_0 ! queue ! decodebin ! videoconvert ! video/x-raw,format=BGRA ! tee name=t
-    # t. ! queue ! appsink name=video_sink
-    # t. ! queue ! fpsdisplaysink video-sink=fakesink
-    # demux.audio_0 ! queue ! decodebin ! audioconvert ! audioresample ! appsink name=audio_sink
-    # demux.subtitle_0 ! queue ! decodebin ! appsink name=subtitle_sink
-    # """
-
-    # pipeline_description = f"""
-    # filesrc location={mkv_file_path} ! matroskademux name=demux
-    # demux.video_0 ! queue ! decodebin ! videoconvert ! video/x-raw,format=BGRA ! fpsdisplaysink video-sink=fakesink
-    # """
-
-    # pipeline_description = f"""
-    # filesrc location={mkv_file_path} ! matroskademux name=demux
-    # demux.video_0 ! queue ! decodebin ! fpsdisplaysink video-sink=fakesink
-    # """
+    # pipeline_description = (
+    #     "d3d11screencapturesrc show-cursor=true do-timestamp=true ! "
+    #     "videorate drop-only=true ! "
+    #     "video/x-raw(memory:D3D11Memory),framerate=0/1,max-framerate=60/1 ! "
+    #     "queue leaky=downstream ! d3d11download ! videoconvert ! "
+    #     "video/x-raw,format=BGRA ! appsink name=video_sink sync=false max-buffers=1 "
+    #     "drop=true emit-signals=true"
+    # )
 
     # Create and configure the pipeline runner
     runner = GstPipelineRunner().configure(pipeline_description)
     runner.register_appsink_callback(sample_callback)
-    runner.enable_fps_display()
+    # runner.enable_fps_display()
 
     # Optional: Seek to a specific position before starting
-    runner.seek(start_time=0.4, end_time=1.5)
+    # runner.seek(start_time=0.4, end_time=1.5)
 
     try:
         # Start the pipeline

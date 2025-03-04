@@ -14,17 +14,19 @@ if not Gst.is_initialized():
     Gst.init(None)
 
 
-def get_frame_time_ns(pts: int, pipeline: Gst.Pipeline) -> dict:
+def get_frame_time_ns(sample: Gst.Sample, pipeline: Gst.Pipeline) -> dict:
     """
     Calculate frame timestamp in ns adjusted by pipeline latency.
 
     Args:
-        pts: Presentation timestamp of the buffer
+        sample: GStreamer sample object
         pipeline: GStreamer pipeline object
 
     Returns:
         Dictionary containing frame_time_ns and latency
     """
+    pts = sample.get_buffer().pts
+
     if pts == Gst.CLOCK_TIME_NONE:
         return dict(frame_time_ns=time.time_ns(), latency=0)
 

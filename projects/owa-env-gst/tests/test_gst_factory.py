@@ -43,7 +43,7 @@ def test_screen_capture():
         "video/x-raw(memory:D3D11Memory),framerate=0/1,max-framerate=60/1 ! "
         "queue leaky=downstream ! d3d11download ! videoconvert ! "
         "video/x-raw,format=BGRA ! appsink name=appsink sync=false max-buffers=1 "
-        "drop=true emit-signals=true"
+        "drop=true emit-signals=true wait-on-eos=false"
     )
     assert pipeline == expected_pipeline
     pipeline = Gst.parse_launch(pipeline)

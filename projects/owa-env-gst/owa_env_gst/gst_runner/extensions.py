@@ -9,7 +9,7 @@ import inspect
 from gi.repository import Gst
 from loguru import logger
 
-from ..utils import try_set_state, wait_for_message
+from ..utils import get_frame_time_ns, try_set_state, wait_for_message
 
 # Initialize GStreamer
 if not Gst.is_initialized():
@@ -24,13 +24,12 @@ class AppsinkExtension:
         Args:
             callback: Callback function to be called
         """
-        self.callback = callback
-        self.appsinks = self.find_elements_by_name("appsink")
+        self.appsink_callback = callback
+        self.appsinks: list[Gst.Element] = self.find_elements_by_name("appsink")
         for appsink in self.appsinks:
-            appsink.set_property("emit-signals", True)
-            appsink.set_property("wait-on-eos", False)
-            appsink.set_property("max-buffers", 1)
-            appsink.set_property("drop", True)
+            if not self._do_not_modify_appsink_properties:
+                appsink.set_properties(sync=False, emit_signals=True, wait_on_eos=False, max_buffers=1, drop=True)
+
             appsink.connect("new-sample", self._on_new_sample)
 
     def _on_new_sample(self, appsink: Gst.Element) -> Gst.FlowReturn:
@@ -43,19 +42,23 @@ class AppsinkExtension:
         Returns:
             Gst.FlowReturn: Status of sample processing
         """
-        sample = appsink.emit("pull-sample")
+        sample: Gst.Sample = appsink.emit("pull-sample")
         if sample is None:
             logger.error("Failed to get sample")
             return Gst.FlowReturn.ERROR
 
         kwargs = {}
-        parameters = inspect.signature(self.callback).parameters
+        parameters = inspect.signature(self.appsink_callback).parameters
+        if "sample" in parameters:
+            kwargs["sample"] = sample
         if "pipeline" in parameters:
             kwargs["pipeline"] = self.pipeline
         if "appsink" in parameters:
             kwargs["appsink"] = appsink
+        if "metadata" in parameters:
+            kwargs["metadata"] = get_frame_time_ns(sample, self.pipeline)
 
-        self.callback(sample, **kwargs)
+        self.appsink_callback(**kwargs)
         return Gst.FlowReturn.OK
 
 
@@ -109,7 +112,10 @@ class FPSDisplayExtension:
         """
         Turn on FPS display on the video sink. Utilize the 'fpsdisplaysink' element.
         """
-        fpsdisplaysink = self.find_elements_by_name("fpsdisplaysink")[0]
+        sinks = self.find_elements_by_name("fpsdisplaysink")
+        if not sinks:
+            raise ValueError("No 'fpsdisplaysink' element found in the pipeline.")
+        fpsdisplaysink = sinks[0]
 
         def fps_measurement_callback(fpsdisplaysink, fps, droprate, avgfps):
             print(f"FPS: {fps}, Drop Rate: {droprate}, Average FPS: {avgfps}")
