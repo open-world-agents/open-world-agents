@@ -100,6 +100,50 @@ def build_screen_callback(callback):
 
 @LISTENERS.register("screen")
 class ScreenListener(GstPipelineRunner):
+    """
+    GStreamer-based screen capture listener.
+
+    Captures screen content and delivers frames to a callback function.
+    Can capture specific windows, monitors, or the entire screen.
+
+    Example:
+    ```python
+    from owa.registry import LISTENERS, activate_module
+    import cv2
+    import numpy as np
+
+    # Activate the GStreamer module
+    activate_module("owa_env_gst")
+
+    # Define a callback to process frames
+    def process_frame(frame):
+        # Display the frame
+        cv2.imshow("Screen Capture", frame.frame_arr)
+        cv2.waitKey(1)
+
+    # Create and configure the listener
+    screen = LISTENERS["screen"]().configure(
+        callback=process_frame,
+        fps=30,
+        show_cursor=True
+    )
+
+    # Run the screen capture
+    with screen.session:
+        input("Press Enter to stop")
+    ```
+
+    For performance metrics:
+    ```python
+    def process_with_metrics(frame, metrics):
+        print(f"FPS: {metrics.fps:.2f}, Latency: {metrics.latency*1000:.2f} ms")
+        cv2.imshow("Screen", frame.frame_arr)
+        cv2.waitKey(1)
+
+    screen.configure(callback=process_with_metrics)
+    ```
+    """
+
     def on_configure(
         self,
         *,
@@ -114,6 +158,7 @@ class ScreenListener(GstPipelineRunner):
         Configure the GStreamer pipeline for screen capture.
 
         Keyword Arguments:
+            callback: Function to call with each captured frame
             show_cursor (bool): Whether to show the cursor in the capture.
             fps (float): Frames per second.
             window_name (str | None): (Optional) specific window to capture.
