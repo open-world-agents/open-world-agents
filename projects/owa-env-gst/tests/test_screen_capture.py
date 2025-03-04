@@ -9,10 +9,8 @@ from owa.registry import RUNNABLES, activate_module
 def screen_capture():
     activate_module("owa_env_gst")
     capture = RUNNABLES["screen_capture"]().configure(fps=60)
-    capture.start()
-    yield capture
-    capture.stop()
-    capture.join()
+    with capture.session:
+        yield capture
 
 
 def test_screen_capture_warmup(screen_capture):

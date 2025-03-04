@@ -6,7 +6,8 @@ from gi.repository import Gst  # noqa: E402
 
 from owa_env_gst import gst_factory  # noqa: E402
 
-Gst.init(None)
+if not Gst.is_initialized():
+    Gst.init(None)
 
 
 def test_recorder():
@@ -41,8 +42,8 @@ def test_screen_capture():
         "videorate drop-only=true ! "
         "video/x-raw(memory:D3D11Memory),framerate=0/1,max-framerate=60/1 ! "
         "queue leaky=downstream ! d3d11download ! videoconvert ! "
-        "video/x-raw,format=BGRA ! appsink name=appsink sync=true max-buffers=1 "
-        "drop=true emit-signals=true"
+        "video/x-raw,format=BGRA ! appsink name=appsink sync=false max-buffers=1 "
+        "drop=true emit-signals=true wait-on-eos=false"
     )
     assert pipeline == expected_pipeline
     pipeline = Gst.parse_launch(pipeline)
