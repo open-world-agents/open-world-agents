@@ -6,14 +6,10 @@ import gi
 
 gi.require_version("Gst", "1.0")
 
-import time
-from collections import deque
 
-import numpy as np
-from gi.repository import GLib, Gst
+from gi.repository import Gst
 from loguru import logger
 
-from owa import Listener
 from owa.registry import LISTENERS
 
 from ..gst_factory import screen_capture_pipeline
