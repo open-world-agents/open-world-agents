@@ -171,7 +171,7 @@ requires-dist = [
     { name = "opencv-python", specifier = ">=4.11.0.86" },
     { name = "owa-core", editable = "../core" },
     { name = "pygetwindow", marker = "sys_platform == 'win32'", specifier = ">=0.0.9" },
-    { name = "pynput", specifier = ">=1.7.7" },
+    { name = "pynput", specifier = ">=1.8.0" },
     { name = "pyobjc-framework-applicationservices", marker = "sys_platform == 'Darwin'", specifier = ">=11.0" },
     { name = "pyobjc-framework-quartz", marker = "sys_platform == 'Darwin'", specifier = ">=11.0" },
 ]
@@ -248,13 +248,13 @@ name = "pygetwindow"
 version = "0.0.9"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pyrect" },
+    { name = "pyrect", marker = "(platform_machine != 'aarch64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/e1/70/c7a4f46dbf06048c6d57d9489b8e0f9c4c3d36b7479f03c5ca97eaa2541d/PyGetWindow-0.0.9.tar.gz", hash = "sha256:17894355e7d2b305cd832d717708384017c1698a90ce24f6f7fbf0242dd0a688", size = 9699 }
 
 [[package]]
 name = "pynput"
-version = "1.7.7"
+version = "1.8.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "evdev", marker = "'linux' in sys_platform" },
@@ -264,7 +264,7 @@ dependencies = [
     { name = "six" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ef/1d/fdef3fdc9dc8dedc65898c8ad0e8922a914bb89c5308887e45f9aafaec36/pynput-1.7.7-py2.py3-none-any.whl", hash = "sha256:afc43f651684c98818de048abc76adf9f2d3d797083cb07c1f82be764a2d44cb", size = 90243 },
+    { url = "https://files.pythonhosted.org/packages/be/ff/19ecf48d2a950c649b1e433fa07236fede92bb5832b6e2b913c267ba41b2/pynput-1.8.0-py2.py3-none-any.whl", hash = "sha256:dc660dc93cb03cf58141e54ed575667032841846801f3dc3c4c719d4209c7e5c", size = 91577 },
 ]
 
 [[package]]
@@ -284,10 +284,10 @@ name = "pyobjc-framework-applicationservices"
 version = "11.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pyobjc-core" },
-    { name = "pyobjc-framework-cocoa" },
-    { name = "pyobjc-framework-coretext" },
-    { name = "pyobjc-framework-quartz" },
+    { name = "pyobjc-core", marker = "platform_machine != 'aarch64' or sys_platform != 'linux'" },
+    { name = "pyobjc-framework-cocoa", marker = "platform_machine != 'aarch64' or sys_platform != 'linux'" },
+    { name = "pyobjc-framework-coretext", marker = "platform_machine != 'aarch64' or sys_platform != 'linux'" },
+    { name = "pyobjc-framework-quartz", marker = "platform_machine != 'aarch64' or sys_platform != 'linux'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/ba/fb/4e42573b0d3baa3fa18ec53614cf979f951313f1451e8f2e17df9429da1f/pyobjc_framework_applicationservices-11.0.tar.gz", hash = "sha256:d6ea18dfc7d5626a3ecf4ac72d510405c0d3a648ca38cae8db841acdebecf4d2", size = 224334 }
 wheels = [
@@ -302,7 +302,7 @@ name = "pyobjc-framework-cocoa"
 version = "11.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pyobjc-core" },
+    { name = "pyobjc-core", marker = "platform_machine != 'aarch64' or sys_platform != 'linux'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/c5/32/53809096ad5fc3e7a2c5ddea642590a5f2cb5b81d0ad6ea67fdb2263d9f9/pyobjc_framework_cocoa-11.0.tar.gz", hash = "sha256:00346a8cb81ad7b017b32ff7bf596000f9faa905807b1bd234644ebd47f692c5", size = 6173848 }
 wheels = [
@@ -317,9 +317,9 @@ name = "pyobjc-framework-coretext"
 version = "11.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pyobjc-core" },
-    { name = "pyobjc-framework-cocoa" },
-    { name = "pyobjc-framework-quartz" },
+    { name = "pyobjc-core", marker = "platform_machine != 'aarch64' or sys_platform != 'linux'" },
+    { name = "pyobjc-framework-cocoa", marker = "platform_machine != 'aarch64' or sys_platform != 'linux'" },
+    { name = "pyobjc-framework-quartz", marker = "platform_machine != 'aarch64' or sys_platform != 'linux'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/9d/e8/9b68dc788828e38143a3e834e66346713751cb83d7f0955016323005c1a2/pyobjc_framework_coretext-11.0.tar.gz", hash = "sha256:a68437153e627847e3898754dd3f13ae0cb852246b016a91f9c9cbccb9f91a43", size = 274222 }
 wheels = [
@@ -334,8 +334,8 @@ name = "pyobjc-framework-quartz"
 version = "11.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pyobjc-core" },
-    { name = "pyobjc-framework-cocoa" },
+    { name = "pyobjc-core", marker = "platform_machine != 'aarch64' or sys_platform != 'linux'" },
+    { name = "pyobjc-framework-cocoa", marker = "platform_machine != 'aarch64' or sys_platform != 'linux'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/a5/ad/f00f3f53387c23bbf4e0bb1410e11978cbf87c82fa6baff0ee86f74c5fb6/pyobjc_framework_quartz-11.0.tar.gz", hash = "sha256:3205bf7795fb9ae34747f701486b3db6dfac71924894d1f372977c4d70c3c619", size = 3952463 }
 wheels = [

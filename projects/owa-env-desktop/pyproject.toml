@@ -10,7 +10,7 @@ dependencies = [
     "pyobjc-framework-Quartz>=11.0; sys_platform == 'Darwin'",
     "pyobjc-framework-ApplicationServices>=11.0; sys_platform == 'Darwin'",
     "bettercam>=1.0.0",
-    "pynput>=1.7.7",
+    "pynput>=1.8.0",
     "opencv-python>=4.11.0.86",
 ]
 

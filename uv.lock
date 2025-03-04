@@ -264,7 +264,7 @@ wheels = [
 
 [[package]]
 name = "ipython"
-version = "9.0.0"
+version = "9.0.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "colorama", marker = "sys_platform == 'win32'" },
@@ -279,9 +279,9 @@ dependencies = [
     { name = "traitlets" },
     { name = "typing-extensions", marker = "python_full_version < '3.12'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/de/39/264894738a202ddaf6abae39b3f84671ddee23fd292dbb3e10039e70300c/ipython-9.0.0.tar.gz", hash = "sha256:9368d65b3d4a471e9a698fed3ea486bbf6737e45111e915279c971b77f974397", size = 4364165 }
+sdist = { url = "https://files.pythonhosted.org/packages/9d/33/1901c9a842b301d8674f367dee597e654e402548a903faf7280aae8fc2d4/ipython-9.0.1.tar.gz", hash = "sha256:377ea91c8226b48dc9021ac9846a64761abc7ddf74c5efe38e6eb06f6e052f3a", size = 4365847 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/85/a1/894e4c0b6ac994045c6edeb2b6fdf69c59f20fcd2e348a42f4e40889181c/ipython-9.0.0-py3-none-any.whl", hash = "sha256:2cce23069b830a54a5b9d3d66ccd6433047c1503a7b9a3b34593c0b5c2c08477", size = 592040 },
+    { url = "https://files.pythonhosted.org/packages/28/39/fda74f8215ef94a812dd780073c61a826a88a01e51f627a3454f7ae6951d/ipython-9.0.1-py3-none-any.whl", hash = "sha256:3e878273824b52e0a2280ed84f8193aba8c4ba9a6f45a438348a3d5ef1a34bd0", size = 600186 },
 ]
 
 [[package]]
@@ -493,7 +493,7 @@ wheels = [
 
 [[package]]
 name = "mkdocs-material"
-version = "9.6.6"
+version = "9.6.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "babel" },
@@ -508,9 +508,9 @@ dependencies = [
     { name = "pymdown-extensions" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/26/b2/4244c578bf00f88181c55a76e484efb429159a1a49db60eaf6b696783760/mkdocs_material-9.6.6.tar.gz", hash = "sha256:06141bd720b0b235829bd59e8afc11d5587c35ae7fc340612d2b3f554e6a69d8", size = 3947396 }
+sdist = { url = "https://files.pythonhosted.org/packages/9b/d7/93e19c9587e5f4ed25647890555d58cf484a4d412be7037dc17b9c9179d9/mkdocs_material-9.6.7.tar.gz", hash = "sha256:3e2c1fceb9410056c2d91f334a00cdea3215c28750e00c691c1e46b2a33309b4", size = 3947458 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a4/2d/c71b689cbccef26806cea4f3dd98f1555cb5894e374c8c5ca6d2106d7fd4/mkdocs_material-9.6.6-py3-none-any.whl", hash = "sha256:904c422ec86086144495831cee2614bb8a0092572ef579af6392b8080309d3a3", size = 8696753 },
+    { url = "https://files.pythonhosted.org/packages/aa/d3/12f22de41bdd9e576ddc459b38c651d68edfb840b32acaa1f46ae36845e3/mkdocs_material-9.6.7-py3-none-any.whl", hash = "sha256:8a159e45e80fcaadd9fbeef62cbf928569b93df954d4dc5ba76d46820caf7b47", size = 8696755 },
 ]
 
 [[package]]
@@ -683,10 +683,10 @@ provides-extras = ["docs"]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "ipython", specifier = ">=8.32.0" },
-    { name = "pytest", specifier = ">=8.3.4" },
+    { name = "ipython", specifier = ">=9.0.1" },
+    { name = "pytest", specifier = ">=8.3.5" },
     { name = "pytest-timeout", specifier = ">=2.3.1" },
-    { name = "ruff", specifier = ">=0.9.5" },
+    { name = "ruff", specifier = ">=0.9.7" },
 ]
 
 [[package]]
@@ -726,7 +726,7 @@ requires-dist = [
     { name = "opencv-python", specifier = ">=4.11.0.86" },
     { name = "owa-core", editable = "projects/core" },
     { name = "pygetwindow", marker = "sys_platform == 'win32'", specifier = ">=0.0.9" },
-    { name = "pynput", specifier = ">=1.7.7" },
+    { name = "pynput", specifier = ">=1.8.0" },
     { name = "pyobjc-framework-applicationservices", marker = "sys_platform == 'Darwin'", specifier = ">=11.0" },
     { name = "pyobjc-framework-quartz", marker = "sys_platform == 'Darwin'", specifier = ">=11.0" },
 ]
@@ -948,7 +948,7 @@ wheels = [
 
 [[package]]
 name = "pynput"
-version = "1.7.8"
+version = "1.8.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "evdev", marker = "'linux' in sys_platform" },
@@ -958,7 +958,7 @@ dependencies = [
     { name = "six" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/77/23/2eeda4a156da594411abdb606654b681091e18f5e62d92a9c0965c101598/pynput-1.7.8-py2.py3-none-any.whl", hash = "sha256:a5d2e492dc3906ff85a5fe66bf05c440ce716fcc2d8bd988bc357b5d2298c577", size = 90363 },
+    { url = "https://files.pythonhosted.org/packages/be/ff/19ecf48d2a950c649b1e433fa07236fede92bb5832b6e2b913c267ba41b2/pynput-1.8.0-py2.py3-none-any.whl", hash = "sha256:dc660dc93cb03cf58141e54ed575667032841846801f3dc3c4c719d4209c7e5c", size = 91577 },
 ]
 
 [[package]]
