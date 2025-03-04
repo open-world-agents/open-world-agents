@@ -1,41 +1,16 @@
-import signal
-import subprocess
 from pathlib import Path
 from typing import Optional
 
 from loguru import logger
 
-from owa import Runnable
 from owa.registry import RUNNABLES
+from owa.runner import SubprocessRunner
 
 from .gst_factory import recorder_pipeline
 
 
-def disable_ctrl_c_once():
-    """
-    DO NOT USE THIS FUNCTION.
-    Pass CREATE_NEW_PROCESS_GROUP to the subprocess.Popen() function
-    and send CTRL_BREAK_EVENT signal instead of CTRL_C_EVENT(it does NOT work).
-
-    ===
-    Disable Ctrl+C once. This function must be called before sending Ctrl+C to a process.
-    Utilizing this function is not preferred, as this function must be called in main thread, which is not guaranteed in common.
-
-    Related issues:
-        - https://github.com/robotframework/robotframework/issues/3924
-        - https://stackoverflow.com/a/60795888
-    """
-    original_handler = signal.getsignal(signal.SIGINT)
-
-    def enable_ctrl_c(signum, frame):
-        logger.info("Ctrl+C intercepted.")
-        signal.signal(signal.SIGINT, original_handler)
-
-    signal.signal(signal.SIGINT, enable_ctrl_c)
-
-
 @RUNNABLES.register("screen/recorder")
-class ScreenRecorder(Runnable):
+class ScreenRecorder(SubprocessRunner):
     """A ScreenRecorder Runnable that records video and/or audio using a GStreamer pipeline."""
 
     def on_configure(
@@ -53,8 +28,6 @@ class ScreenRecorder(Runnable):
         additional_args: Optional[str] = None,
     ):
         """Prepare the GStreamer pipeline command."""
-        self._process = None  # This will hold the subprocess running the pipeline
-        self._pipeline_cmd = None  # The pipeline command to execute
 
         # if filesink_location does not exist, create it and warn the user
         if not Path(filesink_location).parent.exists():
@@ -77,49 +50,5 @@ class ScreenRecorder(Runnable):
             monitor_idx=monitor_idx,
             additional_args=additional_args,
         )
-        self._pipeline_cmd = f"gst-launch-1.0.exe -e -v {pipeline_description}"
 
-    def loop(self):
-        try:
-            self._loop()
-        finally:
-            self.cleanup()
-
-    def _loop(self):
-        if self._pipeline_cmd is None:
-            self.configure()
-        # Start the GStreamer pipeline process with the modified environment
-        self._process = subprocess.Popen(self._pipeline_cmd.split(), creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
-
-        # Monitor the process and check for stop event
-        while self._process.poll() is None:
-            if self._stop_event.is_set():
-                # Stop event is set, send eos to the pipeline
-                self._process.send_signal(signal.CTRL_BREAK_EVENT)
-                break
-            # Sleep briefly to avoid busy waiting
-            self._stop_event.wait(0.5)
-            # time.sleep(0.5)
-        # Wait for the process to terminate fully
-        rt = self._process.wait(5)
-        if rt == 0:
-            logger.info("ScreenRecorder process terminated successfully.")
-        else:
-            logger.error(f"ScreenRecorder process terminated with return code {rt}")
-
-    def cleanup(self):
-        """Clean up resources. This method is called after loop() exits."""
-        if self._process and self._process.poll() is None:
-            try:
-                self._process.terminate()
-                self._process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                # If the process doesn't terminate, kill it forcefully
-                self._process.kill()
-                logger.error("ScreenRecorder process killed forcefully.")
-            except Exception:
-                import traceback
-
-                traceback.print_exc()
-                pass  # Handle any other exceptions silently
-        self._process = None
+        super().on_configure(f"gst-launch-1.0.exe -e -v {pipeline_description}".split())
