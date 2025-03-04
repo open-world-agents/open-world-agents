@@ -19,7 +19,7 @@ from .gst_runner import GstPipelineRunner
 
 def activate():
     from . import screen  # noqa
-    from . import screen_recorder  # noqa
+    from . import omnimodal  # noqa
 
 
 __all__ = ["gst_factory", "activate", "GstPipelineRunner"]

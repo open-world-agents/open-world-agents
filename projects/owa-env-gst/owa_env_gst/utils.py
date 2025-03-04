@@ -58,7 +58,12 @@ def sample_to_ndarray(sample: Gst.Sample) -> np.ndarray:
     return np.ndarray((height, width, 4), buffer=frame_data, dtype=np.uint8)
 
 
-def try_set_state(pipeline: Gst.Pipeline, state: Gst.State, timeout: float = 1.0):
+# by default, common gstreamer element uses 1 second value. so timoeut must be > 1 seconds.
+# The default queue size limits are 200 buffers, 10MB of data, or one second worth of data, whichever is reached first.
+# https://gstreamer.freedesktop.org/documentation/coreelements/queue.html?gi-language=c
+# videorate's max-closing-segment-duplication-duration is 1 second by default.
+# https://gstreamer.freedesktop.org/documentation/videorate/index.html?gi-language=c#videorate:max-closing-segment-duplication-duration
+def try_set_state(pipeline: Gst.Pipeline, state: Gst.State, timeout: float = 3.0):
     """
     Attempt to set pipeline state with error handling.
 
@@ -90,7 +95,7 @@ def try_set_state(pipeline: Gst.Pipeline, state: Gst.State, timeout: float = 1.0
     return ret
 
 
-def wait_for_message(pipeline: Gst.Pipeline, message: Gst.MessageType, timeout: float = 1.0):
+def wait_for_message(pipeline: Gst.Pipeline, message: Gst.MessageType, timeout: float = 3.0):
     """
     Wait for a specific message on the pipeline bus.
 

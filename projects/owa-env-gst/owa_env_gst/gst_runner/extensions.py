@@ -25,7 +25,7 @@ class AppsinkExtension:
             callback: Callback function to be called
         """
         self.appsink_callback = callback
-        self.appsinks: list[Gst.Element] = self.find_elements_by_name("appsink")
+        self.appsinks: list[Gst.Element] = self.find_elements_by_factoryname("appsink")
         for appsink in self.appsinks:
             if not self._do_not_modify_appsink_properties:
                 appsink.set_properties(sync=False, emit_signals=True, wait_on_eos=False, max_buffers=1, drop=True)
@@ -112,7 +112,7 @@ class FPSDisplayExtension:
         """
         Turn on FPS display on the video sink. Utilize the 'fpsdisplaysink' element.
         """
-        sinks = self.find_elements_by_name("fpsdisplaysink")
+        sinks = self.find_elements_by_factoryname("fpsdisplaysink")
         if not sinks:
             raise ValueError("No 'fpsdisplaysink' element found in the pipeline.")
         fpsdisplaysink = sinks[0]

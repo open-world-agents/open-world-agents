@@ -82,7 +82,7 @@ class MetricManager:
 def build_screen_callback(callback):
     metric_manager = MetricManager()
 
-    def screen_callback(sample: Gst.Sample, pipeline: Gst.Pipeline, metadata: dict):
+    def screen_callback(sample: Gst.Sample, metadata: dict):
         frame_arr = sample_to_ndarray(sample)
         latency = metadata["latency"]
         timestamp_ns = metadata["frame_time_ns"]

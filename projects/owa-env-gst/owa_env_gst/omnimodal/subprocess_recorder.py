@@ -6,11 +6,11 @@ from loguru import logger
 from owa.registry import RUNNABLES
 from owa.runner import SubprocessRunner
 
-from .gst_factory import recorder_pipeline
+from ..gst_factory import recorder_pipeline
 
 
-@RUNNABLES.register("screen/recorder")
-class ScreenRecorder(SubprocessRunner):
+@RUNNABLES.register("owa_env_gst/omnimodal/subprocess_recorder")
+class SubprocessRecorder(SubprocessRunner):
     """A ScreenRecorder Runnable that records video and/or audio using a GStreamer pipeline."""
 
     def on_configure(

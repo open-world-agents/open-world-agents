@@ -59,7 +59,7 @@ class BaseGstPipelineRunner(Runnable):
         self.appsinks = []
 
         try:
-            self.pipeline = Gst.parse_launch(self.pipeline_description)
+            self.pipeline: Gst.Pipeline = Gst.parse_launch(self.pipeline_description)
         except Exception as e:
             logger.error(f"Failed to create pipeline: {e}")
             return False
@@ -105,7 +105,7 @@ class BaseGstPipelineRunner(Runnable):
             self.pipeline.send_event(Gst.Event.new_eos())
             # After sending EOS, `on_message` will handle the EOS signal and quit the loop
 
-    def find_elements_by_name(self, name: str) -> list[Gst.Element]:
+    def find_elements_by_factoryname(self, name: str) -> list[Gst.Element]:
         """
         Find an element by name in the pipeline.
 
@@ -117,7 +117,7 @@ class BaseGstPipelineRunner(Runnable):
         """
         elements: list[Gst.Element] = []
         try:
-            iter = self.pipeline.iterate_sinks()
+            iter = self.pipeline.iterate_elements()
             while True:
                 res, elem = iter.next()
                 if res == Gst.IteratorResult.OK:
