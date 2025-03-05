@@ -1,0 +1,25 @@
+[project]
+name = "mcap-owa-support"
+dynamic = ["version"]
+description = "OWA support for the Python MCAP library"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "owa-core",
+    "easydict>=1.13",
+    "orjson>=3.10.15",
+    "mcap>=1.2.2",
+]
+
+[tool.uv.sources]
+owa-core = { path = "../core", editable = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["mcap_owa"]
+
+[tool.hatch.version]
+path = "mcap_owa/__init__.py"

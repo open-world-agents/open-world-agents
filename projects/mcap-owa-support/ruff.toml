@@ -1,0 +1,4 @@
+line-length = 119
+
+[lint.isort]
+known-first-party = ["mcap_owa"]

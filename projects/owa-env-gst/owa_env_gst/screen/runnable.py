@@ -3,8 +3,8 @@ from collections import deque
 
 from owa.registry import RUNNABLES
 
+from ..msg import FrameStamped
 from .listeners import ScreenListener
-from .msg import FrameStamped
 
 
 @RUNNABLES.register("screen_capture")
