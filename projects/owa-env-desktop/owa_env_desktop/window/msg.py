@@ -1,7 +1,9 @@
-from pydantic import BaseModel
+from owa.message import OWAMessage
 
 
-class WindowInfo(BaseModel):
+class WindowInfo(OWAMessage):
+    _type = "owa_env_desktop.window.WindowInfo"
+
     title: str
     rect: tuple[int, int, int, int]
     hWnd: int

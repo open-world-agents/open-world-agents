@@ -13,9 +13,9 @@ from loguru import logger
 from owa.registry import LISTENERS
 
 from ..gst_runner import GstPipelineRunner
+from ..msg import FrameStamped
 from ..pipeline_builder import screen_capture_pipeline
 from ..utils import sample_to_ndarray
-from .msg import FrameStamped
 
 if not Gst.is_initialized():
     Gst.init(None)
