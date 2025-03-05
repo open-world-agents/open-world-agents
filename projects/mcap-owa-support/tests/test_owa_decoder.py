@@ -1,6 +1,6 @@
-from mcap_ros1.decoder import DecoderFactory
-
 from mcap.reader import make_reader
+
+from mcap_owa.decoder import DecoderFactory
 
 from .generate import generate_sample_data
 

@@ -27,8 +27,8 @@ output_file = None
 
 class BagEvent(BaseModel):
     timestamp_ns: int
-    event_src: str
-    event_data: bytes
+    msgtype: str
+    msgdata: bytes
 
 
 def write_event_into_jsonl(event, source=None):

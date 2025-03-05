@@ -3,15 +3,18 @@ from io import BufferedWriter, BytesIO
 from typing import IO, Any, Dict, Optional, Union
 
 import mcap
+import orjson
+from mcap.well_known import SchemaEncoding
 from mcap.writer import CompressionType
 from mcap.writer import Writer as McapWriter
+from owa.message import BaseMessage
 
 from . import __version__
 
 
 def _library_identifier():
     mcap_version = getattr(mcap, "__version__", "<=0.0.10")
-    return f"mcap-ros1-support {__version__}; mcap {mcap_version}"
+    return f"mcap-owa-support {__version__}; mcap {mcap_version}"
 
 
 class Writer:
@@ -30,7 +33,7 @@ class Writer:
         )
         self.__schema_ids: Dict[str, int] = {}
         self.__channel_ids: Dict[str, int] = {}
-        self.__writer.start(profile="ros1", library=_library_identifier())
+        self.__writer.start(profile="owa", library=_library_identifier())
         self.__finished = False
 
     def finish(self):
@@ -62,10 +65,14 @@ class Writer:
         :param sequence: An optional sequence number.
         """
         if message._type not in self.__schema_ids:
+            if isinstance(message, BaseMessage):
+                schema_data = orjson.dumps(message.get_schema())
+            else:
+                schema_data = message.__class__.__name__.encode()
             schema_id = self.__writer.register_schema(
                 name=message._type,
-                data=message.__class__._full_text.encode(),
-                encoding="ros1msg",
+                data=schema_data,
+                encoding=SchemaEncoding.JSONSchema,
             )
             self.__schema_ids[message._type] = schema_id
         schema_id = self.__schema_ids[message._type]
@@ -73,7 +80,7 @@ class Writer:
         if topic not in self.__channel_ids:
             channel_id = self.__writer.register_channel(
                 topic=topic,
-                message_encoding="ros1",
+                message_encoding="json",
                 schema_id=schema_id,
             )
             self.__channel_ids[topic] = channel_id
