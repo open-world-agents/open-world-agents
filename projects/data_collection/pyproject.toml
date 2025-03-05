@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "mcap-owa-support",
     "orjson>=3.10.15",
     "owa-core",
     "owa-env-desktop",
@@ -16,6 +17,7 @@ dependencies = [
 owa-core = { path = "../core", editable = true }
 owa-env-desktop = { path = "../owa-env-desktop", editable = true }
 owa-env-gst = { path = "../owa-env-gst", editable = true }
+mcap-owa-support = { path = "../mcap-owa-support", editable = true }
 
 [build-system]
 requires = ["hatchling"]
