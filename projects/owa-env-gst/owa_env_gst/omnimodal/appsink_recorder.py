@@ -32,7 +32,8 @@ class AppsinkRecorder(GstPipelineRunner):
         def buffer_probe_callback(pad: Gst.Pad, info: Gst.PadProbeInfo):
             buf = info.get_buffer()
             frame_time_ns = time.time_ns()
-            callback(buf.pts, frame_time_ns)
+            callback((buf.pts, frame_time_ns))
             return Gst.PadProbeReturn.OK
 
         identity.get_static_pad("src").add_probe(Gst.PadProbeType.BUFFER, buffer_probe_callback)
+        self.enable_fps_display()

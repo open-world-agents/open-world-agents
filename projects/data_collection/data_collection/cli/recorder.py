@@ -53,6 +53,10 @@ def control_publisher_callback(*event):
     write_event_into_jsonl(event, source="control_publisher")
 
 
+def screen_publisher_callback(event):
+    write_event_into_jsonl(event, source="screen")
+
+
 def configure():
     activate_module("owa_env_desktop")
     activate_module("owa_env_gst")
@@ -88,9 +92,15 @@ def main(
         logger.warning(f"Deleted existing file {output_file}")
 
     configure()
-    recorder = RUNNABLES["screen/recorder"]()
+    recorder = LISTENERS["owa_env_gst/omnimodal/appsink_recorder"]()
     keyboard_listener = LISTENERS["keyboard"]().configure(callback=control_publisher_callback)
     mouse_listener = LISTENERS["mouse"]().configure(callback=control_publisher_callback)
+
+    additional_properties = {}
+    if additional_args is not None:
+        for arg in additional_args.split(","):
+            key, value = arg.split("=")
+            additional_properties[key] = value
     recorder.configure(
         filesink_location=file_location,
         record_audio=record_audio,
@@ -99,7 +109,8 @@ def main(
         show_cursor=show_cursor,
         window_name=window_name,
         monitor_idx=monitor_idx,
-        additional_args=additional_args,
+        additional_properties=additional_properties,
+        callback=screen_publisher_callback,
     )
 
     try:
