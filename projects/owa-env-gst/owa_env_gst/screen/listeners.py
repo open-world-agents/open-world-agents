@@ -12,8 +12,8 @@ from loguru import logger
 
 from owa.registry import LISTENERS
 
-from ..gst_factory import screen_capture_pipeline
 from ..gst_runner import GstPipelineRunner
+from ..pipeline_builder import screen_capture_pipeline
 from ..utils import sample_to_ndarray
 from .msg import FrameStamped
 
@@ -152,7 +152,7 @@ class ScreenListener(GstPipelineRunner):
         fps: float = 60,
         window_name: str | None = None,
         monitor_idx: int | None = None,
-        additional_args: str | None = None,
+        additional_properties: dict | None = None,
     ) -> bool:
         """
         Configure the GStreamer pipeline for screen capture.
@@ -163,7 +163,7 @@ class ScreenListener(GstPipelineRunner):
             fps (float): Frames per second.
             window_name (str | None): (Optional) specific window to capture.
             monitor_idx (int | None): (Optional) specific monitor index.
-            additional_args (str | None): (Optional) additional arguments to pass to the pipeline.
+            additional_properties (dict | None): (Optional) additional arguments to pass to the pipeline.
         """
         # Construct the pipeline description
         pipeline_description = screen_capture_pipeline(
@@ -171,7 +171,7 @@ class ScreenListener(GstPipelineRunner):
             fps=fps,
             window_name=window_name,
             monitor_idx=monitor_idx,
-            additional_args=additional_args,
+            additional_properties=additional_properties,
         )
         logger.debug(f"Constructed pipeline: {pipeline_description}")
         super().on_configure(pipeline_description)

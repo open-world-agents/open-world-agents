@@ -6,7 +6,7 @@ from loguru import logger
 from owa.registry import RUNNABLES
 from owa.runner import SubprocessRunner
 
-from ..gst_factory import recorder_pipeline
+from ..pipeline_builder import subprocess_recorder_pipeline
 
 
 @RUNNABLES.register("owa_env_gst/omnimodal/subprocess_recorder")
@@ -19,13 +19,12 @@ class SubprocessRecorder(SubprocessRunner):
         record_audio: bool = True,
         record_video: bool = True,
         record_timestamp: bool = True,
-        enable_appsink: bool = False,
         enable_fpsdisplaysink: bool = True,
         show_cursor: bool = True,
         fps: float = 60,
         window_name: Optional[str] = None,
         monitor_idx: Optional[int] = None,
-        additional_args: Optional[str] = None,
+        additional_properties: Optional[dict] = None,
     ):
         """Prepare the GStreamer pipeline command."""
 
@@ -37,18 +36,17 @@ class SubprocessRecorder(SubprocessRunner):
         # convert to posix path. this is required for gstreamer executable.
         filesink_location = Path(filesink_location).as_posix()
 
-        pipeline_description = recorder_pipeline(
+        pipeline_description = subprocess_recorder_pipeline(
             filesink_location=filesink_location,
             record_audio=record_audio,
             record_video=record_video,
             record_timestamp=record_timestamp,
-            enable_appsink=enable_appsink,
             enable_fpsdisplaysink=enable_fpsdisplaysink,
             show_cursor=show_cursor,
             fps=fps,
             window_name=window_name,
             monitor_idx=monitor_idx,
-            additional_args=additional_args,
+            additional_properties=additional_properties,
         )
 
         super().on_configure(f"gst-launch-1.0.exe -e -v {pipeline_description}".split())

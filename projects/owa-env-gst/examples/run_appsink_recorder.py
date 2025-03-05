@@ -11,7 +11,7 @@ def main():
     def callback(pts, frame_time_ns):
         print(f"Received frame with PTS {pts} at time {frame_time_ns}")
 
-    recorder.configure(callback=callback)
+    recorder.configure("test.mkv", callback=callback)
 
     with recorder.session:
         time.sleep(3)
