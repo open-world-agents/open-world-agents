@@ -1,5 +1,6 @@
 import time
 from io import BufferedWriter, BytesIO
+from pathlib import Path
 from typing import IO, Any, Dict, Optional, Union
 
 import mcap
@@ -23,9 +24,14 @@ class Writer:
     ```python
     from pathlib import Path
 
+    from owa.message import OWAMessage
+
     from mcap_owa.writer import Writer as OWAWriter
 
-    from owa_env_desktop.keyboard_mouse import KeyboardEvent
+
+    class String(OWAMessage):
+        _type = "std_msgs/String"
+        data: str
 
 
     def main():
@@ -33,7 +39,7 @@ class Writer:
         stream = output_file.open("wb")
         with OWAWriter(stream) as writer:
             topic = "/chatter"
-            event = KeyboardEvent(event_type="press", vk=1)
+            event = String(data="string message")
             for i in range(0, 10):
                 publish_time = i
                 writer.write_message(topic, event, publish_time=publish_time)
@@ -41,15 +47,19 @@ class Writer:
 
     if __name__ == "__main__":
         main()
+
     """
 
     def __init__(
         self,
-        output: Union[str, IO[Any], BufferedWriter],
+        output: Union[str, IO[Any], BufferedWriter, Path],
         chunk_size: int = 1024 * 1024,
         compression: CompressionType = CompressionType.ZSTD,
         enable_crcs: bool = True,
     ):
+        if isinstance(output, Path):
+            output = output.as_posix()
+
         self.__writer = McapWriter(
             output=output,
             chunk_size=chunk_size,
