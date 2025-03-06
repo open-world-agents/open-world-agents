@@ -14,11 +14,12 @@ except Exception as e:  # noqa: F841
 os.environ["GST_PLUGIN_PATH"] = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gst-plugins")
 
 from . import gst_factory
+from .gst_runner import GstPipelineRunner
 
 
 def activate():
     from . import screen  # noqa
-    from . import recorder  # noqa
+    from . import omnimodal  # noqa
 
 
-__all__ = ["gst_factory", "activate"]
+__all__ = ["gst_factory", "activate", "GstPipelineRunner"]

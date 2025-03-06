@@ -1,90 +1,64 @@
-import time
-from queue import Queue
+import threading
+from collections import deque
 
 from owa.registry import RUNNABLES
-from owa.runnable import RunnableThread
 
 from .listeners import ScreenListener
 from .msg import FrameStamped
 
 
 @RUNNABLES.register("screen_capture")
-class ScreenCapture(RunnableThread):
+class ScreenCapture(ScreenListener):
     """
-    A runnable thread for capturing the screen using a GStreamer-based pipeline.
-    It continuously listens for screen frames and stores them in a queue.
+    Screen capture thread using GStreamer pipeline.
 
-    Example usage:
+    Captures screen frames continuously and makes the latest frame
+    available through a thread-safe interface.
+
+    Example:
     ```python
     from owa.registry import RUNNABLES, activate_module
+
     activate_module("owa_env_gst")
-    screen_capture = RUNNABLES["screen_capture"]()
-    screen_capture.configure()
-    screen_capture.start()
-    for _ in range(10):
-        timestamp, frame = screen_capture.grab()
-        print(timestamp, frame.shape)
+    screen_capture = RUNNABLES["screen_capture"]().configure(fps=60)
+
+    with screen_capture.session:
+        for _ in range(10):
+            frame = screen_capture.grab()
+            print(f"Shape: {frame.frame_arr.shape}")
     ```
     """
 
-    def __init__(self):
-        """Initialize the screen capture runnable with a frame queue and listener."""
-        super().__init__()
-        self.queue = Queue(maxsize=1)  # Holds the most recent frame
-        self.listener = None  # Listener for capturing screen frames
-
-    def on_configure(self, *, fps: float = 60, window_name: str | None = None, monitor_idx: int | None = None):
+    def on_configure(self, *args, **kwargs):
         """
         Configure and start the screen listener.
 
         Args:
             fps (float): Frames per second for capture.
-            window_name (str | None): Name of the window to capture (optional).
-            monitor_idx (int | None): Index of the monitor to capture (optional).
+            window_name (str, optional): Window to capture. If None, captures entire screen.
+            monitor_idx (int, optional): Monitor index to capture.
         """
-        self.listener = ScreenListener()
-        self.listener.configure(fps=fps, window_name=window_name, monitor_idx=monitor_idx, callback=self.on_frame)
-        self.listener.start()
+        self.queue = deque(maxlen=1)  # Holds the most recent frame
+        self._event = threading.Event()
 
-    def on_frame(self, frame):
-        """
-        Callback function for handling incoming frames.
-        Stores the most recent frame in the queue, removing older ones if necessary.
+        def on_frame(frame):
+            self.queue.append(frame)
+            self._event.set()
 
-        Args:
-            frame: Captured frame from the listener.
-        """
-        if self.queue.full():
-            self.queue.get()  # Remove the oldest frame to make space
-        self.queue.put(frame)
-
-    def loop(self):
-        try:
-            self._loop()
-        finally:
-            self.cleanup()
-
-    def _loop(self):
-        """
-        Keep the thread running until stopped.
-        This loop does not process frames but keeps the thread alive.
-        """
-        while not self._stop_event.is_set():
-            time.sleep(1)  # Prevent high CPU usage by sleeping
-
-    def cleanup(self):
-        """
-        Stop and clean up the screen listener before shutting down the thread.
-        """
-        if self.listener:
-            self.listener.stop()
-            self.listener.join()
+        super().on_configure(callback=on_frame, *args, **kwargs)
+        return self
 
     def grab(self) -> FrameStamped:
         """
-        Retrieve the most recent frame from the queue.
+        Get the most recent frame (blocks until frame is available).
 
         Returns:
-            FrameStamped: The latest captured frame with a timestamp.
+            FrameStamped: Latest captured frame with timestamp.
+
+        Raises:
+            TimeoutError: If no frame is received within 1 second.
         """
-        return self.queue.get()
+        if not self._event.wait(timeout=1.0):
+            raise TimeoutError("Timeout waiting for frame")
+        self._event.clear()
+        return self.queue[0]
