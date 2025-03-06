@@ -21,7 +21,6 @@ from mcap_owa.writer import Writer as OWAWriter
 from pydantic import BaseModel
 from typing_extensions import Annotated
 
-from owa.message import OWAMessage
 from owa.registry import CALLABLES, LISTENERS, activate_module
 
 app = typer.Typer()

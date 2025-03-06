@@ -10,8 +10,6 @@ def read_owa_messages(stream: BytesIO):
 
 
 if __name__ == "__main__":
-    import importlib
-
     with open("test.mcap", "rb") as f:
         for schema, channel, msg, decoded_msg in read_owa_messages(BytesIO(f.read())):
             print(schema.name, channel.topic, msg, decoded_msg)
