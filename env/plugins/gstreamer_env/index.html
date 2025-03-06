@@ -18,7 +18,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.5">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.7">
     
     
       
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#known-issues" class="md-skip">
+        <a href="#examples" class="md-skip">
           Skip to content
         </a>
       
@@ -629,6 +629,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      Examples
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#known-issues" class="md-nav__link">
     <span class="md-ellipsis">
       Known Issues
@@ -979,6 +988,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      Examples
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#known-issues" class="md-nav__link">
     <span class="md-ellipsis">
       Known Issues
@@ -1009,6 +1027,57 @@
   <h1>Gstreamer Environment (Docs=WIP)</h1>
 
 <p>To see detailed implementation, skim over <a href="https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-env-gst/owa_env_gst">owa_env_gst</a>. API Docs is being written WIP.</p>
+<h2 id="examples">Examples</h2>
+<ul>
+<li>
+<p>example of <code>screen</code> listener
+    <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">LISTENERS</span><span class="p">,</span> <span class="n">activate_module</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">cv2</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># Activate the GStreamer module</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">activate_module</span><span class="p">(</span><span class="s2">&quot;owa_env_gst&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="c1"># Define a callback to process frames</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="k">def</span><span class="w"> </span><span class="nf">process_frame</span><span class="p">(</span><span class="n">frame</span><span class="p">):</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="c1"># Display the frame</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">cv2</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="s2">&quot;Screen Capture&quot;</span><span class="p">,</span> <span class="n">frame</span><span class="o">.</span><span class="n">frame_arr</span><span class="p">)</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">cv2</span><span class="o">.</span><span class="n">waitKey</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="c1"># Create and configure the listener</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="n">screen</span> <span class="o">=</span> <span class="n">LISTENERS</span><span class="p">[</span><span class="s2">&quot;screen&quot;</span><span class="p">]()</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    <span class="n">callback</span><span class="o">=</span><span class="n">process_frame</span><span class="p">,</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>    <span class="n">fps</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    <span class="n">show_cursor</span><span class="o">=</span><span class="kc">True</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="p">)</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="c1"># Run the screen capture</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="k">with</span> <span class="n">screen</span><span class="o">.</span><span class="n">session</span><span class="p">:</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>    <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;Press Enter to stop&quot;</span><span class="p">)</span>
+</code></pre></div></p>
+<p>For performance metrics:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">process_with_metrics</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="n">metrics</span><span class="p">):</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;FPS: </span><span class="si">{</span><span class="n">metrics</span><span class="o">.</span><span class="n">fps</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">, Latency: </span><span class="si">{</span><span class="n">metrics</span><span class="o">.</span><span class="n">latency</span><span class="o">*</span><span class="mi">1000</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> ms&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">cv2</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="s2">&quot;Screen&quot;</span><span class="p">,</span> <span class="n">frame</span><span class="o">.</span><span class="n">frame_arr</span><span class="p">)</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">cv2</span><span class="o">.</span><span class="n">waitKey</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">screen</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">callback</span><span class="o">=</span><span class="n">process_with_metrics</span><span class="p">)</span>
+</code></pre></div></p>
+</li>
+<li>
+<p>example of <code>screen_capture</code> runnable
+    <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">RUNNABLES</span><span class="p">,</span> <span class="n">activate_module</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">activate_module</span><span class="p">(</span><span class="s2">&quot;owa_env_gst&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">screen_capture</span> <span class="o">=</span> <span class="n">RUNNABLES</span><span class="p">[</span><span class="s2">&quot;screen_capture&quot;</span><span class="p">]()</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">fps</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="k">with</span> <span class="n">screen_capture</span><span class="o">.</span><span class="n">session</span><span class="p">:</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>        <span class="n">frame</span> <span class="o">=</span> <span class="n">screen_capture</span><span class="o">.</span><span class="n">grab</span><span class="p">()</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Shape: </span><span class="si">{</span><span class="n">frame</span><span class="o">.</span><span class="n">frame_arr</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div></p>
+</li>
+</ul>
 <h2 id="known-issues">Known Issues</h2>
 <ul>
 <li>Currently, we only supports Windows OS. Other OS support is in TODO-list, but it's priority is not high.</li>
@@ -1016,7 +1085,7 @@
 <p>Currently, we only supports device with NVIDIA GPU. This is also in TODO-list, it's priority is higher than multi-OS support.</p>
 </li>
 <li>
-<p>When capturing some screen with <code>WGC</code>(Windows Graphics Capture API, it's being activate when you specify window handle), and with some desktop(not all), above issues are observed.</p>
+<p>When capturing some screen with <code>WGC</code>(Windows Graphics Capture API, it's being activate when you specify window handle), and with some desktop(not all), below issues are observed.</p>
 <ul>
 <li>maximum FPS can't exceed maximum Hz of physical monitor.</li>
 <li>When capturing <code>Windows Terminal</code> and <code>Discord</code>, the following case was reported. I also guess this phenomena is because of usage of <code>WGC</code>.<ul>
@@ -1047,7 +1116,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime">February 28, 2025 13:34:46</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime">March 4, 2025 07:32:23</span>
   </span>
 
     
@@ -1105,7 +1174,7 @@
     <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.sections", "navigation.top", "search.suggest", "search.highlight", "content.tabs.link", "content.code.annotation", "content.code.copy"], "search": "../../../assets/javascripts/workers/search.f8cc74c7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.f1b6f286.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.c8b220af.min.js"></script>
       
     
   </body>
