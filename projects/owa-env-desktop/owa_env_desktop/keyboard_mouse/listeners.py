@@ -5,8 +5,8 @@ from pynput.mouse import Listener as MouseListener
 from owa.listener import Listener
 from owa.registry import LISTENERS
 
+from ..msg import KeyboardEvent, MouseEvent
 from ..utils import key_to_vk
-from .msg import KeyboardEvent, MouseEvent
 
 
 @LISTENERS.register("keyboard")
