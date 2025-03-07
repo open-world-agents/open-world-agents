@@ -34,11 +34,15 @@ class BagEvent(BaseModel):
 
 
 def callback(event, topic=None):
-    queue.put((topic, event, time.time_ns()))
+    queue.put((event, event, time.time_ns()))
 
 
-def control_publisher_callback(event):
-    callback(event, topic="control")
+def keyboard_publisher_callback(event):
+    callback(event, topic="keyboard")
+
+
+def mouse_publisher_callback(event):
+    callback(event, topic="mouse")
 
 
 def screen_publisher_callback(event):
@@ -87,8 +91,8 @@ def main(
 
     configure()
     recorder = LISTENERS["owa_env_gst/omnimodal/appsink_recorder"]()
-    keyboard_listener = LISTENERS["keyboard"]().configure(callback=control_publisher_callback)
-    mouse_listener = LISTENERS["mouse"]().configure(callback=control_publisher_callback)
+    keyboard_listener = LISTENERS["keyboard"]().configure(callback=keyboard_publisher_callback)
+    mouse_listener = LISTENERS["mouse"]().configure(callback=mouse_publisher_callback)
 
     additional_properties = {}
     if additional_args is not None:
