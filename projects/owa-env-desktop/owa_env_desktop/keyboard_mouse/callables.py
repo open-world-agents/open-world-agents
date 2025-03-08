@@ -1,3 +1,5 @@
+import time
+
 from pynput.keyboard import Controller as KeyboardController
 from pynput.mouse import Button
 from pynput.mouse import Controller as MouseController
@@ -25,3 +27,16 @@ keyboard_controller = KeyboardController()
 CALLABLES.register("keyboard.press")(keyboard_controller.press)
 CALLABLES.register("keyboard.release")(keyboard_controller.release)
 CALLABLES.register("keyboard.type")(keyboard_controller.type)
+
+
+@CALLABLES.register("keyboard.press_repeat")
+def press_repeat_key(key, press_time: float, initial_delay: float = 0.5, repeat_delay: float = 0.033):
+    """Mocks the behavior of holding a key down, with a delay between presses."""
+    repeat_time = max(0, (press_time - initial_delay) // repeat_delay - 1)
+
+    keyboard_controller.press(key)
+    time.sleep(initial_delay)
+    for _ in range(int(repeat_time)):
+        keyboard_controller.press(key)
+        time.sleep(repeat_delay)
+    keyboard_controller.release(key)

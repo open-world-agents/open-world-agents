@@ -56,3 +56,24 @@ To see detailed implementation, skim over [owa_env_desktop](https://github.com/o
 
 - `keyboard` - Listen for keyboard events
 - `mouse` - Listen for mouse events
+
+
+## Misc
+
+### Library Selection Rationale
+This module utilizes `pynput` for input simulation after evaluating several alternatives:
+
+- **Why not PyAutoGUI?** Though widely used, [PyAutoGUI](https://github.com/asweigart/pyautogui) uses deprecated Windows APIs (`keybd_event/mouse_event`) rather than the modern `SendInput` method. These older APIs fail in DirectX applications and games. Additionally, PyAutoGUI has seen limited maintenance (last significant update was over 2 years ago).
+
+- **Alternative Solutions:** Libraries like [pydirectinput](https://github.com/learncodebygaming/pydirectinput) and [pydirectinput_rgx](https://github.com/ReggX/pydirectinput_rgx) address the Windows API issue by using `SendInput`, but they lack input capturing capabilities which are essential for our use case.
+
+- **Other Options:** We also evaluated [keyboard](https://github.com/boppreh/keyboard) and [mouse](https://github.com/boppreh/mouse) libraries but found them inadequately maintained with several unresolved bugs that could impact reliability.
+
+### Input Auto-Repeat Functionality
+For simulating key auto-repeat behavior, use the dedicated function:
+
+```python
+CALLABLES["keyboard.press_repeat"](key, press_time: float, initial_delay: float = 0.5, repeat_delay: float = 0.033)
+```
+
+This function handles the complexity of simulating hardware auto-repeat, with configurable initial delay before repeating starts and the interval between repeated keypresses.

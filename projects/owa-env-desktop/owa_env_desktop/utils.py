@@ -1,3 +1,4 @@
+import enum
 import platform
 from typing import Union
 
@@ -18,12 +19,18 @@ def key_to_vk(key: Union[Key, KeyCode, None]) -> int:
     os_name = platform.system()
 
     if os_name == "Windows":
-        # Windows uses virtual key codes
-        vk = getattr(key, "vk", None)  # Key, special keys
-        if vk is None:
-            vk = getattr(key, "value", None).vk  # KeyCode, alphanumeric keys
+        # For unknown key, return -1
+        if key is None:
+            return -1
+        # Converts Key(enum.Enum) which has value as KeyCode to KeyCode
+        if isinstance(key, enum.Enum) and getattr(key, "value", None) is not None:
+            key = key.value
+        # Read over virtual key codes
+        vk = getattr(key, "vk", None)
         return vk
     elif os_name == "Darwin":
+        # TODO: check whether this is correct
+
         # Mac OS uses key codes
         if isinstance(key, Key):
             # Map common special keys

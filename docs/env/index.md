@@ -8,12 +8,22 @@ Open World Agents leverages a registration pattern that allows multiple modules 
 
 ## 2. Core Architecture and Registry Pattern
 
-- **Registry:**
-    - **CALLABLES:** Stores module-provided functionalities as key-value pairs (e.g., registered as `clock.time_ns`). What developer must implement is just `__call__` function.
-    - **LISTENERS:** Manages classes responsible for event handling by storing them under designated keys (e.g., registered as `clock/tick`). This class takes `callback` as argument in `configure` and otherwise it's same as `Runnables`.
-    - **RUNNABLES:** This is parent class of `Listeners` and it supports `start/stop/join` operations in user side and developer must implement `loop/cleanup` methods.
+Two main concepts are introduced:
 
-Modules are activated via the `activate_module` function, during which their functions and listeners are systematically added to the global registry.
+1. **Callable** - Defines functions that acquire state or perform actions, called by the user. Developers simply need to implement the `__call__` function. Example: `CALLABLES["clock.time_ns"]()`
+
+2. **Listener** - Provides interfaces for the environment to call user-defined functions. This class takes a `callback` argument in the `configure` method. Example: `LISTENERS["clock/tick"]().configure(callback=callback)`
+
+The key difference between these two is who initiates the call:
+
+- **Callable** is actively called by the user
+- **Listener** is passively waiting for events and then calls user-provided callbacks
+
+Additionally, **Runnable** can be used to model Threads/Processes that execute in the background. This is a parent class of `Listener` and supports `start/stop/join` operations on the user side. Developers must implement the `loop` methods, which is equivalent to `run` in `threading.Thread`.
+
+These **Callable, Listener, Runnable** components are managed through the `CALLABLES, LISTENERS, RUNNABLES` registries in the `owa.registry` module. To register each component, use `CALLABLES.register`, `LISTENERS.register`, or `RUNNABLES.register` respectively.
+
+Furthermore, collections of Callable, Listener, and Runnable objects that perform specific roles are managed as `EnvPlugin` modules. `EnvPlugins` are activated via the `activate_module` function inside the `owa.registry` module, during which their callables/listeners/runnables are systematically added to the global registry.
 
 ## 3. Detailed Explanation of Core Logic
 
