@@ -1,14 +1,11 @@
 import functools
-from io import BytesIO
 from pathlib import Path
 from typing import Iterable, Iterator, Optional, Tuple, TypeAlias
 
 from mcap.reader import McapReader, make_reader
 from mcap.records import Channel, Message, Schema
-from owa.message import OWAMessage
 
 from mcap_owa.decoder import DecoderFactory
-from mcap_owa.writer import Writer as OWAWriter
 
 PathType: TypeAlias = str | Path
 

@@ -20,6 +20,9 @@ def _library_identifier():
 
 class Writer:
     """
+    A writer for MCAP streams that writes OWAMessage objects.
+
+
     Example:
     ```python
     from pathlib import Path
@@ -120,6 +123,21 @@ class Writer:
             )
             self.__channel_ids[topic] = channel_id
         channel_id = self.__channel_ids[topic]
+
+        # Type check for message
+        scheme_for_channel = self.__writer.__channels[channel_id].schema_id
+        assert scheme_for_channel == schema_id, (
+            f"Schema ID Mismatch Error:\n"
+            f"-------------------------\n"
+            f"Channel (ID: {channel_id}):\n"
+            f"  Schema ID:   {scheme_for_channel}\n"
+            f"  Schema Name: {self.__writer.__schemas[scheme_for_channel].name}\n\n"
+            f"Message (Type: {message._type}):\n"
+            f"  Schema ID:   {schema_id}\n"
+            f"  Schema Name: {message._type}\n\n"
+            f"Error: Each channel must use a consistent message type.\n"
+            f"Solution: Ensure you're publishing the correct message type on this channel."
+        )
 
         buffer = BytesIO()
         message.serialize(buffer)
