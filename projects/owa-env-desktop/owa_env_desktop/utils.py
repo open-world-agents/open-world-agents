@@ -25,7 +25,7 @@ def key_to_vk(key: Union[Key, KeyCode, None]) -> int:
         # Converts Key(enum.Enum) which has value as KeyCode to KeyCode
         if isinstance(key, enum.Enum) and getattr(key, "value", None) is not None:
             key = key.value
-        # Read over virtual key codes
+        # Read over virtual key codes from KeyCode
         vk = getattr(key, "vk", None)
         return vk
     elif os_name == "Darwin":
