@@ -25,6 +25,7 @@ dev = [
     "pytest>=8.3.5",
     "pytest-timeout>=2.3.1",
     "ruff>=0.9.7",
+    "virtual-uv>=0.1.1",
 ]
 
 [tool.uv.sources]
