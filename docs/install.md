@@ -1,8 +1,8 @@
 ## Install from repository
 
 1. **Install package managers, uv and conda**:
-    - Follow the [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/). If you do prefer quick start, you may `pip install uv`
-    - Follow the [miniforge installation guide](https://github.com/conda-forge/miniforge?tab=readme-ov-file#install) to install `conda` and `mamba`. `mamba` is just a faster `conda`. If you've already installed `conda`, you may skip and go ahead. You may use `conda` instead of `mamba`.
+    - Follow the [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/). If you do prefer quick start, you may run `pip install uv` after you created virtual environment.
+    - Follow the [miniforge installation guide](https://github.com/conda-forge/miniforge?tab=readme-ov-file#install) to install `conda` and `mamba`. `mamba` is just a faster `conda`. If you've already installed `conda`, you may skip and go ahead. You may use `conda` instead of `mamba`. Installing `conda`/`mamba` is mandatory to utilize `owa-env-gst` EnvPlugin.
 
 2. **Setup virtual environments**:
     - (Recommended) Create new environment with dependencies. `gstreamer` related conda packages are installed.
@@ -16,11 +16,12 @@
     ```
 
 3. **Install required dependencies**:
-    - Use `python vuv.py` instead of `uv` for all `uv` commands to prevent `uv` from separating virtual environments across sub-repositories in a mono-repo. Argument `--inexact` is needed to prevent `uv` from deleting non-dependency packages and `--extra envs` is needed to install EnvPlugin.
+    - Install `virtual-uv` package and run `vuv install`. You must run `vuv` instead of `uv` to prevent `uv` from separating virtual environments across sub-repositories in a mono-repo.
     ```sh
-    python vuv.py sync --inexact
+    pip install virtual-uv
+    vuv install
     ```
-    - To use raw `uv` binary, you must setup `UV_PROJECT_ENVIRONMENT` environment variable. see [here](https://docs.astral.sh/uv/configuration/environment/#uv_project_environment)
+    - (Optional) To use raw `uv` binary, you must setup `UV_PROJECT_ENVIRONMENT` environment variable. see [here](https://docs.astral.sh/uv/configuration/environment/#uv_project_environment)
     ```sh
     $ $env:UV_PROJECT_ENVIRONMENT="C:\Users\MilkClouds\miniforge3\envs\owa"
     $ uv sync --inexact
@@ -40,11 +41,9 @@
         time_ns = CALLABLES["clock.time_ns"]()
         print(f"Current time in nanoseconds: {time_ns}")
 
-    # Create a listener for clock/tick event
-    tick = LISTENERS["clock/tick"]().configure(callback=callback)
+    # Create a listener for clock/tick event and set interval to 1 seconds.
+    tick = LISTENERS["clock/tick"]().configure(interval=1, callback=callback)
 
-    # Set listener to trigger every 1 second
-    tick.configure(interval=1)
     # Start the listener
     tick.start()
 
