@@ -1029,8 +1029,8 @@
 <li>
 <p><strong>Install package managers, uv and conda</strong>:</p>
 <ul>
-<li>Follow the <a href="https://docs.astral.sh/uv/getting-started/installation/">uv installation guide</a>. If you do prefer quick start, you may <code>pip install uv</code></li>
-<li>Follow the <a href="https://github.com/conda-forge/miniforge?tab=readme-ov-file#install">miniforge installation guide</a> to install <code>conda</code> and <code>mamba</code>. <code>mamba</code> is just a faster <code>conda</code>. If you've already installed <code>conda</code>, you may skip and go ahead. You may use <code>conda</code> instead of <code>mamba</code>.</li>
+<li>Follow the <a href="https://docs.astral.sh/uv/getting-started/installation/">uv installation guide</a>. If you do prefer quick start, you may run <code>pip install uv</code> after you created virtual environment.</li>
+<li>Follow the <a href="https://github.com/conda-forge/miniforge?tab=readme-ov-file#install">miniforge installation guide</a> to install <code>conda</code> and <code>mamba</code>. <code>mamba</code> is just a faster <code>conda</code>. If you've already installed <code>conda</code>, you may skip and go ahead. You may use <code>conda</code> instead of <code>mamba</code>. Installing <code>conda</code>/<code>mamba</code> is mandatory to utilize <code>owa-env-gst</code> EnvPlugin.</li>
 </ul>
 </li>
 <li>
@@ -1048,10 +1048,11 @@
 <li>
 <p><strong>Install required dependencies</strong>:</p>
 <ul>
-<li>Use <code>python vuv.py</code> instead of <code>uv</code> for all <code>uv</code> commands to prevent <code>uv</code> from separating virtual environments across sub-repositories in a mono-repo. Argument <code>--inexact</code> is needed to prevent <code>uv</code> from deleting non-dependency packages and <code>--extra envs</code> is needed to install EnvPlugin.
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>python<span class="w"> </span>vuv.py<span class="w"> </span>sync<span class="w"> </span>--inexact
+<li>Install <code>virtual-uv</code> package and run <code>vuv install</code>. You must run <code>vuv</code> instead of <code>uv</code> to prevent <code>uv</code> from separating virtual environments across sub-repositories in a mono-repo.
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span>virtual-uv
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>vuv<span class="w"> </span>install
 </code></pre></div></li>
-<li>To use raw <code>uv</code> binary, you must setup <code>UV_PROJECT_ENVIRONMENT</code> environment variable. see <a href="https://docs.astral.sh/uv/configuration/environment/#uv_project_environment">here</a>
+<li>(Optional) To use raw <code>uv</code> binary, you must setup <code>UV_PROJECT_ENVIRONMENT</code> environment variable. see <a href="https://docs.astral.sh/uv/configuration/environment/#uv_project_environment">here</a>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>$<span class="w"> </span><span class="nv">$env</span>:UV_PROJECT_ENVIRONMENT<span class="o">=</span><span class="s2">&quot;C:\Users\MilkClouds\miniforge3\envs\owa&quot;</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>$<span class="w"> </span>uv<span class="w"> </span>sync<span class="w"> </span>--inexact
 </code></pre></div></li>
@@ -1071,19 +1072,17 @@
 <a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>    <span class="n">time_ns</span> <span class="o">=</span> <span class="n">CALLABLES</span><span class="p">[</span><span class="s2">&quot;clock.time_ns&quot;</span><span class="p">]()</span>
 <a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Current time in nanoseconds: </span><span class="si">{</span><span class="n">time_ns</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 <a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>
-<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="c1"># Create a listener for clock/tick event</span>
-<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="n">tick</span> <span class="o">=</span> <span class="n">LISTENERS</span><span class="p">[</span><span class="s2">&quot;clock/tick&quot;</span><span class="p">]()</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="c1"># Create a listener for clock/tick event and set interval to 1 seconds.</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="n">tick</span> <span class="o">=</span> <span class="n">LISTENERS</span><span class="p">[</span><span class="s2">&quot;clock/tick&quot;</span><span class="p">]()</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">interval</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
 <a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>
-<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="c1"># Set listener to trigger every 1 second</span>
-<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="n">tick</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">interval</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="c1"># Start the listener</span>
-<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="n">tick</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
-<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>
-<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="c1"># Allow the listener to run for 2 seconds</span>
-<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
-<a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a>
-<a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a><span class="c1"># Stop the listener and wait for it to finish</span>
-<a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a><span class="n">tick</span><span class="o">.</span><span class="n">stop</span><span class="p">(),</span> <span class="n">tick</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="c1"># Start the listener</span>
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="n">tick</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="c1"># Allow the listener to run for 2 seconds</span>
+<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a>
+<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="c1"># Stop the listener and wait for it to finish</span>
+<a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="n">tick</span><span class="o">.</span><span class="n">stop</span><span class="p">(),</span> <span class="n">tick</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
 </code></pre></div></p>
 </li>
 </ol>
@@ -1119,7 +1118,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime">February 28, 2025 13:43:09</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime">March 9, 2025 10:04:30</span>
   </span>
 
     
