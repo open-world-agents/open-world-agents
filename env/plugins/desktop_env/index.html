@@ -697,6 +697,39 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#misc" class="md-nav__link">
+    <span class="md-ellipsis">
+      Misc
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Misc">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#library-selection-rationale" class="md-nav__link">
+    <span class="md-ellipsis">
+      Library Selection Rationale
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#input-auto-repeat-functionality" class="md-nav__link">
+    <span class="md-ellipsis">
+      Input Auto-Repeat Functionality
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1149,6 +1182,39 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#misc" class="md-nav__link">
+    <span class="md-ellipsis">
+      Misc
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Misc">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#library-selection-rationale" class="md-nav__link">
+    <span class="md-ellipsis">
+      Library Selection Rationale
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#input-auto-repeat-functionality" class="md-nav__link">
+    <span class="md-ellipsis">
+      Input Auto-Repeat Functionality
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1218,6 +1284,25 @@
 <li><code>keyboard</code> - Listen for keyboard events</li>
 <li><code>mouse</code> - Listen for mouse events</li>
 </ul>
+<h2 id="misc">Misc</h2>
+<h3 id="library-selection-rationale">Library Selection Rationale</h3>
+<p>This module utilizes <code>pynput</code> for input simulation after evaluating several alternatives:</p>
+<ul>
+<li>
+<p><strong>Why not PyAutoGUI?</strong> Though widely used, <a href="https://github.com/asweigart/pyautogui">PyAutoGUI</a> uses deprecated Windows APIs (<code>keybd_event/mouse_event</code>) rather than the modern <code>SendInput</code> method. These older APIs fail in DirectX applications and games. Additionally, PyAutoGUI has seen limited maintenance (last significant update was over 2 years ago).</p>
+</li>
+<li>
+<p><strong>Alternative Solutions:</strong> Libraries like <a href="https://github.com/learncodebygaming/pydirectinput">pydirectinput</a> and <a href="https://github.com/ReggX/pydirectinput_rgx">pydirectinput_rgx</a> address the Windows API issue by using <code>SendInput</code>, but they lack input capturing capabilities which are essential for our use case.</p>
+</li>
+<li>
+<p><strong>Other Options:</strong> We also evaluated <a href="https://github.com/boppreh/keyboard">keyboard</a> and <a href="https://github.com/boppreh/mouse">mouse</a> libraries but found them inadequately maintained with several unresolved bugs that could impact reliability.</p>
+</li>
+</ul>
+<h3 id="input-auto-repeat-functionality">Input Auto-Repeat Functionality</h3>
+<p>For simulating key auto-repeat behavior, use the dedicated function:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">CALLABLES</span><span class="p">[</span><span class="s2">&quot;keyboard.press_repeat&quot;</span><span class="p">](</span><span class="n">key</span><span class="p">,</span> <span class="n">press_time</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">initial_delay</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">repeat_delay</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.033</span><span class="p">)</span>
+</code></pre></div>
+<p>This function handles the complexity of simulating hardware auto-repeat, with configurable initial delay before repeating starts and the interval between repeated keypresses.</p>
 
 
 
@@ -1238,7 +1323,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime">February 28, 2025 14:22:52</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime">March 8, 2025 13:09:34</span>
   </span>
 
     
