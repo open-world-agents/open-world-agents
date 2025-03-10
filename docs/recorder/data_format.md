@@ -12,6 +12,29 @@
 
 - `example.mcap` [[Download]](https://github.com/open-world-agents/open-world-agents/blob/main/docs/recorder/example.mcap)
 
+    Utilizing [mcap CLI](https://mcap.dev/guides/cli), you can inspect the summary of `mcap` file.
+```
+mcap info example.mcap
+library:   mcap-owa-support 0.1.0; mcap 1.2.2
+profile:   owa
+messages:  2124
+duration:  17.6543448s
+start:     2025-03-11T02:46:39.0329786+09:00 (1741628799.032978600)
+end:       2025-03-11T02:46:56.6873234+09:00 (1741628816.687323400)
+compression:
+        zstd: [1/1 chunks] [173.83 KiB/28.29 KiB (83.73%)] [1.60 KiB/sec]
+channels:
+        (1) window            18 msgs (1.02 Hz)    : owa_env_desktop.msg.WindowInfo [jsonschema]
+        (2) keyboard/state    18 msgs (1.02 Hz)    : owa_env_desktop.msg.KeyboardState [jsonschema]
+        (3) mouse           1064 msgs (60.27 Hz)   : owa_env_desktop.msg.MouseEvent [jsonschema]
+        (4) screen           978 msgs (55.40 Hz)   : owa_env_gst.msg.ScreenEmitted [jsonschema]
+        (5) keyboard          46 msgs (2.61 Hz)    : owa_env_desktop.msg.KeyboardEvent [jsonschema]
+channels: 5
+attachments: 0
+metadata: 0
+```
+
+    Also, you may inspect the detailed messages with [simple reader](#reading-owa-mcap-files)
 ```
 Topic: window, Timestamp: 1741628814049712700, Message: {'title': 'ZType – Typing Game - Type to Shoot - Chromium', 'rect': [389, 10, 955, 1022], 'hWnd': 7540094}
 Topic: keyboard/state, Timestamp: 1741628814049712700, Message: {'pressed_vk_list': []}
@@ -26,8 +49,6 @@ Topic: keyboard, Timestamp: 1741628815015522100, Message: {'event_type': 'releas
 Topic: screen, Timestamp: 1741628815016585400, Message: {'path': 'example.mkv', 'pts': 15783333333, 'utc_ns': 1741628815015522100}
 Topic: window, Timestamp: 1741628815050666400, Message: {'title': 'data_format.md - open-world-agents - Visual Studio Code', 'rect': [-8, -8, 1928, 1040], 'hWnd': 133438}
 Topic: keyboard/state, Timestamp: 1741628815050666400, Message: {'pressed_vk_list': []}
-Topic: screen, Timestamp: 1741628815054648300, Message: {'path': 'example.mkv', 'pts': 15830000000, 'utc_ns': 1741628815054648300}
-Topic: screen, Timestamp: 1741628815067474000, Message: {'path': 'example.mkv', 'pts': 15870000000, 'utc_ns': 1741628815067474000}
 
 ... (additional lines omitted for brevity) ...
 
