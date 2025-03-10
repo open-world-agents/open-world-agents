@@ -9,6 +9,7 @@ dependencies = [
     "easydict>=1.13",
     "orjson>=3.10.15",
     "mcap>=1.2.2",
+    "semantic-version>=2.10.0",
 ]
 
 [tool.uv.sources]
