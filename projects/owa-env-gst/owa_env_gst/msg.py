@@ -6,9 +6,6 @@ from PIL import Image
 
 from owa.message import OWAMessage
 
-...
-import line_profiler
-
 
 class ScreenEmitted(OWAMessage):
     _type = "owa_env_gst.msg.ScreenEmitted"
@@ -34,7 +31,6 @@ class ScreenEmitted(OWAMessage):
         rgb_array = bgra_array[..., [2, 1, 0]]
         return Image.fromarray(rgb_array, mode="RGB")
 
-    @line_profiler.profile
     def to_bgra_array(self) -> np.ndarray:
         """
         Extract the frame at the specified PTS and return it as a BGRA NumPy array.
