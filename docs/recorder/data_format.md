@@ -14,7 +14,7 @@
 
     Utilizing [mcap CLI](https://mcap.dev/guides/cli), you can inspect the summary of `mcap` file.
 ```
-mcap info example.mcap
+$ mcap info example.mcap
 library:   mcap-owa-support 0.1.0; mcap 1.2.2
 profile:   owa
 messages:  2124
