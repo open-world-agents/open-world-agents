@@ -1,8 +1,8 @@
-from fractions import Fraction
 from typing import Optional
 
 from owa.registry import CALLABLES, activate_module
 
+from ..utils import framerate_float_to_str
 from .element import Element
 
 
@@ -48,8 +48,7 @@ class ElementFactory:
         if additional_properties is not None:
             properties.update(additional_properties)
 
-        frac = Fraction(fps).limit_denominator()
-        framerate = f"framerate=0/1,max-framerate={frac.numerator}/{frac.denominator}"
+        framerate = f"framerate=0/1,max-framerate={framerate_float_to_str(fps)}"
 
         return (
             Element("d3d11screencapturesrc", properties)
