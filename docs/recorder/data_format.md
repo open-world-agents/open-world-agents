@@ -1,81 +1,85 @@
 ## Data Format
 
+- The main recording is saved as a Matroska (`.mkv`) file. This `.mkv` file includes timestamps (nanoseconds since the [epoch](https://docs.python.org/3/library/time.html#epoch)) as subtitles. These timestamps can be used to align events in the `.mcap` file with frames in the `.mkv`.
+- Events such as keyboard, mouse, and window interactions are logged in an `.mcap` file with the same name.
 
-- The main recording will be saved as a Matroska (`.mkv`) file. This `.mkv` file contains timestamp, nanoseconds since the [epoch](https://docs.python.org/3/library/time.html#epoch), as subtitle. This timestamp is needed to align timestamp between events in `.jsonl` file and frames in `.mkv`. 
-- Events such as keyboard, mouse, and window events will be logged in an `.jsonl` file with same name.
+!!! mcap "What's MCAP?"
+    MCAP (pronounced "em-cap") is an open-source container file format designed for multimodal log data. It supports multiple channels of timestamped pre-serialized data and is ideal for use in pub/sub or robotics applications.
 
+    **[Learn more about MCAP](https://mcap.dev/)**
 
 ### Example Data
 
-- `example.jsonl` [[link to file]](https://github.com/open-world-agents/open-world-agents/blob/main/docs/recorder/example.jsonl)
-```
-{"timestamp_ns":1740134045272214800,"event_src":"control_publisher","event_data":"[\"mouse.click\",1446,1107,left,true]"}
-{"timestamp_ns":1740134045347404600,"event_src":"control_publisher","event_data":"[\"mouse.click\",1446,1107,left,false]"}
-{"timestamp_ns":1740134045978417500,"event_src":"window_publisher","event_data":"{\"title\":\"ZType – Typing Game - Type to Shoot - Chromium\",\"rect\":[1211,789,1727,1353],\"hWnd\":265272}"}
-{"timestamp_ns":1740134046292540600,"event_src":"control_publisher","event_data":"[\"mouse.move\",1445,1107]"}
-{"timestamp_ns":1740134046293541900,"event_src":"control_publisher","event_data":"[\"mouse.move\",1444,1107]"}
-{"timestamp_ns":1740134046299730700,"event_src":"control_publisher","event_data":"[\"mouse.move\",1435,1107]"}
+- `example.mcap` [[Download]](https://github.com/open-world-agents/open-world-agents/blob/main/docs/recorder/example.mcap)
 
-# long long mouse moves...
-
-{"timestamp_ns":1740134048033194400,"event_src":"control_publisher","event_data":"[\"mouse.click\",1466,1151,left,true]"}
-{"timestamp_ns":1740134048100818900,"event_src":"control_publisher","event_data":"[\"mouse.click\",1466,1151,left,false]"}
-{"timestamp_ns":1740134048267817500,"event_src":"control_publisher","event_data":"[\"keyboard.press\",81]"}
-{"timestamp_ns":1740134048313781500,"event_src":"control_publisher","event_data":"[\"keyboard.press\",87]"}
-{"timestamp_ns":1740134048380686200,"event_src":"control_publisher","event_data":"[\"keyboard.press\",69]"}
-{"timestamp_ns":1740134048448819100,"event_src":"control_publisher","event_data":"[\"keyboard.release\",81]"}
-{"timestamp_ns":1740134048470371900,"event_src":"control_publisher","event_data":"[\"keyboard.release\",87]"}
-{"timestamp_ns":1740134048513648900,"event_src":"control_publisher","event_data":"[\"mouse.move\",1466,1152]"}
-{"timestamp_ns":1740134048514651700,"event_src":"control_publisher","event_data":"[\"mouse.move\",1467,1153]"}
-{"timestamp_ns":1740134048519005500,"event_src":"control_publisher","event_data":"[\"keyboard.release\",69]"}
 ```
-- `example.mkv`: (width, height) = (502, 557). Note that timestamp is embedded as subtitle. [[link to file]](https://github.com/open-world-agents/open-world-agents/blob/main/docs/recorder/example.mkv)
+Topic: window, Timestamp: 1741628814049712700, Message: {'title': 'ZType – Typing Game - Type to Shoot - Chromium', 'rect': [389, 10, 955, 1022], 'hWnd': 7540094}
+Topic: keyboard/state, Timestamp: 1741628814049712700, Message: {'pressed_vk_list': []}
+Topic: screen, Timestamp: 1741628814057575300, Message: {'path': 'example.mkv', 'pts': 14866666666, 'utc_ns': 1741628814056571100}
+Topic: screen, Timestamp: 1741628814073392700, Message: {'path': 'example.mkv', 'pts': 14883333333, 'utc_ns': 1741628814072476900}
+
+... (additional lines omitted for brevity) ...
+
+Topic: screen, Timestamp: 1741628814955961800, Message: {'path': 'example.mkv', 'pts': 15766666666, 'utc_ns': 1741628814955961800}
+Topic: keyboard, Timestamp: 1741628814978561600, Message: {'event_type': 'release', 'vk': 67}
+Topic: keyboard, Timestamp: 1741628815015522100, Message: {'event_type': 'release', 'vk': 162}
+Topic: screen, Timestamp: 1741628815016585400, Message: {'path': 'example.mkv', 'pts': 15783333333, 'utc_ns': 1741628815015522100}
+Topic: window, Timestamp: 1741628815050666400, Message: {'title': 'data_format.md - open-world-agents - Visual Studio Code', 'rect': [-8, -8, 1928, 1040], 'hWnd': 133438}
+Topic: keyboard/state, Timestamp: 1741628815050666400, Message: {'pressed_vk_list': []}
+Topic: screen, Timestamp: 1741628815054648300, Message: {'path': 'example.mkv', 'pts': 15830000000, 'utc_ns': 1741628815054648300}
+Topic: screen, Timestamp: 1741628815067474000, Message: {'path': 'example.mkv', 'pts': 15870000000, 'utc_ns': 1741628815067474000}
+
+... (additional lines omitted for brevity) ...
+
+Topic: mouse, Timestamp: 1741628816438561600, Message: {'event_type': 'move', 'x': 950, 'y': 891}
+Topic: mouse, Timestamp: 1741628816441655400, Message: {'event_type': 'move', 'x': 950, 'y': 891}
+Topic: mouse, Timestamp: 1741628816445662100, Message: {'event_type': 'move', 'x': 949, 'y': 891}
+Topic: screen, Timestamp: 1741628816446661600, Message: {'path': 'example.mkv', 'pts': 17250000000, 'utc_ns': 1741628816446661600}
+```
+
+- `example.mkv` [[Download]](https://github.com/open-world-agents/open-world-agents/blob/main/docs/recorder/example.mkv)
+
 <video controls>
 <source src="../example.mkv" type="video/mp4">
 </video>
 
+### Reading OWA MCAP Files
 
-### How to extract timestamp from video file
+!!! Note "Note" 
+    Note that awesome read/writer and dataloader for OWA MCAP file is WIP! Stay tuned.
 
-With In Progress: reader of OWA data!
+You can read the `.mcap` file using the following script:
 
-```py
-import subprocess
+```python
+from mcap_owa.highlevel import Reader
 
-video_file = "example.mkv"
-subtitle_file = "subtitle.srt"
-command = [
-    "ffmpeg",
-    "-i",
-    video_file,
-    "-map",
-    "0:s:0",  # Change this option to select a different subtitle track, if needed
-    subtitle_file,
-    "-y",  # Overwrite the output file if it exists
-]
+def main():
+    with Reader("tmp/example.mcap") as reader:
+        print(reader.topics)
+        print(reader.start_time, reader.end_time)
+        for topic, timestamp, msg in reader.iter_decoded_messages():
+            print(f"Topic: {topic}, Timestamp: {timestamp}, Message: {msg}")
 
-subprocess.run(command, check=True)
-print("Subtitle extraction complete.")
-
+if __name__ == "__main__":
+    main()
 ```
 
-```py
-import pysrt
+### 💡 Why Use `.mkv` Instead of `.mp4`?
 
-# Open the SRT file
-subs = pysrt.open('example.srt', encoding='utf-8')
+OWA's Recorder uses **Matroska (`.mkv`)** instead of `.mp4` to ensure reliability in case of crashes or power failures.
 
-# Iterate through subtitle entries
-for sub in subs:
-    print(f"Start: {sub.start}, End: {sub.end}")
-    print(f"Text: {sub.text}\n")
-```
+- If a recording is unexpectedly interrupted (e.g., power outage, software crash), `.mkv` files remain recoverable.
+- `.mp4` files, by contrast, may become corrupted or completely lost if not properly finalized.
 
-### 💡 Why `.mkv` Instead of `.mp4`?  
+For safety and data integrity, `.mkv` is the preferred format—you can always convert it to other formats later if needed.
 
-OWA's Recorder records in **Matroska (`.mkv`)** instead of `.mp4` to ensure **reliability in case of crashes or power failures**.  
 
-- If a recording is **unexpectedly interrupted** (e.g., power outage, OBS crash), `.mkv` files remain **recoverable**.  
-- `.mp4` files, by contrast, **may become corrupted or completely lost** if not properly finalized.  
+### 💡 Why Use `.mcap`?
 
-For **safety and data integrity**, `.mkv` is the **preferred format**—you can always convert it later as needed.  
+MCAP is a powerful open-source format for logging multimodal data. Unlike traditional log formats, MCAP is optimized for performance, flexibility, and interoperability.
+
+- **High Performance**: Efficient storage and retrieval of large event data streams.  
+- **Flexible & Open**: Works with diverse data types beyond robotics.  
+- **Self-Describing**: Encodes schema information to ensure compatibility.
+
+To enhance MCAP support for Open World Agents (OWA), we have developed the [`mcap-owa-support`](https://github.com/open-world-agents/open-world-agents/blob/main/projects/mcap-owa-support) package. This package provides custom readers and writers for the **OWA MCAP** format, making it easier to log and process event data seamlessly.
