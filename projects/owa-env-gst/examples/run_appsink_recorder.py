@@ -8,10 +8,11 @@ def main():
     recorder = AppsinkRecorder()
 
     # Configure the recorder with a callback function
-    def callback(pts, frame_time_ns):
+    def callback(x):
+        path, pts, frame_time_ns = x
         print(f"Received frame with PTS {pts} at time {frame_time_ns}")
 
-    recorder.configure(callback=callback)
+    recorder.configure("test.mkv", callback=callback)
 
     with recorder.session:
         time.sleep(3)

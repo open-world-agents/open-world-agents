@@ -2,7 +2,7 @@ import platform
 
 from owa.registry import CALLABLES
 
-from .msg import WindowInfo
+from ..msg import WindowInfo
 
 # === Definition of the `get_active_window` function ===
 

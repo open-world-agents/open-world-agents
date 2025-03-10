@@ -9,20 +9,23 @@
 # [tool.uv.sources]
 # open-world-agents = { path = "../" }
 # ///
+import threading
 import time
 from pathlib import Path
+from queue import Queue
 from typing import Optional
 
-import orjson
 import typer
 from loguru import logger
+from mcap_owa.writer import Writer as OWAWriter
 from pydantic import BaseModel
 from typing_extensions import Annotated
 
-from owa.registry import CALLABLES, LISTENERS, RUNNABLES, activate_module
+from owa.registry import CALLABLES, LISTENERS, activate_module
 
 app = typer.Typer()
-output_file = None
+queue = Queue()
+MCAP_LOCATION = None
 
 
 class BagEvent(BaseModel):
@@ -31,26 +34,31 @@ class BagEvent(BaseModel):
     event_data: bytes
 
 
-def write_event_into_jsonl(event, source=None):
-    global output_file
-    # you can find where the event is coming from. e.g. where the calling this function
-    # frame = inspect.currentframe().f_back
-
-    with open(output_file, "ab") as f:
-        if isinstance(event, BaseModel):
-            event_data = event.model_dump_json().encode("utf-8")
-        else:
-            event_data = orjson.dumps(event)
-        bag_event = BagEvent(timestamp_ns=time.time_ns(), event_src=source, event_data=event_data)
-        f.write(bag_event.model_dump_json().encode("utf-8") + b"\n")
+def callback(event, topic=None):
+    queue.put((topic, event, time.time_ns()))
 
 
-def window_publisher_callback(event):
-    write_event_into_jsonl(event, source="window_publisher")
+def keyboard_publisher_callback(event):
+    callback(event, topic="keyboard")
 
 
-def control_publisher_callback(*event):
-    write_event_into_jsonl(event, source="control_publisher")
+def mouse_publisher_callback(event):
+    callback(event, topic="mouse")
+
+
+def screen_publisher_callback(event):
+    global MCAP_LOCATION
+    event.path = Path(event.path).relative_to(MCAP_LOCATION.parent).as_posix()
+    callback(event, topic="screen")
+
+
+def publish_window_info():
+    while True:
+        active_window = CALLABLES["window.get_active_window"]()
+        pressed_vk_list = CALLABLES["keyboard.get_pressed_vk_list"]()
+        callback(active_window, topic="window")
+        callback(pressed_vk_list, topic="keyboard/state")
+        time.sleep(1)
 
 
 def configure():
@@ -77,8 +85,10 @@ def main(
         ),
     ] = None,
 ):
-    global output_file
-    output_file = Path(file_location).with_suffix(".jsonl")
+    global MCAP_LOCATION
+    output_file = Path(file_location).with_suffix(".mcap")
+    MCAP_LOCATION = output_file
+
     if not output_file.parent.exists():
         output_file.parent.mkdir(parents=True, exist_ok=True)
         logger.warning(f"Created directory {output_file.parent}")
@@ -88,9 +98,15 @@ def main(
         logger.warning(f"Deleted existing file {output_file}")
 
     configure()
-    recorder = RUNNABLES["screen/recorder"]()
-    keyboard_listener = LISTENERS["keyboard"]().configure(callback=control_publisher_callback)
-    mouse_listener = LISTENERS["mouse"]().configure(callback=control_publisher_callback)
+    recorder = LISTENERS["owa_env_gst/omnimodal/appsink_recorder"]()
+    keyboard_listener = LISTENERS["keyboard"]().configure(callback=keyboard_publisher_callback)
+    mouse_listener = LISTENERS["mouse"]().configure(callback=mouse_publisher_callback)
+
+    additional_properties = {}
+    if additional_args is not None:
+        for arg in additional_args.split(","):
+            key, value = arg.split("=")
+            additional_properties[key] = value
     recorder.configure(
         filesink_location=file_location,
         record_audio=record_audio,
@@ -99,21 +115,50 @@ def main(
         show_cursor=show_cursor,
         window_name=window_name,
         monitor_idx=monitor_idx,
-        additional_args=additional_args,
+        additional_properties=additional_properties,
+        callback=screen_publisher_callback,
     )
+    window_thread = threading.Thread(target=publish_window_info, daemon=True)
+    stream = output_file.open("wb")
+    writer = OWAWriter(stream)
 
     try:
         # TODO?: add `wait` method to Runnable, which waits until the Runnable is ready to operate well.
         recorder.start()
         keyboard_listener.start()
         mouse_listener.start()
+        window_thread.start()
+
         while True:
-            active_window = CALLABLES["window.get_active_window"]()
-            window_publisher_callback(active_window)
-            time.sleep(1)
+            topic, event, publish_time = queue.get()
+            writer.write_message(topic, event, publish_time=publish_time)
+
     except KeyboardInterrupt:
-        recorder.stop()
-        recorder.join()
+        logger.info("Recording stopped by user.")
+    finally:
+        # resource cleanup
+        try:
+            writer.finish()
+            stream.close()
+            logger.info(f"Output file saved to {output_file}")
+        except Exception as e:
+            logger.error(f"Error occurred while saving the output file: {e}")
+
+        try:
+            recorder.stop()
+            recorder.join(timeout=5)
+        except Exception as e:
+            logger.error(f"Error occurred while stopping the recorder: {e}")
+
+        try:
+            keyboard_listener.stop()
+            mouse_listener.stop()
+            keyboard_listener.join(timeout=5)
+            mouse_listener.join(timeout=5)
+        except Exception as e:
+            logger.error(f"Error occurred while stopping the listeners: {e}")
+
+        # window_thread.join()
 
 
 if __name__ == "__main__":

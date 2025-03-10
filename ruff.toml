@@ -1,4 +1,5 @@
 exclude = [
+    "projects/owa-env-desktop/scripts",
     "projects/owa-env-gst/owa_env_gst/gst-plugins/python/py_utctimestampsrc.py",
     "projects/owa-env-gst/scripts",
     "poc",
