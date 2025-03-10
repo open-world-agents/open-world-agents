@@ -31,6 +31,3 @@ def char_to_vk(char: str) -> int:
         return ord(char)
     else:
         raise ValueError(f"Unsupported character: {char}")
-
-
-__all__ = ["key_to_vk", "char_to_vk"]

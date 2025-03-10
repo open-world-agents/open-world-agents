@@ -34,7 +34,7 @@ class BagEvent(BaseModel):
 
 
 def callback(event, topic=None):
-    queue.put((event, event, time.time_ns()))
+    queue.put((topic, event, time.time_ns()))
 
 
 def keyboard_publisher_callback(event):
@@ -52,7 +52,9 @@ def screen_publisher_callback(event):
 def publish_window_info():
     while True:
         active_window = CALLABLES["window.get_active_window"]()
+        pressed_vk_list = CALLABLES["keyboard.get_pressed_vk_list"]()
         callback(active_window, topic="window")
+        callback(pressed_vk_list, topic="keyboard/state")
         time.sleep(1)
 
 

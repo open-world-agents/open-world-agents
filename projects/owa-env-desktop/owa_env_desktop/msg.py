@@ -8,6 +8,11 @@ class KeyboardEvent(OWAMessage):
     vk: int
 
 
+class KeyboardState(OWAMessage):
+    _type = "owa_env_desktop.msg.KeyboardState"
+    pressed_vk_list: list[int]
+
+
 class MouseEvent(OWAMessage):
     _type = "owa_env_desktop.msg.MouseEvent"
 

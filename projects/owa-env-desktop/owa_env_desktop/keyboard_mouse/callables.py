@@ -6,6 +6,9 @@ from pynput.mouse import Controller as MouseController
 
 from owa.registry import CALLABLES
 
+from ..msg import KeyboardState
+from ..utils import get_current_vk_list
+
 mouse_controller = MouseController()
 
 
@@ -40,3 +43,8 @@ def press_repeat_key(key, press_time: float, initial_delay: float = 0.5, repeat_
         keyboard_controller.press(key)
         time.sleep(repeat_delay)
     keyboard_controller.release(key)
+
+
+@CALLABLES.register("keyboard.get_pressed_vk_list")
+def get_pressed_vk_list():
+    return KeyboardState(pressed_vk_list=get_current_vk_list())
