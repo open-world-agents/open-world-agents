@@ -1,8 +1,6 @@
 from queue import Empty, Queue
 from typing import Self
 
-import line_profiler
-
 from .gst_runner import GstPipelineRunner
 from .utils import framerate_float_to_str, sample_to_ndarray
 
