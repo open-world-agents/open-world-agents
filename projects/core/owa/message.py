@@ -23,7 +23,7 @@ class OWAMessage(BaseModel, BaseMessage):
     _type: str
 
     def serialize(self, buffer):
-        buffer.write(self.model_dump_json().encode())
+        buffer.write(self.model_dump_json(exclude_none=True).encode())
 
     @classmethod
     def deserialize(cls, buffer):

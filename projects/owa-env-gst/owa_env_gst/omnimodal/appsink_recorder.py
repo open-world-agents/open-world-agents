@@ -42,7 +42,7 @@ class AppsinkRecorder(GstPipelineRunner):
         def buffer_probe_callback(pad: Gst.Pad, info: Gst.PadProbeInfo):
             buf = info.get_buffer()
             frame_time_ns = time.time_ns()
-            callback(ScreenEmitted(pts=buf.pts, frame_time_ns=frame_time_ns))
+            callback(ScreenEmitted(path=filesink_location, pts=buf.pts, utc_ns=frame_time_ns))
             return Gst.PadProbeReturn.OK
 
         identity.get_static_pad("src").add_probe(Gst.PadProbeType.BUFFER, buffer_probe_callback)

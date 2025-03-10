@@ -15,5 +15,9 @@ class FrameStamped(OWAMessage):
 class ScreenEmitted(OWAMessage):
     _type = "owa_env_gst.msg.ScreenEmitted"
 
+    # Path to the stream, e.g. output.mkv
+    path: str
+    # Time since stream start as nanoseconds.
     pts: int
-    frame_time_ns: int
+    # Time since epoch as nanoseconds.
+    utc_ns: int
