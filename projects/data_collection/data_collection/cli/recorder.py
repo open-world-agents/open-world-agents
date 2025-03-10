@@ -25,6 +25,7 @@ from owa.registry import CALLABLES, LISTENERS, activate_module
 
 app = typer.Typer()
 queue = Queue()
+MCAP_LOCATION = None
 
 
 class BagEvent(BaseModel):
@@ -46,6 +47,8 @@ def mouse_publisher_callback(event):
 
 
 def screen_publisher_callback(event):
+    global MCAP_LOCATION
+    event.path = Path(event.path).relative_to(MCAP_LOCATION.parent).as_posix()
     callback(event, topic="screen")
 
 
@@ -82,7 +85,10 @@ def main(
         ),
     ] = None,
 ):
+    global MCAP_LOCATION
     output_file = Path(file_location).with_suffix(".mcap")
+    MCAP_LOCATION = output_file
+
     if not output_file.parent.exists():
         output_file.parent.mkdir(parents=True, exist_ok=True)
         logger.warning(f"Created directory {output_file.parent}")
