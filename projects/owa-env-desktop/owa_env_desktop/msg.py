@@ -1,10 +1,12 @@
+from typing import Literal
+
 from owa.message import OWAMessage
 
 
 class KeyboardEvent(OWAMessage):
     _type = "owa_env_desktop.msg.KeyboardEvent"
 
-    event_type: str
+    event_type: Literal["press", "release"]
     vk: int
 
 
@@ -16,7 +18,7 @@ class KeyboardState(OWAMessage):
 class MouseEvent(OWAMessage):
     _type = "owa_env_desktop.msg.MouseEvent"
 
-    event_type: str
+    event_type: Literal["move", "click", "scroll"]
     x: int
     y: int
     button: str | None = None
@@ -29,6 +31,10 @@ class WindowInfo(OWAMessage):
     _type = "owa_env_desktop.msg.WindowInfo"
 
     title: str
+    # rect has (left, top, right, bottom) format
+    # normally,
+    # 0 <= left < right <= screen_width
+    # 0 <= top < bottom <= screen_height
     rect: tuple[int, int, int, int]
     hWnd: int
 

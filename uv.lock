@@ -510,7 +510,7 @@ wheels = [
 
 [[package]]
 name = "mcap-owa-support"
-source = { directory = "projects/mcap-owa-support" }
+source = { editable = "projects/mcap-owa-support" }
 dependencies = [
     { name = "easydict" },
     { name = "mcap" },
@@ -676,16 +676,16 @@ python = [
 
 [[package]]
 name = "mkdocstrings-python"
-version = "1.16.4"
+version = "1.16.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "griffe" },
     { name = "mkdocs-autorefs" },
     { name = "mkdocstrings" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/1c/35/3096a6b84433a563c8141bcd16c5c8b9a7c95b7d340150e15f05c66add84/mkdocstrings_python-1.16.4.tar.gz", hash = "sha256:869af98e7f692021d9fd589cd9d0b3f1041998a4a011834cd976300889305a9b", size = 424179 }
+sdist = { url = "https://files.pythonhosted.org/packages/a1/81/3575e451682e0ed3c39e9b57d1fd30590cd28a965131ead14bf2efe34a1b/mkdocstrings_python-1.16.5.tar.gz", hash = "sha256:706b28dd0f59249a7c22cc5d517c9521e06c030b57e2a5478e1928a58f900abb", size = 426979 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c1/c2/90851de012e50a214c0a9d30f9abf5106d286ef9780d91ec7c833a0ca950/mkdocstrings_python-1.16.4-py3-none-any.whl", hash = "sha256:db5dbe7d1ab506d673a798703331854052b14820e8c038f1341da6150b2a41c4", size = 449313 },
+    { url = "https://files.pythonhosted.org/packages/5c/27/42f8a520111a4dde9722f08ca75d761b68722158b2232b63def061de12a8/mkdocstrings_python-1.16.5-py3-none-any.whl", hash = "sha256:0899a12e356eab8e83720c63e15d0ff51cd96603216c837618de346e086b39ba", size = 451550 },
 ]
 
 [[package]]
@@ -831,7 +831,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "mcap-owa-support", directory = "projects/mcap-owa-support" },
+    { name = "mcap-owa-support", editable = "projects/mcap-owa-support" },
     { name = "mkdocs", marker = "extra == 'docs'", specifier = ">=1.6.1" },
     { name = "mkdocs-git-revision-date-localized-plugin", marker = "extra == 'docs'", specifier = ">=1.2.1" },
     { name = "mkdocs-material", marker = "extra == 'docs'", specifier = ">=9.5.3" },

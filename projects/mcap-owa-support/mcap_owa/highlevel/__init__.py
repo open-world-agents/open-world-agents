@@ -1,4 +1,4 @@
-from .reader import Reader
-from .writer import Writer
+from .reader import OWAMcapReader
+from .writer import OWAMcapWriter
 
-__all__ = ["Reader", "Writer"]
+__all__ = ["OWAMcapReader", "OWAMcapWriter"]

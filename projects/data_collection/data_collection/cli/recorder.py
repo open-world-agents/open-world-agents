@@ -17,10 +17,10 @@ from typing import Optional
 
 import typer
 from loguru import logger
-from mcap_owa.writer import Writer as OWAWriter
 from pydantic import BaseModel
 from typing_extensions import Annotated
 
+from mcap_owa.highlevel import OWAMcapWriter
 from owa.registry import CALLABLES, LISTENERS, activate_module
 
 app = typer.Typer()
@@ -119,8 +119,7 @@ def main(
         callback=screen_publisher_callback,
     )
     window_thread = threading.Thread(target=publish_window_info, daemon=True)
-    stream = output_file.open("wb")
-    writer = OWAWriter(stream)
+    writer = OWAMcapWriter(output_file)
 
     try:
         # TODO?: add `wait` method to Runnable, which waits until the Runnable is ready to operate well.
@@ -139,7 +138,6 @@ def main(
         # resource cleanup
         try:
             writer.finish()
-            stream.close()
             logger.info(f"Output file saved to {output_file}")
         except Exception as e:
             logger.error(f"Error occurred while saving the output file: {e}")
