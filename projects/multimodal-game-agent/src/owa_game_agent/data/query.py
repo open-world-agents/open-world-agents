@@ -33,14 +33,20 @@ class OWAMcapQuery(BaseModel):
             ):
                 raise ValueError("Query timestamp is out of range")
 
-            state_keyboard = None
+            pressed_vks = None
             for topic, timestamp, msg in reader.iter_decoded_messages(
                 topics=["keyboard/state"], end_time=self.anchor_timestamp_ns - self.past_range_ns, reverse=True
             ):
-                state_keyboard = msg["pressed_vk_list"]
+                pressed_vks = msg["pressed_vk_list"]
                 break
             else:
                 raise ValueError("No keyboard state found")
+
+            # in Windows, vk 1/2/4 corresponds to left/right/middle mouse button. TODO: multi-os support
+            mouse_keys = {1: "left", 2: "right", 4: "middle"}
+            state_keyboard = set(pressed_vks) - {1, 2, 4}
+            state_mouse = set(pressed_vks) & {1, 2, 4}
+            state_mouse = set([mouse_keys[button] for button in state_mouse])
 
             state_screen = []
             start_time, end_time = self.anchor_timestamp_ns - self.past_range_ns, self.anchor_timestamp_ns
@@ -81,6 +87,7 @@ class OWAMcapQuery(BaseModel):
 
         return OWATrainingSample(
             state_keyboard=state_keyboard,
+            state_mouse=state_mouse,
             state_screen=state_screen,
             action_keyboard=action_keyboard,
             action_mouse=action_mouse,
