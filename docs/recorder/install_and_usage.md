@@ -97,3 +97,7 @@ To stop the recording, simply press `Ctrl+C`.
 
 For more details on the features and performance of OWA Recorder, refer to the [Why use OWA Recorder](why.md) section.
 
+### Real-time latency information
+
+- Currently, `probe` in `appsink_recorder` and appsink callback in screen listener automatically warns you if `latency > 50ms`. And in `recorder` it warns you if it takes `> 20ms` to write a queued events. In common case **you would not see** this warning but if you so, be take care of the system's performance and loads.
+- Normally, it takes some time(e.g. `170ms`) for screen record to be started. In other words, first screen record event is recorded after some time.

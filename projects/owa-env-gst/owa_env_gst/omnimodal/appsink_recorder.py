@@ -42,6 +42,15 @@ class AppsinkRecorder(GstPipelineRunner):
         def buffer_probe_callback(pad: Gst.Pad, info: Gst.PadProbeInfo):
             buf = info.get_buffer()
             frame_time_ns = time.time_ns()
+
+            clock = self.pipeline.get_clock()
+            elapsed = clock.get_time() - self.pipeline.get_base_time()
+            latency = elapsed - buf.pts
+
+            # warn if latency is too high, e.g. > 50ms
+            if latency > 50 * Gst.MSECOND:
+                logger.warning(f"High latency: {latency / Gst.MSECOND}ms")
+
             callback(ScreenEmitted(path=filesink_location, pts=buf.pts, utc_ns=frame_time_ns))
             return Gst.PadProbeReturn.OK
 
