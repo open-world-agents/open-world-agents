@@ -1,19 +1,24 @@
+from pathlib import Path
+
 from pydantic import BaseModel
 
 from mcap_owa.highlevel import OWAMcapReader
 
 from .sample import OWATrainingSample
 
+ORIGINAL_FRAME_RATE = 60  # TODO: adaptive logic
+MIN_SCREEN_NUM = 5
+
 
 class OWAMcapQuery(BaseModel):
-    file_path: str | None = None
+    file_path: Path | None = None
 
     anchor_timestamp_ns: int
 
     past_range_ns: int
     future_range_ns: int
 
-    screen_framerate: int = 5
+    screen_framerate: int = 20
 
     def to_sample(self) -> OWATrainingSample:
         """
@@ -22,6 +27,12 @@ class OWAMcapQuery(BaseModel):
         TODO: optimization of this method. each `iter_decoded_messages` takes 10ms and whole `to_sample` takes 30ms.
         """
         with OWAMcapReader(self.file_path) as reader:
+            if (
+                self.anchor_timestamp_ns - self.past_range_ns < reader.start_time
+                or self.anchor_timestamp_ns + self.future_range_ns > reader.end_time
+            ):
+                raise ValueError("Query timestamp is out of range")
+
             state_keyboard = None
             for topic, timestamp, msg in reader.iter_decoded_messages(
                 topics=["keyboard/state"], end_time=self.anchor_timestamp_ns - self.past_range_ns, reverse=True
@@ -33,12 +44,25 @@ class OWAMcapQuery(BaseModel):
 
             state_screen = []
             start_time, end_time = self.anchor_timestamp_ns - self.past_range_ns, self.anchor_timestamp_ns
-            for topic, timestamp, msg in reader.iter_decoded_messages(
-                topics=["screen"],
-                start_time=start_time,
-                end_time=end_time,
+            for idx, (topic, timestamp, msg) in enumerate(
+                reader.iter_decoded_messages(
+                    topics=["screen"],
+                    start_time=start_time,
+                    end_time=end_time,
+                    reverse=True,  # ensure that the latest screen is included
+                )
             ):
+                if idx % (ORIGINAL_FRAME_RATE // self.screen_framerate):
+                    continue
                 state_screen.append((timestamp - self.anchor_timestamp_ns, msg))
+
+            if len(state_screen) < MIN_SCREEN_NUM:
+                raise ValueError(
+                    f"Not enough screen states found, expected {MIN_SCREEN_NUM} but got {len(state_screen)}"
+                )
+
+            # convert to oldest-to-latest order
+            state_screen = state_screen[::-1]
 
             action_keyboard = []
             action_mouse = []
