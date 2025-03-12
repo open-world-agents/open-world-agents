@@ -130,6 +130,10 @@ def main(
 
         while True:
             topic, event, publish_time = queue.get()
+            latency = time.time_ns() - publish_time
+            # warn if latency is too high, i.e., > 20ms
+            if latency / 1e6 > 20:
+                logger.warning(f"Event {event} from {topic} is written to the file with latency {latency / 1e6:.2f}ms")
             writer.write_message(topic, event, publish_time=publish_time)
 
     except KeyboardInterrupt:

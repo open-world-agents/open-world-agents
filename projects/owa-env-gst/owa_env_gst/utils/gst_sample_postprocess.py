@@ -30,6 +30,8 @@ def get_frame_time_ns(sample: Gst.Sample, pipeline: Gst.Pipeline) -> dict:
         return dict(frame_time_ns=time.time_ns(), latency=0)
 
     clock = pipeline.get_clock()
+    # https://gstreamer.freedesktop.org/documentation/application-development/advanced/clocks.html?gi-language=c#clock-runningtime
+    # says running-time = absolute-time - base-time
     elapsed = clock.get_time() - pipeline.get_base_time()
     latency = elapsed - pts
     return dict(frame_time_ns=time.time_ns() - latency, latency=latency)
