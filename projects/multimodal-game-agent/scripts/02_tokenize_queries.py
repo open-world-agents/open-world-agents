@@ -21,7 +21,7 @@ def tokenize_sample(sample: OWATrainingSample) -> OWATrainingSample:
 
 
 class SmolVLMInput:
-    images: list[Image]
+    images: list[Image.Image]
     messages: dict
 
 

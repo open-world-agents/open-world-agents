@@ -5,11 +5,13 @@ Input: list[mcap + mkv]
 Output: list[query]
 """
 
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import typer
+from tqdm import tqdm
 
 from mcap_owa.highlevel import OWAMcapReader
 from owa_game_agent.constants import RECORD_PAUSE_KEY, RECORD_START_STOP_KEY
@@ -26,6 +28,15 @@ def sample_interval():
     return np.random.rand() * (PAST_RANGE_S + FUTURE_RANGE_S)
 
 
+def process_query(query):
+    """Function to process one query in parallel."""
+    try:
+        query.to_sample()
+        return query
+    except ValueError:
+        return None
+
+
 def extract_query(mcap_file: Path) -> list[OWAMcapQuery]:
     key_events = []
     with OWAMcapReader(mcap_file) as reader:
@@ -35,15 +46,17 @@ def extract_query(mcap_file: Path) -> list[OWAMcapQuery]:
             elif msg.vk == RECORD_PAUSE_KEY:
                 raise NotImplementedError("Pause key is not implemented")
 
-        key_events = [reader.start_time, reader.end_time]  # TODO: remove this line
-
     assert len(key_events) % 2 == 0, "Number of start/stop key events should be even"
     intervals = np.array(key_events).reshape(-1, 2)
 
+    pbar = tqdm(intervals, desc=f"Extracting queries from {mcap_file.name}")
+
     queries = []
+    query_list = []
     for start, end in intervals:
         anchor = start + TimeUnits.SECOND * PAST_RANGE_S
         while anchor < end:
+            pbar.update()
             query = OWAMcapQuery(
                 file_path=mcap_file,
                 anchor_timestamp_ns=anchor,
@@ -51,12 +64,16 @@ def extract_query(mcap_file: Path) -> list[OWAMcapQuery]:
                 future_range_ns=TimeUnits.SECOND * FUTURE_RANGE_S,
                 screen_framerate=FRAMERATE,
             )
-            try:
-                query.to_sample()
-                queries.append(query)
-            except ValueError:
-                pass
+            query_list.append(query)
             anchor += TimeUnits.SECOND * sample_interval()
+
+    # Parallelizing query.to_sample()
+    with ProcessPoolExecutor(max_workers=16) as executor:
+        futures = {executor.submit(process_query, query): query for query in query_list}
+        for future in tqdm(as_completed(futures), total=len(futures), desc="Processing queries"):
+            result = future.result()
+            if result:
+                queries.append(result)
 
     return queries
 
@@ -67,7 +84,7 @@ def main(dataset_path: Path, query_path: Path):
     for mcap_file in dataset_path.glob("*.mcap"):
         queries[mcap_file] = extract_query(mcap_file)
 
-    # print statistics for duration
+    # Print statistics for duration
     durations = []
     for mcap_file, qs in queries.items():
         with OWAMcapReader(mcap_file) as reader:
@@ -77,12 +94,12 @@ def main(dataset_path: Path, query_path: Path):
     print("Duration statistics")
     print(durations.describe())
 
-    # print statistics for number of queries
+    # Print statistics for number of queries
     num_queries = pd.Series([len(qs) for qs in queries.values()])
     print("Number of queries statistics")
     print(num_queries.describe())
 
-    # save queries into query_path (jsonl file)
+    # Save queries into query_path (jsonl file)
     all_queries: list[OWAMcapQuery] = []
     for qs in queries.values():
         all_queries.extend(qs)
