@@ -7,14 +7,10 @@ Output: N/A
 
 from pathlib import Path
 
-import numpy as np
-import orjson
-import pandas as pd
 import typer
+from PIL import Image
 
-from mcap_owa.highlevel import OWAMcapReader
-from owa_game_agent.constants import RECORD_PAUSE_KEY, RECORD_START_STOP_KEY
-from owa_game_agent.data import OWAMcapQuery, OWATrainingSample, TimeUnits
+from owa_game_agent.data import OWAMcapQuery, OWATrainingSample
 
 app = typer.Typer()
 
@@ -24,7 +20,12 @@ def tokenize_sample(sample: OWATrainingSample) -> OWATrainingSample:
     ...
 
 
-def sample_to_smolvlm_input(sample: OWATrainingSample) -> dict:
+class SmolVLMInput:
+    images: list[Image]
+    messages: dict
+
+
+def sample_to_smolvlm_input(sample: OWATrainingSample) -> SmolVLMInput:
     # TODO: implement this function
     ...
 
