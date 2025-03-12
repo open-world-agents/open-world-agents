@@ -9,7 +9,9 @@ line-length = 119
 
 [lint.isort]
 known-first-party = [
+    "mcap_owa",
     "owa",
     "owa_env_desktop",
     "owa_env_gst",
+    "owa_game_agent",
 ]
