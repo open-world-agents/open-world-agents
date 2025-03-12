@@ -1,4 +1,5 @@
-import os,platform
+import os
+import platform
 import subprocess
 
 # check if GStreamer is properly installed. TODO: multi-os support

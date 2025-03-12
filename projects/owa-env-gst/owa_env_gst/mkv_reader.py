@@ -3,7 +3,6 @@ from queue import Empty, Queue
 from typing import Self
 
 import av
-import numpy as np
 
 from .gst_runner import GstPipelineRunner
 from .utils import framerate_float_to_str, sample_to_ndarray

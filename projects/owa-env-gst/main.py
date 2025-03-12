@@ -1,4 +1,3 @@
-import av
 import line_profiler
 
 from owa_env_gst.mkv_reader import GstMKVReader, PyAVMKVReader
