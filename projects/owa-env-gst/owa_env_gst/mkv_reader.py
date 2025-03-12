@@ -1,3 +1,4 @@
+import platform
 from abc import ABC, abstractmethod
 from queue import Empty, Queue
 from typing import Self
@@ -39,23 +40,24 @@ class GstMKVReader(MKVReader):
         #         appsink name=audio_sink
         # """
 
-        pipeline_description = f"""
-            filesrc location={mkv_file_path} ! matroskademux name=demux
+        if platform.system() == "Windows":
+            pipeline_description = f"""
+                filesrc location={mkv_file_path} ! matroskademux name=demux
 
-            demux.video_0 ! queue ! 
-                decodebin ! d3d11convert ! videorate drop-only=true ! 
-                video/x-raw(memory:D3D11Memory),framerate={framerate_float_to_str(framerate)},format=BGRA ! d3d11download ! 
-                appsink name=video_sink sync=false emit-signals=true wait-on-eos=false max-bytes=1000000000 drop=false
-        """
+                demux.video_0 ! queue ! 
+                    decodebin ! d3d11convert ! videorate drop-only=true ! 
+                    video/x-raw(memory:D3D11Memory),framerate={framerate_float_to_str(framerate)},format=BGRA ! d3d11download ! 
+                    appsink name=video_sink sync=false emit-signals=true wait-on-eos=false max-bytes=1000000000 drop=false
+            """
+        else:
+            pipeline_description = f"""
+                filesrc location={mkv_file_path} ! matroskademux name=demux
 
-        pipeline_description = f"""
-            filesrc location={mkv_file_path} ! matroskademux name=demux
-
-            demux.video_0 ! queue ! 
-                decodebin ! videoconvert ! videorate drop-only=true ! 
-                video/x-raw,framerate={framerate_float_to_str(framerate)},format=BGRA ! 
-                appsink name=video_sink sync=false emit-signals=true wait-on-eos=false max-bytes=1000000000 drop=false
-        """
+                demux.video_0 ! queue ! 
+                    decodebin ! videoconvert ! videorate drop-only=true ! 
+                    video/x-raw,framerate={framerate_float_to_str(framerate)},format=BGRA ! 
+                    appsink name=video_sink sync=false emit-signals=true wait-on-eos=false max-bytes=1000000000 drop=false
+            """
         # ensure drop property is set to false, to ensure ALL frames are emitted
         runner = GstPipelineRunner().configure(pipeline_description, do_not_modify_appsink_properties=True)
         runner.register_appsink_callback(self._sample_callback)

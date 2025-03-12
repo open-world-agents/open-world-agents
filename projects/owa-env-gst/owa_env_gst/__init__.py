@@ -6,7 +6,7 @@ import subprocess
 try:
     # if os is windows
     if platform.system() == "Windows":
-        subprocess.run(["gst-inspect-1.0", "d3d11"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        subprocess.run(["gst-inspect-1.0.exe", "d3d11"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     elif platform.system() == "Linux":
         subprocess.run(["gst-inspect-1.0", "ximagesrc"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     elif platform.system() == "Darwin":

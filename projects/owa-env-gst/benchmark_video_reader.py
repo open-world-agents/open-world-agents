@@ -28,11 +28,17 @@ def test_decord():
 
 
 """
+on Windows 11 with i7-14700, 4070 Ti Super
+
+  1.14 seconds - projects\owa-env-gst\benchmark_video_reader.py:22 - test_decord
+  3.14 seconds - projects\owa-env-gst\benchmark_video_reader.py:15 - test_av
+  3.95 seconds - projects\owa-env-gst\benchmark_video_reader.py:8 - test_gst
+
 on DGX H100, cpus=16 gpus=0
 
-  1.89 seconds - /mnt/home/claude/GitHub/open-world-agents/projects/owa-env-gst/main.py:22 - test_decord
-  5.57 seconds - /mnt/home/claude/GitHub/open-world-agents/projects/owa-env-gst/main.py:15 - test_av
-  9.09 seconds - /mnt/home/claude/GitHub/open-world-agents/projects/owa-env-gst/main.py:8 - test_gst
+  1.89 seconds - projects/owa-env-gst/main.py:22 - test_decord
+  5.57 seconds - projects/owa-env-gst/main.py:15 - test_av
+  9.09 seconds - projects/owa-env-gst/main.py:8 - test_gst
 """
 
 if __name__ == "__main__":
