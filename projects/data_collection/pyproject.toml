@@ -25,3 +25,4 @@ build-backend = "hatchling.build"
 
 [project.scripts]
 recorder = "data_collection.cli.recorder:app"
+window_resizer = "data_collection.cli.window_resizer:app"
