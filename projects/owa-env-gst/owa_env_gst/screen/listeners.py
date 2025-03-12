@@ -85,6 +85,10 @@ def build_screen_callback(callback):
     def screen_callback(sample: Gst.Sample, metadata: dict):
         frame_arr = sample_to_ndarray(sample)
         latency = metadata["latency"]
+        # warn if latency is too high, e.g. > 50ms
+        if latency > 50 * Gst.MSECOND:
+            logger.warning(f"High latency: {latency / Gst.MSECOND}ms")
+
         timestamp_ns = metadata["frame_time_ns"]
         metric_manager.append(timestamp_ns, latency)
 
