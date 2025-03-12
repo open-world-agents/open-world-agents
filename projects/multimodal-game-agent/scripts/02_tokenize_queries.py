@@ -20,12 +20,13 @@ app = typer.Typer()
 def convert_timestamp_to_token(timestamp: int) -> str:
     """
     Convert a nanosecond timestamp to a discrete token.
-    The rule here is to divide the timestamp by 10^7.
-    For example, 2748662650 becomes 2740_MILLISECOND.
+    The rule here is to divide the timestamp by 10^7 and multiply by 10, which is timestamp token is discretize by each 0.01 second.
+    Also, 5000000ns is added to the timestamp to round up to the nearest 0.01 second.
+    For example, 274866265ns becomes 2750_MILLISECOND, denoted as 2750_MS.
     """
-    # Divide by 10^7 (i.e. 10000000) to get the discrete token value
-    token_val = timestamp // 1000000
+    token_val = (timestamp + 5000000) // 10000000 * 10
     return f"{token_val}_MS"
+
 
 def get_vk_name(code: int) -> str:
     """
@@ -79,7 +80,7 @@ def process_action_keyboard(action_keyboard: List[Tuple[int, dict]]) -> List[str
             tokens.append(time_token)
             tokens.append(key_token)
         else:
-            raise ValueError(f"Invalid event or key_token: {event_type}, {vk}")
+            print(f"Skip Invalid event or key_token: {event_type}, {vk}")
     return tokens
 
 
@@ -107,7 +108,7 @@ After this prompt, you will receive {len_images} sequential image frames that sh
 Using the current keyboard state and the image sequence, predict the future sequence of keyboard actions. For each action, include the timestamp when it should be executed."""
 
     keyboard_state = sample.state_keyboard
-    if keyboard_state == None:
+    if keyboard_state is None:
         keyboard_state = "None"
     keyboard_action = sample.action_keyboard
     state_screen = sample.state_screen
@@ -145,7 +146,7 @@ def main(query_path: Path):
         queries = [OWAMcapQuery.model_validate_json(line) for line in f]
 
     # TODO: implement following
-    query = queries[10]
+    query = queries[0]
     sample = query.to_sample()
     print(sample)
     print("==============")
