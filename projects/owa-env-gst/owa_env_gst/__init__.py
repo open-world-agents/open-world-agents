@@ -1,9 +1,15 @@
-import os
+import os,platform
 import subprocess
 
 # check if GStreamer is properly installed. TODO: multi-os support
 try:
-    subprocess.run(["gst-inspect-1.0", "d3d11"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    # if os is windows
+    if platform.system() == "Windows":
+        subprocess.run(["gst-inspect-1.0", "d3d11"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    elif platform.system() == "Linux":
+        subprocess.run(["gst-inspect-1.0", "ximagesrc"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    elif platform.system() == "Darwin":
+        subprocess.run(["gst-inspect-1.0", "avfvideosrc"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 except Exception as e:  # noqa: F841
     raise ImportError(
         "GStreamer is not properly installed or not in PATH. "

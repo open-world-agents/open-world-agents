@@ -33,7 +33,7 @@ dev = [
 owa-core = { path = "projects/core", editable = true }
 owa-env-desktop = { path = "projects/owa-env-desktop", editable = true }
 owa-env-gst = { path = "projects/owa-env-gst", editable = true }
-mcap-owa-support = { path = "projects/mcap-owa-support" }
+mcap-owa-support = { path = "projects/mcap-owa-support", editable = true }
 
 [tool.pytest.ini_options]
 minversion = "6.0"
