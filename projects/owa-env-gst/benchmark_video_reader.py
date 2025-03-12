@@ -1,10 +1,12 @@
+import decord
 import line_profiler
+from decord import VideoReader, cpu
 
 from owa_env_gst.mkv_reader import GstMKVReader, PyAVMKVReader
 
 
 @line_profiler.profile
-def test_mkv_reader():
+def test_gst():
     with GstMKVReader("output.mkv") as reader:
         for frame in reader.iter_frames():
             print(frame["pts"], frame["data"].shape)
@@ -12,23 +14,38 @@ def test_mkv_reader():
 
 @line_profiler.profile
 def test_av():
-    # container = av.open("output.mkv")
-    # stream = next(s for s in container.streams if s.type == "video")
-    # for frame in container.decode(stream):
-    #     print(frame.pts, frame.time_base, frame.to_ndarray().shape)
-    # container.close()
-
     with PyAVMKVReader("output.mkv") as reader:
         for frame in reader.iter_frames():
             print(frame["pts"], frame["data"].shape)
 
 
+@line_profiler.profile
+def test_decord():
+    vr = VideoReader("output.mkv", ctx=cpu(0))
+    for i in range(len(vr)):
+        frame = vr[i]
+        print(i, frame.shape)
+
+
+"""
+on DGX H100, cpus=16 gpus=0
+
+  1.89 seconds - /mnt/home/claude/GitHub/open-world-agents/projects/owa-env-gst/main.py:22 - test_decord
+  5.57 seconds - /mnt/home/claude/GitHub/open-world-agents/projects/owa-env-gst/main.py:15 - test_av
+  9.09 seconds - /mnt/home/claude/GitHub/open-world-agents/projects/owa-env-gst/main.py:8 - test_gst
+"""
+
 if __name__ == "__main__":
     # on Windows 11 with i7-14700, 4070 Ti Super
     # 56sec -> 4.39sec after optimization to process much more in d3d11memory
     # on DGX H100 w/o GPU, 9.84sec
-    test_mkv_reader()
+    test_gst()
+
     # on Windows 11 with i7-14700, 4070 Ti Super
     # 3.17sec w/o to_ndarray, 3.69sec w/ to_ndarray
     # on DGX H100, 3.14sec
     test_av()
+
+    # Benchmarking Decord
+    # Add any additional notes based on benchmarking results
+    test_decord()
