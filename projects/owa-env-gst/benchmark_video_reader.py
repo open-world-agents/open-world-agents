@@ -1,4 +1,3 @@
-import decord
 import line_profiler
 from decord import VideoReader, cpu
 
