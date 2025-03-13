@@ -111,7 +111,7 @@ Using the current keyboard state and the image sequence, predict the future sequ
     keyboard_action = sample.action_keyboard
     state_screen = sample.state_screen
 
-    state_screen = [ScreenEmitted(**screen).to_pil_image() for screen in state_screen]
+    state_screen = [ScreenEmitted(**screen).to_pil_image() for timestamp, screen in state_screen]
 
     len_images = len(state_screen)
 
