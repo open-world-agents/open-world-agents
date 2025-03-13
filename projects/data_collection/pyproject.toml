@@ -5,11 +5,14 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "loguru>=0.7.3",
     "mcap-owa-support",
     "orjson>=3.10.15",
     "owa-core",
     "owa-env-desktop",
     "owa-env-gst",
+    "pydantic>=2.10.6",
+    "pygetwindow>=0.0.9 ; sys_platform == 'win32'",
     "typer>=0.15.1",
 ]
 
@@ -24,5 +27,4 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project.scripts]
-recorder = "data_collection.cli.recorder:app"
-window_resizer = "data_collection.cli.window_resizer:app"
+owa-cli = "data_collection.cli:app"

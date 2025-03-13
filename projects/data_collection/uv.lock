@@ -112,21 +112,27 @@ name = "data-collection"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "loguru" },
     { name = "mcap-owa-support" },
     { name = "orjson" },
     { name = "owa-core" },
     { name = "owa-env-desktop" },
     { name = "owa-env-gst" },
+    { name = "pydantic" },
+    { name = "pygetwindow", marker = "sys_platform == 'win32'" },
     { name = "typer" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "loguru", specifier = ">=0.7.3" },
     { name = "mcap-owa-support", editable = "../mcap-owa-support" },
     { name = "orjson", specifier = ">=3.10.15" },
     { name = "owa-core", editable = "../core" },
     { name = "owa-env-desktop", editable = "../owa-env-desktop" },
     { name = "owa-env-gst", editable = "../owa-env-gst" },
+    { name = "pydantic", specifier = ">=2.10.6" },
+    { name = "pygetwindow", marker = "sys_platform == 'win32'", specifier = ">=0.0.9" },
     { name = "typer", specifier = ">=0.15.1" },
 ]
 
@@ -217,6 +223,7 @@ dependencies = [
     { name = "mcap" },
     { name = "orjson" },
     { name = "owa-core" },
+    { name = "semantic-version" },
 ]
 
 [package.metadata]
@@ -225,6 +232,7 @@ requires-dist = [
     { name = "mcap", specifier = ">=1.2.2" },
     { name = "orjson", specifier = ">=3.10.15" },
     { name = "owa-core", editable = "../core" },
+    { name = "semantic-version", specifier = ">=2.10.0" },
 ]
 
 [[package]]
@@ -396,13 +404,40 @@ version = "0.1.0"
 source = { editable = "../owa-env-gst" }
 dependencies = [
     { name = "owa-core" },
+    { name = "pyav" },
     { name = "pygobject-stubs" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "owa-core", editable = "../core" },
+    { name = "pyav", specifier = ">=14.2.1" },
     { name = "pygobject-stubs", specifier = ">=2.12.0" },
+]
+
+[[package]]
+name = "pyav"
+version = "14.2.1"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2e/65/ecd3f34a3f7f6e92fe454f367f2e9c9cb5cb2b0e7667264e9af8e3a5cac9/pyav-14.2.1-cp311-cp311-macosx_12_0_arm64.whl", hash = "sha256:932f3a4b09ffe083718030d8765c27aca2ca04f99c70ebbdadbb6c5953469f02", size = 19330975 },
+    { url = "https://files.pythonhosted.org/packages/2e/d5/9af9121c54ff0050281ff34675b781f6a8c6a8c6a93e578118400d2e7e83/pyav-14.2.1-cp311-cp311-macosx_12_0_x86_64.whl", hash = "sha256:268e012a2e5014a806923a0d5485a7eb33fa37852716cc5abaf6726c2c8f0072", size = 22898406 },
+    { url = "https://files.pythonhosted.org/packages/39/af/7e96a8a13dcffa0af738e23cd986b2177125468c03651b6d2ef154cc4f1c/pyav-14.2.1-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:f65ddeba850b67090a3304c3ad3a10811bab003342db38ae29d9d5046af9c270", size = 31870511 },
+    { url = "https://files.pythonhosted.org/packages/6b/fb/f5ec265829e050bc892055dd07f3054acd7c6b9d494a2c4eb85a03d57c47/pyav-14.2.1-cp311-cp311-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:f6a14c9628eafa8d5691cdff6d6e848c29d04bbbd121b4acd8d2f6d0a2ce8a8b", size = 30346972 },
+    { url = "https://files.pythonhosted.org/packages/56/7d/f9f3dd8af59b2e610802b87bf109c57d52696f408385d0c6c79f70d90308/pyav-14.2.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:59600fd2c28b4f587c090a73ce200d186fe0106df17c1c6643f54c66cbeb8e22", size = 32973743 },
+    { url = "https://files.pythonhosted.org/packages/8d/c7/486be1e4bfadcf4b0159589f0345bb43067f1ae15a0da411d37543bb1737/pyav-14.2.1-cp311-cp311-win_amd64.whl", hash = "sha256:32e64e5efee7951631945f4046d8585209ca7323a0e4867a34b724f0c8b08935", size = 24681208 },
+    { url = "https://files.pythonhosted.org/packages/f2/83/85e68d45bc7f0fdd8e70f3f8890de4d58c4dfe52f5d9cd4483071bfc2c38/pyav-14.2.1-cp312-cp312-macosx_12_0_arm64.whl", hash = "sha256:901a0266f23a6349e11855c61aaa1bcd264e6292b5288d1037477a583a470ed8", size = 19335071 },
+    { url = "https://files.pythonhosted.org/packages/e2/80/6e0613e74b2f8ebefcb71e05af2aec7cd74aa3d7da064f923464c65a6ea1/pyav-14.2.1-cp312-cp312-macosx_12_0_x86_64.whl", hash = "sha256:fa87967017e431179a6226e42c1a967478c101957acca20254c575f7addcbd26", size = 22911864 },
+    { url = "https://files.pythonhosted.org/packages/b5/7d/f26edffdbb3941d0acc06c35a1c3ee90994784de2865738c227e518e8695/pyav-14.2.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:00112d7bef21b85f5cab6be4773e4186157fcd08d0743702b2727938e9ab4e50", size = 32130095 },
+    { url = "https://files.pythonhosted.org/packages/61/b1/0b5ab9d1b45abe87d4ccd2408cb2f448009fa02e7785e895ef43fe754904/pyav-14.2.1-cp312-cp312-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:e5da60ebb2943c052d853903e187e1c57f672ed558481c721b2ad4ef5f763a14", size = 30625075 },
+    { url = "https://files.pythonhosted.org/packages/88/f3/fc58af26727c75d8a4fa09a97124e39b690cf8a7f4825d2eddd6afcf2ee2/pyav-14.2.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d7c7532d69a10a649f5bc75304282218b9a536e3b465ab6437a5effefc6d0c5e", size = 33335544 },
+    { url = "https://files.pythonhosted.org/packages/a8/a6/e98967afb044a324c93069f1d215f81afdbfdfa0bbafbc6040bf411d1cb5/pyav-14.2.1-cp312-cp312-win_amd64.whl", hash = "sha256:bc838cbdb6ecf304e5eb49d46d4292c3805adb237216141c5a3a9e7bd96542aa", size = 24684510 },
+    { url = "https://files.pythonhosted.org/packages/54/04/268c290c91b099038ca6c32a7fe5a961b6e15e35e9cb43353702044f9140/pyav-14.2.1-cp313-cp313-macosx_12_0_arm64.whl", hash = "sha256:3263d41e634e42683a2c4545670001d7bfb2a62cb39b08c83b7694e3c610aa1d", size = 19294167 },
+    { url = "https://files.pythonhosted.org/packages/b1/f4/9dc1d0bb5cfc4157c9e4e3a7174d91eb65be921faa0daf7161ce8d25b7ce/pyav-14.2.1-cp313-cp313-macosx_12_0_x86_64.whl", hash = "sha256:8487ef841c706ea1366902b235f8df0f3437bf2a3d9b04090aba9db26bf65729", size = 22869618 },
+    { url = "https://files.pythonhosted.org/packages/ac/79/3e6e12bfe2a5a0f4f9fbe739f59378d9bf333cbb729084c300eb5ba3661a/pyav-14.2.1-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b11ff98da96d4faf018deefe0843292f260fd70e01f0b9ad2b79bd78d572f05a", size = 31773472 },
+    { url = "https://files.pythonhosted.org/packages/3e/12/730cf4691610f28353baf4d14d8b4855378a7c93ae0b0693b46ac53f9776/pyav-14.2.1-cp313-cp313-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:f41cf05bcddc9ed91a1015a49899181e47c24fe74dac93efa7472eef7ba04cb9", size = 30281403 },
+    { url = "https://files.pythonhosted.org/packages/f2/77/375835a1317b4096f44659b2ec3d2c09cfc1de550865aa3a14e1fd59305c/pyav-14.2.1-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:800993f5b945450d6f2aaa3a4a14122f146b40bee2505c18f368400fb9eb482b", size = 32986387 },
+    { url = "https://files.pythonhosted.org/packages/f8/9e/cbd16b4083955303a7f8b4690cab2e465dfaf5a2089156d3cf98bc22f0d0/pyav-14.2.1-cp313-cp313-win_amd64.whl", hash = "sha256:4167cc4e57e53794d22161448a8d66afe9ab5aab38c55a5cd06401edbcc9222a", size = 24655270 },
 ]
 
 [[package]]
@@ -627,6 +662,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/ab/3a/0316b28d0761c6734d6bc14e770d85506c986c85ffb239e688eeaab2c2bc/rich-13.9.4.tar.gz", hash = "sha256:439594978a49a09530cff7ebc4b5c7103ef57baf48d5ea3184f21d9a2befa098", size = 223149 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/19/71/39c7c0d87f8d4e6c020a393182060eaefeeae6c01dab6a84ec346f2567df/rich-13.9.4-py3-none-any.whl", hash = "sha256:6049d5e6ec054bf2779ab3358186963bac2ea89175919d699e378b99738c2a90", size = 242424 },
+]
+
+[[package]]
+name = "semantic-version"
+version = "2.10.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/7d/31/f2289ce78b9b473d582568c234e104d2a342fd658cc288a7553d83bb8595/semantic_version-2.10.0.tar.gz", hash = "sha256:bdabb6d336998cbb378d4b9db3a4b56a1e3235701dc05ea2690d9a997ed5041c", size = 52289 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6a/23/8146aad7d88f4fcb3a6218f41a60f6c2d4e3a72de72da1825dc7c8f7877c/semantic_version-2.10.0-py2.py3-none-any.whl", hash = "sha256:de78a3b8e0feda74cabc54aab2da702113e33ac9d9eb9d2389bcf1f58b7d9177", size = 15552 },
 ]
 
 [[package]]
