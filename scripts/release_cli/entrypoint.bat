@@ -61,12 +61,12 @@ if exist ".\Scripts\conda-unpack.exe" (
     echo conda-unpack.exe not found, skipping this step.
 )
 
-:: Step 5: Run recorder.exe with the argument (preserving colors)
-echo Running recorder.exe with argument: %ARG%
+:: Step 5: Run CLI with the argument (preserving colors)
+echo Running owl with argument: %ARG%
 
 :: Method 1: Direct execution (best for color support)
 @REM recorder.exe "%ARG%"
-python .\Lib\site-packages\owa\cli\mcap\record.py "%ARG%"
+python -m owa.cli "%ARG%"
 set ERR=%errorlevel%
 
 :: Alternative Method 2: Use start /wait if the output is still not fully visible
@@ -74,7 +74,7 @@ set ERR=%errorlevel%
 :: set ERR=%errorlevel%
 
 if %ERR% neq 0 (
-    echo Failed to run recorder.exe with exit code %ERR%
+    echo Failed to run owl with exit code %ERR%
     pause
     exit /b %ERR%
 )

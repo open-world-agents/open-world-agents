@@ -8,6 +8,3 @@ app.command()(cat.cat)
 app.command()(convert.convert)
 app.command()(info.info)
 app.command()(record.record)
-
-if __name__ == "__main__":
-    app()
