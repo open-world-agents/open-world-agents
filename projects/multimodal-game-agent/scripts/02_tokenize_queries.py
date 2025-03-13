@@ -14,7 +14,7 @@ from pydantic import BaseModel
 
 from owa.env.desktop.constants import VK
 from owa_game_agent.data import OWAMcapQuery, OWATrainingSample
-
+from owa.env.gst.msg import ScreenEmitted
 app = typer.Typer()
 
 
@@ -113,6 +113,8 @@ Using the current keyboard state and the image sequence, predict the future sequ
         keyboard_state = "None"
     keyboard_action = sample.action_keyboard
     state_screen = sample.state_screen
+
+    state_screen = [ScreenEmitted(**screen).to_pil_image() for screen in state_screen]
 
     len_images = len(state_screen)
 
