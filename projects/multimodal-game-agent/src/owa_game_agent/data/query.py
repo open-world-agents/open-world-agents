@@ -42,11 +42,20 @@ class OWAMcapQuery(BaseModel):
             else:
                 raise ValueError("No keyboard state found")
 
+            state_mouse = {"pressed": {}, "x": 0, "y": 0}
+            for topic, timestamp, msg in reader.iter_decoded_messages(
+                topics=["mouse"], end_time=self.anchor_timestamp_ns - self.past_range_ns, reverse=True
+            ):
+                state_mouse["x"], state_mouse["y"] = msg["x"], msg["y"]
+                break
+            else:
+                raise ValueError("No keyboard state found")
+
             # in Windows, vk 1/2/4 corresponds to left/right/middle mouse button. TODO: multi-os support
             mouse_keys = {1: "left", 2: "right", 4: "middle"}
             state_keyboard = set(pressed_vks) - {1, 2, 4}
             state_mouse = set(pressed_vks) & {1, 2, 4}
-            state_mouse = set([mouse_keys[button] for button in state_mouse])
+            state_mouse["pressed"] = set([mouse_keys[button] for button in state_mouse])
 
             state_screen = []
             start_time, end_time = self.anchor_timestamp_ns - self.past_range_ns, self.anchor_timestamp_ns
