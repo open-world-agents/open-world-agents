@@ -24,7 +24,7 @@ def convert(
     output_srt: Annotated[Path, typer.Argument(help="Path to the output .srt file")] = None,
 ):
     """
-    Convert an `.mcap` file into an `.srt` subtitle file.
+    Convert an `.mcap` file into an `.srt` subtitle file. After the conversion, you may play `.mkv` file and verify the sanity of data.
     """
     if output_srt is None:
         output_srt = mcap_path.with_suffix(".srt")

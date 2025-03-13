@@ -3,13 +3,10 @@ setlocal enabledelayedexpansion
 
 :: Ensure an argument is provided
 if "%~1"=="" (
-    echo Usage: %~nx0 ^<arg^>
+    echo Usage: %~nx0 ^<arguments^>
     pause
     exit /b 1
 )
-
-:: Extract the provided argument
-set "ARG=%~1"
 
 :: Step 1: Check if env directory exists
 if not exist "env\" (
@@ -61,16 +58,16 @@ if exist ".\Scripts\conda-unpack.exe" (
     echo conda-unpack.exe not found, skipping this step.
 )
 
-:: Step 5: Run CLI with the argument (preserving colors)
-echo Running owl with argument: %ARG%
+:: Step 5: Run CLI with all arguments (preserving colors)
+echo Running owl with arguments: %*
 
 :: Method 1: Direct execution (best for color support)
-@REM recorder.exe "%ARG%"
-python -m owa.cli "%ARG%"
+@REM recorder.exe %*
+python -m owa.cli %*
 set ERR=%errorlevel%
 
 :: Alternative Method 2: Use start /wait if the output is still not fully visible
-:: start /wait recorder.exe "%ARG%"
+:: start /wait recorder.exe %*
 :: set ERR=%errorlevel%
 
 if %ERR% neq 0 (

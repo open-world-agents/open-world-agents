@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "owa-core",
+    "pillow>=11.1.0",
     "pyav>=14.2.1",
     "pygobject-stubs>=2.12.0",
 ]
