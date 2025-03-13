@@ -36,7 +36,7 @@ def cat(
     end_time = end_time * TimeUnits.SECOND if end_time is not None else None
 
     with OWAMcapReader(mcap_path) as reader:
-        topics = topics.split(",") or reader.topics
+        topics = topics.split(",") if topics else reader.topics
         topics = set(topics) - (set(exclude.split(",")) if exclude else set())
         topics = list(topics)
 
