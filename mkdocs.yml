@@ -69,7 +69,6 @@ markdown_extensions:
 nav:
   - Get Started:
     - Welcome to OWA: index.md
-    # - Why use OWA: why.md
     - Help with OWA: help_with_owa.md
     - Installation: install.md
     - Contributing: contributing.md 
@@ -85,6 +84,7 @@ nav:
       - Gstreamer Environment: env/plugins/gstreamer_env.md
   - Data in OWA:
     - data/data_format.md
+    # - Comparison with other data formats: data/comparison.md # Later
     - Desktop Recorder:
       - Why use OWA's Desktop Recorder: data/recorder/why.md
       - Install & Usage: data/recorder/install_and_usage.md
