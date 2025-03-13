@@ -54,8 +54,8 @@ class OWAMcapQuery(BaseModel):
             # in Windows, vk 1/2/4 corresponds to left/right/middle mouse button. TODO: multi-os support
             mouse_keys = {1: "left", 2: "right", 4: "middle"}
             state_keyboard = set(pressed_vks) - {1, 2, 4}
-            state_mouse = set(pressed_vks) & {1, 2, 4}
-            state_mouse["pressed"] = set([mouse_keys[button] for button in state_mouse])
+            pressed_mks = set(pressed_vks) & {1, 2, 4}
+            state_mouse["pressed"] = set([mouse_keys[button] for button in pressed_mks])
 
             state_screen = []
             start_time, end_time = self.anchor_timestamp_ns - self.past_range_ns, self.anchor_timestamp_ns
