@@ -1,6 +1,4 @@
-
 To see detailed implementation, skim over [owa_env_gst](https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-env-gst). API Docs is being written WIP.
-
 
 ## Examples
 

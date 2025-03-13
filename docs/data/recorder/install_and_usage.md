@@ -23,12 +23,7 @@ This guide will help you install and use the **owl**(Open World agent cLi) for h
 
 ### Manual Installation Guide
 
-If you have followed [OWA Installation Guide](../../install.md), you can install `owl` very easily by simply running:
-
-```sh
-uv pip install -e projects/owa-cli
-# `pip install -e projects/owa-cli` also work, but slower
-```
+Follow the [OWA Installation Guide](../../install.md), make sure to install GStreamer using conda.
 
 ## Usage
 
