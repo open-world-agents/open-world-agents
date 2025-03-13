@@ -12,7 +12,7 @@ The Standard Environment plugin (`owa.env.std`) is a core component of the Open 
 To activate the Standard Environment plugin, use the following command in your code:
 
 ```python
-from owa.registry import activate_module
+from owa.core.registry import activate_module
 
 activate_module("owa.env.std")
 ```
@@ -20,7 +20,7 @@ activate_module("owa.env.std")
 Once activated, you can access the registered functions and listeners via the global `CALLABLES` and `LISTENERS` registries. For example:
 
 ```python
-from owa.registry import CALLABLES, LISTENERS
+from owa.core.registry import CALLABLES, LISTENERS
 
 # Get the current time in nanoseconds
 current_time_ns = CALLABLES["clock.time_ns"]()
@@ -58,7 +58,7 @@ tick_listener.join()
 Here is a complete example demonstrating how to use the Standard Environment plugin:
 
 ```python
-from owa.registry import CALLABLES, LISTENERS, activate_module
+from owa.core.registry import CALLABLES, LISTENERS, activate_module
 
 # Activate the Standard Environment plugin
 activate_module("owa.env.std")

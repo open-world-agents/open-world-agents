@@ -41,7 +41,7 @@ jobs:
           path: D:\conda_pkgs_dir
           key:
             ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
-            hashFiles('projects/owa-env-gst/environment_detail.yml') }}
+            hashFiles('projects/owa-env-gst/environment.yml') }}
 
       - uses: conda-incubator/setup-miniconda@v3
         with:
@@ -49,7 +49,7 @@ jobs:
           mamba-version: "*"
           channels: conda-forge
           conda-remove-defaults: "true"
-          environment-file: projects/owa-env-gst/environment_detail.yml
+          environment-file: projects/owa-env-gst/environment.yml
           pkgs-dirs: D:\conda_pkgs_dir
           activate-environment: owa
 
@@ -58,5 +58,4 @@ jobs:
 
       - name: Run pytest (will also pick it up)
         run: |
-          pytest projects/core
-          pytest projects/owa-env-desktop
+          pytest

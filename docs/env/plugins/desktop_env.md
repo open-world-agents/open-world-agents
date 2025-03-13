@@ -27,7 +27,7 @@ This module is essential for applications that require integration with desktop 
 
 ## Implementation Details
 
-To see detailed implementation, skim over [owa_env_desktop](https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-env-desktop/owa_env_desktop). API documentation is currently being developed.
+To see detailed implementation, skim over [owa-env-desktop](https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-env-desktop). API documentation is currently being developed.
 
 ## Available Functions
 
@@ -43,6 +43,7 @@ To see detailed implementation, skim over [owa_env_desktop](https://github.com/o
 - `keyboard.press` - Simulate pressing a keyboard key
 - `keyboard.release` - Simulate releasing a keyboard key
 - `keyboard.type` - Type a string of characters
+- `keyboard.press_repeat` - Simulate repeat-press when pressing key long time
 
 ### Screen Functions
 - `screen.capture` - Capture the current screen (Note: This module utilizes `bettercam`. For better performance and extensibility, use `owa-env-gst`'s functions instead)

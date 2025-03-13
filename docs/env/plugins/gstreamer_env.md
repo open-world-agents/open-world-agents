@@ -1,17 +1,15 @@
-
-To see detailed implementation, skim over [owa_env_gst](https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-env-gst/owa_env_gst). API Docs is being written WIP.
-
+To see detailed implementation, skim over [owa_env_gst](https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-env-gst). API Docs is being written WIP.
 
 ## Examples
 
 - example of `screen` listener
     ```python
-    from owa.registry import LISTENERS, activate_module
+    from owa.core.registry import LISTENERS, activate_module
     import cv2
     import numpy as np
 
     # Activate the GStreamer module
-    activate_module("owa_env_gst")
+    activate_module("owa.env.gst")
 
     # Define a callback to process frames
     def process_frame(frame):
@@ -43,9 +41,9 @@ To see detailed implementation, skim over [owa_env_gst](https://github.com/open-
 
 - example of `screen_capture` runnable
     ```python
-    from owa.registry import RUNNABLES, activate_module
+    from owa.core.registry import RUNNABLES, activate_module
     
-    activate_module("owa_env_gst")
+    activate_module("owa.env.gst")
     screen_capture = RUNNABLES["screen_capture"]().configure(fps=60)
     
     with screen_capture.session:
