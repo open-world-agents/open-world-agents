@@ -14,7 +14,7 @@ try:
 except Exception as e:  # noqa: F841
     raise ImportError(
         "GStreamer is not properly installed or not in PATH. "
-        "Please install conda packages in `projects/owa-env-gst/environment_detail.yml`"
+        "Please install conda packages in `projects/owa-env-gst/environment.yml`"
     )
 
 # set GST_PLUGIN_PATH to the 'gst-plugins' directory in the current working directory
