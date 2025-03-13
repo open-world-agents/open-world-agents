@@ -23,7 +23,6 @@ from typing_extensions import Annotated
 from mcap_owa.highlevel import OWAMcapWriter
 from owa.registry import CALLABLES, LISTENERS, activate_module
 
-app = typer.Typer()
 queue = Queue()
 MCAP_LOCATION = None
 
@@ -66,9 +65,22 @@ def configure():
     activate_module("owa_env_gst")
 
 
-@app.command()
-def main(
-    file_location: Annotated[str, typer.Argument(help="The location of the output file, use `.mkv` extension.")],
+USER_INSTRUCTION = """
+
+Since this recorder records all screen/keyboard/mouse/window events, be aware NOT to record sensitive information, such as passwords, credit card numbers, etc.
+
+Press Ctrl+C to stop recording.
+
+"""
+
+
+def record(
+    file_location: Annotated[
+        Path,
+        typer.Argument(
+            help="The location of the output file. If `output.mcap` is given as argument, the output file would be `output.mcap` and `output.mkv`."
+        ),
+    ],
     *,
     record_audio: Annotated[bool, typer.Option(help="Whether to record audio")] = True,
     record_video: Annotated[bool, typer.Option(help="Whether to record video")] = True,
@@ -85,13 +97,15 @@ def main(
         ),
     ] = None,
 ):
+    """Record screen, keyboard, mouse, and window events to an `.mcap` and `.mkv` file."""
     global MCAP_LOCATION
-    output_file = Path(file_location).with_suffix(".mcap")
+    output_file = file_location.with_suffix(".mcap")
     MCAP_LOCATION = output_file
 
     if not output_file.parent.exists():
         output_file.parent.mkdir(parents=True, exist_ok=True)
         logger.warning(f"Created directory {output_file.parent}")
+
     # delete the file if it exists
     if output_file.exists():
         output_file.unlink()
@@ -108,7 +122,7 @@ def main(
             key, value = arg.split("=")
             additional_properties[key] = value
     recorder.configure(
-        filesink_location=file_location,
+        filesink_location=file_location.with_suffix(".mkv"),
         record_audio=record_audio,
         record_video=record_video,
         record_timestamp=record_timestamp,
@@ -120,6 +134,8 @@ def main(
     )
     window_thread = threading.Thread(target=publish_window_info, daemon=True)
     writer = OWAMcapWriter(output_file)
+
+    logger.info(USER_INSTRUCTION)
 
     try:
         # TODO?: add `wait` method to Runnable, which waits until the Runnable is ready to operate well.
@@ -164,4 +180,4 @@ def main(
 
 
 if __name__ == "__main__":
-    app()
+    typer.run(record)

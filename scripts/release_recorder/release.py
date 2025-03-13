@@ -4,7 +4,6 @@ from pathlib import Path
 ENV_NAME = "owa"
 
 
-# Step 1: Replace all `editable = true` with `editable = false` in all `pyproject.toml` files
 def update_pyproject_toml(revert=False):
     for pyproject in Path(".").rglob("pyproject.toml"):
         content = pyproject.read_text()
@@ -16,23 +15,29 @@ def update_pyproject_toml(revert=False):
         print(f"Updated: {pyproject}")
 
 
-# Step 2: Run `uv pip install .`
 def install_project():
     subprocess.run(["uv", "pip", "install", "projects/data_collection"], check=True)
     print("Installed project dependencies.")
 
 
-# Step 3: Run `conda pack -n owa`
 def pack_conda_env():
     subprocess.run(["conda-pack", "-n", ENV_NAME, "--output", "scripts/release_recorder/env.tar.gz"], check=True)
     print("Packed conda environment.")
 
 
 def main():
+    # Step 1: Replace all `editable = true` with `editable = false` in all `pyproject.toml` files
     update_pyproject_toml()
+
+    # Step 2: Run `uv pip install .`
     install_project()
+
+    # Step 3: Run `conda pack -n owa`
     pack_conda_env()
+
+    # Step 4: Revert all `editable = false` back to `editable = true` in all `pyproject.toml` files
     update_pyproject_toml(revert=True)
+
     print("Process completed successfully!")
 
 
