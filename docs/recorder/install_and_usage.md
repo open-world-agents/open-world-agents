@@ -26,8 +26,8 @@ This guide will help you install and use the OWA Recorder for high-performance s
 If you have followed [OWA Installation Guide](../install.md), you can install `recorder` very easily by simply running:
 
 ```sh
-uv pip install -e projects/data_collection
-# `pip install -e projects/data_collection` also work, but slower
+uv pip install -e projects/owa-cli
+# `pip install -e projects/owa-cli` also work, but slower
 ```
 
 ## Usage
