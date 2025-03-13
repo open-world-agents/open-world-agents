@@ -9,7 +9,7 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-owa-core = { path = "../core", editable = true }
+owa-core = { path = "../owa-core", editable = true }
 
 [build-system]
 requires = ["hatchling"]

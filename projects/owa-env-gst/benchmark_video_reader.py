@@ -1,7 +1,7 @@
 import line_profiler
 from decord import VideoReader, cpu
 
-from owa_env_gst.mkv_reader import GstMKVReader, PyAVMKVReader
+from owa.env.gst.mkv_reader import GstMKVReader, PyAVMKVReader
 
 
 @line_profiler.profile

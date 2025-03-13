@@ -71,7 +71,7 @@ def record(file: str = "events.pkl"):
         KeyboardListener(on_press=on_press, on_release=on_release) as kl,
     ):
         mouse_listener = ml
-        keyboard_listener = kl
+        keyboard_listener = kl  # noqa: F841
         typer.echo("Recording... Press ESC to stop.")
         kl.join()
 

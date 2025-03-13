@@ -11,8 +11,8 @@ import numpy as np
 from gi.repository import Gst
 from loguru import logger
 
-from owa_env_gst import GstPipelineRunner
-from owa_env_gst.utils import sample_to_ndarray
+from owa.env.gst import GstPipelineRunner
+from owa.env.gst.utils import sample_to_ndarray
 
 # Initialize GStreamer
 if not Gst.is_initialized():

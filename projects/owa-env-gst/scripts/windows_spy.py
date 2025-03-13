@@ -1,6 +1,6 @@
 import typer
 
-from owa_env_desktop.window.callables import get_window_by_title
+from owa.env.desktop.window.callables import get_window_by_title
 
 
 def main(window_title_substring: str):

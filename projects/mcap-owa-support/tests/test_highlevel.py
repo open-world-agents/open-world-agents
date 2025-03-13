@@ -1,9 +1,9 @@
 import tempfile
 
 import pytest
-from owa_env_desktop.msg import KeyboardEvent
+from owa.env.desktop.msg import KeyboardEvent
 
-from mcap_owa.highlevel import Reader, Writer
+from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
 
 
 @pytest.fixture
@@ -18,16 +18,16 @@ def test_write_and_read_messages(temp_mcap_file):
     topic = "/chatter"
     event = KeyboardEvent(event_type="press", vk=1)
 
-    with Writer(file_path) as writer:
+    with OWAMcapWriter(file_path) as writer:
         for i in range(0, 10):
             publish_time = i
-            writer.write_message(topic, event, publish_time=publish_time)
+            writer.write_message(topic, event, log_time=publish_time)
 
-    with Reader(file_path) as reader:
+    with OWAMcapReader(file_path) as reader:
         messages = list(reader.iter_decoded_messages())
         assert len(messages) == 10
-        for i, (schema, channel, message, decoded) in enumerate(messages):
-            assert channel.topic == topic
-            assert decoded.event_type == "press"
-            assert decoded.vk == 1
-            assert message.publish_time == i
+        for i, (_topic, timestamp, msg) in enumerate(messages):
+            assert _topic == topic
+            assert msg.event_type == "press"
+            assert msg.vk == 1
+            assert timestamp == i

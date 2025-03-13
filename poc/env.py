@@ -60,7 +60,7 @@ LISTENERS = Registry()
 # ================ Example of registering the CALLABLES and LISTENERS ================================
 
 # === in owa/listeners/screen.py ===
-from owa.registry import LISTENERS
+from owa.core.registry import LISTENERS
 
 
 @LISTENERS.register("screen")
@@ -73,7 +73,7 @@ class ScreenListener(Listener): ...  # TODO: implement single-image grab Callabl
 from pynput.keyboard import Listener as KeyboardListener
 from pynput.mouse import Listener as MouseListener
 
-from owa.registry import LISTENERS
+from owa.core.registry import LISTENERS
 
 
 @LISTENERS.register("keyboard")
@@ -104,7 +104,7 @@ class YourCustomListener(Listener): ...
 from pynput.keyboard import Controller as KeyboardController
 from pynput.mouse import Controller as MouseController
 
-from owa.registry import CALLABLES
+from owa.core.registry import CALLABLES
 
 mouse_controller = MouseController()
 
@@ -119,7 +119,7 @@ CALLABLES.register("mouse.scroll")(mouse_controller.scroll)
 # === in owa/callables/minecraft-specific-somethings.py ===
 # Register the callable functions for minecraft
 
-from owa.registry import CALLABLES
+from owa.core.registry import CALLABLES
 
 
 @CALLABLES.register("minecraft.get_inventory")
@@ -129,7 +129,7 @@ def get_inventory(player):
 
 # ================ Example of using the CALLABLES and LISTENERS ================================
 
-from owa.registry import CALLABLES, LISTENERS
+from owa.core.registry import CALLABLES, LISTENERS
 
 # Get the callable function for mouse click
 mouse_click = CALLABLES["mouse.click"]
