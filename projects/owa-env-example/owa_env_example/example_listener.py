@@ -1,5 +1,5 @@
-from owa import Listener
-from owa.registry import LISTENERS
+from owa.core import Listener
+from owa.core.registry import LISTENERS
 
 
 @LISTENERS.register("example/listener")

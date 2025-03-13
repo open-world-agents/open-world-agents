@@ -24,11 +24,11 @@ end:       2025-03-11T02:46:56.6873234+09:00 (1741628816.687323400)
 compression:
         zstd: [1/1 chunks] [173.83 KiB/28.29 KiB (83.73%)] [1.60 KiB/sec]
 channels:
-        (1) window            18 msgs (1.02 Hz)    : owa_env_desktop.msg.WindowInfo [jsonschema]
-        (2) keyboard/state    18 msgs (1.02 Hz)    : owa_env_desktop.msg.KeyboardState [jsonschema]
-        (3) mouse           1064 msgs (60.27 Hz)   : owa_env_desktop.msg.MouseEvent [jsonschema]
-        (4) screen           978 msgs (55.40 Hz)   : owa_env_gst.msg.ScreenEmitted [jsonschema]
-        (5) keyboard          46 msgs (2.61 Hz)    : owa_env_desktop.msg.KeyboardEvent [jsonschema]
+        (1) window            18 msgs (1.02 Hz)    : owa.env.desktop.msg.WindowInfo [jsonschema]
+        (2) keyboard/state    18 msgs (1.02 Hz)    : owa.env.desktop.msg.KeyboardState [jsonschema]
+        (3) mouse           1064 msgs (60.27 Hz)   : owa.env.desktop.msg.MouseEvent [jsonschema]
+        (4) screen           978 msgs (55.40 Hz)   : owa.env.gst.msg.ScreenEmitted [jsonschema]
+        (5) keyboard          46 msgs (2.61 Hz)    : owa.env.desktop.msg.KeyboardEvent [jsonschema]
 channels: 5
 attachments: 0
 metadata: 0

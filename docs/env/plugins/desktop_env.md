@@ -27,7 +27,7 @@ This module is essential for applications that require integration with desktop 
 
 ## Implementation Details
 
-To see detailed implementation, skim over [owa_env_desktop](https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-env-desktop/owa_env_desktop). API documentation is currently being developed.
+To see detailed implementation, skim over [owa-env-desktop](https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-env-desktop). API documentation is currently being developed.
 
 ## Available Functions
 

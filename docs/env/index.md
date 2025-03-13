@@ -21,9 +21,9 @@ The key difference between these two is who initiates the call:
 
 Additionally, **Runnable** can be used to model Threads/Processes that execute in the background. This is a parent class of `Listener` and supports `start/stop/join` operations on the user side. Developers must implement the `loop` methods, which is equivalent to `run` in `threading.Thread`.
 
-These **Callable, Listener, Runnable** components are managed through the `CALLABLES, LISTENERS, RUNNABLES` registries in the `owa.registry` module. To register each component, use `CALLABLES.register`, `LISTENERS.register`, or `RUNNABLES.register` respectively.
+These **Callable, Listener, Runnable** components are managed through the `CALLABLES, LISTENERS, RUNNABLES` registries in the `owa.core.registry` module. To register each component, use `CALLABLES.register`, `LISTENERS.register`, or `RUNNABLES.register` respectively.
 
-Furthermore, collections of Callable, Listener, and Runnable objects that perform specific roles are managed as `EnvPlugin` modules. `EnvPlugins` are activated via the `activate_module` function inside the `owa.registry` module, during which their callables/listeners/runnables are systematically added to the global registry.
+Furthermore, collections of Callable, Listener, and Runnable objects that perform specific roles are managed as `EnvPlugin` modules. `EnvPlugins` are activated via the `activate_module` function inside the `owa.core.registry` module, during which their callables/listeners/runnables are systematically added to the global registry.
 
 ## 3. Detailed Explanation of Core Logic
 
@@ -33,7 +33,7 @@ The `projects/core/main.py` file initiates the standard environment. In the foll
 
 ```python
 import time
-from owa.registry import CALLABLES, LISTENERS, activate_module
+from owa.core.registry import CALLABLES, LISTENERS, activate_module
 
 # Initial registry state (empty)
 print(CALLABLES, LISTENERS)  # {}, {}

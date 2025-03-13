@@ -1,5 +1,5 @@
-from owa import Runnable
-from owa.registry import RUNNABLES
+from owa.core import Runnable
+from owa.core.registry import RUNNABLES
 
 
 @RUNNABLES.register("example/runnable")

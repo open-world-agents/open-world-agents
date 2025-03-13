@@ -1,4 +1,4 @@
-from owa.registry import CALLABLES
+from owa.core.registry import CALLABLES
 
 
 @CALLABLES.register("example/callable")

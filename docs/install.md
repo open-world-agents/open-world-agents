@@ -31,7 +31,7 @@
     ```python
     import time
 
-    from owa.registry import CALLABLES, LISTENERS, activate_module
+    from owa.core.registry import CALLABLES, LISTENERS, activate_module
 
     # Activate the standard environment module
     activate_module("owa.env.std")

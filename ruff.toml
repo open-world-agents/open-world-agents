@@ -1,7 +1,5 @@
 exclude = [
-    "projects/owa-env-desktop/scripts",
     "projects/owa-env-gst/owa_env_gst/gst-plugins/python/py_utctimestampsrc.py",
-    "projects/owa-env-gst/scripts",
     "poc",
 ]
 
@@ -11,7 +9,5 @@ line-length = 119
 known-first-party = [
     "mcap_owa",
     "owa",
-    "owa_env_desktop",
-    "owa_env_gst",
     "owa_game_agent",
 ]

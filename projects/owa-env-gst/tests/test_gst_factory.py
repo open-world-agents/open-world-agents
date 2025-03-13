@@ -4,7 +4,7 @@ gi.require_version("Gst", "1.0")
 
 from gi.repository import Gst  # noqa: E402
 
-from owa_env_gst import pipeline_builder  # noqa: E402
+from owa.env.gst import pipeline_builder  # noqa: E402
 
 if not Gst.is_initialized():
     Gst.init(None)

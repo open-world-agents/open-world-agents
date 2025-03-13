@@ -8,7 +8,7 @@ import orjson
 from mcap.well_known import SchemaEncoding
 from mcap.writer import CompressionType
 from mcap.writer import Writer as McapWriter
-from owa.message import BaseMessage
+from owa.core.message import BaseMessage
 
 from . import __version__
 
@@ -27,7 +27,7 @@ class Writer:
     ```python
     from pathlib import Path
 
-    from owa.message import OWAMessage
+    from owa.core.message import OWAMessage
 
     from mcap_owa.writer import Writer as OWAWriter
 
@@ -145,6 +145,7 @@ class Writer:
             log_time = time.time_ns()
         if publish_time is None:
             publish_time = log_time
+
         self.__writer.add_message(
             channel_id=channel_id,
             log_time=log_time,

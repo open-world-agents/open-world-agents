@@ -20,7 +20,7 @@ With open-world-agents, you can:
     ```python
     import time
 
-    from owa.registry import CALLABLES, LISTENERS, activate_module
+    from owa.core.registry import CALLABLES, LISTENERS, activate_module
 
     # Activate the standard environment module
     activate_module("owa.env.std")
@@ -51,8 +51,8 @@ With open-world-agents, you can:
 3. How to register your custom EnvPlugin. [Learn more...](env/custom_plugins.md)
     1. Write your own code
 ```python
-from owa import Listener
-from owa.registry import LISTENERS
+from owa.core import Listener
+from owa.core.registry import LISTENERS
 
 
 @LISTENERS.register("my/listener")
@@ -64,7 +64,7 @@ class MyEventListener(Listener):
 ```
     2. Use it!
 ```python
-from owa.registry import LISTENERS, activate_module
+from owa.core.registry import LISTENERS, activate_module
 
 activate_module("your-own-envplugin")
 

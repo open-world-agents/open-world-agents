@@ -1,6 +1,6 @@
 import pytest
 
-from owa.registry import CALLABLES, activate_module
+from owa.core.registry import CALLABLES, activate_module
 
 
 # Automatically activate the desktop module for all tests in this session.
