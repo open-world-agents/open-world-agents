@@ -21,7 +21,7 @@ def install_project():
 
 
 def pack_conda_env():
-    subprocess.run(["conda-pack", "-n", ENV_NAME, "--output", "scripts/release_cli/env.tar.gz"], check=True)
+    subprocess.run(["conda-pack", "-n", ENV_NAME, "--output", "scripts/release_owl/env.tar.gz"], check=True)
     print("Packed conda environment.")
 
 

@@ -1,4 +1,4 @@
-name: Recorder Release
+name: owl Release
 
 on:
   push:
@@ -60,12 +60,12 @@ jobs:
         run: uv pip install conda-pack
 
       - name: Generate Release Files
-        run: python scripts/release_recorder/release.py
+        run: python scripts/release_owl/release.py
 
       - name: Upload Release Files
         uses: actions/upload-artifact@v4
         with:
-          name: recorder
+          name: owl
           path: |
-            scripts/release_recorder/env.tar.gz
-            scripts/release_recorder/entrypoint.bat
+            scripts/release_owl/env.tar.gz
+            scripts/release_owl/entrypoint.bat
