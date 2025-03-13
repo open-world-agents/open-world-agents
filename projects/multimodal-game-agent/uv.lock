@@ -55,12 +55,15 @@ source = { editable = "." }
 dependencies = [
     { name = "pandas" },
     { name = "pillow" },
+    { name = "tqdm" },
     { name = "typer" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "pandas", specifier = ">=2.2.3" },
+    { name = "pillow", specifier = ">=11.1.0" },
+    { name = "tqdm", specifier = ">=4.67.1" },
     { name = "typer", specifier = ">=0.15.2" },
 ]
 

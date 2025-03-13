@@ -26,7 +26,7 @@ def convert_timestamp_to_token(timestamp: int) -> str:
     For example, 274866265ns becomes 2750_MILLISECOND, denoted as 2750_MS.
     """
     token_val = (timestamp + 5000000) // 10000000 * 10
-    return f"{token_val}_MS"
+    return f"<{token_val}_MS>"
 
 
 def get_vk_name(code: int) -> str:
@@ -53,7 +53,7 @@ def process_state_keyboard(state_keyboard: List[dict]) -> List[str]:
         for vk in pressed_vk_list:
             key_letter = get_vk_name(vk)
             if key_letter:
-                token = f"KEYBOARD_{key_letter.upper()}_PRESSED"
+                token = f"<KEYBOARD_{key_letter.upper()}_PRESSED>"
                 tokens.append(token)
     return tokens
 
@@ -77,7 +77,7 @@ def process_action_keyboard(action_keyboard: List[Tuple[int, dict]]) -> List[str
         if vk_name and event_type in {"press", "release"}:
             # Map 'press' -> PRESSED, 'release' -> RELEASED
             event_str = "PRESSED" if event_type == "press" else "RELEASED"
-            key_token = f"KEYBOARD_{vk_name}_{event_str}"
+            key_token = f"<KEYBOARD_{vk_name}_{event_str}>"
             tokens.append(time_token)
             tokens.append(key_token)
         else:
@@ -98,9 +98,6 @@ def rule_based_tokenize_sample(sample: OWATrainingSample) -> List[str]:
 class SmolVLMInput(BaseModel):
     images: List[Any]
     messages: List[dict]
-
-    class Config:
-        arbitrary_types_allowed = True
 
 
 def sample_to_smolvlm_input(sample: OWATrainingSample) -> SmolVLMInput:
