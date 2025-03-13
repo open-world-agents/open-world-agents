@@ -23,6 +23,7 @@ def format_timestamp(ns):
 
 def cat(
     mcap_path: Annotated[Path, typer.Argument(help="Path to the input .mcap file")],
+    pretty: Annotated[bool, typer.Option(help="Pretty print JSON output")] = True,
     topics: Annotated[str, typer.Option(help="Comma-separated list of topics to include")] = None,
     exclude: Annotated[str, typer.Option(help="Comma-separated list of topics to exclude")] = None,
     start_time: Annotated[int, typer.Option(help="Start time in seconds")] = None,
@@ -46,17 +47,20 @@ def cat(
             if n is not None and i >= n:
                 break
 
-            formatted_time = format_timestamp(timestamp)
-            pretty_msg = json.dumps(msg, indent=2, ensure_ascii=False)
+            if pretty:
+                formatted_time = format_timestamp(timestamp)
+                pretty_msg = json.dumps(msg, indent=2, ensure_ascii=False)
 
-            typer.echo(
-                typer.style(f"[{formatted_time}]", fg=typer.colors.BLUE)
-                + typer.style(f" [{topic}]", fg=typer.colors.GREEN)
-                + "\n"
-                + typer.style(pretty_msg, fg=typer.colors.CYAN)
-                + "\n"
-                + "-" * 80
-            )
+                typer.echo(
+                    typer.style(f"[{formatted_time}]", fg=typer.colors.BLUE)
+                    + typer.style(f" [{topic}]", fg=typer.colors.GREEN)
+                    + "\n"
+                    + typer.style(pretty_msg, fg=typer.colors.CYAN)
+                    + "\n"
+                    + "-" * 80
+                )
+            else:
+                typer.echo(f"Topic: {topic}, Timestamp: {timestamp}, Message: {msg}")
 
 
 if __name__ == "__main__":
