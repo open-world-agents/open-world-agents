@@ -12,9 +12,9 @@
 
 - `example.mcap` [[Download]](https://github.com/open-world-agents/open-world-agents/blob/main/docs/data/example.mcap)
 
-    Utilizing [mcap CLI](https://mcap.dev/guides/cli), you can inspect the summary of `mcap` file.
+    Utilizing `owl`(Open World agents cLi), you can inspect the summary of `mcap` file.
 ```
-$ mcap info example.mcap
+$ owl mcap info example.mcap
 library:   mcap-owa-support 0.1.0; mcap 1.2.2
 profile:   owa
 messages:  2124
@@ -34,7 +34,7 @@ attachments: 0
 metadata: 0
 ```
 
-    Also, you may inspect the detailed messages with [simple reader](#reading-owa-mcap-files)
+    Also, you may inspect the detailed messages with [simple reader](#reading-owa-mcap-files) or by running `owl mcap cat example.mcap --n 8 --no-pretty`
 ```
 Topic: window, Timestamp: 1741628814049712700, Message: {'title': 'ZType – Typing Game - Type to Shoot - Chromium', 'rect': [389, 10, 955, 1022], 'hWnd': 7540094}
 Topic: keyboard/state, Timestamp: 1741628814049712700, Message: {'pressed_vk_list': []}
