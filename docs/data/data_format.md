@@ -34,8 +34,9 @@ attachments: 0
 metadata: 0
 ```
 
-    Also, you may inspect the detailed messages with [simple reader](#reading-owa-mcap-files) or by running `owl mcap cat example.mcap --n 8 --no-pretty`
+    Also, you may inspect the detailed messages with [simple reader](#reading-owa-mcap-files) or by running `owl`.
 ```
+$ owl mcap cat example.mcap --n 8 --no-pretty
 Topic: window, Timestamp: 1741628814049712700, Message: {'title': 'ZType – Typing Game - Type to Shoot - Chromium', 'rect': [389, 10, 955, 1022], 'hWnd': 7540094}
 Topic: keyboard/state, Timestamp: 1741628814049712700, Message: {'pressed_vk_list': []}
 Topic: screen, Timestamp: 1741628814057575300, Message: {'path': 'example.mkv', 'pts': 14866666666, 'utc_ns': 1741628814056571100}
