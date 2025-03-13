@@ -6,14 +6,15 @@ Output: N/A
 """
 
 from pathlib import Path
+from typing import Any, List, Tuple
 
 import typer
 from PIL import Image
-from typing import Any, List, Tuple
 from pydantic import BaseModel
 
+from owa.env.desktop.constants import VK
 from owa_game_agent.data import OWAMcapQuery, OWATrainingSample
-from owa_env_desktop.constants import VK
+
 app = typer.Typer()
 
 
@@ -124,15 +125,19 @@ Using the current keyboard state and the image sequence, predict the future sequ
         {
             "role": "user",
             "content": [
-                {"type": "text", "text": CHAT_INSTRUCTION.format_map({"len_images": len_images, "keyboard_state": keyboard_state})+"<image>"*len_images},
-            ]
+                {
+                    "type": "text",
+                    "text": CHAT_INSTRUCTION.format_map({"len_images": len_images, "keyboard_state": keyboard_state})
+                    + "<image>" * len_images,
+                },
+            ],
         },
         {
             "role": "assistant",
             "content": [
                 {"type": "text", "text": keyboard_action},
-            ]
-        }
+            ],
+        },
     ]
 
     return SmolVLMInput(images=state_screen, messages=messages)
