@@ -12,8 +12,7 @@ print(CALLABLES, LISTENERS)
 # {'clock.time_ns': <built-in function time_ns>} {'clock/tick': <class 'owa.env.std.clock.ClockTickListener'>}
 
 # now, let's test the clock/tick listener
-tick = LISTENERS["clock/tick"]().configure(callback=lambda: print(CALLABLES["clock.time_ns"]()))
-tick.configure(interval=1)
+tick = LISTENERS["clock/tick"]().configure(interval=1, callback=lambda: print(CALLABLES["clock.time_ns"]()))
 tick.start()
 
 time.sleep(1)  # during this time, the tick listener will print the time in nanoseconds 1 or 2 time
@@ -39,13 +38,12 @@ mouse_click("left", 2)
 
 
 # Get the listener for keyboard
-def on_keyboard_event(event_type, key):
-    print(f"Keyboard event: {event_type}, {key}")
+def on_keyboard_event(event):
+    print(f"Keyboard event type: {event.event_type}, vk: {event.vk}")
 
 
 a = LISTENERS["keyboard"]
-keyboard_listener = LISTENERS["keyboard"](on_keyboard_event)
-keyboard_listener.configure()
+keyboard_listener = LISTENERS["keyboard"]().configure(callback=on_keyboard_event)
 keyboard_listener.start()
 
 time.sleep(5)
