@@ -1,11 +1,8 @@
-# ruff: noqa: E402
-# To suppress the warning for E402, waiting for https://github.com/astral-sh/ruff/issues/3711
-
 import os
 
 import pytest
 
-import owa.env.gst  # to enable GST_PLUGIN_PATH environment variable setup
+import owa.env.gst  # must import 'gst' to enable GST_PLUGIN_PATH environment variable setup
 
 
 @pytest.fixture
@@ -19,9 +16,7 @@ def gstreamer():
     if not Gst.is_initialized():
         Gst.init(None)
 
-    from owa.env.gst import pipeline_builder
-
-    return Gst, pipeline_builder
+    return Gst, owa.env.gst.pipeline_builder
 
 
 def check_plugin(gst, plugin_name):
