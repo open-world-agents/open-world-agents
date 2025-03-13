@@ -2,7 +2,7 @@
 
 Each sub-repository is a self-contained repository which may have other sub-repository as dependencies.
 
-We're adopting namespace packages. For more detail, see https://packaging.python.org/en/latest/guides/packaging-namespace-packages/
+We're adopting namespace packages. Most `owa`-related packages, including EnvPlugins, are installed in `owa` namespace, e.g. `owa.core`, `owa.cli`, `owa.env.desktop`. For more detail, see [Packaging namespace packages](https://packaging.python.org/en/latest/guides/packaging-namespace-packages/)
 
 ```
 open-world-agents/

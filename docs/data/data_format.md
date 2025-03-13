@@ -1,4 +1,4 @@
-## Data Format
+# OWAMcap format
 
 - The main recording is saved as a Matroska (`.mkv`) file. This `.mkv` file includes timestamps (nanoseconds since the [epoch](https://docs.python.org/3/library/time.html#epoch)) as subtitles. These timestamps can be used to align events in the `.mcap` file with frames in the `.mkv`.
 - Events such as keyboard, mouse, and window interactions are logged in an `.mcap` file with the same name.
@@ -10,7 +10,7 @@
 
 ### Example Data
 
-- `example.mcap` [[Download]](https://github.com/open-world-agents/open-world-agents/blob/main/docs/recorder/example.mcap)
+- `example.mcap` [[Download]](https://github.com/open-world-agents/open-world-agents/blob/main/docs/data/example.mcap)
 
     Utilizing [mcap CLI](https://mcap.dev/guides/cli), you can inspect the summary of `mcap` file.
 ```
@@ -58,7 +58,7 @@ Topic: mouse, Timestamp: 1741628816445662100, Message: {'event_type': 'move', 'x
 Topic: screen, Timestamp: 1741628816446661600, Message: {'path': 'example.mkv', 'pts': 17250000000, 'utc_ns': 1741628816446661600}
 ```
 
-- `example.mkv` [[Download]](https://github.com/open-world-agents/open-world-agents/blob/main/docs/recorder/example.mkv)
+- `example.mkv` [[Download]](https://github.com/open-world-agents/open-world-agents/blob/main/docs/data/example.mkv)
 
 <video controls>
 <source src="../example.mkv" type="video/mp4">

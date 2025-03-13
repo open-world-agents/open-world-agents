@@ -4,19 +4,38 @@
 
 Streamline your agent's lifecycle with Open World Agents. From data capture to model training and real-time evaluation, everything is designed for flexibility and performance.
 
-With open-world-agents, you can:
+Here's what we've got in store for you!
 
-- **Data Collection**: Collect your own desktop data, which contains timestamp-aligned **keyboard/mouse** control and **high-frequency(60Hz+) screen** data.
-    - Powered by Windows APIs (`DXGI/WGC`) and the robust [GStreamer](https://gstreamer.freedesktop.org/) framework, ensuring superior performance compared to alternatives. [Learn more...](recorder/why.md)
-- **Asynchronous, real-time event processing**: Compared to existing LLM-agent frameworks and [gymnasium.Env](https://gymnasium.farama.org/api/env/), our platform features an asynchronous processing design leveraging `Callables`, `Listeners`, and `Runnables`. [Learn more...](env/index.md)
-- **Dynamic EnvPlugin Registration**: Seamlessly register and activate EnvPlugins—consisting of `Callables`, `Listeners`, and `Runnables`—at runtime to customize and extend functionality. [Learn more...](env/custom_plugins.md)
-- **Extensible Design**: Easy to add custom EnvPlugin and extend functionality. [Learn more...](env/custom_plugins.md)
-- **Comprehensive Examples**: We provides various examples that demonstrates how to build foundation multimodal desktop agent. Since it's just a example, you may customize anything you want.
+---
+
+- **OWA's Env**: The asynchronous, event-driven environmental interface for real-time agent
+    - **Asynchronous, real-time event processing**: Compared to existing LLM-agent frameworks and [gymnasium.Env](https://gymnasium.farama.org/api/env/), OWA's Env features an asynchronous processing design leveraging `Callables`, `Listeners`, and `Runnables`. [Learn more...](env/index.md)
+    - **Dynamic EnvPlugin Activation**: Seamlessly register and activate EnvPlugins at runtime to customize and extend functionality, powered by registry pattern. [Learn more...](env/guide.md)
+    - **Extensible, Open-Source Design**: Built for the community, by the community. Easily add custom plugins and extend the Env's functionality to suit your needs. [Learn more...](env/custom_plugins.md)
+
+- **Predefined EnvPlugins**: We provide you some EnvPlugins which is suitable for constructing multimodal desktop agent.
+    - [`owa-env-desktop`](env/plugins/desktop_env.md): Provides basic `Callables/Listeners` for mouse/keyboard/window events. 
+    - [`owa-env-gst`](env/plugins/gstreamer_env.md): Powered by Windows APIs (`DXGI/WGC`) and the robust [GStreamer](https://gstreamer.freedesktop.org/) framework, provides high-performance and efficient screen capture/recording features. `owa-env-gst`'s screen capture is **6x faster** compared to alternatives. [Learn more...](data/recorder/why.md)
+
+---
+
+- **OWA's Data**: From high-performance, robust and open-source friendly data format to powerful, efficient and easy-to-use desktop recorder.
+    - **`OWAMcap` file format**: high-performance, self-contained, flexible container file format for multimodal desktop log data, powerd by open-source container file format [mcap](https://mcap.dev/). [Learn more...](data/data_format.md)
+    - **`owl mcap record your-filename.mcap`**: powerful, efficient and easy-to-use desktop recorder. Contains keyboard/mouse, active window info and high-frequency screen data.
+        - Powered by [`owa-env-gst`](env/plugins/gstreamer_env.md), ensuring superior performance compared to alternatives. [Learn more...](data/recorder/why.md)
+    - **`owl`: Open World agents cLi**: CLI for OWA, which supports MCAP file management and window management.
+
+---
+
+- **Comprehensive Examples**: We provides various examples that demonstrates how to build foundation multimodal desktop agent. Since it's just a example, you may customize anything you want. **Examples are in progress; stay tuned!**
+
+
 <!-- - **Cross-Platform**: Works on Windows and macOS. -->
+
 
 ## Quick Start
 
-1. Simple example of using `Callables` and `Listeners`. [Learn more...](env)
+- Simple example of using `Callables` and `Listeners`. [Learn more...](env/index.md)
     ```python
     import time
 
@@ -45,39 +64,45 @@ With open-world-agents, you can:
     tick.stop(), tick.join()
     ```
 
-2. Record your own desktop usage data by just running `recorder.exe output.mkv`. [Learn more...](recorder/install_and_usage.md)
+- Record your own desktop usage data by just running `owl mcap record your-filename.mcap`. [Learn more...](data/recorder/install_and_usage.md)
 
 
-3. How to register your custom EnvPlugin. [Learn more...](env/custom_plugins.md)
-    1. Write your own code
-```python
-from owa.core import Listener
-from owa.core.registry import LISTENERS
-
-
-@LISTENERS.register("my/listener")
-class MyEventListener(Listener):
-    def loop(self, *, stop_event, callback):
-        while not stop_event.is_set():
-            event = wait_and_get_event()
-            callback(event)
+- Curious about `OWAMCap` format? see following: (Note that `cat` output is a created example.)
 ```
-    2. Use it!
-```python
-from owa.core.registry import LISTENERS, activate_module
+$ owl mcap info example.mcap
+library:   mcap-owa-support 0.1.0; mcap 1.2.2
+profile:   owa
+messages:  2124
+duration:  17.6543448s
+start:     2025-03-11T02:46:39.0329786+09:00 (1741628799.032978600)
+end:       2025-03-11T02:46:56.6873234+09:00 (1741628816.687323400)
+compression:
+        zstd: [1/1 chunks] [173.83 KiB/28.29 KiB (83.73%)] [1.60 KiB/sec]
+channels:
+        (1) window            18 msgs (1.02 Hz)    : owa.env.desktop.msg.WindowInfo [jsonschema]
+        (2) keyboard/state    18 msgs (1.02 Hz)    : owa.env.desktop.msg.KeyboardState [jsonschema]
+        (3) mouse           1064 msgs (60.27 Hz)   : owa.env.desktop.msg.MouseEvent [jsonschema]
+        (4) screen           978 msgs (55.40 Hz)   : owa.env.gst.msg.ScreenEmitted [jsonschema]
+        (5) keyboard          46 msgs (2.61 Hz)    : owa.env.desktop.msg.KeyboardEvent [jsonschema]
+channels: 5
+attachments: 0
+metadata: 0
 
-activate_module("your-own-envplugin")
+$ owl mcap cat example.mcap --n 8 --no-pretty
+Topic: window, Timestamp: 1741628814049712700, Message: {'title': 'ZType – Typing Game - Type to Shoot - Chromium', 'rect': [389, 10, 955, 1022], 'hWnd': 7540094}
+Topic: keyboard/state, Timestamp: 1741628814049712700, Message: {'pressed_vk_list': []}
+Topic: screen, Timestamp: 1741628814057575300, Message: {'path': 'example.mkv', 'pts': 14866666666,
 
-def callback(event):
-    print(f"Captured event: {event}")
+... (additional lines omitted for brevity) ...
 
-listener = LISTENERS["my/listener"]().configure(callback=callback)
-listener.configure(), listener.start()
+Topic: keyboard, Timestamp: 1741628814978561600, Message: {'event_type': 'press', 'vk': 162}
+Topic: keyboard, Timestamp: 1741628815015522100, Message: {'event_type': 'release', 'vk': 162}
+Topic: window, Timestamp: 1741628815050666400, Message: {'title': 'data_format.md - open-world-agents - Visual Studio Code', 'rect': [-8, -8, 1928, 1040], 'hWnd': 133438}
 
-... # Run any your own logic here. listener is being executed in background as thread(ListenerThread) or process(ListenerProcess).
+... (additional lines omitted for brevity) ...
 
-# Finish it by calling stop and join
-listener.stop(), listener.join()
+Topic: mouse, Timestamp: 1741628816438561600, Message: {'event_type': 'move', 'x': 950, 'y': 891}
+Topic: mouse, Timestamp: 1741628816441655400, Message: {'event_type': 'click', 'x': 950, 'y': 891, 'button': 'left', 'pressed': true}
 ```
 
 <!-- TODO: add agent training lifecycle example -->

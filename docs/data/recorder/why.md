@@ -8,13 +8,13 @@ OWA's Recorder is a **powerful, efficient, and easy-to-use** screen recording to
 
 - **🔹 Simple & Intuitive** — Start recording with:  
     ```sh
-    recorder FILE_LOCATION
+    owl mcap record FILE_LOCATION
     ```  
     Stop with `Ctrl+C`. [Learn more...](install_and_usage.md)  
 
 - **🎥 All-in-One Recording** — Captures **screen, audio, and timestamps** in a single `.mkv` file.  
     - Timestamps are embedded as subtitles.  
-    - Logs **keyboard, mouse, and window events** in [mcap format](https://mcap.dev/). For data format, [Learn more...](data_format.md)  
+    - Logs **keyboard, mouse, and window events** in [mcap format](https://mcap.dev/). For data format, [Learn more...](../data_format.md)  
 
 - **🎯 Flexible Capture Options** — Supports `fps`, `window-name`, `monitor-index`, `show-cursor`, and more. [Learn more...](https://gstreamer.freedesktop.org/documentation/d3d11/d3d11screencapturesrc.html)
 

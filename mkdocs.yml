@@ -41,6 +41,9 @@ plugins:
   - git-revision-date-localized:
       type: datetime
   - mermaid2
+  - redirects:
+      redirect_maps:
+        'data/index.md': 'data/data_format.md'
 
 markdown_extensions:
   - pymdownx.highlight:
@@ -72,21 +75,23 @@ nav:
     - Contributing: contributing.md 
     # - Changelog: changelog.md # Later
   - Project Overview: project_overview.md
-  - OWA-Env:
-    - Introducing OWA-Env: env/index.md
+  - Env in OWA:
+    - env/index.md
+    - env/guide.md
     - Custom EnvPlugins: env/custom_plugins.md
     - Lists of EnvPlugins:
       - Standard Environment: env/plugins/std.md
       - Desktop Environment: env/plugins/desktop_env.md
-      - Gstreamer Environment (Docs=WIP): env/plugins/gstreamer_env.md
-  - OWA-Recorder:
-    - Why use OWA Recorder: recorder/why.md
-    - Install & Usage: recorder/install_and_usage.md
-    - Data format & Conversion: recorder/data_format.md
+      - Gstreamer Environment: env/plugins/gstreamer_env.md
+  - Data in OWA:
+    - data/data_format.md
+    - Desktop Recorder:
+      - Why use OWA's Desktop Recorder: data/recorder/why.md
+      - Install & Usage: data/recorder/install_and_usage.md
   - 🚀 Awesome Examples (WIP):
-    - Multimodal Game Agent: examples/multimodal_game_agent/overview.md
-    - Omniparse + InternLM GUI Agent: examples/gui_agent/overview.md
-    - Interactve World Model: examples/interactive_world_model/overview.md
+    - Multimodal Game Agent: examples/multimodal_game_agent.md
+    - Omniparse + InternLM GUI Agent: examples/gui_agent.md
+    - Interactve World Model: examples/interactive_world_model.md
     - Usage with transformers: examples/usage_with_transformers.md
     - Usage with LLM Inference Engines(ollama, ...): examples/usage_with_llm.md
-  - API Reference: api_reference.md # Later
+  # - API Reference: api_reference.md # Later

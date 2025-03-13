@@ -1,6 +1,6 @@
 # Installation & Usage
 
-This guide will help you install and use the OWA Recorder for high-performance screen recording and event capturing.
+This guide will help you install and use the **owl**(Open World agent cLi) for high-performance screen recording and event capturing.
 
 ## 🖥 Supported OS & HW
 
@@ -15,15 +15,15 @@ This guide will help you install and use the OWA Recorder for high-performance s
 
 ### Quick-Start Guide
 
-1. Download `recorder.zip` in [OWA releases](https://github.com/open-world-agents/open-world-agents/releases)
-2. unzip `recorder.zip`
-3. on `cmd` or `PowerShell`, run `entrypoint.bat --help`. `entrypoint.bat` unzip `env.tar.gz`, which is `conda` env, and run `recorder.py` with given arguments.
-    - e.g. `entrypoint.bat output.mkv` is equivalent to `recorder.py output.mkv`
+1. Download `owl.zip` in [OWA releases](https://github.com/open-world-agents/open-world-agents/releases)
+2. unzip `owl.zip`
+3. on `cmd` or `PowerShell`, run `entrypoint.bat --help`. `entrypoint.bat` unzip `env.tar.gz`, which is `conda` env, and run `owl` with given arguments.
+    - e.g. `entrypoint.bat output.mkv` is equivalent to `owl output.mkv`
 4. It's all!
 
 ### Manual Installation Guide
 
-If you have followed [OWA Installation Guide](../install.md), you can install `recorder` very easily by simply running:
+If you have followed [OWA Installation Guide](../../install.md), you can install `owl` very easily by simply running:
 
 ```sh
 uv pip install -e projects/owa-cli
@@ -38,9 +38,9 @@ The OWA Recorder can be used to capture screen, audio, and various desktop event
 
 To start recording, use the following command:
 ```sh
-recorder --help
+owl mcap record --help
                                                                                                                                                 
- Usage: recorder [OPTIONS] FILE_LOCATION                                                                                                        
+ Usage: owl mcap record [OPTIONS] FILE_LOCATION                                                                                                       
 
 ╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ *    file_location      TEXT  The location of the output file, use `.mkv` extension. [default: None] [required]                              │
@@ -63,22 +63,22 @@ recorder --help
 
 1. **Record screen and audio**:
     ```sh
-    recorder output.mkv --record-audio --record-video
+    owl mcap record output.mkv --record-audio --record-video
     ```
 
 2. **Record a specific window**:
     ```sh
-    recorder output.mkv --window-name "My Application"
+    owl mcap record output.mkv --window-name "My Application"
     ```
 
 3. **Record a specific monitor**:
     ```sh
-    recorder output.mkv --monitor-idx 1
+    owl mcap record output.mkv --monitor-idx 1
     ```
 
 4. **Disable audio recording**:
     ```sh
-    recorder output.mkv --no-record-audio
+    owl mcap record output.mkv --no-record-audio
     ```
 
 ### Stopping the Recording
@@ -89,7 +89,7 @@ To stop the recording, simply press `Ctrl+C`.
 ## Additional Information
 
 - **Output Files**:
-    - For the format of output file, see [Data Format Guide](data_format.md)
+    - For the format of output file, see [Data Format Guide](../data_format.md)
 
 - **Performance**:
     - OWA Recorder is optimized for high performance with minimal CPU/GPU usage.
@@ -99,5 +99,5 @@ For more details on the features and performance of OWA Recorder, refer to the [
 
 ### Real-time latency information
 
-- Currently, `probe` in `appsink_recorder` and appsink callback in screen listener automatically warns you if `latency > 50ms`. And in `recorder` it warns you if it takes `> 20ms` to write a queued events. In common case **you would not see** this warning but if you so, be take care of the system's performance and loads.
+- Currently, `probe` in `appsink_recorder` and appsink callback in screen listener automatically warns you if `latency > 30ms`. And in `recorder` it warns you if it takes `> 20ms` to write a queued events. In common case **you would not see** this warning but if you so, be take care of the system's performance and loads.
 - Normally, it takes some time(e.g. `170ms`) for screen record to be started. In other words, first screen record event is recorded after some time.

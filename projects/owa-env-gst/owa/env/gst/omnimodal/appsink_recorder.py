@@ -47,8 +47,8 @@ class AppsinkRecorder(GstPipelineRunner):
             elapsed = clock.get_time() - self.pipeline.get_base_time()
             latency = elapsed - buf.pts
 
-            # warn if latency is too high, e.g. > 50ms
-            if latency > 50 * Gst.MSECOND:
+            # warn if latency is too high, e.g. > 30ms
+            if latency > 30 * Gst.MSECOND:
                 logger.warning(f"High latency: {latency / Gst.MSECOND}ms")
 
             callback(ScreenEmitted(path=filesink_location, pts=buf.pts, utc_ns=frame_time_ns))

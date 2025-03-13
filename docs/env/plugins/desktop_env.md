@@ -43,6 +43,7 @@ To see detailed implementation, skim over [owa-env-desktop](https://github.com/o
 - `keyboard.press` - Simulate pressing a keyboard key
 - `keyboard.release` - Simulate releasing a keyboard key
 - `keyboard.type` - Type a string of characters
+- `keyboard.press_repeat` - Simulate repeat-press when pressing key long time
 
 ### Screen Functions
 - `screen.capture` - Capture the current screen (Note: This module utilizes `bettercam`. For better performance and extensibility, use `owa-env-gst`'s functions instead)
