@@ -7,8 +7,8 @@
 import tempfile
 
 from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
-from owa.message import OWAMessage
-from owa_env_desktop.msg import KeyboardEvent
+from owa.core.message import OWAMessage
+from owa.env.desktop.msg import KeyboardEvent
 
 
 class String(OWAMessage):
