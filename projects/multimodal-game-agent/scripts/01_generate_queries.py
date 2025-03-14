@@ -14,8 +14,9 @@ import typer
 from tqdm import tqdm
 
 from mcap_owa.highlevel import OWAMcapReader
+from owa.core.time import TimeUnits
 from owa_game_agent.constants import RECORD_PAUSE_KEY, RECORD_START_STOP_KEY
-from owa_game_agent.data import OWAMcapQuery, TimeUnits
+from owa_game_agent.data import OWAMcapQuery
 
 app = typer.Typer()
 
