@@ -28,7 +28,7 @@ def sample_interval():
     return np.random.rand() * (PAST_RANGE_S + FUTURE_RANGE_S)
 
 
-def process_query(query):
+def process_query(query: OWAMcapQuery) -> OWAMcapQuery:
     """Function to process one query in parallel."""
     try:
         query.to_sample()
@@ -51,7 +51,6 @@ def extract_query(mcap_file: Path) -> list[OWAMcapQuery]:
 
     pbar = tqdm(intervals, desc=f"Extracting queries from {mcap_file.name}")
 
-    queries = []
     query_list = []
     for start, end in intervals:
         anchor = start + TimeUnits.SECOND * PAST_RANGE_S
@@ -67,6 +66,7 @@ def extract_query(mcap_file: Path) -> list[OWAMcapQuery]:
             query_list.append(query)
             anchor += TimeUnits.SECOND * sample_interval()
 
+    queries = []
     # Parallelizing query.to_sample()
     with ProcessPoolExecutor(max_workers=16) as executor:
         futures = {executor.submit(process_query, query): query for query in query_list}

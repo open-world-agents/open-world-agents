@@ -69,6 +69,10 @@ class OWAMcapQuery(BaseModel):
             ):
                 if idx % (ORIGINAL_FRAME_RATE // self.screen_framerate):
                     continue
+                # msg.path: ztype.mkv
+                # self.file_path: absolute path to the mcap file
+                # convert msg.path to absolute path, with relative_to
+                msg.path = (self.file_path.parent / msg.path).as_posix()
                 state_screen.append((timestamp - self.anchor_timestamp_ns, msg))
 
             if len(state_screen) < MIN_SCREEN_NUM:
