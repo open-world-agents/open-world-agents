@@ -49,7 +49,7 @@ We recommend setting up `uv` next:
 
 ### Installation (3/3)
 
-Before install, clone repository by `https://github.com/open-world-agents/open-world-agents` and ensure you're at project root(`cd open-world-agents`).
+Before install, clone repository by `git clone https://github.com/open-world-agents/open-world-agents` and ensure you're at project root(`cd open-world-agents`).
 
 === "uv"
 
