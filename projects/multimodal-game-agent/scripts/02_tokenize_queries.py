@@ -9,158 +9,150 @@ from pathlib import Path
 from typing import Any, List, Tuple
 
 import typer
-from PIL import Image
+from loguru import logger
 from pydantic import BaseModel
 
-from owa.env.desktop.constants import VK
-from owa_game_agent.data import OWAMcapQuery, OWATrainingSample
+from owa.core.time import TimeUnits
 from owa.env.gst.msg import ScreenEmitted
+from owa_game_agent.data import OWAMcapQuery, OWATrainingSample
+
+# Constants
+TIMESTAMP_MIN_NS = 0
+TIMESTAMP_MAX_NS = TimeUnits.SECOND
+TIMESTAMP_TOKEN_INTERVAL_NS = TimeUnits.MSECOND * 10
+
+MS_TOKEN_FORMAT = "<TIMESTAMP_{}>"
+KEYBOARD_EVENT_TOKEN_FORMAT = "<KEYBOARD_{}_{}>>"
+CHAT_INSTRUCTION = """You are playing Super Hexagon, a fast-paced game that requires precise control and timing. The current keyboard state, which represents the keys that are pressed, is {keyboard_state}.
+After this prompt, you will receive {len_images} sequential image frames that show the game's visual history from the past to the present.
+Using the current keyboard state and the image sequence, predict the future sequence of keyboard actions. For each action, include the timestamp when it should be executed."""
+
 app = typer.Typer()
 
 
-def convert_timestamp_to_token(timestamp: int) -> str:
-    """
-    Convert a nanosecond timestamp to a discrete token.
-    The rule here is to divide the timestamp by 10^7 and multiply by 10, which is timestamp token is discretize by each 0.01 second.
-    Also, 5000000ns is added to the timestamp to round up to the nearest 0.01 second.
-    For example, 274866265ns becomes 2750_MILLISECOND, denoted as 2750_MS.
-    """
-    token_val = (timestamp + 5000000) // 10000000 * 10
-    return f"<{token_val}_MS>"
+class TokenizationHelper:
+    @staticmethod
+    def convert_timestamp_to_token(timestamp: int) -> str:
+        if not TIMESTAMP_MIN_NS <= timestamp <= TIMESTAMP_MAX_NS:
+            raise ValueError(f"Invalid timestamp: {timestamp}")
 
+        index = (timestamp - TIMESTAMP_MIN_NS) // TIMESTAMP_TOKEN_INTERVAL_NS
+        return MS_TOKEN_FORMAT.format(index)
 
-def get_vk_name(code: int) -> str:
-    """
-    Attempt to retrieve the enum member name from the VK enum given a key code.
-    Returns None if the code is not in VK.
-    """
-    try:
-        return VK(code).name
-    except ValueError:
-        return None
+    @staticmethod
+    def process_state_keyboard(state_keyboard: List[dict]) -> List[str]:
+        return [KEYBOARD_EVENT_TOKEN_FORMAT.format(pressed_key, "PRESSED") for pressed_key in state_keyboard]
 
+    @staticmethod
+    def process_action_keyboard(action_keyboard: List[Tuple[int, dict]]) -> List[str]:
+        tokens = []
+        for timestamp, event_info in action_keyboard:
+            # Convert timestamp
+            time_token = TokenizationHelper.convert_timestamp_to_token(timestamp)
 
-def process_state_keyboard(state_keyboard: List[dict]) -> List[str]:
-    """
-    Process state_keyboard events into discrete tokens.
-    Each dictionary in state_keyboard should have a 'pressed_vk_list' key.
-    For each key code in that list, we generate a token like "KEYBOARD_A_PRESSED"
-    if the key is in our mapping.
-    """
-    tokens = []
-    for entry in state_keyboard:
-        pressed_vk_list = entry.get("pressed_vk_list", [])
-        for vk in pressed_vk_list:
-            key_letter = get_vk_name(vk)
-            if key_letter:
-                token = f"<KEYBOARD_{key_letter.upper()}_PRESSED>"
-                tokens.append(token)
-    return tokens
+            # Process keyboard event
+            event_type = event_info.get("event_type")
+            vk = event_info.get("vk")
 
+            if event_type in {"press", "release"}:
+                # Map 'press' -> PRESSED, 'release' -> RELEASED
+                event_str = "PRESSED" if event_type == "press" else "RELEASED"
+                key_token = KEYBOARD_EVENT_TOKEN_FORMAT.format(vk, event_str)
+                tokens.extend([time_token, key_token])
+            else:
+                print(f"Skip Invalid event or key_token: {event_type}, {vk}")
 
-def process_action_keyboard(action_keyboard: List[Tuple[int, dict]]) -> List[str]:
-    """
-    Process action_keyboard events into discrete tokens.
-    Each event is a tuple of (timestamp, event_info).
-    The event_info dict should contain 'event_type' (press/release) and 'vk'.
-    We also convert the timestamp to a discrete token.
-    """
-    tokens = []
-    for event in action_keyboard:
-        timestamp, event_info = event
-        # Convert timestamp
-        time_token = convert_timestamp_to_token(timestamp)
-        # Process keyboard event
-        event_type = event_info.get("event_type")
-        vk = event_info.get("vk")
-        vk_name = get_vk_name(vk)
-        if vk_name and event_type in {"press", "release"}:
-            # Map 'press' -> PRESSED, 'release' -> RELEASED
-            event_str = "PRESSED" if event_type == "press" else "RELEASED"
-            key_token = f"<KEYBOARD_{vk_name}_{event_str}>"
-            tokens.append(time_token)
-            tokens.append(key_token)
-        else:
-            print(f"Skip Invalid event or key_token: {event_type}, {vk}")
-    return tokens
-
-
-def rule_based_tokenize_sample(sample: OWATrainingSample) -> List[str]:
-    """
-    Tokenize the given sample using rule-based tokenization for keyboard events.
-    Processes only state_keyboard and action_keyboard.
-    """
-    sample.state_keyboard = process_state_keyboard(sample.state_keyboard)
-    sample.action_keyboard = process_action_keyboard(sample.action_keyboard)
-    return sample
+        return tokens
 
 
 class SmolVLMInput(BaseModel):
-    images: List[Any]
-    messages: List[dict]
+    images: list[Any]
+    messages: list[dict]
 
 
-def sample_to_smolvlm_input(sample: OWATrainingSample) -> SmolVLMInput:
-    CHAT_INSTRUCTION = """You are playing Super Hexagon, a fast-paced game that requires precise control and timing. The current keyboard state, which represents the keys that are pressed, is {keyboard_state}.
-After this prompt, you will receive {len_images} sequential image frames that show the game’s visual history from the past to the present.
-Using the current keyboard state and the image sequence, predict the future sequence of keyboard actions. For each action, include the timestamp when it should be executed."""
+class SampleProcessor:
+    @staticmethod
+    def tokenize_sample(sample: OWATrainingSample) -> OWATrainingSample:
+        """
+        Tokenize the given sample using rule-based tokenization for keyboard events.
+        Processes only state_keyboard and action_keyboard.
+        """
+        tokenized_sample = sample.model_copy(deep=True)
+        tokenized_sample.state_keyboard = TokenizationHelper.process_state_keyboard(sample.state_keyboard)
+        tokenized_sample.action_keyboard = TokenizationHelper.process_action_keyboard(sample.action_keyboard)
+        return tokenized_sample
 
-    keyboard_state = sample.state_keyboard
-    if keyboard_state is None:
-        keyboard_state = "None"
-    keyboard_action = sample.action_keyboard
-    state_screen = sample.state_screen
+    @staticmethod
+    def to_smolvlm_input(sample: OWATrainingSample) -> SmolVLMInput:
+        """
+        Convert a training sample to SmolVLM input format with images and messages.
+        """
+        # Convert state_keyboard to string representation
+        keyboard_state = (
+            "None" if sample.state_keyboard is None else "".join(str(item) for item in sample.state_keyboard)
+        )
 
-    state_screen = [ScreenEmitted(**screen).to_pil_image() for timestamp, screen in state_screen]
+        # Convert action_keyboard to string representation
+        keyboard_action = "".join(str(item) for pair in sample.action_keyboard for item in pair)
 
-    len_images = len(state_screen)
+        # Convert screen states to PIL images
+        state_screen = [ScreenEmitted(**screen).to_pil_image() for timestamp, screen in sample.state_screen]
+        len_images = len(state_screen)
 
-    # It will be processed like [keyboard1, keyboard2, ...], -> keyboard1keyboard2...
-    keyboard_state = "".join(str(item) for item in keyboard_state)
-    # It will be processed like [(timestamp1, keyboard1), (timestamp2, keyboard2), ...], -> timestamp1keyboard1timestamp2keyboard2...
-    keyboard_action = "".join(str(item) for pair in keyboard_action for item in pair)
+        # Create messages for SmolVLM
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": CHAT_INSTRUCTION.format(len_images=len_images, keyboard_state=keyboard_state)
+                        + "<image>" * len_images,
+                    },
+                ],
+            },
+            {
+                "role": "assistant",
+                "content": [
+                    {"type": "text", "text": keyboard_action},
+                ],
+            },
+        ]
 
-    messages = [
-        {
-            "role": "user",
-            "content": [
-                {
-                    "type": "text",
-                    "text": CHAT_INSTRUCTION.format_map({"len_images": len_images, "keyboard_state": keyboard_state})
-                    + "<image>" * len_images,
-                },
-            ],
-        },
-        {
-            "role": "assistant",
-            "content": [
-                {"type": "text", "text": keyboard_action},
-            ],
-        },
-    ]
+        return SmolVLMInput(images=state_screen, messages=messages)
 
-    return SmolVLMInput(images=state_screen, messages=messages)
+
+def load_queries(query_path: Path) -> List[OWAMcapQuery]:
+    """Load queries from a JSONL file."""
+    with open(query_path, "r") as f:
+        return [OWAMcapQuery.model_validate_json(line) for line in f]
 
 
 @app.command()
 def main(query_path: Path):
-    # for each query, extract the sample.
-    # query_path is jsonl file
-    with open(query_path, "r") as f:
-        queries = [OWAMcapQuery.model_validate_json(line) for line in f]
+    logger.info(
+        f"Total timestamp tokens: {(TIMESTAMP_MAX_NS - TIMESTAMP_MIN_NS) // TIMESTAMP_TOKEN_INTERVAL_NS}, "
+        f"ranging from {TIMESTAMP_MIN_NS / TimeUnits.SECOND} to {TIMESTAMP_MAX_NS / TimeUnits.SECOND} seconds"
+    )
 
-    # TODO: implement following
-    query = queries[0]
+    # Load all queries from the file
+    queries = load_queries(query_path)
+
+    # Select a sample query for processing (same as original)
+    query_index = len(queries) // 2 + 55
+    query = queries[query_index]
+
+    # Process the sample
     sample = query.to_sample()
     print(sample)
     print("==============")
 
-    sample = rule_based_tokenize_sample(sample)
-    print(sample)
+    tokenized_sample = SampleProcessor.tokenize_sample(sample)
+    print(tokenized_sample)
     print("==============")
 
-    sample = sample_to_smolvlm_input(sample)
-    print(sample)
+    vlm_input = SampleProcessor.to_smolvlm_input(tokenized_sample)
+    print(vlm_input)
     print("==============")
 
 
