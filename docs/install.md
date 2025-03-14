@@ -2,7 +2,7 @@
 
 ## Quick Start
 
-**If you want super-quick-start, skip and head to `pip` install guide in [below](#installation-33).**
+**If you want super-quick-start, skip and head to `pip` install guide in [below](#__tabbed_2_2).**
 
 ## Install from Source
 
@@ -48,6 +48,8 @@ We recommend setting up `uv` next:
     Always activate your virtual environment before running any `vuv` commands.
 
 ### Installation (3/3)
+
+Before install, clone repository by `https://github.com/open-world-agents/open-world-agents` and ensure you're at project root(`cd open-world-agents`).
 
 === "uv"
 
