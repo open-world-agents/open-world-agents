@@ -44,7 +44,7 @@ If you **do not require** efficient screen capture with `owa-env-gst`, installat
 
 ---
 
-## Full Installation Guide with GStreamer
+## Full Installation Guide
 
 If you **do require** efficient screen capture with `owa-env-gst`, follow this guide.
 
