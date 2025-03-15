@@ -18,9 +18,9 @@ This guide will help you install and use the **owl**(Open World agent cLi) for h
 1. Download `owl.zip` in [OWA releases](https://github.com/open-world-agents/open-world-agents/releases)
 2. unzip `owl.zip`
 3. You may choose among 2 options:
-    1. double-click `conda_terminal.bat` on Windows Explorer and run `owl mcap --help`
-    2. on CLI(`cmd/powershell`), run `owl.bat mcap --help`
-4. It's all!
+    1. double-click `run.bat` on Windows Explorer. It opens up terminal(`cmd`) with virtual environment activated. Run `owl mcap --help` on terminal.
+    2. on CLI(`cmd/powershell`), run `run.bat mcap --help`. Note that `run.bat (args)` is equivalent to `owl (args)`.
+4. Done!
 
 ### Manual Installation Guide
 

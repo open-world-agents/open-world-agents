@@ -8,11 +8,10 @@ set TAR_FILE=env.tar.gz
 :: Initialize environment
 call :InitializeEnvironment || exit /b 1
 
-:: Run the command
+:: Run the application with auto-detection
 call :RunApplication %* || exit /b 1
 
 echo Script execution completed.
-pause
 exit /b 0
 
 :: ========= FUNCTIONS =========
@@ -69,16 +68,36 @@ exit /b 0
 
     :: Return to original directory
     cd ..
+
+    :: Restore `owl` command
+    echo Restoring `owl` command...
+    python restore_owl.py
+
     exit /b 0
 
 :RunApplication
+    :: Auto-detect whether to run command or open shell
+    if "%~1"=="" (
+        call :OpenInteractiveShell
+    ) else (
+        call :ExecuteOWLCommand %*
+    )
+    exit /b %errorlevel%
+
+:ExecuteOWLCommand
     echo Running owl with arguments: %*
     python -m owa.cli %*
     set ERR=%errorlevel%
     
     if %ERR% neq 0 (
         echo [ERROR] Failed to run owl with exit code %ERR%
-        pause
         exit /b %ERR%
     )
+    exit /b 0
+
+:OpenInteractiveShell
+    echo Starting new command prompt with activated environment...
+    echo Type 'exit' to close the window when finished.
+    echo.
+    start cmd.exe /k "call .\env\Scripts\activate.bat && title Conda Environment (%ENV_DIR%)"
     exit /b 0
