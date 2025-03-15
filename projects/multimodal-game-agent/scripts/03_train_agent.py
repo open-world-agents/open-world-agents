@@ -22,134 +22,106 @@ Also mouse contains the 1) x, y position + 2) event type (click, move, scroll) +
 In this exmaple, we will not use state_mouse and action_mouse!
 """
 
-import torch
-from transformers import AutoProcessor, AutoModelForImageTextToText
-from trl import SFTTrainer, SFTConfig
+import argparse
+import functools
+import json
+import os
+from pathlib import Path
+from typing import Any, Dict, List, Tuple
 
-CHAT_INSTRUCTION = """You are playing Super Hexagon, a fast-paced game that requires precise control and timing. The current keyboard state, which represents the keys that are pressed, is {keyboard_state}.
-After this prompt, you will receive {len_images} sequential image frames that show the game’s visual history from the past to the present.
-Using the current keyboard state and the image sequence, predict the future sequence of keyboard actions. For each action, include the timestamp when it should be executed."""
+import torch
+from loguru import logger
+from pydantic import BaseModel
+from torch.utils.data import Dataset
+from transformers import AutoModelForImageTextToText, AutoProcessor
+from trl import SFTConfig, SFTTrainer
+
+from owa.core.time import TimeUnits
+from owa.env.gst.msg import ScreenEmitted
+from owa_game_agent.data import OWAMcapQuery, OWATrainingSample
+from owa_game_agent.data.datasets.smolvlm2 import SmolVLM2Dataset, collate_fn
 
 if __name__ == "__main__":
-    model_id = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct"
-    
+    parser = argparse.ArgumentParser(description="Train SmolVLM model on OWA game queries")
+    parser.add_argument("--query_path", type=str, required=True, help="Path to JSONL file containing queries")
+    parser.add_argument("--output_dir", type=str, default="./output", help="Directory to save model checkpoints")
+    parser.add_argument("--model_id", type=str, default="HuggingFaceTB/SmolVLM2-500M-Video-Instruct", help="Model ID")
+    parser.add_argument("--num_epochs", type=int, default=1, help="Number of training epochs")
+    parser.add_argument("--batch_size", type=int, default=1, help="Batch size per device")
+    parser.add_argument("--gradient_accumulation_steps", type=int, default=4, help="Gradient accumulation steps")
+    parser.add_argument("--learning_rate", type=float, default=2e-5, help="Learning rate")
+    parser.add_argument("--save_steps", type=int, default=2000, help="Save checkpoint every X steps")
+    args = parser.parse_args()
+
+    logger.info("Starting training process")
+
     ##########
     # Model, Tokenizer & Processor
     ##########
-    processor = AutoProcessor.from_pretrained(model_id)
+    logger.info(f"Loading model: {args.model_id}")
+    processor = AutoProcessor.from_pretrained(args.model_id)
     model = AutoModelForImageTextToText.from_pretrained(
-        model_id,
+        args.model_id,
         torch_dtype=torch.bfloat16,
         _attn_implementation="flash_attention_2",
     )
 
     ################
-    # Create a data collator to encode text and image pairs
-    ################
-    def collate_fn(examples):
-        # Get the texts and images, and apply the chat template
-        texts = []
-        images = []
-        for example in examples:
-            keyboard_state = example["state_keyboard"]
-            keyboard_action = example["action_keyboard"]
-            state_screen = example["state_screen"]
-
-            len_images = len(state_screen)
-
-            # It will be processed like [keyboard1, keyboard2, ...], -> keyboard1keyboard2...
-            keyboard_state = "".join(str(item) for item in keyboard_state)
-            # It will be processed like [(timestamp1, keyboard1), (timestamp2, keyboard2), ...], -> timestamp1keyboard1timestamp2keyboard2...
-            keyboard_action = "".join(str(item) for pair in keyboard_action for item in pair)
-
-            messages = [
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": CHAT_INSTRUCTION.format_map({"len_images": len_images, "keyboard_state": keyboard_state})}+"<image>"*len_images,
-                    ]
-                },
-                {
-                    "role": "assistant",
-                    "content": [
-                        {"type": "text", "text": keyboard_action},
-                    ]
-                }
-            ]
-
-            texts.append(processor.apply_chat_template(messages, tokenize=False))
-            images.append(state_screen)
-
-        # Tokenize the texts and process the images
-        batch = processor(text=texts, images=images, return_tensors="pt", padding=True)
-
-        # The labels are the input_ids, and we mask the padding tokens in the loss computation
-        labels = batch["input_ids"].clone()
-        labels[labels == processor.tokenizer.pad_token_id] = -100
-
-        # Ignore the image token index in the loss computation (model specific, we will use SmolVLM2)
-        image_token_id = processor.tokenizer.additional_special_tokens_ids[
-            processor.tokenizer.additional_special_tokens.index("<image>")
-        ]
-        labels[labels == image_token_id] = -100
-        batch["labels"] = labels
-
-        # TODO: ignore the prompt token index if needed
-
-        return batch
-
-    ################
     # Dataset
     ################
-    dataset = # TODO: Huggingface dataset?
+    logger.info(f"Loading dataset from: {args.query_path}")
+    dataset = SmolVLM2Dataset(args.query_path, processor=processor)
 
     ################
     # Training arguments
     ################
+    os.makedirs(args.output_dir, exist_ok=True)
 
-    save_path = "/mnt/cephfs/scratch"
-
-    args = SFTConfig(
-        # deepspeed=deepspeed_conf,
-        output_dir=save_path,  # directory to save and repository id
-        num_train_epochs=1,                     # number of training epochs
-        per_device_train_batch_size=1,          # batch size per device during training
-        gradient_accumulation_steps=4,         # number of steps before performing a backward/update pass
-        gradient_checkpointing=True,            # use gradient checkpointing to save memory
-        optim="adamw_torch_fused",              # use fused adamw optimizer
-        logging_steps=1,                        # log every step
-        save_strategy="steps",                  # save checkpoint every epoch
-        save_steps=2000,
+    training_args = SFTConfig(
+        output_dir=args.output_dir,
+        num_train_epochs=args.num_epochs,
+        per_device_train_batch_size=args.batch_size,
+        gradient_accumulation_steps=args.gradient_accumulation_steps,
+        gradient_checkpointing=True,
+        optim="adamw_torch_fused",
+        logging_steps=1,
+        save_strategy="steps",
+        save_steps=args.save_steps,
         save_total_limit=1,
-        learning_rate=2e-5,                     # learning rate, based on QLoRA paper
-        bf16=True,                              # use bfloat16 precision
-        tf32=True,                              # use tf32 precision
-        max_grad_norm=0.3,                      # max gradient norm based on QLoRA paper
-        warmup_ratio=0.03,                      # warmup ratio based on QLoRA paper
-        weight_decay=0.,
+        learning_rate=args.learning_rate,
+        bf16=True,
+        tf32=True,
+        max_grad_norm=0.3,
+        warmup_ratio=0.03,
+        weight_decay=0.0,
         lr_scheduler_type="cosine",
         max_seq_length=6144,
         report_to="wandb",
-        gradient_checkpointing_kwargs = {"use_reentrant": False},
-        dataset_text_field="", # need a dummy field for collator
-        dataset_kwargs = {"skip_prepare_dataset": True}, # important for collator
-        dataloader_num_workers=4,
-        run_name=save_path.split('/')[-1],
+        gradient_checkpointing_kwargs={"use_reentrant": False},
+        dataset_text_field="",  # dummy field for collator
+        dataset_kwargs={"skip_prepare_dataset": True},  # important for collator
+        dataloader_num_workers=8,  # important for throughput
+        run_name=os.path.basename(args.output_dir),
+        remove_unused_columns=False,  # required to keep various state/action keys in the dataset
     )
 
     ################
     # Training
     ################
+    logger.info("Initializing trainer")
     trainer = SFTTrainer(
         model=model,
         args=training_args,
-        data_collator=collate_fn,
-        train_dataset=dataset[script_args.dataset_train_split],
+        data_collator=functools.partial(collate_fn, processor=processor),
+        train_dataset=dataset,
         eval_dataset=None,
         processing_class=processor.tokenizer,
     )
 
+    logger.info("Starting training")
     trainer.train()
 
     # Save and push to hub
-    trainer.save_model(save_path)
+    logger.info(f"Saving model to {args.output_dir}")
+    trainer.save_model(args.output_dir)
+    logger.info("Training completed")

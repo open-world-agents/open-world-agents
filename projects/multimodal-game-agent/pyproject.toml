@@ -5,10 +5,15 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "num2words>=0.5.14",
     "pandas>=2.2.3",
     "pillow>=11.1.0",
+    "torch>=2.6.0",
+    "torchvision>=0.21.0",
     "tqdm>=4.67.1",
+    "transformers",
     "typer>=0.15.2",
+    "wandb>=0.19.8",
 ]
 
 [project.scripts]
@@ -20,3 +25,6 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/owa_game_agent"]
+
+[tool.uv.sources]
+transformers = { git = "https://github.com/huggingface/transformers", rev = "2c2495cc7b0e3e2942a9310f61548f40a2bc8425" }
