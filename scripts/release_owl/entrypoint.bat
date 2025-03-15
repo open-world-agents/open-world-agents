@@ -1,13 +1,6 @@
 @echo off
 setlocal enabledelayedexpansion
 
-:: Ensure an argument is provided
-if "%~1"=="" (
-    echo Usage: %~nx0 ^<arguments^>
-    pause
-    exit /b 1
-)
-
 :: Step 1: Check if env directory exists
 if not exist "env\" (
     echo Extracting env.tar.gz...
@@ -57,6 +50,9 @@ if exist ".\Scripts\conda-unpack.exe" (
 ) else (
     echo conda-unpack.exe not found, skipping this step.
 )
+
+:: return to the original directory
+cd ..
 
 :: Step 5: Run CLI with all arguments (preserving colors)
 echo Running owl with arguments: %*

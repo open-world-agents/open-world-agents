@@ -40,7 +40,7 @@ elif platform.system() == "Windows":
             rect_coords = (rect.left, rect.top, rect.right, rect.bottom)
             hWnd = active_window._hWnd
             return WindowInfo(title=title, rect=rect_coords, hWnd=hWnd)
-        return None
+        return WindowInfo(title="", rect=[0, 0, 0, 0], hWnd=-1)
 
 else:
 
