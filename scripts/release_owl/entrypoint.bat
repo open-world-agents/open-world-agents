@@ -1,77 +1,84 @@
 @echo off
 setlocal enabledelayedexpansion
 
-:: Step 1: Check if env directory exists
-if not exist "env\" (
-    echo Extracting env.tar.gz...
-    
-    mkdir env || (
-        echo Failed to create env directory
-        pause
-        exit /b 1
-    )
+:: Configuration
+set ENV_DIR=env
+set TAR_FILE=env.tar.gz
 
-    tar -xvf env.tar.gz -C env || (
-        echo Failed to extract env.tar.gz
-        pause
-        exit /b 1
-    )
-) else (
-    echo env directory already exists. Skipping extraction.
-)
+:: Initialize environment
+call :InitializeEnvironment || exit /b 1
 
-:: Step 2: Change directory to env
-cd env || (
-    echo Failed to enter env directory
-    pause
-    exit /b 1
-)
-
-:: Step 3: Check if virtual environment is activated
-if "%CONDA_DEFAULT_ENV%"=="" (
-    echo Activating virtual environment...
-    call .\Scripts\activate.bat || (
-        echo Failed to activate environment
-        pause
-        exit /b 1
-    )
-) else (
-    echo Virtual environment is already activated.
-)
-
-:: Step 4: Check if conda-unpack.exe exists and run it only if needed
-if exist ".\Scripts\conda-unpack.exe" (
-    echo Running conda-unpack.exe...
-    call .\Scripts\conda-unpack.exe || (
-        echo Failed to run conda-unpack.exe
-        pause
-        exit /b 1
-    )
-) else (
-    echo conda-unpack.exe not found, skipping this step.
-)
-
-:: return to the original directory
-cd ..
-
-:: Step 5: Run CLI with all arguments (preserving colors)
-echo Running owl with arguments: %*
-
-:: Method 1: Direct execution (best for color support)
-@REM recorder.exe %*
-python -m owa.cli %*
-set ERR=%errorlevel%
-
-:: Alternative Method 2: Use start /wait if the output is still not fully visible
-:: start /wait recorder.exe %*
-:: set ERR=%errorlevel%
-
-if %ERR% neq 0 (
-    echo Failed to run owl with exit code %ERR%
-    pause
-    exit /b %ERR%
-)
+:: Run the command
+call :RunApplication %* || exit /b 1
 
 echo Script execution completed.
-pause  :: Keeps the window open
+pause
 exit /b 0
+
+:: ========= FUNCTIONS =========
+
+:InitializeEnvironment
+    :: Extract environment if needed
+    if not exist "%ENV_DIR%\" (
+        echo Extracting %TAR_FILE%...
+        mkdir "%ENV_DIR%" || (
+            echo [ERROR] Failed to create %ENV_DIR% directory
+            pause
+            exit /b 1
+        )
+
+        tar -xf %TAR_FILE% -C %ENV_DIR% || (
+            echo [ERROR] Failed to extract %TAR_FILE%
+            pause
+            exit /b 1
+        )
+    ) else (
+        echo %ENV_DIR% directory already exists. Skipping extraction.
+    )
+
+    :: Enter environment directory
+    cd "%ENV_DIR%" || (
+        echo [ERROR] Failed to enter %ENV_DIR% directory
+        pause
+        exit /b 1
+    )
+
+    :: Activate virtual environment if needed
+    if "%CONDA_DEFAULT_ENV%"=="" (
+        echo Activating virtual environment...
+        call .\Scripts\activate.bat || (
+            echo [ERROR] Failed to activate environment
+            pause
+            exit /b 1
+        )
+    ) else (
+        echo Virtual environment is already activated.
+    )
+
+    :: Run conda-unpack if available
+    if exist ".\Scripts\conda-unpack.exe" (
+        echo Running conda-unpack.exe...
+        call .\Scripts\conda-unpack.exe || (
+            echo [ERROR] Failed to run conda-unpack.exe
+            pause
+            exit /b 1
+        )
+    ) else (
+        echo conda-unpack.exe not found, skipping this step.
+    )
+
+    :: Return to original directory
+    cd ..
+    exit /b 0
+
+:RunApplication
+    echo Running owl with arguments: %*
+    python -m owa.cli %*
+    set ERR=%errorlevel%
+    
+    if %ERR% neq 0 (
+        echo [ERROR] Failed to run owl with exit code %ERR%
+        pause
+        exit /b %ERR%
+    )
+    exit /b 0
