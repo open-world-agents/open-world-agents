@@ -1,0 +1,197 @@
+"""
+This script's I/O
+
+Input: list[query]
+Output: N/A
+"""
+
+from pathlib import Path
+from typing import List
+
+import cv2
+import torch
+import typer
+from transformers import AutoModelForImageTextToText, AutoProcessor, GPT2Tokenizer, GPT2TokenizerFast
+
+from owa_game_agent.data import OWAMcapQuery
+from owa_game_agent.data.datasets.smolvlm2 import SmolVLM2Dataset, collate_fn, sample_to_smolvlm_input
+from owa_game_agent.data.sample_processor import (
+    KEYBOARD_EVENT_TOKEN_FORMAT,
+    KEYBOARD_STATE_COUNT,
+    KEYBOARD_VK_COUNT,
+    TIMESTAMP_TOKEN_COUNT,
+    TIMESTAMP_TOKEN_FORMAT,
+    SampleProcessor,
+)
+
+app = typer.Typer()
+
+
+def load_queries(query_path: Path) -> List[OWAMcapQuery]:
+    """Load queries from a JSONL file."""
+    with open(query_path, "r") as f:
+        return [OWAMcapQuery.model_validate_json(line) for line in f]
+
+
+@app.command("quickstart")
+def show_by_decompose(query_path: Path):
+    """
+    example output:
+
+    state_keyboard=set() state_mouse={'pressed': set(), 'x': 1061, 'y': 812} state_screen=[(-227049220, {'path': '/mnt/raid11/datasets/owa/mcaps/ztype.mkv', 'pts': 208520000000, 'utc_ns': 1741776086345743100}), (-160120220, {'path': '/mnt/raid11/datasets/owa/mcaps/ztype.mkv', 'pts': 208590000000, 'utc_ns': 1741776086412672100}), (-110049820, {'path': '/mnt/raid11/datasets/owa/mcaps/ztype.mkv', 'pts': 208640000000, 'utc_ns': 1741776086462404300}), (-59651220, {'path': '/mnt/raid11/datasets/owa/mcaps/ztype.mkv', 'pts': 208690000000, 'utc_ns': 1741776086512804500}), (-10007820, {'path': '/mnt/raid11/datasets/owa/mcaps/ztype.mkv', 'pts': 208740000000, 'utc_ns': 1741776086562784500})] action_keyboard=[(9606680, {'event_type': 'release', 'vk': 83}), (100317080, {'event_type': 'press', 'vk': 76}), (187930380, {'event_type': 'press', 'vk': 69}), (233117480, {'event_type': 'release', 'vk': 76})] action_mouse=[]
+    ==============
+    state_keyboard=[] state_mouse={'pressed': set(), 'x': 1061, 'y': 812} state_screen=[(-227049220, {'path': '/mnt/raid11/datasets/owa/mcaps/ztype.mkv', 'pts': 208520000000, 'utc_ns': 1741776086345743100}), (-160120220, {'path': '/mnt/raid11/datasets/owa/mcaps/ztype.mkv', 'pts': 208590000000, 'utc_ns': 1741776086412672100}), (-110049820, {'path': '/mnt/raid11/datasets/owa/mcaps/ztype.mkv', 'pts': 208640000000, 'utc_ns': 1741776086462404300}), (-59651220, {'path': '/mnt/raid11/datasets/owa/mcaps/ztype.mkv', 'pts': 208690000000, 'utc_ns': 1741776086512804500}), (-10007820, {'path': '/mnt/raid11/datasets/owa/mcaps/ztype.mkv', 'pts': 208740000000, 'utc_ns': 1741776086562784500})] action_keyboard=['<TIMESTAMP_0>', '<KEYBOARD_83_RELEASED>>', '<TIMESTAMP_10>', '<KEYBOARD_76_PRESSED>>', '<TIMESTAMP_18>', '<KEYBOARD_69_PRESSED>>', '<TIMESTAMP_23>', '<KEYBOARD_76_RELEASED>>'] action_mouse=[]
+    ==============
+    images=[<PIL.Image.Image image mode=RGB size=586x794 at 0x7F0D32C3D710>, <PIL.Image.Image image mode=RGB size=586x794 at 0x7F0D32C3DD50>, <PIL.Image.Image image mode=RGB size=586x794 at 0x7F0D32CC7450>, <PIL.Image.Image image mode=RGB size=586x794 at 0x7F0D32C4CC50>, <PIL.Image.Image image mode=RGB size=586x794 at 0x7F0D32C4DBD0>] messages=[{'role': 'user', 'content': [{'type': 'text', 'text': "You are playing Super Hexagon, a fast-paced game that requires precise control and timing. The current keyboard state, which represents the keys that are pressed, is .\nAfter this prompt, you will receive 5 sequential image frames that show the game's visual history from the past to the present.\nUsing the current keyboard state and the image sequence, predict the future sequence of keyboard actions. For each action, include the timestamp when it should be executed.<image><image><image><image><image>"}]}, {'role': 'assistant', 'content': [{'type': 'text', 'text': '<TIMESTAMP_0><KEYBOARD_83_RELEASED>><TIMESTAMP_10><KEYBOARD_76_PRESSED>><TIMESTAMP_18><KEYBOARD_69_PRESSED>><TIMESTAMP_23><KEYBOARD_76_RELEASED>>'}]}]
+    ==============
+    """
+    # Load all queries from the file
+    queries = load_queries(query_path)
+
+    # Select a sample query for processing (same as original)
+    query_index = len(queries) // 2 + 55
+    query = queries[query_index]
+
+    # Process the sample
+    sample = query.to_sample()
+    print(sample)
+    print("==============")
+
+    sample_processor = SampleProcessor()
+    tokenized_sample = sample_processor.tokenize(sample)
+    print(tokenized_sample)
+    print("==============")
+
+    vlm_input = sample_to_smolvlm_input(tokenized_sample)
+    print(vlm_input)
+    print("==============")
+
+
+@app.command("prepare")
+def prepare_model(save_path: Path, model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct"):
+    model = AutoModelForImageTextToText.from_pretrained(model_id, torch_dtype=torch.bfloat16)
+    processor = AutoProcessor.from_pretrained(model_id)
+
+    assert processor.do_image_splitting is True
+    processor.do_image_splitting = False
+
+    assert processor.image_size == processor.image_processor.size == {"longest_edge": 2048}
+    processor.image_size = processor.image_processor.size = {"longest_edge": 512}
+
+    assert processor.image_processor.max_image_size == {"longest_edge": 512}
+    processor.image_processor.max_image_size = {"longest_edge": 512}
+
+    before_token_count = len(processor.tokenizer)  # 49280
+    print(f"Before token count: {before_token_count}")
+    print(f"Note that processor.tokenizer.vocab_size is {processor.tokenizer.vocab_size}, which seems to be mistake.")
+
+    tokens_to_expand = []
+    for i in range(KEYBOARD_VK_COUNT):
+        for j in range(KEYBOARD_STATE_COUNT):
+            tokens_to_expand.append(KEYBOARD_EVENT_TOKEN_FORMAT.format(i, j))
+
+    for i in range(TIMESTAMP_TOKEN_COUNT):
+        tokens_to_expand.append(TIMESTAMP_TOKEN_FORMAT.format(i))
+
+    processor.tokenizer.add_tokens(tokens_to_expand)
+    model.resize_token_embeddings(len(processor.tokenizer))
+    # Outputs:
+    # > The new embeddings will be initialized from a multivariate normal distribution that has old embeddings' mean and covariance. As described in this article: https://nlp.stanford.edu/~johnhew/vocab-expansion.html. To disable this, use `mean_resizing=False`
+    # > The new lm_head weights will be initialized from a multivariate normal distribution that has old embeddings' mean and covariance. As described in this article: https://nlp.stanford.edu/~johnhew/vocab-expansion.html. To disable this, use `mean_resizing=False`
+
+    after_token_count = len(processor.tokenizer)  # 49892
+    print(f"After token count: {after_token_count}")
+
+    assert after_token_count == before_token_count + KEYBOARD_VK_COUNT * KEYBOARD_STATE_COUNT + TIMESTAMP_TOKEN_COUNT
+
+    model.save_pretrained(save_path)
+    processor.save_pretrained(save_path)
+
+
+@app.command("verify")
+def verify_tokenizer(model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct"):
+    """
+    Verify the tokenizer with additional tokens.
+    Related issue: https://github.com/huggingface/tokenizers/issues/1544
+    """
+    processor = AutoProcessor.from_pretrained(model_id)
+
+    assert isinstance(processor.tokenizer, GPT2TokenizerFast)
+
+    def test_tokenizer(tokenizer):
+        test_texts = [
+            "!@#",
+            "!@# ",
+            "!@# <ACTION_1>",
+            "!@# <ACTION_1> ",
+            "!@# <ACTION_1> <ACTION_2>",
+            "!@# <ACTION_1><ACTION_2>",
+        ]
+        print("=======")
+        tokenized = []
+        for text in test_texts:
+            print(f"{text:30}", tokenizer(text))
+            tokenized.append(tokenizer(text))
+        return tokenized
+
+    tokenizer = GPT2Tokenizer.from_pretrained(model_id)
+    tokenizer.add_tokens([f"<ACTION_{idx}>" for idx in range(18)])
+    A = test_tokenizer(tokenizer)
+
+    tokenizer = GPT2Tokenizer.from_pretrained(model_id)
+    tokenizer.add_tokens([f"<ACTION_{idx}>" for idx in range(18)], special_tokens=True)
+    B = test_tokenizer(tokenizer)
+
+    tokenizer = GPT2TokenizerFast.from_pretrained(model_id)
+    tokenizer.add_tokens([f"<ACTION_{idx}>" for idx in range(18)])
+    C = test_tokenizer(tokenizer)
+
+    tokenizer = GPT2TokenizerFast.from_pretrained(model_id)
+    tokenizer.add_tokens([f"<ACTION_{idx}>" for idx in range(18)], special_tokens=True)
+    D = test_tokenizer(tokenizer)
+
+    assert A == B == C == D
+
+
+@app.command("collator")
+def show_dataset_collator(query_path: Path, model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct"):
+    processor = AutoProcessor.from_pretrained(model_id)
+    processor.do_image_splitting = False
+    # processor.image_size = processor.image_processor.size = {"longest_edge": 512}  # {'longest_edge': 2048}
+    # processor.image_processor.max_image_size = {"longest_edge": 512}  # {'longest_edge': 512}
+
+    dataset = SmolVLM2Dataset(query_path, processor=processor)
+
+    samples = [dataset[0], dataset[len(dataset) // 2 + 55]]
+
+    samples[0]["images"][0].save("example_sample.png")
+
+    print(samples)
+    batch = collate_fn(samples, processor)
+
+    pixel_values = batch["pixel_values"]
+    pixel_attention_mask = batch["pixel_attention_mask"]
+    input_ids: torch.Tensor = batch["input_ids"]
+    attention_mask = batch["attention_mask"]
+    labels: torch.Tensor = batch["labels"]
+
+    # torch.Size([2, 65, 3, 512, 512]) torch.Size([2, 65, 512, 512]) torch.Size([2, 4419]) torch.Size([2, 4419]) torch.Size([2, 4419])
+    # torch.Size([2, 5, 3, 512, 512]) torch.Size([2, 5, 512, 512]) torch.Size([2, 439]) torch.Size([2, 439]) torch.Size([2, 439])
+    print(pixel_values.shape, pixel_attention_mask.shape, input_ids.shape, attention_mask.shape, labels.shape)
+    print(input_ids.tolist(), labels.tolist())
+
+    # visualize pixel_values
+    pixel_values = pixel_values[0]
+    pixel_values = pixel_values.permute(0, 2, 3, 1)
+    pixel_values = pixel_values.cpu().numpy()
+
+    print(pixel_values.min(), pixel_values.max())  # -1, 1
+    pixel_values = (pixel_values + 1) / 2 * 255
+    pixel_values = pixel_values.astype("uint8")
+
+    for i, image in enumerate(pixel_values):
+        cv2.imwrite(f"image_{i}.png", cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
+
+
+if __name__ == "__main__":
+    app()
