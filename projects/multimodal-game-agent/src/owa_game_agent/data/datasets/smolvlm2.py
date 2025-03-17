@@ -1,6 +1,8 @@
 from pathlib import Path
 from typing import Any, List
 
+import line_profiler
+import torch
 from loguru import logger
 from PIL import Image
 from pydantic import BaseModel
@@ -41,6 +43,7 @@ def pad_to_square(image: Image.Image) -> Image.Image:
         return new_image
 
 
+@line_profiler.profile  # profile: 0.266s
 def sample_to_smolvlm_input(sample: OWATrainingSample) -> SmolVLMInput:
     """
     Convert an OWATrainingSample to a SmolvlmInput object.
@@ -56,6 +59,7 @@ def sample_to_smolvlm_input(sample: OWATrainingSample) -> SmolVLMInput:
     keyboard_action = "".join(str(item) for pair in sample.action_keyboard for item in pair)
 
     # Convert screen states to PIL images
+    # profile: 97.8% (0.261s)
     state_screen = [ScreenEmitted(**screen).to_pil_image() for timestamp, screen in sample.state_screen]
 
     # SmolVLM2 only takes a square image, so we will pad the images to make them square
@@ -121,6 +125,7 @@ class SmolVLM2Dataset(Dataset):
     def __len__(self):
         return len(self.queries)
 
+    @line_profiler.profile  # profile: 1.99s
     def __getitem__(self, idx):
         """
         Get a processed item ready for training.
@@ -132,12 +137,12 @@ class SmolVLM2Dataset(Dataset):
         """
         query = self.queries[idx]
 
-        sample = query.to_sample()
+        sample = query.to_sample()  # profile: 72.5% (0.723s)
 
         sample = self.sample_processor.tokenize(sample)
 
         # Use SampleProcessor to process the sample
-        vlm_input = sample_to_smolvlm_input(sample)
+        vlm_input = sample_to_smolvlm_input(sample)  # profile: 26.8% (0.267s)
 
         # Extract images and messages
         images = vlm_input.images
@@ -145,7 +150,8 @@ class SmolVLM2Dataset(Dataset):
 
         # Apply chat template if processor is available
         if self.processor:
-            text = self.processor.apply_chat_template(messages, tokenize=False)
+            # strip \n in "<|im_start|>User:...<end_of_utterance>\nAssistant: <end_of_utterance>\n"
+            text = self.processor.apply_chat_template(messages, tokenize=False).strip()
         else:
             raise NotImplementedError("TODO")
             text = messages
@@ -153,7 +159,6 @@ class SmolVLM2Dataset(Dataset):
         return {"text": text, "images": images, "sample_id": idx}
 
 
-# Example collate function to use with this dataset
 def collate_fn(examples, processor: SmolVLMProcessor):
     """
     Collate function that works with the self-contained OWAGameDataset.
@@ -172,15 +177,36 @@ def collate_fn(examples, processor: SmolVLMProcessor):
     tokenizer: GPT2TokenizerFast = processor.tokenizer
 
     # The labels are the input_ids, and we mask the padding tokens in the loss computation
-    labels = batch["input_ids"].clone()
-    labels[labels == tokenizer.pad_token_id] = -100
+    labels: torch.IntTensor = batch["input_ids"].clone()
 
-    # Ignore the image token index in the loss computation (model specific, we will use SmolVLM2)
-    image_token_id = tokenizer.additional_special_tokens_ids[tokenizer.additional_special_tokens.index("<image>")]
-    labels[labels == image_token_id] = -100
+    # First, mask all tokens (set to -100)
+    labels.fill_(-100)
+
+    # Pattern for start of assistant's response
+    start_pattern = tokenizer("<end_of_utterance>\nAssistant: ")["input_ids"]
+    # End pattern is just the <end_of_utterance> token
+    end_token = tokenizer("<end_of_utterance>")["input_ids"][0]
+
+    # Process each sequence in the batch
+    for i in range(labels.size(0)):
+        input_ids = batch["input_ids"][i].tolist()
+
+        # Find the start pattern
+        for j in range(len(input_ids) - len(start_pattern)):
+            if input_ids[j : j + len(start_pattern)] == start_pattern:
+                start_idx = j + len(start_pattern)
+
+                # Find the next end token after the start pattern
+                for k in range(start_idx, len(input_ids)):
+                    if input_ids[k] == end_token:
+                        end_idx = k + 1  # include <end_of_utterance> token
+
+                        # Unmask the assistant's response (keep these tokens in the loss computation)
+                        labels[i, start_idx:end_idx] = batch["input_ids"][i, start_idx:end_idx]
+                        break
+                break
+
     batch["labels"] = labels
-
-    # TODO: ignore the prompt token index if needed
     return batch
 
 

@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import line_profiler
 from pydantic import BaseModel
 
 from mcap_owa.highlevel import OWAMcapReader
@@ -20,6 +21,7 @@ class OWAMcapQuery(BaseModel):
 
     screen_framerate: int = 20
 
+    @line_profiler.profile  # profile: 0.723s
     def to_sample(self) -> OWATrainingSample:
         """
         Extracts a training sample from the MCAP file.
@@ -36,7 +38,7 @@ class OWAMcapQuery(BaseModel):
             pressed_vks = None
             for topic, timestamp, msg in reader.iter_decoded_messages(
                 topics=["keyboard/state"], end_time=self.anchor_timestamp_ns - self.past_range_ns, reverse=True
-            ):
+            ):  # profile: 31.2% (0.451s)
                 pressed_vks = msg["pressed_vk_list"]
                 break
             else:
@@ -45,7 +47,7 @@ class OWAMcapQuery(BaseModel):
             state_mouse = {"pressed": {}, "x": 0, "y": 0}
             for topic, timestamp, msg in reader.iter_decoded_messages(
                 topics=["mouse"], end_time=self.anchor_timestamp_ns - self.past_range_ns, reverse=True
-            ):
+            ):  # profile: 23.0% (0.332s)
                 state_mouse["x"], state_mouse["y"] = msg["x"], msg["y"]
                 break
             else:
@@ -66,7 +68,7 @@ class OWAMcapQuery(BaseModel):
                     end_time=end_time,
                     reverse=True,  # ensure that the latest screen is included
                 )
-            ):
+            ):  # profile: 23.0% (0.332s)
                 if idx % (ORIGINAL_FRAME_RATE // self.screen_framerate):
                     continue
                 # msg.path: ztype.mkv
@@ -90,7 +92,7 @@ class OWAMcapQuery(BaseModel):
                 topics=["keyboard", "mouse"],
                 start_time=start_time,
                 end_time=end_time,
-            ):
+            ):  # profile: 22.6% (0.327s)
                 if topic == "keyboard":
                     action_keyboard.append((timestamp - self.anchor_timestamp_ns, msg))
                 elif topic == "mouse":

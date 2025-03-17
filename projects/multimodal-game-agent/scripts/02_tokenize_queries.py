@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import List
 
 import cv2
+import line_profiler
 import torch
 import typer
 from transformers import AutoModelForImageTextToText, AutoProcessor, GPT2Tokenizer, GPT2TokenizerFast
@@ -154,6 +155,7 @@ def verify_tokenizer(model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct
 
 
 @app.command("collator")
+@line_profiler.profile
 def show_dataset_collator(query_path: Path, model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct"):
     processor = AutoProcessor.from_pretrained(model_id)
     processor.do_image_splitting = False
@@ -172,6 +174,12 @@ def show_dataset_collator(query_path: Path, model_id: str = "HuggingFaceTB/SmolV
     pixel_values = batch["pixel_values"]
     pixel_attention_mask = batch["pixel_attention_mask"]
     input_ids: torch.Tensor = batch["input_ids"]
+    """
+    In [16]: a="<end_of_utterance>\nAssistant: <end_of_utterance>"
+
+    In [17]: processor.tokenizer(a)
+    Out[17]: {'input_ids': [49279, 198, 9519, 9531, 42, 216, 49279], 'attention_mask': [1, 1, 1, 1, 1, 1, 1]}
+    """
     attention_mask = batch["attention_mask"]
     labels: torch.Tensor = batch["labels"]
 
