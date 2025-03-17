@@ -87,7 +87,7 @@ def build_screen_callback(callback):
         latency = metadata["latency"]
         # warn if latency is too high, e.g. > 30ms
         if latency > 30 * Gst.MSECOND:
-            logger.warning(f"High latency: {latency / Gst.MSECOND}ms")
+            logger.warning(f"High latency: {latency / Gst.MSECOND:.2f}ms")
 
         timestamp_ns = metadata["frame_time_ns"]
         metric_manager.append(timestamp_ns, latency)

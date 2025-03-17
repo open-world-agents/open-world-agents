@@ -9,6 +9,7 @@ dependencies = [
     "pillow>=11.1.0",
     "pyav>=14.2.1",
     "pygobject-stubs>=2.12.0",
+    "tqdm>=4.67.1",
 ]
 
 [tool.uv.sources]

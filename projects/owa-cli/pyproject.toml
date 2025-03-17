@@ -13,6 +13,7 @@ dependencies = [
     "owa-env-gst",
     "pydantic>=2.10.6",
     "pygetwindow>=0.0.9 ; sys_platform == 'win32'",
+    "tqdm>=4.67.1",
     "typer>=0.15.1",
 ]
 
