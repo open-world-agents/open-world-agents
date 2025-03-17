@@ -22,6 +22,7 @@ from typing_extensions import Annotated
 
 from mcap_owa.highlevel import OWAMcapWriter
 from owa.core.registry import CALLABLES, LISTENERS, activate_module
+from owa.core.time import TimeUnits
 
 queue = Queue()
 MCAP_LOCATION = None
@@ -38,6 +39,9 @@ def callback(event, topic=None):
 
 
 def keyboard_publisher_callback(event):
+    # info only for F1-F12 keys
+    if 0x70 <= event.vk <= 0x7B and event.event_type == "press":
+        logger.info(f"F1-F12 key pressed: F{event.vk - 0x70 + 1}")
     callback(event, topic="keyboard")
 
 
@@ -148,8 +152,8 @@ def record(
             topic, event, publish_time = queue.get()
             latency = time.time_ns() - publish_time
             # warn if latency is too high, i.e., > 20ms
-            if latency / 1e6 > 20:
-                logger.warning(f"Event {event} from {topic} is written to the file with latency {latency / 1e6:.2f}ms")
+            if latency > 20 * TimeUnits.MSECOND:
+                logger.warning(f"High latency: {latency / TimeUnits.MSECOND:.2f}ms while processing {topic} event.")
             writer.write_message(topic, event, publish_time=publish_time)
 
     except KeyboardInterrupt:
