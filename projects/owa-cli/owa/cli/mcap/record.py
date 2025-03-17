@@ -18,11 +18,15 @@ from typing import Optional
 import typer
 from loguru import logger
 from pydantic import BaseModel
+from tqdm import tqdm
 from typing_extensions import Annotated
 
 from mcap_owa.highlevel import OWAMcapWriter
 from owa.core.registry import CALLABLES, LISTENERS, activate_module
 from owa.core.time import TimeUnits
+
+logger.remove()
+logger.add(lambda msg: tqdm.write(msg, end=""), colorize=True)
 
 queue = Queue()
 MCAP_LOCATION = None

@@ -8,6 +8,7 @@ import inspect
 
 from gi.repository import Gst
 from loguru import logger
+from tqdm import tqdm
 
 from ..utils import get_frame_time_ns, try_set_state, wait_for_message
 
@@ -116,9 +117,11 @@ class FPSDisplayExtension:
         if not sinks:
             raise ValueError("No 'fpsdisplaysink' element found in the pipeline.")
         fpsdisplaysink = sinks[0]
+        self._pbar = tqdm(total=0, bar_format="{desc}", position=0, leave=True)
 
         def fps_measurement_callback(fpsdisplaysink, fps, droprate, avgfps):
-            print(f"FPS: {fps}, Drop Rate: {droprate}, Average FPS: {avgfps}")
+            self._pbar.set_description_str(f"FPS: {fps:.2f}, Drop Rate: {droprate:.2f}, Average FPS: {avgfps:.2f}")
+            # print(f"\rFPS: {fps:.2f}, Drop Rate: {droprate:.2f}, Average FPS: {avgfps:.2f}      ", end="", flush=True)
 
         _callback = fps_measurement_callback if callback is None else callback
 
