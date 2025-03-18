@@ -4,11 +4,13 @@ import line_profiler
 from pydantic import BaseModel
 
 from mcap_owa.highlevel import OWAMcapReader
+from owa.core.time import TimeUnits
 
 from .sample import OWATrainingSample
 
 ORIGINAL_FRAME_RATE = 60  # TODO: adaptive logic
 MIN_SCREEN_NUM = 5
+SCREEN_TOLERANCE = 0.05  # 0.05 seconds tolerance for screen state
 
 
 class OWAMcapQuery(BaseModel):
@@ -51,7 +53,9 @@ class OWAMcapQuery(BaseModel):
                 state_mouse["x"], state_mouse["y"] = msg["x"], msg["y"]
                 break
             else:
-                raise ValueError("No keyboard state found")
+                # this line is to temporarily support keyboard-only game. TODO: erase this line.
+                state_mouse["x"], state_mouse["y"] = (0, 0)
+                # raise ValueError("No mouse state found")
 
             # in Windows, vk 1/2/4 corresponds to left/right/middle mouse button. TODO: multi-os support
             mouse_keys = {1: "left", 2: "right", 4: "middle"}
@@ -60,7 +64,10 @@ class OWAMcapQuery(BaseModel):
             state_mouse["pressed"] = set([mouse_keys[button] for button in pressed_mks])
 
             state_screen = []
-            start_time, end_time = self.anchor_timestamp_ns - self.past_range_ns, self.anchor_timestamp_ns
+            start_time, end_time = (
+                self.anchor_timestamp_ns - self.past_range_ns - SCREEN_TOLERANCE * TimeUnits.SECOND,
+                self.anchor_timestamp_ns,
+            )
             for idx, (topic, timestamp, msg) in enumerate(
                 reader.iter_decoded_messages(
                     topics=["screen"],
@@ -81,6 +88,9 @@ class OWAMcapQuery(BaseModel):
                 raise ValueError(
                     f"Not enough screen states found, expected {MIN_SCREEN_NUM} but got {len(state_screen)}"
                 )
+
+            # restrict to the last MIN_SCREEN_NUM states
+            state_screen = state_screen[:MIN_SCREEN_NUM]
 
             # convert to oldest-to-latest order
             state_screen = state_screen[::-1]

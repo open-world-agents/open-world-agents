@@ -158,11 +158,8 @@ def verify_tokenizer(model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct
 @line_profiler.profile
 def show_dataset_collator(query_path: Path, model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct"):
     processor = AutoProcessor.from_pretrained(model_id)
-    processor.do_image_splitting = False
-    # processor.image_size = processor.image_processor.size = {"longest_edge": 512}  # {'longest_edge': 2048}
-    # processor.image_processor.max_image_size = {"longest_edge": 512}  # {'longest_edge': 512}
 
-    dataset = SmolVLM2Dataset(query_path, processor=processor)
+    dataset = SmolVLM2Dataset(query_path)
 
     samples = [dataset[0], dataset[len(dataset) // 2 + 55]]
 
@@ -173,7 +170,7 @@ def show_dataset_collator(query_path: Path, model_id: str = "HuggingFaceTB/SmolV
 
     pixel_values = batch["pixel_values"]
     pixel_attention_mask = batch["pixel_attention_mask"]
-    input_ids: torch.Tensor = batch["input_ids"]
+    input_ids: torch.IntTensor = batch["input_ids"]
     """
     In [16]: a="<end_of_utterance>\nAssistant: <end_of_utterance>"
 

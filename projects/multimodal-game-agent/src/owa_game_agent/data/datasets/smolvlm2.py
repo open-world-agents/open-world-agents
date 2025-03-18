@@ -96,7 +96,7 @@ class SmolVLM2Dataset(Dataset):
     Provides direct access to processed text and images ready for training.
     """
 
-    def __init__(self, query_path: str, processor):
+    def __init__(self, query_path: str):
         """
         Initialize the dataset.
 
@@ -106,7 +106,6 @@ class SmolVLM2Dataset(Dataset):
         """
         self.query_path = Path(query_path)
         self.queries = self.load_queries()
-        self.processor = processor
         self.sample_processor = SampleProcessor()
         logger.info(f"Loaded {len(self.queries)} queries from {query_path}")
 
@@ -148,15 +147,7 @@ class SmolVLM2Dataset(Dataset):
         images = vlm_input.images
         messages = vlm_input.messages
 
-        # Apply chat template if processor is available
-        if self.processor:
-            # strip \n in "<|im_start|>User:...<end_of_utterance>\nAssistant: <end_of_utterance>\n"
-            text = self.processor.apply_chat_template(messages, tokenize=False).strip()
-        else:
-            raise NotImplementedError("TODO")
-            text = messages
-
-        return {"text": text, "images": images, "sample_id": idx}
+        return {"messages": messages, "images": images, "sample_id": idx}
 
 
 def collate_fn(examples, processor: SmolVLMProcessor):
@@ -167,8 +158,12 @@ def collate_fn(examples, processor: SmolVLMProcessor):
         examples: List of items from OWAGameDataset
         processor: Processor to tokenize text and process images
     """
-    texts = [ex["text"] for ex in examples]
-    images = [ex["images"] for ex in examples]
+    texts = []
+    images = []
+    for ex in examples:
+        # strip \n in "<|im_start|>User:...<end_of_utterance>\nAssistant: <end_of_utterance>\n"
+        texts.append(processor.apply_chat_template(ex["messages"], tokenize=False).strip())
+        images.append(ex["images"])
 
     # Tokenize the texts and process the images
     batch = processor(text=texts, images=images, return_tensors="pt", padding=True)
@@ -208,20 +203,3 @@ def collate_fn(examples, processor: SmolVLMProcessor):
 
     batch["labels"] = labels
     return batch
-
-
-# Example usage in training:
-"""
-# During initialization
-dataset = OWAGameDataset(query_path, processor)
-
-# For training
-trainer = SFTTrainer(
-    model=model,
-    args=training_args,
-    data_collator=lambda examples: collate_fn(examples, processor),
-    train_dataset=dataset,
-    eval_dataset=None,
-    processing_class=processor.tokenizer,
-)
-"""

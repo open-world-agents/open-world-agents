@@ -11,6 +11,7 @@ from owa.core.message import OWAMessage
 
 # BUG: PyAV has "corrupted size vs. prev_size" error when `frame.to_ndarray(format="bgra")` is called for video "expert-jy-1.mkv"
 #      This bug does not occur when format does not contain `alpha` channel, e.g. "bgr24"
+#      Guessed reason is mismatch of width/height=770/512 and codec_width/codec_height=800/512.
 class PyAVVideoReader:
     """Class responsible for reading video files and extracting frames at specified timestamps."""
 
@@ -62,6 +63,9 @@ class PyAVVideoReader:
 
             # Calculate the seek position in terms of stream time base
             seek_timestamp = int(target_time / stream.time_base)
+
+            # Flush the decoder before seeking
+            # container.flush_buffers()
 
             # Seek to the nearest keyframe before the target time
             container.seek(seek_timestamp, any_frame=False, backward=True, stream=stream)

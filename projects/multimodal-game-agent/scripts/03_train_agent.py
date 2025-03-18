@@ -35,6 +35,7 @@ import os
 import numpy as np
 import torch
 from accelerate import Accelerator
+from accelerate.utils import set_seed
 from torch.utils.data import Subset
 from transformers import AutoModelForImageTextToText, AutoProcessor
 from trl import SFTConfig, SFTTrainer
@@ -72,10 +73,11 @@ if __name__ == "__main__":
     # Dataset
     ################
     accelerator.print(f"Loading dataset from: {args.query_path}")
-    dataset = SmolVLM2Dataset(args.query_path, processor=processor)
+    dataset = SmolVLM2Dataset(args.query_path)
 
     # Split dataset into train and validation
-    train_indices = np.random.choice(len(dataset), int(0.8 * len(dataset)), replace=False)
+    rng = np.random.default_rng(seed=23)  # Needed to reproduce the same split per each run / per each device
+    train_indices = rng.choice(len(dataset), int(0.8 * len(dataset)), replace=False)
     eval_indices = np.setdiff1d(np.arange(len(dataset)), train_indices)
 
     # Define train and eval datasets
@@ -138,4 +140,5 @@ if __name__ == "__main__":
     # Save and push to hub
     accelerator.print(f"Saving model to {args.output_dir}")
     trainer.save_model(args.output_dir)
+    processor.save_pretrained(args.output_dir)
     accelerator.print("Training completed")

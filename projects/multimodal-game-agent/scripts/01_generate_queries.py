@@ -50,7 +50,10 @@ def extract_query(mcap_file: Path) -> list[OWAMcapQuery]:
     assert len(key_events) % 2 == 0, "Number of start/stop key events should be even"
     intervals = np.array(key_events).reshape(-1, 2)
 
-    pbar = tqdm(intervals, desc=f"Extracting queries from {mcap_file.name}")
+    # Filter only intervals longer than 60 seconds (SUPER HEXAGON)
+    intervals = intervals[intervals[:, 1] - intervals[:, 0] > TimeUnits.SECOND * 60]
+
+    pbar = tqdm(intervals, desc=f"Extracting queries from {mcap_file.name} with {len(intervals)} intervals")
 
     query_list = []
     for start, end in intervals:
