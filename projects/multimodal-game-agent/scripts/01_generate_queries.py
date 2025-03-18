@@ -21,7 +21,7 @@ from owa_game_agent.data import OWAMcapQuery
 app = typer.Typer()
 
 PAST_RANGE_S = 0.25
-FUTURE_RANGE_S = 0.25
+FUTURE_RANGE_S = 1
 FRAMERATE = 20  # 0.25 * 20 = 5, 5 image input
 
 

@@ -7,6 +7,7 @@ import numpy as np
 from PIL import Image
 
 from owa.core.message import OWAMessage
+from owa.core.time import TimeUnits
 
 
 # BUG: PyAV has "corrupted size vs. prev_size" error when `frame.to_ndarray(format="bgra")` is called for video "expert-jy-1.mkv"
@@ -50,44 +51,45 @@ class PyAVVideoReader:
 
         try:
             # Get the video container from cache or open a new one
-            container = self._get_video_container(video_path)
+            # container = self._get_video_container(video_path)
+            # TODO: lock per video file
+            with av.open(video_path) as container:
+                # Convert PTS from nanoseconds to seconds
+                target_time = pts_ns / TimeUnits.SECOND
 
-            # Convert PTS from nanoseconds to seconds
-            target_time = pts_ns / 1e9
+                # Select the first video stream
+                try:
+                    stream = next(s for s in container.streams if s.type == "video")
+                except StopIteration:
+                    raise ValueError("No video stream found in the file.")
 
-            # Select the first video stream
-            try:
-                stream = next(s for s in container.streams if s.type == "video")
-            except StopIteration:
-                raise ValueError("No video stream found in the file.")
+                # Calculate the seek position in terms of stream time base
+                seek_timestamp = int(target_time / stream.time_base)
 
-            # Calculate the seek position in terms of stream time base
-            seek_timestamp = int(target_time / stream.time_base)
+                # Flush the decoder before seeking
+                # container.flush_buffers()
 
-            # Flush the decoder before seeking
-            # container.flush_buffers()
+                # Seek to the nearest keyframe before the target time
+                container.seek(seek_timestamp, any_frame=False, backward=True, stream=stream)
 
-            # Seek to the nearest keyframe before the target time
-            container.seek(seek_timestamp, any_frame=False, backward=True, stream=stream)
+                frame_found = False
+                bgra_frame = None
 
-            frame_found = False
-            bgra_frame = None
+                for frame in container.decode(stream):
+                    frame_time = frame.pts * stream.time_base
+                    if frame_time >= target_time:
+                        # Convert frame to BGRA format
+                        bgra_frame = frame.to_ndarray(format="rgb24")
+                        frame_found = True
+                        break
 
-            for frame in container.decode(stream):
-                frame_time = frame.pts * stream.time_base
-                if frame_time >= target_time:
-                    # Convert frame to BGRA format
-                    bgra_frame = frame.to_ndarray(format="rgb24")
-                    frame_found = True
-                    break
-
-            if not frame_found:
-                raise ValueError(f"No frame found at PTS: {pts_ns} ns")
-            return bgra_frame
+                if not frame_found:
+                    raise ValueError(f"No frame found at PTS: {pts_ns} ns")
+                return bgra_frame
 
         except FileNotFoundError:
             raise FileNotFoundError(f"Video file not found: {video_path}")
-        except av.AVError as e:
+        except av.FFmpegError as e:
             raise ValueError(f"Error opening video file: {e}")
 
     def _get_video_container(self, video_path):

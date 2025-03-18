@@ -5,13 +5,16 @@ Input: list[query]
 Output: N/A
 """
 
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 from typing import List
 
 import cv2
 import line_profiler
+import pandas as pd
 import torch
 import typer
+from tqdm import tqdm
 from transformers import AutoModelForImageTextToText, AutoProcessor, GPT2Tokenizer, GPT2TokenizerFast
 
 from owa_game_agent.data import OWAMcapQuery
@@ -68,6 +71,34 @@ def show_by_decompose(query_path: Path):
     print("==============")
 
 
+@app.command("eda")
+def eda_sample(query_path: Path):
+    # Load all queries from the file
+    queries = load_queries(query_path)
+
+    # Parallel process to convert queries to samples
+    samples = []
+    with ProcessPoolExecutor(max_workers=16) as executor:
+        futures = [executor.submit(query.to_sample) for query in queries]
+
+        for future in tqdm(as_completed(futures), total=len(futures), desc="Processing queries"):
+            query = future.result()
+            samples.append(query)
+
+    # show up the distribution of sample.action_keyboard's length
+    action_keyboard_lengths = [len(sample.action_keyboard) for sample in samples]
+
+    df = pd.DataFrame(action_keyboard_lengths, columns=["action_keyboard_length"])
+    print(df.describe())
+
+    # print ratio of 0
+    print(f"Ratio of 0: {action_keyboard_lengths.count(0) / len(action_keyboard_lengths)}")
+
+    # print example sample which has maximum action_keyboard length
+    max_idx = action_keyboard_lengths.index(max(action_keyboard_lengths))
+    print(samples[max_idx])
+
+
 @app.command("prepare")
 def prepare_model(save_path: Path, model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct"):
     model = AutoModelForImageTextToText.from_pretrained(model_id, torch_dtype=torch.bfloat16)
@@ -81,6 +112,8 @@ def prepare_model(save_path: Path, model_id: str = "HuggingFaceTB/SmolVLM2-500M-
 
     assert processor.image_processor.max_image_size == {"longest_edge": 512}
     processor.image_processor.max_image_size = {"longest_edge": 512}
+
+    processor.tokenizer.padding_side == "right"  # https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/discussions/16
 
     before_token_count = len(processor.tokenizer)  # 49280
     print(f"Before token count: {before_token_count}")
@@ -104,6 +137,33 @@ def prepare_model(save_path: Path, model_id: str = "HuggingFaceTB/SmolVLM2-500M-
     print(f"After token count: {after_token_count}")
 
     assert after_token_count == before_token_count + KEYBOARD_VK_COUNT * KEYBOARD_STATE_COUNT + TIMESTAMP_TOKEN_COUNT
+
+    # Apply semantic initialization
+    for i in range(KEYBOARD_VK_COUNT):
+        # Skip non-alphabet characters
+        if not (0x41 <= i <= 0x5A):
+            continue
+        for j in range(KEYBOARD_STATE_COUNT):
+            # Initialize the embeddings for <KEYBOARD_i_j> as (i - 0x41)th alphabet character
+            new_token_idx = processor.tokenizer.convert_tokens_to_ids(KEYBOARD_EVENT_TOKEN_FORMAT.format(i, j))
+            source_token_idx = processor.tokenizer.convert_tokens_to_ids(chr(i - 0x41))
+            model.get_input_embeddings().weight.data[new_token_idx] = model.get_input_embeddings().weight.data[
+                source_token_idx
+            ]
+            model.get_output_embeddings().weight.data[new_token_idx] = model.get_output_embeddings().weight.data[
+                source_token_idx
+            ]
+
+    for i in range(TIMESTAMP_TOKEN_COUNT):
+        # Initialize the embeddings for <TIMESTAMP_i> as digit i
+        new_token_idx = processor.tokenizer.convert_tokens_to_ids(TIMESTAMP_TOKEN_FORMAT.format(i))
+        source_token_idx = processor.tokenizer.convert_tokens_to_ids(str(i))
+        model.get_input_embeddings().weight.data[new_token_idx] = model.get_input_embeddings().weight.data[
+            source_token_idx
+        ]
+        model.get_output_embeddings().weight.data[new_token_idx] = model.get_output_embeddings().weight.data[
+            source_token_idx
+        ]
 
     model.save_pretrained(save_path)
     processor.save_pretrained(save_path)
@@ -178,7 +238,7 @@ def show_dataset_collator(query_path: Path, model_id: str = "HuggingFaceTB/SmolV
     Out[17]: {'input_ids': [49279, 198, 9519, 9531, 42, 216, 49279], 'attention_mask': [1, 1, 1, 1, 1, 1, 1]}
     """
     attention_mask = batch["attention_mask"]
-    labels: torch.Tensor = batch["labels"]
+    labels: torch.IntTensor = batch["labels"]
 
     # torch.Size([2, 65, 3, 512, 512]) torch.Size([2, 65, 512, 512]) torch.Size([2, 4419]) torch.Size([2, 4419]) torch.Size([2, 4419])
     # torch.Size([2, 5, 3, 512, 512]) torch.Size([2, 5, 512, 512]) torch.Size([2, 439]) torch.Size([2, 439]) torch.Size([2, 439])

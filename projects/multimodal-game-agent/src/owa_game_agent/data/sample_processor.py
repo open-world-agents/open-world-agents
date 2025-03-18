@@ -4,9 +4,10 @@ from owa.core.time import TimeUnits
 from owa_game_agent.data import OWATrainingSample
 
 # Constants
-TIMESTAMP_MIN_NS = 0
-TIMESTAMP_MAX_NS = TimeUnits.SECOND
-TIMESTAMP_TOKEN_INTERVAL_NS = TimeUnits.MSECOND * 10
+TIMESTAMP_MIN_NS = 0  # 0 seconds. TODO: minus timestamp to support timestamp to state.
+TIMESTAMP_MAX_NS = TimeUnits.SECOND * 2  # 2 seconds
+TIMESTAMP_TOKEN_INTERVAL_NS = TimeUnits.MSECOND * 50  # 20.0 Hz
+# 2 seconds * 20 Hz = 80 tokens
 TIMESTAMP_TOKEN_COUNT = (TIMESTAMP_MAX_NS - TIMESTAMP_MIN_NS) // TIMESTAMP_TOKEN_INTERVAL_NS
 TIMESTAMP_TOKEN_FORMAT = "<TIMESTAMP_{}>"
 

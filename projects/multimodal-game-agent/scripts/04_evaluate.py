@@ -39,7 +39,9 @@ def evaluate_step(model, processor: SmolVLMProcessor, examples):
     # Tokenize the texts and process the images
     batch = processor(text=texts, images=images, return_tensors="pt", padding=True).to(model.device, dtype=model.dtype)
 
-    outputs = model.generate(**batch, do_sample=False, max_new_tokens=64)
+    outputs = model.generate(
+        **batch, do_sample=False, max_new_tokens=64, eos_token_id=processor.tokenizer.encode("<end_of_utterance>")[0]
+    )
 
     for i, (text, label, output) in enumerate(zip(texts, labels, outputs)):
         generated: str = processor.decode(output)
@@ -58,7 +60,7 @@ if __name__ == "__main__":
     parser.add_argument("--model_id", type=str, default="HuggingFaceTB/SmolVLM2-500M-Video-Instruct", help="Model ID")
     args = parser.parse_args()
 
-    processor = AutoProcessor.from_pretrained(args.model_id)
+    processor = AutoProcessor.from_pretrained(args.model_id, padding_side="left")
     model = AutoModelForImageTextToText.from_pretrained(
         args.model_id,
         torch_dtype=torch.bfloat16,

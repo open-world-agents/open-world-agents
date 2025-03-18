@@ -47,8 +47,8 @@ if __name__ == "__main__":
     parser.add_argument("--query_path", type=str, required=True, help="Path to JSONL file containing queries")
     parser.add_argument("--output_dir", type=str, default="./output", help="Directory to save model checkpoints")
     parser.add_argument("--model_id", type=str, default="HuggingFaceTB/SmolVLM2-500M-Video-Instruct", help="Model ID")
-    parser.add_argument("--num_epochs", type=int, default=20, help="Number of training epochs")
-    parser.add_argument("--batch_size", type=int, default=16, help="Batch size per device")
+    parser.add_argument("--num_epochs", type=int, default=5, help="Number of training epochs")
+    parser.add_argument("--batch_size", type=int, default=32, help="Batch size per device")
     parser.add_argument("--gradient_accumulation_steps", type=int, default=1, help="Gradient accumulation steps")
     parser.add_argument("--learning_rate", type=float, default=2e-5, help="Learning rate")
     parser.add_argument("--save_steps", type=int, default=2000, help="Save checkpoint every X steps")
@@ -69,11 +69,18 @@ if __name__ == "__main__":
         _attn_implementation="flash_attention_2",
     )
 
+    # print trainable parameter counts over all parameter counts
+    trainable_params = model.num_parameters(only_trainable=True)
+    total_params = model.num_parameters()
+    accelerator.print(
+        f"Model has {trainable_params} / {total_params} ({trainable_params / total_params:.2%}) trainable parameters"
+    )
+
     ################
     # Dataset
     ################
     accelerator.print(f"Loading dataset from: {args.query_path}")
-    dataset = SmolVLM2Dataset(args.query_path)
+    dataset = SmolVLM2Dataset(args.query_path, repeat_n=16)
 
     # Split dataset into train and validation
     rng = np.random.default_rng(seed=23)  # Needed to reproduce the same split per each run / per each device
@@ -83,6 +90,9 @@ if __name__ == "__main__":
     # Define train and eval datasets
     train_dataset = Subset(dataset, train_indices)
     eval_dataset = Subset(dataset, eval_indices)
+
+    # Set seed for dataset loading
+    set_seed(23, device_specific=True)  # device_specific must be True for multiple devices to load different data
 
     ################
     # Training arguments

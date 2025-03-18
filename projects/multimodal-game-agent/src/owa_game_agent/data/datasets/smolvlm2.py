@@ -96,17 +96,18 @@ class SmolVLM2Dataset(Dataset):
     Provides direct access to processed text and images ready for training.
     """
 
-    def __init__(self, query_path: str):
+    def __init__(self, query_path: str, repeat_n: int = 1):
         """
         Initialize the dataset.
 
         Args:
             query_path: Path to JSONL file containing queries
-            processor: processor for applying chat template (if None, will return raw messages)
+            repeat_n: Number of times to repeat the dataset. Useful for efficient loading of small datasets.
         """
         self.query_path = Path(query_path)
         self.queries = self.load_queries()
         self.sample_processor = SampleProcessor()
+        self._repeat_n = repeat_n
         logger.info(f"Loaded {len(self.queries)} queries from {query_path}")
 
     def load_queries(self) -> List[OWAMcapQuery]:
@@ -122,7 +123,7 @@ class SmolVLM2Dataset(Dataset):
         return queries
 
     def __len__(self):
-        return len(self.queries)
+        return len(self.queries) * self._repeat_n
 
     @line_profiler.profile  # profile: 1.99s
     def __getitem__(self, idx):
@@ -134,6 +135,8 @@ class SmolVLM2Dataset(Dataset):
             - images: List of PIL images from the sample
             - sample_id: Original index in the dataset
         """
+        # Consider the repeat_n parameter
+        idx = idx % len(self.queries)
         query = self.queries[idx]
 
         sample = query.to_sample()  # profile: 72.5% (0.723s)

@@ -37,18 +37,33 @@ class OWAMcapQuery(BaseModel):
             ):
                 raise ValueError("Query timestamp is out of range")
 
-            pressed_vks = None
+            # ===== Prepare state_keyboard, state_mouse =====
+
+            last_keyboard_state = None
+            keyboard_events_from_last_state = []
             for topic, timestamp, msg in reader.iter_decoded_messages(
-                topics=["keyboard/state"], end_time=self.anchor_timestamp_ns - self.past_range_ns, reverse=True
+                topics=["keyboard/state", "keyboard"], end_time=self.anchor_timestamp_ns, reverse=True
             ):  # profile: 31.2% (0.451s)
-                pressed_vks = msg["pressed_vk_list"]
-                break
+                if topic == "keyboard/state":
+                    last_keyboard_state = msg["pressed_vk_list"]
+                    break
+                elif topic == "keyboard":
+                    keyboard_events_from_last_state.append((timestamp, msg))
             else:
                 raise ValueError("No keyboard state found")
 
+            pressed_vks = set(last_keyboard_state)
+            for timestamp, msg in keyboard_events_from_last_state[::-1]:
+                if msg["event_type"] == "press":
+                    pressed_vks.add(msg["vk"])
+                elif msg["event_type"] == "release":
+                    pressed_vks.remove(msg["vk"])
+                else:
+                    raise ValueError(f"Invalid event type: {msg['event_type']}")
+
             state_mouse = {"pressed": {}, "x": 0, "y": 0}
             for topic, timestamp, msg in reader.iter_decoded_messages(
-                topics=["mouse"], end_time=self.anchor_timestamp_ns - self.past_range_ns, reverse=True
+                topics=["mouse"], end_time=self.anchor_timestamp_ns, reverse=True
             ):  # profile: 23.0% (0.332s)
                 state_mouse["x"], state_mouse["y"] = msg["x"], msg["y"]
                 break
@@ -62,6 +77,8 @@ class OWAMcapQuery(BaseModel):
             state_keyboard = set(pressed_vks) - {1, 2, 4}
             pressed_mks = set(pressed_vks) & {1, 2, 4}
             state_mouse["pressed"] = set([mouse_keys[button] for button in pressed_mks])
+
+            # ===== Prepare state_screen =====
 
             state_screen = []
             start_time, end_time = (
@@ -95,8 +112,11 @@ class OWAMcapQuery(BaseModel):
             # convert to oldest-to-latest order
             state_screen = state_screen[::-1]
 
+            # ===== Prepare action_keyboard, action_mouse =====
+
             action_keyboard = []
             action_mouse = []
+            _state_keyboard = state_keyboard.copy()
             start_time, end_time = self.anchor_timestamp_ns, self.anchor_timestamp_ns + self.future_range_ns
             for topic, timestamp, msg in reader.iter_decoded_messages(
                 topics=["keyboard", "mouse"],
@@ -104,7 +124,16 @@ class OWAMcapQuery(BaseModel):
                 end_time=end_time,
             ):  # profile: 22.6% (0.327s)
                 if topic == "keyboard":
+                    if msg.event_type == "press" and msg.vk in _state_keyboard:
+                        continue
                     action_keyboard.append((timestamp - self.anchor_timestamp_ns, msg))
+                    if msg.event_type == "press":
+                        _state_keyboard.add(msg.vk)
+                    elif msg.event_type == "release":
+                        try:
+                            _state_keyboard.remove(msg.vk)
+                        except KeyError:
+                            raise ValueError(f"Key release event without press event: {msg}")
                 elif topic == "mouse":
                     action_mouse.append((timestamp - self.anchor_timestamp_ns, msg))
                 else:
