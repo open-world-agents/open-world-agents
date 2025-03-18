@@ -9,7 +9,9 @@ from PIL import Image
 from owa.core.message import OWAMessage
 
 
-class VideoReader:
+# BUG: PyAV has "corrupted size vs. prev_size" error when `frame.to_ndarray(format="bgra")` is called for video "expert-jy-1.mkv"
+#      This bug does not occur when format does not contain `alpha` channel, e.g. "bgr24"
+class PyAVVideoReader:
     """Class responsible for reading video files and extracting frames at specified timestamps."""
 
     _GC_COLLECT_COUNT = 0
@@ -40,8 +42,8 @@ class VideoReader:
             ValueError: If a frame at the specified PTS cannot be found
         """
         # Increment GC counter and occasionally run garbage collection
-        VideoReader._GC_COLLECT_COUNT += 1
-        if VideoReader._GC_COLLECT_COUNT % self._GC_COLLECTION_INTERVAL == 0:
+        PyAVVideoReader._GC_COLLECT_COUNT += 1
+        if PyAVVideoReader._GC_COLLECT_COUNT % self._GC_COLLECTION_INTERVAL == 0:
             # Mandatory to prevent memory leaks when processing many videos
             gc.collect()
 
@@ -71,13 +73,12 @@ class VideoReader:
                 frame_time = frame.pts * stream.time_base
                 if frame_time >= target_time:
                     # Convert frame to BGRA format
-                    bgra_frame = frame.to_ndarray(format="bgra")
+                    bgra_frame = frame.to_ndarray(format="rgb24")
                     frame_found = True
                     break
 
             if not frame_found:
                 raise ValueError(f"No frame found at PTS: {pts_ns} ns")
-
             return bgra_frame
 
         except FileNotFoundError:
@@ -116,7 +117,7 @@ class VideoReader:
 
 
 # Global video reader instance
-_video_reader = VideoReader()
+_video_reader = PyAVVideoReader()
 
 
 class ScreenEmitted(OWAMessage):
@@ -138,17 +139,17 @@ class ScreenEmitted(OWAMessage):
         Returns:
             PIL.Image.Image: The frame as a PIL Image.
         """
-        bgra_array = self.to_bgra_array()
+        rgb_array = self.to_rgb_array()
         # Convert BGRA to RGB by rearranging the channels
-        rgb_array = bgra_array[..., [2, 1, 0]]
+        # rgb_array = bgra_array[..., [2, 1, 0]]
         return Image.fromarray(rgb_array, mode="RGB")
 
-    def to_bgra_array(self) -> np.ndarray:
+    def to_rgb_array(self) -> np.ndarray:
         """
-        Extract the frame at the specified PTS and return it as a BGRA NumPy array.
+        Extract the frame at the specified PTS and return it as a rgb NumPy array.
 
         Returns:
-            np.ndarray: The frame as a BGRA array with shape (H, W, 4).
+            np.ndarray: The frame as a rgb array with shape (H, W, 4).
 
         Raises:
             FileNotFoundError: If the video file does not exist.
