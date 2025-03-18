@@ -1,6 +1,6 @@
 import time
 
-from owa_env_gst.omnimodal import AppsinkRecorder
+from owa.env.gst.omnimodal import AppsinkRecorder
 
 
 def main():

@@ -1,10 +1,10 @@
-# OWA Env - Detailed Overview
+# Introducing OWA's Env
 
-This document provides a comprehensive explanation of the core functionalities and underlying logic of the Open World Agents codebase. Open World Agents is a modular agent system, where a variety of modules are dynamically registered and utilized at runtime. Below, you will find an in-depth description of the core logic, sample code, and a range of additional example projects.
+**Open World Agents (OWA)** introduces **Env**, a groundbreaking modular agent system designed for dynamic, real-time environments. Say goodbye to rigid frameworks with fixed interfaces—Env's flexible architecture lets you activate and customize components on the fly.
 
-## 1. Introduction
+## Why Choose OWA's Env?
 
-Open World Agents leverages a registration pattern that allows multiple modules to be dynamically activated during runtime. Each module's functionalities are registered in a global registry using dedicated dictionaries: CALLABLES for synchronous functions and LISTENERS for asynchronous/event-driven listeners.
+Traditional environmental interfaces like [gymnasium.Env](https://gymnasium.farama.org/api/env/) fall short when it comes to building **real-time, real-world agents**. They rely on synchronous steps (`env.step()`, `env.reset()`), which assume your agent has infinite time to process actions. That's not realistic for agents that need to react instantly in dynamic environments.
 
 ## 2. Core Architecture and Registry Pattern
 
@@ -128,4 +128,3 @@ Within the `/projects` directory, besides the core module, several example proje
 - [`owa.env.std`](plugins/std.md)
 - [`owa-env-desktop`](plugins/desktop_env.md)
 - [`owa-env-gst`](plugins/gstreamer_env.md)
-- [`owa-env-omniparser`](plugins/omniparser_env.md)

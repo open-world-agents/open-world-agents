@@ -1,0 +1,72 @@
+name: owl Release
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  release_owl:
+    runs-on: windows-latest
+
+    env:
+      UV_PROJECT_ENVIRONMENT: "C:\\Users\\runneradmin\\miniconda3\\envs\\owa"
+      # below line is legacy line, but I'm keeping it here for reference to know where the packages are installed
+      # GST_PLUGIN_PATH: "D:\\a\\open-world-agents\\open-world-agents\\projects\\owa-env-gst\\gst-plugins"
+    
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install the latest version of uv
+        id: setup-uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+          enable-cache: true
+      
+      - name: Do something if the cache was restored
+        if: steps.setup-uv.outputs.cache-hit == 'true'
+        run: echo "Cache was restored"
+      
+      - name: Cache conda
+        uses: actions/cache@v4
+        env:
+          # Increase this value to reset cache if etc/example-environment.yml has not changed
+          CACHE_NUMBER: 0
+        with:
+          # Use faster GNU tar
+          enableCrossOsArchive: true
+          path: D:\conda_pkgs_dir
+          key:
+            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
+            hashFiles('projects/owa-env-gst/environment.yml') }}
+
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+          mamba-version: "*"
+          channels: conda-forge
+          conda-remove-defaults: "true"
+          environment-file: projects/owa-env-gst/environment.yml
+          pkgs-dirs: D:\conda_pkgs_dir
+          activate-environment: owa
+      
+      # install `conda-pack`
+      - name: Install conda-pack
+        run: uv pip install conda-pack
+
+      - name: Generate Release Files
+        run: python scripts/release_owl/release.py
+
+      - name: Upload Release Files
+        uses: actions/upload-artifact@v4
+        with:
+          name: owl
+          path: |
+            scripts/release_owl/env.tar.gz
+            scripts/release_owl/run.bat
+            scripts/release_owl/restore_owl.py
