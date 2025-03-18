@@ -128,3 +128,4 @@ Within the `/projects` directory, besides the core module, several example proje
 - [`owa.env.std`](plugins/std.md)
 - [`owa-env-desktop`](plugins/desktop_env.md)
 - [`owa-env-gst`](plugins/gstreamer_env.md)
+- [`owa-env-omniparser`](plugins/omniparser_env.md)

@@ -65,28 +65,29 @@ markdown_extensions:
 
 nav:
   - Get Started:
-    - Welcome to OWA: index.md
-    # - Why use OWA: why.md
-    - Help with OWA: help_with_owa.md
-    - Installation: install.md
-    - Contributing: contributing.md 
+      - Welcome to OWA: index.md
+      # - Why use OWA: why.md
+      - Help with OWA: help_with_owa.md
+      - Installation: install.md
+      - Contributing: contributing.md
     # - Changelog: changelog.md # Later
   - Project Overview: project_overview.md
   - OWA-Env:
-    - Introducing OWA-Env: env/index.md
-    - Custom EnvPlugins: env/custom_plugins.md
-    - Lists of EnvPlugins:
-      - Standard Environment: env/plugins/std.md
-      - Desktop Environment: env/plugins/desktop_env.md
-      - Gstreamer Environment (Docs=WIP): env/plugins/gstreamer_env.md
+      - Introducing OWA-Env: env/index.md
+      - Custom EnvPlugins: env/custom_plugins.md
+      - Lists of EnvPlugins:
+          - Standard Environment: env/plugins/std.md
+          - Desktop Environment: env/plugins/desktop_env.md
+          - Gstreamer Environment (Docs=WIP): env/plugins/gstreamer_env.md
+          - OmniParser Environment: env/plugins/omniparser_env.md
   - OWA-Recorder:
-    - Why use OWA Recorder: recorder/why.md
-    - Install & Usage: recorder/install_and_usage.md
-    - Data format & Conversion: recorder/data_format.md
+      - Why use OWA Recorder: recorder/why.md
+      - Install & Usage: recorder/install_and_usage.md
+      - Data format & Conversion: recorder/data_format.md
   - 🚀 Awesome Examples (WIP):
-    - Multimodal Game Agent: examples/multimodal_game_agent/overview.md
-    - Omniparse + InternLM GUI Agent: examples/gui_agent/overview.md
-    - Interactve World Model: examples/interactive_world_model/overview.md
-    - Usage with transformers: examples/usage_with_transformers.md
-    - Usage with LLM Inference Engines(ollama, ...): examples/usage_with_llm.md
+      - Multimodal Game Agent: examples/multimodal_game_agent/overview.md
+      - Omniparse + InternLM GUI Agent: examples/gui_agent/overview.md
+      - Interactve World Model: examples/interactive_world_model/overview.md
+      - Usage with transformers: examples/usage_with_transformers.md
+      - Usage with LLM Inference Engines(ollama, ...): examples/usage_with_llm.md
   - API Reference: api_reference.md # Later
