@@ -142,6 +142,7 @@ def record(
     )
     window_thread = threading.Thread(target=publish_window_info, daemon=True)
     writer = OWAMcapWriter(output_file)
+    pbar = tqdm(desc="Recording", unit="event", dynamic_ncols=True)
 
     logger.info(USER_INSTRUCTION)
 
@@ -154,6 +155,8 @@ def record(
 
         while True:
             topic, event, publish_time = queue.get()
+            pbar.update()
+
             latency = time.time_ns() - publish_time
             # warn if latency is too high, i.e., > 20ms
             if latency > 20 * TimeUnits.MSECOND:
