@@ -338,6 +338,7 @@ dependencies = [
     { name = "owa-core" },
     { name = "owa-env-desktop" },
     { name = "owa-env-gst" },
+    { name = "plotext" },
     { name = "pydantic" },
     { name = "pygetwindow", marker = "sys_platform == 'win32'" },
     { name = "tqdm" },
@@ -352,6 +353,7 @@ requires-dist = [
     { name = "owa-core", editable = "../owa-core" },
     { name = "owa-env-desktop", editable = "../owa-env-desktop" },
     { name = "owa-env-gst", editable = "../owa-env-gst" },
+    { name = "plotext", specifier = ">=5.3.2" },
     { name = "pydantic", specifier = ">=2.10.6" },
     { name = "pygetwindow", marker = "sys_platform == 'win32'", specifier = ">=0.0.9" },
     { name = "tqdm", specifier = ">=4.67.1" },
@@ -468,6 +470,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/e5/fb/a7960e838bc5df57a2ce23183bfd2290d97c33028b96bde332a9057834d3/pillow-11.1.0-cp313-cp313t-win32.whl", hash = "sha256:dda60aa465b861324e65a78c9f5cf0f4bc713e4309f83bc387be158b077963d9", size = 2295494 },
     { url = "https://files.pythonhosted.org/packages/d7/6c/6ec83ee2f6f0fda8d4cf89045c6be4b0373ebfc363ba8538f8c999f63fcd/pillow-11.1.0-cp313-cp313t-win_amd64.whl", hash = "sha256:ad5db5781c774ab9a9b2c4302bbf0c1014960a0a7be63278d13ae6fdf88126fe", size = 2631595 },
     { url = "https://files.pythonhosted.org/packages/cf/6c/41c21c6c8af92b9fea313aa47c75de49e2f9a467964ee33eb0135d47eb64/pillow-11.1.0-cp313-cp313t-win_arm64.whl", hash = "sha256:67cd427c68926108778a9005f2a04adbd5e67c442ed21d95389fe1d595458756", size = 2377651 },
+]
+
+[[package]]
+name = "plotext"
+version = "5.3.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/c9/d7/f75f397af966fe252d0d34ffd3cae765317fce2134f925f95e7d6725d1ce/plotext-5.3.2.tar.gz", hash = "sha256:52d1e932e67c177bf357a3f0fe6ce14d1a96f7f7d5679d7b455b929df517068e", size = 61967 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f6/1e/12fe7c40cd2099a1f454518754ed229b01beaf3bbb343127f0cc13ce6c22/plotext-5.3.2-py3-none-any.whl", hash = "sha256:394362349c1ddbf319548cfac17ca65e6d5dfc03200c40dfdc0503b3e95a2283", size = 64047 },
 ]
 
 [[package]]

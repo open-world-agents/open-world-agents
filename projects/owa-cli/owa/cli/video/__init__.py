@@ -1,13 +1,19 @@
-import subprocess
-import statistics
-from collections import Counter
-import typer
-from pathlib import Path
 import shutil
-import plotext as plt
+import statistics
+import subprocess
+from collections import Counter
+from pathlib import Path
 from typing import Dict, List
 
-app = typer.Typer()
+import plotext as plt
+import typer
+
+app = typer.Typer(
+    help="""
+Analyze frame types and patterns in a video file.
+Video resize command is TODO; for now, run commands as `ffmpeg -i 0319_2.mkv -filter:v "crop=586:794:1504:450,fps=60" -c:v libx265 -x265-params "keyint=30:no-scenecut=1:bframes=0" -c:a copy 0319_22.mkv`
+"""
+)
 
 
 def get_frame_data(video_path: str):
@@ -215,7 +221,7 @@ def analyze_iframe_intervals(frames: List[Dict], fps: float, frame_count: bool =
     return stats
 
 
-@app.command()
+@app.command("probe")
 def analyze_video(
     video_path: str = typer.Argument(..., help="Path to the video file"),
     detailed: bool = typer.Option(False, "--detailed", "-d", help="Show detailed frame information"),
