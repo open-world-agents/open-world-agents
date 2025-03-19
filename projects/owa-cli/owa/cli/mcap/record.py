@@ -62,9 +62,11 @@ def screen_publisher_callback(event):
 def publish_window_info():
     while True:
         active_window = CALLABLES["window.get_active_window"]()
-        pressed_vk_list = CALLABLES["keyboard.get_pressed_vk_list"]()
+        keyboard_state = CALLABLES["keyboard.get_state"]()
+        mouse_state = CALLABLES["mouse.get_state"]()
         callback(active_window, topic="window")
-        callback(pressed_vk_list, topic="keyboard/state")
+        callback(keyboard_state, topic="keyboard/state")
+        callback(mouse_state, topic="mouse/state")
         time.sleep(1)
 
 

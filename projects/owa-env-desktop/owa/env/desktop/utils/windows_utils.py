@@ -1,10 +1,9 @@
 from ctypes import c_int, c_long, c_uint, c_wchar_p, create_unicode_buffer, windll
-from typing import List
 
 MAPVK_VK_TO_VSC = 0
 
 
-def get_current_vk_list() -> List[int]:
+def get_vk_state() -> set[int]:
     """Get a list of currently pressed virtual key (VK) codes.
 
     Uses the Windows API function `GetAsyncKeyState` to check the state of all virtual key codes (0 to 255).
@@ -49,11 +48,11 @@ def vk_to_name(vk: int) -> str:
 
 
 def main() -> None:
-    """Demonstrate the usage of `get_current_vk_list` and `vk_to_name` functions.
+    """Demonstrate the usage of `get_vk_state` and `vk_to_name` functions.
 
     Retrieves the currently pressed keys and prints their VK codes along with human-readable names.
     """
-    vks = get_current_vk_list()  # 300 microseconds
+    vks = get_vk_state()  # 300 microseconds
     print("Currently pressed VK codes:", vks)
 
     for vk in vks:

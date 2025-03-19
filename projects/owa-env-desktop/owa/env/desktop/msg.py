@@ -1,6 +1,23 @@
-from typing import Literal
+from typing import Annotated, Literal
+
+from annotated_types import Ge, Lt
+from pydantic import Field, PositiveFloat
 
 from owa.core.message import OWAMessage
+
+UInt8 = Annotated[int, Ge(0), Lt(256)]
+
+
+class KeyboardState(OWAMessage):
+    _type = "owa.env.desktop.msg.KeyboardState"
+    buttons: set[UInt8]
+
+
+class MouseState(OWAMessage):
+    _type = "owa.env.desktop.msg.MouseState"
+    x: int
+    y: int
+    buttons: set[Literal["left", "middle", "right"]]
 
 
 class KeyboardEvent(OWAMessage):
@@ -8,11 +25,6 @@ class KeyboardEvent(OWAMessage):
 
     event_type: Literal["press", "release"]
     vk: int
-
-
-class KeyboardState(OWAMessage):
-    _type = "owa.env.desktop.msg.KeyboardState"
-    pressed_vk_list: list[int]
 
 
 class MouseEvent(OWAMessage):
