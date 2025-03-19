@@ -56,8 +56,8 @@ def logits_processor(input_ids: torch.LongTensor, scores: torch.FloatTensor):
             token_score = second_topk_scores[batch_idx, i].item()
             print(f"  Token ID: {token_id}, Score: {token_score:.4f}")
 
-    # Zero out the probability for token ID 49279 as in the original code
-    scores[:, 49279] = 0
+    # Zero out the probability for token ID 49279 as in the original code (just for ignoring the eos token to see what's gunna be the second-next token)
+    # scores[:, 49279] = 0
     return scores
 
 

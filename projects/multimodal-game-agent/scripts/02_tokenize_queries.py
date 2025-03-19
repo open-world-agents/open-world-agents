@@ -112,6 +112,12 @@ def prepare_model(save_path: Path, model_id: str = "HuggingFaceTB/SmolVLM2-500M-
         max_image_size={"longest_edge": 512},
     )
 
+    # print(processor.image_size)
+    # print(processor.image_processor.size)
+    # print(processor.image_processor.max_image_size)
+
+    processor.image_processor.size = {"longest_edge": 512}
+
     assert processor.tokenizer.padding_side == "left"  # original: "right"
     assert processor.do_image_splitting is False  # original: True
     # original: {"longest_edge": 2048}
@@ -180,6 +186,9 @@ def verify_tokenizer(model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct
     Related issue: https://github.com/huggingface/tokenizers/issues/1544
     """
     processor = AutoProcessor.from_pretrained(model_id)
+
+    print(processor.tokenizer.eos_token_id)
+    print(processor.tokenizer.pad_token_id)
 
     assert isinstance(processor.tokenizer, GPT2TokenizerFast)
 

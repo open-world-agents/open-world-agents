@@ -52,6 +52,7 @@ if __name__ == "__main__":
     parser.add_argument("--gradient_accumulation_steps", type=int, default=1, help="Gradient accumulation steps")
     parser.add_argument("--learning_rate", type=float, default=2e-5, help="Learning rate")
     parser.add_argument("--save_steps", type=int, default=2000, help="Save checkpoint every X steps")
+    parser.add_argument("--repeat_n", type=int, default=5, help="Number of times to repeat the sampling from the dataset")
     args = parser.parse_args()
 
     accelerator = Accelerator()
@@ -83,7 +84,7 @@ if __name__ == "__main__":
     # Dataset
     ################
     accelerator.print(f"Loading dataset from: {args.query_path}")
-    dataset = SmolVLM2Dataset(args.query_path, repeat_n=2)
+    dataset = SmolVLM2Dataset(args.query_path, repeat_n=args.repeat_n)
 
     # Split dataset into train and validation
     rng = np.random.default_rng(seed=23)  # Needed to reproduce the same split per each run / per each device
