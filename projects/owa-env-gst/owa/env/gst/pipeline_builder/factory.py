@@ -36,6 +36,12 @@ class ElementFactory:
         properties = {
             "show-cursor": str(show_cursor).lower(),
             "do-timestamp": "true",
+            "window-capture-mode": "client",
+            # wgc is slower than dxgi in d3d11 implmenetation, but capable of specific window capture
+            # TODO: upgrade gstreamer & support d3d12 plugins
+            # "capture-api": "wgc",
+            # "capture-api": "dxgi",
+            "show-border": True,
         }
         if window_name is not None:
             activate_module("owa.env.desktop")
