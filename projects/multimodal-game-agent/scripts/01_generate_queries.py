@@ -11,12 +11,15 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import typer
+from accelerate.utils import set_seed
 from tqdm import tqdm
 
 from mcap_owa.highlevel import OWAMcapReader
 from owa.core.time import TimeUnits
 from owa_game_agent.constants import RECORD_PAUSE_KEY, RECORD_START_STOP_KEY
 from owa_game_agent.data import OWAMcapQuery
+
+set_seed(23)
 
 app = typer.Typer()
 

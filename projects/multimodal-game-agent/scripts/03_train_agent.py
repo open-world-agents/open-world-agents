@@ -63,6 +63,9 @@ if __name__ == "__main__":
     ##########
     accelerator.print(f"Loading model: {args.model_id}")
     processor = AutoProcessor.from_pretrained(args.model_id)
+    # https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/discussions/16
+    processor.tokenizer.padding_side = "left"
+
     model = AutoModelForImageTextToText.from_pretrained(
         args.model_id,
         torch_dtype=torch.bfloat16,
@@ -80,7 +83,7 @@ if __name__ == "__main__":
     # Dataset
     ################
     accelerator.print(f"Loading dataset from: {args.query_path}")
-    dataset = SmolVLM2Dataset(args.query_path, repeat_n=16)
+    dataset = SmolVLM2Dataset(args.query_path, repeat_n=2)
 
     # Split dataset into train and validation
     rng = np.random.default_rng(seed=23)  # Needed to reproduce the same split per each run / per each device
@@ -117,7 +120,7 @@ if __name__ == "__main__":
         warmup_ratio=0.03,
         weight_decay=0.0,
         lr_scheduler_type="cosine",
-        max_seq_length=6144,
+        # max_seq_length=6144,
         report_to="wandb",
         gradient_checkpointing_kwargs={"use_reentrant": False},
         dataset_text_field="",  # dummy field for collator

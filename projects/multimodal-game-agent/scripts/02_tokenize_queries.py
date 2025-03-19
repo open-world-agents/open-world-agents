@@ -102,18 +102,22 @@ def eda_sample(query_path: Path):
 @app.command("prepare")
 def prepare_model(save_path: Path, model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct"):
     model = AutoModelForImageTextToText.from_pretrained(model_id, torch_dtype=torch.bfloat16)
-    processor = AutoProcessor.from_pretrained(model_id)
 
-    assert processor.do_image_splitting is True
-    processor.do_image_splitting = False
+    # https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/discussions/16
+    processor = AutoProcessor.from_pretrained(
+        model_id,
+        padding_side="left",
+        do_image_splitting=False,
+        image_size={"longest_edge": 512},
+        max_image_size={"longest_edge": 512},
+    )
 
-    assert processor.image_size == processor.image_processor.size == {"longest_edge": 2048}
-    processor.image_size = processor.image_processor.size = {"longest_edge": 512}
-
+    assert processor.tokenizer.padding_side == "left"  # original: "right"
+    assert processor.do_image_splitting is False  # original: True
+    # original: {"longest_edge": 2048}
+    assert processor.image_size == processor.image_processor.size == {"longest_edge": 512}
+    # original: {"longest_edge": 512}
     assert processor.image_processor.max_image_size == {"longest_edge": 512}
-    processor.image_processor.max_image_size = {"longest_edge": 512}
-
-    processor.tokenizer.padding_side == "right"  # https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/discussions/16
 
     before_token_count = len(processor.tokenizer)  # 49280
     print(f"Before token count: {before_token_count}")
@@ -219,6 +223,13 @@ def verify_tokenizer(model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct
 def show_dataset_collator(query_path: Path, model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct"):
     processor = AutoProcessor.from_pretrained(model_id)
 
+    assert processor.tokenizer.padding_side == "left"  # original: "right"
+    assert processor.do_image_splitting is False  # original: True
+    # original: {"longest_edge": 2048}
+    assert processor.image_size == processor.image_processor.size == {"longest_edge": 512}
+    # original: {"longest_edge": 512}
+    assert processor.image_processor.max_image_size == {"longest_edge": 512}
+
     dataset = SmolVLM2Dataset(query_path)
 
     samples = [dataset[0], dataset[len(dataset) // 2 + 55]]
@@ -230,7 +241,7 @@ def show_dataset_collator(query_path: Path, model_id: str = "HuggingFaceTB/SmolV
 
     pixel_values = batch["pixel_values"]
     pixel_attention_mask = batch["pixel_attention_mask"]
-    input_ids: torch.IntTensor = batch["input_ids"]
+    input_ids: torch.LongTensor = batch["input_ids"]
     """
     In [16]: a="<end_of_utterance>\nAssistant: <end_of_utterance>"
 
@@ -238,7 +249,7 @@ def show_dataset_collator(query_path: Path, model_id: str = "HuggingFaceTB/SmolV
     Out[17]: {'input_ids': [49279, 198, 9519, 9531, 42, 216, 49279], 'attention_mask': [1, 1, 1, 1, 1, 1, 1]}
     """
     attention_mask = batch["attention_mask"]
-    labels: torch.IntTensor = batch["labels"]
+    labels: torch.LongTensor = batch["labels"]
 
     # torch.Size([2, 65, 3, 512, 512]) torch.Size([2, 65, 512, 512]) torch.Size([2, 4419]) torch.Size([2, 4419]) torch.Size([2, 4419])
     # torch.Size([2, 5, 3, 512, 512]) torch.Size([2, 5, 512, 512]) torch.Size([2, 439]) torch.Size([2, 439]) torch.Size([2, 439])

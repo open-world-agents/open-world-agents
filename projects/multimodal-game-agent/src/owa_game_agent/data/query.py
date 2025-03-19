@@ -29,6 +29,7 @@ class OWAMcapQuery(BaseModel):
         Extracts a training sample from the MCAP file.
 
         TODO: optimization of this method. each `iter_decoded_messages` takes 10ms and whole `to_sample` takes 30ms.
+        TODO: separate various ValueError into multiple cases and log part of them.
         """
         with OWAMcapReader(self.file_path) as reader:
             if (
@@ -57,7 +58,10 @@ class OWAMcapQuery(BaseModel):
                 if msg["event_type"] == "press":
                     pressed_vks.add(msg["vk"])
                 elif msg["event_type"] == "release":
-                    pressed_vks.remove(msg["vk"])
+                    try:
+                        pressed_vks.remove(msg["vk"])
+                    except KeyError:
+                        raise ValueError(f"Key release event without press event: {msg}")
                 else:
                     raise ValueError(f"Invalid event type: {msg['event_type']}")
 
