@@ -1,0 +1,3 @@
+[] since mkv path is hard-coded into mcap file, naive file renaming does not work(path to video is being invalid). Implement renaming command & add to docs.
+[] accurate mouse state acquisation method. currently, if user does not move mouse after recording, there's no way to extract mouse state.
+[] prepare a method to match mouse position and capturing screen. currently, gstreamer captures a window and there's no way to figure out the accurate position of captured screen with regard to whole screen.
