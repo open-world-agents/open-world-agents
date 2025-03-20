@@ -1,7 +1,6 @@
 from typing import Annotated, Literal
 
 from annotated_types import Ge, Lt
-from pydantic import Field, PositiveFloat
 
 from owa.core.message import OWAMessage
 
