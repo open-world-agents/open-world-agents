@@ -2,6 +2,8 @@ import pynput._util.win32_vks as VK
 from pynput.keyboard import KeyCode
 
 # Copied from https://github.com/moses-palmer/pynput/blob/2dab434cba790ee92e807594e6bf8f83265dca34/lib/pynput/keyboard/_win32.py#L113
+# These keys MUST be handled differently because they are not recognized by `KeyCode.from_vk`.
+# See also: https://learn.microsoft.com/en-us/windows/win32/inputdev/about-keyboard-input#extended-key-flag
 EXTENDED_KEYS = [
     VK.RMENU,
     VK.RCONTROL,
