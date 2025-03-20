@@ -6,7 +6,7 @@ Conclusion of this script: we must consider extended keys, and I've implemented 
 
 import time
 
-from pynput.keyboard import Controller, Key, KeyCode
+from pynput.keyboard import Controller, KeyCode
 
 keyboard = Controller()
 
