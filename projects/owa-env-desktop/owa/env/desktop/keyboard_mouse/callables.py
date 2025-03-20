@@ -7,7 +7,7 @@ from pynput.mouse import Controller as MouseController
 from owa.core.registry import CALLABLES
 
 from ..msg import KeyboardState, MouseState
-from ..utils import get_vk_state
+from ..utils import get_vk_state, vk_to_keycode
 
 mouse_controller = MouseController()
 
@@ -27,14 +27,26 @@ CALLABLES.register("mouse.scroll")(mouse_controller.scroll)
 
 keyboard_controller = KeyboardController()
 
-CALLABLES.register("keyboard.press")(keyboard_controller.press)
-CALLABLES.register("keyboard.release")(keyboard_controller.release)
+
+@CALLABLES.register("keyboard.press")
+def press(key):
+    key = vk_to_keycode(key) if isinstance(key, int) else key
+    return keyboard_controller.press(key)
+
+
+@CALLABLES.register("keyboard.release")
+def release(key):
+    key = vk_to_keycode(key) if isinstance(key, int) else key
+    return keyboard_controller.release(key)
+
+
 CALLABLES.register("keyboard.type")(keyboard_controller.type)
 
 
 @CALLABLES.register("keyboard.press_repeat")
 def press_repeat_key(key, press_time: float, initial_delay: float = 0.5, repeat_delay: float = 0.033):
     """Mocks the behavior of holding a key down, with a delay between presses."""
+    key = vk_to_keycode(key) if isinstance(key, int) else key
     repeat_time = max(0, (press_time - initial_delay) // repeat_delay - 1)
 
     keyboard_controller.press(key)
