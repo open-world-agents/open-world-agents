@@ -15,6 +15,8 @@ from pynput.mouse import Button
 from pynput.mouse import Controller as MouseController
 from pynput.mouse import Listener as MouseListener
 
+from owa.env.desktop.utils import vk_to_name
+
 # set logger level
 logger.remove()
 logger.add(sys.stderr, level="DEBUG")
@@ -50,7 +52,7 @@ def record(file: str = "events.pkl"):
         timestamp = time.time() - start_time
         _key = key.value if hasattr(key, "value") else key
         vk = getattr(_key, "vk", None)
-        logger.debug(f"key: {key}, _key: {_key}, vk: {vk}")
+        logger.debug(f"key: {key}, _key: {_key}, vk: {vk}, scancode: {_key._scan}, name: {vk_to_name(vk)}")
         if vk is not None:
             events.append(("key_press", timestamp, vk))
 
@@ -62,7 +64,7 @@ def record(file: str = "events.pkl"):
         timestamp = time.time() - start_time
         _key = key.value if hasattr(key, "value") else key
         vk = getattr(_key, "vk", None)
-        logger.debug(f"key: {key}, _key: {_key}, vk: {vk}")
+        logger.debug(f"key: {key}, _key: {_key}, vk: {vk}, scancode: {_key._scan}, name: {vk_to_name(vk)}")
         if vk is not None:
             events.append(("key_release", timestamp, vk))
 
