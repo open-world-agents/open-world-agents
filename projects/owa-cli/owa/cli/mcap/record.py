@@ -25,8 +25,11 @@ from mcap_owa.highlevel import OWAMcapWriter
 from owa.core.registry import CALLABLES, LISTENERS, activate_module
 from owa.core.time import TimeUnits
 
+# how to use loguru with tqdm: https://github.com/Delgan/loguru/issues/135
 logger.remove()
 logger.add(lambda msg: tqdm.write(msg, end=""), colorize=True)
+
+logger.disable("owa.env.gst")  # suppress pipeline print
 
 queue = Queue()
 MCAP_LOCATION = None
@@ -117,9 +120,24 @@ def record(
         logger.warning(f"Created directory {output_file.parent}")
 
     # delete the file if it exists
-    if output_file.exists():
+    if output_file.exists() or output_file.with_suffix(".mkv").exists():
+        delete = typer.confirm("The output file already exists. Do you want to delete it?")
+        if not delete:
+            print("The recording is aborted.")
+            raise typer.Abort()
         output_file.unlink()
         logger.warning(f"Deleted existing file {output_file}")
+
+    if window_name is not None:
+        logger.warning(
+            "⚠️ WINDOW CAPTURE LIMITATION (as of 2025-03-20) ⚠️\n"
+            "When capturing a specific window, mouse coordinates cannot be accurately aligned with the window content due to "
+            "limitations in the Windows API (WGC).\n\n"
+            "RECOMMENDATION:\n"
+            "- Use FULL SCREEN capture when you need mouse event tracking\n"
+            "- Full screen mode in games works well if the video output matches your monitor resolution (e.g., 1920x1080)\n"
+            "- Any non-fullscreen capture will have misaligned mouse coordinates in the recording"
+        )
 
     configure()
     recorder = LISTENERS["owa.env.gst/omnimodal/appsink_recorder"]()

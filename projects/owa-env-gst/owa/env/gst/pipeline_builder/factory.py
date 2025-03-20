@@ -38,7 +38,7 @@ class ElementFactory:
             "do-timestamp": "true",
             "window-capture-mode": "client",
             # wgc is slower than dxgi in d3d11 implmenetation, but capable of specific window capture
-            # TODO: upgrade gstreamer & support d3d12 plugins
+            # TODO: upgrade gstreamer & support d3d12 plugins. low-framerate issue in wgc is resolved in d3d12 version. https://discourse.gstreamer.org/t/d3d11screencapturesrc-vs-d3d12screencapturesrc/2080
             # "capture-api": "wgc",
             # "capture-api": "dxgi",
             "show-border": True,
