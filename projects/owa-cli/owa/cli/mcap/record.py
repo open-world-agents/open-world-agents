@@ -29,6 +29,7 @@ from owa.core.time import TimeUnits
 logger.remove()
 logger.add(lambda msg: tqdm.write(msg, end=""), colorize=True)
 
+# TODO: apply https://loguru.readthedocs.io/en/stable/resources/recipes.html#configuring-loguru-to-be-used-by-a-library-or-an-application
 logger.disable("owa.env.gst")  # suppress pipeline print
 
 queue = Queue()
