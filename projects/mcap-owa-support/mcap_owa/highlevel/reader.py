@@ -59,7 +59,7 @@ class OWAMcapReader:
 
     @functools.cached_property
     def duration(self):
-        return self._end_time - self._start_time
+        return self.end_time - self.start_time
 
     def __enter__(self):
         return self

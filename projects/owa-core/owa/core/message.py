@@ -1,5 +1,6 @@
 import io
 from abc import ABC, abstractmethod
+from typing import Self
 
 from pydantic import BaseModel
 
@@ -12,7 +13,7 @@ class BaseMessage(ABC):
 
     @classmethod
     @abstractmethod
-    def deserialize(cls, buffer): ...
+    def deserialize(cls, buffer: io.BytesIO) -> Self: ...
 
     @classmethod
     @abstractmethod
