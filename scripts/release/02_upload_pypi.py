@@ -11,7 +11,7 @@ from pathlib import Path
 
 def list_subrepos() -> list[str]:
     """List all subrepositories in the projects directory."""
-    projects = []
+    projects = [Path(".")]
     for d in Path("projects").iterdir():
         if not d.is_dir():
             continue
