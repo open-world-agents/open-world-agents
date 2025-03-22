@@ -40,7 +40,7 @@ elif platform.system() == "Windows":
             rect_coords = (rect.left, rect.top, rect.right, rect.bottom)
             hWnd = active_window._hWnd
             return WindowInfo(title=title, rect=rect_coords, hWnd=hWnd)
-        return None
+        return WindowInfo(title="", rect=[0, 0, 0, 0], hWnd=-1)
 
 else:
 
@@ -58,6 +58,12 @@ def get_window_by_title(window_title_substring: str) -> WindowInfo:
         windows = gw.getWindowsWithTitle(window_title_substring)
         if not windows:
             raise ValueError(f"No window with title containing '{window_title_substring}' found.")
+
+        # Temporal workaround to deal with `cmd`'s behavior: it setup own title as the command it running.
+        # e.g. `owl window find abcd` will always find `cmd` window itself running command.
+        if "Conda" in windows[0].title:
+            windows.pop(0)
+
         window = windows[0]
         rect = window._getWindowRect()
         return WindowInfo(title=window.title, rect=(rect.left, rect.top, rect.right, rect.bottom), hWnd=window._hWnd)

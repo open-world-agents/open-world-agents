@@ -49,7 +49,7 @@ class AppsinkRecorder(GstPipelineRunner):
 
             # warn if latency is too high, e.g. > 30ms
             if latency > 30 * Gst.MSECOND:
-                logger.warning(f"High latency: {latency / Gst.MSECOND}ms")
+                logger.warning(f"High latency: {latency / Gst.MSECOND:.2f}ms")
 
             callback(ScreenEmitted(path=filesink_location, pts=buf.pts, utc_ns=frame_time_ns))
             return Gst.PadProbeReturn.OK

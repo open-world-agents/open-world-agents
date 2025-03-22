@@ -1,107 +1,172 @@
-# OWAMcap format
+# Introducing OWAMcap
 
-- The main recording is saved as a Matroska (`.mkv`) file. This `.mkv` file includes timestamps (nanoseconds since the [epoch](https://docs.python.org/3/library/time.html#epoch)) as subtitles. These timestamps can be used to align events in the `.mcap` file with frames in the `.mkv`.
-- Events such as keyboard, mouse, and window interactions are logged in an `.mcap` file with the same name.
+## Overview
 
-!!! mcap "What's MCAP?"
-    MCAP (pronounced "em-cap") is an open-source container file format designed for multimodal log data. It supports multiple channels of timestamped pre-serialized data and is ideal for use in pub/sub or robotics applications.
+OWAMcap is a high-performance, self-contained, flexible container file format for multimodal desktop log data, powered by the open-source container file format [mcap](https://mcap.dev/). This format is designed for efficiently recording and processing message data in Open World Agents (OWA) applications.
 
-    **[Learn more about MCAP](https://mcap.dev/)**
+!!! tip "So, what exactly is mcap?"
+    Simply put, mcap is a format that allows you to record various types of events such as keyboard events, mouse events, and screen captures along with their timestamps. For more detailed information, please refer to the [OWAMcap Format Specification](#internals-owamcap-format-specification) section.
 
-### Example Data
+## Usage Example of OWAMcap - Desktop Recorder
+
+What exactly does the OWAMcap format contain? Let's demonstrate with an example of recorded desktop data. Below are sample datasets that you can download and explore yourself:
 
 - `example.mcap` [[Download]](https://github.com/open-world-agents/open-world-agents/blob/main/docs/data/example.mcap)
+- `example.mkv` [[Download]](https://github.com/open-world-agents/open-world-agents/blob/main/docs/data/example.mkv)
 
-    Utilizing `owl`(Open World agents cLi), you can inspect the summary of `mcap` file.
+??? demo "Click here to see `example.mkv`!"
+    <video controls>
+    <source src="../example.mkv" type="video/mp4">
+    </video>
+### Exploring Example Data
+
+Let's examine the contents of an OWAMcap file using the `owl` command-line tool (Open World agents cLi).
+
+#### File Summary with `owl mcap info`
+
+First, we can get an overview of the file structure:
+
 ```
 $ owl mcap info example.mcap
 library:   mcap-owa-support 0.1.0; mcap 1.2.2
 profile:   owa
-messages:  2124
-duration:  17.6543448s
-start:     2025-03-11T02:46:39.0329786+09:00 (1741628799.032978600)
-end:       2025-03-11T02:46:56.6873234+09:00 (1741628816.687323400)
+messages:  518
+duration:  6.8558623s
+start:     2025-03-21T17:06:30.7029335+09:00 (1742544390.702933500)
+end:       2025-03-21T17:06:37.5587958+09:00 (1742544397.558795800)
 compression:
-        zstd: [1/1 chunks] [173.83 KiB/28.29 KiB (83.73%)] [1.60 KiB/sec]
+        zstd: [1/1 chunks] [48.19 KiB/9.42 KiB (80.44%)] [1.37 KiB/sec]
 channels:
-        (1) window            18 msgs (1.02 Hz)    : owa.env.desktop.msg.WindowInfo [jsonschema]
-        (2) keyboard/state    18 msgs (1.02 Hz)    : owa.env.desktop.msg.KeyboardState [jsonschema]
-        (3) mouse           1064 msgs (60.27 Hz)   : owa.env.desktop.msg.MouseEvent [jsonschema]
-        (4) screen           978 msgs (55.40 Hz)   : owa.env.gst.msg.ScreenEmitted [jsonschema]
-        (5) keyboard          46 msgs (2.61 Hz)    : owa.env.desktop.msg.KeyboardEvent [jsonschema]
-channels: 5
+        (1) window            7 msgs (1.02 Hz)    : owa.env.desktop.msg.WindowInfo [jsonschema]
+        (2) keyboard/state    7 msgs (1.02 Hz)    : owa.env.desktop.msg.KeyboardState [jsonschema]
+        (3) mouse/state       7 msgs (1.02 Hz)    : owa.env.desktop.msg.MouseState [jsonschema]
+        (4) mouse           115 msgs (16.77 Hz)   : owa.env.desktop.msg.MouseEvent [jsonschema]
+        (5) screen          362 msgs (52.80 Hz)   : owa.env.gst.msg.ScreenEmitted [jsonschema]
+        (6) keyboard         20 msgs (2.92 Hz)    : owa.env.desktop.msg.KeyboardEvent [jsonschema]
+channels: 6
 attachments: 0
 metadata: 0
 ```
 
-    Also, you may inspect the detailed messages with [simple reader](#reading-owa-mcap-files) or by running `owl`.
+**Key observations from this output:**
+
+1. **File Overview**:
+    - Contains 518 messages recorded over 6.86 seconds
+    - Records from March 21, 2025, with precise start and end timestamps
+
+2. **Compression**:
+    - Uses zstd compression, reducing file size by 80.44%
+
+3. **Channels (Topics)**:
+    - The file contains 6 different channels (or topics), each tracking a specific type of event:
+
+   | Channel # | Name | Message Count | Frequency | Message Type |
+   |-----------|------|--------------|-----------|--------------|
+   | 1 | window | 7 msgs | 1.02 Hz | WindowInfo |
+   | 2 | keyboard/state | 7 msgs | 1.02 Hz | KeyboardState |
+   | 3 | mouse/state | 7 msgs | 1.02 Hz | MouseState |
+   | 4 | mouse | 115 msgs | 16.77 Hz | MouseEvent |
+   | 5 | screen | 362 msgs | 52.80 Hz | ScreenEmitted |
+   | 6 | keyboard | 20 msgs | 2.92 Hz | KeyboardEvent |
+
+For example, looking at channel #5 (screen), we can see:
+
+- The topic name is "screen"
+- It contains 362 messages
+- Recording frequency is 52.80 Hz (slightly lower than the intended 60 Hz, likely due to the short recording time)
+- Messages are of type `owa.env.gst.msg.ScreenEmitted`
+
+#### Detailed Message Inspection with `owl mcap cat`
+
+To examine individual messages, we can use the `cat` command:
+
 ```
 $ owl mcap cat example.mcap --n 8 --no-pretty
 Topic: window, Timestamp: 1741628814049712700, Message: {'title': 'ZType – Typing Game - Type to Shoot - Chromium', 'rect': [389, 10, 955, 1022], 'hWnd': 7540094}
-Topic: keyboard/state, Timestamp: 1741628814049712700, Message: {'pressed_vk_list': []}
+Topic: keyboard/state, Timestamp: 1741628814049712700, Message: {'buttons': []}
+Topic: mouse/state, Timestamp: 1742544390703436600, Message: {'x': 1594, 'y': 1112, 'buttons': []}
+Topic: mouse, Timestamp: 1742544390707441200, Message: {'event_type': 'move', 'x': 1597, 'y': 1112}
 Topic: screen, Timestamp: 1741628814057575300, Message: {'path': 'example.mkv', 'pts': 14866666666, 'utc_ns': 1741628814056571100}
 Topic: screen, Timestamp: 1741628814073392700, Message: {'path': 'example.mkv', 'pts': 14883333333, 'utc_ns': 1741628814072476900}
-
-... (additional lines omitted for brevity) ...
-
-Topic: screen, Timestamp: 1741628814955961800, Message: {'path': 'example.mkv', 'pts': 15766666666, 'utc_ns': 1741628814955961800}
-Topic: keyboard, Timestamp: 1741628814978561600, Message: {'event_type': 'release', 'vk': 67}
 Topic: keyboard, Timestamp: 1741628815015522100, Message: {'event_type': 'release', 'vk': 162}
-Topic: screen, Timestamp: 1741628815016585400, Message: {'path': 'example.mkv', 'pts': 15783333333, 'utc_ns': 1741628815015522100}
-Topic: window, Timestamp: 1741628815050666400, Message: {'title': 'data_format.md - open-world-agents - Visual Studio Code', 'rect': [-8, -8, 1928, 1040], 'hWnd': 133438}
-Topic: keyboard/state, Timestamp: 1741628815050666400, Message: {'pressed_vk_list': []}
-
-... (additional lines omitted for brevity) ...
-
-Topic: mouse, Timestamp: 1741628816438561600, Message: {'event_type': 'move', 'x': 950, 'y': 891}
-Topic: mouse, Timestamp: 1741628816441655400, Message: {'event_type': 'move', 'x': 950, 'y': 891}
-Topic: mouse, Timestamp: 1741628816445662100, Message: {'event_type': 'move', 'x': 949, 'y': 891}
-Topic: screen, Timestamp: 1741628816446661600, Message: {'path': 'example.mkv', 'pts': 17250000000, 'utc_ns': 1741628816446661600}
 ```
 
-- `example.mkv` [[Download]](https://github.com/open-world-agents/open-world-agents/blob/main/docs/data/example.mkv)
+**What we can learn from these messages:**
 
-<video controls>
-<source src="../example.mkv" type="video/mp4">
-</video>
+1. **Window messages** - Track active windows
+    - Example: `{'title': 'ZType – Typing Game - Type to Shoot - Chromium', 'rect': [389, 10, 955, 1022], 'hWnd': 7540094}`
+    - Shows which window was active, its title, position and size
 
-### Reading OWA MCAP Files
+2. **Mouse messages** - Track cursor position and button states
+    - Position tracking: `{'x': 1597, 'y': 1112}`
+    - Event types include: "move", "click", etc.
 
-!!! Note "Note" 
-    Note that awesome read/writer and dataloader for OWA MCAP file is WIP! Stay tuned.
+3. **Keyboard messages** - Track key presses and releases
+    - Example: `{'event_type': 'release', 'vk': 162}`
+    - Records which virtual key was pressed or released
 
-You can read the `.mcap` file using the following script:
+4. **Screen messages** - Link to video frames in the MKV file
+    - Contains paths, presentation timestamps, and UTC timestamps
+
+#### Using This Data
+
+This structured data allows for powerful analysis and use cases:
+
+- You can filter data based on which window was active at a particular time
+- You can synchronize keyboard/mouse events with screen captures
+- The timestamps allow for precise reconstruction of user interactions
+
+!!! tip "What's VK(Virtual Key Code)?"
+    Operating systems don't directly use the physical keyboard input values (scan codes) but instead use virtualized keys called VKs. OWA's recorder uses VKs to record keyboard-agnostic data. If you're interested in more details, you can refer to the following resources:
+
+    - [Keyboard Input Overview, Microsoft](https://learn.microsoft.com/en-us/windows/win32/inputdev/about-keyboard-input)
+    - [Virtual-Key Codes, Microsoft](https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes)
+
+
+## Internals - OWAMcap Format Specification
+
+!!! note "Note for Users"
+    This part is intended for developers who want to utilize the OWAMcap file format for their own applications. **Regular users of the library may not need this information.**
+
+### Technical Specifications
+
+- OWAMcap uses the standard `mcap` format with `json` schema
+- The [`mcap-owa-support`](https://github.com/open-world-agents/open-world-agents/tree/main/projects/mcap-owa-support) Python package, which is within the open-world-agents repository, provides decoders, writers, and readers for this format
+- All messages must inherit from or implement the [`BaseMessage`](https://github.com/open-world-agents/open-world-agents/blob/main/projects/owa-core/owa/core/message.py#L7) class from `owa.core.message`
+
+!!! mcap "What's MCAP?"
+    MCAP (pronounced "em-cap") is an open-source container file format designed for multimodal log data. It supports multiple channels of timestamped pre-serialized data and is ideal for pub/sub or robotics applications.
+    
+    Key advantages of MCAP:
+    
+    - **High Performance**: Efficient storage and retrieval of large event data streams
+    - **Flexible & Open**: Works with diverse data types beyond robotics
+    - **Self-Describing**: Encodes schema information to ensure compatibility
+    
+    **[Learn more about MCAP](https://mcap.dev/)**
+
+### Implementation Guide
+
+Any message that implements [`BaseMessage`](https://github.com/open-world-agents/open-world-agents/blob/main/projects/owa-core/owa/core/message.py#L7) can be recorded in the OWAMcap format. This provides flexibility while maintaining a consistent interface. Following block describes the interface of `BaseMessage`.
 
 ```python
-from mcap_owa.highlevel import Reader
+class BaseMessage(ABC):
+    _type: str
 
-def main():
-    with Reader("tmp/example.mcap") as reader:
-        print(reader.topics)
-        print(reader.start_time, reader.end_time)
-        for topic, timestamp, msg in reader.iter_decoded_messages():
-            print(f"Topic: {topic}, Timestamp: {timestamp}, Message: {msg}")
+    @abstractmethod
+    def serialize(self, buffer: io.BytesIO): ...
 
-if __name__ == "__main__":
-    main()
+    @classmethod
+    @abstractmethod
+    def deserialize(cls, buffer: io.BytesIO) -> Self: ...
+
+    @classmethod
+    @abstractmethod
+    def get_schema(cls): ...
 ```
 
-### 💡 Why Use `.mkv` Instead of `.mp4`?
+### File Format Considerations
 
-OWA's Recorder uses **Matroska (`.mkv`)** instead of `.mp4` to ensure reliability in case of crashes or power failures.
+#### Why Use `.mcap`?
 
-- If a recording is unexpectedly interrupted (e.g., power outage, software crash), `.mkv` files remain recoverable.
-- `.mp4` files, by contrast, may become corrupted or completely lost if not properly finalized.
-
-For safety and data integrity, `.mkv` is the preferred format—you can always convert it to other formats later if needed.
-
-
-### 💡 Why Use `.mcap`?
-
-MCAP is a powerful open-source format for logging multimodal data. Unlike traditional log formats, MCAP is optimized for performance, flexibility, and interoperability.
-
-- **High Performance**: Efficient storage and retrieval of large event data streams.  
-- **Flexible & Open**: Works with diverse data types beyond robotics.  
-- **Self-Describing**: Encodes schema information to ensure compatibility.
-
-To enhance MCAP support for Open World Agents (OWA), we have developed the [`mcap-owa-support`](https://github.com/open-world-agents/open-world-agents/blob/main/projects/mcap-owa-support) package. This package provides custom readers and writers for the **OWA MCAP** format, making it easier to log and process event data seamlessly.
+There are very few open-source formats available for heterogeneous timestamped data. ROS's bagfile format is one option, but it heavily depends on the ROS ecosystem and often requires installation of ROS1/2. In comparison, `mcap` is self-contained and efficient, especially for random read (or seeking) operations, which is critical for training VLA (Vision-Language-Action) models.

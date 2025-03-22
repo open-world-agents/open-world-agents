@@ -1,4 +1,4 @@
-# Why You Should Use OWA's Recorder  
+# Introducing Desktop Recorder
 
 OWA's Recorder is a **powerful, efficient, and easy-to-use** screen recording tool designed for modern workflows. Whether you need precise event tracking, high-performance screen capture, or seamless audio synchronization, it delivers everything in a lightweight yet robust package.  
 

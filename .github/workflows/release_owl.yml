@@ -68,4 +68,5 @@ jobs:
           name: owl
           path: |
             scripts/release_owl/env.tar.gz
-            scripts/release_owl/entrypoint.bat
+            scripts/release_owl/run.bat
+            scripts/release_owl/restore_owl.py

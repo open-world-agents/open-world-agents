@@ -2,11 +2,11 @@ import platform
 
 import typer
 
-from . import mcap
+from . import mcap, video
 
 app = typer.Typer()
 app.add_typer(mcap.app, name="mcap")
-
+app.add_typer(video.app, name="video")
 
 if platform.system() == "Windows":
     from . import window

@@ -18,10 +18,19 @@ from typing import Optional
 import typer
 from loguru import logger
 from pydantic import BaseModel
+from tqdm import tqdm
 from typing_extensions import Annotated
 
 from mcap_owa.highlevel import OWAMcapWriter
 from owa.core.registry import CALLABLES, LISTENERS, activate_module
+from owa.core.time import TimeUnits
+
+# how to use loguru with tqdm: https://github.com/Delgan/loguru/issues/135
+logger.remove()
+logger.add(lambda msg: tqdm.write(msg, end=""), colorize=True)
+
+# TODO: apply https://loguru.readthedocs.io/en/stable/resources/recipes.html#configuring-loguru-to-be-used-by-a-library-or-an-application
+logger.disable("owa.env.gst")  # suppress pipeline print
 
 queue = Queue()
 MCAP_LOCATION = None
@@ -38,6 +47,9 @@ def callback(event, topic=None):
 
 
 def keyboard_publisher_callback(event):
+    # info only for F1-F12 keys
+    if 0x70 <= event.vk <= 0x7B and event.event_type == "press":
+        logger.info(f"F1-F12 key pressed: F{event.vk - 0x70 + 1}")
     callback(event, topic="keyboard")
 
 
@@ -54,9 +66,11 @@ def screen_publisher_callback(event):
 def publish_window_info():
     while True:
         active_window = CALLABLES["window.get_active_window"]()
-        pressed_vk_list = CALLABLES["keyboard.get_pressed_vk_list"]()
+        keyboard_state = CALLABLES["keyboard.get_state"]()
+        mouse_state = CALLABLES["mouse.get_state"]()
         callback(active_window, topic="window")
-        callback(pressed_vk_list, topic="keyboard/state")
+        callback(keyboard_state, topic="keyboard/state")
+        callback(mouse_state, topic="mouse/state")
         time.sleep(1)
 
 
@@ -107,9 +121,24 @@ def record(
         logger.warning(f"Created directory {output_file.parent}")
 
     # delete the file if it exists
-    if output_file.exists():
+    if output_file.exists() or output_file.with_suffix(".mkv").exists():
+        delete = typer.confirm("The output file already exists. Do you want to delete it?")
+        if not delete:
+            print("The recording is aborted.")
+            raise typer.Abort()
         output_file.unlink()
         logger.warning(f"Deleted existing file {output_file}")
+
+    if window_name is not None:
+        logger.warning(
+            "⚠️ WINDOW CAPTURE LIMITATION (as of 2025-03-20) ⚠️\n"
+            "When capturing a specific window, mouse coordinates cannot be accurately aligned with the window content due to "
+            "limitations in the Windows API (WGC).\n\n"
+            "RECOMMENDATION:\n"
+            "- Use FULL SCREEN capture when you need mouse event tracking\n"
+            "- Full screen mode in games works well if the video output matches your monitor resolution (e.g., 1920x1080)\n"
+            "- Any non-fullscreen capture will have misaligned mouse coordinates in the recording"
+        )
 
     configure()
     recorder = LISTENERS["owa.env.gst/omnimodal/appsink_recorder"]()
@@ -134,6 +163,7 @@ def record(
     )
     window_thread = threading.Thread(target=publish_window_info, daemon=True)
     writer = OWAMcapWriter(output_file)
+    pbar = tqdm(desc="Recording", unit="event", dynamic_ncols=True)
 
     logger.info(USER_INSTRUCTION)
 
@@ -146,10 +176,12 @@ def record(
 
         while True:
             topic, event, publish_time = queue.get()
+            pbar.update()
+
             latency = time.time_ns() - publish_time
             # warn if latency is too high, i.e., > 20ms
-            if latency / 1e6 > 20:
-                logger.warning(f"Event {event} from {topic} is written to the file with latency {latency / 1e6:.2f}ms")
+            if latency > 20 * TimeUnits.MSECOND:
+                logger.warning(f"High latency: {latency / TimeUnits.MSECOND:.2f}ms while processing {topic} event.")
             writer.write_message(topic, event, publish_time=publish_time)
 
     except KeyboardInterrupt:
