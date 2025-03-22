@@ -12,8 +12,16 @@ from pathlib import Path
 
 def list_subrepos() -> list[str]:
     """List all subrepositories in the projects directory."""
-    projects_dir = Path("projects")
-    return [d for d in projects_dir.iterdir() if d.is_dir() and d.name.startswith("owa")]
+    projects = []
+    for d in Path("projects").iterdir():
+        if not d.is_dir():
+            continue
+        if not d.name.startswith("owa"):
+            continue
+        if d.name == "owa-env-example":
+            continue
+        projects.append(d)
+    return projects
 
 
 def update_version_in_pyproject(pyproject_file: Path, version: str) -> bool:
