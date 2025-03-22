@@ -15,10 +15,12 @@ PathType: TypeAlias = str | Path
 
 
 class OWAMcapReader:
-    def __init__(self, file_path: PathType):
+    def __init__(self, file_path: PathType, deserialize_to_objects: bool = False):
         self.file_path = file_path
         self._file = open(file_path, "rb")
-        self.reader: McapReader = make_reader(self._file, decoder_factories=[DecoderFactory()])
+        self.reader: McapReader = make_reader(
+            self._file, decoder_factories=[DecoderFactory(deserialize_to_objects=deserialize_to_objects)]
+        )
         self.__finished = False
 
         # Check profile of mcap file
