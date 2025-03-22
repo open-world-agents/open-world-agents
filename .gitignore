@@ -1,0 +1,19 @@
+.env
+
+# Temporary directory
+/tmp/
+
+# documentation site
+/site/
+
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+downloads/
+
+# Virtual environments
+.venv
