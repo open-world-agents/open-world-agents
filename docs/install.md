@@ -1,6 +1,12 @@
 # Installation Guide
 
-## Minimal Installation Guide
+## Installing from source
+
+!!! info
+
+    Instead of installing from source, you may try `pip install owa`, following [Install from PyPI](#install-from-pypi-conda-forge-experimental) guide, but note that this section is experimental.
+
+### Minimal Installation Guide
 
 If you **do not require** efficient screen capture with `owa-env-gst`, installation is simple as:
 
@@ -44,11 +50,11 @@ If you **do not require** efficient screen capture with `owa-env-gst`, installat
 
 ---
 
-## Full Installation Guide
+### Full Installation Guide
 
 If you **do require** efficient screen capture with `owa-env-gst`, follow this guide.
 
-### Setup Virtual Environment (1/3)
+#### Setup Virtual Environment (1/3)
 
 Before installation, we recommend setting up a virtual environment.
 
@@ -73,7 +79,7 @@ Before installation, we recommend setting up a virtual environment.
     
     Note: GStreamer is only needed if you plan to capture screens.
 
-### Setup `uv` (2/3)
+#### Setup `uv` (2/3)
 
 We recommend setting up `uv` next:
 
@@ -88,7 +94,7 @@ We recommend setting up `uv` next:
 
     Always activate your virtual environment before running any `vuv` commands.
 
-### Installation (3/3)
+#### Installation (3/3)
 
 After all setup, installation is simple as:
 
@@ -105,11 +111,36 @@ After all setup, installation is simple as:
 
     Always activate your virtual environment before running any `vuv` commands.
 
-## Install from PyPI & conda-forge (WIP)
+## Install from PyPI & conda-forge (experimental)
+
+Installation is simple as:
+
+=== "uv"
+
+    ```sh
+    $ uv pip install owa
+    ```
+
+=== "pip"
+
+    ```sh
+    $ pip install owa
+    ```
+
+
+
+There're several packages related to `open-world-agents`.
 
 - PyPI packages:
     - `owa-core`: Contains only the core logic to manage OWA's EnvPlugin
     - `owa`: Contains several base EnvPlugins along with `owa-core` (requires separate GStreamer installation)
+    - Note that we're adopting lockstep versioning, which provides same version for each first-party sub-projects. e.g. following version specification is valid:
+    ```sh
+    pip install owa-core==0.3.2 owa-cli==0.3.2 owa-env-desktop==0.3.2
+    ```
 
-- Conda packages:
-    - `owa`: Complete package with EnvPlugins and core functionality
+- Conda packages (Coming soon):
+    - `owa`: Complete package including all dependencies (GStreamer bundled)
+    - The conda package will eliminate the need to install GStreamer separately
+    - In the future, users will be able to simply run `conda install -c conda-forge owa` to get a fully functional installation
+    - Note: This implementation is still in progress and not yet available
