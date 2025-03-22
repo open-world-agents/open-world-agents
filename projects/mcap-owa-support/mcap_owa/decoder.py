@@ -45,7 +45,7 @@ class DecoderFactory(McapDecoderFactory):
                         return cls.deserialize(buffer)
 
                     self._decoders[schema.id] = decoder
-                except ImportError as e:
+                except ImportError:
                     # Fall back to dictionary decoding on import error
                     self._decoders[schema.id] = lambda data: EasyDict(orjson.loads(data))
                     return self._decoders[schema.id](message_data)
