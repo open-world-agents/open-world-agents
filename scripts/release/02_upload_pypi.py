@@ -8,19 +8,18 @@ import os
 import subprocess
 from pathlib import Path
 
+PROJECTS = [
+    ".",
+    "projects/owa-cli",
+    "projects/owa-core",
+    "projects/owa-env-desktop",
+    "projects/owa-env-gst",
+]
 
-def list_subrepos() -> list[str]:
+
+def packages_to_be_released() -> list[Path]:
     """List all subrepositories in the projects directory."""
-    projects = [Path(".")]
-    for d in Path("projects").iterdir():
-        if not d.is_dir():
-            continue
-        if not d.name.startswith("owa"):
-            continue
-        if d.name == "owa-env-example":
-            continue
-        projects.append(d)
-    return projects
+    return [Path(p) for p in PROJECTS]
 
 
 def run_command(command, cwd=None):
@@ -47,7 +46,7 @@ def main():
     print("Building and publishing packages to PyPI...")
 
     # Find all project directories
-    package_dirs = list_subrepos()
+    package_dirs = packages_to_be_released()
 
     # Process each package
     for package_dir in package_dirs:

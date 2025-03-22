@@ -9,19 +9,19 @@ import re
 import subprocess
 from pathlib import Path
 
+PROJECTS = [
+    ".",
+    "projects/mcap-owa-support",
+    "projects/owa-cli",
+    "projects/owa-core",
+    "projects/owa-env-desktop",
+    "projects/owa-env-gst",
+]
 
-def list_subrepos() -> list[str]:
+
+def packages_to_be_released() -> list[Path]:
     """List all subrepositories in the projects directory."""
-    projects = [Path(".")]
-    for d in Path("projects").iterdir():
-        if not d.is_dir():
-            continue
-        if not d.name.startswith("owa"):
-            continue
-        if d.name == "owa-env-example":
-            continue
-        projects.append(d)
-    return projects
+    return [Path(p) for p in PROJECTS]
 
 
 def update_version_in_pyproject(pyproject_file: Path, version: str) -> bool:
@@ -60,7 +60,7 @@ def main():
     print(f"Setting all package versions to: {version}")
 
     # Find all project directories
-    package_dirs = list_subrepos()
+    package_dirs = packages_to_be_released()
     modified_files = []
 
     # Process each package
