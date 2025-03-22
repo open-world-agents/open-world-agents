@@ -57,3 +57,18 @@ def sample_to_ndarray(sample: Gst.Sample) -> np.ndarray:
     frame_data = buf.extract_dup(0, buf.get_size())
     # baseline: np.frombuffer(frame_data, dtype=np.uint8).reshape((height, width, 4))
     return np.ndarray((height, width, 4), buffer=frame_data, dtype=np.uint8)
+
+
+def sample_to_shape(sample: Gst.Sample) -> tuple[int, int]:
+    """
+    Get the shape of the frame from the GStreamer sample.
+
+    Args:
+        sample: GStreamer sample object
+
+    Returns:
+        Tuple containing the height and width of the frame
+    """
+    caps = sample.get_caps()
+    structure = caps.get_structure(0)
+    return structure.get_value("height"), structure.get_value("width")
