@@ -2,8 +2,6 @@ import importlib
 import io
 from typing import Any, Optional
 
-import orjson
-from easydict import EasyDict
 from mcap.decoder import DecoderFactory as McapDecoderFactory
 from mcap.records import Schema
 from mcap.well_known import MessageEncoding, SchemaEncoding
