@@ -19,11 +19,11 @@ Here's what we've got in store for you!
 
 ---
 
-- **OWA's Data**: From high-performance, robust and open-source friendly data format to powerful, efficient and easy-to-use desktop recorder.
-    - **`OWAMcap` file format**: high-performance, self-contained, flexible container file format for multimodal desktop log data, powerd by open-source container file format [mcap](https://mcap.dev/). [Learn more...](data/data_format.md)
-    - **`owl mcap record your-filename.mcap`**: powerful, efficient and easy-to-use desktop recorder. Contains keyboard/mouse, active window info and high-frequency screen data.
+- **OWA's Data**: From high-performance, robust and open-source friendly data format to powerful, efficient and huggingface integration.
+    - **`OWAMcap` file format**: high-performance, self-contained, flexible container file format for multimodal desktop log data, powered by the open-source container file format [mcap](https://mcap.dev/). [Learn more...](data/data_format.md)
+    - **`owl mcap record your-filename.mcap`**: powerful, efficient and easy-to-use desktop recorder. Contains keyboard/mouse and high-frequency screen data.
         - Powered by [`owa-env-gst`](env/plugins/gstreamer_env.md), ensuring superior performance compared to alternatives. [Learn more...](data/recorder/why.md)
-    - **`owl`: Open World agents cLi**: CLI for OWA, which supports MCAP file management and window management.
+    - **[Huggingface](https://huggingface.co/) Integration** (TODO): We'll accelerate the open-sourcing process and improve accessibility of multimodal desktop agent through integration with Huggingface. Stay Tuned!
 
 ---
 
@@ -90,7 +90,7 @@ metadata: 0
 
 $ owl mcap cat example.mcap --n 8 --no-pretty
 Topic: window, Timestamp: 1741628814049712700, Message: {'title': 'ZType – Typing Game - Type to Shoot - Chromium', 'rect': [389, 10, 955, 1022], 'hWnd': 7540094}
-Topic: keyboard/state, Timestamp: 1741628814049712700, Message: {'pressed_vk_list': []}
+Topic: keyboard/state, Timestamp: 1741628814049712700, Message: {'buttons': []}
 Topic: screen, Timestamp: 1741628814057575300, Message: {'path': 'example.mkv', 'pts': 14866666666,
 
 ... (additional lines omitted for brevity) ...

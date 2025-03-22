@@ -41,9 +41,9 @@ plugins:
   - git-revision-date-localized:
       type: datetime
   - mermaid2
-  - redirects:
-      redirect_maps:
-        'data/index.md': 'data/data_format.md'
+  # - redirects:
+  #     redirect_maps:
+  #       'data/index.md': 'data/data_format.md'
 
 markdown_extensions:
   - toc:
@@ -87,6 +87,7 @@ nav:
       - Desktop Environment: env/plugins/desktop_env.md
       - Gstreamer Environment: env/plugins/gstreamer_env.md
   - Data in OWA:
+    - data/index.md
     - data/data_format.md
     - data/how_to_explorer_and_edit.md
     # - Comparison with other data formats: data/comparison.md # Later

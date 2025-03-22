@@ -1,18 +1,30 @@
-# Exploring & Editing OWAMCap
+# Exploring & Editing OWAMcap
+
+## Sample Datasets
+
+Below are sample datasets you can download and explore:
 
 - `example.mcap` [[Download]](https://github.com/open-world-agents/open-world-agents/blob/main/docs/data/example.mcap)
 - `example.mkv` [[Download]](https://github.com/open-world-agents/open-world-agents/blob/main/docs/data/example.mkv)
 
-<video controls>
-<source src="../example.mkv" type="video/mp4">
-</video>
+??? demo "Click here to see `example.mkv`!"
+    <video controls>
+    <source src="../example.mkv" type="video/mp4">
+    </video>
 
-## How to explore the dataset
+## How to Explore the Dataset
 
-### 1. By `owl`
+There are multiple ways to explore OWAMcap files. Here are three methods:
 
-Utilizing `owl`(Open World agents cLi), you can inspect the summary of `mcap` file.
-```
+### 1. Using the `owl` Command Line Tool
+
+The `owl` (Open World agents cLi) tool provides a convenient way to inspect MCAP files.
+
+#### Getting a Summary
+
+View a summary of the MCAP file:
+
+```bash
 $ owl mcap info example.mcap
 library:   mcap-owa-support 0.1.0; mcap 1.2.2
 profile:   owa
@@ -34,11 +46,14 @@ attachments: 0
 metadata: 0
 ```
 
-Also, you may inspect the detailed messages with by running `owl mcap cat`. (Note that `cat` output is a created example.)
-```
+#### Examining Message Content
+
+Inspect detailed messages (note that the output below is a created example):
+
+```bash
 $ owl mcap cat example.mcap --n 8 --no-pretty
 Topic: window, Timestamp: 1741628814049712700, Message: {'title': 'ZType – Typing Game - Type to Shoot - Chromium', 'rect': [389, 10, 955, 1022], 'hWnd': 7540094}
-Topic: keyboard/state, Timestamp: 1741628814049712700, Message: {'pressed_vk_list': []}
+Topic: keyboard/state, Timestamp: 1741628814049712700, Message: {'buttons': []}
 Topic: mouse/state, Timestamp: 1742544390703436600, Message: {'x': 1594, 'y': 1112, 'buttons': []}
 Topic: mouse, Timestamp: 1742544390707441200, Message: {'event_type': 'move', 'x': 1597, 'y': 1112}
 Topic: screen, Timestamp: 1741628814057575300, Message: {'path': 'example.mkv', 'pts': 14866666666, 'utc_ns': 1741628814056571100}
@@ -46,15 +61,20 @@ Topic: screen, Timestamp: 1741628814073392700, Message: {'path': 'example.mkv', 
 Topic: keyboard, Timestamp: 1741628815015522100, Message: {'event_type': 'release', 'vk': 162}
 ```
 
-### 2. By `OWAMcapReader`
+### 2. Using `OWAMcapReader` in Python
+
+You can programmatically access the MCAP data using the Python API:
 
 ```python
 from mcap_owa.highlevel import OWAMcapReader
 
 def main():
-    with Reader("tmp/example.mcap") as reader:
+    with OWAMcapReader("tmp/example.mcap") as reader:
+        # Print available topics and time range
         print(reader.topics)
         print(reader.start_time, reader.end_time)
+        
+        # Iterate through all messages
         for topic, timestamp, msg in reader.iter_decoded_messages():
             print(f"Topic: {topic}, Timestamp: {timestamp}, Message: {msg}")
 
@@ -62,54 +82,72 @@ if __name__ == "__main__":
     main()
 ```
 
-### 3. By Media Player(e.g. VLC)
+### 3. Using a Media Player (e.g., VLC)
 
-1. Convert `mcap` file into `srt` file, which is subtitle format for video.
-```sh
-# This command converts abcd.mcap into abcd.srt
-owl mcap convert abcd.mcap
-```
+For visual exploration of the data:
 
-2. Open `.mkv` file with media player, which supports subtitle view. We recommend [VLC media player](https://www.videolan.org/vlc/). 
+1. **Convert MCAP to SRT subtitle format**:
+   ```bash
+   # This command converts abcd.mcap into abcd.srt
+   owl mcap convert abcd.mcap
+   ```
 
+2. **Open the .mkv file with a media player** that supports subtitles. We recommend [VLC media player](https://www.videolan.org/vlc/).
 
-## How to Edit OWAMCAP Files
+## How to Edit OWAMcap Files
 
-Following example script shows how to utilize OWAMcapReader and OWAMcapWriter from `mcap_owa.highlevel`. Utilizing both, you may edit middle of the `.mcap` file.
+You can create and modify OWAMcap files using the Python API. The example below demonstrates writing and reading messages:
 
 ```python
 import tempfile
 
-import pytest
+from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
+from owa.core.message import OWAMessage
 from owa.env.desktop.msg import KeyboardEvent
 
-from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
+
+class String(OWAMessage):
+    _type = "std_msgs/String"
+    data: str
 
 
-@pytest.fixture
-def temp_mcap_file():
+def main():
     with tempfile.TemporaryDirectory() as tmpdir:
         file_path = tmpdir + "/output.mcap"
-        yield file_path
+        
+        # Writing messages to an OWAMcap file
+        with OWAMcapWriter(file_path) as writer:
+            for i in range(0, 10):
+                publish_time = i
+                if i % 2 == 0:
+                    topic = "/chatter"
+                    event = String(data="string message")
+                else:
+                    topic = "/keyboard"
+                    event = KeyboardEvent(event_type="press", vk=1)
+                writer.write_message(topic, event, publish_time=publish_time)
+
+        # Reading messages from an OWAMcap file
+        with OWAMcapReader(file_path) as reader:
+            for topic, timestamp, msg in reader.iter_decoded_messages():
+                print(f"Topic: {topic}, Timestamp: {timestamp}, Message: {msg}")
 
 
-def test_write_and_read_messages(temp_mcap_file):
-    file_path = temp_mcap_file
-    topic = "/chatter"
-    event = KeyboardEvent(event_type="press", vk=1)
+if __name__ == "__main__":
+    main()
+```
 
-    with OWAMcapWriter(file_path) as writer:
-        for i in range(0, 10):
-            publish_time = i
-            writer.write_message(topic, event, log_time=publish_time)
+Example output:
 
-    with OWAMcapReader(file_path) as reader:
-        messages = list(reader.iter_decoded_messages())
-        assert len(messages) == 10
-        for i, (_topic, timestamp, msg) in enumerate(messages):
-            assert _topic == topic
-            assert msg.event_type == "press"
-            assert msg.vk == 1
-            assert timestamp == i
-
+```
+Topic: /chatter, Timestamp: 1741767097157638598, Message: {'data': 'string message'}
+Topic: /keyboard, Timestamp: 1741767097157965764, Message: {'event_type': 'press', 'vk': 1}
+Topic: /chatter, Timestamp: 1741767097157997762, Message: {'data': 'string message'}
+Topic: /keyboard, Timestamp: 1741767097158019602, Message: {'event_type': 'press', 'vk': 1}
+Topic: /chatter, Timestamp: 1741767097158036925, Message: {'data': 'string message'}
+Topic: /keyboard, Timestamp: 1741767097158051239, Message: {'event_type': 'press', 'vk': 1}
+Topic: /chatter, Timestamp: 1741767097158065463, Message: {'data': 'string message'}
+Topic: /keyboard, Timestamp: 1741767097158089318, Message: {'event_type': 'press', 'vk': 1}
+Topic: /chatter, Timestamp: 1741767097158113250, Message: {'data': 'string message'}
+Topic: /keyboard, Timestamp: 1741767097158129738, Message: {'event_type': 'press', 'vk': 1}
 ```
