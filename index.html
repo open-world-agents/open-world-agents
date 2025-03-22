@@ -758,11 +758,55 @@
   
   
     <li class="md-nav__item">
+      <a href="data/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Open-sourcing Dataset for Multimodal Desktop Agent
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="data/data_format/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    OWAMcap format
+    Introducing OWAMcap
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="data/how_to_explorer_and_edit/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Exploring &amp; Editing OWAMcap
     
   </span>
   
@@ -789,10 +833,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" >
         
           
-          <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="0">
             
   
   <span class="md-ellipsis">
@@ -804,8 +848,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_2">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4">
             <span class="md-nav__icon md-icon"></span>
             Desktop Recorder
           </label>
@@ -1133,13 +1177,13 @@
 </ul>
 <hr />
 <ul>
-<li><strong>OWA's Data</strong>: From high-performance, robust and open-source friendly data format to powerful, efficient and easy-to-use desktop recorder.<ul>
-<li><strong><code>OWAMcap</code> file format</strong>: high-performance, self-contained, flexible container file format for multimodal desktop log data, powerd by open-source container file format <a href="https://mcap.dev/">mcap</a>. <a href="data/data_format/">Learn more...</a></li>
-<li><strong><code>owl mcap record your-filename.mcap</code></strong>: powerful, efficient and easy-to-use desktop recorder. Contains keyboard/mouse, active window info and high-frequency screen data.<ul>
+<li><strong>OWA's Data</strong>: From high-performance, robust and open-source friendly data format to powerful, efficient and huggingface integration.<ul>
+<li><strong><code>OWAMcap</code> file format</strong>: high-performance, self-contained, flexible container file format for multimodal desktop log data, powered by the open-source container file format <a href="https://mcap.dev/">mcap</a>. <a href="data/data_format/">Learn more...</a></li>
+<li><strong><code>owl mcap record your-filename.mcap</code></strong>: powerful, efficient and easy-to-use desktop recorder. Contains keyboard/mouse and high-frequency screen data.<ul>
 <li>Powered by <a href="env/plugins/gstreamer_env/"><code>owa-env-gst</code></a>, ensuring superior performance compared to alternatives. <a href="data/recorder/why/">Learn more...</a></li>
 </ul>
 </li>
-<li><strong><code>owl</code>: Open World agents cLi</strong>: CLI for OWA, which supports MCAP file management and window management.</li>
+<li><strong><a href="https://huggingface.co/">Huggingface</a> Integration</strong> (TODO): We'll accelerate the open-sourcing process and improve accessibility of multimodal desktop agent through integration with Huggingface. Stay Tuned!</li>
 </ul>
 </li>
 </ul>
@@ -1206,7 +1250,7 @@
 <a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>
 <a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>$ owl mcap cat example.mcap --n 8 --no-pretty
 <a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>Topic: window, Timestamp: 1741628814049712700, Message: {&#39;title&#39;: &#39;ZType – Typing Game - Type to Shoot - Chromium&#39;, &#39;rect&#39;: [389, 10, 955, 1022], &#39;hWnd&#39;: 7540094}
-<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>Topic: keyboard/state, Timestamp: 1741628814049712700, Message: {&#39;pressed_vk_list&#39;: []}
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>Topic: keyboard/state, Timestamp: 1741628814049712700, Message: {&#39;buttons&#39;: []}
 <a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>Topic: screen, Timestamp: 1741628814057575300, Message: {&#39;path&#39;: &#39;example.mkv&#39;, &#39;pts&#39;: 14866666666,
 <a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>
 <a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>... (additional lines omitted for brevity) ...
@@ -1254,7 +1298,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="March 13, 2025 09:40:12">March 13, 2025 09:40:12</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="March 22, 2025 07:55:00">March 22, 2025 07:55:00</span>
   </span>
 
     
