@@ -46,7 +46,7 @@ class OWAMcapQuery(BaseModel):
                 topics=["keyboard/state", "keyboard"], end_time=self.anchor_timestamp_ns, reverse=True
             ):  # profile: 31.2% (0.451s)
                 if topic == "keyboard/state":
-                    last_keyboard_state = msg["pressed_vk_list"]
+                    last_keyboard_state = msg["buttons"]
                     break
                 elif topic == "keyboard":
                     keyboard_events_from_last_state.append((timestamp, msg))
