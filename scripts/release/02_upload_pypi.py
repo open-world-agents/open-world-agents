@@ -8,11 +8,18 @@ import os
 import subprocess
 from pathlib import Path
 
+PROJECTS = [
+    ".",
+    "projects/owa-cli",
+    "projects/owa-core",
+    "projects/owa-env-desktop",
+    "projects/owa-env-gst",
+]
 
-def list_subrepos() -> list[str]:
+
+def packages_to_be_released() -> list[Path]:
     """List all subrepositories in the projects directory."""
-    projects_dir = Path("projects")
-    return [d for d in projects_dir.iterdir() if d.is_dir() and d.name.startswith("owa")]
+    return [Path(p) for p in PROJECTS]
 
 
 def run_command(command, cwd=None):
@@ -33,10 +40,13 @@ def main():
         print("  export PYPI_TOKEN=your_token_here")
         exit(1)
 
+    # https://docs.astral.sh/uv/guides/package/#publishing-your-package
+    os.environ["UV_PUBLISH_TOKEN"] = os.environ["PYPI_TOKEN"]
+
     print("Building and publishing packages to PyPI...")
 
     # Find all project directories
-    package_dirs = list_subrepos()
+    package_dirs = packages_to_be_released()
 
     # Process each package
     for package_dir in package_dirs:

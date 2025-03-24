@@ -15,10 +15,12 @@ PathType: TypeAlias = str | Path
 
 
 class OWAMcapReader:
-    def __init__(self, file_path: PathType):
+    def __init__(self, file_path: PathType, deserialize_to_objects: bool = False):
         self.file_path = file_path
         self._file = open(file_path, "rb")
-        self.reader: McapReader = make_reader(self._file, decoder_factories=[DecoderFactory()])
+        self.reader: McapReader = make_reader(
+            self._file, decoder_factories=[DecoderFactory(deserialize_to_objects=deserialize_to_objects)]
+        )
         self.__finished = False
 
         # Check profile of mcap file
@@ -31,7 +33,7 @@ class OWAMcapReader:
 
         # assert by semantic versioning: patch version change is backward compatible
         if not semantic_version.match(f"~{m['version']}", __version__):
-            warnings.warn(f"Reader version {__version__} is not compatible with writer version {m['version']}")
+            warnings.warn(f"Reader version {__version__} may not be compatible with writer version {m['version']}")
 
     def finish(self):
         if not self.__finished:

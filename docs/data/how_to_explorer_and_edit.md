@@ -92,7 +92,7 @@ For visual exploration of the data:
    owl mcap convert abcd.mcap
    ```
 
-2. **Open the .mkv file with a media player** that supports subtitles. We recommend [VLC media player](https://www.videolan.org/vlc/).
+2. **Open the .mkv file with a media player** that supports subtitles. We recommend [VLC media player](https://www.videolan.org/vlc/). You may also check `example.srt` [[Download]](https://github.com/open-world-agents/open-world-agents/blob/main/docs/data/example.srt)
 
 ## How to Edit OWAMcap Files
 
