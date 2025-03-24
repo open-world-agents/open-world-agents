@@ -46,6 +46,7 @@ logger.disable("owa.env.gst")  # suppress pipeline print
 
 queue = Queue()
 pbar = tqdm(desc="Recording", unit="event", dynamic_ncols=True)
+WINDOW_NAME = "Super Hexagon"
 
 
 def callback(event, topic=None):
@@ -95,6 +96,11 @@ class SampleManager(Runnable):
 
 
 def logits_processor(input_ids: torch.LongTensor, scores: torch.FloatTensor):
+    # left
+    scores[:, 49354] *= 0.98  # <KEYBOARD_37_0>
+    # right
+    scores[:, 49358] *= 0.98  # <KEYBOARD_39_0>
+    print(scores[:, 49354:49359])
     # scores[:, 49418] *= 0.8  # <KEYBOARD_69_0>
     # scores[:, 49419] *= 0.8  # <KEYBOARD_69_1>
     return scores
@@ -151,7 +157,7 @@ class Agent(Runnable):
 
             logger.info(f"Generated: {generated}")
 
-            if CALLABLES["window.is_active"]("ZType"):
+            if CALLABLES["window.is_active"](WINDOW_NAME):
                 self.execute(generated)
 
     def execute(self, generated):
@@ -173,8 +179,8 @@ class Agent(Runnable):
                 total_time += timestamp * 0.05
             elif token.startswith("KEYBOARD"):
                 vk, state = map(int, token.split("_")[1:])
-                # CALLABLES["keyboard.press"](vk) if state else CALLABLES["keyboard.release"](vk)
-                CALLABLES["keyboard.press"](vk), CALLABLES["keyboard.release"](vk)
+                CALLABLES["keyboard.press"](vk) if state else CALLABLES["keyboard.release"](vk)
+                # CALLABLES["keyboard.press"](vk), CALLABLES["keyboard.release"](vk)
                 pbar.set_description(f"Executing: {token}, {vk}, {state}")
             else:
                 raise ValueError(f"Invalid token: {token}")
@@ -184,7 +190,7 @@ def main(model_id: str):
     """Record screen, keyboard, mouse, and window events to an `.mcap` and `.mkv` file."""
 
     configure()
-    recorder = LISTENERS["screen"]().configure(window_name="ZType", fps=5, callback=screen_publisher_callback)
+    recorder = LISTENERS["screen"]().configure(window_name=WINDOW_NAME, fps=5, callback=screen_publisher_callback)
     keyboard_listener = LISTENERS["keyboard"]().configure(callback=keyboard_publisher_callback)
     sample_manager = SampleManager().configure(queue=queue)
     agent = Agent().configure(model_id=model_id, sample_manager=sample_manager)
