@@ -48,11 +48,13 @@ if __name__ == "__main__":
     parser.add_argument("--output_dir", type=str, default="./output", help="Directory to save model checkpoints")
     parser.add_argument("--model_id", type=str, default="HuggingFaceTB/SmolVLM2-500M-Video-Instruct", help="Model ID")
     parser.add_argument("--num_epochs", type=int, default=5, help="Number of training epochs")
-    parser.add_argument("--batch_size", type=int, default=32, help="Batch size per device")
+    parser.add_argument("--batch_size", type=int, default=8, help="Batch size per device")
     parser.add_argument("--gradient_accumulation_steps", type=int, default=1, help="Gradient accumulation steps")
     parser.add_argument("--learning_rate", type=float, default=2e-5, help="Learning rate")
     parser.add_argument("--save_steps", type=int, default=2000, help="Save checkpoint every X steps")
-    parser.add_argument("--repeat_n", type=int, default=5, help="Number of times to repeat the sampling from the dataset")
+    parser.add_argument(
+        "--repeat_n", type=int, default=5, help="Number of times to repeat the sampling from the dataset"
+    )
     args = parser.parse_args()
 
     accelerator = Accelerator()

@@ -17,7 +17,6 @@ from typing import Optional
 
 import typer
 from loguru import logger
-from pydantic import BaseModel
 from tqdm import tqdm
 from typing_extensions import Annotated
 
@@ -34,12 +33,6 @@ logger.disable("owa.env.gst")  # suppress pipeline print
 
 queue = Queue()
 MCAP_LOCATION = None
-
-
-class BagEvent(BaseModel):
-    timestamp_ns: int
-    event_src: str
-    event_data: bytes
 
 
 def callback(event, topic=None):

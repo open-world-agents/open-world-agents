@@ -1,7 +1,9 @@
 from pathlib import Path
 from typing import Any, List
 
+import cv2
 import line_profiler
+import numpy as np
 import torch
 from loguru import logger
 from PIL import Image
@@ -60,7 +62,14 @@ def sample_to_smolvlm_input(sample: OWATrainingSample) -> SmolVLMInput:
 
     # Convert screen states to PIL images
     # profile: 97.8% (0.261s)
-    state_screen = [ScreenEmitted(**screen).to_pil_image() for timestamp, screen in sample.state_screen]
+    state_screen = []
+    for timestamp, screen in sample.state_screen:
+        if isinstance(screen, np.ndarray):
+            # convert BGRA to RGB PIL image
+            screen = cv2.cvtColor(screen, cv2.COLOR_BGRA2RGB)
+            state_screen.append(Image.fromarray(screen))
+        else:
+            state_screen.append(ScreenEmitted(**screen).to_pil_image())
 
     # SmolVLM2 only takes a square image, so we will pad the images to make them square
     state_screen = [pad_to_square(image) for image in state_screen]

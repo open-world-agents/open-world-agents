@@ -24,40 +24,41 @@ def evaluate(model, processor: SmolVLMProcessor, dataset: SmolVLM2Dataset):
 
 
 def logits_processor(input_ids: torch.LongTensor, scores: torch.FloatTensor):
-    # print the difference between
-    # 1. topk scores/index from 49279 to end
-    # 2. topk scores/index from 0 to 49279
+    if False:
+        # print the difference between
+        # 1. topk scores/index from 49279 to end
+        # 2. topk scores/index from 0 to 49279
 
-    # Number of top items to compare
-    k = 5
+        # Number of top items to compare
+        k = 5
 
-    # Get topk scores and indices for the first segment (0 to 49279)
-    first_segment = scores[:, :49279]
-    first_topk_scores, first_topk_indices = torch.topk(first_segment, k)
+        # Get topk scores and indices for the first segment (0 to 49279)
+        first_segment = scores[:, :49279]
+        first_topk_scores, first_topk_indices = torch.topk(first_segment, k)
 
-    # Get topk scores and indices for the second segment (49279 to end)
-    second_segment = scores[:, 49279:]
-    second_topk_scores, second_topk_indices = torch.topk(second_segment, k)
-    # Adjust indices to account for the offset
-    second_topk_indices = second_topk_indices + 49279
+        # Get topk scores and indices for the second segment (49279 to end)
+        second_segment = scores[:, 49279:]
+        second_topk_scores, second_topk_indices = torch.topk(second_segment, k)
+        # Adjust indices to account for the offset
+        second_topk_indices = second_topk_indices + 49279
 
-    # Print comparison for each example in the batch
-    for batch_idx in range(scores.shape[0]):
-        print(f"\nBatch item {batch_idx} comparison:")
-        print(f"Top {k} tokens from first segment (0-49279):")
-        for i in range(k):
-            token_id = first_topk_indices[batch_idx, i].item()
-            token_score = first_topk_scores[batch_idx, i].item()
-            print(f"  Token ID: {token_id}, Score: {token_score:.4f}")
+        # Print comparison for each example in the batch
+        for batch_idx in range(scores.shape[0]):
+            print(f"\nBatch item {batch_idx} comparison:")
+            print(f"Top {k} tokens from first segment (0-49279):")
+            for i in range(k):
+                token_id = first_topk_indices[batch_idx, i].item()
+                token_score = first_topk_scores[batch_idx, i].item()
+                print(f"  Token ID: {token_id}, Score: {token_score:.4f}")
 
-        print(f"Top {k} tokens from second segment (49279+):")
-        for i in range(k):
-            token_id = second_topk_indices[batch_idx, i].item()
-            token_score = second_topk_scores[batch_idx, i].item()
-            print(f"  Token ID: {token_id}, Score: {token_score:.4f}")
+            print(f"Top {k} tokens from second segment (49279+):")
+            for i in range(k):
+                token_id = second_topk_indices[batch_idx, i].item()
+                token_score = second_topk_scores[batch_idx, i].item()
+                print(f"  Token ID: {token_id}, Score: {token_score:.4f}")
 
     # Zero out the probability for token ID 49279 as in the original code (just for ignoring the eos token to see what's gunna be the second-next token)
-    # scores[:, 49279] = 0
+    # scores[:, 49279] =0
     return scores
 
 
@@ -81,16 +82,17 @@ def evaluate_step(model, processor: SmolVLMProcessor, examples):
     attention_mask = batch["attention_mask"]
     # print(f"attention_mask: {attention_mask.tolist()}")
 
+    print(model.generation_config)
+
     outputs = model.generate(
         **batch,
         logits_processor=[logits_processor],
         do_sample=False,
         max_new_tokens=64,
-        eos_token_id=processor.tokenizer.encode("<end_of_utterance>")[0],
     )
 
     for i, (text, label, output) in enumerate(zip(texts, labels, outputs)):
-        generated: str = processor.decode(output)
+        generated: str = processor.decode(output, skip_special_tokens=True)
         generated = generated[generated.find("Assistant: ") + len("Assistant: ") :]
 
         print(f"Example {i}")

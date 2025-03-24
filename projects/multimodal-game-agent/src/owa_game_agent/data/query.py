@@ -65,6 +65,7 @@ class OWAMcapQuery(BaseModel):
                 else:
                     raise ValueError(f"Invalid event type: {msg['event_type']}")
 
+            # TODO: support mouse/state topic
             state_mouse = {"pressed": {}, "x": 0, "y": 0}
             for topic, timestamp, msg in reader.iter_decoded_messages(
                 topics=["mouse"], end_time=self.anchor_timestamp_ns, reverse=True

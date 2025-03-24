@@ -14,6 +14,7 @@ import line_profiler
 import pandas as pd
 import torch
 import typer
+from loguru import logger
 from tqdm import tqdm
 from transformers import AutoModelForImageTextToText, AutoProcessor, GPT2Tokenizer, GPT2TokenizerFast
 
@@ -92,7 +93,10 @@ def eda_sample(query_path: Path):
     print(df.describe())
 
     # print ratio of 0
-    print(f"Ratio of 0: {action_keyboard_lengths.count(0) / len(action_keyboard_lengths)}")
+    ratio_of_zero = action_keyboard_lengths.count(0) / len(action_keyboard_lengths)
+    print(f"Ratio of 0: {ratio_of_zero}")
+    if ratio_of_zero > 0.5:
+        logger.warning("The dataset has many samples with 0 action_keyboard length.")
 
     # print example sample which has maximum action_keyboard length
     max_idx = action_keyboard_lengths.index(max(action_keyboard_lengths))
