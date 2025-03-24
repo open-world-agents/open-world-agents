@@ -64,6 +64,7 @@ def sample_to_smolvlm_input(sample: OWATrainingSample) -> SmolVLMInput:
     # profile: 97.8% (0.261s)
     state_screen = []
     for timestamp, screen in sample.state_screen:
+        # FIXME: more graceful logic
         if isinstance(screen, np.ndarray):
             # convert BGRA to RGB PIL image
             screen = cv2.cvtColor(screen, cv2.COLOR_BGRA2RGB)

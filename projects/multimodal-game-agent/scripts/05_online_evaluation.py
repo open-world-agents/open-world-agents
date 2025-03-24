@@ -3,6 +3,7 @@ import re
 import threading
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from copy import deepcopy
 from pathlib import Path
 from queue import Queue
 from typing import List, Optional
@@ -44,7 +45,7 @@ logger.add(lambda msg: tqdm.write(msg, end=""), colorize=True)
 logger.disable("owa.env.gst")  # suppress pipeline print
 
 queue = Queue()
-MCAP_LOCATION = None
+pbar = tqdm(desc="Recording", unit="event", dynamic_ncols=True)
 
 
 def callback(event, topic=None):
@@ -58,8 +59,6 @@ def keyboard_publisher_callback(event):
 
 
 def screen_publisher_callback(event):
-    global MCAP_LOCATION
-    event.path = Path(event.path).relative_to(MCAP_LOCATION.parent).as_posix()
     callback(event, topic="screen")
 
 
@@ -71,24 +70,34 @@ def configure():
 class SampleManager(Runnable):
     def on_configure(self, queue: Queue):
         self.queue = queue
-        self._sample = OWATrainingSample(state_keyboard=[], state_screen=[], action_keyboard=[])
+        self._sample = OWATrainingSample(
+            state_keyboard=[], state_mouse=None, state_screen=[], action_mouse=None, action_keyboard=[]
+        )
 
     def loop(self, stop_event):
         while not stop_event.is_set():
             topic, event, publish_time = self.queue.get()
-            logger.info(f"Received {topic} event: {event}")
+            pbar.update(1)
 
             if topic == "screen":
-                self._sample.state_screen.append(event)
+                frame_arr = event.frame_arr
+                self._sample.state_screen.append((publish_time, frame_arr))
                 if len(self._sample.state_screen) > 5:
                     self._sample.state_screen.pop(0)
 
     def grab_sample(self) -> OWATrainingSample:
-        state_keyboard = CALLABLES["keyboard.get_state"]() - {1, 2, 4}
+        state_keyboard = CALLABLES["keyboard.get_state"]().buttons - {1, 2, 4}
         state_mouse = CALLABLES["mouse.get_state"]()
         self._sample.state_keyboard = state_keyboard
         self._sample.state_mouse = state_mouse
-        return self._sample
+        logger.info(f"State keyboard: {state_keyboard}")
+        return deepcopy(self._sample)
+
+
+def logits_processor(input_ids: torch.LongTensor, scores: torch.FloatTensor):
+    # scores[:, 49418] *= 0.8  # <KEYBOARD_69_0>
+    # scores[:, 49419] *= 0.8  # <KEYBOARD_69_1>
+    return scores
 
 
 class Agent(Runnable):
@@ -97,7 +106,7 @@ class Agent(Runnable):
         self.model = AutoModelForImageTextToText.from_pretrained(
             model_id,
             torch_dtype=torch.bfloat16,
-            _attn_implementation="flash_attention_2",
+            # _attn_implementation="flash_attention_2",
         ).to("cuda")
         self.sample_manager = sample_manager
 
@@ -107,12 +116,12 @@ class Agent(Runnable):
             if len(sample.state_screen) < 5:
                 continue
 
-            output = self.model(**sample.to_input(self.processor))
             sample_processor = SampleProcessor()
             tokenized_sample = sample_processor.tokenize(sample)
             vlm_input = sample_to_smolvlm_input(tokenized_sample)
+            example = {"messages": vlm_input.messages, "images": vlm_input.images}
 
-            examples = [vlm_input]
+            examples = [example]
             texts = []
             labels = []
             images = []
@@ -132,7 +141,9 @@ class Agent(Runnable):
                 self.model.device, dtype=self.model.dtype
             )
 
-            outputs = self.model.generate(**batch, do_sample=False, max_new_tokens=64)
+            outputs = self.model.generate(
+                **batch, logits_processor=[logits_processor], do_sample=False, max_new_tokens=64
+            )
             output = outputs[0]
 
             generated = self.processor.decode(output, skip_special_tokens=True)
@@ -140,9 +151,9 @@ class Agent(Runnable):
 
             logger.info(f"Generated: {generated}")
 
-            self.execute(generated)
+            if CALLABLES["window.is_active"]("ZType"):
+                self.execute(generated)
 
-    @CALLABLES["window.when_active"](window_name="ZType")
     def execute(self, generated):
         """Execute the generated response.
         generated example: <TIMESTAMP_0><KEYBOARD_69_0><TIMESTAMP_0><KEYBOARD_69_0><TIMESTAMP_2><KEYBOARD_69_0><TIMESTAMP_3><KEYBOARD_69_0><TIMESTAMP_4><KEYBOARD_69_0><TIMESTAMP_4><KEYBOARD_69_0><TIMESTAMP_6><KEYBOARD_69_0><TIMESTAMP_7><KEYBOARD_69_0><TIMESTAMP_7><KEYBOARD_69_0><TIMESTAMP_7><KEYBOARD_69_0><TIMESTAMP_8><KEYBOARD_69_0><TIMESTAMP_9><KEYBOARD_69_0><TIMESTAMP_10><KEYBOARD_69_0>
@@ -162,7 +173,9 @@ class Agent(Runnable):
                 total_time += timestamp * 0.05
             elif token.startswith("KEYBOARD"):
                 vk, state = map(int, token.split("_")[1:])
-                CALLABLES["keyboard.press"](vk) if state else CALLABLES["keyboard.release"](vk)
+                # CALLABLES["keyboard.press"](vk) if state else CALLABLES["keyboard.release"](vk)
+                CALLABLES["keyboard.press"](vk), CALLABLES["keyboard.release"](vk)
+                pbar.set_description(f"Executing: {token}, {vk}, {state}")
             else:
                 raise ValueError(f"Invalid token: {token}")
 
@@ -175,8 +188,6 @@ def main(model_id: str):
     keyboard_listener = LISTENERS["keyboard"]().configure(callback=keyboard_publisher_callback)
     sample_manager = SampleManager().configure(queue=queue)
     agent = Agent().configure(model_id=model_id, sample_manager=sample_manager)
-
-    pbar = tqdm(desc="Recording", unit="event", dynamic_ncols=True)
 
     try:
         recorder.start()

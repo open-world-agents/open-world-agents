@@ -109,10 +109,7 @@ def when_active(window_title_substring: str):
 
     def decorator(func):
         def wrapper(*args, **kwargs):
-            window = get_window_by_title(window_title_substring)
-            import pygetwindow as gw
-
-            if gw.getActiveWindow()._hWnd == window.hWnd:
+            if is_active(window_title_substring):
                 return func(*args, **kwargs)
 
         return wrapper
@@ -120,6 +117,17 @@ def when_active(window_title_substring: str):
     return decorator
 
 
+def is_active(window_title_substring: str):
+    """Returns whether the window with the title containing the substring is active."""
+    try:
+        window = get_window_by_title(window_title_substring)
+    except ValueError:
+        return False
+
+    return get_active_window().hWnd == window.hWnd
+
+
 CALLABLES.register("window.get_active_window")(get_active_window)
 CALLABLES.register("window.get_window_by_title")(get_window_by_title)
 CALLABLES.register("window.when_active")(when_active)
+CALLABLES.register("window.is_active")(is_active)

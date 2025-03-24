@@ -16,9 +16,6 @@ dependencies = [
     "wandb>=0.19.8",
 ]
 
-[project.scripts]
-multimodal-game-agent = "multimodal_game_agent:main"
-
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -28,3 +25,14 @@ packages = ["src/owa_game_agent"]
 
 [tool.uv.sources]
 transformers = { git = "https://github.com/huggingface/transformers", rev = "2c2495cc7b0e3e2942a9310f61548f40a2bc8425" }
+torch = [
+  { index = "pytorch-cu124", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+torchvision = [
+  { index = "pytorch-cu124", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true
