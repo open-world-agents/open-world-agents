@@ -75,6 +75,11 @@ def sample_to_smolvlm_input(sample: OWATrainingSample) -> SmolVLMInput:
     # SmolVLM2 only takes a square image, so we will pad the images to make them square
     state_screen = [pad_to_square(image) for image in state_screen]
 
+    # # resize to 512x512
+    # state_screen = [image.resize((512, 512), Image.BICUBIC) for image in state_screen]
+    # # crop center, with size 256x256
+    # state_screen = [image.crop((128, 128, 384, 384)) for image in state_screen]
+
     len_images = len(state_screen)
 
     # Create messages for SmolVLM

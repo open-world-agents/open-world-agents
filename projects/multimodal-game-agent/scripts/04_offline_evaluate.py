@@ -82,8 +82,6 @@ def evaluate_step(model, processor: SmolVLMProcessor, examples):
     attention_mask = batch["attention_mask"]  # noqa: F841
     # print(f"attention_mask: {attention_mask.tolist()}")
 
-    print(model.generation_config)
-
     outputs = model.generate(
         **batch,
         logits_processor=[logits_processor],

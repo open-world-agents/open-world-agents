@@ -86,6 +86,18 @@ def eda_sample(query_path: Path):
             query = future.result()
             samples.append(query)
 
+    action_keyboards = []
+    for sample in samples:
+        for timestamp, msg in sample.action_keyboard:
+            action_keyboards.append((msg["vk"], msg["event_type"]))
+
+    # show up the distribution of action_keyboard. I'm curious about the majority event
+    df = pd.DataFrame(action_keyboards, columns=["vk", "event_type"])
+    print(df["vk"].value_counts())
+    print(df["event_type"].value_counts())
+    # print major in terms of (vk, event_type) pairs
+    print(df.groupby(["vk", "event_type"]).size().sort_values(ascending=False))
+
     # show up the distribution of sample.action_keyboard's length
     action_keyboard_lengths = [len(sample.action_keyboard) for sample in samples]
 
@@ -104,7 +116,9 @@ def eda_sample(query_path: Path):
 
 
 @app.command("prepare")
-def prepare_model(save_path: Path, model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct"):
+def prepare_model(
+    save_path: Path, model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct", apply_semantic_init: bool = False
+):
     model = AutoModelForImageTextToText.from_pretrained(model_id, torch_dtype=torch.bfloat16)
 
     # https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/discussions/16
@@ -153,32 +167,53 @@ def prepare_model(save_path: Path, model_id: str = "HuggingFaceTB/SmolVLM2-500M-
 
     assert after_token_count == before_token_count + KEYBOARD_VK_COUNT * KEYBOARD_STATE_COUNT + TIMESTAMP_TOKEN_COUNT
 
-    # Apply semantic initialization
-    for i in range(KEYBOARD_VK_COUNT):
-        # Skip non-alphabet characters
-        if not (0x41 <= i <= 0x5A):
-            continue
-        for j in range(KEYBOARD_STATE_COUNT):
-            # Initialize the embeddings for <KEYBOARD_i_j> as (i - 0x41)th alphabet character
-            new_token_idx = processor.tokenizer.convert_tokens_to_ids(KEYBOARD_EVENT_TOKEN_FORMAT.format(i, j))
-            source_token_idx = processor.tokenizer.convert_tokens_to_ids(chr(i - 0x41))
+    if apply_semantic_init:
+        # Apply semantic initialization
+        for i in range(KEYBOARD_VK_COUNT):
+            # Skip non-alphabet characters
+            source_char = None
+            if 0x41 <= i <= 0x5A:
+                source_char = chr(i)
+            elif 0x25 <= i <= 0x28:
+                # left, up, right, down arrow
+                source_char = {0x25: "left", 0x26: "up", 0x27: "right", 0x28: "down"}[i]
+
+            if source_char is None:
+                continue
+
+            for j in range(KEYBOARD_STATE_COUNT):
+                # Initialize the embeddings for <KEYBOARD_i_j> as (i - 0x41)th alphabet character
+                NEW_TOKEN = KEYBOARD_EVENT_TOKEN_FORMAT.format(i, j)
+                new_token_idx = processor.tokenizer.convert_tokens_to_ids(NEW_TOKEN)
+                source_token_idx = processor.tokenizer.convert_tokens_to_ids(source_char)
+                if new_token_idx == 0 or source_token_idx == 0:
+                    logger.warning(
+                        f"token: {NEW_TOKEN}, new_token_idx: {new_token_idx}, source_token_idx: {source_token_idx}"
+                    )
+                    continue
+                model.get_input_embeddings().weight.data[new_token_idx] = model.get_input_embeddings().weight.data[
+                    source_token_idx
+                ]
+                model.get_output_embeddings().weight.data[new_token_idx] = model.get_output_embeddings().weight.data[
+                    source_token_idx
+                ]
+
+        for i in range(TIMESTAMP_TOKEN_COUNT):
+            # Initialize the embeddings for <TIMESTAMP_i> as digit i
+            NEW_TOKEN = TIMESTAMP_TOKEN_FORMAT.format(i)
+            new_token_idx = processor.tokenizer.convert_tokens_to_ids(NEW_TOKEN)
+            source_token_idx = processor.tokenizer.convert_tokens_to_ids(str(i))
+            if new_token_idx == 0 or source_token_idx == 0:
+                logger.warning(
+                    f"token: {NEW_TOKEN}, new_token_idx: {new_token_idx}, source_token_idx: {source_token_idx}"
+                )
+                continue
             model.get_input_embeddings().weight.data[new_token_idx] = model.get_input_embeddings().weight.data[
                 source_token_idx
             ]
             model.get_output_embeddings().weight.data[new_token_idx] = model.get_output_embeddings().weight.data[
                 source_token_idx
             ]
-
-    for i in range(TIMESTAMP_TOKEN_COUNT):
-        # Initialize the embeddings for <TIMESTAMP_i> as digit i
-        new_token_idx = processor.tokenizer.convert_tokens_to_ids(TIMESTAMP_TOKEN_FORMAT.format(i))
-        source_token_idx = processor.tokenizer.convert_tokens_to_ids(str(i))
-        model.get_input_embeddings().weight.data[new_token_idx] = model.get_input_embeddings().weight.data[
-            source_token_idx
-        ]
-        model.get_output_embeddings().weight.data[new_token_idx] = model.get_output_embeddings().weight.data[
-            source_token_idx
-        ]
 
     model.save_pretrained(save_path)
     processor.save_pretrained(save_path)

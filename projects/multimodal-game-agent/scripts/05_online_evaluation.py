@@ -74,11 +74,12 @@ class SampleManager(Runnable):
 
 
 def logits_processor(input_ids: torch.LongTensor, scores: torch.FloatTensor):
-    # left
-    scores[:, 49354] *= 0.98  # <KEYBOARD_37_0>
-    # right
-    scores[:, 49358] *= 0.98  # <KEYBOARD_39_0>
-    print(scores[:, 49354:49359])
+    # # left
+    # scores[:, 49354] *= 0.98  # <KEYBOARD_37_0>
+    # # right
+    # scores[:, 49358] *= 0.98  # <KEYBOARD_39_0>
+    # print(scores[:, 49354:49359])
+
     # scores[:, 49418] *= 0.8  # <KEYBOARD_69_0>
     # scores[:, 49419] *= 0.8  # <KEYBOARD_69_1>
     return scores
