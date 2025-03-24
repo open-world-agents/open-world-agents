@@ -1,0 +1,40 @@
+# Dockerfile for Desktop Agent
+FROM python:3.9-slim
+
+# Install Chrome and dependencies
+RUN apt-get update && apt-get install -y \
+    wget \
+    gnupg \
+    unzip \
+    xvfb \
+    libxi6 \
+    libgconf-2-4 \
+    default-jdk \
+    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
+    && sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' \
+    && apt-get update \
+    && apt-get install -y google-chrome-stable \
+    && apt-get clean
+
+# Install Chrome WebDriver
+RUN wget -q https://chromedriver.storage.googleapis.com/94.0.4606.61/chromedriver_linux64.zip \
+    && unzip chromedriver_linux64.zip \
+    && mv chromedriver /usr/bin/chromedriver \
+    && chmod +x /usr/bin/chromedriver \
+    && rm chromedriver_linux64.zip
+
+# Create app directory
+WORKDIR /app
+
+# Copy requirements and install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY . .
+
+# Expose the API port
+EXPOSE 8000
+
+# Start the agent
+CMD ["python", "-m", "agent.main"]
