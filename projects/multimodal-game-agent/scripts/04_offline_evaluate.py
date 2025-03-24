@@ -16,7 +16,7 @@ def evaluate(model, processor: SmolVLMProcessor, dataset: SmolVLM2Dataset):
     eval_indices = np.setdiff1d(np.arange(len(dataset)), train_indices)
 
     # Define train and eval datasets
-    train_dataset = Subset(dataset, train_indices)
+    train_dataset = Subset(dataset, train_indices)  # noqa: F841
     eval_dataset = Subset(dataset, eval_indices)
 
     examples = [eval_dataset[i] for i in range(8)]
@@ -78,8 +78,8 @@ def evaluate_step(model, processor: SmolVLMProcessor, examples):
     # Tokenize the texts and process the images
     batch = processor(text=texts, images=images, return_tensors="pt", padding=True).to(model.device, dtype=model.dtype)
 
-    input_ids = batch["input_ids"]
-    attention_mask = batch["attention_mask"]
+    input_ids = batch["input_ids"]  # noqa: F841
+    attention_mask = batch["attention_mask"]  # noqa: F841
     # print(f"attention_mask: {attention_mask.tolist()}")
 
     print(model.generation_config)

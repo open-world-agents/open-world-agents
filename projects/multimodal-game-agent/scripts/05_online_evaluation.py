@@ -1,41 +1,19 @@
-import argparse
 import re
-import threading
 import time
-from concurrent.futures import ProcessPoolExecutor, as_completed
 from copy import deepcopy
-from pathlib import Path
 from queue import Queue
-from typing import List, Optional
 
-import cv2
-import line_profiler
-import numpy as np
-import pandas as pd
 import torch
 import typer
 from loguru import logger
-from pydantic import BaseModel
-from torch.utils.data import Subset
 from tqdm import tqdm
-from transformers import AutoModelForImageTextToText, AutoProcessor, GPT2Tokenizer, GPT2TokenizerFast
-from transformers.models.smolvlm import SmolVLMProcessor
-from typing_extensions import Annotated
+from transformers import AutoModelForImageTextToText, AutoProcessor
 
-from mcap_owa.highlevel import OWAMcapWriter
 from owa.core import Runnable
 from owa.core.registry import CALLABLES, LISTENERS, activate_module
-from owa.core.time import TimeUnits
-from owa_game_agent.data import OWAMcapQuery, OWATrainingSample
-from owa_game_agent.data.datasets.smolvlm2 import SmolVLM2Dataset, collate_fn, sample_to_smolvlm_input
-from owa_game_agent.data.sample_processor import (
-    KEYBOARD_EVENT_TOKEN_FORMAT,
-    KEYBOARD_STATE_COUNT,
-    KEYBOARD_VK_COUNT,
-    TIMESTAMP_TOKEN_COUNT,
-    TIMESTAMP_TOKEN_FORMAT,
-    SampleProcessor,
-)
+from owa_game_agent.data import OWATrainingSample
+from owa_game_agent.data.datasets.smolvlm2 import sample_to_smolvlm_input
+from owa_game_agent.data.sample_processor import SampleProcessor
 
 # how to use loguru with tqdm: https://github.com/Delgan/loguru/issues/135
 logger.remove()
