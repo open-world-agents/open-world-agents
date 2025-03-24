@@ -1,8 +1,9 @@
+import queue
 import re
 import time
 from copy import deepcopy
-from queue import Queue
 
+import line_profiler
 import torch
 import typer
 from loguru import logger
@@ -22,13 +23,13 @@ logger.add(lambda msg: tqdm.write(msg, end=""), colorize=True)
 # TODO: apply https://loguru.readthedocs.io/en/stable/resources/recipes.html#configuring-loguru-to-be-used-by-a-library-or-an-application
 logger.disable("owa.env.gst")  # suppress pipeline print
 
-queue = Queue()
+msg_queue = queue.Queue()
 pbar = tqdm(desc="Recording", unit="event", dynamic_ncols=True)
 WINDOW_NAME = "Super Hexagon"
 
 
 def callback(event, topic=None):
-    queue.put((topic, event, time.time_ns()))
+    msg_queue.put((topic, event, time.time_ns()))
 
 
 def keyboard_publisher_callback(event):
@@ -47,7 +48,7 @@ def configure():
 
 
 class SampleManager(Runnable):
-    def on_configure(self, queue: Queue):
+    def on_configure(self, queue: queue.Queue):
         self.queue = queue
         self._sample = OWATrainingSample(
             state_keyboard=[], state_mouse=None, state_screen=[], action_mouse=None, action_keyboard=[]
@@ -55,7 +56,10 @@ class SampleManager(Runnable):
 
     def loop(self, stop_event):
         while not stop_event.is_set():
-            topic, event, publish_time = self.queue.get()
+            try:
+                topic, event, publish_time = self.queue.get(timeout=1)
+            except queue.Empty:
+                continue
             pbar.update(1)
 
             if topic == "screen":
@@ -95,12 +99,14 @@ class Agent(Runnable):
         ).to("cuda")
         self.sample_manager = sample_manager
 
+    @line_profiler.profile
     def loop(self, stop_event):
         while not stop_event.is_set():
             sample = self.sample_manager.grab_sample()
             if len(sample.state_screen) < 5:
                 continue
 
+            now = time.time()
             sample_processor = SampleProcessor()
             tokenized_sample = sample_processor.tokenize(sample)
             vlm_input = sample_to_smolvlm_input(tokenized_sample)
@@ -122,10 +128,12 @@ class Agent(Runnable):
                 labels.append(assistant_prompt["content"][0]["text"])
                 images.append(ex["images"])
 
+            # profile: 48ms, 24.1%
             batch = self.processor(text=texts, images=images, return_tensors="pt", padding=True).to(
                 self.model.device, dtype=self.model.dtype
             )
 
+            # profile: 77ms, 57.5%
             outputs = self.model.generate(
                 **batch, logits_processor=[logits_processor], do_sample=False, max_new_tokens=64
             )
@@ -134,32 +142,31 @@ class Agent(Runnable):
             generated = self.processor.decode(output, skip_special_tokens=True)
             generated = generated[generated.find("Assistant: ") + len("Assistant: ") :]
 
-            logger.info(f"Generated: {generated}")
+            logger.info(f"Generated: {generated}, taken: {time.time() - now:.2f}s")
 
             if CALLABLES["window.is_active"](WINDOW_NAME):
-                self.execute(generated)
+                self.execute(generated, anchor_time=now)
 
-    def execute(self, generated):
+    def execute(self, generated, anchor_time: float):
         """Execute the generated response.
         generated example: <TIMESTAMP_0><KEYBOARD_69_0><TIMESTAMP_0><KEYBOARD_69_0><TIMESTAMP_2><KEYBOARD_69_0><TIMESTAMP_3><KEYBOARD_69_0><TIMESTAMP_4><KEYBOARD_69_0><TIMESTAMP_4><KEYBOARD_69_0><TIMESTAMP_6><KEYBOARD_69_0><TIMESTAMP_7><KEYBOARD_69_0><TIMESTAMP_7><KEYBOARD_69_0><TIMESTAMP_7><KEYBOARD_69_0><TIMESTAMP_8><KEYBOARD_69_0><TIMESTAMP_9><KEYBOARD_69_0><TIMESTAMP_10><KEYBOARD_69_0>
         TIMESTAMP_0: 0 seconds, TIMESTAMP_i: i * 50 ms
         KEYBOARD_i_{0/1}: press(1)/release(0) virtual key code i
         """
         tokens = re.findall(r"<(.*?)>", generated)
-        total_time = 0
+        sum_time = anchor_time
 
         for token in tokens:
-            # limit the execution time to 0.25 seconds
-            if total_time > 0.25:
-                break
             if token.startswith("TIMESTAMP"):
                 timestamp = int(token.split("_")[1])
-                time.sleep(timestamp * 0.05)
-                total_time += timestamp * 0.05
+                sum_time = anchor_time + timestamp * 0.05
+                to_sleep = max(0, sum_time - time.time())
+                if sum_time + to_sleep - anchor_time > 0.50:
+                    break
+                time.sleep(to_sleep)
             elif token.startswith("KEYBOARD"):
                 vk, state = map(int, token.split("_")[1:])
                 CALLABLES["keyboard.press"](vk) if state else CALLABLES["keyboard.release"](vk)
-                # CALLABLES["keyboard.press"](vk), CALLABLES["keyboard.release"](vk)
                 pbar.set_description(f"Executing: {token}, {vk}, {state}")
             else:
                 raise ValueError(f"Invalid token: {token}")
@@ -171,7 +178,7 @@ def main(model_id: str):
     configure()
     recorder = LISTENERS["screen"]().configure(window_name=WINDOW_NAME, fps=5, callback=screen_publisher_callback)
     keyboard_listener = LISTENERS["keyboard"]().configure(callback=keyboard_publisher_callback)
-    sample_manager = SampleManager().configure(queue=queue)
+    sample_manager = SampleManager().configure(queue=msg_queue)
     agent = Agent().configure(model_id=model_id, sample_manager=sample_manager)
 
     try:
@@ -190,24 +197,28 @@ def main(model_id: str):
         try:
             recorder.stop()
             recorder.join(timeout=5)
+            logger.info("Stopped the recorder.")
         except Exception as e:
             logger.error(f"Error occurred while stopping the recorder: {e}")
 
         try:
             keyboard_listener.stop()
             keyboard_listener.join(timeout=5)
+            logger.info("Stopped the keyboard listener.")
         except Exception as e:
             logger.error(f"Error occurred while stopping the listeners: {e}")
 
         try:
             sample_manager.stop()
             sample_manager.join(timeout=5)
+            logger.info("Stopped the sample manager.")
         except Exception as e:
             logger.error(f"Error occurred while stopping the sample manager: {e}")
 
         try:
             agent.stop()
             agent.join(timeout=5)
+            logger.info("Stopped the agent.")
         except Exception as e:
             logger.error(f"Error occurred while stopping the agent: {e}")
 
