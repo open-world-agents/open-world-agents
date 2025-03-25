@@ -1,0 +1,46 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCAP + MKV Viewer</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h2>Available Files</h2>
+            <div id="file-list"></div>
+        </div>
+        <div class="main-content">
+            <div class="video-container">
+                <video id="video-player" controls>
+                    <source id="video-source" src="" type="video/x-matroska">
+                    Your browser does not support the video tag.
+                </video>
+                <div class="timeline" id="timeline">
+                    <div class="timeline-marker" id="timeline-marker"></div>
+                </div>
+            </div>
+            <div class="visualization">
+                <div class="viz-window">
+                    <h3>Window</h3>
+                    <div id="window-info">Select a file to begin</div>
+                </div>
+                <div class="viz-keyboard">
+                    <h3>Keyboard</h3>
+                    <div id="keyboard-display" class="keyboard">Select a file to begin</div>
+                </div>
+                <div class="viz-mouse">
+                    <h3>Mouse</h3>
+                    <div id="mouse-display" class="mouse-area">
+                        <div id="mouse-cursor"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="/static/app.js"></script>
+</body>
+</html>
