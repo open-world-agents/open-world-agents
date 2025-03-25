@@ -267,7 +267,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // Add this function to handle data loading checks
+    // Add this function to handle data loading checks.
+    // TODO: pause playback before we ensure the data is loaded.
     function checkDataLoading() {
         if (!metadata) return;
         
