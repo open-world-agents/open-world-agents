@@ -1,6 +1,6 @@
-# server.py - improved with direct MCAP time filtering
 import logging
 import os
+import subprocess
 from pathlib import Path
 from typing import List, Optional
 
@@ -35,6 +35,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 # Directory containing MCAP and MKV files
+# TODO: support configurable data directory, with huggingface dataset repository
 DATA_DIR = os.environ.get("DATA_DIR", "./data")
 
 # Cache for MCAP metadata
@@ -56,7 +57,22 @@ class McapMetadata:
 
 @app.get("/")
 async def read_root(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(
+        "index.html", {"request": request, "featured_datasets": ["open-world-agents/example_dataset"]}
+    )
+
+
+@app.get("/viewer/{dataset_namespace}/{dataset_name}")
+async def read_viewer(dataset_namespace: str, dataset_name: str, request: Request):
+    return templates.TemplateResponse(
+        "viewer.html",
+        {
+            "request": request,
+            "dataset_info": {
+                "repo_id": f"{dataset_namespace}/{dataset_name}",
+            },
+        },
+    )
 
 
 @app.get("/api/file_pairs", response_model=List[FilePair])
@@ -79,6 +95,26 @@ async def list_file_pairs():
             file_pairs.append(FilePair(mcap_file=str(mcap_file.name), mkv_file=str(mkv_file.name), basename=base_name))
 
     return file_pairs
+
+
+@app.get("/api/mcap_info/{mcap_filename}")
+async def get_mcap_info(mcap_filename: str):
+    """Return the `owl mcap info` command output"""
+    mcap_path = Path(DATA_DIR) / mcap_filename
+
+    if not mcap_path.exists():
+        raise HTTPException(status_code=404, detail="MCAP file not found")
+
+    logger.info(f"Getting MCAP info for: {mcap_path}")
+
+    try:
+        # Run the `owl mcap info` command
+        output = subprocess.check_output(["owl", "mcap", "info", str(mcap_path)], text=True)
+        return {"info": output}
+
+    except Exception as e:
+        logger.error(f"Error getting MCAP info: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error getting MCAP info: {str(e)}")
 
 
 @app.get("/api/mcap_metadata/{mcap_filename}")
