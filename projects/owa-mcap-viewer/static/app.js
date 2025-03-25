@@ -26,6 +26,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastLoadedTime = null;
     let isLoading = false;
     let timelineControls = null;
+
+    let isPlaying = false;
+    let lastRenderTime = 0;
+    let animationFrameId = null;
     
     // Constants
     const DATA_WINDOW_SIZE = 10_000_000_000; // 10 seconds in nanoseconds
@@ -114,9 +118,15 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Setup enhanced timeline (must be after data is loaded)
             setupEnhancedTimeline();
-            
-            // Update visualizations once immediately to show initial state
-            updateVisualizations();
+
+            // Stop any existing visualization loop
+            stopVisualizationLoop();
+
+            // Start visualization loop if video is already playing
+            if (!videoPlayer.paused) {
+                isPlaying = true;
+                startVisualizationLoop();
+            }
             
             // Update timeline visualization
             updateTimelineLoadedRegions();
@@ -211,25 +221,54 @@ document.addEventListener('DOMContentLoaded', () => {
     // Set up video synchronization with MCAP data
     function setupVideoSync() {
         // Remove previous event listeners
-        videoPlayer.onplay = null;
-        videoPlayer.onpause = null;
-        videoPlayer.onseeking = null;
-        videoPlayer.ontimeupdate = null;
+        videoPlayer.onplay = () => {
+            isPlaying = true;
+            startVisualizationLoop();
+        };
         
-        // Update on timeupdate
-        videoPlayer.ontimeupdate = handleTimeUpdate;
+        videoPlayer.onpause = () => {
+            isPlaying = false;
+            stopVisualizationLoop();
+        };
         
-        // Handle seeking events
         videoPlayer.onseeking = handleSeeking;
+        
+        // Remove the timeupdate listener since we'll use requestAnimationFrame
+        videoPlayer.ontimeupdate = null;
         
         console.log("Video sync setup complete");
     }
-    
-    // Handle video time updates
-    function handleTimeUpdate() {
-        updateVisualizations();
+
+    function startVisualizationLoop() {
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+        }
         
-        // Check if we need to load more data
+        function render(timestamp) {
+            // Limit updates to ~60fps
+            if (timestamp - lastRenderTime >= 16.67) { // roughly 60fps (1000ms / 60)
+                updateVisualizations();
+                checkDataLoading();
+                lastRenderTime = timestamp;
+            }
+            
+            if (isPlaying) {
+                animationFrameId = requestAnimationFrame(render);
+            }
+        }
+        
+        animationFrameId = requestAnimationFrame(render);
+    }
+    
+    function stopVisualizationLoop() {
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        }
+    }
+    
+    // Add this function to handle data loading checks
+    function checkDataLoading() {
         if (!metadata) return;
         
         const videoTime = videoPlayer.currentTime || 0;
@@ -254,6 +293,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Update visualizations immediately after data is loaded
                 updateVisualizations();
             });
+            
+        // Ensure visualization loop is in correct state
+        if (isPlaying) {
+            startVisualizationLoop();
+        }
     }
     
     // Update visualizations based on current video time
