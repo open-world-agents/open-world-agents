@@ -1,5 +1,5 @@
 [project]
-name = "owa-env-example"
+name = "owa-mcap-viewer"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -11,9 +11,6 @@ dependencies = [
     "owa-core==0.3.2",
     "python-multipart>=0.0.20",
 ]
-
-[tool.uv.sources]
-owa-core = { path = "../owa-core", editable = true }
 
 [build-system]
 requires = ["hatchling"]

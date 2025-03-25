@@ -54,7 +54,6 @@ class McapMetadata:
         self.start_time = None
         self.end_time = None
         self.topics = set()
-        self.topic_counts = {}
 
 
 @app.get("/")
@@ -101,12 +100,7 @@ async def get_mcap_metadata(mcap_filename: str):
         raise HTTPException(status_code=500, detail="Failed to create MCAP metadata")
 
     # Return metadata about the file
-    return {
-        "start_time": metadata.start_time,
-        "end_time": metadata.end_time,
-        "topics": list(metadata.topics),
-        "durations": metadata.topic_counts,
-    }
+    return {"start_time": metadata.start_time, "end_time": metadata.end_time, "topics": list(metadata.topics)}
 
 
 @app.get("/api/mcap_data/{mcap_filename}")
@@ -145,26 +139,14 @@ async def get_mcap_data(
     topics_data = {topic: [] for topic in topics_of_interest}
 
     try:
-        with open(mcap_path, "rb") as f:
-            reader = make_reader(f)
-
+        with OWAMcapReader(mcap_path) as reader:
             # Use the built-in filter parameters of iter_messages
-            for schema, channel, message in reader.iter_messages(
+            for topic, timestamp, message in reader.iter_decoded_messages(
                 topics=topics_of_interest, start_time=start_time, end_time=end_time
             ):
-                topic = channel.topic
-
-                try:
-                    # Parse the message data
-                    msg_data = json.loads(message.data.decode("utf-8"))
-
-                    # Add timestamp info
-                    msg_data["timestamp"] = message.log_time
-
-                    # Append to the appropriate topic list
-                    topics_data[topic].append(msg_data)
-                except json.JSONDecodeError:
-                    logger.warning(f"Error parsing message data for topic {topic}")
+                # topics_data[topic].append({"timestamp": timestamp, "data": message})
+                message["timestamp"] = timestamp
+                topics_data[topic].append(message)
 
         total_messages = sum(len(msgs) for msgs in topics_data.values())
         logger.info(f"Fetched {total_messages} messages for time range {start_time} to {end_time}")
@@ -187,12 +169,15 @@ async def get_video(video_filename: str):
 
     logger.info(f"Serving video file: {video_path}")
 
-    # Use StreamingResponse for better seeking support in large video files
-    def iterfile():
-        with open(video_path, "rb") as f:
-            yield from f
+    # BUG: below line does not support seeking. Use FileResponse instead
+    # # Use StreamingResponse for better seeking support in large video files
+    # def iterfile():
+    #     with open(video_path, "rb") as f:
+    #         yield from f
 
-    return StreamingResponse(iterfile(), media_type="video/x-matroska", headers={"Accept-Ranges": "bytes"})
+    # return StreamingResponse(iterfile(), media_type="video/x-matroska", headers={"Accept-Ranges": "bytes"})
+
+    return FileResponse(str(video_path), media_type="video/x-matroska")
 
 
 async def build_mcap_metadata(mcap_filename: str):
@@ -205,34 +190,12 @@ async def build_mcap_metadata(mcap_filename: str):
     logger.info(f"Building metadata for MCAP file: {mcap_path}")
 
     metadata = McapMetadata()
-    topics_of_interest = ["keyboard", "mouse", "screen", "window", "keyboard/state", "mouse/state"]
 
     try:
-        with open(mcap_path, "rb") as f:
-            reader = make_reader(f)
-
-            # Initialize topic counts
-            for topic in topics_of_interest:
-                metadata.topic_counts[topic] = 0
-
-            # First pass: gather metadata
-            for schema, channel, message in reader.iter_messages():
-                topic = channel.topic
-
-                if topic in topics_of_interest:
-                    timestamp = message.log_time
-
-                    # Track topic
-                    metadata.topics.add(topic)
-
-                    # Count messages per topic
-                    metadata.topic_counts[topic] += 1
-
-                    # Track global time range
-                    if metadata.start_time is None or timestamp < metadata.start_time:
-                        metadata.start_time = timestamp
-                    if metadata.end_time is None or timestamp > metadata.end_time:
-                        metadata.end_time = timestamp
+        with OWAMcapReader(mcap_path) as reader:
+            metadata.start_time = reader.start_time
+            metadata.end_time = reader.end_time
+            metadata.topics = set(reader.topics)
 
             logger.info(
                 f"Metadata built for {mcap_filename}: {len(metadata.topics)} topics, "
