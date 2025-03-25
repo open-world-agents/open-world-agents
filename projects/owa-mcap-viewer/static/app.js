@@ -344,77 +344,170 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update keyboard state display
     function updateKeyboardState(currentTimeNs) {
         const keyboardState = currentData['keyboard/state'] || [];
+        const keyboardEvents = currentData['keyboard'] || [];
         
-        if (keyboardState.length === 0) {
-            keyboardDisplay.innerHTML = 'No keyboard state data available';
+        if (keyboardState.length === 0 && keyboardEvents.length === 0) {
+            keyboardDisplay.innerHTML = 'No keyboard data available';
             return;
         }
         
-        const event = findLastEventBeforeTime(keyboardState, currentTimeNs);
-        if (event) {
-            // Clear previous state
-            keyboardDisplay.innerHTML = '';
+        // Get current state
+        const stateEvent = findLastEventBeforeTime(keyboardState, currentTimeNs);
+        // Get recent events (within last 500ms for visual feedback)
+        const recentEvents = keyboardEvents.filter(event => 
+            event.timestamp > currentTimeNs - 500000000 && 
+            event.timestamp <= currentTimeNs
+        );
+        
+        // Clear previous state
+        keyboardDisplay.innerHTML = '';
+        
+        // Create state section
+        const stateSection = document.createElement('div');
+        stateSection.className = 'keyboard-state';
+        stateSection.innerHTML = '<h4>Current State</h4>';
+        
+        if (stateEvent) {
+            const pressedKeys = new Set((stateEvent.buttons || [])
+                .filter(vk => ![1, 2, 4].includes(vk)));
             
-            // Check keyboard events to determine currently pressed keys
-            const pressedKeys = new Set(event.buttons || []);
-            
-            // Create key elements
             for (const key of pressedKeys) {
                 const keyElem = document.createElement('div');
                 keyElem.className = 'key pressed';
                 keyElem.textContent = getKeyName(key);
-                keyboardDisplay.appendChild(keyElem);
+                stateSection.appendChild(keyElem);
             }
-            
             if (pressedKeys.size === 0) {
-                keyboardDisplay.innerHTML = '<div>No keys pressed</div>';
+                stateSection.innerHTML += '<div>No keys pressed</div>';
             }
-        } else {
-            keyboardDisplay.innerHTML = 'No keyboard events at current time';
         }
+        
+        // Create events section
+        const eventsSection = document.createElement('div');
+        eventsSection.className = 'keyboard-events';
+        eventsSection.innerHTML = '<h4>Recent Events</h4>';
+        
+        if (recentEvents.length > 0) {
+            recentEvents.forEach(event => {
+                const eventElem = document.createElement('div');
+                eventElem.className = `key-event ${event.event_type}`;
+                eventElem.textContent = `${getKeyName(event.vk)} (${event.event_type})`;
+                eventsSection.appendChild(eventElem);
+            });
+        } else {
+            eventsSection.innerHTML += '<div>No recent events</div>';
+        }
+        
+        keyboardDisplay.appendChild(stateSection);
+        keyboardDisplay.appendChild(eventsSection);
     }
     
     // Update mouse state display
     function updateMouseState(currentTimeNs) {
         const mouseState = currentData['mouse/state'] || [];
+        const mouseEvents = currentData['mouse'] || [];
         
-        if (mouseState.length === 0) {
-            mouseDisplay.innerHTML = '<div>No mouse state data available</div>';
+        if (mouseState.length === 0 && mouseEvents.length === 0) {
+            mouseDisplay.innerHTML = '<div>No mouse data available</div>';
             mouseCursor.style.display = 'none';
             return;
         }
         
-        const event = findLastEventBeforeTime(mouseState, currentTimeNs);
-        if (event) {
-            // Make sure cursor is visible
+        // Get current state and most recent event
+        const stateEvent = findLastEventBeforeTime(mouseState, currentTimeNs);
+        const lastEvent = findLastEventBeforeTime(mouseEvents, currentTimeNs);
+        
+        // Use state event for position, but if there's a more recent mouse movement event, use that
+        let currentEvent = stateEvent;
+        if (lastEvent && (!stateEvent || lastEvent.timestamp > stateEvent.timestamp)) {
+            currentEvent = lastEvent;
+        }
+        
+        // Get recent click and scroll events (within last 1000ms)
+        const recentSpecialEvents = mouseEvents.filter(event => 
+            (event.event_type === 'click' || event.event_type === 'scroll') &&
+            event.timestamp > currentTimeNs - 1000000000 && 
+            event.timestamp <= currentTimeNs
+        );
+    
+        // Update cursor position and state
+        if (currentEvent) {
             mouseCursor.style.display = 'block';
             
-            // Scale mouse position to fit in our display area
             const displayWidth = mouseDisplay.clientWidth;
             const displayHeight = mouseDisplay.clientHeight;
-            
-            // Assume screen dimensions - ideally these would come from the data
             const screenWidth = 1920;
             const screenHeight = 1080;
             
-            const x = ((event.x || 0) / screenWidth) * displayWidth;
-            const y = ((event.y || 0) / screenHeight) * displayHeight;
+            const x = ((currentEvent.x || 0) / screenWidth) * displayWidth;
+            const y = ((currentEvent.y || 0) / screenHeight) * displayHeight;
             
             mouseCursor.style.left = `${x}px`;
             mouseCursor.style.top = `${y}px`;
             
-            // Highlight if buttons pressed
-            if (event.buttons && event.buttons.length > 0) {
+            // Update cursor appearance based on state and event type
+            if (stateEvent && stateEvent.buttons && stateEvent.buttons.length > 0) {
+                // Mouse button is pressed
                 mouseCursor.style.backgroundColor = 'blue';
                 mouseCursor.style.width = '12px';
                 mouseCursor.style.height = '12px';
+            } else if (lastEvent && lastEvent.event_type === 'move') {
+                // Mouse is moving
+                mouseCursor.style.backgroundColor = 'green';
+                mouseCursor.style.width = '10px';
+                mouseCursor.style.height = '10px';
             } else {
+                // Default state
                 mouseCursor.style.backgroundColor = 'red';
                 mouseCursor.style.width = '10px';
                 mouseCursor.style.height = '10px';
             }
         } else {
             mouseCursor.style.display = 'none';
+        }
+    
+        // Clear the mouse display (keeping the cursor)
+        const cursor = mouseDisplay.querySelector('#mouse-cursor');
+        mouseDisplay.innerHTML = '';
+        mouseDisplay.appendChild(cursor);
+    
+        // Add recent special events if any exist
+        if (recentSpecialEvents.length > 0) {
+            const eventsDiv = document.createElement('div');
+            eventsDiv.className = 'mouse-events';
+            eventsDiv.innerHTML = '<h4>Recent Events</h4>';
+            
+            recentSpecialEvents.forEach(event => {
+                const eventElem = document.createElement('div');
+                
+                // Create class based on event type, button, and pressed state
+                let classes = ['mouse-event'];
+                if (event.event_type === 'click' && event.button) {
+                    classes.push(event.button); // 'left', 'right', or 'middle'
+                    classes.push(event.pressed ? 'press' : 'release');
+                } else if (event.event_type === 'scroll') {
+                    classes.push('scroll');
+                }
+                eventElem.className = classes.join(' ');
+    
+                // Create event text
+                let eventText = '';
+                if (event.event_type === 'click') {
+                    const buttonText = event.button ? event.button.charAt(0).toUpperCase() + event.button.slice(1) : '';
+                    const actionText = event.pressed ? 'Press' : 'Release';
+                    eventText = `${buttonText} ${actionText} at (${event.x}, ${event.y})`;
+                } else if (event.event_type === 'scroll') {
+                    eventText = `Scroll at (${event.x}, ${event.y})`;
+                    if (event.dx != null || event.dy != null) {
+                        eventText += ` delta: ${event.dx || 0}, ${event.dy || 0}`;
+                    }
+                }
+                
+                eventElem.textContent = eventText;
+                eventsDiv.appendChild(eventElem);
+            });
+            
+            mouseDisplay.appendChild(eventsDiv);
         }
     }
     

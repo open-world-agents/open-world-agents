@@ -117,6 +117,74 @@ body {
     transform: translate(-50%, -50%);
 }
 
+.keyboard-state, .keyboard-events, .mouse-events {
+    margin: 10px 0;
+}
+
+.key-event {
+    display: inline-block;
+    padding: 2px 5px;
+    margin: 2px;
+    border-radius: 3px;
+    background-color: #f0f0f0;
+}
+
+.key-event.press {
+    background-color: #a8e6cf;
+}
+
+.key-event.release {
+    background-color: #ffd3b6;
+}
+
+.mouse-events {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 5px;
+    border-radius: 4px;
+}
+
+.mouse-event {
+    display: inline-block;
+    padding: 2px 5px;
+    margin: 2px;
+    border-radius: 3px;
+    background-color: #f0f0f0;
+}
+
+/* Press events */
+.mouse-event.left.press {
+    background-color: #a8e6cf; /* Green, same as keyboard press */
+}
+
+.mouse-event.right.press {
+    background-color: #bdb2ff; /* Purple */
+}
+
+.mouse-event.middle.press {
+    background-color: #ffe5d9; /* Light Pink */
+}
+
+/* Release events */
+.mouse-event.left.release {
+    background-color: #ffd3b6; /* Orange, same as keyboard release */
+}
+
+.mouse-event.right.release {
+    background-color: #d7c9ff; /* Light Purple */
+}
+
+.mouse-event.middle.release {
+    background-color: #ffc2c2; /* Pink */
+}
+
+/* Scroll events */
+.mouse-event.scroll {
+    background-color: #caffbf; /* Light Green */
+}
+
 #file-list {
     margin-top: 10px;
 }
@@ -204,3 +272,4 @@ body {
         flex-direction: column;
     }
 }
+
