@@ -110,7 +110,7 @@ def get_omniparser():
                     "caption_model_name": config.caption_model_name,
                     "caption_model_path": config.caption_model_path,
                     "device": config.device,
-                    "BOX_TRESHOLD": config.box_threshold,
+                    "BOX_THRESHOLD": config.box_threshold,
                 }
             )
 

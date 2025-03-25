@@ -83,7 +83,7 @@ Upcoming features for the OmniParser environment include:
 3. Performance optimizations for faster parsing
 4. Support for additional UI frameworks and platforms
 
-(or just waiting for updates on origianl omniparser)
+(or just waiting for updates on original omniparser)
 
 ## Acknowledgments
 
