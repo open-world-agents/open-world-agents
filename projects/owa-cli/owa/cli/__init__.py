@@ -13,4 +13,4 @@ if platform.system() == "Windows":
 
     app.add_typer(window.app, name="window")
 else:
-    typer.echo("Since you're not using Windows OS, `owa-cli window` command is disabled.")
+    typer.echo("Since you're not using Windows OS, `owa-cli window` command is disabled.", err=True)
