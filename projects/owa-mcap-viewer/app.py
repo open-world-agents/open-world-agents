@@ -1,16 +1,14 @@
 # server.py - improved with direct MCAP time filtering
-import json
 import logging
 import os
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from mcap.reader import make_reader
 from pydantic import BaseModel
 
 from mcap_owa.highlevel import OWAMcapReader
