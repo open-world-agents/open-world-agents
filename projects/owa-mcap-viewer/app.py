@@ -214,4 +214,5 @@ if __name__ == "__main__":
     import uvicorn
 
     logger.info("Starting server...")
-    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)
+    # huggingface space use 7860 port
+    uvicorn.run("app:app", host="0.0.0.0", port=7860, reload=True)
