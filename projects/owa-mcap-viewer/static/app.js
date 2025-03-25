@@ -437,6 +437,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const displayWidth = mouseDisplay.clientWidth;
             const displayHeight = mouseDisplay.clientHeight;
+            // TODO: Update these values based on actual screen resolution
             const screenWidth = 1920;
             const screenHeight = 1080;
             
