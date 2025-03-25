@@ -61,3 +61,6 @@ class ElementFactory:
             >> Element("videorate", {"drop-only": "true"})
             >> ElementFactory.capsfilter(caps=f"video/x-raw(memory:D3D11Memory),{framerate}")
         )
+
+    # TODO: add "loopback-target-pid" configurable wasapi2src element.
+    # "loopback-target-pid" is needed to capture the only audio from a specific process.
