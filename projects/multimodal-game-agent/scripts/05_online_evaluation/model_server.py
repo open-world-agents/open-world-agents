@@ -96,8 +96,8 @@ async def inference(request: InferenceRequest):
         texts = []
 
         # Extract the last assistant message as the prompt structure
-        messages_copy = [msg.dict() for msg in request.messages]
-        assistant_prompt = messages_copy.pop(-1)
+        messages_copy = [msg.model_dump() for msg in request.messages]
+        assistant_prompt = messages_copy.pop(-1)  # noqa: F841
 
         # Format text with chat template
         text = processor.apply_chat_template(messages_copy, tokenize=False, add_generation_prompt=True) + " "

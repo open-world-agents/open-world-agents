@@ -138,7 +138,7 @@ class Agent(Runnable):
         images = []
 
         for ex in examples:
-            assistant_prompt = ex["messages"].pop(-1)
+            assistant_prompt = ex["messages"].pop(-1)  # noqa: F841
             texts.append(
                 self.processor.apply_chat_template(ex["messages"], tokenize=False, add_generation_prompt=True) + " "
             )
