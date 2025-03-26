@@ -20,7 +20,7 @@ After activation, you can access desktop functionalities via the global registri
 
 ```python
 print(CALLABLES["screen.capture"]().shape)  # Capture and display screen dimensions
-print(CALLABLES["window.get_active_window"])()  # Retrieve the active window
+print(CALLABLES["window.get_active_window"]())  # Retrieve the active window
 ```
 
 This module is essential for applications that require integration with desktop UI elements and user input simulation.
