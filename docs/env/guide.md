@@ -77,7 +77,7 @@ print(CALLABLES, LISTENERS) # {'clock.time_ns': <built-in function time_ns>} {'c
 tick = LISTENERS["clock/tick"]().configure(callback=lambda: print(CALLABLES["clock.time_ns"]()), interval=1)
 tick.start()
 
-time.sleep(1)  # The listener prints the current time in nanoseconds a few times
+time.sleep(2)  # The listener prints the current time in nanoseconds a few times
 
 tick.stop(), tick.join()
 ```
@@ -88,7 +88,7 @@ Instead of manual `start-stop-join` procedure, you may utilize context manager: 
 
 ```python
 with tick.session:
-    time.sleep(1)
+    time.sleep(2)
 ```
 
 ### Desktop Environment (`owa.env.desktop`)
@@ -96,13 +96,17 @@ with tick.session:
 *The desktop environment module provides capabilities for UI interaction and input handling.*
 
 ```python
+import time
+from owa.core.registry import CALLABLES, LISTENERS, activate_module
+from owa.env.desktop.msg import KeyboardEvent
+
 # Activate the desktop module to enable UI and input capabilities
 activate_module("owa.env.desktop")
 
 # Using screen capture and window management features
-print(CALLABLES["screen.capture"]().shape)  # Example output: (1080, 1920, 3)
-print(CALLABLES["window.get_active_window"])()
-print(CALLABLES["window.get_window_by_title"]("open-world-agents"))
+print(f"{CALLABLES['screen.capture']().shape=}")  # Example output: (1080, 1920, 3)
+print(f"{CALLABLES['window.get_active_window']()=}")
+print(f"{CALLABLES['window.get_window_by_title']('open-world-agents')=}")
 
 # Simulating a mouse click (left button, double click)
 mouse_click = CALLABLES["mouse.click"]
@@ -110,8 +114,10 @@ mouse_click("left", 2)
 
 # Configuring a keyboard listener
 
-def on_keyboard_event(event_type, key):
-    print(f"Keyboard event: {event_type}, {key}")
+
+def on_keyboard_event(keyboard_event: KeyboardEvent):
+    print(f"Keyboard event: {keyboard_event.event_type=}, {keyboard_event.vk=}")
+
 
 keyboard_listener = LISTENERS["keyboard"]().configure(callback=on_keyboard_event)
 keyboard_listener.start()

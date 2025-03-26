@@ -329,7 +329,7 @@ wheels = [
 
 [[package]]
 name = "owa-cli"
-version = "0.1.0"
+version = "0.3.2"
 source = { editable = "." }
 dependencies = [
     { name = "loguru" },
@@ -362,7 +362,7 @@ requires-dist = [
 
 [[package]]
 name = "owa-core"
-version = "0.1.0"
+version = "0.3.2"
 source = { editable = "../owa-core" }
 dependencies = [
     { name = "loguru" },
@@ -379,7 +379,7 @@ requires-dist = [
 
 [[package]]
 name = "owa-env-desktop"
-version = "0.1.0"
+version = "0.3.2"
 source = { editable = "../owa-env-desktop" }
 dependencies = [
     { name = "bettercam" },
@@ -404,7 +404,7 @@ requires-dist = [
 
 [[package]]
 name = "owa-env-gst"
-version = "0.1.0"
+version = "0.3.2"
 source = { editable = "../owa-env-gst" }
 dependencies = [
     { name = "owa-core" },

@@ -49,11 +49,9 @@ Here's what we've got in store for you!
         time_ns = CALLABLES["clock.time_ns"]()
         print(f"Current time in nanoseconds: {time_ns}")
 
-    # Create a listener for clock/tick event
-    tick = LISTENERS["clock/tick"]().configure(callback=callback)
+    # Create a listener for clock/tick event, Set listener to trigger every 1 second
+    tick = LISTENERS["clock/tick"]().configure(callback=callback, interval=1)
 
-    # Set listener to trigger every 1 second
-    tick.configure(interval=1)
     # Start the listener
     tick.start()
 
@@ -62,6 +60,7 @@ Here's what we've got in store for you!
 
     # Stop the listener and wait for it to finish
     tick.stop(), tick.join()
+
     ```
 
 - Record your own desktop usage data by just running `owl mcap record your-filename.mcap`. [Learn more...](data/recorder/install_and_usage.md)

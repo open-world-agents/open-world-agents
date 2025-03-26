@@ -140,7 +140,7 @@ class ScreenEmitted(OWAMessage):
 
     def to_pil_image(self) -> Image.Image:
         """
-        Convert the frame at the specified PTS to a PIL Image in RGBA format.
+        Convert the frame at the specified PTS to a PIL Image in RGB format.
 
         Returns:
             PIL.Image.Image: The frame as a PIL Image.

@@ -1,0 +1,677 @@
+diff --git a/.gitignore b/.gitignore
+index 4cd8e0a..57e6c83 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -1,3 +1,4 @@
++wandb/
+ .env
+ 
+ # Temporary directory
+diff --git a/docs/faq_dev.md b/docs/faq_dev.md
+new file mode 100644
+index 0000000..1070be0
+--- /dev/null
++++ b/docs/faq_dev.md
+@@ -0,0 +1,6 @@
++## How to disable `typer`-specific traceback?
++
++set `_TYPER_STANDARD_TRACEBACK=1`
++
++https://stackoverflow.com/questions/76375307/how-to-make-typer-traceback-look-normal
++
+diff --git a/projects/mcap-owa-support/uv.lock b/projects/mcap-owa-support/uv.lock
+index 600f8b4..61090d0 100644
+--- a/projects/mcap-owa-support/uv.lock
++++ b/projects/mcap-owa-support/uv.lock
+@@ -268,7 +268,7 @@ wheels = [
+ 
+ [[package]]
+ name = "owa-core"
+-version = "0.1.0"
++version = "0.3.2"
+ source = { editable = "../owa-core" }
+ dependencies = [
+     { name = "loguru" },
+diff --git a/projects/owa-cli/owa/cli/mcap/cat.py b/projects/owa-cli/owa/cli/mcap/cat.py
+index 966cd27..024d5f4 100644
+--- a/projects/owa-cli/owa/cli/mcap/cat.py
++++ b/projects/owa-cli/owa/cli/mcap/cat.py
+@@ -6,13 +6,7 @@ import typer
+ from typing_extensions import Annotated
+ 
+ from mcap_owa.highlevel import OWAMcapReader
+-
+-
+-class TimeUnits:
+-    NSECOND = 1
+-    USECOND = 10**3
+-    MSECOND = 10**6
+-    SECOND = 10**9
++from owa.core.time import TimeUnits
+ 
+ 
+ def format_timestamp(ns):
+diff --git a/projects/owa-cli/owa/cli/mcap/record.py b/projects/owa-cli/owa/cli/mcap/record.py
+index a98c7a9..a349968 100644
+--- a/projects/owa-cli/owa/cli/mcap/record.py
++++ b/projects/owa-cli/owa/cli/mcap/record.py
+@@ -17,7 +17,6 @@ from typing import Optional
+ 
+ import typer
+ from loguru import logger
+-from pydantic import BaseModel
+ from tqdm import tqdm
+ from typing_extensions import Annotated
+ 
+@@ -36,12 +35,6 @@ queue = Queue()
+ MCAP_LOCATION = None
+ 
+ 
+-class BagEvent(BaseModel):
+-    timestamp_ns: int
+-    event_src: str
+-    event_data: bytes
+-
+-
+ def callback(event, topic=None):
+     queue.put((topic, event, time.time_ns()))
+ 
+diff --git a/projects/owa-cli/uv.lock b/projects/owa-cli/uv.lock
+index d094515..46d2483 100644
+--- a/projects/owa-cli/uv.lock
++++ b/projects/owa-cli/uv.lock
+@@ -329,7 +329,7 @@ wheels = [
+ 
+ [[package]]
+ name = "owa-cli"
+-version = "0.1.0"
++version = "0.3.2"
+ source = { editable = "." }
+ dependencies = [
+     { name = "loguru" },
+@@ -362,7 +362,7 @@ requires-dist = [
+ 
+ [[package]]
+ name = "owa-core"
+-version = "0.1.0"
++version = "0.3.2"
+ source = { editable = "../owa-core" }
+ dependencies = [
+     { name = "loguru" },
+@@ -379,7 +379,7 @@ requires-dist = [
+ 
+ [[package]]
+ name = "owa-env-desktop"
+-version = "0.1.0"
++version = "0.3.2"
+ source = { editable = "../owa-env-desktop" }
+ dependencies = [
+     { name = "bettercam" },
+@@ -404,7 +404,7 @@ requires-dist = [
+ 
+ [[package]]
+ name = "owa-env-gst"
+-version = "0.1.0"
++version = "0.3.2"
+ source = { editable = "../owa-env-gst" }
+ dependencies = [
+     { name = "owa-core" },
+diff --git a/projects/owa-core/uv.lock b/projects/owa-core/uv.lock
+index d97c7d1..7c2d636 100644
+--- a/projects/owa-core/uv.lock
++++ b/projects/owa-core/uv.lock
+@@ -108,7 +108,7 @@ wheels = [
+ 
+ [[package]]
+ name = "owa-core"
+-version = "0.1.0"
++version = "0.3.2"
+ source = { editable = "." }
+ dependencies = [
+     { name = "loguru" },
+diff --git a/projects/owa-env-desktop/owa/env/desktop/constants.py b/projects/owa-env-desktop/owa/env/desktop/constants.py
+new file mode 100644
+index 0000000..8c05185
+--- /dev/null
++++ b/projects/owa-env-desktop/owa/env/desktop/constants.py
+@@ -0,0 +1,165 @@
++from enum import IntEnum
++
++
++# TODO: multi-os support
++class VK(IntEnum):
++    LBUTTON = 1
++    RBUTTON = 2
++    CANCEL = 3
++    MBUTTON = 4
++    XBUTTON1 = 5
++    XBUTTON2 = 6
++    BACK = 8
++    TAB = 9
++    CLEAR = 12
++    RETURN = 13
++    SHIFT = 16
++    CONTROL = 17
++    MENU = 18
++    PAUSE = 19
++    CAPITAL = 20
++    KANA = 21
++    HANGEUL = 21
++    HANGUL = 21
++    JUNJA = 23
++    FINAL = 24
++    HANJA = 25
++    KANJI = 25
++    ESCAPE = 27
++    CONVERT = 28
++    NONCONVERT = 29
++    ACCEPT = 30
++    MODECHANGE = 31
++    SPACE = 32
++    PRIOR = 33
++    NEXT = 34
++    END = 35
++    HOME = 36
++    LEFT = 37
++    UP = 38
++    RIGHT = 39
++    DOWN = 40
++    SELECT = 41
++    PRINT = 42
++    EXECUTE = 43
++    SNAPSHOT = 44
++    INSERT = 45
++    DELETE = 46
++    HELP = 47
++    LWIN = 91
++    RWIN = 92
++    APPS = 93
++    SLEEP = 95
++    NUMPAD0 = 96
++    NUMPAD1 = 97
++    NUMPAD2 = 98
++    NUMPAD3 = 99
++    NUMPAD4 = 100
++    NUMPAD5 = 101
++    NUMPAD6 = 102
++    NUMPAD7 = 103
++    NUMPAD8 = 104
++    NUMPAD9 = 105
++    MULTIPLY = 106
++    ADD = 107
++    SEPARATOR = 108
++    SUBTRACT = 109
++    DECIMAL = 110
++    DIVIDE = 111
++    F1 = 112
++    F2 = 113
++    F3 = 114
++    F4 = 115
++    F5 = 116
++    F6 = 117
++    F7 = 118
++    F8 = 119
++    F9 = 120
++    F10 = 121
++    F11 = 122
++    F12 = 123
++    F13 = 124
++    F14 = 125
++    F15 = 126
++    F16 = 127
++    F17 = 128
++    F18 = 129
++    F19 = 130
++    F20 = 131
++    F21 = 132
++    F22 = 133
++    F23 = 134
++    F24 = 135
++    NUMLOCK = 144
++    SCROLL = 145
++    OEM_NEC_EQUAL = 146
++    OEM_FJ_JISHO = 146
++    OEM_FJ_MASSHOU = 147
++    OEM_FJ_TOUROKU = 148
++    OEM_FJ_LOYA = 149
++    OEM_FJ_ROYA = 150
++    LSHIFT = 160
++    RSHIFT = 161
++    LCONTROL = 162
++    RCONTROL = 163
++    LMENU = 164
++    RMENU = 165
++    BROWSER_BACK = 166
++    BROWSER_FORWARD = 167
++    BROWSER_REFRESH = 168
++    BROWSER_STOP = 169
++    BROWSER_SEARCH = 170
++    BROWSER_FAVORITES = 171
++    BROWSER_HOME = 172
++    VOLUME_MUTE = 173
++    VOLUME_DOWN = 174
++    VOLUME_UP = 175
++    MEDIA_NEXT_TRACK = 176
++    MEDIA_PREV_TRACK = 177
++    MEDIA_STOP = 178
++    MEDIA_PLAY_PAUSE = 179
++    LAUNCH_MAIL = 180
++    LAUNCH_MEDIA_SELECT = 181
++    LAUNCH_APP1 = 182
++    LAUNCH_APP2 = 183
++    OEM_1 = 186
++    OEM_PLUS = 187
++    OEM_COMMA = 188
++    OEM_MINUS = 189
++    OEM_PERIOD = 190
++    OEM_2 = 191
++    OEM_3 = 192
++    OEM_4 = 219
++    OEM_5 = 220
++    OEM_6 = 221
++    OEM_7 = 222
++    OEM_8 = 223
++    OEM_AX = 225
++    OEM_102 = 226
++    ICO_HELP = 227
++    ICO_00 = 228
++    PROCESSKEY = 229
++    ICO_CLEAR = 230
++    PACKET = 231
++    OEM_RESET = 233
++    OEM_JUMP = 234
++    OEM_PA1 = 235
++    OEM_PA2 = 236
++    OEM_PA3 = 237
++    OEM_WSCTRL = 238
++    OEM_CUSEL = 239
++    OEM_ATTN = 240
++    OEM_FINISH = 241
++    OEM_COPY = 242
++    OEM_AUTO = 243
++    OEM_ENLW = 244
++    OEM_BACKTAB = 245
++    ATTN = 246
++    CRSEL = 247
++    EXSEL = 248
++    EREOF = 249
++    PLAY = 250
++    ZOOM = 251
++    NONAME = 252
++    PA1 = 253
++    OEM_CLEAR = 254
+diff --git a/projects/owa-env-desktop/owa/env/desktop/window/callables.py b/projects/owa-env-desktop/owa/env/desktop/window/callables.py
+index 7833ae1..46b4eb8 100644
+--- a/projects/owa-env-desktop/owa/env/desktop/window/callables.py
++++ b/projects/owa-env-desktop/owa/env/desktop/window/callables.py
+@@ -109,10 +109,7 @@ def when_active(window_title_substring: str):
+ 
+     def decorator(func):
+         def wrapper(*args, **kwargs):
+-            window = get_window_by_title(window_title_substring)
+-            import pygetwindow as gw
+-
+-            if gw.getActiveWindow()._hWnd == window.hWnd:
++            if is_active(window_title_substring):
+                 return func(*args, **kwargs)
+ 
+         return wrapper
+@@ -120,6 +117,17 @@ def when_active(window_title_substring: str):
+     return decorator
+ 
+ 
++def is_active(window_title_substring: str):
++    """Returns whether the window with the title containing the substring is active."""
++    try:
++        window = get_window_by_title(window_title_substring)
++    except ValueError:
++        return False
++
++    return get_active_window().hWnd == window.hWnd
++
++
+ CALLABLES.register("window.get_active_window")(get_active_window)
+ CALLABLES.register("window.get_window_by_title")(get_window_by_title)
+ CALLABLES.register("window.when_active")(when_active)
++CALLABLES.register("window.is_active")(is_active)
+diff --git a/projects/owa-env-desktop/uv.lock b/projects/owa-env-desktop/uv.lock
+index 88ede2f..1cb3acc 100644
+--- a/projects/owa-env-desktop/uv.lock
++++ b/projects/owa-env-desktop/uv.lock
+@@ -136,7 +136,7 @@ wheels = [
+ 
+ [[package]]
+ name = "owa-core"
+-version = "0.1.0"
++version = "0.3.2"
+ source = { editable = "../owa-core" }
+ dependencies = [
+     { name = "loguru" },
+@@ -153,7 +153,7 @@ requires-dist = [
+ 
+ [[package]]
+ name = "owa-env-desktop"
+-version = "0.1.0"
++version = "0.3.2"
+ source = { editable = "." }
+ dependencies = [
+     { name = "bettercam" },
+diff --git a/projects/owa-env-example/uv.lock b/projects/owa-env-example/uv.lock
+index c12e4a3..646002e 100644
+--- a/projects/owa-env-example/uv.lock
++++ b/projects/owa-env-example/uv.lock
+@@ -108,7 +108,7 @@ wheels = [
+ 
+ [[package]]
+ name = "owa-core"
+-version = "0.1.0"
++version = "0.3.2"
+ source = { editable = "../owa-core" }
+ dependencies = [
+     { name = "loguru" },
+diff --git a/projects/owa-env-gst/benchmark_video_reader.py b/projects/owa-env-gst/benchmark_video_reader.py
+index 80dc24c..b04e7c4 100644
+--- a/projects/owa-env-gst/benchmark_video_reader.py
++++ b/projects/owa-env-gst/benchmark_video_reader.py
+@@ -3,27 +3,35 @@ from decord import VideoReader, cpu
+ 
+ from owa.env.gst.mkv_reader import GstMKVReader, PyAVMKVReader
+ 
++VIDEO_PATH = "../../tmp/output.mkv"
++
+ 
+ @line_profiler.profile
+ def test_gst():
+-    with GstMKVReader("output.mkv") as reader:
+-        for frame in reader.iter_frames():
++    with GstMKVReader(VIDEO_PATH) as reader:
++        for idx, frame in enumerate(reader.iter_frames()):
++            if idx == 120:
++                break
+             print(frame["pts"], frame["data"].shape)
+ 
+ 
+ @line_profiler.profile
+ def test_av():
+-    with PyAVMKVReader("output.mkv") as reader:
+-        for frame in reader.iter_frames():
++    with PyAVMKVReader(VIDEO_PATH) as reader:
++        for idx, frame in enumerate(reader.iter_frames()):
++            if idx == 120:
++                break
+             print(frame["pts"], frame["data"].shape)
+ 
+ 
+ @line_profiler.profile
+ def test_decord():
+-    vr = VideoReader("output.mkv", ctx=cpu(0))
+-    for i in range(len(vr)):
+-        frame = vr[i]
+-        print(i, frame.shape)
++    vr = VideoReader(VIDEO_PATH, ctx=cpu(0))
++    for idx in range(len(vr)):
++        if idx == 120:
++            break
++        frame = vr[idx]
++        print(idx, frame.shape)
+ 
+ 
+ """
+diff --git a/projects/owa-env-gst/owa/env/gst/mkv_reader.py b/projects/owa-env-gst/owa/env/gst/mkv_reader.py
+index 36b9f24..6df0686 100644
+--- a/projects/owa-env-gst/owa/env/gst/mkv_reader.py
++++ b/projects/owa-env-gst/owa/env/gst/mkv_reader.py
+@@ -72,7 +72,6 @@ class GstMKVReader(MKVReader):
+         frame_arr = sample_to_ndarray(sample)
+         data = {"data": frame_arr, "pts": sample.get_buffer().pts}
+         self.frame_queue.put(data)  # Add the frame to the queue
+-        print("queued", data["pts"])
+ 
+     def iter_frames(self):
+         self.runner.start()  # Start the runner
+diff --git a/projects/owa-env-gst/owa/env/gst/msg.py b/projects/owa-env-gst/owa/env/gst/msg.py
+index 39b1709..b513173 100644
+--- a/projects/owa-env-gst/owa/env/gst/msg.py
++++ b/projects/owa-env-gst/owa/env/gst/msg.py
+@@ -140,7 +140,7 @@ class ScreenEmitted(OWAMessage):
+ 
+     def to_pil_image(self) -> Image.Image:
+         """
+-        Convert the frame at the specified PTS to a PIL Image in RGBA format.
++        Convert the frame at the specified PTS to a PIL Image in RGB format.
+ 
+         Returns:
+             PIL.Image.Image: The frame as a PIL Image.
+diff --git a/projects/owa-env-gst/owa/env/gst/utils/__init__.py b/projects/owa-env-gst/owa/env/gst/utils/__init__.py
+index 3a8f6d4..90508c5 100644
+--- a/projects/owa-env-gst/owa/env/gst/utils/__init__.py
++++ b/projects/owa-env-gst/owa/env/gst/utils/__init__.py
+@@ -1,5 +1,5 @@
+ from .gst_lifecycle import try_set_state, wait_for_message
+-from .gst_sample_postprocess import get_frame_time_ns, sample_to_ndarray
++from .gst_sample_postprocess import get_frame_time_ns, sample_to_ndarray, sample_to_shape
+ from .misc import framerate_float_to_str
+ 
+ __all__ = [
+@@ -7,5 +7,6 @@ __all__ = [
+     "wait_for_message",
+     "get_frame_time_ns",
+     "sample_to_ndarray",
++    "sample_to_shape",
+     "framerate_float_to_str",
+ ]
+diff --git a/projects/owa-env-gst/owa/env/gst/utils/gst_sample_postprocess.py b/projects/owa-env-gst/owa/env/gst/utils/gst_sample_postprocess.py
+index f341b5a..ff95acc 100644
+--- a/projects/owa-env-gst/owa/env/gst/utils/gst_sample_postprocess.py
++++ b/projects/owa-env-gst/owa/env/gst/utils/gst_sample_postprocess.py
+@@ -57,3 +57,18 @@ def sample_to_ndarray(sample: Gst.Sample) -> np.ndarray:
+     frame_data = buf.extract_dup(0, buf.get_size())
+     # baseline: np.frombuffer(frame_data, dtype=np.uint8).reshape((height, width, 4))
+     return np.ndarray((height, width, 4), buffer=frame_data, dtype=np.uint8)
++
++
++def sample_to_shape(sample: Gst.Sample) -> tuple[int, int]:
++    """
++    Get the shape of the frame from the GStreamer sample.
++
++    Args:
++        sample: GStreamer sample object
++
++    Returns:
++        Tuple containing the height and width of the frame
++    """
++    caps = sample.get_caps()
++    structure = caps.get_structure(0)
++    return structure.get_value("height"), structure.get_value("width")
+diff --git a/projects/owa-env-gst/scripts/verify_data.py b/projects/owa-env-gst/scripts/verify_data.py
+index 82a21f8..12b2e34 100644
+--- a/projects/owa-env-gst/scripts/verify_data.py
++++ b/projects/owa-env-gst/scripts/verify_data.py
+@@ -2,13 +2,7 @@ import matplotlib.pyplot as plt  # Import matplotlib for plotting
+ import numpy as np
+ 
+ from mcap_owa.highlevel import OWAMcapReader
+-
+-
+-class TimeUnits:
+-    NSECOND = 1
+-    USECOND = 10**3
+-    MSECOND = 10**6
+-    SECOND = 10**9
++from owa.core.time import TimeUnits
+ 
+ 
+ def main():
+diff --git a/projects/owa-env-gst/uv.lock b/projects/owa-env-gst/uv.lock
+index 1511c30..3823088 100644
+--- a/projects/owa-env-gst/uv.lock
++++ b/projects/owa-env-gst/uv.lock
+@@ -108,7 +108,7 @@ wheels = [
+ 
+ [[package]]
+ name = "owa-core"
+-version = "0.1.0"
++version = "0.3.2"
+ source = { editable = "../owa-core" }
+ dependencies = [
+     { name = "loguru" },
+@@ -125,7 +125,7 @@ requires-dist = [
+ 
+ [[package]]
+ name = "owa-env-gst"
+-version = "0.1.0"
++version = "0.3.2"
+ source = { editable = "." }
+ dependencies = [
+     { name = "owa-core" },
+diff --git a/uv.lock b/uv.lock
+index b696434..08ed8b0 100644
+--- a/uv.lock
++++ b/uv.lock
+@@ -288,14 +288,14 @@ wheels = [
+ 
+ [[package]]
+ name = "griffe"
+-version = "1.6.1"
++version = "1.6.2"
+ source = { registry = "https://pypi.org/simple" }
+ dependencies = [
+     { name = "colorama" },
+ ]
+-sdist = { url = "https://files.pythonhosted.org/packages/6a/ba/1ebe51a22c491a3fc94b44ef9c46a5b5472540e24a5c3f251cebbab7214b/griffe-1.6.1.tar.gz", hash = "sha256:ff0acf706b2680f8c721412623091c891e752b2c61b7037618f7b77d06732cf5", size = 393112 }
++sdist = { url = "https://files.pythonhosted.org/packages/2f/f2/b00eb72b853ecb5bf31dd47857cdf6767e380ca24ec2910d43b3fa7cc500/griffe-1.6.2.tar.gz", hash = "sha256:3a46fa7bd83280909b63c12b9a975732a927dd97809efe5b7972290b606c5d91", size = 392836 }
+ wheels = [
+-    { url = "https://files.pythonhosted.org/packages/1f/d3/a760d1062e44587230aa65573c70edaad4ee8a0e60e193a3172b304d24d8/griffe-1.6.1-py3-none-any.whl", hash = "sha256:b0131670db16834f82383bcf4f788778853c9bf4dc7a1a2b708bb0808ca56a98", size = 128615 },
++    { url = "https://files.pythonhosted.org/packages/4e/bc/bd8b7de5e748e078b6be648e76b47189a9182b1ac1eb7791ff7969f39f27/griffe-1.6.2-py3-none-any.whl", hash = "sha256:6399f7e663150e4278a312a8e8a14d2f3d7bd86e2ef2f8056a1058e38579c2ee", size = 128638 },
+ ]
+ 
+ [[package]]
+@@ -709,16 +709,16 @@ python = [
+ 
+ [[package]]
+ name = "mkdocstrings-python"
+-version = "1.16.6"
++version = "1.16.8"
+ source = { registry = "https://pypi.org/simple" }
+ dependencies = [
+     { name = "griffe" },
+     { name = "mkdocs-autorefs" },
+     { name = "mkdocstrings" },
+ ]
+-sdist = { url = "https://files.pythonhosted.org/packages/8e/e7/0691e34e807a8f5c28f0988fcfeeb584f0b569ce433bf341944f14bdb3ff/mkdocstrings_python-1.16.6.tar.gz", hash = "sha256:cefe0f0e17ab4a4611f01b0a2af75e4298664e0ff54feb83c91a485bfed82dc9", size = 201565 }
++sdist = { url = "https://files.pythonhosted.org/packages/8e/b8/62190ea298fdb1e84670ef548590748c633ab4e05b35bcf902e89f2f28c6/mkdocstrings_python-1.16.8.tar.gz", hash = "sha256:9453ccae69be103810c1cf6435ce71c8f714ae37fef4d87d16aa92a7c800fe1d", size = 205119 }
+ wheels = [
+-    { url = "https://files.pythonhosted.org/packages/6a/42/ed682687ef5f248e104f82806d5d9893f6dd81d8cb4561692e190ba1a252/mkdocstrings_python-1.16.6-py3-none-any.whl", hash = "sha256:de877dd71f69878c973c4897a39683b7b6961bee7b058879095b69681488453f", size = 123207 },
++    { url = "https://files.pythonhosted.org/packages/67/d0/ef6e82f7a68c7ac02e1a01815fbe88773f4f9e40728ed35bd1664a5d76f2/mkdocstrings_python-1.16.8-py3-none-any.whl", hash = "sha256:211b7aaf776cd45578ecb531e5ad0d3a35a8be9101a6bfa10de38a69af9d8fd8", size = 124116 },
+ ]
+ 
+ [[package]]
+@@ -835,7 +835,7 @@ wheels = [
+ 
+ [[package]]
+ name = "owa"
+-version = "0.1.1"
++version = "0.3.2"
+ source = { editable = "." }
+ dependencies = [
+     { name = "mcap-owa-support" },
+@@ -891,7 +891,7 @@ dev = [
+ 
+ [[package]]
+ name = "owa-cli"
+-version = "0.1.0"
++version = "0.3.2"
+ source = { editable = "projects/owa-cli" }
+ dependencies = [
+     { name = "loguru" },
+@@ -924,7 +924,7 @@ requires-dist = [
+ 
+ [[package]]
+ name = "owa-core"
+-version = "0.1.0"
++version = "0.3.2"
+ source = { editable = "projects/owa-core" }
+ dependencies = [
+     { name = "loguru" },
+@@ -941,7 +941,7 @@ requires-dist = [
+ 
+ [[package]]
+ name = "owa-env-desktop"
+-version = "0.1.0"
++version = "0.3.2"
+ source = { editable = "projects/owa-env-desktop" }
+ dependencies = [
+     { name = "bettercam" },
+@@ -966,7 +966,7 @@ requires-dist = [
+ 
+ [[package]]
+ name = "owa-env-gst"
+-version = "0.1.0"
++version = "0.3.2"
+ source = { editable = "projects/owa-env-gst" }
+ dependencies = [
+     { name = "owa-core" },
+@@ -1514,27 +1514,27 @@ wheels = [
+ 
+ [[package]]
+ name = "ruff"
+-version = "0.11.0"
+-source = { registry = "https://pypi.org/simple" }
+-sdist = { url = "https://files.pythonhosted.org/packages/77/2b/7ca27e854d92df5e681e6527dc0f9254c9dc06c8408317893cf96c851cdd/ruff-0.11.0.tar.gz", hash = "sha256:e55c620690a4a7ee6f1cccb256ec2157dc597d109400ae75bbf944fc9d6462e2", size = 3799407 }
+-wheels = [
+-    { url = "https://files.pythonhosted.org/packages/48/40/3d0340a9e5edc77d37852c0cd98c5985a5a8081fc3befaeb2ae90aaafd2b/ruff-0.11.0-py3-none-linux_armv6l.whl", hash = "sha256:dc67e32bc3b29557513eb7eeabb23efdb25753684b913bebb8a0c62495095acb", size = 10098158 },
+-    { url = "https://files.pythonhosted.org/packages/ec/a9/d8f5abb3b87b973b007649ac7bf63665a05b2ae2b2af39217b09f52abbbf/ruff-0.11.0-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:38c23fd9bdec4eb437b4c1e3595905a0a8edfccd63a790f818b28c78fe345639", size = 10879071 },
+-    { url = "https://files.pythonhosted.org/packages/ab/62/aaa198614c6211677913ec480415c5e6509586d7b796356cec73a2f8a3e6/ruff-0.11.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:7c8661b0be91a38bd56db593e9331beaf9064a79028adee2d5f392674bbc5e88", size = 10247944 },
+-    { url = "https://files.pythonhosted.org/packages/9f/52/59e0a9f2cf1ce5e6cbe336b6dd0144725c8ea3b97cac60688f4e7880bf13/ruff-0.11.0-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b6c0e8d3d2db7e9f6efd884f44b8dc542d5b6b590fc4bb334fdbc624d93a29a2", size = 10421725 },
+-    { url = "https://files.pythonhosted.org/packages/a6/c3/dcd71acc6dff72ce66d13f4be5bca1dbed4db678dff2f0f6f307b04e5c02/ruff-0.11.0-py3-none-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:3c3156d3f4b42e57247275a0a7e15a851c165a4fc89c5e8fa30ea6da4f7407b8", size = 9954435 },
+-    { url = "https://files.pythonhosted.org/packages/a6/9a/342d336c7c52dbd136dee97d4c7797e66c3f92df804f8f3b30da59b92e9c/ruff-0.11.0-py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:490b1e147c1260545f6d041c4092483e3f6d8eba81dc2875eaebcf9140b53905", size = 11492664 },
+-    { url = "https://files.pythonhosted.org/packages/84/35/6e7defd2d7ca95cc385ac1bd9f7f2e4a61b9cc35d60a263aebc8e590c462/ruff-0.11.0-py3-none-manylinux_2_17_ppc64.manylinux2014_ppc64.whl", hash = "sha256:1bc09a7419e09662983b1312f6fa5dab829d6ab5d11f18c3760be7ca521c9329", size = 12207856 },
+-    { url = "https://files.pythonhosted.org/packages/22/78/da669c8731bacf40001c880ada6d31bcfb81f89cc996230c3b80d319993e/ruff-0.11.0-py3-none-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:bcfa478daf61ac8002214eb2ca5f3e9365048506a9d52b11bea3ecea822bb844", size = 11645156 },
+-    { url = "https://files.pythonhosted.org/packages/ee/47/e27d17d83530a208f4a9ab2e94f758574a04c51e492aa58f91a3ed7cbbcb/ruff-0.11.0-py3-none-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:6fbb2aed66fe742a6a3a0075ed467a459b7cedc5ae01008340075909d819df1e", size = 13884167 },
+-    { url = "https://files.pythonhosted.org/packages/9f/5e/42ffbb0a5d4b07bbc642b7d58357b4e19a0f4774275ca6ca7d1f7b5452cd/ruff-0.11.0-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:92c0c1ff014351c0b0cdfdb1e35fa83b780f1e065667167bb9502d47ca41e6db", size = 11348311 },
+-    { url = "https://files.pythonhosted.org/packages/c8/51/dc3ce0c5ce1a586727a3444a32f98b83ba99599bb1ebca29d9302886e87f/ruff-0.11.0-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:e4fd5ff5de5f83e0458a138e8a869c7c5e907541aec32b707f57cf9a5e124445", size = 10305039 },
+-    { url = "https://files.pythonhosted.org/packages/60/e0/475f0c2f26280f46f2d6d1df1ba96b3399e0234cf368cc4c88e6ad10dcd9/ruff-0.11.0-py3-none-musllinux_1_2_armv7l.whl", hash = "sha256:96bc89a5c5fd21a04939773f9e0e276308be0935de06845110f43fd5c2e4ead7", size = 9937939 },
+-    { url = "https://files.pythonhosted.org/packages/e2/d3/3e61b7fd3e9cdd1e5b8c7ac188bec12975c824e51c5cd3d64caf81b0331e/ruff-0.11.0-py3-none-musllinux_1_2_i686.whl", hash = "sha256:a9352b9d767889ec5df1483f94870564e8102d4d7e99da52ebf564b882cdc2c7", size = 10923259 },
+-    { url = "https://files.pythonhosted.org/packages/30/32/cd74149ebb40b62ddd14bd2d1842149aeb7f74191fb0f49bd45c76909ff2/ruff-0.11.0-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:049a191969a10897fe052ef9cc7491b3ef6de79acd7790af7d7897b7a9bfbcb6", size = 11406212 },
+-    { url = "https://files.pythonhosted.org/packages/00/ef/033022a6b104be32e899b00de704d7c6d1723a54d4c9e09d147368f14b62/ruff-0.11.0-py3-none-win32.whl", hash = "sha256:3191e9116b6b5bbe187447656f0c8526f0d36b6fd89ad78ccaad6bdc2fad7df2", size = 10310905 },
+-    { url = "https://files.pythonhosted.org/packages/ed/8a/163f2e78c37757d035bd56cd60c8d96312904ca4a6deeab8442d7b3cbf89/ruff-0.11.0-py3-none-win_amd64.whl", hash = "sha256:c58bfa00e740ca0a6c43d41fb004cd22d165302f360aaa56f7126d544db31a21", size = 11411730 },
+-    { url = "https://files.pythonhosted.org/packages/4e/f7/096f6efabe69b49d7ca61052fc70289c05d8d35735c137ef5ba5ef423662/ruff-0.11.0-py3-none-win_arm64.whl", hash = "sha256:868364fc23f5aa122b00c6f794211e85f7e78f5dffdf7c590ab90b8c4e69b657", size = 10538956 },
++version = "0.11.2"
++source = { registry = "https://pypi.org/simple" }
++sdist = { url = "https://files.pythonhosted.org/packages/90/61/fb87430f040e4e577e784e325351186976516faef17d6fcd921fe28edfd7/ruff-0.11.2.tar.gz", hash = "sha256:ec47591497d5a1050175bdf4e1a4e6272cddff7da88a2ad595e1e326041d8d94", size = 3857511 }
++wheels = [
++    { url = "https://files.pythonhosted.org/packages/62/99/102578506f0f5fa29fd7e0df0a273864f79af044757aef73d1cae0afe6ad/ruff-0.11.2-py3-none-linux_armv6l.whl", hash = "sha256:c69e20ea49e973f3afec2c06376eb56045709f0212615c1adb0eda35e8a4e477", size = 10113146 },
++    { url = "https://files.pythonhosted.org/packages/74/ad/5cd4ba58ab602a579997a8494b96f10f316e874d7c435bcc1a92e6da1b12/ruff-0.11.2-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:2c5424cc1c4eb1d8ecabe6d4f1b70470b4f24a0c0171356290b1953ad8f0e272", size = 10867092 },
++    { url = "https://files.pythonhosted.org/packages/fc/3e/d3f13619e1d152c7b600a38c1a035e833e794c6625c9a6cea6f63dbf3af4/ruff-0.11.2-py3-none-macosx_11_0_arm64.whl", hash = "sha256:ecf20854cc73f42171eedb66f006a43d0a21bfb98a2523a809931cda569552d9", size = 10224082 },
++    { url = "https://files.pythonhosted.org/packages/90/06/f77b3d790d24a93f38e3806216f263974909888fd1e826717c3ec956bbcd/ruff-0.11.2-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:0c543bf65d5d27240321604cee0633a70c6c25c9a2f2492efa9f6d4b8e4199bb", size = 10394818 },
++    { url = "https://files.pythonhosted.org/packages/99/7f/78aa431d3ddebfc2418cd95b786642557ba8b3cb578c075239da9ce97ff9/ruff-0.11.2-py3-none-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:20967168cc21195db5830b9224be0e964cc9c8ecf3b5a9e3ce19876e8d3a96e3", size = 9952251 },
++    { url = "https://files.pythonhosted.org/packages/30/3e/f11186d1ddfaca438c3bbff73c6a2fdb5b60e6450cc466129c694b0ab7a2/ruff-0.11.2-py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:955a9ce63483999d9f0b8f0b4a3ad669e53484232853054cc8b9d51ab4c5de74", size = 11563566 },
++    { url = "https://files.pythonhosted.org/packages/22/6c/6ca91befbc0a6539ee133d9a9ce60b1a354db12c3c5d11cfdbf77140f851/ruff-0.11.2-py3-none-manylinux_2_17_ppc64.manylinux2014_ppc64.whl", hash = "sha256:86b3a27c38b8fce73bcd262b0de32e9a6801b76d52cdb3ae4c914515f0cef608", size = 12208721 },
++    { url = "https://files.pythonhosted.org/packages/19/b0/24516a3b850d55b17c03fc399b681c6a549d06ce665915721dc5d6458a5c/ruff-0.11.2-py3-none-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:a3b66a03b248c9fcd9d64d445bafdf1589326bee6fc5c8e92d7562e58883e30f", size = 11662274 },
++    { url = "https://files.pythonhosted.org/packages/d7/65/76be06d28ecb7c6070280cef2bcb20c98fbf99ff60b1c57d2fb9b8771348/ruff-0.11.2-py3-none-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:0397c2672db015be5aa3d4dac54c69aa012429097ff219392c018e21f5085147", size = 13792284 },
++    { url = "https://files.pythonhosted.org/packages/ce/d2/4ceed7147e05852876f3b5f3fdc23f878ce2b7e0b90dd6e698bda3d20787/ruff-0.11.2-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:869bcf3f9abf6457fbe39b5a37333aa4eecc52a3b99c98827ccc371a8e5b6f1b", size = 11327861 },
++    { url = "https://files.pythonhosted.org/packages/c4/78/4935ecba13706fd60ebe0e3dc50371f2bdc3d9bc80e68adc32ff93914534/ruff-0.11.2-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:2a2b50ca35457ba785cd8c93ebbe529467594087b527a08d487cf0ee7b3087e9", size = 10276560 },
++    { url = "https://files.pythonhosted.org/packages/81/7f/1b2435c3f5245d410bb5dc80f13ec796454c21fbda12b77d7588d5cf4e29/ruff-0.11.2-py3-none-musllinux_1_2_armv7l.whl", hash = "sha256:7c69c74bf53ddcfbc22e6eb2f31211df7f65054bfc1f72288fc71e5f82db3eab", size = 9945091 },
++    { url = "https://files.pythonhosted.org/packages/39/c4/692284c07e6bf2b31d82bb8c32f8840f9d0627d92983edaac991a2b66c0a/ruff-0.11.2-py3-none-musllinux_1_2_i686.whl", hash = "sha256:6e8fb75e14560f7cf53b15bbc55baf5ecbe373dd5f3aab96ff7aa7777edd7630", size = 10977133 },
++    { url = "https://files.pythonhosted.org/packages/94/cf/8ab81cb7dd7a3b0a3960c2769825038f3adcd75faf46dd6376086df8b128/ruff-0.11.2-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:842a472d7b4d6f5924e9297aa38149e5dcb1e628773b70e6387ae2c97a63c58f", size = 11378514 },
++    { url = "https://files.pythonhosted.org/packages/d9/3a/a647fa4f316482dacf2fd68e8a386327a33d6eabd8eb2f9a0c3d291ec549/ruff-0.11.2-py3-none-win32.whl", hash = "sha256:aca01ccd0eb5eb7156b324cfaa088586f06a86d9e5314b0eb330cb48415097cc", size = 10319835 },
++    { url = "https://files.pythonhosted.org/packages/86/54/3c12d3af58012a5e2cd7ebdbe9983f4834af3f8cbea0e8a8c74fa1e23b2b/ruff-0.11.2-py3-none-win_amd64.whl", hash = "sha256:3170150172a8f994136c0c66f494edf199a0bbea7a409f649e4bc8f4d7084080", size = 11373713 },
++    { url = "https://files.pythonhosted.org/packages/d6/d4/dd813703af8a1e2ac33bf3feb27e8a5ad514c9f219df80c64d69807e7f71/ruff-0.11.2-py3-none-win_arm64.whl", hash = "sha256:52933095158ff328f4c77af3d74f0379e34fd52f175144cefc1b192e7ccd32b4", size = 10441990 },
+ ]
+ 
+ [[package]]
+@@ -1548,11 +1548,11 @@ wheels = [
+ 
+ [[package]]
+ name = "setuptools"
+-version = "77.0.1"
++version = "77.0.3"
+ source = { registry = "https://pypi.org/simple" }
+-sdist = { url = "https://files.pythonhosted.org/packages/ea/df/9f719dc48f64284be8bd99e2e0bb0dd6e9f8e2c2c3c7bf7a685bc5adf2c7/setuptools-77.0.1.tar.gz", hash = "sha256:a1246a1b4178c66d7cf50c9fc6d530fac3f89bc284cf803c7fa878c41b1a03b2", size = 1366225 }
++sdist = { url = "https://files.pythonhosted.org/packages/81/ed/7101d53811fd359333583330ff976e5177c5e871ca8b909d1d6c30553aa3/setuptools-77.0.3.tar.gz", hash = "sha256:583b361c8da8de57403743e756609670de6fb2345920e36dc5c2d914c319c945", size = 1367236 }
+ wheels = [
+-    { url = "https://files.pythonhosted.org/packages/40/50/bc3d02829a3babd70b7f1414c93cf6acd198976f0469a07d0e7b813c5002/setuptools-77.0.1-py3-none-any.whl", hash = "sha256:81a234dff81a82bb52e522c8aef145d0dd4de1fd6de4d3b196d0f77dc2fded26", size = 1254282 },
++    { url = "https://files.pythonhosted.org/packages/a9/07/99f2cefae815c66eb23148f15d79ec055429c38fa8986edcc712ab5f3223/setuptools-77.0.3-py3-none-any.whl", hash = "sha256:67122e78221da5cf550ddd04cf8742c8fe12094483749a792d56cd669d6cf58c", size = 1255678 },
+ ]
+ 
+ [[package]]

@@ -3,27 +3,35 @@ from decord import VideoReader, cpu
 
 from owa.env.gst.mkv_reader import GstMKVReader, PyAVMKVReader
 
+VIDEO_PATH = "../../tmp/output.mkv"
+
 
 @line_profiler.profile
 def test_gst():
-    with GstMKVReader("output.mkv") as reader:
-        for frame in reader.iter_frames():
+    with GstMKVReader(VIDEO_PATH) as reader:
+        for idx, frame in enumerate(reader.iter_frames()):
+            if idx == 120:
+                break
             print(frame["pts"], frame["data"].shape)
 
 
 @line_profiler.profile
 def test_av():
-    with PyAVMKVReader("output.mkv") as reader:
-        for frame in reader.iter_frames():
+    with PyAVMKVReader(VIDEO_PATH) as reader:
+        for idx, frame in enumerate(reader.iter_frames()):
+            if idx == 120:
+                break
             print(frame["pts"], frame["data"].shape)
 
 
 @line_profiler.profile
 def test_decord():
-    vr = VideoReader("output.mkv", ctx=cpu(0))
-    for i in range(len(vr)):
-        frame = vr[i]
-        print(i, frame.shape)
+    vr = VideoReader(VIDEO_PATH, ctx=cpu(0))
+    for idx in range(len(vr)):
+        if idx == 120:
+            break
+        frame = vr[idx]
+        print(idx, frame.shape)
 
 
 """
