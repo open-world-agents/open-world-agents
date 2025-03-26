@@ -108,6 +108,7 @@ class Agent(Runnable):
         self.model = AutoModelForImageTextToText.from_pretrained(
             model_id,
             torch_dtype=torch.bfloat16,
+            _attn_implementation="flash_attention_2",
         ).to("cuda")
         self.sample_manager = sample_manager
         self.event_manager = event_manager

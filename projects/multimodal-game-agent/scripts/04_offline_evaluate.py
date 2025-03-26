@@ -134,7 +134,7 @@ if __name__ == "__main__":
     model = AutoModelForImageTextToText.from_pretrained(
         args.model_id,
         torch_dtype=torch.bfloat16,
-        # _attn_implementation="flash_attention_2",
+        _attn_implementation="flash_attention_2",
     ).to("cuda")
 
     dataset = SmolVLM2Dataset(args.query_path)
