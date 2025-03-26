@@ -28,11 +28,15 @@ RUN useradd -m -u 1000 user
 
 # Install LeRobot
 RUN git clone --depth 1 https://github.com/open-world-agents/open-world-agents /owa
+WORKDIR /owa
+RUN --mount=type=cache,target=/home/user/.cache/uv \
+    vuv install --frozen
+
 WORKDIR /owa/projects/owa-mcap-viewer
 RUN --mount=type=cache,target=/home/user/.cache/uv \
     # --mount=type=bind,source=uv.lock,target=uv.lock \
     # --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    vuv sync --frozen
+    vuv install --frozen
 
 # Prepare example datasets
 RUN --mount=type=cache,target=/home/user/.cache/uv \
