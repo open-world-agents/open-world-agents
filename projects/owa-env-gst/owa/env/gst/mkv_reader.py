@@ -72,7 +72,6 @@ class GstMKVReader(MKVReader):
         frame_arr = sample_to_ndarray(sample)
         data = {"data": frame_arr, "pts": sample.get_buffer().pts}
         self.frame_queue.put(data)  # Add the frame to the queue
-        print("queued", data["pts"])
 
     def iter_frames(self):
         self.runner.start()  # Start the runner

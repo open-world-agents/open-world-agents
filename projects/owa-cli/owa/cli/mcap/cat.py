@@ -6,13 +6,7 @@ import typer
 from typing_extensions import Annotated
 
 from mcap_owa.highlevel import OWAMcapReader
-
-
-class TimeUnits:
-    NSECOND = 1
-    USECOND = 10**3
-    MSECOND = 10**6
-    SECOND = 10**9
+from owa.core.time import TimeUnits
 
 
 def format_timestamp(ns):
