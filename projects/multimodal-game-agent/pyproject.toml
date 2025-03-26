@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "fastapi>=0.115.12",
     "line-profiler>=4.2.0",
     "num2words>=0.5.14",
     "pandas>=2.2.3",
@@ -15,6 +16,7 @@ dependencies = [
     "transformers==4.50.0",
     "trl>=0.16.0",
     "typer>=0.15.2",
+    "uvicorn>=0.34.0",
     "wandb>=0.19.8",
 ]
 
