@@ -11,7 +11,7 @@ dependencies = [
     "torch>=2.6.0",
     "torchvision>=0.21.0",
     "tqdm>=4.67.1",
-    "transformers",
+    "transformers==4.50.0",
     "typer>=0.15.2",
     "wandb>=0.19.8",
 ]
@@ -24,7 +24,6 @@ build-backend = "hatchling.build"
 packages = ["src/owa_game_agent"]
 
 [tool.uv.sources]
-transformers = { git = "https://github.com/huggingface/transformers", rev = "2c2495cc7b0e3e2942a9310f61548f40a2bc8425" }
 torch = [
   { index = "pytorch-cu124", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
