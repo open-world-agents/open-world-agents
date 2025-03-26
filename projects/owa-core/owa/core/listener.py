@@ -73,9 +73,7 @@ class ListenerMixin(RunnableMixin):
             AttributeError: If no callback has been registered.
         """
         if not hasattr(self, "_callback"):
-            raise AttributeError(
-                "Callback not set. Please call self.register_callback() to set the callback."
-            )
+            raise AttributeError("Callback not set. Please call self.register_callback() to set the callback.")
         return self._callback
 
     def register_callback(self, callback: Callable) -> Self:
