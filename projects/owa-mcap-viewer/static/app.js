@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const mouseDisplay = document.getElementById('mouse-display');
     const mouseCursor = document.getElementById('mouse-cursor');
     const timeline = document.getElementById('timeline');
+    const repoId = window.APP_CONFIG.repoId;
     
     // State
     let currentFile = null;
@@ -38,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Fetch list of available file pairs
     async function fetchFilePairs() {
         try {
-            const response = await fetch('/api/file_pairs');
+            const response = await fetch(`/api/list_files?repo_id=${repoId}`);
             const data = await response.json();
             
             console.log("Available file pairs:", data);
@@ -94,6 +95,8 @@ document.addEventListener('DOMContentLoaded', () => {
             
             metadata = await metaResponse.json();
             console.log("MCAP metadata loaded:", metadata);
+
+            await updateMcapInfo(pair.mcap_file);
             
             // Initialize with data from the beginning
             await loadDataForTimeRange(metadata.start_time, null);
@@ -136,6 +139,27 @@ document.addEventListener('DOMContentLoaded', () => {
             alert(`Error loading file: ${error.message}`);
         } finally {
             setLoadingState(false);
+        }
+    }
+
+    async function updateMcapInfo(mcapFilename) {
+        try {
+            const response = await fetch(`/api/mcap_info/${mcapFilename}`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const mcapInfo = (await response.json())["info"];
+            
+            // Replace literal "\n" with actual newlines and "\t" with actual tabs
+            const formattedInfo = mcapInfo
+                .replace(/\\n/g, '\n')
+                .replace(/\\t/g, '\t');
+            
+            document.getElementById('mcap-info').innerHTML = `<pre>${formattedInfo}</pre>`;
+        } catch (error) {
+            console.error('Error fetching MCAP info:', error);
+            document.getElementById('mcap-info').innerHTML = 
+                `<pre>Error loading MCAP info: ${error.message}</pre>`;
         }
     }
     
@@ -437,6 +461,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const displayWidth = mouseDisplay.clientWidth;
             const displayHeight = mouseDisplay.clientHeight;
+            // TODO: Update these values based on actual screen resolution
             const screenWidth = 1920;
             const screenHeight = 1080;
             
