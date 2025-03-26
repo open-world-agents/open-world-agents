@@ -14,12 +14,22 @@ import line_profiler
 import pandas as pd
 import torch
 import typer
+from typing_extensions import Annotated
 from loguru import logger
 from tqdm import tqdm
-from transformers import AutoModelForImageTextToText, AutoProcessor, GPT2Tokenizer, GPT2TokenizerFast
+from transformers import (
+    AutoModelForImageTextToText,
+    AutoProcessor,
+    GPT2Tokenizer,
+    GPT2TokenizerFast,
+)
 
 from owa_game_agent.data import OWAMcapQuery
-from owa_game_agent.data.datasets.smolvlm2 import SmolVLM2Dataset, collate_fn, sample_to_smolvlm_input
+from owa_game_agent.data.datasets.smolvlm2 import (
+    SmolVLM2Dataset,
+    collate_fn,
+    sample_to_smolvlm_input,
+)
 from owa_game_agent.data.sample_processor import (
     KEYBOARD_EVENT_TOKEN_FORMAT,
     KEYBOARD_STATE_COUNT,
@@ -39,7 +49,7 @@ def load_queries(query_path: Path) -> List[OWAMcapQuery]:
 
 
 @app.command("quickstart")
-def show_by_decompose(query_path: Path):
+def show_by_decompose(query_path: Annotated[Path, typer.Option("--query_path")]):
     """
     example output:
 
@@ -54,7 +64,7 @@ def show_by_decompose(query_path: Path):
     queries = load_queries(query_path)
 
     # Select a sample query for processing (same as original)
-    query_index = len(queries) // 2 + 55
+    query_index = 0
     query = queries[query_index]
 
     # Process the sample
@@ -73,7 +83,7 @@ def show_by_decompose(query_path: Path):
 
 
 @app.command("eda")
-def eda_sample(query_path: Path):
+def eda_sample(query_path: Annotated[Path, typer.Option("--query_path")]):
     # Load all queries from the file
     queries = load_queries(query_path)
 
@@ -82,7 +92,9 @@ def eda_sample(query_path: Path):
     with ProcessPoolExecutor(max_workers=16) as executor:
         futures = [executor.submit(query.to_sample) for query in queries]
 
-        for future in tqdm(as_completed(futures), total=len(futures), desc="Processing queries"):
+        for future in tqdm(
+            as_completed(futures), total=len(futures), desc="Processing queries"
+        ):
             query = future.result()
             samples.append(query)
 
@@ -117,9 +129,13 @@ def eda_sample(query_path: Path):
 
 @app.command("prepare")
 def prepare_model(
-    save_path: Path, model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct", apply_semantic_init: bool = False
+    save_path: Annotated[Path, typer.Option("--save_path")],
+    model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct",
+    apply_semantic_init: bool = False,
 ):
-    model = AutoModelForImageTextToText.from_pretrained(model_id, torch_dtype=torch.bfloat16)
+    model = AutoModelForImageTextToText.from_pretrained(
+        model_id, torch_dtype=torch.bfloat16
+    )
 
     # https://huggingface.co/HuggingFaceTB/SmolVLM2-500M-Video-Instruct/discussions/16
     processor = AutoProcessor.from_pretrained(
@@ -140,13 +156,17 @@ def prepare_model(
     assert processor.do_image_splitting is False  # original: True
     # original: {"longest_edge": 2048}
     processor.image_processor.size = {"longest_edge": 512}
-    assert processor.image_size == processor.image_processor.size == {"longest_edge": 512}
+    assert (
+        processor.image_size == processor.image_processor.size == {"longest_edge": 512}
+    )
     # original: {"longest_edge": 512}
     assert processor.image_processor.max_image_size == {"longest_edge": 512}
 
     before_token_count = len(processor.tokenizer)  # 49280
     print(f"Before token count: {before_token_count}")
-    print(f"Note that processor.tokenizer.vocab_size is {processor.tokenizer.vocab_size}, which seems to be mistake.")
+    print(
+        f"Note that processor.tokenizer.vocab_size is {processor.tokenizer.vocab_size}, which seems to be mistake."
+    )
 
     tokens_to_expand = []
     for i in range(KEYBOARD_VK_COUNT):
@@ -165,7 +185,12 @@ def prepare_model(
     after_token_count = len(processor.tokenizer)  # 49892
     print(f"After token count: {after_token_count}")
 
-    assert after_token_count == before_token_count + KEYBOARD_VK_COUNT * KEYBOARD_STATE_COUNT + TIMESTAMP_TOKEN_COUNT
+    assert (
+        after_token_count
+        == before_token_count
+        + KEYBOARD_VK_COUNT * KEYBOARD_STATE_COUNT
+        + TIMESTAMP_TOKEN_COUNT
+    )
 
     if apply_semantic_init:
         # Apply semantic initialization
@@ -185,18 +210,20 @@ def prepare_model(
                 # Initialize the embeddings for <KEYBOARD_i_j> as (i - 0x41)th alphabet character
                 NEW_TOKEN = KEYBOARD_EVENT_TOKEN_FORMAT.format(i, j)
                 new_token_idx = processor.tokenizer.convert_tokens_to_ids(NEW_TOKEN)
-                source_token_idx = processor.tokenizer.convert_tokens_to_ids(source_char)
+                source_token_idx = processor.tokenizer.convert_tokens_to_ids(
+                    source_char
+                )
                 if new_token_idx == 0 or source_token_idx == 0:
                     logger.warning(
                         f"token: {NEW_TOKEN}, new_token_idx: {new_token_idx}, source_token_idx: {source_token_idx}"
                     )
                     continue
-                model.get_input_embeddings().weight.data[new_token_idx] = model.get_input_embeddings().weight.data[
-                    source_token_idx
-                ]
-                model.get_output_embeddings().weight.data[new_token_idx] = model.get_output_embeddings().weight.data[
-                    source_token_idx
-                ]
+                model.get_input_embeddings().weight.data[
+                    new_token_idx
+                ] = model.get_input_embeddings().weight.data[source_token_idx]
+                model.get_output_embeddings().weight.data[
+                    new_token_idx
+                ] = model.get_output_embeddings().weight.data[source_token_idx]
 
         for i in range(TIMESTAMP_TOKEN_COUNT):
             # Initialize the embeddings for <TIMESTAMP_i> as digit i
@@ -208,12 +235,12 @@ def prepare_model(
                     f"token: {NEW_TOKEN}, new_token_idx: {new_token_idx}, source_token_idx: {source_token_idx}"
                 )
                 continue
-            model.get_input_embeddings().weight.data[new_token_idx] = model.get_input_embeddings().weight.data[
-                source_token_idx
-            ]
-            model.get_output_embeddings().weight.data[new_token_idx] = model.get_output_embeddings().weight.data[
-                source_token_idx
-            ]
+            model.get_input_embeddings().weight.data[
+                new_token_idx
+            ] = model.get_input_embeddings().weight.data[source_token_idx]
+            model.get_output_embeddings().weight.data[
+                new_token_idx
+            ] = model.get_output_embeddings().weight.data[source_token_idx]
 
     model.save_pretrained(save_path)
     processor.save_pretrained(save_path)
@@ -269,19 +296,24 @@ def verify_tokenizer(model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct
 
 @app.command("collator")
 @line_profiler.profile
-def show_dataset_collator(query_path: Path, model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct"):
+def show_dataset_collator(
+    query_path: Annotated[Path, typer.Option("--query_path")],
+    model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct",
+):
     processor = AutoProcessor.from_pretrained(model_id)
 
     assert processor.tokenizer.padding_side == "left"  # original: "right"
     assert processor.do_image_splitting is False  # original: True
     # original: {"longest_edge": 2048}
-    assert processor.image_size == processor.image_processor.size == {"longest_edge": 512}
+    assert (
+        processor.image_size == processor.image_processor.size == {"longest_edge": 512}
+    )
     # original: {"longest_edge": 512}
     assert processor.image_processor.max_image_size == {"longest_edge": 512}
 
     dataset = SmolVLM2Dataset(query_path)
 
-    samples = [dataset[0], dataset[len(dataset) // 2 + 55]]
+    samples = [dataset[0], dataset[-1]]
 
     samples[0]["images"][0].save("example_sample.png")
 
@@ -302,7 +334,13 @@ def show_dataset_collator(query_path: Path, model_id: str = "HuggingFaceTB/SmolV
 
     # torch.Size([2, 65, 3, 512, 512]) torch.Size([2, 65, 512, 512]) torch.Size([2, 4419]) torch.Size([2, 4419]) torch.Size([2, 4419])
     # torch.Size([2, 5, 3, 512, 512]) torch.Size([2, 5, 512, 512]) torch.Size([2, 439]) torch.Size([2, 439]) torch.Size([2, 439])
-    print(pixel_values.shape, pixel_attention_mask.shape, input_ids.shape, attention_mask.shape, labels.shape)
+    print(
+        pixel_values.shape,
+        pixel_attention_mask.shape,
+        input_ids.shape,
+        attention_mask.shape,
+        labels.shape,
+    )
     print(input_ids.tolist(), labels.tolist())
 
     # visualize pixel_values

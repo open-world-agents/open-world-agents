@@ -6,6 +6,8 @@
 
 1. Prepare your data.
     ```sh
+    $ owl mcap record output.mkv --window-name "Super Hexagon"
+    
     # below line is example.
     $ DATA_DIR=/mnt/raid11/datasets/owa/mcaps/super_hexagon
     $ CHECKPOINT_DIR=/mnt/raid11/datasets/owa/
@@ -15,11 +17,11 @@
     ```
 2. Generate `jsonl` file containing query. 
     ```sh
-    python scripts/01_generate_queries.py / super_hexagon.jsonl
+    python scripts/01_generate_queries.py --dataset_path $DATA_DIR --query_path super_hexagon.jsonl
     ```
 3. Check whether generated dataset has no problem. Be aware to maintain proper data distribution, without imbalance.
     ```sh
-    python scripts/02_tokenize_queries.py eda super_hexagon.jsonl
+    python scripts/02_tokenize_queries.py eda --query_path super_hexagon.jsonl
     ```
 4. Prepare token-expanded model.
     ```sh
@@ -27,7 +29,7 @@
     ```
 5. Check your dataset in your eye.
     ```sh
-    python scripts/02_tokenize_queries.py collator super_hexagon.jsonl --model-id $CHECKPOINT_DIR/SmolVLM2-500M-Video-Instruct-expanded
+    python scripts/02_tokenize_queries.py collator --query_path super_hexagon.jsonl --model-id $CHECKPOINT_DIR/SmolVLM2-500M-Video-Instruct-expanded
     ```
 6. Train your model. Make sure & Find the settings when the loss goes below `0.1`.
     1. Using sbatch

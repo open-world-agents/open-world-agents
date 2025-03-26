@@ -1,8 +1,8 @@
 """
 This script's I/O
 
-Input: list[mcap + mkv]
-Output: list[query]
+Input: list[mcap] (dataset_path)
+Output: list[query] (query_path)
 """
 
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -11,6 +11,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import typer
+from typing_extensions import Annotated
 from accelerate.utils import set_seed
 from tqdm import tqdm
 
@@ -54,9 +55,12 @@ def extract_query(mcap_file: Path) -> list[OWAMcapQuery]:
     intervals = np.array(key_events).reshape(-1, 2)
 
     # Filter only intervals longer than 60 seconds (SUPER HEXAGON)
-    intervals = intervals[intervals[:, 1] - intervals[:, 0] > TimeUnits.SECOND * 60]
+    intervals = intervals[intervals[:, 1] - intervals[:, 0] > TimeUnits.SECOND * 1]
 
-    pbar = tqdm(intervals, desc=f"Extracting queries from {mcap_file.name} with {len(intervals)} intervals")
+    pbar = tqdm(
+        intervals,
+        desc=f"Extracting queries from {mcap_file.name} with {len(intervals)} intervals",
+    )
 
     query_list = []
     for start, end in intervals:
@@ -77,7 +81,9 @@ def extract_query(mcap_file: Path) -> list[OWAMcapQuery]:
     # Parallelizing query.to_sample()
     with ProcessPoolExecutor(max_workers=16) as executor:
         futures = {executor.submit(process_query, query): query for query in query_list}
-        for future in tqdm(as_completed(futures), total=len(futures), desc="Processing queries"):
+        for future in tqdm(
+            as_completed(futures), total=len(futures), desc="Processing queries"
+        ):
             result = future.result()
             if result:
                 queries.append(result)
@@ -86,8 +92,11 @@ def extract_query(mcap_file: Path) -> list[OWAMcapQuery]:
 
 
 @app.command()
-def main(dataset_path: Path, query_path: Path):
-    queries: dict[str, list[OWAMcapQuery]] = {}
+def main(
+    dataset_path: Annotated[Path, typer.Option("--dataset_path")],
+    query_path: Annotated[Path, typer.Option("--query_path")],
+):
+    queries: dict[Path, list[OWAMcapQuery]] = {}
     for mcap_file in dataset_path.glob("*.mcap"):
         queries[mcap_file] = extract_query(mcap_file)
 
