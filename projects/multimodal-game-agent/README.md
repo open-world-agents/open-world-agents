@@ -2,7 +2,7 @@
 
 **WARNING**: This `multimodal-game-agent` project is experimental.
 
-**WARNING**: Currently, overall implementation is focused on playing single game: Super Hexagon. Many part of code is hard-coded and has a game-specific implementation in many part. Please me cautious and be aware to modify various part of this code to make your own game agent to be run.
+**WARNING**: Currently, overall implementation is focused on playing single game: Super Hexagon. Many part of code is **hard-coded**(So you must read over whole code once, in now.) and has a game-specific implementation in many part. Please me cautious and be aware to modify various part of this code to make your own game agent to be run.
 
 1. Prepare your data.
     ```sh
