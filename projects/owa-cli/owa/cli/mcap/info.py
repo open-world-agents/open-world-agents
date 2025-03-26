@@ -42,7 +42,7 @@ def detect_system():
 
 def get_conda_bin_dir() -> Path:
     """Return the bin directory of the active conda environment."""
-    conda_prefix = os.environ.get("CONDA_PREFIX")
+    conda_prefix = os.environ.get("CONDA_PREFIX") or os.environ.get("VIRTUAL_ENV")
     if not conda_prefix:
         raise RuntimeError("No active conda environment detected.")
     return Path(conda_prefix) / ("Scripts" if os.name == "nt" else "bin")
