@@ -96,7 +96,6 @@ with tick.session:
 *The desktop environment module provides capabilities for UI interaction and input handling.*
 
 ```python
-import time
 from owa.core.registry import CALLABLES, LISTENERS, activate_module
 from owa.env.desktop.msg import KeyboardEvent
 
@@ -112,18 +111,15 @@ print(f"{CALLABLES['window.get_window_by_title']('open-world-agents')=}")
 mouse_click = CALLABLES["mouse.click"]
 mouse_click("left", 2)
 
+
 # Configuring a keyboard listener
-
-
 def on_keyboard_event(keyboard_event: KeyboardEvent):
     print(f"Keyboard event: {keyboard_event.event_type=}, {keyboard_event.vk=}")
 
 
 keyboard_listener = LISTENERS["keyboard"]().configure(callback=on_keyboard_event)
-keyboard_listener.start()
-
-time.sleep(5)
-keyboard_listener.stop(), keyboard_listener.join()
+with keyboard_listener.session:
+    input("Type enter to exit.\n")
 ```
 *This code demonstrates capturing the screen, retrieving window information, simulating mouse clicks, and listening to keyboard events.*
 
