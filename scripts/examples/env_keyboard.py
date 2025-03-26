@@ -21,4 +21,4 @@ def on_keyboard_event(keyboard_event: KeyboardEvent):
 
 keyboard_listener = LISTENERS["keyboard"]().configure(callback=on_keyboard_event)
 with keyboard_listener.session:
-    input("Type enter to exit")
+    input("Type enter to exit.\n")
