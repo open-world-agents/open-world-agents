@@ -27,7 +27,7 @@ RUN echo "source /opt/venv/bin/activate" >> /root/.bashrc
 RUN useradd -m -u 1000 user
 
 # Install LeRobot
-RUN git clone https://github.com/open-world-agents/open-world-agents /owa
+RUN git clone --depth 1 https://github.com/open-world-agents/open-world-agents /owa
 WORKDIR /owa/projects/owa-mcap-viewer
 RUN --mount=type=cache,target=/home/user/.cache/uv \
     # --mount=type=bind,source=uv.lock,target=uv.lock \
@@ -37,8 +37,8 @@ RUN --mount=type=cache,target=/home/user/.cache/uv \
 # Prepare example datasets
 RUN --mount=type=cache,target=/home/user/.cache/uv \
     vuv pip install huggingface-hub
-RUN huggingface-cli download open-world-agents/example-dataset --repo-type dataset --local-dir /data
-ENV DATA_DIR=/data
+RUN huggingface-cli download open-world-agents/example_dataset --repo-type dataset --local-dir /data
+ENV EXPORT_PATH=/data
 
 COPY --chown=user . /owa/projects/owa-mcap-viewer
 CMD ["uvicorn", "owa_viewer:app", "--host", "0.0.0.0", "--port", "7860"]
