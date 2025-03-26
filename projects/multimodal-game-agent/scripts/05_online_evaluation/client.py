@@ -1,9 +1,10 @@
 """
-Game agent that uses a Vision Language Model to play Super Hexagon.
-Captures screen frames and provides keyboard controls based on model predictions.
+Game agent client that captures screen frames and sends them to a remote model server.
 """
 
 # Standard library imports
+import base64
+import io
 import queue
 import re
 import time
@@ -11,12 +12,12 @@ from contextlib import contextmanager
 from copy import deepcopy
 
 # Third-party imports
-import line_profiler
-import torch
+import numpy as np
+import requests
 import typer
 from loguru import logger
+from PIL import Image
 from tqdm import tqdm
-from transformers import AutoModelForImageTextToText, AutoProcessor
 
 # Local imports
 from owa.core import Runnable
@@ -30,6 +31,7 @@ WINDOW_NAME = "Super Hexagon"
 FPS = 5
 MAX_SCREEN_FRAMES = 5
 MODEL_SAMPLE_DELAY = 0.5  # seconds
+MODEL_SERVER_URL = "http://your-server-ip:8000/api/inference"  # Update with your server address
 
 
 # Setup logger for use with tqdm
@@ -37,6 +39,14 @@ def setup_logger():
     logger.remove()
     logger.add(lambda msg: tqdm.write(msg, end=""), colorize=True)
     logger.disable("owa.env.gst")  # suppress pipeline print
+
+
+def encode_image(image_array: np.ndarray) -> str:
+    """Encode numpy array image to base64 string for API transmission."""
+    img = Image.fromarray(image_array)
+    buffer = io.BytesIO()
+    img.save(buffer, format="PNG")
+    return base64.b64encode(buffer.getvalue()).decode("utf-8")
 
 
 class EventManager:
@@ -63,6 +73,7 @@ class SampleManager(Runnable):
     """Manages collection and processing of input samples."""
 
     def on_configure(self, event_manager):
+        self.event_manager = event_manager
         self.queue = event_manager.msg_queue
         self._sample = OWATrainingSample(
             state_keyboard=[], state_mouse=None, state_screen=[], action_mouse=None, action_keyboard=[]
@@ -91,28 +102,21 @@ class SampleManager(Runnable):
         return deepcopy(self._sample)
 
 
-def logits_processor(input_ids: torch.LongTensor, scores: torch.FloatTensor):
-    """Process logits to adjust model generation behavior."""
-    # Adjust token probabilities as needed
-    # Example (commented out):
-    # scores[:, 49354] *= 0.98  # <KEYBOARD_37_0> (left)
-    # scores[:, 49358] *= 0.98  # <KEYBOARD_39_0> (right)
-    return scores
+class RemoteAgent(Runnable):
+    """Agent that sends samples to a remote model server and executes received actions."""
 
-
-class Agent(Runnable):
-    """AI agent that processes samples and generates actions."""
-
-    def on_configure(self, model_id: str, sample_manager: SampleManager, event_manager: EventManager):
-        self.processor = AutoProcessor.from_pretrained(model_id, padding_side="left")
-        self.model = AutoModelForImageTextToText.from_pretrained(
-            model_id,
-            torch_dtype=torch.bfloat16,
-        ).to("cuda")
+    def on_configure(self, sample_manager: SampleManager, event_manager: EventManager):
         self.sample_manager = sample_manager
         self.event_manager = event_manager
+        self.session = requests.Session()
+        # Test connection to server
+        try:
+            self.session.get(MODEL_SERVER_URL.replace("/api/inference", "/docs"))
+            logger.info(f"Successfully connected to model server at {MODEL_SERVER_URL}")
+        except requests.RequestException as e:
+            logger.error(f"Failed to connect to model server: {e}")
+            logger.warning("The agent will still run, but model inference will fail until server is available")
 
-    @line_profiler.profile
     def loop(self, stop_event):
         while not stop_event.is_set():
             sample = self.sample_manager.grab_sample()
@@ -120,39 +124,36 @@ class Agent(Runnable):
                 continue
 
             now = time.time()
-            generated = self._generate_response(sample)
-            logger.info(f"Generated: {generated}, taken: {time.time() - now:.2f}s")
+            try:
+                generated = self._get_remote_inference(sample)
+                logger.info(f"Generated: {generated}, taken: {time.time() - now:.2f}s")
 
-            if CALLABLES["window.is_active"](WINDOW_NAME):
-                self.execute(generated, anchor_time=now)
+                if CALLABLES["window.is_active"](WINDOW_NAME):
+                    self.execute(generated, anchor_time=now)
+            except Exception as e:
+                logger.error(f"Error in remote inference: {e}")
+                time.sleep(1)  # Avoid rapid retries on failure
 
-    def _generate_response(self, sample):
-        """Process the sample and generate a response using the VLM."""
+    def _get_remote_inference(self, sample):
+        """Send sample to remote model server and get response."""
         sample_processor = SampleProcessor()
         tokenized_sample = sample_processor.tokenize(sample)
         vlm_input = sample_to_smolvlm_input(tokenized_sample)
 
-        example = {"messages": vlm_input.messages, "images": vlm_input.images}
-        examples = [example]
-        texts = []
-        images = []
+        # Encode images for transmission
+        encoded_images = []
+        for _, frame in sample.state_screen:
+            encoded_images.append(encode_image(frame))
 
-        for ex in examples:
-            assistant_prompt = ex["messages"].pop(-1)
-            texts.append(
-                self.processor.apply_chat_template(ex["messages"], tokenize=False, add_generation_prompt=True) + " "
-            )
-            images.append(ex["images"])
+        # Prepare request payload
+        payload = {"messages": vlm_input.messages, "images": encoded_images}
 
-        batch = self.processor(text=texts, images=images, return_tensors="pt", padding=True).to(
-            self.model.device, dtype=self.model.dtype
-        )
+        # Send request to server
+        response = self.session.post(MODEL_SERVER_URL, json=payload)
+        response.raise_for_status()
+        result = response.json()
 
-        outputs = self.model.generate(**batch, logits_processor=[logits_processor], do_sample=False, max_new_tokens=64)
-
-        output = outputs[0]
-        generated = self.processor.decode(output, skip_special_tokens=True)
-        return generated[generated.find("Assistant: ") + len("Assistant: ") :]
+        return result["generated_text"]
 
     def execute(self, generated, anchor_time: float):
         """Execute the generated response as keyboard actions."""
@@ -179,7 +180,7 @@ class Agent(Runnable):
 
 
 @contextmanager
-def setup_resources(model_id: str):
+def setup_resources():
     """Set up and tear down all resources needed for the application."""
     setup_logger()
     activate_module("owa.env.desktop")
@@ -191,7 +192,7 @@ def setup_resources(model_id: str):
     )
     keyboard_listener = LISTENERS["keyboard"]().configure(callback=event_manager.keyboard_callback)
     sample_manager = SampleManager().configure(event_manager=event_manager)
-    agent = Agent().configure(model_id=model_id, sample_manager=sample_manager, event_manager=event_manager)
+    agent = RemoteAgent().configure(sample_manager=sample_manager, event_manager=event_manager)
 
     resources = [
         (recorder, "recorder"),
@@ -218,9 +219,9 @@ def setup_resources(model_id: str):
                 logger.error(f"Error stopping {name}: {e}")
 
 
-def main(model_id: str):
-    """Run the game agent with the specified model."""
-    with setup_resources(model_id):
+def main():
+    """Run the game agent client."""
+    with setup_resources():
         try:
             # Keep main thread alive
             while True:
