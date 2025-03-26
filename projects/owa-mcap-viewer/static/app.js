@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const mouseDisplay = document.getElementById('mouse-display');
     const mouseCursor = document.getElementById('mouse-cursor');
     const timeline = document.getElementById('timeline');
+    const repoId = window.APP_CONFIG.repoId;
     
     // State
     let currentFile = null;
@@ -38,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Fetch list of available file pairs
     async function fetchFilePairs() {
         try {
-            const response = await fetch('/api/file_pairs');
+            const response = await fetch(`/api/list_files?repo_id=${repoId}`);
             const data = await response.json();
             
             console.log("Available file pairs:", data);

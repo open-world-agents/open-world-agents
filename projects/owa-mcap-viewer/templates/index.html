@@ -23,7 +23,7 @@ modifications under MIT License.
     navigateToDataset() {
         const trimmedValue = this.inputValue.trim();
         if (trimmedValue) {
-            window.location.href = `/viewer/${trimmedValue}`;
+            window.location.href = `/viewer?repo_id=${trimmedValue}`;
         }
     }
 }">
@@ -45,7 +45,7 @@ modifications under MIT License.
                 <h3 class="font-semibold mb-2 mt-4">Example Datasets:</h3>
                 <ul class="list-disc list-inside">
                     {% for dataset in featured_datasets %}
-                        <li><a href="/viewer/{{ dataset }}" class="text-blue-300 hover:text-blue-100 hover:underline">{{ dataset }}</a></li>
+                        <li><a href="/viewer?repo_id={{ dataset }}" class="text-blue-300 hover:text-blue-100 hover:underline">{{ dataset }}</a></li>
                     {% endfor %}
                 </ul>
             </div>
@@ -70,7 +70,7 @@ modifications under MIT License.
             <summary>More example datasets</summary>
             <ul class="list-disc list-inside max-h-28 overflow-y-auto break-all">
                 {% for dataset in owa_datasets %}
-                    <li><a href="/viewer/{{ dataset }}" class="text-blue-300 hover:text-blue-100 hover:underline">{{ dataset }}</a></li>
+                    <li><a href="/viewer?repo_id={{ dataset }}" class="text-blue-300 hover:text-blue-100 hover:underline">{{ dataset }}</a></li>
                 {% endfor %}
             </ul>
         </details>

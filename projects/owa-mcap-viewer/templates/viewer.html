@@ -58,6 +58,12 @@
             </div>
         </div>
     </div>
+    <script>
+        // Create a global variable that your external JS can access
+        window.APP_CONFIG = {
+            repoId: "{{ dataset_info.repo_id }}"
+        };
+    </script>
     <script src="/static/app.js"></script>
 </body>
 </html>

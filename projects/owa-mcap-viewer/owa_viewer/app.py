@@ -1,5 +1,4 @@
 import logging
-import os
 import subprocess
 from pathlib import Path
 from typing import List, Optional
@@ -9,13 +8,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel
 
 from mcap_owa.highlevel import OWAMcapReader
+from owa_viewer.routers import export_file
+from owa_viewer.schema import FilePair
+from owa_viewer.services import file_services
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 app = FastAPI()
 
@@ -28,24 +30,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(export_file.router)
+
 # Mount static files (CSS, JS)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Setup Jinja2 templates
 templates = Jinja2Templates(directory="templates")
 
-# Directory containing MCAP and MKV files
-# TODO: support configurable data directory, with huggingface dataset repository
-DATA_DIR = os.environ.get("DATA_DIR", "./data")
+# TODO: support huggingface & local dataset
 
 # Cache for MCAP metadata
 mcap_metadata_cache = {}
 
-
-class FilePair(BaseModel):
-    mcap_file: str
-    mkv_file: str
-    basename: str
+data_cache = {}
 
 
 class McapMetadata:
@@ -62,45 +60,41 @@ async def read_root(request: Request):
     )
 
 
-@app.get("/viewer/{dataset_namespace}/{dataset_name}")
-async def read_viewer(dataset_namespace: str, dataset_name: str, request: Request):
+@app.get("/viewer")
+async def read_viewer(repo_id: str, request: Request):
+    if data_cache.get(repo_id) is None:
+        data_cache[repo_id] = file_services.list_filepair(repo_id)
+    files = data_cache[repo_id]
+
+    # TODO: deprecate list_filepair and use list_file instead and uncomment below lines
+    # size = sum(f.size for f in files)
+    # # convert size to human readable format
+    # size_units = ["iB", "KiB", "MiB", "GiB", "TiB"]
+    # size_unit = min(len(size_units), np.floor(np.log2(size) / 10))
+    # size /= 1024**size_unit
+    # size = f"{size:.2f} {size_units[int(size_unit)]}"
+    size = -1
+
     return templates.TemplateResponse(
         "viewer.html",
         {
             "request": request,
-            "dataset_info": {
-                "repo_id": f"{dataset_namespace}/{dataset_name}",
-            },
+            "dataset_info": {"repo_id": repo_id, "files": len(files), "size": size},
         },
     )
 
 
-@app.get("/api/file_pairs", response_model=List[FilePair])
-async def list_file_pairs():
+@app.get("/api/list_files", response_model=List[FilePair])
+async def list_files(repo_id: str):
     """List all available MCAP+MKV file pairs"""
-    file_pairs = []
-    data_path = Path(DATA_DIR)
 
-    logger.info(f"Scanning directory: {data_path}")
-
-    mcap_files = list(data_path.glob("*.mcap"))
-    logger.info(f"Found {len(mcap_files)} MCAP files")
-
-    for mcap_file in mcap_files:
-        base_name = mcap_file.stem
-        mkv_file = data_path / f"{base_name}.mkv"
-
-        if mkv_file.exists():
-            logger.info(f"Found matching pair: {mcap_file.name} and {mkv_file.name}")
-            file_pairs.append(FilePair(mcap_file=str(mcap_file.name), mkv_file=str(mkv_file.name), basename=base_name))
-
-    return file_pairs
+    return file_services.list_filepair(repo_id)
 
 
 @app.get("/api/mcap_info/{mcap_filename}")
 async def get_mcap_info(mcap_filename: str):
     """Return the `owl mcap info` command output"""
-    mcap_path = Path(DATA_DIR) / mcap_filename
+    mcap_path = Path(file_services.EXPORT_PATH) / mcap_filename
 
     if not mcap_path.exists():
         raise HTTPException(status_code=404, detail="MCAP file not found")
@@ -120,7 +114,7 @@ async def get_mcap_info(mcap_filename: str):
 @app.get("/api/mcap_metadata/{mcap_filename}")
 async def get_mcap_metadata(mcap_filename: str):
     """Get metadata about an MCAP file including time range and topics"""
-    mcap_path = Path(DATA_DIR) / mcap_filename
+    mcap_path = Path(file_services.EXPORT_PATH) / mcap_filename
 
     if not mcap_path.exists():
         raise HTTPException(status_code=404, detail="MCAP file not found")
@@ -145,7 +139,7 @@ async def get_mcap_data(
     window_size: Optional[int] = Query(10_000_000_000),  # Default 10-second window in nanoseconds
 ):
     """Get MCAP data for a specific time range"""
-    mcap_path = Path(DATA_DIR) / mcap_filename
+    mcap_path = Path(file_services.EXPORT_PATH) / mcap_filename
 
     if not mcap_path.exists():
         raise HTTPException(status_code=404, detail="MCAP file not found")
@@ -192,31 +186,9 @@ async def get_mcap_data(
         raise HTTPException(status_code=500, detail=f"Error fetching MCAP data: {str(e)}")
 
 
-@app.get("/video/{video_filename}")
-async def get_video(video_filename: str):
-    """Serve an MKV video file"""
-    video_path = Path(DATA_DIR) / video_filename
-
-    if not video_path.exists():
-        logger.error(f"Video file not found: {video_path}")
-        raise HTTPException(status_code=404, detail="Video file not found")
-
-    logger.info(f"Serving video file: {video_path}")
-
-    # BUG: below line does not support seeking. Use FileResponse instead
-    # # Use StreamingResponse for better seeking support in large video files
-    # def iterfile():
-    #     with open(video_path, "rb") as f:
-    #         yield from f
-
-    # return StreamingResponse(iterfile(), media_type="video/x-matroska", headers={"Accept-Ranges": "bytes"})
-
-    return FileResponse(str(video_path), media_type="video/x-matroska")
-
-
 async def build_mcap_metadata(mcap_filename: str):
     """Build metadata about an MCAP file (time range, topics, etc.)"""
-    mcap_path = Path(DATA_DIR) / mcap_filename
+    mcap_path = Path(file_services.EXPORT_PATH) / mcap_filename
 
     if not mcap_path.exists():
         raise HTTPException(status_code=404, detail="MCAP file not found")
@@ -242,6 +214,29 @@ async def build_mcap_metadata(mcap_filename: str):
     except Exception as e:
         logger.error(f"Error building MCAP metadata: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error building MCAP metadata: {str(e)}")
+
+
+# TODO: erase this and replace to `/files` in export_file.py
+@app.get("/video/{video_filename}")
+async def get_video(video_filename: str):
+    """Serve an MKV video file"""
+    video_path = Path(file_services.EXPORT_PATH) / video_filename
+
+    if not video_path.exists():
+        logger.error(f"Video file not found: {video_path}")
+        raise HTTPException(status_code=404, detail="Video file not found")
+
+    logger.info(f"Serving video file: {video_path}")
+
+    # BUG: below line does not support seeking. Use FileResponse instead
+    # # Use StreamingResponse for better seeking support in large video files
+    # def iterfile():
+    #     with open(video_path, "rb") as f:
+    #         yield from f
+
+    # return StreamingResponse(iterfile(), media_type="video/x-matroska", headers={"Accept-Ranges": "bytes"})
+
+    return FileResponse(str(video_path), media_type="video/x-matroska")
 
 
 if __name__ == "__main__":

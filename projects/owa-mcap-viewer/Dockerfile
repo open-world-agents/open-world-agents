@@ -32,7 +32,7 @@ WORKDIR /owa/projects/owa-mcap-viewer
 RUN --mount=type=cache,target=/home/user/.cache/uv \
     # --mount=type=bind,source=uv.lock,target=uv.lock \
     # --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    vuv sync --frozen --no-install-project
+    vuv sync --frozen
 
 # Prepare example datasets
 RUN --mount=type=cache,target=/home/user/.cache/uv \
@@ -41,4 +41,4 @@ RUN huggingface-cli download open-world-agents/example-dataset --repo-type datas
 ENV DATA_DIR=/data
 
 COPY --chown=user . /owa/projects/owa-mcap-viewer
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "7860"]
+CMD ["uvicorn", "owa_viewer:app", "--host", "0.0.0.0", "--port", "7860"]
