@@ -16,6 +16,7 @@ import threading
 from abc import ABC, abstractmethod
 from enum import Enum, auto
 from typing import List, Dict, Any, Optional
+from typing_extensions import Annotated
 
 import typer
 import requests
@@ -92,7 +93,9 @@ class AgentAPI:
     def start_task(self, task_config: TaskConfig) -> bool:
         """Send a task to the agent"""
         try:
-            response = requests.post(f"{self.base_url}/task/start", json=task_config.model_dump())
+            response = requests.post(
+                f"{self.base_url}/task/start", json=task_config.model_dump()
+            )
             response.raise_for_status()
             return response.status_code == 200
         except requests.exceptions.RequestException as e:
@@ -162,7 +165,10 @@ class GameAgent(ABC):
     def start_task(self, task: TaskConfig, background_tasks: BackgroundTasks):
         """Start a new task"""
         if self.state != AgentState.READY:
-            return {"success": False, "error": f"Agent not ready. Current state: {self.state.name}"}
+            return {
+                "success": False,
+                "error": f"Agent not ready. Current state: {self.state.name}",
+            }
 
         self.current_task = task
         self.state = AgentState.RUNNING
@@ -191,7 +197,9 @@ class GameAgent(ABC):
             print(f"Error in task execution: {e}")
         finally:
             if self.state == AgentState.RUNNING:
-                self.state = AgentState.READY  # Change IDLE to READY to better support multiple evaluations
+                self.state = (
+                    AgentState.READY
+                )  # Change IDLE to READY to better support multiple evaluations
 
     def stop_task(self):
         """Stop the current task"""
@@ -267,7 +275,9 @@ class EvaluatorAPI:
     def register_agent(self, agent_url: str) -> bool:
         """Register an agent with the evaluator"""
         try:
-            response = requests.post(f"{self.evaluator_url}/register_agent", json={"agent_url": agent_url})
+            response = requests.post(
+                f"{self.evaluator_url}/register_agent", json={"agent_url": agent_url}
+            )
             response.raise_for_status()
             return response.status_code == 200
         except requests.exceptions.RequestException as e:
@@ -281,7 +291,8 @@ class EvaluatorAPI:
             self.reset()
 
             response = requests.post(
-                f"{self.evaluator_url}/evaluation/start", json={"tasks": [t.model_dump() for t in tasks]}
+                f"{self.evaluator_url}/evaluation/start",
+                json={"tasks": [t.model_dump() for t in tasks]},
             )
             response.raise_for_status()
             return response.status_code == 200
@@ -346,7 +357,9 @@ class Evaluator(ABC):
         self.state = EvaluatorState.IDLE
         return {"success": True, "message": f"Agent registered: {self.agent_url}"}
 
-    def start_evaluation(self, data: Dict[str, List[Dict[str, Any]]], background_tasks: BackgroundTasks):
+    def start_evaluation(
+        self, data: Dict[str, List[Dict[str, Any]]], background_tasks: BackgroundTasks
+    ):
         """Start an evaluation with a list of tasks"""
         if not self.agent_api:
             return {"success": False, "error": "No agent registered"}
@@ -365,7 +378,10 @@ class Evaluator(ABC):
         # Start evaluation in background
         background_tasks.add_task(self._run_evaluation)
 
-        return {"success": True, "message": f"Starting evaluation with {len(self.tasks)} tasks"}
+        return {
+            "success": True,
+            "message": f"Starting evaluation with {len(self.tasks)} tasks",
+        }
 
     def reset_evaluator(self):
         """Reset the evaluator for a new evaluation run"""
@@ -505,13 +521,15 @@ class Evaluator(ABC):
 
         # Start monitoring thread for timeout
         self.stop_event.clear()
-        self.task_thread = threading.Thread(target=self._monitor_task, args=(self.current_task,))
+        self.task_thread = threading.Thread(
+            target=self._monitor_task, args=(self.current_task,)
+        )
         self.task_thread.start()
 
     def _monitor_task(self, task: TaskConfig):
         """Monitor a running task and handle timeouts"""
         # Wait for the maximum duration plus a buffer
-        timeout = task.max_duration_seconds + 5
+        timeout = task.max_duration_seconds
         start_time = time.time()
 
         while time.time() - start_time < timeout:
@@ -578,10 +596,13 @@ class MyGameAgent(GameAgent):
 
         # Game loop
         start_time = time.time()
-        while not stop_event.is_set() and time.time() - start_time < task.max_duration_seconds:
+        while (
+            not stop_event.is_set()
+            and time.time() - start_time < task.max_duration_seconds
+        ):
             window_active = CALLABLES["window.is_active"](task.window_name)
             if not window_active:
-                print(f"Window {task.window_name} is not active")
+                print(f"Window {task.window_name} is not active", end="\r")
                 time.sleep(0.1)
                 continue
 
@@ -596,17 +617,20 @@ class MyGameAgent(GameAgent):
                 CALLABLES["keyboard.press"](39)  # Right arrow
                 time.sleep(0.05)
                 CALLABLES["keyboard.release"](39)
-                print(f"key {39} pressed")
+                print(f"key {39} pressed", end="\r")
 
             # Check for game-specific success condition
             if self._check_success_condition(task):
                 # Signal that we're done
                 try:
-                    requests.post(f"{self.base_url}/agent/finished")  # TODO: make it internal class function
+                    requests.post(
+                        f"{self.base_url}/agent/finished"
+                    )  # TODO: make it internal class function
                 except requests.exceptions.RequestException as e:
                     print(f"Request exception: {e}")
                 break
 
+        print()
         print("Finished playing game")
 
     def _check_success_condition(self, task: TaskConfig) -> bool:
@@ -677,7 +701,9 @@ def run_agent(model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct"):
     agent.run(host="0.0.0.0", port=8000)
 
 
-def run_agent_background(model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct", port: int = 8000):
+def run_agent_background(
+    model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct", port: int = 8000
+):
     """Run the agent server in a background thread and wait for it to be ready
 
     Args:
@@ -823,7 +849,9 @@ def run_example_evaluation(agent_url: str, evaluator_url: str):
         print()
 
 
-def run_example_nonblocking(model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct"):
+def run_example_nonblocking(
+    model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct",
+):
     """Run an example evaluation without blocking
 
     This function starts both the agent and evaluator servers in background threads,
@@ -853,21 +881,36 @@ def run_example_nonblocking(model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-I
         print("Exiting...")
 
 
+class Mode(Enum):
+    AGENT = "agent"
+    EVALUATOR = "evaluator"
+    EXAMPLE = "example"
+    NONBLOCKING = "nonblocking"
+
+
 def main(
-    mode: str = typer.Option("agent", help="Mode to run: agent, evaluator, example, or nonblocking"),
-    model_id: str = typer.Option("HuggingFaceTB/SmolVLM2-500M-Video-Instruct", help="Model ID to use for the agent"),
+    mode: Annotated[
+        Mode,
+        typer.Option(
+            help="Mode to run: 'agent', 'evaluator', 'example', or 'nonblocking'",
+        ),
+    ] = Mode.NONBLOCKING.value,
+    model_id: Annotated[
+        str,
+        typer.Option(help="Model ID to use for the agent"),
+    ] = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct",
 ):
     """Main entry point"""
-    if mode == "agent":
+    if mode == Mode.AGENT:
         run_agent(model_id)
-    elif mode == "evaluator":
+    elif mode == Mode.EVALUATOR:
         run_evaluator()
-    elif mode == "example":
+    elif mode == Mode.EXAMPLE:
         run_example_evaluation("http://localhost:8000", "http://localhost:8001")
-    elif mode == "nonblocking":
+    elif mode == Mode.NONBLOCKING:
         run_example_nonblocking(model_id)
     else:
-        print(f"Unknown mode: {mode}")
+        raise ValueError(f"Unknown mode: {mode=}")
 
 
 if __name__ == "__main__":

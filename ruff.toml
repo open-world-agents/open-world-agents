@@ -5,6 +5,9 @@ exclude = [
 
 line-length = 119
 
+[lint]
+line-ending = "lf"
+
 [lint.isort]
 known-first-party = [
     "mcap_owa",
