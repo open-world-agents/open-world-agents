@@ -5,7 +5,8 @@ exclude = [
 
 line-length = 119
 
-[lint]
+[format]
+# Use `\n` line endings for all files
 line-ending = "lf"
 
 [lint.isort]
