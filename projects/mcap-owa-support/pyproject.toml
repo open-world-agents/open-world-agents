@@ -10,6 +10,7 @@ dependencies = [
     "orjson>=3.10.15",
     "mcap>=1.2.2",
     "semantic-version>=2.10.0",
+    "requests>=2.32.3",
 ]
 
 [tool.uv.sources]
