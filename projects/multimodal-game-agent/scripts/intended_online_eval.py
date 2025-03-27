@@ -33,7 +33,7 @@ from owa.core.registry import CALLABLES, activate_module
 class AgentState(Enum):
     """States for the Agent state machine"""
 
-    IDLE = auto()
+    INIT = auto()
     READY = auto()
     RUNNING = auto()
     STOPPING = auto()
@@ -43,7 +43,7 @@ class AgentState(Enum):
 class EvaluatorState(Enum):
     """States for the Evaluator state machine"""
 
-    IDLE = auto()
+    INIT = auto()
     WAITING_FOR_AGENT = auto()
     AGENT_READY = auto()
     EVALUATING = auto()
@@ -143,7 +143,7 @@ class Agent(ABC):
         """Initialize the agent with optional model"""
         self.model_id = model_id
         self.app = FastAPI(title="Agent API")
-        self.state = AgentState.IDLE
+        self.state = AgentState.INIT
         self.current_task = None
         self.task_thread = None
         self.stop_event = threading.Event()
@@ -154,7 +154,7 @@ class Agent(ABC):
         self.app.post("/agent/task/stop")(self.stop_task)
         self.app.post("/agent/task/finished")(self.finished_task)
         self.app.post("/agent/kill")(self.kill)
-        self.app.post("/agent/reset")(self.reset)  # Add reset endpoint
+        self.app.post("/agent/reset")(self.reset_agent)  # Add reset endpoint
 
     def get_status(self):
         """Return the current state of the agent"""
@@ -221,19 +221,15 @@ class Agent(ABC):
         threading.Timer(1.0, self.reset_state).start()
         return {"success": True, "message": "Task marked as finished"}
 
-    def reset_state(self):
-        """Reset the agent to READY state for the next task"""
-        self.state = AgentState.READY
-        self.current_task = None
-        self.stop_event.clear()
-
-    def reset(self):
+    def reset_agent(self):
         """Reset the agent state for a new evaluation run"""
         if self.state == AgentState.RUNNING:
             self.stop_event.set()
             time.sleep(0.5)
 
-        self.reset_state()
+        self.state = AgentState.READY
+        self.current_task = None
+        self.stop_event.clear()
         return {"success": True, "message": "Agent reset and ready for new tasks"}
 
     def kill(self):
@@ -278,15 +274,11 @@ class EvaluatorAPIClient:
             print(f"Request exception: {e}")
             return False
 
-    def start_evaluation(self, tasks: List[TaskConfig]) -> bool:
-        """Start an evaluation with a list of tasks"""
+    def start_evaluation(self, task: TaskConfig) -> bool:
+        """Start an evaluation with a task"""
         try:
-            # First reset the evaluator
-            self.reset()
-
             response = requests.post(
-                f"{self.evaluator_url}/evaluator/evaluation/start",
-                json={"tasks": [t.model_dump() for t in tasks]},
+                f"{self.evaluator_url}/evaluator/evaluation/start", json={"task": task.model_dump()}
             )
             response.raise_for_status()
             return response.status_code == 200
@@ -304,15 +296,15 @@ class EvaluatorAPIClient:
             print(f"Request exception: {e}")
             return False
 
-    def get_results(self) -> List[EvaluationResult]:
+    def get_results(self) -> Optional[EvaluationResult]:
         """Get the results of the evaluation"""
         try:
             response = requests.get(f"{self.evaluator_url}/evaluator/evaluation/results")
             response.raise_for_status()
-            return [EvaluationResult(**r) for r in response.json()["results"]]
+            return response.json()
         except requests.exceptions.RequestException as e:
             print(f"Request exception: {e}")
-            return []
+            return None
 
 
 class Evaluator(ABC):
@@ -325,13 +317,11 @@ class Evaluator(ABC):
     def __init__(self):
         """Initialize the evaluator"""
         self.app = FastAPI(title="Evaluator API")
-        self.state = EvaluatorState.IDLE
+        self.state = EvaluatorState.INIT
         self.agent_url = None
         self.agent_api_client = None
-        self.tasks = []
-        self.current_task_index = 0
-        self.current_task = None
-        self.results = []
+        self.task = None
+        self.result = None
         self.task_start_time = None
         self.task_thread = None
         self.stop_event = threading.Event()
@@ -340,104 +330,101 @@ class Evaluator(ABC):
         self.app.post("/evaluator/register_agent")(self.register_agent)
         self.app.post("/evaluator/evaluation/start")(self.start_evaluation)
         self.app.post("/evaluator/agent_finished")(self.agent_finished)
-        self.app.post("/evaluator/reset")(self.reset_evaluator)  # Add reset endpoint
-        self.app.get("/evaluator/status")(self.get_status)  # Add status endpoint
+        self.app.post("/evaluator/reset")(self.reset_evaluator)
+        self.app.get("/evaluator/status")(self.get_status)
         self.app.get("/evaluator/evaluation/results")(self.get_results)
 
     def register_agent(self, data: Dict[str, str]):
         """Register an agent with the evaluator"""
-        self.agent_url = data["agent_url"]
-        self.agent_api_client = AgentAPIClient(agent_url=self.agent_url)
-        self.state = EvaluatorState.IDLE
-        return {"success": True, "message": f"Agent registered: {self.agent_url}"}
+        if self.state != EvaluatorState.INIT:
+            return {
+                "success": False,
+                "error": f"Evaluator not idle. Current state: {self.state.name}",
+            }
 
-    def start_evaluation(self, data: Dict[str, List[Dict[str, Any]]], background_tasks: BackgroundTasks):
-        """Start an evaluation with a list of tasks"""
+        self.agent_url = data.get("agent_url")
+        if not self.agent_url:
+            return {"success": False, "error": "No agent URL provided"}
+
+        self.agent_api_client = AgentAPIClient(self.agent_url)
+        self.state = EvaluatorState.WAITING_FOR_AGENT
+        return {"success": True, "message": f"Registered agent at {self.agent_url}"}
+
+    def start_evaluation(self, data: Dict[str, Any], background_tasks: BackgroundTasks):
+        """Start an evaluation with a task"""
+        if self.state != EvaluatorState.WAITING_FOR_AGENT:
+            return {
+                "success": False,
+                "error": f"Evaluator not waiting for agent. Current state: {self.state.name}",
+            }
+
         if not self.agent_api_client:
             return {"success": False, "error": "No agent registered"}
 
-        # Reset agent before starting a new evaluation
-        try:
-            requests.post(f"{self.agent_url}/agent/reset")
-        except requests.exceptions.RequestException as e:
-            print(f"Warning: Could not reset agent: {e}")
+        # Extract and validate the task
+        task_data = data.get("task")
+        if not task_data:
+            return {"success": False, "error": "No task provided"}
 
-        self.tasks = [TaskConfig(**task) for task in data["tasks"]]
-        self.current_task_index = 0
-        self.results = []
-        self.state = EvaluatorState.IDLE  # Reset state before starting
+        self.task = TaskConfig(**task_data)
 
-        # Start evaluation in background
+        # Start the evaluation in a background thread
         background_tasks.add_task(self._run_evaluation)
-
-        return {
-            "success": True,
-            "message": f"Starting evaluation with {len(self.tasks)} tasks",
-        }
+        return {"success": True, "message": "Started evaluation"}
 
     def reset_evaluator(self):
         """Reset the evaluator for a new evaluation run"""
-        if self.agent_api_client and self.state != EvaluatorState.IDLE:
-            # Try to stop any running tasks
-            self.agent_api_client.stop_task()
-            self.stop_event.set()
+        self.stop_event.set()
+        if self.task_thread and self.task_thread.is_alive():
+            self.task_thread.join(timeout=2)  # Wait for thread to finish
 
-        self.state = EvaluatorState.IDLE
-        self.current_task_index = 0
-        self.current_task = None
-        self.results = []
+        if self.state == EvaluatorState.INIT:
+            raise ValueError("Evaluator is not initiated. Call register_agent first")
+        else:
+            self.state = EvaluatorState.WAITING_FOR_AGENT
+        self.task = None
+        self.result = None
         self.task_start_time = None
+        # reset agent_api_client
+        self.agent_api_client.reset()
         self.stop_event.clear()
-
         return {"success": True, "message": "Evaluator reset"}
 
     def get_status(self):
         """Get the current status of the evaluation"""
-        status = {
+        return {
             "state": self.state.name,
-            "current_task_index": self.current_task_index if self.tasks else None,
-            "total_tasks": len(self.tasks),
             "agent_url": self.agent_url,
+            "current_task": self.task.model_dump() if self.task else None,
         }
-        return status
 
     def get_results(self):
         """Get the results of the evaluation"""
-        return {"results": [r.model_dump() for r in self.results]}
+        if self.result:
+            return self.result.model_dump()
+        return {"message": "No results available"}
 
     def agent_finished(self):
         """Called when the agent finishes a task"""
         if self.state == EvaluatorState.EVALUATING:
             self.state = EvaluatorState.SCORING
-            # Process in background
-            threading.Thread(target=self._process_finished_task).start()
-        return {"success": True}
+            self._process_finished_task()
+            return {"success": True, "message": "Task completion acknowledged"}
+        return {
+            "success": False,
+            "error": f"Unexpected state: {self.state.name}. Expected: EVALUATING",
+        }
 
     def _process_finished_task(self):
         """Process a finished task"""
-        # Score the task
+        if not self.task or not self.task_start_time:
+            self.state = EvaluatorState.WAITING_FOR_AGENT
+            return
+
         duration = time.time() - self.task_start_time
-
-        # Score the task using the abstract method
-        result = self.score_task(self.current_task, duration)
-
-        self.results.append(result)
-
-        # Move to next task or finish
-        self.current_task_index += 1
-        if self.current_task_index < len(self.tasks):
-            # Wait a moment to ensure agent has time to reset
-            time.sleep(1)
-            self._start_next_task()
-        else:
-            # Finalize this evaluation run
-            self.state = EvaluatorState.IDLE
-
-            # Reset agent to ensure it's ready for future evaluations
-            try:
-                requests.post(f"{self.agent_url}/agent/reset")
-            except requests.exceptions.RequestException as e:
-                print(f"Warning: Could not reset agent: {e}")
+        self.result = self.score_task(self.task, duration)
+        print(f"Task completed. Result: {self.result.model_dump()}")
+        self.state = EvaluatorState.WAITING_FOR_AGENT
 
     @abstractmethod
     def score_task(self, task: TaskConfig, duration: float) -> EvaluationResult:
@@ -466,99 +453,71 @@ class Evaluator(ABC):
         pass
 
     def _run_evaluation(self):
-        """Run the entire evaluation process"""
-        if not self.tasks:
-            self.state = EvaluatorState.IDLE
+        """Run the evaluation process"""
+        self.stop_event.clear()
+
+        # Check if agent is ready
+        if not self.agent_api_client.check_ready():
+            print("Agent not ready. Aborting evaluation.")
+            self.state = EvaluatorState.WAITING_FOR_AGENT
             return
 
-        # Wait for agent to be ready
-        self.state = EvaluatorState.WAITING_FOR_AGENT
-        max_retries = 10
-        retries = 0
+        self.state = EvaluatorState.AGENT_READY
 
-        while retries < max_retries:
-            if self.agent_api_client.check_ready():
-                self.state = EvaluatorState.AGENT_READY
-                break
-            retries += 1
-            time.sleep(1)
+        # Start the task
+        self._start_task()
 
-        if self.state != EvaluatorState.AGENT_READY:
-            print("Agent not ready after maximum retries")
-            self.state = EvaluatorState.IDLE
+    def _start_task(self):
+        """Start the task"""
+        if not self.task:
+            print("No task to run.")
+            self.state = EvaluatorState.WAITING_FOR_AGENT
             return
 
-        # Start the first task
-        self._start_next_task()
-
-    def _start_next_task(self):
-        """Start the next task in the queue"""
-        if self.current_task_index >= len(self.tasks):
-            self.state = EvaluatorState.IDLE
+        # Setup environment for the task
+        try:
+            self._setup_environment(self.task)
+        except Exception as e:
+            print(f"Error setting up environment: {e}")
+            self.state = EvaluatorState.WAITING_FOR_AGENT
             return
 
-        self.current_task = self.tasks[self.current_task_index]
-        self.state = EvaluatorState.EVALUATING
-
-        # Configure environment for task
-        self._setup_environment(self.current_task)
-
-        # Start the task on the agent
-        if not self.agent_api_client.start_task(self.current_task):
-            print(f"Failed to start task {self.current_task_index}")
-            self.state = EvaluatorState.IDLE
+        # Start the agent on this task
+        if not self.agent_api_client.start_task(self.task):
+            print(f"Failed to start task on agent: {self.task.env_name}")
+            self.state = EvaluatorState.WAITING_FOR_AGENT
             return
 
         self.task_start_time = time.time()
+        self.state = EvaluatorState.EVALUATING
 
-        # Start monitoring thread for timeout
-        self.stop_event.clear()
-        self.task_thread = threading.Thread(target=self._monitor_task, args=(self.current_task,))
+        # Start monitoring thread
+        self.task_thread = threading.Thread(target=self._monitor_task, args=(self.task,))
+        self.task_thread.daemon = True
         self.task_thread.start()
 
     def _monitor_task(self, task: TaskConfig):
         """Monitor a running task and handle timeouts"""
-        # Wait for the maximum duration plus a buffer
-        timeout = task.max_duration_seconds
         start_time = time.time()
+        max_duration = task.max_duration_seconds
 
-        while time.time() - start_time < timeout:
-            # Check if task was marked as finished
-            if self.state == EvaluatorState.SCORING:
+        while time.time() - start_time < max_duration and not self.stop_event.is_set():
+            # Check if the task has already been marked as finished by the agent
+            if self.state != EvaluatorState.EVALUATING:
                 return
+            time.sleep(1)  # Sleep to avoid busy waiting
 
-            # Check for stop event (externally triggered)
-            if self.stop_event.wait(0.1):
-                return
-
-        # If we get here, we've timed out
-        print(f"Task timed out after {timeout} seconds")
-
-        # Try to stop gracefully
-        if not self.agent_api_client.stop_task():
-            # If stop fails, try to kill
-            self.agent_api_client.kill()
-
-        # Record timeout result
-        result = EvaluationResult(
-            task_id=f"task_{self.current_task_index}",
-            score=0.0,
-            metrics={"timeout": True},
-            duration_seconds=timeout,
-            success=False,
-            notes="Task timed out",
-        )
-
-        self.results.append(result)
-
-        # Move to next task
-        self.current_task_index += 1
-        self.state = EvaluatorState.AGENT_READY
-        self._start_next_task()
+        # If we get here, either the timeout occurred or stop was requested
+        if not self.stop_event.is_set() and self.state == EvaluatorState.EVALUATING:
+            print(f"Task timed out after {max_duration} seconds: {task.env_name}")
+            # Stop the agent task
+            self.agent_api_client.stop_task()
+            # Score the task
+            self.state = EvaluatorState.SCORING
+            self._process_finished_task()
 
     def run(self, host: str = "0.0.0.0", port: int = 8001):
         """Run the evaluator server"""
-        self.state = EvaluatorState.IDLE
         uvicorn.run(self.app, host=host, port=port)
 
 
@@ -631,22 +590,34 @@ class SimpleEvaluator(Evaluator):
 
     def score_task(self, task: TaskConfig, duration: float) -> EvaluationResult:
         """Simple scoring based on task duration and success criteria"""
-        # Very basic scoring logic as an example
+        # In a real implementation, this would be more sophisticated
+        # and would actually verify the agent's success against ground truth
+        # For this example, we use a simple time-based metric
+
+        # Calculate a score: faster is better, up to a maximum of 1.0
+        # Score decreases linearly from 1.0 to 0.1 as time approaches max_duration
+        max_score = 1.0
+        min_score = 0.1
+        max_time = task.max_duration_seconds
+
+        # Faster completion gets higher score
+        score = max(min_score, max_score - (duration / max_time) * (max_score - min_score))
+
+        # Here you would check if the agent actually achieved the success criteria
+        # This could involve checking game state, screenshot analysis, etc.
+        # For this example, we'll just assume success if they finished before timeout
         success = duration < task.max_duration_seconds
-        score = 1.0 if success else duration / task.max_duration_seconds
 
-        print(f"Task: Score = {score:.2f}, Success = {success}")
-
-        # In the real implementation, might want to check env to decide score
+        # In a real evaluator, you might capture screenshots or other artifacts
         # CALLABLES["screen.capture"]()
 
         return EvaluationResult(
-            task_id=f"task_{self.current_task_index}",
+            task_id="task",
             score=score,
             metrics={"time": duration},
             duration_seconds=duration,
             success=success,
-            notes="Task completed successfully" if success else "Task took too long",
+            notes="Example evaluation based on task duration" if success else "Failed to complete task in time",
         )
 
     def _setup_environment(self, task: TaskConfig):  # NOTE: make a separate ENV class?
@@ -771,106 +742,74 @@ def run_evaluator_background(port: int = 8001):
 
 
 def run_evaluation_client(agent_url: str, evaluator_url: str):
-    """Run an example evaluation using client, assumes both agent and evaluator servers are running"""
-    evaluator_api_client = EvaluatorAPIClient(evaluator_url=evaluator_url)
+    """Run an example evaluation"""
+    # Create API clients
+    evaluator_client = EvaluatorAPIClient(evaluator_url)
 
-    # Register the agent
+    # Register agent with evaluator
     print("Registering agent with evaluator...")
-    if not evaluator_api_client.register_agent(agent_url=agent_url):
-        print("Failed to register agent")
+    if not evaluator_client.register_agent(agent_url):
+        print("Failed to register agent. Exiting.")
         return
+
+    # Get example task
+    example_task = get_example_tasks()[0]  # Get first task
 
     # Start evaluation
-    tasks = get_example_tasks()
-    print(f"Starting evaluation with {len(tasks)} tasks...")
-    if not evaluator_api_client.start_evaluation(tasks):
-        print("Failed to start evaluation")
-        return
+    for _ in range(3):
+        evaluator_client.reset()
+        print(f"Starting evaluation with task: {example_task.env_name}...")
+        if not evaluator_client.start_evaluation(example_task):
+            print("Failed to start evaluation. Exiting.")
+            return
 
-    # Wait for completion and get results
-    print("Waiting for evaluation to complete...")
-    max_wait = 300  # 5 minutes
-    start_time = time.time()
-    results = []
-
-    while time.time() - start_time < max_wait:
-        results = evaluator_api_client.get_results()
-        if len(results) == len(tasks):
-            break
-        else:
-            print(f"Waiting for {len(tasks) - len(results)} more tasks to complete... {results=}")
-        time.sleep(5)
-    print(f"{results=}")
-
-    # Print results
-    print("\nEvaluation Results:")
-    for i, result in enumerate(results):
-        print(f"Task {i + 1}: Score = {result.score:.2f}, Success = {result.success}")
-        print(f"  Duration: {result.duration_seconds:.1f} seconds")
-        print(f"  Notes: {result.notes}")
-        print()
-
-    # Run a second evaluation to demonstrate multiple evaluation support
-    print("\nRunning a second evaluation with the same tasks...")
-    if not evaluator_api_client.reset():
-        print("Failed to reset evaluator")
-        return
-    if not evaluator_api_client.start_evaluation(tasks):
-        print("Failed to start second evaluation")
-        return
-
-    # Wait for completion of the second evaluation
-    print("Waiting for second evaluation to complete...")
-    start_time = time.time()
-    results = []
-
-    while time.time() - start_time < max_wait:
-        results = evaluator_api_client.get_results()
-        if len(results) == len(tasks):
-            break
-        else:
-            print(f"Waiting for {len(tasks) - len(results)} more tasks to complete... {results=}")
-        time.sleep(5)
-
-    # Print results of second evaluation
-    print("\nSecond Evaluation Results:")
-    for i, result in enumerate(results):
-        print(f"Task {i + 1}: Score = {result.score:.2f}, Success = {result.success}")
-        print(f"  Duration: {result.duration_seconds:.1f} seconds")
-        print(f"  Notes: {result.notes}")
-        print()
+        # Wait for evaluation to complete
+        print("Waiting for evaluation to complete...")
+        while True:
+            try:
+                # Poll for results
+                results = evaluator_client.get_results()
+                if results and "message" not in results:
+                    print(f"Evaluation completed with results: {results}")
+                    break
+                time.sleep(2)
+            except KeyboardInterrupt:
+                print("Interrupted by user. Exiting.")
+                break
 
 
 def run_evaluation_client_with_server(
     model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct",
 ):
-    """Run an example evaluation without blocking
+    """
+    Run an example evaluation without blocking
 
     This function starts both the agent and evaluator servers in background threads,
     waits for them to be ready, and then runs an example evaluation against them.
     """
-    import time
-
-    # Start the agent and evaluator in background threads and wait for them to be ready
-    print("Starting servers and waiting for them to be ready...")
+    # Start agent server in background
+    print("Starting agent server...")
     agent_url = run_agent_background(model_id)
-    evaluator_url = run_evaluator_background()
-
-    if not agent_url or not evaluator_url:
-        print("Failed to start servers")
+    if not agent_url:
+        print("Failed to start agent server. Exiting.")
         return
 
-    # Run the example evaluation
-    print("Both servers are ready, running example evaluation...")
+    # Start evaluator server in background
+    print("Starting evaluator server...")
+    evaluator_url = run_evaluator_background()
+    if not evaluator_url:
+        print("Failed to start evaluator server. Exiting.")
+        return
+
+    # Short delay to ensure servers are ready
+    time.sleep(1)
+
+    # Run evaluation
+    print("Running evaluation...")
     run_evaluation_client(agent_url, evaluator_url)
 
-    # Keep the main thread running to allow the background servers to continue
-    print("\nServers are running in the background. Press Ctrl+C to exit.")
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        print("Exiting...")
+    # Wait for user input to exit
+    input("Press Enter to exit...")
 
 
 class Mode(Enum):
