@@ -1,6 +1,6 @@
 """
 This script demonstrates the intended usage and interaction between Agent and Evaluator components
-for online evaluation of game agents. Both components run independently and communicate via HTTP,
+for online evaluation of environment(such as games) agents. Both components run independently and communicate via HTTP,
 following a finite state machine design pattern.
 
 Key Features:
@@ -51,9 +51,9 @@ class EvaluatorState(Enum):
 
 
 class TaskConfig(BaseModel):
-    """Configuration for a game task"""
+    """Configuration for a task in an environment"""
 
-    game_name: str
+    env_name: str
     window_name: str
     task_description: str
     max_duration_seconds: int
@@ -93,9 +93,7 @@ class AgentAPI:
     def start_task(self, task_config: TaskConfig) -> bool:
         """Send a task to the agent"""
         try:
-            response = requests.post(
-                f"{self.base_url}/task/start", json=task_config.model_dump()
-            )
+            response = requests.post(f"{self.base_url}/task/start", json=task_config.model_dump())
             response.raise_for_status()
             return response.status_code == 200
         except requests.exceptions.RequestException as e:
@@ -133,18 +131,18 @@ class AgentAPI:
             return False
 
 
-class GameAgent(ABC):
+class Agent(ABC):
     """
-    Abstract base class for implementing a game agent.
+    Abstract base class for implementing a agent.
 
-    Researchers only need to implement the play_game method to create their own agent.
+    Researchers only need to implement the play_env method to create their own agent.
     This provides a simple interface that handles the communication with the evaluator.
     """
 
     def __init__(self, model_id: str = None):
         """Initialize the agent with optional model"""
         self.model_id = model_id
-        self.app = FastAPI(title="Game Agent API")
+        self.app = FastAPI(title="Agent API")
         self.state = AgentState.IDLE
         self.current_task = None
         self.task_thread = None
@@ -177,13 +175,13 @@ class GameAgent(ABC):
         # Start the task in a background thread
         background_tasks.add_task(self._run_task, task)
 
-        return {"success": True, "message": f"Started task for game: {task.game_name}"}
+        return {"success": True, "message": f"Started task for environment: {task.env_name}"}
 
     def _run_task(self, task: TaskConfig):
         """Run the task in a background thread"""
         try:
             # Call the user-implemented method
-            self.play_game(task, self.stop_event)
+            self.play_env(task, self.stop_event)
 
             # If we got here without being stopped, the task is finished
             if not self.stop_event.is_set():
@@ -197,9 +195,7 @@ class GameAgent(ABC):
             print(f"Error in task execution: {e}")
         finally:
             if self.state == AgentState.RUNNING:
-                self.state = (
-                    AgentState.READY
-                )  # Change IDLE to READY to better support multiple evaluations
+                self.state = AgentState.READY  # Change IDLE to READY to better support multiple evaluations
 
     def stop_task(self):
         """Stop the current task"""
@@ -247,7 +243,7 @@ class GameAgent(ABC):
         return {"success": True, "message": "Kill signal received"}
 
     @abstractmethod
-    def play_game(self, task: TaskConfig, stop_event: threading.Event):
+    def play_env(self, task: TaskConfig, stop_event: threading.Event):
         """
         This method must be implemented by subclasses.
 
@@ -275,9 +271,7 @@ class EvaluatorAPI:
     def register_agent(self, agent_url: str) -> bool:
         """Register an agent with the evaluator"""
         try:
-            response = requests.post(
-                f"{self.evaluator_url}/register_agent", json={"agent_url": agent_url}
-            )
+            response = requests.post(f"{self.evaluator_url}/register_agent", json={"agent_url": agent_url})
             response.raise_for_status()
             return response.status_code == 200
         except requests.exceptions.RequestException as e:
@@ -323,14 +317,14 @@ class EvaluatorAPI:
 
 class Evaluator(ABC):
     """
-    Abstract base class for evaluators of game agents.
+    Abstract base class for evaluators of agents.
 
     Handles setting up tasks, monitoring agent behavior, and scoring performance.
     """
 
     def __init__(self):
         """Initialize the evaluator"""
-        self.app = FastAPI(title="Game Evaluator API")
+        self.app = FastAPI(title="Evaluator API")
         self.state = EvaluatorState.IDLE
         self.agent_url = None
         self.agent_api = None
@@ -357,9 +351,7 @@ class Evaluator(ABC):
         self.state = EvaluatorState.IDLE
         return {"success": True, "message": f"Agent registered: {self.agent_url}"}
 
-    def start_evaluation(
-        self, data: Dict[str, List[Dict[str, Any]]], background_tasks: BackgroundTasks
-    ):
+    def start_evaluation(self, data: Dict[str, List[Dict[str, Any]]], background_tasks: BackgroundTasks):
         """Start an evaluation with a list of tasks"""
         if not self.agent_api:
             return {"success": False, "error": "No agent registered"}
@@ -521,9 +513,7 @@ class Evaluator(ABC):
 
         # Start monitoring thread for timeout
         self.stop_event.clear()
-        self.task_thread = threading.Thread(
-            target=self._monitor_task, args=(self.current_task,)
-        )
+        self.task_thread = threading.Thread(target=self._monitor_task, args=(self.current_task,))
         self.task_thread.start()
 
     def _monitor_task(self, task: TaskConfig):
@@ -575,15 +565,15 @@ class Evaluator(ABC):
 # --- Concrete Implementation Examples --- #
 
 
-class MyGameAgent(GameAgent):
-    """Example implementation of a game agent"""
+class MyAgent(Agent):
+    """Example implementation of an agent"""
 
-    def play_game(self, task: TaskConfig, stop_event: threading.Event):
+    def play_env(self, task: TaskConfig, stop_event: threading.Event):
         """
-        Implement the game playing logic here.
+        Implement the environment playing logic here.
         This is what researchers would customize with their models and logic.
         """
-        print(f"Playing game: {task.game_name}")
+        print(f"Playing environment: {task.env_name}")
         print(f"Task description: {task.task_description}")
 
         # Example: Super Hexagon implementation would use screen observations
@@ -594,12 +584,9 @@ class MyGameAgent(GameAgent):
         # Setup screen recorder and other components
         # (Simplified for example)
 
-        # Game loop
+        # Environment loop
         start_time = time.time()
-        while (
-            not stop_event.is_set()
-            and time.time() - start_time < task.max_duration_seconds
-        ):
+        while not stop_event.is_set() and time.time() - start_time < task.max_duration_seconds:
             window_active = CALLABLES["window.is_active"](task.window_name)
             if not window_active:
                 print(f"Window {task.window_name} is not active", end="\r")
@@ -619,23 +606,21 @@ class MyGameAgent(GameAgent):
                 CALLABLES["keyboard.release"](39)
                 print(f"key {39} pressed", end="\r")
 
-            # Check for game-specific success condition
+            # Check for environment-specific success condition
             if self._check_success_condition(task):
                 # Signal that we're done
                 try:
-                    requests.post(
-                        f"{self.base_url}/agent/finished"
-                    )  # TODO: make it internal class function
+                    requests.post(f"{self.base_url}/agent/finished")  # TODO: make it internal class function
                 except requests.exceptions.RequestException as e:
                     print(f"Request exception: {e}")
                 break
 
         print()
-        print("Finished playing game")
+        print("Finished playing environment")
 
     def _check_success_condition(self, task: TaskConfig) -> bool:
         """Check if the success condition for the task has been met"""
-        # This would implement game-specific success detection
+        # This would implement environment-specific success detection
         # For example, detecting a "victory" screen or a specific score
         # task.success_criteria
         return False
@@ -664,7 +649,7 @@ class SimpleEvaluator(Evaluator):
 
     def _setup_environment(self, task: TaskConfig):  # NOTE: make a separate ENV class?
         """Setup the environment for a task"""
-        print(f"Setting up environment for {task.game_name}")
+        print(f"Setting up environment for {task.env_name}")
         # In a real implementation, this would launch games, configure windows, etc.
 
 
@@ -675,14 +660,14 @@ def get_example_tasks() -> List[TaskConfig]:
     """Get a list of example tasks for testing"""
     return [
         TaskConfig(
-            game_name="Super Hexagon",
+            env_name="Super Hexagon",
             window_name="Super Hexagon",
             task_description="Survive for at least 5 seconds in the hardest level",
             max_duration_seconds=5,
             success_criteria={"time_survived": 1},
         ),
         # TaskConfig(
-        #     game_name="ZType",
+        #     env_name="ZType",
         #     window_name="ZType",
         #     task_description="Complete the first level with at least 90% accuracy",
         #     max_duration_seconds=120,
@@ -696,14 +681,12 @@ def get_example_tasks() -> List[TaskConfig]:
 
 def run_agent(model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct"):
     """Run the agent server"""
-    agent = MyGameAgent(model_id=model_id)
+    agent = MyAgent(model_id=model_id)
     print(f"Starting agent server with model: {model_id}")
     agent.run(host="0.0.0.0", port=8000)
 
 
-def run_agent_background(
-    model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct", port: int = 8000
-):
+def run_agent_background(model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct", port: int = 8000):
     """Run the agent server in a background thread and wait for it to be ready
 
     Args:
