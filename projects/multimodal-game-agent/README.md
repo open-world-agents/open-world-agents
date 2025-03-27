@@ -4,6 +4,18 @@
 
 **WARNING**: Currently, overall implementation is focused on playing single game: Super Hexagon. Many part of code is **hard-coded**(So you must read over whole code once, in now.) and has a game-specific implementation in many part. Please me cautious and be aware to modify various part of this code to make your own game agent to be run.
 
+0. Prerequisites  
+    Install dependencies.
+    ```sh
+    cd projects/multimodal-game-agent
+    vuv install
+    ```
+    
+    For flash-attention in windows, you can reference this [wheel](https://github.com/kingbri1/flash-attention/releases).
+    Download and install the appropriate wheel (`flash_attn-2.7.4.post1+cu124torch2.6.0cxx11abiFALSE-cp311-cp311-win_amd64.whl` if you followed our instructions).
+    ```sh
+    pip install flash_attn-2.7.4.post1+cu124torch2.6.0cxx11abiFALSE-cp311-cp311-win_amd64.whl
+    ```
 1. Prepare your data.
     ```sh
     $ owl mcap record output.mkv --window-name "Super Hexagon"
