@@ -322,6 +322,7 @@ class Evaluator(ABC):
         self.agent_api_client = None
         self.task = None
         self.result = None
+        self.result_lock = threading.Lock()  # Lock for self.result
         self.task_start_time = None
         self.task_thread = None
         self.stop_event = threading.Event()
@@ -408,26 +409,42 @@ class Evaluator(ABC):
         """Called when the agent finishes a task"""
         if self.state == EvaluatorState.EVALUATING:
             self.state = EvaluatorState.SCORING
-            self._process_finished_task()
+            self._process_finished_task(note="_agent_finished")
             return {"success": True, "message": "Task completion acknowledged"}
         return {
             "success": False,
             "error": f"Unexpected state: {self.state.name}. Expected: EVALUATING",
         }
 
-    def _process_finished_task(self):
-        """Process a finished task"""
+    def _process_finished_task(self, note: str = ""):
+        """Process a finished task.
+        This function might be called via a call from an agent (`agent_finished()`),
+        or a timeout by the evaluator (`_monitor_task()`).
+        We use double checked locking in self.result for thread safety.
+        If self.result is already set, we do not set it again.
+        """
+        print(f"_process_finished_task: {note}")
         if not self.task or not self.task_start_time:
             self.state = EvaluatorState.WAITING_FOR_AGENT
             return
 
-        duration = time.time() - self.task_start_time
-        self.result = self.score_task(self.task, duration)
-        print(f"Task completed. Result: {self.result.model_dump()}")
+        # First check without lock
+        if self.result is None:
+            # Acquire lock and check again (double-checked locking)
+            with self.result_lock:
+                if self.result is None:
+                    duration = time.time() - self.task_start_time
+                    self.result = self.score_task(self.task, duration, note)
+                    print(f"Task completed. Result: {self.result.model_dump()}")
+                else:
+                    print("Task already completed. Skipping scoring.")
+        else:
+            print("Task already completed. Skipping scoring.")
+
         self.state = EvaluatorState.WAITING_FOR_AGENT
 
     @abstractmethod
-    def score_task(self, task: TaskConfig, duration: float) -> EvaluationResult:
+    def score_task(self, task: TaskConfig, duration: float, note: str = "") -> EvaluationResult:
         """
         Calculate score for a completed task.
         Must be implemented by subclasses.
@@ -505,7 +522,7 @@ class Evaluator(ABC):
             # Check if the task has already been marked as finished by the agent
             if self.state != EvaluatorState.EVALUATING:
                 return
-            time.sleep(1)  # Sleep to avoid busy waiting
+            time.sleep(0.1)  # Sleep to avoid busy waiting
 
         # If we get here, either the timeout occurred or stop was requested
         if not self.stop_event.is_set() and self.state == EvaluatorState.EVALUATING:
@@ -514,7 +531,7 @@ class Evaluator(ABC):
             self.agent_api_client.stop_task()
             # Score the task
             self.state = EvaluatorState.SCORING
-            self._process_finished_task()
+            self._process_finished_task(note=f"_monitor_task: Task timed out after {max_duration} seconds")
 
     def run(self, host: str = "0.0.0.0", port: int = 8001):
         """Run the evaluator server"""
@@ -588,7 +605,7 @@ class MyAgent(Agent):
 class SimpleEvaluator(Evaluator):
     """Concrete implementation of an Evaluator"""
 
-    def score_task(self, task: TaskConfig, duration: float) -> EvaluationResult:
+    def score_task(self, task: TaskConfig, duration: float, note: str = "") -> EvaluationResult:
         """Simple scoring based on task duration and success criteria"""
         # In a real implementation, this would be more sophisticated
         # and would actually verify the agent's success against ground truth
@@ -617,7 +634,7 @@ class SimpleEvaluator(Evaluator):
             metrics={"time": duration},
             duration_seconds=duration,
             success=success,
-            notes="Example evaluation based on task duration" if success else "Failed to complete task in time",
+            notes=note,
         )
 
     def _setup_environment(self, task: TaskConfig):  # NOTE: make a separate ENV class?
