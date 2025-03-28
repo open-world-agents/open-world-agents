@@ -13,9 +13,9 @@ class NETWORK:
     AGENT_PORT = 8000
     EVALUATOR_PORT = 8001
 
-    # URL construction
-    AGENT_URL = f"http://{LOCALHOST}:{AGENT_PORT}"
-    EVALUATOR_URL = f"http://{LOCALHOST}:{EVALUATOR_PORT}"
+    # NOTE: URL constants should not be used directly, rather passed as arguments
+    _AGENT_URL = f"http://{LOCALHOST}:{AGENT_PORT}"
+    _EVALUATOR_URL = f"http://{LOCALHOST}:{EVALUATOR_PORT}"
 
 
 # API Endpoints
@@ -30,6 +30,7 @@ class ENDPOINTS:
     AGENT_TASK_FINISHED = "/agent/task/finished"
     AGENT_KILL = "/agent/kill"
     AGENT_RESET = "/agent/reset"
+    AGENT_REGISTER_EVALUATOR = "/agent/register_evaluator"
 
     # Evaluator endpoints
     EVALUATOR_REGISTER_AGENT = "/evaluator/register_agent"

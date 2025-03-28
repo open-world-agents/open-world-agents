@@ -16,14 +16,14 @@ import threading
 import logging
 from abc import ABC, abstractmethod
 from enum import Enum, auto
-from typing import List, Dict, Any, Optional
+from typing import Any, Optional
 from owa.env.desktop.constants import VK
 from typing_extensions import Annotated
 
 import typer
 import requests
 import uvicorn
-from fastapi import FastAPI, BackgroundTasks
+from fastapi import FastAPI, BackgroundTasks, Response, status
 from pydantic import BaseModel
 from rich.logging import RichHandler
 
@@ -66,7 +66,7 @@ class TaskConfig(BaseModel):
     window_name: str
     task_description: str
     max_duration_seconds: int
-    success_criteria: Dict[str, Any]
+    success_criteria: dict[str, Any]
 
 
 class EvaluationResult(BaseModel):
@@ -74,7 +74,7 @@ class EvaluationResult(BaseModel):
 
     task_id: str
     score: float
-    metrics: Dict[str, Any]
+    metrics: dict[str, Any]
     duration_seconds: float
     success: bool
     notes: Optional[str] = None
@@ -125,6 +125,15 @@ def run_server_background(
         time.sleep(TIMEOUTS.SERVER_STARTUP_RETRY_INTERVAL)
 
 
+def raise_for_status_with_message(response: Response):
+    """Helper function to raise for status with response message"""
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        error_msg = f"HTTP {response.status_code}: {response.text}"
+        raise requests.exceptions.HTTPError(error_msg) from e
+
+
 # --- Agent Components --- #
 
 
@@ -149,7 +158,7 @@ class Agent(ABC):
         self.stop_event = threading.Event()
         self.api_server = None
         self.agent_url = None
-        self.evaluator_url = None  # TODO: initialize evaluator_url
+        self.evaluator_url = None
 
     def _run_task(self, task: TaskConfig):
         """
@@ -184,7 +193,8 @@ class Agent(ABC):
 
         # Notify evaluator that we're done
         try:
-            requests.post(f"{NETWORK.EVALUATOR_URL}{ENDPOINTS.EVALUATOR_AGENT_FINISHED}")
+            response = requests.post(f"{self.evaluator_url}{ENDPOINTS.EVALUATOR_AGENT_FINISHED}")
+            raise_for_status_with_message(response)
         except requests.exceptions.RequestException as e:
             logger.error(f"Request exception when notifying evaluator: {e}")
 
@@ -213,7 +223,6 @@ class Agent(ABC):
             host (str): The host to run the server on.
             port (int): The port to run the server on.
         """
-        self.state = AgentState.READY
         self.api_server = AgentAPIServer(self)
         self.agent_url = f"http://{host}:{port}"
         uvicorn.run(self.api_server.app, host=host, port=port)
@@ -249,14 +258,17 @@ class AgentAPIServer:
         self.app.post(ENDPOINTS.AGENT_TASK_STOP)(self._task_stop)
         self.app.post(ENDPOINTS.AGENT_KILL)(self._kill)
         self.app.post(ENDPOINTS.AGENT_RESET)(self._reset_agent)
+        self.app.post(ENDPOINTS.AGENT_REGISTER_EVALUATOR)(self._register_evaluator)
 
-    def _get_status(self):
+    def _get_status(self, response: Response):
         """Return the current state of the agent"""
+        response.status_code = status.HTTP_200_OK
         return {"state": self.agent.state.name}
 
-    def _task_start(self, task: TaskConfig, background_tasks: BackgroundTasks):
+    def _task_start(self, task: TaskConfig, background_tasks: BackgroundTasks, response: Response):
         """Start a new task"""
         if self.agent.state != AgentState.READY:
+            response.status_code = status.HTTP_400_BAD_REQUEST
             return {
                 "success": False,
                 "error": f"Agent not ready. Current state: {self.agent.state.name}",
@@ -269,11 +281,13 @@ class AgentAPIServer:
         # Start the task in a background thread
         background_tasks.add_task(self.agent._run_task, task)
 
+        response.status_code = status.HTTP_200_OK
         return {"success": True, "message": f"Started task for environment: {task.env_name}"}
 
-    def _task_stop(self):
+    def _task_stop(self, response: Response):
         """Stop the current task"""
         if self.agent.state != AgentState.RUNNING:
+            response.status_code = status.HTTP_400_BAD_REQUEST
             return {"success": False, "error": "No task is currently running"}
 
         self.agent.state = AgentState.STOPPING
@@ -283,15 +297,17 @@ class AgentAPIServer:
         time.sleep(TIMEOUTS.TASK_CLEANUP_DELAY)
         self.agent.state = AgentState.READY
 
+        response.status_code = status.HTTP_200_OK
         return {"success": True, "message": "Task stopped"}
 
-    def _kill(self):
+    def _kill(self, response: Response):
         """Force kill the agent process"""
         self.agent.stop_event.set()
         # TODO : implement kill logic. Kill is intended to be called by the evaluator, when the agent is not responding with _task_stop().
+        response.status_code = status.HTTP_200_OK
         return {"success": True, "message": "Kill signal received"}
 
-    def _reset_agent(self):
+    def _reset_agent(self, response: Response):
         """Reset the agent state for a new evaluation run"""
         if self.agent.state == AgentState.RUNNING:
             self.agent.stop_event.set()
@@ -300,7 +316,28 @@ class AgentAPIServer:
         self.agent.state = AgentState.READY
         self.agent.current_task = None
         self.agent.stop_event.clear()
+        response.status_code = status.HTTP_200_OK
         return {"success": True, "message": "Agent reset and ready for new tasks"}
+
+    def _register_evaluator(self, data: dict[str, str], response: Response):
+        """Register an evaluator with the agent"""
+        if self.agent.state != AgentState.INIT:
+            response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+
+            return {
+                "success": False,
+                "error": f"Agent not in INIT state. Current state: {self.agent.state.name}",
+            }
+
+        evaluator_url = data.get("evaluator_url")
+        if not evaluator_url:
+            response.status_code = status.HTTP_400_BAD_REQUEST
+            return {"success": False, "error": "No evaluator URL provided"}
+
+        self.agent.evaluator_url = evaluator_url
+        self.agent.state = AgentState.READY
+        response.status_code = status.HTTP_200_OK
+        return {"success": True, "message": f"Registered evaluator at {evaluator_url}"}
 
 
 class AgentAPIClient:
@@ -324,7 +361,7 @@ class AgentAPIClient:
         """
         try:
             response = requests.get(f"{self.agent_url}{ENDPOINTS.AGENT_STATUS}")
-            response.raise_for_status()
+            raise_for_status_with_message(response)
             return response.json().get("state") == "READY"
         except requests.exceptions.RequestException as e:
             logger.error(f"Request exception: {e}")
@@ -342,7 +379,7 @@ class AgentAPIClient:
         """
         try:
             response = requests.post(f"{self.agent_url}{ENDPOINTS.AGENT_TASK_START}", json=task_config.model_dump())
-            response.raise_for_status()
+            raise_for_status_with_message(response)
             return response.status_code == 200
         except requests.exceptions.RequestException as e:
             logger.error(f"Request exception: {e}")
@@ -357,7 +394,7 @@ class AgentAPIClient:
         """
         try:
             response = requests.post(f"{self.agent_url}{ENDPOINTS.AGENT_TASK_STOP}")
-            response.raise_for_status()
+            raise_for_status_with_message(response)
             return response.status_code == 200
         except requests.exceptions.RequestException as e:
             logger.error(f"Request exception: {e}")
@@ -372,7 +409,7 @@ class AgentAPIClient:
         """
         try:
             response = requests.post(f"{self.agent_url}{ENDPOINTS.AGENT_RESET}")
-            response.raise_for_status()
+            raise_for_status_with_message(response)
             return response.status_code == 200
         except requests.exceptions.RequestException as e:
             logger.error(f"Request exception: {e}")
@@ -387,7 +424,27 @@ class AgentAPIClient:
         """
         try:
             response = requests.post(f"{self.agent_url}{ENDPOINTS.AGENT_KILL}")
-            response.raise_for_status()
+            raise_for_status_with_message(response)
+            return response.status_code == 200
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Request exception: {e}")
+            return False
+
+    def register_evaluator(self, evaluator_url: str) -> bool:
+        """
+        Register an evaluator with the agent.
+
+        Args:
+            evaluator_url (str): The URL of the evaluator server.
+
+        Returns:
+            bool: True if the evaluator was registered successfully, False otherwise.
+        """
+        try:
+            response = requests.post(
+                f"{self.agent_url}{ENDPOINTS.AGENT_REGISTER_EVALUATOR}", json={"evaluator_url": evaluator_url}
+            )
+            raise_for_status_with_message(response)
             return response.status_code == 200
         except requests.exceptions.RequestException as e:
             logger.error(f"Request exception: {e}")
@@ -595,9 +652,10 @@ class EvaluatorAPIServer:
         self.app.get(ENDPOINTS.EVALUATOR_STATUS)(self._get_status)
         self.app.get(ENDPOINTS.EVALUATOR_EVALUATION_RESULTS)(self._get_results)
 
-    def _register_agent(self, data: Dict[str, str]):
+    def _register_agent(self, data: dict[str, str], response: Response):
         """Register an agent with the evaluator"""
         if self.evaluator.state != EvaluatorState.INIT:
+            response.status_code = status.HTTP_400_BAD_REQUEST
             return {
                 "success": False,
                 "error": f"Evaluator not idle. Current state: {self.evaluator.state.name}",
@@ -605,52 +663,61 @@ class EvaluatorAPIServer:
 
         self.evaluator.agent_url = data.get("agent_url")
         if not self.evaluator.agent_url:
+            response.status_code = status.HTTP_400_BAD_REQUEST
             return {"success": False, "error": "No agent URL provided"}
 
         self.evaluator.agent_api_client = AgentAPIClient(self.evaluator.agent_url)
         self.evaluator.state = EvaluatorState.WAITING_FOR_AGENT
+        response.status_code = status.HTTP_200_OK
         return {"success": True, "message": f"Registered agent at {self.evaluator.agent_url}"}
 
-    def _start_evaluation(self, data: Dict[str, Any], background_tasks: BackgroundTasks):
+    def _start_evaluation(self, data: dict[str, Any], background_tasks: BackgroundTasks, response: Response):
         """Start an evaluation with a task"""
         if self.evaluator.state != EvaluatorState.WAITING_FOR_AGENT:
+            response.status_code = status.HTTP_400_BAD_REQUEST
             return {
                 "success": False,
                 "error": f"Evaluator not waiting for agent. Current state: {self.evaluator.state.name}",
             }
 
         if not self.evaluator.agent_api_client:
+            response.status_code = status.HTTP_400_BAD_REQUEST
             return {"success": False, "error": "No agent registered"}
 
         # Extract and validate the task
         task_data = data.get("task")
         if not task_data:
+            response.status_code = status.HTTP_400_BAD_REQUEST
             return {"success": False, "error": "No task provided"}
 
         self.evaluator.task = TaskConfig(**task_data)
 
         # Start the evaluation in a background thread
         background_tasks.add_task(self.evaluator._run_evaluation)
+        response.status_code = status.HTTP_200_OK
         return {"success": True, "message": "Started evaluation"}
 
-    def _agent_finished(self):
+    def _agent_finished(self, response: Response):
         """Called when the agent finishes a task"""
         if self.evaluator.state == EvaluatorState.EVALUATING:
             self.evaluator.state = EvaluatorState.SCORING
             self.evaluator.process_finished_task(note="`_agent_finished`: Agent reported task completion")
+            response.status_code = status.HTTP_200_OK
             return {"success": True, "message": "Task completion acknowledged"}
+        response.status_code = status.HTTP_400_BAD_REQUEST
         return {
             "success": False,
             "error": f"Unexpected state: {self.evaluator.state.name}. Expected: EVALUATING",
         }
 
-    def _reset_evaluator(self):
+    def _reset_evaluator(self, response: Response):
         """Reset the evaluator for a new evaluation run"""
         self.evaluator.stop_event.set()
         if self.evaluator.task_thread and self.evaluator.task_thread.is_alive():
             self.evaluator.task_thread.join(timeout=TIMEOUTS.THREAD_JOIN_TIMEOUT)  # Wait for thread to finish
 
         if self.evaluator.state == EvaluatorState.INIT:
+            response.status_code = status.HTTP_400_BAD_REQUEST
             raise ValueError("Evaluator is not initiated. Call register_agent first")
         else:
             self.evaluator.state = EvaluatorState.WAITING_FOR_AGENT
@@ -660,20 +727,24 @@ class EvaluatorAPIServer:
         # reset agent_api_client
         self.evaluator.agent_api_client.reset()
         self.evaluator.stop_event.clear()
+        response.status_code = status.HTTP_200_OK
         return {"success": True, "message": "Evaluator reset"}
 
-    def _get_status(self):
+    def _get_status(self, response: Response):
         """Get the current status of the evaluation"""
+        response.status_code = status.HTTP_200_OK
         return {
             "state": self.evaluator.state.name,
             "agent_url": self.evaluator.agent_url,
             "current_task": self.evaluator.task.model_dump() if self.evaluator.task else None,
         }
 
-    def _get_results(self):
+    def _get_results(self, response: Response):
         """Get the results of the evaluation"""
         if self.evaluator.result:
+            response.status_code = status.HTTP_200_OK
             return self.evaluator.result.model_dump()
+        response.status_code = status.HTTP_404_NOT_FOUND
         return {"message": "No results available"}
 
 
@@ -703,7 +774,7 @@ class EvaluatorAPIClient:
             response = requests.post(
                 f"{self.evaluator_url}{ENDPOINTS.EVALUATOR_REGISTER_AGENT}", json={"agent_url": agent_url}
             )
-            response.raise_for_status()
+            raise_for_status_with_message(response)
             return response.status_code == 200
         except requests.exceptions.RequestException as e:
             logger.error(f"Request exception: {e}")
@@ -723,7 +794,7 @@ class EvaluatorAPIClient:
             response = requests.post(
                 f"{self.evaluator_url}{ENDPOINTS.EVALUATOR_EVALUATION_START}", json={"task": task.model_dump()}
             )
-            response.raise_for_status()
+            raise_for_status_with_message(response)
             return response.status_code == 200
         except requests.exceptions.RequestException as e:
             logger.error(f"Request exception: {e}")
@@ -738,7 +809,7 @@ class EvaluatorAPIClient:
         """
         try:
             response = requests.post(f"{self.evaluator_url}{ENDPOINTS.EVALUATOR_RESET}")
-            response.raise_for_status()
+            raise_for_status_with_message(response)
             return response.status_code == 200
         except requests.exceptions.RequestException as e:
             logger.error(f"Request exception: {e}")
@@ -753,7 +824,7 @@ class EvaluatorAPIClient:
         """
         try:
             response = requests.get(f"{self.evaluator_url}{ENDPOINTS.EVALUATOR_EVALUATION_RESULTS}")
-            response.raise_for_status()
+            raise_for_status_with_message(response)
             return response.json()
         except requests.exceptions.RequestException as e:
             logger.error(f"Request exception: {e}")
@@ -940,11 +1011,18 @@ def run_evaluation_client(agent_url: str, evaluator_url: str):
     """
     # Create API clients
     evaluator_client = EvaluatorAPIClient(evaluator_url)
+    agent_client = AgentAPIClient(agent_url)
+
+    # Register evaluator with agent
+    print("Registering evaluator with agent...")
+    if not agent_client.register_evaluator(evaluator_url):
+        print("Failed to register evaluator with agent. Exiting.")
+        return
 
     # Register agent with evaluator
     print("Registering agent with evaluator...")
     if not evaluator_client.register_agent(agent_url):
-        print("Failed to register agent. Exiting.")
+        print("Failed to register agent with evaluator. Exiting.")
         return
 
     # Get example task
@@ -1042,7 +1120,7 @@ def main(
     elif mode == Mode.EVALUATOR:
         run_evaluator()
     elif mode == Mode.RUN_CLIENT:
-        run_evaluation_client(NETWORK.AGENT_URL, NETWORK.EVALUATOR_URL)
+        run_evaluation_client(NETWORK._AGENT_URL, NETWORK._EVALUATOR_URL)
     elif mode == Mode.RUN_CLIENT_WITH_SERVER:
         run_evaluation_client_with_server(model_id)
     else:
