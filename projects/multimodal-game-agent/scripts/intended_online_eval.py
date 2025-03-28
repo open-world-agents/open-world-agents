@@ -13,6 +13,7 @@ Key Features:
 
 import time
 import threading
+import logging
 from abc import ABC, abstractmethod
 from enum import Enum, auto
 from typing import List, Dict, Any, Optional
@@ -24,10 +25,16 @@ import requests
 import uvicorn
 from fastapi import FastAPI, BackgroundTasks
 from pydantic import BaseModel
+from rich.logging import RichHandler
 
 from owa.core.registry import CALLABLES, activate_module
 from constants import NETWORK, ENDPOINTS, TIMEOUTS, DEFAULTS
 
+# Configure Rich-based logging
+logging.basicConfig(
+    level=logging.DEBUG, format="%(message)s", datefmt="[%X]", handlers=[RichHandler(rich_tracebacks=True)]
+)
+logger = logging.getLogger(__name__)
 
 # --- Common Components --- #
 
@@ -95,7 +102,7 @@ def run_server_background(
         Optional[str]: The URL of the server if it started successfully, None otherwise.
     """
     # Start the server in a background thread
-    print(f"Starting server in background on port {port}...")
+    logger.info(f"Starting server in background on port {port}...")
     server_thread = threading.Thread(target=run_method, args=(host, port, *args), kwargs=kwargs, daemon=True)
     server_thread.start()
 
@@ -106,13 +113,13 @@ def run_server_background(
         try:
             response = requests.get(f"{server_url}{healthcheck_endpoint}")
             if response.status_code == 200:
-                print(f"Server is ready after {i + 1} attempts")
+                logger.debug(f"Server is ready after {i + 1} attempts")
                 return server_url
         except requests.exceptions.RequestException:
             pass
 
         if i == max_retries - 1:
-            print("Failed to connect to server")
+            logger.error("Failed to connect to server")
             return None
 
         time.sleep(TIMEOUTS.SERVER_STARTUP_RETRY_INTERVAL)
@@ -160,9 +167,9 @@ class Agent(ABC):
                 try:
                     requests.post(f"{NETWORK.EVALUATOR_URL}{ENDPOINTS.EVALUATOR_AGENT_FINISHED}")
                 except requests.exceptions.RequestException as e:
-                    print(f"Request exception: {e}")
+                    logger.error(f"Request exception: {e}")
         except Exception as e:
-            print(f"Error in task execution: {e}")
+            logger.error(f"Error in task execution: {e}")
         finally:
             if self.state == AgentState.RUNNING:
                 self.state = AgentState.READY  # Change IDLE to READY to better support multiple evaluations
@@ -316,7 +323,7 @@ class AgentAPIClient:
             response.raise_for_status()
             return response.json().get("state") == "READY"
         except requests.exceptions.RequestException as e:
-            print(f"Request exception: {e}")
+            logger.error(f"Request exception: {e}")
             return False
 
     def start_task(self, task_config: TaskConfig) -> bool:
@@ -334,7 +341,7 @@ class AgentAPIClient:
             response.raise_for_status()
             return response.status_code == 200
         except requests.exceptions.RequestException as e:
-            print(f"Request exception: {e}")
+            logger.error(f"Request exception: {e}")
             return False
 
     def stop_task(self) -> bool:
@@ -349,7 +356,7 @@ class AgentAPIClient:
             response.raise_for_status()
             return response.status_code == 200
         except requests.exceptions.RequestException as e:
-            print(f"Request exception: {e}")
+            logger.error(f"Request exception: {e}")
             return False
 
     def reset(self) -> bool:
@@ -364,7 +371,7 @@ class AgentAPIClient:
             response.raise_for_status()
             return response.status_code == 200
         except requests.exceptions.RequestException as e:
-            print(f"Request exception: {e}")
+            logger.error(f"Request exception: {e}")
             return False
 
     def kill(self) -> bool:
@@ -379,7 +386,7 @@ class AgentAPIClient:
             response.raise_for_status()
             return response.status_code == 200
         except requests.exceptions.RequestException as e:
-            print(f"Request exception: {e}")
+            logger.error(f"Request exception: {e}")
             return False
 
 
@@ -417,7 +424,7 @@ class Evaluator(ABC):
 
         # Check if agent is ready
         if not self.agent_api_client.check_ready():
-            print("Agent not ready. Aborting evaluation.")
+            logger.debug("Agent not ready. Aborting evaluation.")
             self.state = EvaluatorState.WAITING_FOR_AGENT
             return
 
@@ -431,7 +438,7 @@ class Evaluator(ABC):
         Start the task.
         """
         if not self.task:
-            print("No task to run.")
+            logger.debug("No task to run.")
             self.state = EvaluatorState.WAITING_FOR_AGENT
             return
 
@@ -439,13 +446,13 @@ class Evaluator(ABC):
         try:
             self._setup_environment(self.task)
         except Exception as e:
-            print(f"Error setting up environment: {e}")
+            logger.error(f"Error setting up environment: {e}")
             self.state = EvaluatorState.WAITING_FOR_AGENT
             return
 
         # Start the agent on this task
         if not self.agent_api_client.start_task(self.task):
-            print(f"Failed to start task on agent: {self.task.env_name}")
+            logger.error(f"Failed to start task on agent: {self.task.env_name}")
             self.state = EvaluatorState.WAITING_FOR_AGENT
             return
 
@@ -475,7 +482,7 @@ class Evaluator(ABC):
 
         # If we get here, either the timeout occurred or stop was requested
         if not self.stop_event.is_set() and self.state == EvaluatorState.EVALUATING:
-            print(f"Task timed out after {max_duration} seconds: {task.env_name}")
+            logger.debug(f"Task timed out after {max_duration} seconds: {task.env_name}")
             # Stop the agent task
             self.agent_api_client.stop_task()
             # Score the task
@@ -494,7 +501,7 @@ class Evaluator(ABC):
         Args:
             note (str): A note about the task completion.
         """
-        print(f"_process_finished_task: {note=}")
+        logger.debug(f"_process_finished_task: {note=}")
         if not self.task or not self.task_start_time:
             self.state = EvaluatorState.WAITING_FOR_AGENT
             return
@@ -506,11 +513,11 @@ class Evaluator(ABC):
                 if self.result is None:
                     duration = time.time() - self.task_start_time
                     self.result = self._score_task(self.task, duration, note)
-                    print(f"Task completed. Result: {self.result.model_dump()}")
+                    logger.debug(f"Task completed. Result: {self.result.model_dump()}")
                 else:
-                    print("Task already completed. Skipping scoring.")
+                    logger.debug("Task already completed. Skipping scoring.")
         else:
-            print("Task already completed. Skipping scoring.")
+            logger.debug("Task already completed. Skipping scoring.")
 
         self.state = EvaluatorState.WAITING_FOR_AGENT
 
@@ -694,7 +701,7 @@ class EvaluatorAPIClient:
             response.raise_for_status()
             return response.status_code == 200
         except requests.exceptions.RequestException as e:
-            print(f"Request exception: {e}")
+            logger.error(f"Request exception: {e}")
             return False
 
     def start_evaluation(self, task: TaskConfig) -> bool:
@@ -714,7 +721,7 @@ class EvaluatorAPIClient:
             response.raise_for_status()
             return response.status_code == 200
         except requests.exceptions.RequestException as e:
-            print(f"Request exception: {e}")
+            logger.error(f"Request exception: {e}")
             return False
 
     def reset(self) -> bool:
@@ -729,7 +736,7 @@ class EvaluatorAPIClient:
             response.raise_for_status()
             return response.status_code == 200
         except requests.exceptions.RequestException as e:
-            print(f"Request exception: {e}")
+            logger.error(f"Request exception: {e}")
             return False
 
     def get_results(self) -> Optional[EvaluationResult]:
@@ -744,7 +751,7 @@ class EvaluatorAPIClient:
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
-            print(f"Request exception: {e}")
+            logger.error(f"Request exception: {e}")
             return None
 
 
@@ -759,8 +766,8 @@ class MyAgent(Agent):
         Implement the environment playing logic here.
         This is what researchers would customize with their models and logic.
         """
-        print(f"Playing environment: {task.env_name}")
-        print(f"Task description: {task.task_description}")
+        logger.debug(f"Playing environment: {task.env_name}")
+        logger.debug(f"Task description: {task.task_description}")
 
         # Example: Super Hexagon implementation would use screen observations
         # and generate keyboard inputs based on those observations
@@ -775,7 +782,7 @@ class MyAgent(Agent):
         while not stop_event.is_set() and time.time() - start_time < task.max_duration_seconds:
             window_active = CALLABLES["window.is_active"](task.window_name)
             if not window_active:
-                print(f"Window {task.window_name} is not active", end="\r")
+                logger.debug(f"Window {task.window_name} is not active")
                 time.sleep(DEFAULTS.ENV_CHECK_INTERVAL)
                 continue
 
@@ -790,7 +797,7 @@ class MyAgent(Agent):
                 CALLABLES["keyboard.press"](VK.RIGHT)  # Right arrow
                 time.sleep(DEFAULTS.KEYBOARD_PRESS_DELAY)
                 CALLABLES["keyboard.release"](VK.RIGHT)
-                print(f"key {VK.RIGHT} pressed", end="\r")
+                logger.debug(f"key {VK.RIGHT} pressed")
 
             def check_success_condition(self, task: TaskConfig) -> bool:
                 """
@@ -807,11 +814,10 @@ class MyAgent(Agent):
                 try:
                     requests.post(f"{NETWORK.AGENT_URL}{ENDPOINTS.AGENT_TASK_FINISHED}")
                 except requests.exceptions.RequestException as e:
-                    print(f"Request exception: {e}")
+                    logger.error(f"Request exception: {e}")
                 break
 
-        print()
-        print("Finished playing environment")
+        logger.debug("Finished playing environment")
 
 
 class SimpleEvaluator(Evaluator):
@@ -865,7 +871,7 @@ class SimpleEvaluator(Evaluator):
         Args:
             task (TaskConfig): Configuration for the task to setup
         """
-        print(f"Setting up environment for {task.env_name}")
+        logger.debug(f"Setting up environment for {task.env_name}")
         # In a real implementation, this would launch games, configure windows, etc.
 
 
