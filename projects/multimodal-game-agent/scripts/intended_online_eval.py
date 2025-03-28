@@ -71,6 +71,51 @@ class EvaluationResult(BaseModel):
     notes: Optional[str] = None
 
 
+def run_server_background(
+    run_method, 
+    host: str = "0.0.0.0", 
+    port: int = 8000, 
+    healthcheck_endpoint: str = "/status",
+    *args, 
+    **kwargs
+) -> Optional[str]:
+    """
+    Run a server in a background thread and wait for it to be ready.
+
+    Args:
+        run_method: The method to call to run the server.
+        host: The host to run the server on.
+        port: The port to run the server on.
+        healthcheck_endpoint: The healthcheck endpoint to check for readiness.
+        *args, **kwargs: Additional arguments to pass to the run method.
+
+    Returns:
+        Optional[str]: The URL of the server if it started successfully, None otherwise.
+    """
+    # Start the server in a background thread
+    print(f"Starting server in background on port {port}...")
+    server_thread = threading.Thread(target=run_method, args=(host, port, *args), kwargs=kwargs, daemon=True)
+    server_thread.start()
+
+    # Wait for server to be ready
+    server_url = f"http://{host if host != '0.0.0.0' else 'localhost'}:{port}"
+    max_retries = 10
+    for i in range(max_retries):
+        try:
+            response = requests.get(f"{server_url}{healthcheck_endpoint}")
+            if response.status_code == 200:
+                print(f"Server is ready after {i + 1} attempts")
+                return server_url
+        except requests.exceptions.RequestException:
+            pass
+
+        if i == max_retries - 1:
+            print("Failed to connect to server")
+            return None
+
+        time.sleep(1)
+
+
 # --- Agent Components --- #
 
 
@@ -149,6 +194,19 @@ class Agent(ABC):
         self.state = AgentState.READY
         self.api_server = AgentAPIServer(self)
         uvicorn.run(self.api_server.app, host=host, port=port)
+        
+    def run_background(self, host: str = "0.0.0.0", port: int = 8000) -> Optional[str]:
+        """
+        Run the agent server in a background thread and wait for it to be ready.
+
+        Args:
+            host (str): The host to run the server on.
+            port (int): The port to run the server on.
+
+        Returns:
+            Optional[str]: The URL of the agent server if it started successfully, None otherwise.
+        """
+        return run_server_background(self.run, host, port, "/agent/status")
 
 
 # --- API Server Components --- #
@@ -492,6 +550,19 @@ class Evaluator(ABC):
         """
         self.api_server = EvaluatorAPIServer(self)
         uvicorn.run(self.api_server.app, host=host, port=port)
+        
+    def run_background(self, host: str = "0.0.0.0", port: int = 8001) -> Optional[str]:
+        """
+        Run the evaluator server in a background thread and wait for it to be ready.
+
+        Args:
+            host (str): The host to run the server on.
+            port (int): The port to run the server on.
+
+        Returns:
+            Optional[str]: The URL of the evaluator server if it started successfully, None otherwise.
+        """
+        return run_server_background(self.run, host, port, "/evaluator/status")
 
 
 class EvaluatorAPIServer:
@@ -552,7 +623,7 @@ class EvaluatorAPIServer:
         """Called when the agent finishes a task"""
         if self.evaluator.state == EvaluatorState.EVALUATING:
             self.evaluator.state = EvaluatorState.SCORING
-            self.evaluator.process_finished_task(note="Agent reported task completion")
+            self.evaluator.process_finished_task(note="`_agent_finished`: Agent reported task completion")
             return {"success": True, "message": "Task completion acknowledged"}
         return {
             "success": False,
@@ -833,7 +904,7 @@ def get_example_tasks() -> List[TaskConfig]:
 
 def run_agent(model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct"):
     """
-    Run the agent server.
+    Run the agent server. Blocking.
 
     Args:
         model_id (str): The model ID to use for the agent.
@@ -843,95 +914,18 @@ def run_agent(model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct"):
     agent.run(host="0.0.0.0", port=8000)
 
 
-def run_agent_background(model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct", port: int = 8000):
-    """
-    Run the agent server in a background thread and wait for it to be ready
-
-    Args:
-        model_id (str): The model ID to use for the agent
-        port (int): The port to run the agent server on
-
-    Returns:
-        The URL of the agent server if it started successfully, None otherwise
-    """
-    import threading
-    import time
-    import requests
-
-    # Start the agent in a background thread
-    print("Starting agent server in background...")
-    agent_thread = threading.Thread(target=run_agent, args=(model_id,), daemon=True)
-    agent_thread.start()
-
-    # Wait for agent server to be ready
-    agent_url = f"http://localhost:{port}"
-    max_retries = 10
-    for i in range(max_retries):
-        try:
-            response = requests.get(f"{agent_url}/agent/status")
-            if response.status_code == 200:
-                print(f"Agent server is ready after {i + 1} attempts")
-                return agent_url
-        except requests.exceptions.RequestException:
-            pass
-
-        if i == max_retries - 1:
-            print("Failed to connect to agent server")
-            return None
-
-        time.sleep(1)
-
-
 def run_evaluator():
     """
-    Run the evaluator server.
+    Run the evaluator server. Blocking.
     """
     evaluator = SimpleEvaluator()
     print("Starting evaluator server")
     evaluator.run(host="0.0.0.0", port=8001)
 
 
-def run_evaluator_background(port: int = 8001):
-    """
-    Run the evaluator server in a background thread and wait for it to be ready
-
-    Args:
-        port (int): The port to run the evaluator server on
-
-    Returns:
-        The URL of the evaluator server if it started successfully, None otherwise
-    """
-    import threading
-    import time
-    import requests
-
-    # Start the evaluator in a background thread
-    print("Starting evaluator server in background...")
-    evaluator_thread = threading.Thread(target=run_evaluator, daemon=True)
-    evaluator_thread.start()
-
-    # Wait for evaluator server to be ready
-    evaluator_url = f"http://localhost:{port}"
-    max_retries = 10
-    for i in range(max_retries):
-        try:
-            response = requests.get(f"{evaluator_url}/evaluator/status")
-            if response.status_code == 200:
-                print(f"Evaluator server is ready after {i + 1} attempts")
-                return evaluator_url
-        except requests.exceptions.RequestException:
-            pass
-
-        if i == max_retries - 1:
-            print("Failed to connect to evaluator server")
-            return None
-
-        time.sleep(1)
-
-
 def run_evaluation_client(agent_url: str, evaluator_url: str):
     """
-    Run an example evaluation.
+    Run an example evaluation. Assumes the agent and evaluator servers are already running.
 
     Args:
         agent_url (str): The URL of the agent server.
@@ -981,16 +975,20 @@ def run_evaluation_client_with_server(
     This function starts both the agent and evaluator servers in background threads,
     waits for them to be ready, and then runs an example evaluation against them.
     """
+    # Create agent and evaluator instances
+    agent = MyAgent(model_id=model_id)
+    evaluator = SimpleEvaluator()
+    
     # Start agent server in background
     print("Starting agent server...")
-    agent_url = run_agent_background(model_id)
+    agent_url = agent.run_background()
     if not agent_url:
         print("Failed to start agent server. Exiting.")
         return
 
     # Start evaluator server in background
     print("Starting evaluator server...")
-    evaluator_url = run_evaluator_background()
+    evaluator_url = evaluator.run_background()
     if not evaluator_url:
         print("Failed to start evaluator server. Exiting.")
         return
