@@ -78,10 +78,21 @@ class AgentAPIClient:
     """API client for interacting with the Agent server"""
 
     def __init__(self, agent_url: str = "http://localhost:8000"):
+        """
+        Initialize the API client with the agent URL.
+
+        Args:
+            agent_url (str): The URL of the agent server.
+        """
         self.agent_url = agent_url
 
     def check_ready(self) -> bool:
-        """Check if the agent is ready to accept tasks"""
+        """
+        Check if the agent is ready to accept tasks.
+
+        Returns:
+            bool: True if the agent is ready, False otherwise.
+        """
         try:
             response = requests.get(f"{self.agent_url}/agent/status")
             response.raise_for_status()
@@ -91,7 +102,15 @@ class AgentAPIClient:
             return False
 
     def start_task(self, task_config: TaskConfig) -> bool:
-        """Send a task to the agent"""
+        """
+        Send a task to the agent.
+
+        Args:
+            task_config (TaskConfig): The task configuration.
+
+        Returns:
+            bool: True if the task was started successfully, False otherwise.
+        """
         try:
             response = requests.post(f"{self.agent_url}/agent/task/start", json=task_config.model_dump())
             response.raise_for_status()
@@ -101,7 +120,12 @@ class AgentAPIClient:
             return False
 
     def stop_task(self) -> bool:
-        """Request the agent to stop the current task"""
+        """
+        Request the agent to stop the current task.
+
+        Returns:
+            bool: True if the task was stopped successfully, False otherwise.
+        """
         try:
             response = requests.post(f"{self.agent_url}/agent/task/stop")
             response.raise_for_status()
@@ -111,7 +135,12 @@ class AgentAPIClient:
             return False
 
     def reset(self) -> bool:
-        """Reset the agent state"""
+        """
+        Reset the agent state.
+
+        Returns:
+            bool: True if the agent was reset successfully, False otherwise.
+        """
         try:
             response = requests.post(f"{self.agent_url}/agent/reset")
             response.raise_for_status()
@@ -121,7 +150,12 @@ class AgentAPIClient:
             return False
 
     def kill(self) -> bool:
-        """Force kill the agent process"""
+        """
+        Force kill the agent process.
+
+        Returns:
+            bool: True if the agent was killed successfully, False otherwise.
+        """
         try:
             response = requests.post(f"{self.agent_url}/agent/kill")
             response.raise_for_status()
@@ -135,53 +169,34 @@ class Agent(ABC):
     """
     Abstract base class for implementing a agent.
 
-    Researchers only need to implement the play_env method to create their own agent.
+    Researchers only need to implement the _play_env method to create their own agent.
     This provides a simple interface that handles the communication with the evaluator.
     """
 
     def __init__(self, model_id: str = None):
-        """Initialize the agent with optional model"""
+        """
+        Initialize the agent with optional model.
+
+        Args:
+            model_id (str): The model ID.
+        """
         self.model_id = model_id
-        self.app = FastAPI(title="Agent API")
         self.state = AgentState.INIT
         self.current_task = None
         self.task_thread = None
         self.stop_event = threading.Event()
-
-        # Register API endpoints
-        self.app.get("/agent/status")(self.get_status)
-        self.app.post("/agent/task/start")(self.start_task)
-        self.app.post("/agent/task/stop")(self.stop_task)
-        self.app.post("/agent/task/finished")(self.finished_task)
-        self.app.post("/agent/kill")(self.kill)
-        self.app.post("/agent/reset")(self.reset_agent)  # Add reset endpoint
-
-    def get_status(self):
-        """Return the current state of the agent"""
-        return {"state": self.state.name}
-
-    def start_task(self, task: TaskConfig, background_tasks: BackgroundTasks):
-        """Start a new task"""
-        if self.state != AgentState.READY:
-            return {
-                "success": False,
-                "error": f"Agent not ready. Current state: {self.state.name}",
-            }
-
-        self.current_task = task
-        self.state = AgentState.RUNNING
-        self.stop_event.clear()
-
-        # Start the task in a background thread
-        background_tasks.add_task(self._run_task, task)
-
-        return {"success": True, "message": f"Started task for environment: {task.env_name}"}
+        self.api_server = None
 
     def _run_task(self, task: TaskConfig):
-        """Run the task in a background thread"""
+        """
+        Run the task in a background thread.
+
+        Args:
+            task (TaskConfig): The task configuration.
+        """
         try:
             # Call the user-implemented method
-            self.play_env(task, self.stop_event)
+            self._play_env(task, self.stop_event)
 
             # If we got here without being stopped, the task is finished
             if not self.stop_event.is_set():
@@ -197,62 +212,116 @@ class Agent(ABC):
             if self.state == AgentState.RUNNING:
                 self.state = AgentState.READY  # Change IDLE to READY to better support multiple evaluations
 
-    def stop_task(self):
-        """Stop the current task"""
-        if self.state != AgentState.RUNNING:
-            return {"success": False, "error": "No task is currently running"}
-
-        self.state = AgentState.STOPPING
-        self.stop_event.set()
-
-        # Wait for a bit to allow for cleanup
-        time.sleep(0.5)
+    def _reset_state(self):
+        """
+        Reset the agent state to READY after a task is finished.
+        """
         self.state = AgentState.READY
-
-        return {"success": True, "message": "Task stopped"}
-
-    def finished_task(self):
-        """Signal that the current task is finished"""
-        if self.state != AgentState.RUNNING:
-            return {"success": False, "error": "No task is currently running"}
-
-        self.state = AgentState.FINISHED
-        # Reset to READY state after a short delay to allow for cleanup
-        threading.Timer(1.0, self.reset_state).start()
-        return {"success": True, "message": "Task marked as finished"}
-
-    def reset_agent(self):
-        """Reset the agent state for a new evaluation run"""
-        if self.state == AgentState.RUNNING:
-            self.stop_event.set()
-            time.sleep(0.5)
-
-        self.state = AgentState.READY
-        self.current_task = None
-        self.stop_event.clear()
-        return {"success": True, "message": "Agent reset and ready for new tasks"}
-
-    def kill(self):
-        """Force kill the agent process"""
-        self.stop_event.set()
-        # In a real implementation, this would shut down the server
-        return {"success": True, "message": "Kill signal received"}
 
     @abstractmethod
-    def play_env(self, task: TaskConfig, stop_event: threading.Event):
+    def _play_env(self, task: TaskConfig, stop_event: threading.Event):
         """
         This method must be implemented by subclasses.
 
         Args:
-            task: Configuration for the task to perform
-            stop_event: Event that will be set when the task should stop
+            task (TaskConfig): Configuration for the task to perform
+            stop_event (threading.Event): Event that will be set when the task should stop
         """
         pass
 
     def run(self, host: str = "0.0.0.0", port: int = 8000):
-        """Run the agent server"""
+        """
+        Run the agent server.
+
+        Args:
+            host (str): The host to run the server on.
+            port (int): The port to run the server on.
+        """
         self.state = AgentState.READY
-        uvicorn.run(self.app, host=host, port=port)
+        self.api_server = AgentAPIServer(self)
+        uvicorn.run(self.api_server.app, host=host, port=port)
+
+
+# --- API Server Components --- #
+
+
+class AgentAPIServer:
+    """API server for the Agent"""
+
+    def __init__(self, agent: Agent):
+        """Initialize the API server with a reference to the agent"""
+        self.agent = agent
+        self.app = FastAPI(title="Agent API")
+
+        # Register API endpoints
+        self.app.get("/agent/status")(self._get_status)
+        self.app.post("/agent/task/start")(self._start_task)
+        self.app.post("/agent/task/stop")(self._stop_task)
+        self.app.post("/agent/task/finished")(self._finished_task)
+        self.app.post("/agent/kill")(self._kill)
+        self.app.post("/agent/reset")(self._reset_agent)
+
+    def _get_status(self):
+        """Return the current state of the agent"""
+        return {"state": self.agent.state.name}
+
+    def _start_task(self, task: TaskConfig, background_tasks: BackgroundTasks):
+        """Start a new task"""
+        if self.agent.state != AgentState.READY:
+            return {
+                "success": False,
+                "error": f"Agent not ready. Current state: {self.agent.state.name}",
+            }
+
+        self.agent.current_task = task
+        self.agent.state = AgentState.RUNNING
+        self.agent.stop_event.clear()
+
+        # Start the task in a background thread
+        background_tasks.add_task(self.agent._run_task, task)
+
+        return {"success": True, "message": f"Started task for environment: {task.env_name}"}
+
+    def _stop_task(self):
+        """Stop the current task"""
+        if self.agent.state != AgentState.RUNNING:
+            return {"success": False, "error": "No task is currently running"}
+
+        self.agent.state = AgentState.STOPPING
+        self.agent.stop_event.set()
+
+        # Wait for a bit to allow for cleanup
+        time.sleep(0.5)
+        self.agent.state = AgentState.READY
+
+        return {"success": True, "message": "Task stopped"}
+
+    def _finished_task(self):
+        """Signal that the current task is finished"""
+        if self.agent.state != AgentState.RUNNING:
+            return {"success": False, "error": "No task is currently running"}
+
+        self.agent.state = AgentState.FINISHED
+        # Reset to READY state after a short delay to allow for cleanup
+        threading.Timer(1.0, self.agent._reset_state).start()
+        return {"success": True, "message": "Task marked as finished"}
+
+    def _reset_agent(self):
+        """Reset the agent state for a new evaluation run"""
+        if self.agent.state == AgentState.RUNNING:
+            self.agent.stop_event.set()
+            time.sleep(0.5)
+
+        self.agent.state = AgentState.READY
+        self.agent.current_task = None
+        self.agent.stop_event.clear()
+        return {"success": True, "message": "Agent reset and ready for new tasks"}
+
+    def _kill(self):
+        """Force kill the agent process"""
+        self.agent.stop_event.set()
+        # In a real implementation, this would shut down the server
+        return {"success": True, "message": "Kill signal received"}
 
 
 # --- Evaluator Components --- #
@@ -262,10 +331,24 @@ class EvaluatorAPIClient:
     """API client for interacting with the Evaluator server"""
 
     def __init__(self, evaluator_url: str = "http://localhost:8001"):
+        """
+        Initialize the API client with the evaluator URL.
+
+        Args:
+            evaluator_url (str): The URL of the evaluator server.
+        """
         self.evaluator_url = evaluator_url
 
     def register_agent(self, agent_url: str) -> bool:
-        """Register an agent with the evaluator"""
+        """
+        Register an agent with the evaluator.
+
+        Args:
+            agent_url (str): The URL of the agent server.
+
+        Returns:
+            bool: True if the agent was registered successfully, False otherwise.
+        """
         try:
             response = requests.post(f"{self.evaluator_url}/evaluator/register_agent", json={"agent_url": agent_url})
             response.raise_for_status()
@@ -275,7 +358,15 @@ class EvaluatorAPIClient:
             return False
 
     def start_evaluation(self, task: TaskConfig) -> bool:
-        """Start an evaluation with a task"""
+        """
+        Start an evaluation with a task.
+
+        Args:
+            task (TaskConfig): The task configuration.
+
+        Returns:
+            bool: True if the evaluation was started successfully, False otherwise.
+        """
         try:
             response = requests.post(
                 f"{self.evaluator_url}/evaluator/evaluation/start", json={"task": task.model_dump()}
@@ -287,7 +378,12 @@ class EvaluatorAPIClient:
             return False
 
     def reset(self) -> bool:
-        """Reset the evaluator"""
+        """
+        Reset the evaluator.
+
+        Returns:
+            bool: True if the evaluator was reset successfully, False otherwise.
+        """
         try:
             response = requests.post(f"{self.evaluator_url}/evaluator/reset")
             response.raise_for_status()
@@ -297,7 +393,12 @@ class EvaluatorAPIClient:
             return False
 
     def get_results(self) -> Optional[EvaluationResult]:
-        """Get the results of the evaluation"""
+        """
+        Get the results of the evaluation.
+
+        Returns:
+            Optional[EvaluationResult]: The evaluation results, or None if not available.
+        """
         try:
             response = requests.get(f"{self.evaluator_url}/evaluator/evaluation/results")
             response.raise_for_status()
@@ -315,8 +416,9 @@ class Evaluator(ABC):
     """
 
     def __init__(self):
-        """Initialize the evaluator"""
-        self.app = FastAPI(title="Evaluator API")
+        """
+        Initialize the evaluator.
+        """
         self.state = EvaluatorState.INIT
         self.agent_url = None
         self.agent_api_client = None
@@ -326,151 +428,12 @@ class Evaluator(ABC):
         self.task_start_time = None
         self.task_thread = None
         self.stop_event = threading.Event()
-
-        # Register API endpoints
-        self.app.post("/evaluator/register_agent")(self.register_agent)
-        self.app.post("/evaluator/evaluation/start")(self.start_evaluation)
-        self.app.post("/evaluator/agent_finished")(self.agent_finished)
-        self.app.post("/evaluator/reset")(self.reset_evaluator)
-        self.app.get("/evaluator/status")(self.get_status)
-        self.app.get("/evaluator/evaluation/results")(self.get_results)
-
-    def register_agent(self, data: Dict[str, str]):
-        """Register an agent with the evaluator"""
-        if self.state != EvaluatorState.INIT:
-            return {
-                "success": False,
-                "error": f"Evaluator not idle. Current state: {self.state.name}",
-            }
-
-        self.agent_url = data.get("agent_url")
-        if not self.agent_url:
-            return {"success": False, "error": "No agent URL provided"}
-
-        self.agent_api_client = AgentAPIClient(self.agent_url)
-        self.state = EvaluatorState.WAITING_FOR_AGENT
-        return {"success": True, "message": f"Registered agent at {self.agent_url}"}
-
-    def start_evaluation(self, data: Dict[str, Any], background_tasks: BackgroundTasks):
-        """Start an evaluation with a task"""
-        if self.state != EvaluatorState.WAITING_FOR_AGENT:
-            return {
-                "success": False,
-                "error": f"Evaluator not waiting for agent. Current state: {self.state.name}",
-            }
-
-        if not self.agent_api_client:
-            return {"success": False, "error": "No agent registered"}
-
-        # Extract and validate the task
-        task_data = data.get("task")
-        if not task_data:
-            return {"success": False, "error": "No task provided"}
-
-        self.task = TaskConfig(**task_data)
-
-        # Start the evaluation in a background thread
-        background_tasks.add_task(self._run_evaluation)
-        return {"success": True, "message": "Started evaluation"}
-
-    def reset_evaluator(self):
-        """Reset the evaluator for a new evaluation run"""
-        self.stop_event.set()
-        if self.task_thread and self.task_thread.is_alive():
-            self.task_thread.join(timeout=2)  # Wait for thread to finish
-
-        if self.state == EvaluatorState.INIT:
-            raise ValueError("Evaluator is not initiated. Call register_agent first")
-        else:
-            self.state = EvaluatorState.WAITING_FOR_AGENT
-        self.task = None
-        self.result = None
-        self.task_start_time = None
-        # reset agent_api_client
-        self.agent_api_client.reset()
-        self.stop_event.clear()
-        return {"success": True, "message": "Evaluator reset"}
-
-    def get_status(self):
-        """Get the current status of the evaluation"""
-        return {
-            "state": self.state.name,
-            "agent_url": self.agent_url,
-            "current_task": self.task.model_dump() if self.task else None,
-        }
-
-    def get_results(self):
-        """Get the results of the evaluation"""
-        if self.result:
-            return self.result.model_dump()
-        return {"message": "No results available"}
-
-    def agent_finished(self):
-        """Called when the agent finishes a task"""
-        if self.state == EvaluatorState.EVALUATING:
-            self.state = EvaluatorState.SCORING
-            self._process_finished_task(note="_agent_finished")
-            return {"success": True, "message": "Task completion acknowledged"}
-        return {
-            "success": False,
-            "error": f"Unexpected state: {self.state.name}. Expected: EVALUATING",
-        }
-
-    def _process_finished_task(self, note: str = ""):
-        """Process a finished task.
-        This function might be called via a call from an agent (`agent_finished()`),
-        or a timeout by the evaluator (`_monitor_task()`).
-        We use double checked locking in self.result for thread safety.
-        If self.result is already set, we do not set it again.
-        """
-        print(f"_process_finished_task: {note}")
-        if not self.task or not self.task_start_time:
-            self.state = EvaluatorState.WAITING_FOR_AGENT
-            return
-
-        # First check without lock
-        if self.result is None:
-            # Acquire lock and check again (double-checked locking)
-            with self.result_lock:
-                if self.result is None:
-                    duration = time.time() - self.task_start_time
-                    self.result = self.score_task(self.task, duration, note)
-                    print(f"Task completed. Result: {self.result.model_dump()}")
-                else:
-                    print("Task already completed. Skipping scoring.")
-        else:
-            print("Task already completed. Skipping scoring.")
-
-        self.state = EvaluatorState.WAITING_FOR_AGENT
-
-    @abstractmethod
-    def score_task(self, task: TaskConfig, duration: float, note: str = "") -> EvaluationResult:
-        """
-        Calculate score for a completed task.
-        Must be implemented by subclasses.
-
-        Args:
-            task: The task configuration that was completed
-            duration: How long the task took to complete
-
-        Returns:
-            EvaluationResult: The scoring results
-        """
-        pass
-
-    @abstractmethod
-    def _setup_environment(self, task: TaskConfig):
-        """
-        Setup the environment for a task.
-        Must be implemented by subclasses.
-
-        Args:
-            task: Configuration for the task to setup
-        """
-        pass
+        self.api_server = None
 
     def _run_evaluation(self):
-        """Run the evaluation process"""
+        """
+        Run the evaluation process.
+        """
         self.stop_event.clear()
 
         # Check if agent is ready
@@ -485,7 +448,9 @@ class Evaluator(ABC):
         self._start_task()
 
     def _start_task(self):
-        """Start the task"""
+        """
+        Start the task.
+        """
         if not self.task:
             print("No task to run.")
             self.state = EvaluatorState.WAITING_FOR_AGENT
@@ -514,7 +479,12 @@ class Evaluator(ABC):
         self.task_thread.start()
 
     def _monitor_task(self, task: TaskConfig):
-        """Monitor a running task and handle timeouts"""
+        """
+        Monitor a running task and handle timeouts.
+
+        Args:
+            task (TaskConfig): The task configuration.
+        """
         start_time = time.time()
         max_duration = task.max_duration_seconds
 
@@ -531,11 +501,176 @@ class Evaluator(ABC):
             self.agent_api_client.stop_task()
             # Score the task
             self.state = EvaluatorState.SCORING
-            self._process_finished_task(note=f"_monitor_task: Task timed out after {max_duration} seconds")
+            self.process_finished_task(note=f"_monitor_task: Task timed out after {max_duration} seconds")
+
+    def process_finished_task(self, note: str = ""):
+        """
+        Process a finished task.
+
+        This function might be called via a call from an agent (`agent_finished()`),
+        or a timeout by the evaluator (`_monitor_task()`).
+        We use double checked locking in self.result for thread safety.
+        If self.result is already set, we do not set it again.
+
+        Args:
+            note (str): A note about the task completion.
+        """
+        print(f"_process_finished_task: {note}")
+        if not self.task or not self.task_start_time:
+            self.state = EvaluatorState.WAITING_FOR_AGENT
+            return
+
+        # First check without lock
+        if self.result is None:
+            # Acquire lock and check again (double-checked locking)
+            with self.result_lock:
+                if self.result is None:
+                    duration = time.time() - self.task_start_time
+                    self.result = self._score_task(self.task, duration, note)
+                    print(f"Task completed. Result: {self.result.model_dump()}")
+                else:
+                    print("Task already completed. Skipping scoring.")
+        else:
+            print("Task already completed. Skipping scoring.")
+
+        self.state = EvaluatorState.WAITING_FOR_AGENT
+
+    @abstractmethod
+    def _score_task(self, task: TaskConfig, duration: float, note: str = "") -> EvaluationResult:
+        """
+        Calculate score for a completed task.
+
+        Must be implemented by subclasses.
+
+        Args:
+            task (TaskConfig): The task configuration that was completed
+            duration (float): How long the task took to complete
+
+        Returns:
+            EvaluationResult: The scoring results
+        """
+        pass
+
+    @abstractmethod
+    def _setup_environment(self, task: TaskConfig):
+        """
+        Setup the environment for a task.
+
+        Must be implemented by subclasses.
+
+        Args:
+            task (TaskConfig): Configuration for the task to setup
+        """
+        pass
 
     def run(self, host: str = "0.0.0.0", port: int = 8001):
-        """Run the evaluator server"""
-        uvicorn.run(self.app, host=host, port=port)
+        """
+        Run the evaluator server.
+
+        Args:
+            host (str): The host to run the server on.
+            port (int): The port to run the server on.
+        """
+        self.api_server = EvaluatorAPIServer(self)
+        uvicorn.run(self.api_server.app, host=host, port=port)
+
+
+class EvaluatorAPIServer:
+    """API server for the Evaluator"""
+
+    def __init__(self, evaluator: Evaluator):
+        """Initialize the API server with a reference to the evaluator"""
+        self.evaluator = evaluator
+        self.app = FastAPI(title="Evaluator API")
+
+        # Register API endpoints
+        self.app.post("/evaluator/register_agent")(self._register_agent)
+        self.app.post("/evaluator/evaluation/start")(self._start_evaluation)
+        self.app.post("/evaluator/agent_finished")(self._agent_finished)
+        self.app.post("/evaluator/reset")(self._reset_evaluator)
+        self.app.get("/evaluator/status")(self._get_status)
+        self.app.get("/evaluator/evaluation/results")(self._get_results)
+
+    def _register_agent(self, data: Dict[str, str]):
+        """Register an agent with the evaluator"""
+        if self.evaluator.state != EvaluatorState.INIT:
+            return {
+                "success": False,
+                "error": f"Evaluator not idle. Current state: {self.evaluator.state.name}",
+            }
+
+        self.evaluator.agent_url = data.get("agent_url")
+        if not self.evaluator.agent_url:
+            return {"success": False, "error": "No agent URL provided"}
+
+        self.evaluator.agent_api_client = AgentAPIClient(self.evaluator.agent_url)
+        self.evaluator.state = EvaluatorState.WAITING_FOR_AGENT
+        return {"success": True, "message": f"Registered agent at {self.evaluator.agent_url}"}
+
+    def _start_evaluation(self, data: Dict[str, Any], background_tasks: BackgroundTasks):
+        """Start an evaluation with a task"""
+        if self.evaluator.state != EvaluatorState.WAITING_FOR_AGENT:
+            return {
+                "success": False,
+                "error": f"Evaluator not waiting for agent. Current state: {self.evaluator.state.name}",
+            }
+
+        if not self.evaluator.agent_api_client:
+            return {"success": False, "error": "No agent registered"}
+
+        # Extract and validate the task
+        task_data = data.get("task")
+        if not task_data:
+            return {"success": False, "error": "No task provided"}
+
+        self.evaluator.task = TaskConfig(**task_data)
+
+        # Start the evaluation in a background thread
+        background_tasks.add_task(self.evaluator._run_evaluation)
+        return {"success": True, "message": "Started evaluation"}
+
+    def _agent_finished(self):
+        """Called when the agent finishes a task"""
+        if self.evaluator.state == EvaluatorState.EVALUATING:
+            self.evaluator.state = EvaluatorState.SCORING
+            self.evaluator.process_finished_task(note="Agent reported task completion")
+            return {"success": True, "message": "Task completion acknowledged"}
+        return {
+            "success": False,
+            "error": f"Unexpected state: {self.evaluator.state.name}. Expected: EVALUATING",
+        }
+
+    def _reset_evaluator(self):
+        """Reset the evaluator for a new evaluation run"""
+        self.evaluator.stop_event.set()
+        if self.evaluator.task_thread and self.evaluator.task_thread.is_alive():
+            self.evaluator.task_thread.join(timeout=2)  # Wait for thread to finish
+
+        if self.evaluator.state == EvaluatorState.INIT:
+            raise ValueError("Evaluator is not initiated. Call register_agent first")
+        else:
+            self.evaluator.state = EvaluatorState.WAITING_FOR_AGENT
+        self.evaluator.task = None
+        self.evaluator.result = None
+        self.evaluator.task_start_time = None
+        # reset agent_api_client
+        self.evaluator.agent_api_client.reset()
+        self.evaluator.stop_event.clear()
+        return {"success": True, "message": "Evaluator reset"}
+
+    def _get_status(self):
+        """Get the current status of the evaluation"""
+        return {
+            "state": self.evaluator.state.name,
+            "agent_url": self.evaluator.agent_url,
+            "current_task": self.evaluator.task.model_dump() if self.evaluator.task else None,
+        }
+
+    def _get_results(self):
+        """Get the results of the evaluation"""
+        if self.evaluator.result:
+            return self.evaluator.result.model_dump()
+        return {"message": "No results available"}
 
 
 # --- Concrete Implementation Examples --- #
@@ -544,7 +679,7 @@ class Evaluator(ABC):
 class MyAgent(Agent):
     """Example implementation of an agent"""
 
-    def play_env(self, task: TaskConfig, stop_event: threading.Event):
+    def _play_env(self, task: TaskConfig, stop_event: threading.Event):
         """
         Implement the environment playing logic here.
         This is what researchers would customize with their models and logic.
@@ -595,7 +730,15 @@ class MyAgent(Agent):
         print("Finished playing environment")
 
     def _check_success_condition(self, task: TaskConfig) -> bool:
-        """Check if the success condition for the task has been met"""
+        """
+        Check if the success condition for the task has been met.
+
+        Args:
+            task (TaskConfig): The task configuration.
+
+        Returns:
+            bool: True if the success condition has been met, False otherwise.
+        """
         # This would implement environment-specific success detection
         # For example, detecting a "victory" screen or a specific score
         # task.success_criteria
@@ -605,8 +748,17 @@ class MyAgent(Agent):
 class SimpleEvaluator(Evaluator):
     """Concrete implementation of an Evaluator"""
 
-    def score_task(self, task: TaskConfig, duration: float, note: str = "") -> EvaluationResult:
-        """Simple scoring based on task duration and success criteria"""
+    def _score_task(self, task: TaskConfig, duration: float, note: str = "") -> EvaluationResult:
+        """
+        Simple scoring based on task duration and success criteria.
+
+        Args:
+            task (TaskConfig): The task configuration that was completed
+            duration (float): How long the task took to complete
+
+        Returns:
+            EvaluationResult: The scoring results
+        """
         # In a real implementation, this would be more sophisticated
         # and would actually verify the agent's success against ground truth
         # For this example, we use a simple time-based metric
@@ -638,7 +790,12 @@ class SimpleEvaluator(Evaluator):
         )
 
     def _setup_environment(self, task: TaskConfig):  # NOTE: make a separate ENV class?
-        """Setup the environment for a task"""
+        """
+        Setup the environment for a task.
+
+        Args:
+            task (TaskConfig): Configuration for the task to setup
+        """
         print(f"Setting up environment for {task.env_name}")
         # In a real implementation, this would launch games, configure windows, etc.
 
@@ -647,7 +804,12 @@ class SimpleEvaluator(Evaluator):
 
 
 def get_example_tasks() -> List[TaskConfig]:
-    """Get a list of example tasks for testing"""
+    """
+    Get a list of example tasks for testing.
+
+    Returns:
+        List[TaskConfig]: A list of example tasks.
+    """
     return [
         TaskConfig(
             env_name="Super Hexagon",
@@ -670,18 +832,24 @@ def get_example_tasks() -> List[TaskConfig]:
 
 
 def run_agent(model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct"):
-    """Run the agent server"""
+    """
+    Run the agent server.
+
+    Args:
+        model_id (str): The model ID to use for the agent.
+    """
     agent = MyAgent(model_id=model_id)
     print(f"Starting agent server with model: {model_id}")
     agent.run(host="0.0.0.0", port=8000)
 
 
 def run_agent_background(model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct", port: int = 8000):
-    """Run the agent server in a background thread and wait for it to be ready
+    """
+    Run the agent server in a background thread and wait for it to be ready
 
     Args:
-        model_id: The model ID to use for the agent
-        port: The port to run the agent server on
+        model_id (str): The model ID to use for the agent
+        port (int): The port to run the agent server on
 
     Returns:
         The URL of the agent server if it started successfully, None otherwise
@@ -715,17 +883,20 @@ def run_agent_background(model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Inst
 
 
 def run_evaluator():
-    """Run the evaluator server"""
+    """
+    Run the evaluator server.
+    """
     evaluator = SimpleEvaluator()
     print("Starting evaluator server")
     evaluator.run(host="0.0.0.0", port=8001)
 
 
 def run_evaluator_background(port: int = 8001):
-    """Run the evaluator server in a background thread and wait for it to be ready
+    """
+    Run the evaluator server in a background thread and wait for it to be ready
 
     Args:
-        port: The port to run the evaluator server on
+        port (int): The port to run the evaluator server on
 
     Returns:
         The URL of the evaluator server if it started successfully, None otherwise
@@ -759,7 +930,13 @@ def run_evaluator_background(port: int = 8001):
 
 
 def run_evaluation_client(agent_url: str, evaluator_url: str):
-    """Run an example evaluation"""
+    """
+    Run an example evaluation.
+
+    Args:
+        agent_url (str): The URL of the agent server.
+        evaluator_url (str): The URL of the evaluator server.
+    """
     # Create API clients
     evaluator_client = EvaluatorAPIClient(evaluator_url)
 
@@ -848,7 +1025,13 @@ def main(
         typer.Option(help="Model ID to use for the agent"),
     ] = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct",
 ):
-    """Main entry point"""
+    """
+    Main entry point.
+
+    Args:
+        mode (Mode): The mode to run in.
+        model_id (str): The model ID to use for the agent.
+    """
     if mode == Mode.AGENT:
         run_agent(model_id)
     elif mode == Mode.EVALUATOR:
