@@ -74,97 +74,6 @@ class EvaluationResult(BaseModel):
 # --- Agent Components --- #
 
 
-class AgentAPIClient:
-    """API client for interacting with the Agent server"""
-
-    def __init__(self, agent_url: str = "http://localhost:8000"):
-        """
-        Initialize the API client with the agent URL.
-
-        Args:
-            agent_url (str): The URL of the agent server.
-        """
-        self.agent_url = agent_url
-
-    def check_ready(self) -> bool:
-        """
-        Check if the agent is ready to accept tasks.
-
-        Returns:
-            bool: True if the agent is ready, False otherwise.
-        """
-        try:
-            response = requests.get(f"{self.agent_url}/agent/status")
-            response.raise_for_status()
-            return response.json().get("state") == "READY"
-        except requests.exceptions.RequestException as e:
-            print(f"Request exception: {e}")
-            return False
-
-    def start_task(self, task_config: TaskConfig) -> bool:
-        """
-        Send a task to the agent.
-
-        Args:
-            task_config (TaskConfig): The task configuration.
-
-        Returns:
-            bool: True if the task was started successfully, False otherwise.
-        """
-        try:
-            response = requests.post(f"{self.agent_url}/agent/task/start", json=task_config.model_dump())
-            response.raise_for_status()
-            return response.status_code == 200
-        except requests.exceptions.RequestException as e:
-            print(f"Request exception: {e}")
-            return False
-
-    def stop_task(self) -> bool:
-        """
-        Request the agent to stop the current task.
-
-        Returns:
-            bool: True if the task was stopped successfully, False otherwise.
-        """
-        try:
-            response = requests.post(f"{self.agent_url}/agent/task/stop")
-            response.raise_for_status()
-            return response.status_code == 200
-        except requests.exceptions.RequestException as e:
-            print(f"Request exception: {e}")
-            return False
-
-    def reset(self) -> bool:
-        """
-        Reset the agent state.
-
-        Returns:
-            bool: True if the agent was reset successfully, False otherwise.
-        """
-        try:
-            response = requests.post(f"{self.agent_url}/agent/reset")
-            response.raise_for_status()
-            return response.status_code == 200
-        except requests.exceptions.RequestException as e:
-            print(f"Request exception: {e}")
-            return False
-
-    def kill(self) -> bool:
-        """
-        Force kill the agent process.
-
-        Returns:
-            bool: True if the agent was killed successfully, False otherwise.
-        """
-        try:
-            response = requests.post(f"{self.agent_url}/agent/kill")
-            response.raise_for_status()
-            return response.status_code == 200
-        except requests.exceptions.RequestException as e:
-            print(f"Request exception: {e}")
-            return False
-
-
 class Agent(ABC):
     """
     Abstract base class for implementing a agent.
@@ -324,53 +233,60 @@ class AgentAPIServer:
         return {"success": True, "message": "Kill signal received"}
 
 
-# --- Evaluator Components --- #
+class AgentAPIClient:
+    """API client for interacting with the Agent server"""
 
-
-class EvaluatorAPIClient:
-    """API client for interacting with the Evaluator server"""
-
-    def __init__(self, evaluator_url: str = "http://localhost:8001"):
+    def __init__(self, agent_url: str = "http://localhost:8000"):
         """
-        Initialize the API client with the evaluator URL.
-
-        Args:
-            evaluator_url (str): The URL of the evaluator server.
-        """
-        self.evaluator_url = evaluator_url
-
-    def register_agent(self, agent_url: str) -> bool:
-        """
-        Register an agent with the evaluator.
+        Initialize the API client with the agent URL.
 
         Args:
             agent_url (str): The URL of the agent server.
+        """
+        self.agent_url = agent_url
+
+    def check_ready(self) -> bool:
+        """
+        Check if the agent is ready to accept tasks.
 
         Returns:
-            bool: True if the agent was registered successfully, False otherwise.
+            bool: True if the agent is ready, False otherwise.
         """
         try:
-            response = requests.post(f"{self.evaluator_url}/evaluator/register_agent", json={"agent_url": agent_url})
+            response = requests.get(f"{self.agent_url}/agent/status")
+            response.raise_for_status()
+            return response.json().get("state") == "READY"
+        except requests.exceptions.RequestException as e:
+            print(f"Request exception: {e}")
+            return False
+
+    def start_task(self, task_config: TaskConfig) -> bool:
+        """
+        Send a task to the agent.
+
+        Args:
+            task_config (TaskConfig): The task configuration.
+
+        Returns:
+            bool: True if the task was started successfully, False otherwise.
+        """
+        try:
+            response = requests.post(f"{self.agent_url}/agent/task/start", json=task_config.model_dump())
             response.raise_for_status()
             return response.status_code == 200
         except requests.exceptions.RequestException as e:
             print(f"Request exception: {e}")
             return False
 
-    def start_evaluation(self, task: TaskConfig) -> bool:
+    def stop_task(self) -> bool:
         """
-        Start an evaluation with a task.
-
-        Args:
-            task (TaskConfig): The task configuration.
+        Request the agent to stop the current task.
 
         Returns:
-            bool: True if the evaluation was started successfully, False otherwise.
+            bool: True if the task was stopped successfully, False otherwise.
         """
         try:
-            response = requests.post(
-                f"{self.evaluator_url}/evaluator/evaluation/start", json={"task": task.model_dump()}
-            )
+            response = requests.post(f"{self.agent_url}/agent/task/stop")
             response.raise_for_status()
             return response.status_code == 200
         except requests.exceptions.RequestException as e:
@@ -379,33 +295,36 @@ class EvaluatorAPIClient:
 
     def reset(self) -> bool:
         """
-        Reset the evaluator.
+        Reset the agent state.
 
         Returns:
-            bool: True if the evaluator was reset successfully, False otherwise.
+            bool: True if the agent was reset successfully, False otherwise.
         """
         try:
-            response = requests.post(f"{self.evaluator_url}/evaluator/reset")
+            response = requests.post(f"{self.agent_url}/agent/reset")
             response.raise_for_status()
             return response.status_code == 200
         except requests.exceptions.RequestException as e:
             print(f"Request exception: {e}")
             return False
 
-    def get_results(self) -> Optional[EvaluationResult]:
+    def kill(self) -> bool:
         """
-        Get the results of the evaluation.
+        Force kill the agent process.
 
         Returns:
-            Optional[EvaluationResult]: The evaluation results, or None if not available.
+            bool: True if the agent was killed successfully, False otherwise.
         """
         try:
-            response = requests.get(f"{self.evaluator_url}/evaluator/evaluation/results")
+            response = requests.post(f"{self.agent_url}/agent/kill")
             response.raise_for_status()
-            return response.json()
+            return response.status_code == 200
         except requests.exceptions.RequestException as e:
             print(f"Request exception: {e}")
-            return None
+            return False
+
+
+# --- Evaluator Components --- #
 
 
 class Evaluator(ABC):
@@ -671,6 +590,87 @@ class EvaluatorAPIServer:
         if self.evaluator.result:
             return self.evaluator.result.model_dump()
         return {"message": "No results available"}
+
+
+class EvaluatorAPIClient:
+    """API client for interacting with the Evaluator server"""
+
+    def __init__(self, evaluator_url: str = "http://localhost:8001"):
+        """
+        Initialize the API client with the evaluator URL.
+
+        Args:
+            evaluator_url (str): The URL of the evaluator server.
+        """
+        self.evaluator_url = evaluator_url
+
+    def register_agent(self, agent_url: str) -> bool:
+        """
+        Register an agent with the evaluator.
+
+        Args:
+            agent_url (str): The URL of the agent server.
+
+        Returns:
+            bool: True if the agent was registered successfully, False otherwise.
+        """
+        try:
+            response = requests.post(f"{self.evaluator_url}/evaluator/register_agent", json={"agent_url": agent_url})
+            response.raise_for_status()
+            return response.status_code == 200
+        except requests.exceptions.RequestException as e:
+            print(f"Request exception: {e}")
+            return False
+
+    def start_evaluation(self, task: TaskConfig) -> bool:
+        """
+        Start an evaluation with a task.
+
+        Args:
+            task (TaskConfig): The task configuration.
+
+        Returns:
+            bool: True if the evaluation was started successfully, False otherwise.
+        """
+        try:
+            response = requests.post(
+                f"{self.evaluator_url}/evaluator/evaluation/start", json={"task": task.model_dump()}
+            )
+            response.raise_for_status()
+            return response.status_code == 200
+        except requests.exceptions.RequestException as e:
+            print(f"Request exception: {e}")
+            return False
+
+    def reset(self) -> bool:
+        """
+        Reset the evaluator.
+
+        Returns:
+            bool: True if the evaluator was reset successfully, False otherwise.
+        """
+        try:
+            response = requests.post(f"{self.evaluator_url}/evaluator/reset")
+            response.raise_for_status()
+            return response.status_code == 200
+        except requests.exceptions.RequestException as e:
+            print(f"Request exception: {e}")
+            return False
+
+    def get_results(self) -> Optional[EvaluationResult]:
+        """
+        Get the results of the evaluation.
+
+        Returns:
+            Optional[EvaluationResult]: The evaluation results, or None if not available.
+        """
+        try:
+            response = requests.get(f"{self.evaluator_url}/evaluator/evaluation/results")
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            print(f"Request exception: {e}")
+            return None
 
 
 # --- Concrete Implementation Examples --- #
