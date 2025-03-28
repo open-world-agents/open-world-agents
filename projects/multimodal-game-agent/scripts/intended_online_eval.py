@@ -148,6 +148,8 @@ class Agent(ABC):
         self.task_thread = None
         self.stop_event = threading.Event()
         self.api_server = None
+        self.agent_url = None
+        self.evaluator_url = None  # TODO: initialize evaluator_url
 
     def _run_task(self, task: TaskConfig):
         """
@@ -162,28 +164,40 @@ class Agent(ABC):
 
             # If we got here without being stopped, the task is finished
             if not self.stop_event.is_set():
-                self.state = AgentState.FINISHED
-                # Notify evaluator that we're done
-                try:
-                    requests.post(f"{NETWORK.EVALUATOR_URL}{ENDPOINTS.EVALUATOR_AGENT_FINISHED}")
-                except requests.exceptions.RequestException as e:
-                    logger.error(f"Request exception: {e}")
+                self._task_finished()
         except Exception as e:
             logger.error(f"Error in task execution: {e}")
         finally:
             if self.state == AgentState.RUNNING:
                 self.state = AgentState.READY  # Change IDLE to READY to better support multiple evaluations
 
-    def _reset_state(self):
+    def _task_finished(self) -> bool:
         """
-        Reset the agent state to READY after a task is finished.
+        Signal that the current task is finished. This method should be called by the agent
+        implementation when it determines that a task has been successfully completed.
         """
+        if self.state != AgentState.RUNNING:
+            logger.error("Cannot finish task: no task is currently running")
+            return False
+
+        self.state = AgentState.FINISHED
+
+        # Notify evaluator that we're done
+        try:
+            requests.post(f"{NETWORK.EVALUATOR_URL}{ENDPOINTS.EVALUATOR_AGENT_FINISHED}")
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Request exception when notifying evaluator: {e}")
+
         self.state = AgentState.READY
+        return True
 
     @abstractmethod
     def _play_env(self, task: TaskConfig, stop_event: threading.Event):
         """
         This method must be implemented by subclasses.
+        It should implement the logic for playing the environment.
+        It should also implement the success condition for the task.
+        If the success condition is met, the method should call _task_finished() to signal the evaluator.
 
         Args:
             task (TaskConfig): Configuration for the task to perform
@@ -201,6 +215,7 @@ class Agent(ABC):
         """
         self.state = AgentState.READY
         self.api_server = AgentAPIServer(self)
+        self.agent_url = f"http://{host}:{port}"
         uvicorn.run(self.api_server.app, host=host, port=port)
 
     def run_background(self, host: str = NETWORK.DEFAULT_HOST, port: int = NETWORK.AGENT_PORT) -> Optional[str]:
@@ -230,9 +245,8 @@ class AgentAPIServer:
 
         # Register API endpoints
         self.app.get(ENDPOINTS.AGENT_STATUS)(self._get_status)
-        self.app.post(ENDPOINTS.AGENT_TASK_START)(self._start_task)
-        self.app.post(ENDPOINTS.AGENT_TASK_STOP)(self._stop_task)
-        self.app.post(ENDPOINTS.AGENT_TASK_FINISHED)(self._finished_task)
+        self.app.post(ENDPOINTS.AGENT_TASK_START)(self._task_start)
+        self.app.post(ENDPOINTS.AGENT_TASK_STOP)(self._task_stop)
         self.app.post(ENDPOINTS.AGENT_KILL)(self._kill)
         self.app.post(ENDPOINTS.AGENT_RESET)(self._reset_agent)
 
@@ -240,7 +254,7 @@ class AgentAPIServer:
         """Return the current state of the agent"""
         return {"state": self.agent.state.name}
 
-    def _start_task(self, task: TaskConfig, background_tasks: BackgroundTasks):
+    def _task_start(self, task: TaskConfig, background_tasks: BackgroundTasks):
         """Start a new task"""
         if self.agent.state != AgentState.READY:
             return {
@@ -257,7 +271,7 @@ class AgentAPIServer:
 
         return {"success": True, "message": f"Started task for environment: {task.env_name}"}
 
-    def _stop_task(self):
+    def _task_stop(self):
         """Stop the current task"""
         if self.agent.state != AgentState.RUNNING:
             return {"success": False, "error": "No task is currently running"}
@@ -271,15 +285,11 @@ class AgentAPIServer:
 
         return {"success": True, "message": "Task stopped"}
 
-    def _finished_task(self):
-        """Signal that the current task is finished"""
-        if self.agent.state != AgentState.RUNNING:
-            return {"success": False, "error": "No task is currently running"}
-
-        self.agent.state = AgentState.FINISHED
-        # Reset to READY state after a short delay to allow for cleanup
-        threading.Timer(TIMEOUTS.AGENT_RESET_DELAY, self.agent._reset_state).start()
-        return {"success": True, "message": "Task marked as finished"}
+    def _kill(self):
+        """Force kill the agent process"""
+        self.agent.stop_event.set()
+        # TODO : implement kill logic. Kill is intended to be called by the evaluator, when the agent is not responding with _task_stop().
+        return {"success": True, "message": "Kill signal received"}
 
     def _reset_agent(self):
         """Reset the agent state for a new evaluation run"""
@@ -292,17 +302,11 @@ class AgentAPIServer:
         self.agent.stop_event.clear()
         return {"success": True, "message": "Agent reset and ready for new tasks"}
 
-    def _kill(self):
-        """Force kill the agent process"""
-        self.agent.stop_event.set()
-        # In a real implementation, this would shut down the server
-        return {"success": True, "message": "Kill signal received"}
-
 
 class AgentAPIClient:
     """API client for interacting with the Agent server"""
 
-    def __init__(self, agent_url: str = NETWORK.AGENT_URL):
+    def __init__(self, agent_url: str):
         """
         Initialize the API client with the agent URL.
 
@@ -558,6 +562,7 @@ class Evaluator(ABC):
             port (int): The port to run the server on.
         """
         self.api_server = EvaluatorAPIServer(self)
+        self.evaluator_url = f"http://{host}:{port}"
         uvicorn.run(self.api_server.app, host=host, port=port)
 
     def run_background(self, host: str = NETWORK.DEFAULT_HOST, port: int = NETWORK.EVALUATOR_PORT) -> Optional[str]:
@@ -675,7 +680,7 @@ class EvaluatorAPIServer:
 class EvaluatorAPIClient:
     """API client for interacting with the Evaluator server"""
 
-    def __init__(self, evaluator_url: str = NETWORK.EVALUATOR_URL):
+    def __init__(self, evaluator_url: str):
         """
         Initialize the API client with the evaluator URL.
 
@@ -812,7 +817,7 @@ class MyAgent(Agent):
             if check_success_condition(task):
                 # Signal that we're done
                 try:
-                    requests.post(f"{NETWORK.AGENT_URL}{ENDPOINTS.AGENT_TASK_FINISHED}")
+                    self._task_finished()
                 except requests.exceptions.RequestException as e:
                     logger.error(f"Request exception: {e}")
                 break
@@ -820,7 +825,7 @@ class MyAgent(Agent):
         logger.debug("Finished playing environment")
 
 
-class SimpleEvaluator(Evaluator):
+class MyEvaluator(Evaluator):
     """Example implementation of an Evaluator"""
 
     def _score_task(self, task: TaskConfig, duration: float, note: str = "") -> EvaluationResult:
@@ -920,7 +925,7 @@ def run_evaluator():
     """
     Run the evaluator server. Blocking.
     """
-    evaluator = SimpleEvaluator()
+    evaluator = MyEvaluator()
     print("Starting evaluator server")
     evaluator.run(host=NETWORK.DEFAULT_HOST, port=NETWORK.EVALUATOR_PORT)
 
@@ -979,7 +984,7 @@ def run_evaluation_client_with_server(
     """
     # Create agent and evaluator instances
     agent = MyAgent(model_id=model_id)
-    evaluator = SimpleEvaluator()
+    evaluator = MyEvaluator()
 
     # Start agent server in background
     print("Starting agent server...")
