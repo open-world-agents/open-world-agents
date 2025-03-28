@@ -4,7 +4,7 @@ Constants used in the online evaluation system.
 
 
 # Network constants
-class Network:
+class NETWORK:
     # Host configuration
     DEFAULT_HOST = "0.0.0.0"
     LOCALHOST = "localhost"
@@ -19,7 +19,7 @@ class Network:
 
 
 # API Endpoints
-class Endpoints:
+class ENDPOINTS:
     # Health check endpoints
     AGENT_STATUS = "/agent/status"
     EVALUATOR_STATUS = "/evaluator/status"
@@ -40,7 +40,7 @@ class Endpoints:
 
 
 # Timeouts and retry settings
-class Timeouts:
+class TIMEOUTS:
     SERVER_STARTUP_MAX_RETRIES = 10
     SERVER_STARTUP_RETRY_INTERVAL = 1.0  # seconds
     TASK_CLEANUP_DELAY = 0.5  # seconds
@@ -50,8 +50,7 @@ class Timeouts:
 
 
 # Default values
-class Defaults:
+class DEFAULTS:
     DEFAULT_MODEL_ID = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct"
     KEYBOARD_PRESS_DELAY = 0.05  # seconds
     ENV_CHECK_INTERVAL = 0.1  # seconds
-    RIGHT_ARROW_KEY = 39  # Key code for right arrow
