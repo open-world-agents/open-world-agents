@@ -73,12 +73,12 @@ class EvaluationResult(BaseModel):
 
 
 def run_server_background(
-    run_method, 
-    host: str = Network.DEFAULT_HOST, 
-    port: int = Network.AGENT_PORT, 
+    run_method,
+    host: str = Network.DEFAULT_HOST,
+    port: int = Network.AGENT_PORT,
     healthcheck_endpoint: str = Endpoints.AGENT_STATUS,
-    *args, 
-    **kwargs
+    *args,
+    **kwargs,
 ) -> Optional[str]:
     """
     Run a server in a background thread and wait for it to be ready.
@@ -195,7 +195,7 @@ class Agent(ABC):
         self.state = AgentState.READY
         self.api_server = AgentAPIServer(self)
         uvicorn.run(self.api_server.app, host=host, port=port)
-        
+
     def run_background(self, host: str = Network.DEFAULT_HOST, port: int = Network.AGENT_PORT) -> Optional[str]:
         """
         Run the agent server in a background thread and wait for it to be ready.
@@ -551,7 +551,7 @@ class Evaluator(ABC):
         """
         self.api_server = EvaluatorAPIServer(self)
         uvicorn.run(self.api_server.app, host=host, port=port)
-        
+
     def run_background(self, host: str = Network.DEFAULT_HOST, port: int = Network.EVALUATOR_PORT) -> Optional[str]:
         """
         Run the evaluator server in a background thread and wait for it to be ready.
@@ -687,7 +687,9 @@ class EvaluatorAPIClient:
             bool: True if the agent was registered successfully, False otherwise.
         """
         try:
-            response = requests.post(f"{self.evaluator_url}{Endpoints.EVALUATOR_REGISTER_AGENT}", json={"agent_url": agent_url})
+            response = requests.post(
+                f"{self.evaluator_url}{Endpoints.EVALUATOR_REGISTER_AGENT}", json={"agent_url": agent_url}
+            )
             response.raise_for_status()
             return response.status_code == 200
         except requests.exceptions.RequestException as e:
@@ -979,7 +981,7 @@ def run_evaluation_client_with_server(
     # Create agent and evaluator instances
     agent = MyAgent(model_id=model_id)
     evaluator = SimpleEvaluator()
-    
+
     # Start agent server in background
     print("Starting agent server...")
     agent_url = agent.run_background(host=Network.DEFAULT_HOST, port=Network.AGENT_PORT)
