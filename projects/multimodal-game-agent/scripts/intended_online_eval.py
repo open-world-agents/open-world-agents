@@ -851,7 +851,7 @@ class SimpleEvaluator(Evaluator):
         # For this example, we'll just assume success if they finished before timeout
         success = duration < task.max_duration_seconds
 
-        # In a real evaluator, you might capture screenshots or other artifacts
+        # In a real evaluator, you might capture screenshots or other artifacts for scoring
         # CALLABLES["screen.capture"]()
 
         return EvaluationResult(
@@ -877,29 +877,27 @@ class SimpleEvaluator(Evaluator):
 # --- Example Tasks --- #
 
 
-def get_example_tasks() -> List[TaskConfig]:
+def get_example_task() -> TaskConfig:
     """
-    Get a list of example tasks for testing.
+    Get an example task for testing.
 
     Returns:
-        List[TaskConfig]: A list of example tasks.
+        TaskConfig: An example task configuration.
     """
-    return [
-        TaskConfig(
-            env_name="Super Hexagon",
-            window_name="Super Hexagon",
-            task_description="Survive for at least 1 seconds in the hardest level",
-            max_duration_seconds=1,
-            success_criteria={"time_survived": 1},
-        ),
-        # TaskConfig(
-        #     env_name="ZType",
-        #     window_name="ZType",
-        #     task_description="Complete the first level with at least 90% accuracy",
-        #     max_duration_seconds=120,
-        #     success_criteria={"accuracy": 0.9, "level_completed": True},
-        # ),
-    ]
+    return TaskConfig(
+        env_name="Super Hexagon",
+        window_name="Super Hexagon",
+        task_description="Survive for at least 1 seconds in the hardest level",
+        max_duration_seconds=1,
+        success_criteria={"time_survived": 1},
+    )
+    # TaskConfig(
+    #     env_name="ZType",
+    #     window_name="ZType",
+    #     task_description="Complete the first level with at least 90% accuracy",
+    #     max_duration_seconds=120,
+    #     success_criteria={"accuracy": 0.9, "level_completed": True},
+    # ),
 
 
 # --- Run Functions --- #
@@ -944,7 +942,7 @@ def run_evaluation_client(agent_url: str, evaluator_url: str):
         return
 
     # Get example task
-    example_task = get_example_tasks()[0]  # Get first task
+    example_task = get_example_task()
 
     # Start evaluation
     for _ in range(3):
