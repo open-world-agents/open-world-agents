@@ -313,6 +313,7 @@ class AgentAPIServer:
 
         # Wait for a bit to allow for cleanup
         time.sleep(TIMEOUTS.TASK_CLEANUP_DELAY)
+        # TODO: if task is not finished, kill the task
         self.agent.state = AgentState.READY
 
         response.status_code = status.HTTP_200_OK

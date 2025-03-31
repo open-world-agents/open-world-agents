@@ -7,7 +7,7 @@ Constants used in the online evaluation system.
 class NETWORK:
     # Host configuration
     DEFAULT_HOST = "0.0.0.0"
-    LOCALHOST = "localhost"
+    LOCALHOST = "127.0.0.1"
 
     # Port configuration
     AGENT_PORT = 8000
@@ -47,7 +47,7 @@ class TIMEOUTS:
     TASK_CLEANUP_DELAY = 0.5  # seconds
     AGENT_RESET_DELAY = 1.0  # seconds
     THREAD_JOIN_TIMEOUT = 2.0  # seconds
-    EVALUATION_POLL_INTERVAL = 2.0  # seconds
+    EVALUATION_POLL_INTERVAL = 0.5  # seconds
 
 
 # Default values
