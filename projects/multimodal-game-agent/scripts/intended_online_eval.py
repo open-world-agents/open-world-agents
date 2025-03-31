@@ -161,18 +161,39 @@ class Agent(ABC):
 
     def _run_task(self, task: TaskConfig):
         """
-        Run the task in a background thread.
+        Run the task. Meant to be called in a background thread.
 
         Args:
             task (TaskConfig): The task configuration.
         """
         try:
-            # Call the user-implemented method
-            self._play_env(task, self.stop_event)
+            self.stop_event.clear()
 
-            # If we got here without being stopped, the task is finished
-            if not self.stop_event.is_set():
-                self._task_finished()
+            # start a timer thread that will stop the task after a certain time
+            def timeout_watcher():
+                time.sleep(task.max_duration_seconds)
+                self.stop_event.set()
+
+            # timer_thread = threading.Thread(target=timeout_watcher, daemon=True)
+            # timer_thread.start()
+            # NOTE: evaluator checks timeout, but has latency issues
+
+            start_time = time.time()
+            # Start the environment loop that handles the stop_event
+            while not self.stop_event.is_set():
+                # call user-implemented method _play_env()
+                continue_task = self._play_env(task)
+
+                # If _play_env returns False, it means the task is finished
+                if not continue_task:
+                    logger.debug(f"`_run_task()`: Agent task finished in {time.time() - start_time} seconds")
+                    self._task_finished()
+                    return
+
+            # stop event has been set
+            logger.debug(f"`_run_task()`: Agent task stopped in {time.time() - start_time} seconds")
+            # TODO: signal to evaluator that task has been stopped
+
         except Exception as e:
             logger.error(f"Error in task execution: {e}")
         finally:
@@ -199,16 +220,16 @@ class Agent(ABC):
         return True
 
     @abstractmethod
-    def _play_env(self, task: TaskConfig, stop_event: threading.Event):
+    def _play_env(self, task: TaskConfig) -> bool:
         """
         This method must be implemented by subclasses.
-        It should implement the logic for playing the environment.
-        It should also implement the success condition for the task.
-        If the success condition is met, the method should call _task_finished() to signal the evaluator.
+        It should implement the logic for playing the environment for a single step.
 
         Args:
             task (TaskConfig): Configuration for the task to perform
-            stop_event (threading.Event): Event that will be set when the task should stop
+
+        Returns:
+            bool: True if the task should continue, False if the task is complete
         """
         pass
 
@@ -482,12 +503,12 @@ class Evaluator(ABC):
 
         # Check if agent is ready
         if not self.agent_api_client.check_ready():
-            logger.debug("Agent not ready. Aborting evaluation.")
+            logger.error("Agent not ready. Aborting evaluation.")
             self.state = EvaluatorState.READY
             return
 
         if not self.task:
-            logger.debug("No task to run.")
+            logger.error("No task to run.")
             self.state = EvaluatorState.READY
             return
 
@@ -509,8 +530,7 @@ class Evaluator(ABC):
         self.state = EvaluatorState.EVALUATING
 
         # Start monitoring thread
-        self.task_thread = threading.Thread(target=self._monitor_task, args=(self.task,))
-        self.task_thread.daemon = True
+        self.task_thread = threading.Thread(target=self._monitor_task, args=(self.task,), daemon=True)
         self.task_thread.start()
 
     def _monitor_task(self, task: TaskConfig):
@@ -520,23 +540,30 @@ class Evaluator(ABC):
         Args:
             task (TaskConfig): The task configuration.
         """
-        start_time = time.time()
-        max_duration = task.max_duration_seconds
 
-        while time.time() - start_time < max_duration and not self.stop_event.is_set():
+        # start a timer thread that will stop the task after a certain time
+        def timeout_watcher():
+            time.sleep(task.max_duration_seconds)
+            self.stop_event.set()
+
+        timer_thread = threading.Thread(target=timeout_watcher, daemon=True)
+        timer_thread.start()
+
+        start_time = time.time()
+        while not self.stop_event.is_set():
             # Check if the task has already been marked as finished by the agent
             if self.state != EvaluatorState.EVALUATING:
                 return
             time.sleep(DEFAULTS.ENV_CHECK_INTERVAL)  # Sleep to avoid busy waiting
 
-        # If we get here, either the timeout occurred or stop was requested
-        if not self.stop_event.is_set() and self.state == EvaluatorState.EVALUATING:
-            logger.debug(f"Task timed out after {max_duration} seconds: {task.env_name}")
+        if self.state == EvaluatorState.EVALUATING:
+            elapsed = time.time() - start_time
+            logger.debug(f"Task timed out after {elapsed} seconds: {task.env_name}")
             # Stop the agent task
             self.agent_api_client.stop_task()
             # Score the task
             self.state = EvaluatorState.SCORING
-            self.process_finished_task(note=f"_monitor_task: Task timed out after {max_duration} seconds")
+            self.process_finished_task(note=f"_monitor_task: Task timed out after {elapsed} seconds")
 
     def process_finished_task(self, note: str = ""):
         """
@@ -826,13 +853,8 @@ class EvaluatorAPIClient:
 class MyAgent(Agent):
     """Example implementation of an agent"""
 
-    def _play_env(self, task: TaskConfig, stop_event: threading.Event):
-        """
-        Implement the environment playing logic here.
-        This is what researchers would customize with their models and logic.
-        """
-        logger.debug(f"Playing environment: {task.env_name}")
-        logger.debug(f"Task description: {task.task_description}")
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
         # Example: Super Hexagon implementation would use screen observations
         # and generate keyboard inputs based on those observations
@@ -841,48 +863,50 @@ class MyAgent(Agent):
 
         # Setup screen recorder and other components
         # (Simplified for example)
+        pass
 
-        # Environment loop
-        start_time = time.time()
-        while not stop_event.is_set() and time.time() - start_time < task.max_duration_seconds:
-            window_active = CALLABLES["window.is_active"](task.window_name)
-            if not window_active:
-                logger.debug(f"Window {task.window_name} is not active")
-                time.sleep(DEFAULTS.ENV_CHECK_INTERVAL)
-                continue
+    def _play_env(self, task: TaskConfig) -> bool:
+        """
+        Implement the environment playing logic here for a single step.
+        This is what researchers would customize with their models and logic.
 
-            # Example: Get screen state and make decisions
-            # This would use your ML model to generate actions
+        Args:
+            task (TaskConfig): The task configuration.
 
-            # Simulate thinking and acting
-            pass
+        Returns:
+            bool: True if the task should continue, False if the task is complete
+        """
 
-            # Example keyboard input (pressing right arrow)
-            if not stop_event.is_set():
-                CALLABLES["keyboard.press"](VK.RIGHT)  # Right arrow
-                time.sleep(DEFAULTS.KEYBOARD_PRESS_DELAY)
-                CALLABLES["keyboard.release"](VK.RIGHT)
-                logger.debug(f"key {VK.RIGHT} pressed")
+        # Check if window is active
+        window_active = CALLABLES["window.is_active"](task.window_name)
+        # if not window_active:
+        #     logger.debug(f"Window {task.window_name} is not active")
+        #     return True  # Continue the task
 
-            def check_success_condition(self, task: TaskConfig) -> bool:
-                """
-                Check if the success condition for the task has been met.
-                """
-                # This would implement environment-specific success detection
-                # For example, detecting a "victory" screen or a specific score
-                # task.success_criteria
-                return False
+        # Example: Get screen state and make decisions
+        # This would use your ML model to generate actions
 
-            # Check for environment-specific success condition
-            if check_success_condition(task):
-                # Signal that we're done
-                try:
-                    self._task_finished()
-                except requests.exceptions.RequestException as e:
-                    logger.error(f"Request exception: {e}")
-                break
+        # Example keyboard input (pressing right arrow)
+        CALLABLES["keyboard.press"](VK.RIGHT)  # Right arrow
+        time.sleep(DEFAULTS.KEYBOARD_PRESS_DELAY)
+        CALLABLES["keyboard.release"](VK.RIGHT)
+        logger.debug(f"key {VK.RIGHT} pressed")
 
-        logger.debug("Finished playing environment")
+        # Check if the success condition for the task has been met
+        def check_success_condition(task: TaskConfig) -> bool:
+            """
+            Check if the success condition for the task has been met.
+            """
+            # This would implement environment-specific success detection
+            # For example, detecting a "victory" screen or a specific score
+            # using task.success_criteria
+            return False
+
+        if check_success_condition(task):
+            logger.debug(f"{self._play_env.__name__} finished: Success condition met")
+            return False  # Task complete
+
+        return True  # Continue the task
 
 
 class MyEvaluator(Evaluator):
