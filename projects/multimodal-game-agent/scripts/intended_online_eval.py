@@ -46,15 +46,13 @@ class AgentState(Enum):
     READY = auto()
     RUNNING = auto()
     STOPPING = auto()
-    FINISHED = auto()
 
 
 class EvaluatorState(Enum):
     """States for the Evaluator state machine"""
 
     INIT = auto()
-    WAITING_FOR_AGENT = auto()
-    AGENT_READY = auto()
+    READY = auto()
     EVALUATING = auto()
     SCORING = auto()
 
@@ -131,7 +129,8 @@ def raise_for_status_with_message(response: Response):
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         error_msg = f"HTTP {response.status_code}: {response.text}"
-        raise requests.exceptions.HTTPError(error_msg) from e
+        logger.warning(error_msg)
+        # raise requests.exceptions.HTTPError(error_msg) from e
 
 
 # --- Agent Components --- #
@@ -178,7 +177,7 @@ class Agent(ABC):
             logger.error(f"Error in task execution: {e}")
         finally:
             if self.state == AgentState.RUNNING:
-                self.state = AgentState.READY  # Change IDLE to READY to better support multiple evaluations
+                self.state = AgentState.READY
 
     def _task_finished(self) -> bool:
         """
@@ -188,8 +187,6 @@ class Agent(ABC):
         if self.state != AgentState.RUNNING:
             logger.error("Cannot finish task: no task is currently running")
             return False
-
-        self.state = AgentState.FINISHED
 
         # Notify evaluator that we're done
         try:
@@ -288,7 +285,7 @@ class AgentAPIServer:
         """Stop the current task"""
         if self.agent.state != AgentState.RUNNING:
             response.status_code = status.HTTP_400_BAD_REQUEST
-            return {"success": False, "error": "No task is currently running"}
+            return {"success": False, "error": "Agent is not currently running"}
 
         self.agent.state = AgentState.STOPPING
         self.agent.stop_event.set()
@@ -486,21 +483,12 @@ class Evaluator(ABC):
         # Check if agent is ready
         if not self.agent_api_client.check_ready():
             logger.debug("Agent not ready. Aborting evaluation.")
-            self.state = EvaluatorState.WAITING_FOR_AGENT
+            self.state = EvaluatorState.READY
             return
 
-        self.state = EvaluatorState.AGENT_READY
-
-        # Start the task
-        self._start_task()
-
-    def _start_task(self):
-        """
-        Start the task.
-        """
         if not self.task:
             logger.debug("No task to run.")
-            self.state = EvaluatorState.WAITING_FOR_AGENT
+            self.state = EvaluatorState.READY
             return
 
         # Setup environment for the task
@@ -508,13 +496,13 @@ class Evaluator(ABC):
             self._setup_environment(self.task)
         except Exception as e:
             logger.error(f"Error setting up environment: {e}")
-            self.state = EvaluatorState.WAITING_FOR_AGENT
+            self.state = EvaluatorState.READY
             return
 
         # Start the agent on this task
         if not self.agent_api_client.start_task(self.task):
             logger.error(f"Failed to start task on agent: {self.task.env_name}")
-            self.state = EvaluatorState.WAITING_FOR_AGENT
+            self.state = EvaluatorState.READY
             return
 
         self.task_start_time = time.time()
@@ -564,7 +552,8 @@ class Evaluator(ABC):
         """
         logger.debug(f"_process_finished_task: {note=}")
         if not self.task or not self.task_start_time:
-            self.state = EvaluatorState.WAITING_FOR_AGENT
+            logger.warning("No task or task start time. Returning.")
+            self.state = EvaluatorState.READY
             return
 
         # First check without lock
@@ -580,7 +569,7 @@ class Evaluator(ABC):
         else:
             logger.debug("Task already completed. Skipping scoring.")
 
-        self.state = EvaluatorState.WAITING_FOR_AGENT
+        self.state = EvaluatorState.READY
 
     @abstractmethod
     def _score_task(self, task: TaskConfig, duration: float, note: str = "") -> EvaluationResult:
@@ -667,13 +656,13 @@ class EvaluatorAPIServer:
             return {"success": False, "error": "No agent URL provided"}
 
         self.evaluator.agent_api_client = AgentAPIClient(self.evaluator.agent_url)
-        self.evaluator.state = EvaluatorState.WAITING_FOR_AGENT
+        self.evaluator.state = EvaluatorState.READY
         response.status_code = status.HTTP_200_OK
         return {"success": True, "message": f"Registered agent at {self.evaluator.agent_url}"}
 
     def _start_evaluation(self, data: dict[str, Any], background_tasks: BackgroundTasks, response: Response):
         """Start an evaluation with a task"""
-        if self.evaluator.state != EvaluatorState.WAITING_FOR_AGENT:
+        if self.evaluator.state != EvaluatorState.READY:
             response.status_code = status.HTTP_400_BAD_REQUEST
             return {
                 "success": False,
@@ -718,9 +707,9 @@ class EvaluatorAPIServer:
 
         if self.evaluator.state == EvaluatorState.INIT:
             response.status_code = status.HTTP_400_BAD_REQUEST
-            raise ValueError("Evaluator is not initiated. Call register_agent first")
+            raise ValueError(f"Evaluator is not initiated. Call {ENDPOINTS.EVALUATOR_REGISTER_AGENT} first")
         else:
-            self.evaluator.state = EvaluatorState.WAITING_FOR_AGENT
+            self.evaluator.state = EvaluatorState.READY
         self.evaluator.task = None
         self.evaluator.result = None
         self.evaluator.task_start_time = None
