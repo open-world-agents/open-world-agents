@@ -147,13 +147,25 @@ class Agent(ABC):
         """
         Initialize the agent.
         """
-        self.state = AgentState.INIT
+        self._state = AgentState.INIT
         self.current_task = None
         self.task_thread = None
         self.stop_event = threading.Event()
         self.api_server = None
         self.agent_url = None
         self.evaluator_url = None
+
+    @property
+    def state(self) -> AgentState:
+        """Getter for the agent state."""
+        return self._state
+
+    @state.setter
+    def state(self, new_state: AgentState):
+        """Setter for the agent state with debug logging."""
+        old_state = self._state
+        self._state = new_state
+        logger.debug(f"Agent state changed: {old_state.name} -> {new_state.name}")
 
     def _run_task(self, task: Task):
         """
@@ -481,7 +493,7 @@ class Evaluator(ABC):
         """
         Initialize the evaluator.
         """
-        self.state = EvaluatorState.INIT
+        self._state = EvaluatorState.INIT
         self.agent_url = None
         self.agent_api_client: AgentAPIClient = None
         self.task = None
@@ -491,6 +503,18 @@ class Evaluator(ABC):
         self.task_thread = None
         self.stop_event = threading.Event()
         self.api_server = None
+
+    @property
+    def state(self) -> EvaluatorState:
+        """Getter for the evaluator state."""
+        return self._state
+
+    @state.setter
+    def state(self, new_state: EvaluatorState):
+        """Setter for the evaluator state with debug logging."""
+        old_state = self._state
+        self._state = new_state
+        logger.debug(f"Evaluator state changed: {old_state.name} -> {new_state.name}")
 
     def _run_evaluation(self, task: Task) -> bool:
         """
