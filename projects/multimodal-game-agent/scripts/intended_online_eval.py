@@ -592,9 +592,8 @@ class Evaluator(ABC):
             # Stop the agent task
             self.agent_api_client.stop_task()
             # Score the task
-            self.state = EvaluatorState.SCORING
+
             self.process_finished_task(note=f"`_monitor_task()`: Task timed out after {elapsed} seconds")
-            self.state = EvaluatorState.READY
 
     def process_finished_task(self, note: str = ""):
         """
@@ -608,19 +607,24 @@ class Evaluator(ABC):
         Args:
             note (str): A note about the task completion.
         """
-        logger.debug(f"process_finished_task: {note=}")
-        if not self.task or not self.task_start_time:
-            logger.warning("No task or task start time. Returning.")
-            return
+        logger.debug(f"process_finished_task(): {note=}")
 
         # First check without lock
         if self.result is None:
             # Acquire lock and check again (double-checked locking)
             with self.result_lock:
                 if self.result is None:
+                    if self.state != EvaluatorState.EVALUATING:
+                        logger.warning(
+                            f"`process_finished_task()`: Evaluator not in {EvaluatorState.EVALUATING.name} state, rather {self.state.name=}. Returning."
+                        )
+                        return
+
+                    self.state = EvaluatorState.SCORING
                     task_elapsed_time = time.time() - self.task_start_time
                     self.result = self._score_task(self.task, task_elapsed_time, note)
                     logger.debug(f"Task completed. Result: {self.result.model_dump()}")
+                    self.state = EvaluatorState.READY
                 else:
                     logger.debug("Task already completed. Skipping scoring.")
         else:
@@ -737,9 +741,7 @@ class EvaluatorAPIServer:
     def _agent_finished(self, response: Response):
         """Called when the agent finishes a task"""
         if self.evaluator.state == EvaluatorState.EVALUATING:
-            self.evaluator.state = EvaluatorState.SCORING
             self.evaluator.process_finished_task(note="`_agent_finished()`: Agent reported task completion")
-            self.evaluator.state = EvaluatorState.READY
             response.status_code = status.HTTP_200_OK
             return {"success": True, "message": "Task completion acknowledged"}
         else:
