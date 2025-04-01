@@ -110,7 +110,7 @@ def run_server_background(
         try:
             response = requests.get(f"{server_url}{healthcheck_endpoint}")
             if response.status_code == 200:
-                logger.debug(f"Server is ready after {i + 1} attempts")
+                logger.debug(f"Server healthy after {i + 1} attempts")
                 return server_url
         except requests.exceptions.RequestException:
             pass
@@ -179,7 +179,7 @@ class Agent(ABC):
 
             # stop event has been set
             logger.debug(f"`_run_task()`: Agent task stopped in {time.time() - start_time} seconds")
-            # TODO: signal to evaluator that task has been stopped
+            # TODO: signal to evaluator that task has been stopped. might be stop_event.clear(), or AgentState.READY
 
         except Exception as e:
             logger.error(f"Error in task execution: {e}")
@@ -216,7 +216,7 @@ class Agent(ABC):
         Returns:
             bool: True if the task should continue, False if the task is complete
         """
-        pass
+        ...
 
     def run(self, host: str = NETWORK.DEFAULT_HOST, port: int = NETWORK.AGENT_PORT):
         """
@@ -265,7 +265,10 @@ class AgentAPIServer:
     def _get_status(self, response: Response):
         """Return the current state of the agent"""
         response.status_code = status.HTTP_200_OK
-        return {"state": self.agent.state.name}
+        return {
+            "state": self.agent.state.name,
+            "current_task": self.agent.current_task,
+        }
 
     def _task_start(self, task: Task, background_tasks: BackgroundTasks, response: Response):
         """Start a new task"""
@@ -363,6 +366,21 @@ class AgentAPIClient:
         except requests.exceptions.RequestException as e:
             logger.error(f"Request exception: {e}")
             return False
+
+    def get_status(self) -> Optional[dict]:
+        """
+        Get the current status of the agent.
+
+        Returns:
+            Optional[dict]: A dictionary containing the agent's current state and task, or None if there was an error.
+        """
+        try:
+            response = requests.get(f"{self.agent_url}{ENDPOINTS.AGENT_STATUS}")
+            handle_response_errors(response)
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Request exception: {e}")
+            return None
 
     def start_task(self, task: Task) -> bool:
         """
@@ -551,7 +569,7 @@ class Evaluator(ABC):
             self.agent_api_client.stop_task()
             # Score the task
             self.state = EvaluatorState.SCORING
-            self.process_finished_task(note=f"_monitor_task: Task timed out after {elapsed} seconds")
+            self.process_finished_task(note=f"`_monitor_task()`: Task timed out after {elapsed} seconds")
             self.state = EvaluatorState.READY
 
     def process_finished_task(self, note: str = ""):
@@ -566,7 +584,7 @@ class Evaluator(ABC):
         Args:
             note (str): A note about the task completion.
         """
-        logger.debug(f"_process_finished_task: {note=}")
+        logger.debug(f"process_finished_task: {note=}")
         if not self.task or not self.task_start_time:
             logger.warning("No task or task start time. Returning.")
             return
@@ -598,19 +616,19 @@ class Evaluator(ABC):
         Returns:
             EvaluationResult: The scoring results
         """
-        pass
+        ...
 
     @abstractmethod
     def _setup_environment(self, task: Task):
         """
-        Setup the environment for a task.
+        Setup the environment for a task. Also handles restarting the environment.
 
         Must be implemented by subclasses.
 
         Args:
             task (Task): Configuration for the task to setup
         """
-        pass
+        ...
 
     def run(self, host: str = NETWORK.DEFAULT_HOST, port: int = NETWORK.EVALUATOR_PORT):
         """
@@ -696,7 +714,8 @@ class EvaluatorAPIServer:
         """Called when the agent finishes a task"""
         if self.evaluator.state == EvaluatorState.EVALUATING:
             self.evaluator.state = EvaluatorState.SCORING
-            self.evaluator.process_finished_task(note="`_agent_finished`: Agent reported task completion")
+            self.evaluator.process_finished_task(note="`_agent_finished()`: Agent reported task completion")
+            self.evaluator.state = EvaluatorState.READY
             response.status_code = status.HTTP_200_OK
             return {"success": True, "message": "Task completion acknowledged"}
         else:
@@ -711,7 +730,6 @@ class EvaluatorAPIServer:
         response.status_code = status.HTTP_200_OK
         return {
             "state": self.evaluator.state.name,
-            "agent_url": self.evaluator.agent_url,
             "current_task": self.evaluator.task.model_dump() if self.evaluator.task else None,
         }
 
@@ -756,6 +774,21 @@ class EvaluatorAPIClient:
         except requests.exceptions.RequestException as e:
             logger.error(f"Request exception: {e}")
             return False
+
+    def get_status(self) -> Optional[dict]:
+        """
+        Get the current status of the evaluator.
+
+        Returns:
+            Optional[dict]: A dictionary containing the evaluator's current state and task, or None if there was an error.
+        """
+        try:
+            response = requests.get(f"{self.evaluator_url}{ENDPOINTS.EVALUATOR_STATUS}")
+            handle_response_errors(response)
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Request exception: {e}")
+            return None
 
     def start_evaluation(self, task: Task) -> bool:
         """
@@ -851,7 +884,7 @@ class MyAgent(Agent):
 
         if check_success_condition(task):
             logger.debug(f"{self._play_env.__name__} finished: Success condition met")
-            return False  # Task complete
+            return False  # Do not continue the task. Evaluation will be made by the evaluator.
 
         return True  # Continue the task
 
@@ -893,13 +926,14 @@ class MyEvaluator(Evaluator):
 
     def _setup_environment(self, task: Task):
         """
-        Setup the environment for a task.
+        Setup the environment for a task. Also handles restarting the environment.
 
         Args:
             task (Task): Configuration for the task to setup
         """
         logger.debug(f"Setting up environment for {task.env_name}")
         # In a real implementation, this would launch games, configure windows, etc.
+        # Also handles restarting the environment.
 
 
 # --- Example Tasks --- #
@@ -981,6 +1015,12 @@ def run_evaluation_client(agent_url: str, evaluator_url: str):
 
     # Start evaluation
     for _ in range(3):
+        # wait for evaluator to be ready
+        while evaluator_client.get_status()["state"] != EvaluatorState.READY.name:
+            print(f"Evaluator is not ready: {evaluator_client.get_status()}")
+            time.sleep(TIMEOUTS.EVALUATION_POLL_INTERVAL)
+        print(f"Evaluator is ready: {evaluator_client.get_status()}")
+
         print(f"Starting evaluation with task: {example_task.env_name}...")
         if not evaluator_client.start_evaluation(example_task):
             print("Failed to start evaluation. Exiting.")
