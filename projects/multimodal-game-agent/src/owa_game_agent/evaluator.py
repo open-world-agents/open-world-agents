@@ -44,6 +44,7 @@ class Evaluator(ABC):
         Initialize the evaluator.
         """
         self._state = EvaluatorState.INIT
+        self.evaluator_url = None
         self.agent_url = None
         self.agent_api_client: AgentAPIClient = None
         self.task = None
@@ -380,6 +381,21 @@ class EvaluatorAPIClient:
             response = requests.post(
                 f"{self.evaluator_url}{ENDPOINTS.EVALUATOR_EVALUATION_START}", json=task.model_dump()
             )
+            handle_response_errors(response)
+            return response.status_code == 200
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Request exception: {e}")
+            return False
+
+    def agent_finished(self) -> bool:
+        """
+        Notify the evaluator that the agent has finished its task.
+
+        Returns:
+            bool: True if the notification was sent successfully, False otherwise.
+        """
+        try:
+            response = requests.post(f"{self.evaluator_url}{ENDPOINTS.EVALUATOR_AGENT_FINISHED}")
             handle_response_errors(response)
             return response.status_code == 200
         except requests.exceptions.RequestException as e:

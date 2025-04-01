@@ -48,6 +48,9 @@ class Agent(ABC):
         self.api_server = None
         self.agent_url = None
         self.evaluator_url = None
+        from owa_game_agent.evaluator import EvaluatorAPIClient
+
+        self.evaluator_api_client: Optional[EvaluatorAPIClient] = None
 
     @property
     def state(self) -> AgentState:
@@ -100,13 +103,12 @@ class Agent(ABC):
             logger.error("Cannot finish task: no task is currently running")
             return False
 
-        # Notify evaluator that we're done.
-        # TODO: use API client instead of direct requests
-        try:
-            response = requests.post(f"{self.evaluator_url}{ENDPOINTS.EVALUATOR_AGENT_FINISHED}")
-            handle_response_errors(response)
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Request exception when notifying evaluator: {e}")
+        if self.evaluator_api_client:
+            success = self.evaluator_api_client.agent_finished()
+            if not success:
+                logger.error("Failed to notify evaluator that agent task is finished")
+        else:
+            logger.warning("Cannot notify evaluator: evaluator_api_client is not initialized")
 
         return True
 
@@ -241,6 +243,10 @@ class AgentAPIServer:
             }
 
         self.agent.evaluator_url = request.evaluator_url
+        from owa_game_agent.evaluator import EvaluatorAPIClient
+
+        self.agent.evaluator_api_client = EvaluatorAPIClient(request.evaluator_url)
+
         self.agent.state = AgentState.READY
         response.status_code = status.HTTP_200_OK
         return {"success": True, "message": f"Registered evaluator at {request.evaluator_url}"}
