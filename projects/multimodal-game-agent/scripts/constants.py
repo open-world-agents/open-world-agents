@@ -44,7 +44,7 @@ class ENDPOINTS:
 class TIMEOUTS:
     SERVER_STARTUP_MAX_RETRIES = 10
     SERVER_STARTUP_RETRY_INTERVAL = 1.0  # seconds
-    TASK_CLEANUP_DELAY = 0.5  # seconds
+    TASK_CLEANUP_TIMEOUT = 2.0  # seconds
     AGENT_RESET_DELAY = 1.0  # seconds
     THREAD_JOIN_TIMEOUT = 2.0  # seconds
     EVALUATION_POLL_INTERVAL = 0.5  # seconds
