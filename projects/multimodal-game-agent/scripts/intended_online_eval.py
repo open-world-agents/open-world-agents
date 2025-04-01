@@ -17,6 +17,7 @@ import logging
 from abc import ABC, abstractmethod
 from enum import Enum, auto
 from typing import Any, Optional
+import uuid
 from owa.env.desktop.constants import VK
 from typing_extensions import Annotated
 
@@ -24,7 +25,7 @@ import typer
 import requests
 import uvicorn
 from fastapi import FastAPI, BackgroundTasks, Response, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from rich.logging import RichHandler
 
 from owa.core.registry import CALLABLES, activate_module
@@ -60,6 +61,7 @@ class EvaluatorState(Enum):
 class TaskConfig(BaseModel):
     """Configuration for a task in an environment"""
 
+    task_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     env_name: str
     window_name: str
     task_description: str
@@ -71,10 +73,7 @@ class EvaluationResult(BaseModel):
     """Results from an evaluation"""
 
     task_id: str
-    score: float
     metrics: dict[str, Any]
-    duration_seconds: float
-    success: bool
     notes: Optional[str] = None
 
 
@@ -338,7 +337,10 @@ class AgentAPIServer:
         response.status_code = status.HTTP_200_OK
         return {"success": True, "message": "Agent reset and ready for new tasks"}
 
-    def _register_evaluator(self, data: dict[str, str], response: Response):
+    class RegisterEvaluatorRequest(BaseModel):
+        evaluator_url: str
+
+    def _register_evaluator(self, request: RegisterEvaluatorRequest, response: Response):
         """Register an evaluator with the agent"""
         if self.agent.state != AgentState.INIT:
             response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -348,15 +350,14 @@ class AgentAPIServer:
                 "error": f"Agent not in INIT state. Current state: {self.agent.state.name}",
             }
 
-        evaluator_url = data.get("evaluator_url")
-        if not evaluator_url:
+        if not request.evaluator_url:
             response.status_code = status.HTTP_400_BAD_REQUEST
             return {"success": False, "error": "No evaluator URL provided"}
 
-        self.agent.evaluator_url = evaluator_url
+        self.agent.evaluator_url = request.evaluator_url
         self.agent.state = AgentState.READY
         response.status_code = status.HTTP_200_OK
-        return {"success": True, "message": f"Registered evaluator at {evaluator_url}"}
+        return {"success": True, "message": f"Registered evaluator at {request.evaluator_url}"}
 
 
 class AgentAPIClient:
@@ -669,7 +670,10 @@ class EvaluatorAPIServer:
         self.app.get(ENDPOINTS.EVALUATOR_STATUS)(self._get_status)
         self.app.get(ENDPOINTS.EVALUATOR_EVALUATION_RESULTS)(self._get_results)
 
-    def _register_agent(self, data: dict[str, str], response: Response):
+    class RegisterAgentRequest(BaseModel):
+        agent_url: str
+
+    def _register_agent(self, request: RegisterAgentRequest, response: Response):
         """Register an agent with the evaluator"""
         if self.evaluator.state != EvaluatorState.INIT:
             response.status_code = status.HTTP_400_BAD_REQUEST
@@ -678,7 +682,7 @@ class EvaluatorAPIServer:
                 "error": f"Evaluator not idle. Current state: {self.evaluator.state.name}",
             }
 
-        self.evaluator.agent_url = data.get("agent_url")
+        self.evaluator.agent_url = request.agent_url
         if not self.evaluator.agent_url:
             response.status_code = status.HTTP_400_BAD_REQUEST
             return {"success": False, "error": "No agent URL provided"}
@@ -688,7 +692,7 @@ class EvaluatorAPIServer:
         response.status_code = status.HTTP_200_OK
         return {"success": True, "message": f"Registered agent at {self.evaluator.agent_url}"}
 
-    def _start_evaluation(self, data: dict[str, Any], background_tasks: BackgroundTasks, response: Response):
+    def _start_evaluation(self, task: TaskConfig, background_tasks: BackgroundTasks, response: Response):
         """Start an evaluation with a task"""
         if self.evaluator.state != EvaluatorState.READY:
             response.status_code = status.HTTP_400_BAD_REQUEST
@@ -701,13 +705,7 @@ class EvaluatorAPIServer:
             response.status_code = status.HTTP_400_BAD_REQUEST
             return {"success": False, "error": "No agent registered"}
 
-        # Extract and validate the task
-        task_data = data.get("task")
-        if not task_data:
-            response.status_code = status.HTTP_400_BAD_REQUEST
-            return {"success": False, "error": "No task provided"}
-
-        self.evaluator.task = TaskConfig(**task_data)
+        self.evaluator.task = task
 
         # Start the evaluation in a background thread
         background_tasks.add_task(self.evaluator._run_evaluation)
@@ -809,7 +807,7 @@ class EvaluatorAPIClient:
         """
         try:
             response = requests.post(
-                f"{self.evaluator_url}{ENDPOINTS.EVALUATOR_EVALUATION_START}", json={"task": task.model_dump()}
+                f"{self.evaluator_url}{ENDPOINTS.EVALUATOR_EVALUATION_START}", json=task.model_dump()
             )
             raise_for_status_with_message(response)
             return response.status_code == 200
@@ -946,15 +944,16 @@ class MyEvaluator(Evaluator):
         # CALLABLES["screen.capture"]()
 
         return EvaluationResult(
-            task_id="task",
-            score=score,
-            metrics={"time": duration},
-            duration_seconds=duration,
-            success=success,
+            task_id=task.task_id,
+            metrics={
+                "time": duration,
+                "success": success,
+                "score": score,
+            },
             notes=note,
         )
 
-    def _setup_environment(self, task: TaskConfig):  # NOTE: make a separate ENV class?
+    def _setup_environment(self, task: TaskConfig):
         """
         Setup the environment for a task.
 
