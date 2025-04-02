@@ -130,7 +130,7 @@ def eda_sample(query_path: Annotated[Path, typer.Option("--query_path")]):
 @app.command("prepare")
 def prepare_model(
     save_path: Annotated[Path, typer.Option("--save_path")],
-    model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct",
+    model_id: str = "HuggingFaceTB/SmolVLM2-256M-Video-Instruct",
     apply_semantic_init: bool = False,
 ):
     model = AutoModelForImageTextToText.from_pretrained(
@@ -247,7 +247,7 @@ def prepare_model(
 
 
 @app.command("verify")
-def verify_tokenizer(model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct"):
+def verify_tokenizer(model_id: str = "HuggingFaceTB/SmolVLM2-256M-Video-Instruc"):
     """
     Verify the tokenizer with additional tokens.
     Related issue: https://github.com/huggingface/tokenizers/issues/1544
@@ -298,7 +298,7 @@ def verify_tokenizer(model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct
 @line_profiler.profile
 def show_dataset_collator(
     query_path: Annotated[Path, typer.Option("--query_path")],
-    model_id: str = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct",
+    model_id: str = "HuggingFaceTB/SmolVLM2-256M-Video-Instruc",
 ):
     processor = AutoProcessor.from_pretrained(model_id)
 
