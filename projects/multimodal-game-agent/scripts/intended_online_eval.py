@@ -18,7 +18,6 @@ import time
 from enum import Enum
 
 import cv2
-from pydantic import BaseModel
 import typer
 from openai import OpenAI
 from rich.logging import RichHandler
@@ -66,6 +65,218 @@ def get_current_frame_base64(window_name: str) -> str:
 
 
 class MySuperHexagonAgent(Agent):
+    """Example implementation of an agent"""
+
+    def __init__(self):
+        super().__init__()
+
+        # Example: Super Hexagon implementation would use screen observations
+        # and generate keyboard inputs based on those observations
+        activate_module(
+            "owa.env.desktop"
+        )  # https://open-world-agents.github.io/open-world-agents/env/plugins/desktop_env/
+        activate_module(
+            "owa.env.gst"
+        )  # https://open-world-agents.github.io/open-world-agents/env/plugins/gstreamer_env/
+        self.openai_client = OpenAI()
+
+    def _play_env(self, task: Task) -> bool:
+        """
+        Implement the environment playing logic here for a single step.
+
+        Must be implemented by subclasses.
+        This is what researchers would customize with their models and logic.
+
+        Args:
+            task (Task): The task configuration.
+
+        Returns:
+            bool: True if the task should continue, False if the task should not continue
+        """
+
+        # Check if window is active
+        # window_active = CALLABLES["window.is_active"](task.window_name)
+        # if not window_active:
+        #     logger.debug(f"Window {task.window_name} is not active")
+        #     return True  # Continue the task
+
+        # Check if the task should continue
+        def check_continue(task: Task) -> bool:
+            """
+            Check if the task should continue.
+            """
+            # In this version, evaluator will monitor and check the task. agent does not need to report termination.
+            return True
+
+        if check_continue(task):
+            # logger.debug(f"{self._play_env.__name__}(): task should continue")
+
+            # Normally, you would use your model to generate actions
+
+            # Currently, this agent just presses the right arrow key
+            # Example keyboard input (pressing right arrow)
+            CALLABLES["keyboard.press"](VK.RIGHT)  # Right arrow
+            time.sleep(DEFAULTS.KEYBOARD_PRESS_DELAY)
+            CALLABLES["keyboard.release"](VK.RIGHT)
+            logger.debug(f"key {VK.RIGHT} pressed")
+
+            return True  # Continue the task
+
+        else:
+            # logger.error(f"{self._play_env.__name__}(): task should not continue. This should not happen.")
+            return False  # Do not continue the task. Evaluation will be made by the evaluator.
+
+
+class MySuperHexagonEvaluator(Evaluator):
+    """Example implementation of an Evaluator"""
+
+    def __init__(self):
+        super().__init__()
+        self.openai_client = OpenAI()
+
+    def _check_env_continue(self, task: Task) -> bool:
+        """
+        Check the environment for a task, to see if the task should continue.
+
+        Returns:
+            bool: True if the task should continue, False otherwise.
+
+        Might be overrided by subclasses to check the environment for a task.
+        """
+        # In this version, evaluator will monitor and check the task. agent does not need to report termination.
+
+        # we can also utilize task information
+        # prompt = f"""Did you survive for at least {task.success_criteria["time_survived"]} seconds? Say only yes or no."""
+        prompt = "This is a screenshot of a game called Super Hexagon. Can you see the text `PRESS SPACE TO RETRY` in the bottom? Say only yes or no."
+        frame_base64 = get_current_frame_base64(task.window_name)
+
+        # use gpt-4o to check if the task should continue
+        response = self.openai_client.responses.create(
+            model="gpt-4o-mini",
+            input=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "input_text",
+                            "text": prompt,
+                        },
+                        {
+                            "type": "input_image",
+                            "image_url": f"data:image/png;base64,{frame_base64}",
+                            "detail": "auto",
+                        },
+                    ],
+                }
+            ],
+            temperature=0.0,
+        )
+
+        logger.debug(f"response: {response.output_text}")
+
+        if "yes" in response.output_text.lower():
+            return False  # if we can see the retry button, the task should not continue
+        else:
+            return True  # if we cannot see the retry button, the task should continue
+
+    def _score_task(self, task: Task, task_elapsed_time: float, note: str = "") -> EvaluationResult:
+        """
+        Calculate score for a completed task.
+
+        Args:
+            task (Task): The task configuration that was completed
+            task_elapsed_time (float): How long the task took
+
+        Returns:
+            EvaluationResult: The scoring results
+        """
+
+        # Here you would check if the agent actually achieved the success criteria
+        # This could involve checking game state, screenshot analysis, etc.
+
+        prompt = "This is a screenshot of a game called Super Hexagon. What is the score? It should be written next to `LAST`, and should be in the format of `%d:%d` up to 2 decimals. If you cannot find the score, the score should be `-1`."
+        frame_base64 = get_current_frame_base64(task.window_name)
+
+        # use gpt-4o to evaluate the score
+        response = self.openai_client.responses.create(
+            model="gpt-4o-mini",
+            input=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "input_text",
+                            "text": prompt,
+                        },
+                        {
+                            "type": "input_image",
+                            "image_url": f"data:image/png;base64,{frame_base64}",
+                            "detail": "auto",
+                        },
+                    ],
+                }
+            ],
+            temperature=0.0,
+            text={
+                "format": {
+                    "type": "json_schema",
+                    "name": "score",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "score": {"type": "number"},
+                        },
+                        "required": ["score"],
+                        "additionalProperties": False,
+                    },
+                    "strict": True,
+                },
+            },
+        )
+
+        logger.debug(f"response: {response.output_text}")
+
+        try:
+            score = json.loads(response.output_text)["score"]
+        except json.JSONDecodeError:
+            score = -1
+
+        if score < 0:
+            success = False
+        else:
+            if score > task.success_criteria["time_survived"]:
+                success = True
+            else:
+                success = False
+
+        return EvaluationResult(
+            task_id=task.task_id,
+            metrics={
+                "task_elapsed_time": task_elapsed_time,
+                "success": success,
+                "score": score,
+            },
+            notes=note,
+        )
+
+    def _setup_environment(self, task: Task):
+        """
+        Setup the environment for a task. Also should handle restarting the environment.
+
+        Args:
+            task (Task): Configuration for the task to setup
+        """
+        logger.debug(f"Setting up environment for {task.env_name}")
+        # In a real implementation, this would launch games, configure windows, etc.
+        # Also handles restarting the environment.
+
+        # for super hexagon, we need to press space
+        CALLABLES["keyboard.press"](VK.SPACE)
+        time.sleep(DEFAULTS.KEYBOARD_PRESS_DELAY)
+        CALLABLES["keyboard.release"](VK.SPACE)
+
+
+class YourSuperHexagonAgent(Agent):
     """Example implementation of an agent"""
 
     def __init__(self):
@@ -162,7 +373,7 @@ class MySuperHexagonAgent(Agent):
             return False  # Do not continue the task. Evaluation will be made by the evaluator.
 
 
-class MySuperHexagonEvaluator(Evaluator):
+class YourSuperHexagonEvaluator(Evaluator):
     """Example implementation of an Evaluator"""
 
     def __init__(self):

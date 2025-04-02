@@ -120,6 +120,7 @@ class Evaluator(ABC):
         # start a timer thread that will stop the task after a certain time
         def timeout_watcher():
             time.sleep(task.timeout)
+            logger.debug("Task timed out. Stopping task.")
             self.stop_event.set()
 
         timer_thread = threading.Thread(target=timeout_watcher, daemon=True)
@@ -130,16 +131,19 @@ class Evaluator(ABC):
             # Check if the task has already been marked as finished
             if self.state != EvaluatorState.EVALUATING:
                 return
+            continue_task = self._check_env_continue(task)
+            if not continue_task:
+                logger.debug("Task stopped by `check_env_continue()`. Stopping task.")
+                self.stop_event.set()
             time.sleep(DEFAULTS.ENV_CHECK_INTERVAL)  # Sleep to avoid busy waiting
 
         if self.state == EvaluatorState.EVALUATING:
             elapsed = time.time() - start_time
-            logger.debug(f"Task timed out after {elapsed} seconds: {task.env_name}")
+            logger.debug(f"Task stopped after {elapsed} seconds")
             # Stop the agent task
             self.agent_api_client.stop_task()
-            # Score the task
 
-            self.process_finished_task(note=f"`_monitor_task()`: Task timed out after {elapsed} seconds")
+            self.process_finished_task(note=f"`_monitor_task()`: Task stopped after {elapsed} seconds")
 
     def process_finished_task(self, note: str = ""):
         """
@@ -175,6 +179,17 @@ class Evaluator(ABC):
                     logger.debug("Task already completed. Skipping scoring.")
         else:
             logger.debug("Task already completed. Skipping scoring.")
+
+    def _check_env_continue(self, task: Task) -> bool:
+        """
+        Check the environment for a task, to see if the task should continue.
+
+        Returns:
+            bool: True if the task should continue, False otherwise.
+
+        Might be overrided by subclasses to check the environment for a task.
+        """
+        return True
 
     @abstractmethod
     def _score_task(self, task: Task, task_elapsed_time: float, note: str = "") -> EvaluationResult:
