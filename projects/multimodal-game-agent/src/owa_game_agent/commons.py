@@ -18,6 +18,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+# ----- Data Classes ----- #
+
+
 class Task(BaseModel):
     """Configuration for a task in an environment"""
 
@@ -35,6 +38,9 @@ class EvaluationResult(BaseModel):
     task_id: str
     metrics: dict[str, Any]
     notes: Optional[str] = None
+
+
+# ----- Helper functions ----- #
 
 
 def run_server_background(

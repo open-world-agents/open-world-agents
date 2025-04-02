@@ -224,10 +224,9 @@ class AgentAPIServer:
 
     def _kill(self, response: Response):
         """Force kill the agent process"""
-        self.agent.stop_event.set()
         # TODO : implement kill logic. Kill is intended to be called by the evaluator, when the agent is not responding with _task_stop().
-        response.status_code = status.HTTP_200_OK
-        return {"success": True, "message": "Kill signal received"}
+        response.status_code = status.HTTP_501_NOT_IMPLEMENTED
+        return {"success": False, "message": "Kill is not implemented"}
 
     class RegisterEvaluatorRequest(BaseModel):
         evaluator_url: str
