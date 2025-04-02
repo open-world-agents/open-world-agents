@@ -28,10 +28,10 @@ from owa_game_agent.data.sample_processor import SampleProcessor
 
 # Configuration constants
 WINDOW_NAME = "hexagon"
-FPS = 1
-MAX_SCREEN_FRAMES = 5
+FPS = 5
+MAX_SCREEN_FRAMES = 3
 MODEL_SAMPLE_DELAY = 10.0  # seconds
-TIMESTAMP_INTERVAL = 0.05*5  # seconds
+TIMESTAMP_INTERVAL = 0.05  # seconds
 
 
 # Setup logger for use with tqdm
@@ -162,43 +162,64 @@ class Agent(Runnable):
         generated = self.processor.decode(output, skip_special_tokens=True)
         return generated[generated.find("Assistant: ") + len("Assistant: ") :]
 
-    def execute(self, generated, anchor_time: float, processing_time: float):
-        """Execute the generated response as keyboard actions."""
+    def execute(self, generated: str, anchor_time: float, processing_time: float):
+        """Execute the generated response as scheduled keyboard actions."""
         tokens = re.findall(r"<(.*?)>", generated)
-        sum_time = anchor_time
-        first_time = True
-        first_interval = 0
+        timestamp_list = []
+        events = []
 
-        # Check if the generated response is valid, hardcoded for now
-        if len(tokens)//2 == 0:
-            logger.warning(f"Invalid response: {generated}")
-            return
-
-        for i, token in enumerate(tokens):
+        # Parse tokens: build a list of timestamps and pair them with keyboard actions.
+        for token in tokens:
             if token.startswith("TIMESTAMP"):
                 timestamp = int(token.split("_")[1])
-                sum_time = timestamp * TIMESTAMP_INTERVAL
-                tmp_time = sum_time - processing_time
-                if first_time:
-                    if tmp_time < 0:
-                        first_interval = tmp_time * -1
-                    first_time = False
-                else:
-                    tmp_time += first_interval
-                to_sleep = max(0, tmp_time)
-                # if sum_time + to_sleep - anchor_time > MODEL_SAMPLE_DELAY:
-                #     break
-                time.sleep(to_sleep)
+                # Each timestamp represents an absolute time: anchor_time + (timestamp * TIMESTAMP_INTERVAL)
+                timestamp_list.append(anchor_time + timestamp * TIMESTAMP_INTERVAL)
             elif token.startswith("KEYBOARD"):
+                if not timestamp_list:
+                    logger.warning("Found KEYBOARD without TIMESTAMP")
+                    return
+                ts = timestamp_list.pop(0)
                 vk, state = map(int, token.split("_")[1:])
-                if state:
-                    CALLABLES["keyboard.press"](vk)
-                else:
-                    CALLABLES["keyboard.release"](vk)
-                self.event_manager.pbar.set_description(f"Executing: {token}, {vk}, {state}")
+                events.append((ts, vk, state, token))
             else:
                 logger.warning(f"Invalid token: {token}")
                 return
+
+        if not events:
+            return
+
+        # The first event's intended time
+        base_timestamp = events[0][0]  # e.g. anchor_time + 12 * 0.05 = anchor_time + 0.6
+
+        # Compute delay needed for the first event:
+        # Ideally, we want to execute the first event at base_timestamp.
+        # But if processing already took processing_time, then the remaining delay is:
+        first_delay = (base_timestamp - anchor_time) - processing_time
+        if first_delay < 0:
+            first_delay = 0
+
+        # Schedule the first event to run after first_delay seconds from now.
+        first_event_execution_time = time.time() + first_delay
+
+        # Execute events while preserving relative differences.
+        for original_time, vk, state, token in events:
+            # Calculate the time difference (delta) relative to the first event.
+            delta = original_time - base_timestamp
+            # The scheduled time for this event is:
+            scheduled_time = first_event_execution_time + delta
+            to_sleep = max(0, scheduled_time - time.time())
+            logger.info(
+                f"Sleeping for {to_sleep:.2f}s, processing time {processing_time:.2f}s, token {token}"
+            )
+            time.sleep(to_sleep)
+
+            # Execute the key action.
+            if state:
+                CALLABLES["keyboard.press"](vk)
+            else:
+                CALLABLES["keyboard.release"](vk)
+
+            self.event_manager.pbar.set_description(f"Executing: {token}, {vk}, {state}")
 
 
 @contextmanager
