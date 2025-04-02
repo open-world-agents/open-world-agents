@@ -10,7 +10,6 @@ import requests
 import uvicorn
 from fastapi import BackgroundTasks, FastAPI, Response, status
 from pydantic import BaseModel
-from rich.logging import RichHandler
 
 from owa_game_agent.commons import Task, handle_response_errors, run_server_background
 from owa_game_agent.constants import ENDPOINTS, NETWORK, TIMEOUTS
@@ -112,14 +111,16 @@ class Agent(ABC):
     @abstractmethod
     def _play_env(self, task: Task) -> bool:
         """
-        This method must be implemented by subclasses.
-        It should implement the logic for playing the environment for a single step.
+        Implement the environment playing logic here for a single step.
+
+        Must be implemented by subclasses.
+        This is what researchers would customize with their models and logic.
 
         Args:
-            task (Task): Configuration for the task to perform
+            task (Task): The task configuration.
 
         Returns:
-            bool: True if the task should continue, False if the task is complete
+            bool: True if the task should continue, False if the task should not continue
         """
         ...
 

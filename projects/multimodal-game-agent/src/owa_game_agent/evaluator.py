@@ -9,7 +9,6 @@ import requests
 import uvicorn
 from fastapi import FastAPI, Response, status
 from pydantic import BaseModel
-from rich.logging import RichHandler
 
 from owa_game_agent.agent import AgentAPIClient
 from owa_game_agent.commons import EvaluationResult, Task, handle_response_errors, run_server_background
@@ -196,7 +195,7 @@ class Evaluator(ABC):
     @abstractmethod
     def _setup_environment(self, task: Task):
         """
-        Setup the environment for a task. Also handles restarting the environment.
+        Setup the environment for a task. Also should handle restarting the environment.
 
         Must be implemented by subclasses.
 

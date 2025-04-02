@@ -11,12 +11,16 @@ Key Features:
 - Minimal asynchronous programming requirements for researchers
 """
 
+import base64
+import json
 import logging
 import time
 from enum import Enum
 
 import cv2
+from pydantic import BaseModel
 import typer
+from openai import OpenAI
 from rich.logging import RichHandler
 from typing_extensions import Annotated
 
@@ -35,11 +39,30 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
     handlers=[RichHandler(rich_tracebacks=True, show_time=False)],
 )
+logging.getLogger("openai").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
 # --- Agent-Evaluator Implementation Examples --- #
+
+
+def get_current_frame_base64(window_name: str) -> str:
+    screen_capture = RUNNABLES["screen_capture"]().configure(fps=60, window_name=window_name)
+    with screen_capture.session:
+        # get a single frame
+        frame: FrameStamped = screen_capture.grab()
+
+    # just for debugging, display the frame
+    # cv2.imshow("frame", frame.frame_arr)
+    # cv2.waitKey(100)  # wait for 100ms
+    # cv2.destroyAllWindows()
+
+    # change the frame to base64
+    frame_base64 = cv2.imencode(".png", frame.frame_arr)[1].tobytes()
+    frame_base64 = base64.b64encode(frame_base64).decode("utf-8")
+    return frame_base64
 
 
 class MySuperHexagonAgent(Agent):
@@ -56,57 +79,99 @@ class MySuperHexagonAgent(Agent):
         activate_module(
             "owa.env.gst"
         )  # https://open-world-agents.github.io/open-world-agents/env/plugins/gstreamer_env/
+        self.openai_client = OpenAI()
 
     def _play_env(self, task: Task) -> bool:
         """
         Implement the environment playing logic here for a single step.
+
+        Must be implemented by subclasses.
         This is what researchers would customize with their models and logic.
 
         Args:
             task (Task): The task configuration.
 
         Returns:
-            bool: True if the task should continue, False if the task is complete
+            bool: True if the task should continue, False if the task should not continue
         """
 
         # Check if window is active
-        window_active = CALLABLES["window.is_active"](task.window_name)
+        # window_active = CALLABLES["window.is_active"](task.window_name)
         # if not window_active:
         #     logger.debug(f"Window {task.window_name} is not active")
         #     return True  # Continue the task
 
-        # Example: Get screen state and make decisions
-        # This would use your ML model to generate actions
-
-        # Example keyboard input (pressing right arrow)
-        CALLABLES["keyboard.press"](VK.RIGHT)  # Right arrow
-        time.sleep(DEFAULTS.KEYBOARD_PRESS_DELAY)
-        CALLABLES["keyboard.release"](VK.RIGHT)
-        logger.debug(f"key {VK.RIGHT} pressed")
-
-        # Check if the success condition for the task has been met
-        def check_success_condition(task: Task) -> bool:
+        # Check if the task should continue
+        def check_continue(task: Task) -> bool:
             """
-            Check if the success condition for the task has been met.
+            Check if the task should continue.
             """
-            # This would implement environment-specific success detection
-            # For example, detecting a "victory" screen or a specific score
-            # using task.success_criteria
-            return False
+            # This would implement environment-specific conditions
+            # For example, detecting a "game over" screen or a specific score
 
-        if check_success_condition(task):
-            logger.debug(f"{self._play_env.__name__} finished: Success condition met")
+            # we can also utilize task information
+            # prompt = f"""Did you survive for at least {task.success_criteria["time_survived"]} seconds? Say only yes or no."""
+            prompt = "This is a screenshot of a game called Super Hexagon. Can you see the text `PRESS SPACE TO RETRY` in the bottom? Say only yes or no."
+            frame_base64 = get_current_frame_base64(task.window_name)
+
+            # use gpt-4o to check if the task should continue
+            response = self.openai_client.responses.create(
+                model="gpt-4o-mini",
+                input=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "input_text",
+                                "text": prompt,
+                            },
+                            {
+                                "type": "input_image",
+                                "image_url": f"data:image/png;base64,{frame_base64}",
+                                "detail": "auto",
+                            },
+                        ],
+                    }
+                ],
+                temperature=0.0,
+            )
+
+            logger.debug(f"response: {response.output_text}")
+
+            if "yes" in response.output_text.lower():
+                return False  # if we can see the retry button, the task should not continue
+            else:
+                return True  # if we cannot see the retry button, the task should continue
+
+        if check_continue(task):
+            logger.debug(f"{self._play_env.__name__}(): task should continue")
+
+            # Normally, you would use your model to generate actions
+
+            # Currently, this agent just presses the right arrow key
+            # Example keyboard input (pressing right arrow)
+            CALLABLES["keyboard.press"](VK.RIGHT)  # Right arrow
+            time.sleep(DEFAULTS.KEYBOARD_PRESS_DELAY)
+            CALLABLES["keyboard.release"](VK.RIGHT)
+            logger.debug(f"key {VK.RIGHT} pressed")
+
+            return True  # Continue the task
+
+        else:
+            logger.debug(f"{self._play_env.__name__}(): task should not continue")
             return False  # Do not continue the task. Evaluation will be made by the evaluator.
 
-        return True  # Continue the task
 
-
-class MyEvaluator(Evaluator):
+class MySuperHexagonEvaluator(Evaluator):
     """Example implementation of an Evaluator"""
+
+    def __init__(self):
+        super().__init__()
+        self.openai_client = OpenAI()
 
     def _score_task(self, task: Task, task_elapsed_time: float, note: str = "") -> EvaluationResult:
         """
-        Simple scoring based on task task_elapsed_time and success criteria.
+        Calculate score for a completed task.
 
         Args:
             task (Task): The task configuration that was completed
@@ -116,29 +181,77 @@ class MyEvaluator(Evaluator):
             EvaluationResult: The scoring results
         """
 
-        # Reference Task for configurations
-        success_criteria = task.success_criteria
-
         # Here you would check if the agent actually achieved the success criteria
         # This could involve checking game state, screenshot analysis, etc.
-        # In a real evaluator, you might capture screenshots or other artifacts for scoring
-        CALLABLES["screen.capture"]
 
-        # For this example, we'll just assume success if they finished before timeout
-        success = task_elapsed_time < task.timeout
+        prompt = "This is a screenshot of a game called Super Hexagon. What is the score? It should be written next to `LAST`, and should be in the format of `%d:%d` up to 2 decimals. If you cannot find the score, the score should be `-1`."
+        frame_base64 = get_current_frame_base64(task.window_name)
+
+        # use gpt-4o to evaluate the score
+        response = self.openai_client.responses.create(
+            model="gpt-4o-mini",
+            input=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "input_text",
+                            "text": prompt,
+                        },
+                        {
+                            "type": "input_image",
+                            "image_url": f"data:image/png;base64,{frame_base64}",
+                            "detail": "auto",
+                        },
+                    ],
+                }
+            ],
+            temperature=0.0,
+            text={
+                "format": {
+                    "type": "json_schema",
+                    "name": "score",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "score": {"type": "number"},
+                        },
+                        "required": ["score"],
+                        "additionalProperties": False,
+                    },
+                    "strict": True,
+                },
+            },
+        )
+
+        logger.debug(f"response: {response.output_text}")
+
+        try:
+            score = json.loads(response.output_text)["score"]
+        except json.JSONDecodeError:
+            score = -1
+
+        if score < 0:
+            success = False
+        else:
+            if score > task.success_criteria["time_survived"]:
+                success = True
+            else:
+                success = False
 
         return EvaluationResult(
             task_id=task.task_id,
             metrics={
-                "time": task_elapsed_time,
+                "task_elapsed_time": task_elapsed_time,
                 "success": success,
+                "score": score,
             },
             notes=note,
         )
 
     def _setup_environment(self, task: Task):
         """
-        Setup the environment for a task. Also handles restarting the environment.
+        Setup the environment for a task. Also should handle restarting the environment.
 
         Args:
             task (Task): Configuration for the task to setup
@@ -146,6 +259,11 @@ class MyEvaluator(Evaluator):
         logger.debug(f"Setting up environment for {task.env_name}")
         # In a real implementation, this would launch games, configure windows, etc.
         # Also handles restarting the environment.
+
+        # for super hexagon, we need to press space
+        CALLABLES["keyboard.press"](VK.SPACE)
+        time.sleep(DEFAULTS.KEYBOARD_PRESS_DELAY)
+        CALLABLES["keyboard.release"](VK.SPACE)
 
 
 # --- Example Tasks --- #
@@ -161,9 +279,9 @@ def get_example_task() -> Task:
     return Task(
         env_name="Super Hexagon",
         window_name="Super Hexagon",
-        task_description="Survive as long as possible",
-        timeout=1,
-        success_criteria={"time_survived": 1},
+        task_description="Survive as long as possible. Maximum time is 60 seconds. A survival time over 10 seconds is considered a success.",
+        timeout=60,
+        success_criteria={"time_survived": 10},
     )
     # Task(
     #     env_name="ZType",
@@ -193,7 +311,7 @@ def run_evaluator():
     """
     Run the evaluator server. Blocking.
     """
-    evaluator = MyEvaluator()
+    evaluator = MySuperHexagonEvaluator()
     print("Starting evaluator server")
     evaluator.run(host=NETWORK.DEFAULT_HOST, port=NETWORK.EVALUATOR_PORT)
 
@@ -262,7 +380,7 @@ def run_evaluation_client_with_server():
     """
     # Create agent and evaluator instances
     agent = MySuperHexagonAgent()
-    evaluator = MyEvaluator()
+    evaluator = MySuperHexagonEvaluator()
 
     # Start agent server in background
     print("Starting agent server...")
@@ -324,4 +442,7 @@ def main(
 
 
 if __name__ == "__main__":
+    from dotenv import load_dotenv
+
+    load_dotenv()
     typer.run(main)
