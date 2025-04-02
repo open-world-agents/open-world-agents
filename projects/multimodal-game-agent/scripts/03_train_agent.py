@@ -65,7 +65,7 @@ if __name__ == "__main__":
         help="Model ID",
     )
     parser.add_argument(
-        "--num_epochs", type=int, default=5, help="Number of training epochs"
+        "--num_epochs", type=int, default=20, help="Number of training epochs"
     )
     parser.add_argument(
         "--batch_size", type=int, default=8, help="Batch size per device"
@@ -77,10 +77,10 @@ if __name__ == "__main__":
         help="Gradient accumulation steps",
     )
     parser.add_argument(
-        "--learning_rate", type=float, default=2e-5, help="Learning rate"
+        "--learning_rate", type=float, default=4e-5, help="Learning rate"
     )
     parser.add_argument(
-        "--save_steps", type=int, default=2000, help="Save checkpoint every X steps"
+        "--save_steps", type=int, default=1000, help="Save checkpoint every X steps"
     )
     parser.add_argument(
         "--repeat_n",
@@ -171,7 +171,7 @@ if __name__ == "__main__":
         # Evaluation settings
         do_eval=True,
         eval_strategy="epoch",
-        eval_steps=1,
+        eval_steps=5,
     )
 
     ################

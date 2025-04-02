@@ -55,7 +55,7 @@ def extract_query(mcap_file: Path) -> list[OWAMcapQuery]:
     intervals = np.array(key_events).reshape(-1, 2)
 
     # Filter only intervals longer than 60 seconds (SUPER HEXAGON)
-    intervals = intervals[intervals[:, 1] - intervals[:, 0] > TimeUnits.SECOND * 1]
+    intervals = intervals[intervals[:, 1] - intervals[:, 0] > TimeUnits.SECOND * 60]
 
     pbar = tqdm(
         intervals,
