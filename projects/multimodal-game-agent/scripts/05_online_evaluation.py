@@ -17,6 +17,7 @@ import typer
 from loguru import logger
 from tqdm import tqdm
 from transformers import AutoModelForImageTextToText, AutoProcessor
+# from transformers.models.smolvlm import SmolVLMProcessor
 
 # Local imports
 from owa.core import Runnable
@@ -26,10 +27,11 @@ from owa_game_agent.data.datasets.smolvlm2 import sample_to_smolvlm_input
 from owa_game_agent.data.sample_processor import SampleProcessor
 
 # Configuration constants
-WINDOW_NAME = "Super Hexagon"
-FPS = 5
+WINDOW_NAME = "hexagon"
+FPS = 1
 MAX_SCREEN_FRAMES = 5
-MODEL_SAMPLE_DELAY = 0.5  # seconds
+MODEL_SAMPLE_DELAY = 10.0  # seconds
+TIMESTAMP_INTERVAL = 0.05*5  # seconds
 
 
 # Setup logger for use with tqdm
@@ -108,7 +110,8 @@ class Agent(Runnable):
         self.model = AutoModelForImageTextToText.from_pretrained(
             model_id,
             torch_dtype=torch.bfloat16,
-            _attn_implementation="flash_attention_2",
+            # load_in_4bit=True,
+            # _attn_implementation="flash_attention_2",
         ).to("cuda")
         self.sample_manager = sample_manager
         self.event_manager = event_manager
@@ -122,11 +125,13 @@ class Agent(Runnable):
 
             now = time.time()
             generated = self._generate_response(sample)
-            logger.info(f"Generated: {generated}, taken: {time.time() - now:.2f}s")
+            taken = time.time() - now
+            logger.info(f"Generated: {generated}, taken: {taken:.2f}s")
 
             if CALLABLES["window.is_active"](WINDOW_NAME):
-                self.execute(generated, anchor_time=now)
+                self.execute(generated, anchor_time=now, processing_time=taken)
 
+    @line_profiler.profile
     def _generate_response(self, sample):
         """Process the sample and generate a response using the VLM."""
         sample_processor = SampleProcessor()
@@ -145,28 +150,44 @@ class Agent(Runnable):
             )
             images.append(ex["images"])
 
+        # profile: 38.7%
         batch = self.processor(text=texts, images=images, return_tensors="pt", padding=True).to(
             self.model.device, dtype=self.model.dtype
         )
 
+        # profile: 57.9%
         outputs = self.model.generate(**batch, logits_processor=[logits_processor], do_sample=False, max_new_tokens=64)
 
         output = outputs[0]
         generated = self.processor.decode(output, skip_special_tokens=True)
         return generated[generated.find("Assistant: ") + len("Assistant: ") :]
 
-    def execute(self, generated, anchor_time: float):
+    def execute(self, generated, anchor_time: float, processing_time: float):
         """Execute the generated response as keyboard actions."""
         tokens = re.findall(r"<(.*?)>", generated)
         sum_time = anchor_time
+        first_time = True
+        first_interval = 0
 
-        for token in tokens:
+        # Check if the generated response is valid, hardcoded for now
+        if len(tokens)//2 == 0:
+            logger.warning(f"Invalid response: {generated}")
+            return
+
+        for i, token in enumerate(tokens):
             if token.startswith("TIMESTAMP"):
                 timestamp = int(token.split("_")[1])
-                sum_time = anchor_time + timestamp * 0.05
-                to_sleep = max(0, sum_time - time.time())
-                if sum_time + to_sleep - anchor_time > MODEL_SAMPLE_DELAY:
-                    break
+                sum_time = timestamp * TIMESTAMP_INTERVAL
+                tmp_time = sum_time - processing_time
+                if first_time:
+                    if tmp_time < 0:
+                        first_interval = tmp_time * -1
+                    first_time = False
+                else:
+                    tmp_time += first_interval
+                to_sleep = max(0, tmp_time)
+                # if sum_time + to_sleep - anchor_time > MODEL_SAMPLE_DELAY:
+                #     break
                 time.sleep(to_sleep)
             elif token.startswith("KEYBOARD"):
                 vk, state = map(int, token.split("_")[1:])
@@ -177,6 +198,7 @@ class Agent(Runnable):
                 self.event_manager.pbar.set_description(f"Executing: {token}, {vk}, {state}")
             else:
                 logger.warning(f"Invalid token: {token}")
+                return
 
 
 @contextmanager
