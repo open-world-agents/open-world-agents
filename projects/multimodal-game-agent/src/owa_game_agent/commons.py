@@ -7,16 +7,10 @@ from typing import Any, Optional
 import requests
 from fastapi import Response
 from pydantic import BaseModel, Field
-from rich.logging import RichHandler
 
 from owa_game_agent.constants import ENDPOINTS, NETWORK, TIMEOUTS
 
-# Configure Rich-based logging
-logging.basicConfig(
-    level=logging.DEBUG, format="%(message)s", datefmt="[%X]", handlers=[RichHandler(rich_tracebacks=True)]
-)
 logger = logging.getLogger(__name__)
-
 
 # ----- Data Classes ----- #
 

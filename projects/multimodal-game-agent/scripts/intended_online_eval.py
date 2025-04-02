@@ -15,27 +15,34 @@ import logging
 import time
 from enum import Enum
 
+import cv2
 import typer
 from rich.logging import RichHandler
 from typing_extensions import Annotated
 
-from owa.core.registry import CALLABLES, activate_module
+from owa.core.registry import CALLABLES, RUNNABLES, activate_module
 from owa.env.desktop.constants import VK
+from owa.env.gst.msg import FrameStamped
 from owa_game_agent.agent import Agent, AgentAPIClient
 from owa_game_agent.commons import EvaluationResult, Task
 from owa_game_agent.constants import DEFAULTS, NETWORK, TIMEOUTS
 from owa_game_agent.evaluator import Evaluator, EvaluatorAPIClient, EvaluatorState
+from rich import print
 
-# Configure Rich-based logging
 logging.basicConfig(
-    level=logging.DEBUG, format="%(message)s", datefmt="[%X]", handlers=[RichHandler(rich_tracebacks=True)]
+    level=logging.DEBUG,
+    format="(%(asctime)s) [%(name)s]:\n %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    handlers=[RichHandler(rich_tracebacks=True, show_time=False)],
 )
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+
 logger = logging.getLogger(__name__)
 
 # --- Agent-Evaluator Implementation Examples --- #
 
 
-class MyAgent(Agent):
+class MySuperHexagonAgent(Agent):
     """Example implementation of an agent"""
 
     def __init__(self):
@@ -43,8 +50,12 @@ class MyAgent(Agent):
 
         # Example: Super Hexagon implementation would use screen observations
         # and generate keyboard inputs based on those observations
-        activate_module("owa.env.desktop")
-        activate_module("owa.env.gst")
+        activate_module(
+            "owa.env.desktop"
+        )  # https://open-world-agents.github.io/open-world-agents/env/plugins/desktop_env/
+        activate_module(
+            "owa.env.gst"
+        )  # https://open-world-agents.github.io/open-world-agents/env/plugins/gstreamer_env/
 
     def _play_env(self, task: Task) -> bool:
         """
@@ -173,7 +184,7 @@ def run_agent():
     Args:
         model_id (str): The model ID to use for the agent.
     """
-    agent = MyAgent()
+    agent = MySuperHexagonAgent()
     print("Starting agent server")
     agent.run(host=NETWORK.DEFAULT_HOST, port=NETWORK.AGENT_PORT)
 
@@ -250,7 +261,7 @@ def run_evaluation_client_with_server():
     waits for them to be ready, and then runs an example evaluation against them.
     """
     # Create agent and evaluator instances
-    agent = MyAgent()
+    agent = MySuperHexagonAgent()
     evaluator = MyEvaluator()
 
     # Start agent server in background

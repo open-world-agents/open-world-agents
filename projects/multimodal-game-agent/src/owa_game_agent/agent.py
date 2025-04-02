@@ -3,6 +3,7 @@ import threading
 import time
 from abc import ABC, abstractmethod
 from enum import Enum, auto
+import traceback
 from typing import Optional
 
 import requests
@@ -14,10 +15,6 @@ from rich.logging import RichHandler
 from owa_game_agent.commons import Task, handle_response_errors, run_server_background
 from owa_game_agent.constants import ENDPOINTS, NETWORK, TIMEOUTS
 
-# Configure Rich-based logging
-logging.basicConfig(
-    level=logging.DEBUG, format="%(message)s", datefmt="[%X]", handlers=[RichHandler(rich_tracebacks=True)]
-)
 logger = logging.getLogger(__name__)
 
 
@@ -90,7 +87,7 @@ class Agent(ABC):
             logger.debug(f"`_run_task()`: Agent task stopped in {time.time() - start_time} seconds")
 
         except Exception as e:
-            logger.error(f"Error in task execution: {e}")
+            logger.error(f"Error in task execution: {e} \n {traceback.format_exc()}")
         finally:
             self.state = AgentState.READY
 
@@ -225,6 +222,7 @@ class AgentAPIServer:
     def _kill(self, response: Response):
         """Force kill the agent process"""
         # TODO : implement kill logic. Kill is intended to be called by the evaluator, when the agent is not responding with _task_stop().
+        # To kill the agent, we should make _run_task() run as a process, because threads cannot be killed.
         response.status_code = status.HTTP_501_NOT_IMPLEMENTED
         return {"success": False, "message": "Kill is not implemented"}
 

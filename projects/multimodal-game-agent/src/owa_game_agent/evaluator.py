@@ -15,10 +15,6 @@ from owa_game_agent.agent import AgentAPIClient
 from owa_game_agent.commons import EvaluationResult, Task, handle_response_errors, run_server_background
 from owa_game_agent.constants import DEFAULTS, ENDPOINTS, NETWORK
 
-# Configure Rich-based logging
-logging.basicConfig(
-    level=logging.DEBUG, format="%(message)s", datefmt="[%X]", handlers=[RichHandler(rich_tracebacks=True)]
-)
 logger = logging.getLogger(__name__)
 
 
