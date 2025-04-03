@@ -19,12 +19,13 @@ import time
 from enum import Enum
 
 import cv2
+from owa.env.desktop.msg import KeyboardEvent
 import typer
 from openai import OpenAI
 from rich.logging import RichHandler
 from typing_extensions import Annotated
 
-from owa.core.registry import CALLABLES, RUNNABLES, activate_module
+from owa.core.registry import CALLABLES, LISTENERS, RUNNABLES, activate_module
 from owa.env.desktop.constants import VK
 from owa.env.gst.msg import FrameStamped
 from owa_game_agent.agent import Agent, AgentAPIClient
@@ -44,6 +45,8 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
+
+env_lock = threading.Lock()  # mutex lock for controlling the environment
 
 # --- Agent-Evaluator Implementation Examples --- #
 
@@ -81,6 +84,14 @@ class MySuperHexagonAgent(Agent):
         )  # https://open-world-agents.github.io/open-world-agents/env/plugins/gstreamer_env/
         self.openai_client = OpenAI()
 
+        def on_keyboard_event(keyboard_event: KeyboardEvent):
+            if keyboard_event.vk == VK.F10:
+                logger.debug("Stopping agent")
+                self.stop_event.set()
+
+        keyboard_listener = LISTENERS["keyboard"]().configure(callback=on_keyboard_event)
+        keyboard_listener.start()
+
     def _play_env(self, task: Task) -> bool:
         """
         Implement the environment playing logic here for a single step.
@@ -95,34 +106,35 @@ class MySuperHexagonAgent(Agent):
             bool: True if the task should continue, False if the task should not continue
         """
 
-        # make the window active
-        CALLABLES["window.make_active"](task.window_name)
+        with env_lock:
+            # make the window active
+            CALLABLES["window.make_active"](task.window_name)
 
-        # Check if the task should continue
-        def check_continue(task: Task) -> bool:
-            """
-            Check if the task should continue.
-            """
-            # In this version, evaluator will monitor and check the task. agent does not need to report termination.
-            return True
+            # Check if the task should continue
+            def check_continue(task: Task) -> bool:
+                """
+                Check if the task should continue.
+                """
+                # In this version, evaluator will monitor and check the task. agent does not need to report termination.
+                return True
 
-        if check_continue(task):
-            # logger.debug(f"{self._play_env.__name__}(): task should continue")
+            if check_continue(task):
+                # logger.debug(f"{self._play_env.__name__}(): task should continue")
 
-            # Normally, you would use your model to generate actions
+                # Normally, you would use your model to generate actions
 
-            # Currently, this agent just presses the right arrow key
-            # Example keyboard input (pressing right arrow)
-            CALLABLES["keyboard.press"](VK.RIGHT)  # Right arrow
-            time.sleep(DEFAULTS.KEYBOARD_PRESS_DELAY)
-            CALLABLES["keyboard.release"](VK.RIGHT)
-            logger.debug(f"key {VK.RIGHT} pressed")
+                # Currently, this agent just presses the right arrow key
+                # Example keyboard input (pressing right arrow)
+                CALLABLES["keyboard.press"](VK.RIGHT)  # Right arrow
+                time.sleep(DEFAULTS.KEYBOARD_PRESS_DELAY)
+                CALLABLES["keyboard.release"](VK.RIGHT)
+                logger.debug(f"key {VK.RIGHT} pressed")
 
-            return True  # Continue the task
+                return True  # Continue the task
 
-        else:
-            # logger.error(f"{self._play_env.__name__}(): task should not continue. This should not happen.")
-            return False  # Do not continue the task. Evaluation will be made by the evaluator.
+            else:
+                # logger.error(f"{self._play_env.__name__}(): task should not continue. This should not happen.")
+                return False  # Do not continue the task. Evaluation will be made by the evaluator.
 
 
 class MySuperHexagonEvaluator(Evaluator):
@@ -130,6 +142,15 @@ class MySuperHexagonEvaluator(Evaluator):
 
     def __init__(self):
         super().__init__()
+
+        def on_keyboard_event(keyboard_event: KeyboardEvent):
+            if keyboard_event.vk == VK.F10:
+                logger.debug("Stopping evaluator")
+                self.stop_event.set()
+
+        keyboard_listener = LISTENERS["keyboard"]().configure(callback=on_keyboard_event)
+        keyboard_listener.start()
+
         self.openai_client = OpenAI()
 
     def _check_env_continue(self, task: Task) -> bool:
@@ -268,13 +289,14 @@ class MySuperHexagonEvaluator(Evaluator):
         # In a real implementation, this would launch games, configure windows, etc.
         # Also handles restarting the environment.
 
-        # make the window active
-        CALLABLES["window.make_active"](task.window_name)
+        with env_lock:
+            # make the window active
+            CALLABLES["window.make_active"](task.window_name)
 
-        # for super hexagon, we need to press space
-        CALLABLES["keyboard.press"](VK.SPACE)
-        time.sleep(DEFAULTS.KEYBOARD_PRESS_DELAY)
-        CALLABLES["keyboard.release"](VK.SPACE)
+            # for super hexagon, we need to press space
+            CALLABLES["keyboard.press"](VK.SPACE)
+            time.sleep(DEFAULTS.KEYBOARD_PRESS_DELAY)
+            CALLABLES["keyboard.release"](VK.SPACE)
 
 
 class YourSuperHexagonAgent(Agent):
