@@ -94,11 +94,8 @@ class MySuperHexagonAgent(Agent):
             bool: True if the task should continue, False if the task should not continue
         """
 
-        # Check if window is active
-        # window_active = CALLABLES["window.is_active"](task.window_name)
-        # if not window_active:
-        #     logger.debug(f"Window {task.window_name} is not active")
-        #     return True  # Continue the task
+        # make the window active
+        CALLABLES["window.make_active"](task.window_name)
 
         # Check if the task should continue
         def check_continue(task: Task) -> bool:
@@ -270,6 +267,9 @@ class MySuperHexagonEvaluator(Evaluator):
         # In a real implementation, this would launch games, configure windows, etc.
         # Also handles restarting the environment.
 
+        # make the window active
+        CALLABLES["window.make_active"](task.window_name)
+
         # for super hexagon, we need to press space
         CALLABLES["keyboard.press"](VK.SPACE)
         time.sleep(DEFAULTS.KEYBOARD_PRESS_DELAY)
@@ -306,11 +306,8 @@ class YourSuperHexagonAgent(Agent):
             bool: True if the task should continue, False if the task should not continue
         """
 
-        # Check if window is active
-        # window_active = CALLABLES["window.is_active"](task.window_name)
-        # if not window_active:
-        #     logger.debug(f"Window {task.window_name} is not active")
-        #     return True  # Continue the task
+        # make the window active
+        CALLABLES["window.make_active"](task.window_name)
 
         # Check if the task should continue
         def check_continue(task: Task) -> bool:
@@ -470,6 +467,9 @@ class YourSuperHexagonEvaluator(Evaluator):
         logger.debug(f"Setting up environment for {task.env_name}")
         # In a real implementation, this would launch games, configure windows, etc.
         # Also handles restarting the environment.
+
+        # make the window active
+        CALLABLES["window.make_active"](task.window_name)
 
         # for super hexagon, we need to press space
         CALLABLES["keyboard.press"](VK.SPACE)

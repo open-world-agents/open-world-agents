@@ -1,4 +1,4 @@
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Any
 
 from annotated_types import Ge, Lt
 
@@ -48,6 +48,7 @@ class WindowInfo(OWAMessage):
     # 0 <= top < bottom <= screen_height
     rect: tuple[int, int, int, int]
     hWnd: int
+    window: Any | None = None
 
     @property
     def width(self):

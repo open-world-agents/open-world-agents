@@ -26,7 +26,7 @@ if platform.system() == "Darwin":
                     int(bounds["Y"] + bounds["Height"]),
                 )
                 hWnd = window.get("kCGWindowNumber", 0)
-                return WindowInfo(title=title, rect=rect, hWnd=hWnd)
+                return WindowInfo(title=title, rect=rect, hWnd=hWnd, window=window)
         return None
 
 elif platform.system() == "Windows":
@@ -39,8 +39,8 @@ elif platform.system() == "Windows":
             title = active_window.title
             rect_coords = (rect.left, rect.top, rect.right, rect.bottom)
             hWnd = active_window._hWnd
-            return WindowInfo(title=title, rect=rect_coords, hWnd=hWnd)
-        return WindowInfo(title="", rect=[0, 0, 0, 0], hWnd=-1)
+            return WindowInfo(title=title, rect=rect_coords, hWnd=hWnd, window=active_window)
+        return None
 
 else:
 
@@ -64,9 +64,14 @@ def get_window_by_title(window_title_substring: str) -> WindowInfo:
         if "Conda" in windows[0].title:
             windows.pop(0)
 
-        window = windows[0]
+        window = windows[0]  # NOTE: only return the first window matching the title
         rect = window._getWindowRect()
-        return WindowInfo(title=window.title, rect=(rect.left, rect.top, rect.right, rect.bottom), hWnd=window._hWnd)
+        return WindowInfo(
+            title=window.title,
+            rect=(rect.left, rect.top, rect.right, rect.bottom),
+            hWnd=window._hWnd,
+            window=window,
+        )
     elif os_name == "Darwin":
         from Quartz import CGWindowListCopyWindowInfo, kCGNullWindowID, kCGWindowLayer, kCGWindowListOptionOnScreenOnly
 
@@ -93,6 +98,7 @@ def get_window_by_title(window_title_substring: str) -> WindowInfo:
                             int(bounds["Y"] + bounds["Height"]),
                         ),
                         hWnd=window.get("kCGWindowNumber", 0),
+                        window=window,
                     )
 
         raise ValueError(f"No window with title containing '{window_title_substring}' found.")
@@ -127,7 +133,15 @@ def is_active(window_title_substring: str):
     return get_active_window().hWnd == window.hWnd
 
 
+def make_active(window_title_substring: str):
+    """Make the window with the title containing the substring active."""
+
+    window: WindowInfo = get_window_by_title(window_title_substring)
+    window.window.activate()
+
+
 CALLABLES.register("window.get_active_window")(get_active_window)
 CALLABLES.register("window.get_window_by_title")(get_window_by_title)
 CALLABLES.register("window.when_active")(when_active)
 CALLABLES.register("window.is_active")(is_active)
+CALLABLES.register("window.make_active")(make_active)
