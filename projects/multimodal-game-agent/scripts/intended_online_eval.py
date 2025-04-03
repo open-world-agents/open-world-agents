@@ -14,6 +14,7 @@ Key Features:
 import base64
 import json
 import logging
+import threading
 import time
 from enum import Enum
 
@@ -494,19 +495,28 @@ def get_example_task() -> Task:
         timeout=60,
         success_criteria={"time_survived": 10},
     )
-    # Task(
-    #     env_name="ZType",
-    #     window_name="ZType",
-    #     task_description="Complete the first level with at least 90% accuracy",
-    #     timeout=120,
-    #     success_criteria={"accuracy": 0.9, "level_completed": True},
-    # ),
+
+
+def get_example_task_2() -> Task:
+    """
+    Get an example task for testing.
+
+    Returns:
+        Task: An example task configuration.
+    """
+    return Task(
+        env_name="Hexagon Super",
+        window_name="Hexagon Super",
+        task_description="Survive as long as possible. Maximum time is 60 seconds. A survival time over 10 seconds is considered a success.",
+        timeout=60,
+        success_criteria={"time_survived": 10},
+    )
 
 
 # --- Run Functions --- #
 
 
-def run_agent():
+def run_agent(host: str = NETWORK.DEFAULT_HOST, port: int = NETWORK.AGENT_PORT):
     """
     Run the agent server. Blocking.
 
@@ -515,19 +525,19 @@ def run_agent():
     """
     agent = MySuperHexagonAgent()
     print("Starting agent server")
-    agent.run(host=NETWORK.DEFAULT_HOST, port=NETWORK.AGENT_PORT)
+    agent.run(host=host, port=port)
 
 
-def run_evaluator():
+def run_evaluator(host: str = NETWORK.DEFAULT_HOST, port: int = NETWORK.EVALUATOR_PORT):
     """
     Run the evaluator server. Blocking.
     """
     evaluator = MySuperHexagonEvaluator()
     print("Starting evaluator server")
-    evaluator.run(host=NETWORK.DEFAULT_HOST, port=NETWORK.EVALUATOR_PORT)
+    evaluator.run(host=host, port=port)
 
 
-def run_evaluation_client(agent_url: str, evaluator_url: str):
+def run_evaluation_client(agent_url: str, evaluator_url: str, task: Task):
     """
     Run an example evaluation. Assumes the agent and evaluator servers are already running.
 
@@ -551,9 +561,6 @@ def run_evaluation_client(agent_url: str, evaluator_url: str):
         print("Failed to register agent with evaluator. Exiting.")
         return
 
-    # Get example task
-    example_task = get_example_task()
-
     # Start evaluation
     for _ in range(3):
         # wait for evaluator to be ready
@@ -562,8 +569,8 @@ def run_evaluation_client(agent_url: str, evaluator_url: str):
             time.sleep(TIMEOUTS.EVALUATION_POLL_INTERVAL)
         print(f"Evaluator is ready: {evaluator_client.get_status()}")
 
-        print(f"Starting evaluation with task: {example_task.env_name}...")
-        if not evaluator_client.start_evaluation(example_task):
+        print(f"Starting evaluation with task: {task.window_name}...")
+        if not evaluator_client.start_evaluation(task):
             print("Failed to start evaluation. Exiting.")
             return
 
@@ -582,7 +589,13 @@ def run_evaluation_client(agent_url: str, evaluator_url: str):
                 break
 
 
-def run_evaluation_client_with_server():
+def run_evaluation_client_with_server(
+    task: Task,
+    agent_host: str = NETWORK.DEFAULT_HOST,
+    agent_port: int = NETWORK.AGENT_PORT,
+    evaluator_host: str = NETWORK.DEFAULT_HOST,
+    evaluator_port: int = NETWORK.EVALUATOR_PORT,
+):
     """
     Run an example evaluation without blocking
 
@@ -595,14 +608,14 @@ def run_evaluation_client_with_server():
 
     # Start agent server in background
     print("Starting agent server...")
-    agent_url = agent.run_background(host=NETWORK.DEFAULT_HOST, port=NETWORK.AGENT_PORT)
+    agent_url = agent.run_background(host=agent_host, port=agent_port)
     if not agent_url:
         print("Failed to start agent server. Exiting.")
         return
 
     # Start evaluator server in background
     print("Starting evaluator server...")
-    evaluator_url = evaluator.run_background(host=NETWORK.DEFAULT_HOST, port=NETWORK.EVALUATOR_PORT)
+    evaluator_url = evaluator.run_background(host=evaluator_host, port=evaluator_port)
     if not evaluator_url:
         print("Failed to start evaluator server. Exiting.")
         return
@@ -612,10 +625,39 @@ def run_evaluation_client_with_server():
 
     # Run evaluation
     print("Running evaluation...")
-    run_evaluation_client(agent_url, evaluator_url)
+    run_evaluation_client(agent_url, evaluator_url, task)
 
     # Wait for user input to exit
     input("Press Enter to exit...")
+
+
+def run_evaluation_client_with_server_parallel():
+    """
+    Run an example evaluation without blocking
+
+    This function runs run_evaluation_client_with_server() in parallel for multiple tasks.
+    """
+    tasks = [get_example_task(), get_example_task_2()]
+
+    threads = []
+    port = 8181
+    for task in tasks:
+        thread = threading.Thread(
+            target=run_evaluation_client_with_server,
+            args=(
+                task,
+                NETWORK.DEFAULT_HOST,
+                port,
+                NETWORK.DEFAULT_HOST,
+                port + 1,
+            ),
+        )
+        thread.start()
+        threads.append(thread)
+        port += 2
+
+    for thread in threads:
+        thread.join()
 
 
 class Mode(Enum):
@@ -623,13 +665,14 @@ class Mode(Enum):
     EVALUATOR = "evaluator"
     RUN_CLIENT = "run_client"
     RUN_CLIENT_WITH_SERVER = "run_client_with_server"
+    RUN_PARALLEL = "run_parallel"
 
 
 def main(
     mode: Annotated[
         Mode,
         typer.Option(
-            help="Mode to run: 'agent', 'evaluator', 'run_client', or 'run_client_with_server'",
+            help="Mode to run: 'agent', 'evaluator', 'run_client', 'run_client_with_server', 'run_parallel'",
         ),
     ] = Mode.RUN_CLIENT_WITH_SERVER.value,
 ):
@@ -647,7 +690,9 @@ def main(
     elif mode == Mode.RUN_CLIENT:
         run_evaluation_client(NETWORK._AGENT_URL, NETWORK._EVALUATOR_URL)
     elif mode == Mode.RUN_CLIENT_WITH_SERVER:
-        run_evaluation_client_with_server()
+        run_evaluation_client_with_server(get_example_task())
+    elif mode == Mode.RUN_PARALLEL:
+        run_evaluation_client_with_server_parallel()
     else:
         raise ValueError(f"Unknown mode: {mode=}")
 
