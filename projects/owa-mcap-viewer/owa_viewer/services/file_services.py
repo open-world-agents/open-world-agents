@@ -8,7 +8,12 @@ from huggingface_hub import HfFileSystem
 
 from ..schema import File, FilePair
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 EXPORT_PATH = os.environ.get("EXPORT_PATH", "./data")
+print(f"{EXPORT_PATH=}")
 
 
 def list_file(repo_id: str) -> list[File]:
