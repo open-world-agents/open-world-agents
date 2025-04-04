@@ -81,14 +81,14 @@ document.addEventListener('DOMContentLoaded', () => {
             setLoadingState(true);
 
             // Set the video source
-            console.log(`Setting video source to: ${pair.url_mkv}`);
-            videoSource.src = `${pair.url_mkv}`;
+            console.log(`Setting video source to: /files/${pair.url_mkv}`);
+            videoSource.src = `/files/${pair.url_mkv}`;
             videoPlayer.load();
             console.log("Video source set successfully");
 
             // Fetch MCAP metadata
-            console.log(`Fetching MCAP metadata: /api/mcap_metadata/${pair.basename + ".mcap"}?local=${pair.local}`);
-            const metaResponse = await fetch(`/api/mcap_metadata/${pair.basename + ".mcap"}?local=${pair.local}`);
+            console.log(`Fetching MCAP metadata: /api/mcap_metadata?mcap_filename=${pair.url_mcap}&local=${pair.local}`);
+            const metaResponse = await fetch(`/api/mcap_metadata?mcap_filename=${pair.url_mcap}&local=${pair.local}`);
             if (!metaResponse.ok) {
                 throw new Error(`HTTP error! status: ${metaResponse.status}`);
             }
@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
             metadata = await metaResponse.json();
             console.log("MCAP metadata loaded:", metadata);
 
-            await updateMcapInfo(pair.basename + ".mcap");
+            await updateMcapInfo(pair.url_mcap);
 
             // Initialize with data from the beginning
             await loadDataForTimeRange(metadata.start_time, null);
@@ -144,7 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function updateMcapInfo(mcapFilename) {
         try {
-            const response = await fetch(`/api/mcap_info/${mcapFilename}`);
+            const response = await fetch(`/api/mcap_info?mcap_filename=${mcapFilename}`);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -199,7 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setLoadingState(true);
 
         try {
-            const url = new URL(`/api/mcap_data/${currentFile.basename + ".mcap"}?local=${currentFile.local}`, window.location.origin);
+            const url = new URL(`/api/mcap_data?mcap_filename=${currentFile.url_mcap}&local=${currentFile.local}`, window.location.origin);
             url.searchParams.append('start_time', startTime);
             if (endTime) url.searchParams.append('end_time', endTime);
             url.searchParams.append('window_size', DATA_WINDOW_SIZE);

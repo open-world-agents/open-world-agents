@@ -1,18 +1,18 @@
 import logging
 import subprocess
-from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from rich import print
 
 from mcap_owa.highlevel import OWAMcapReader
 from owa_viewer.routers import export_file
 from owa_viewer.schema import OWAFile
 from owa_viewer.services import file_services
+from owa_viewer.services.file_services import safe_join
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -89,11 +89,12 @@ async def list_files(repo_id: str) -> list[OWAFile]:
     return file_services.list_file(repo_id)
 
 
-@app.get("/api/mcap_info/{mcap_filename}")
+@app.get("/api/mcap_info")
 async def get_mcap_info(mcap_filename: str, local: bool = True):
     """Return the `owl mcap info` command output"""
     if local:
-        mcap_path = Path(file_services.EXPORT_PATH) / mcap_filename
+        # join path
+        mcap_path = safe_join(file_services.EXPORT_PATH, mcap_filename)
 
         if not mcap_path.exists():
             raise HTTPException(status_code=404, detail="MCAP file not found")
@@ -112,84 +113,91 @@ async def get_mcap_info(mcap_filename: str, local: bool = True):
         raise HTTPException(status_code=502, detail="Remote files are not supported yet")
 
 
-@app.get("/api/mcap_metadata/{mcap_filename}")
-async def get_mcap_metadata(mcap_filename: str):
+@app.get("/api/mcap_metadata")
+async def get_mcap_metadata(mcap_filename: str, local: bool = True):
     """Get metadata about an MCAP file including time range and topics"""
-    mcap_path = Path(file_services.EXPORT_PATH) / mcap_filename
+    if local:
+        mcap_path = safe_join(file_services.EXPORT_PATH, mcap_filename)
 
-    if not mcap_path.exists():
-        raise HTTPException(status_code=404, detail="MCAP file not found")
+        if not mcap_path.exists():
+            raise HTTPException(status_code=404, detail="MCAP file not found")
 
-    # Get or build metadata about this file
-    if mcap_filename not in mcap_metadata_cache:
-        await build_mcap_metadata(mcap_filename)
+        # Get or build metadata about this file
+        if mcap_filename not in mcap_metadata_cache:
+            await build_mcap_metadata(mcap_filename)
 
-    metadata = mcap_metadata_cache.get(mcap_filename)
-    if not metadata:
-        raise HTTPException(status_code=500, detail="Failed to create MCAP metadata")
+        metadata = mcap_metadata_cache.get(mcap_filename)
+        if not metadata:
+            raise HTTPException(status_code=500, detail="Failed to create MCAP metadata")
 
-    # Return metadata about the file
-    return {"start_time": metadata.start_time, "end_time": metadata.end_time, "topics": list(metadata.topics)}
+        # Return metadata about the file
+        return {"start_time": metadata.start_time, "end_time": metadata.end_time, "topics": list(metadata.topics)}
+    else:
+        raise HTTPException(status_code=502, detail="Remote files are not supported yet")
 
 
-@app.get("/api/mcap_data/{mcap_filename}")
+@app.get("/api/mcap_data")
 async def get_mcap_data(
     mcap_filename: str,
+    local: bool = True,
     start_time: Optional[int] = Query(None),
     end_time: Optional[int] = Query(None),
     window_size: Optional[int] = Query(10_000_000_000),  # Default 10-second window in nanoseconds
 ):
     """Get MCAP data for a specific time range"""
-    mcap_path = Path(file_services.EXPORT_PATH) / mcap_filename
+    if local:
+        mcap_path = safe_join(file_services.EXPORT_PATH, mcap_filename)
 
-    if not mcap_path.exists():
-        raise HTTPException(status_code=404, detail="MCAP file not found")
+        if not mcap_path.exists():
+            raise HTTPException(status_code=404, detail="MCAP file not found")
 
-    # Ensure we have metadata
-    if mcap_filename not in mcap_metadata_cache:
-        await build_mcap_metadata(mcap_filename)
+        # Ensure we have metadata
+        if mcap_filename not in mcap_metadata_cache:
+            await build_mcap_metadata(mcap_filename)
 
-    metadata = mcap_metadata_cache.get(mcap_filename)
+        metadata = mcap_metadata_cache.get(mcap_filename)
 
-    # If start_time is not provided, use the beginning of the file
-    if start_time is None:
-        start_time = metadata.start_time
+        # If start_time is not provided, use the beginning of the file
+        if start_time is None:
+            start_time = metadata.start_time
 
-    # If end_time is not provided, use start_time + window_size
-    if end_time is None:
-        end_time = start_time + window_size
+        # If end_time is not provided, use start_time + window_size
+        if end_time is None:
+            end_time = start_time + window_size
 
-    logger.info(f"Fetching MCAP data for time range: {start_time} to {end_time}")
+        logger.info(f"Fetching MCAP data for time range: {start_time} to {end_time}")
 
-    # Define topics we're interested in
-    topics_of_interest = ["keyboard", "mouse", "screen", "window", "keyboard/state", "mouse/state"]
+        # Define topics we're interested in
+        topics_of_interest = ["keyboard", "mouse", "screen", "window", "keyboard/state", "mouse/state"]
 
-    # Initialize result structure
-    topics_data = {topic: [] for topic in topics_of_interest}
+        # Initialize result structure
+        topics_data = {topic: [] for topic in topics_of_interest}
 
-    try:
-        with OWAMcapReader(mcap_path) as reader:
-            # Use the built-in filter parameters of iter_messages
-            for topic, timestamp, message in reader.iter_decoded_messages(
-                topics=topics_of_interest, start_time=start_time, end_time=end_time
-            ):
-                # topics_data[topic].append({"timestamp": timestamp, "data": message})
-                message["timestamp"] = timestamp
-                topics_data[topic].append(message)
+        try:
+            with OWAMcapReader(mcap_path) as reader:
+                # Use the built-in filter parameters of iter_messages
+                for topic, timestamp, message in reader.iter_decoded_messages(
+                    topics=topics_of_interest, start_time=start_time, end_time=end_time
+                ):
+                    # topics_data[topic].append({"timestamp": timestamp, "data": message})
+                    message["timestamp"] = timestamp
+                    topics_data[topic].append(message)
 
-        total_messages = sum(len(msgs) for msgs in topics_data.values())
-        logger.info(f"Fetched {total_messages} messages for time range {start_time} to {end_time}")
+            total_messages = sum(len(msgs) for msgs in topics_data.values())
+            logger.info(f"Fetched {total_messages} messages for time range {start_time} to {end_time}")
 
-        return topics_data
+            return topics_data
 
-    except Exception as e:
-        logger.error(f"Error fetching MCAP data: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error fetching MCAP data: {str(e)}")
+        except Exception as e:
+            logger.error(f"Error fetching MCAP data: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail=f"Error fetching MCAP data: {str(e)}")
+    else:
+        raise HTTPException(status_code=502, detail="Remote files are not supported yet")
 
 
 async def build_mcap_metadata(mcap_filename: str):
     """Build metadata about an MCAP file (time range, topics, etc.)"""
-    mcap_path = Path(file_services.EXPORT_PATH) / mcap_filename
+    mcap_path = safe_join(file_services.EXPORT_PATH, mcap_filename)
 
     if not mcap_path.exists():
         raise HTTPException(status_code=404, detail="MCAP file not found")

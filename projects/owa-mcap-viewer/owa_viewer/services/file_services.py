@@ -1,19 +1,33 @@
 import os
 from pathlib import Path, PurePosixPath
 
+from fastapi import HTTPException
 import fsspec
 import fsspec.implementations
+from dotenv import load_dotenv
 from fsspec.implementations.local import LocalFileSystem
 from huggingface_hub import HfFileSystem
+from rich import print
 
 from ..schema import OWAFile
-
-from dotenv import load_dotenv
 
 load_dotenv()
 
 EXPORT_PATH = os.environ.get("EXPORT_PATH", "./data")
+EXPORT_PATH = Path(EXPORT_PATH).as_posix()
 print(f"{EXPORT_PATH=}")
+
+
+def safe_join(base_dir: str, *paths: str) -> Path:
+    """Join paths and ensure the result is within the base directory."""
+    base = Path(base_dir).resolve()
+    target = (base / Path(*paths)).resolve()
+
+    if not str(target).startswith(str(base)):
+        print(f"Unsafe path: {target} is outside of base directory {base}")
+        raise HTTPException(status_code=404, detail="File not found")
+
+    return target
 
 
 def list_file(repo_id: str) -> list[OWAFile]:
@@ -34,8 +48,8 @@ def list_file(repo_id: str) -> list[OWAFile]:
         if fs.exists(mcap_file.with_suffix(".mkv")) and fs.exists(mcap_file.with_suffix(".mcap")):
             basename = (mcap_file.parent / mcap_file.stem).as_posix()
             if repo_id == "local":
-                basename = Path(basename).relative_to(EXPORT_PATH).as_posix()
-                url = f"/files/{basename}"
+                basename = PurePosixPath(basename).relative_to(EXPORT_PATH).as_posix()
+                url = f"{basename}"
                 local = True
             else:
                 basename = basename[len(f"datasets/{repo_id}/") :]
