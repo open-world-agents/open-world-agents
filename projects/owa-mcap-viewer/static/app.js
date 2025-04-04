@@ -81,8 +81,13 @@ document.addEventListener('DOMContentLoaded', () => {
             setLoadingState(true);
 
             // Set the video source
-            console.log(`Setting video source to: /files/${pair.url_mkv}`);
-            videoSource.src = `/files/${pair.url_mkv}`;
+            if (pair.local) {
+                console.log(`Setting video source to: /files/${pair.url_mkv}`);
+                videoSource.src = `/files/${pair.url_mkv}`;
+            } else {
+                console.log(`Setting video source to: ${pair.url_mkv}`);
+                videoSource.src = pair.url_mkv;
+            }
             videoPlayer.load();
             console.log("Video source set successfully");
 
@@ -96,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
             metadata = await metaResponse.json();
             console.log("MCAP metadata loaded:", metadata);
 
-            await updateMcapInfo(pair.url_mcap);
+            await updateMcapInfo(pair);
 
             // Initialize with data from the beginning
             await loadDataForTimeRange(metadata.start_time, null);
@@ -142,9 +147,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function updateMcapInfo(mcapFilename) {
+    async function updateMcapInfo(pair) {
         try {
-            const response = await fetch(`/api/mcap_info?mcap_filename=${mcapFilename}`);
+            const response = await fetch(`/api/mcap_info?mcap_filename=${pair.url_mcap}&local=${pair.local}`);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
