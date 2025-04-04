@@ -81,8 +81,8 @@ document.addEventListener('DOMContentLoaded', () => {
             setLoadingState(true);
 
             // Set the video source
-            console.log(`Setting video source to: /video/${pair.mkv_file}`);
-            videoSource.src = `/video/${pair.mkv_file}`;
+            console.log(`Setting video source to: /files/${pair.mkv_file}`);
+            videoSource.src = `/files/${pair.mkv_file}`;
             videoPlayer.load();
             console.log("Video source set successfully");
 

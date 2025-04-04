@@ -216,29 +216,6 @@ async def build_mcap_metadata(mcap_filename: str):
         raise HTTPException(status_code=500, detail=f"Error building MCAP metadata: {str(e)}")
 
 
-# TODO: erase this and replace to `/files` in export_file.py
-@app.get("/video/{video_filename}")
-async def get_video(video_filename: str):
-    """Serve an MKV video file"""
-    video_path = Path(file_services.EXPORT_PATH) / video_filename
-
-    if not video_path.exists():
-        logger.error(f"Video file not found: {video_path}")
-        raise HTTPException(status_code=404, detail="Video file not found")
-
-    logger.info(f"Serving video file: {video_path}")
-
-    # BUG: below line does not support seeking. Use FileResponse instead
-    # # Use StreamingResponse for better seeking support in large video files
-    # def iterfile():
-    #     with open(video_path, "rb") as f:
-    #         yield from f
-
-    # return StreamingResponse(iterfile(), media_type="video/x-matroska", headers={"Accept-Ranges": "bytes"})
-
-    return FileResponse(str(video_path), media_type="video/x-matroska")
-
-
 if __name__ == "__main__":
     import uvicorn
 
