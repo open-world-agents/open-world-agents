@@ -81,14 +81,14 @@ document.addEventListener('DOMContentLoaded', () => {
             setLoadingState(true);
 
             // Set the video source
-            console.log(`Setting video source to: /files/${pair.mkv_file}`);
-            videoSource.src = `/files/${pair.mkv_file}`;
+            console.log(`Setting video source to: ${pair.url_mkv}`);
+            videoSource.src = `${pair.url_mkv}`;
             videoPlayer.load();
             console.log("Video source set successfully");
 
             // Fetch MCAP metadata
-            console.log(`Fetching MCAP metadata: /api/mcap_metadata/${pair.mcap_file}`);
-            const metaResponse = await fetch(`/api/mcap_metadata/${pair.mcap_file}`);
+            console.log(`Fetching MCAP metadata: /api/mcap_metadata/${pair.basename + ".mcap"}?local=${pair.local}`);
+            const metaResponse = await fetch(`/api/mcap_metadata/${pair.basename + ".mcap"}?local=${pair.local}`);
             if (!metaResponse.ok) {
                 throw new Error(`HTTP error! status: ${metaResponse.status}`);
             }
@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
             metadata = await metaResponse.json();
             console.log("MCAP metadata loaded:", metadata);
 
-            await updateMcapInfo(pair.mcap_file);
+            await updateMcapInfo(pair.basename + ".mcap");
 
             // Initialize with data from the beginning
             await loadDataForTimeRange(metadata.start_time, null);
@@ -199,7 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setLoadingState(true);
 
         try {
-            const url = new URL(`/api/mcap_data/${currentFile.mcap_file}`, window.location.origin);
+            const url = new URL(`/api/mcap_data/${currentFile.basename + ".mcap"}?local=${currentFile.local}`, window.location.origin);
             url.searchParams.append('start_time', startTime);
             if (endTime) url.searchParams.append('end_time', endTime);
             url.searchParams.append('window_size', DATA_WINDOW_SIZE);

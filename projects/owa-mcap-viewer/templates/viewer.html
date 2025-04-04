@@ -1,18 +1,22 @@
 <!-- templates/index.html -->
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OWA Dataset Visualizer: {{ dataset_info.repo_id }}</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
+
 <body>
     <div class="container">
         <div class="sidebar">
             <h2>Dataset Info</h2>
             <div id="dataset-info">
-                <p>Repo ID: <a href="https://huggingface.co/datasets/{{ dataset_info.repo_id }}" target="_blank">{{ dataset_info.repo_id }}</a></p>
+                <p>Repo ID: {% if dataset_info.repo_id != "local" %}<a
+                        href="https://huggingface.co/datasets/{{ dataset_info.repo_id }}" target="_blank">{{
+                        dataset_info.repo_id }}</a>{% else %}{{ dataset_info.repo_id }}{% endif %}</p>
                 <p>Files: {{ dataset_info.files }}</p>
                 <p>Size: {{ dataset_info.size }}</p>
             </div>
@@ -66,4 +70,5 @@
     </script>
     <script src="/static/app.js"></script>
 </body>
+
 </html>

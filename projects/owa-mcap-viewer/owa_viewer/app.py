@@ -11,7 +11,7 @@ from fastapi.templating import Jinja2Templates
 
 from mcap_owa.highlevel import OWAMcapReader
 from owa_viewer.routers import export_file
-from owa_viewer.schema import FilePair
+from owa_viewer.schema import OWAFile
 from owa_viewer.services import file_services
 
 # Set up logging
@@ -38,8 +38,6 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # Setup Jinja2 templates
 templates = Jinja2Templates(directory="templates")
 
-# TODO: support huggingface & local dataset
-
 # Cache for MCAP metadata
 mcap_metadata_cache = {}
 
@@ -63,10 +61,10 @@ async def read_root(request: Request):
 @app.get("/viewer")
 async def read_viewer(repo_id: str, request: Request):
     if data_cache.get(repo_id) is None:
-        data_cache[repo_id] = file_services.list_filepair(repo_id)
+        data_cache[repo_id] = file_services.list_file(repo_id)
     files = data_cache[repo_id]
 
-    # TODO: deprecate list_filepair and use list_file instead and uncomment below lines
+    # TODO: uncomment below lines
     # size = sum(f.size for f in files)
     # # convert size to human readable format
     # size_units = ["iB", "KiB", "MiB", "GiB", "TiB"]
@@ -84,31 +82,34 @@ async def read_viewer(repo_id: str, request: Request):
     )
 
 
-@app.get("/api/list_files", response_model=List[FilePair])
-async def list_files(repo_id: str):
-    """List all available MCAP+MKV file pairs"""
+@app.get("/api/list_files", response_model=list[OWAFile])
+async def list_files(repo_id: str) -> list[OWAFile]:
+    """List all available MCAP+MKV files"""
 
-    return file_services.list_filepair(repo_id)
+    return file_services.list_file(repo_id)
 
 
 @app.get("/api/mcap_info/{mcap_filename}")
-async def get_mcap_info(mcap_filename: str):
+async def get_mcap_info(mcap_filename: str, local: bool = True):
     """Return the `owl mcap info` command output"""
-    mcap_path = Path(file_services.EXPORT_PATH) / mcap_filename
+    if local:
+        mcap_path = Path(file_services.EXPORT_PATH) / mcap_filename
 
-    if not mcap_path.exists():
-        raise HTTPException(status_code=404, detail="MCAP file not found")
+        if not mcap_path.exists():
+            raise HTTPException(status_code=404, detail="MCAP file not found")
 
-    logger.info(f"Getting MCAP info for: {mcap_path}")
+        logger.info(f"Getting MCAP info for: {mcap_path}")
 
-    try:
-        # Run the `owl mcap info` command
-        output = subprocess.check_output(["owl", "mcap", "info", str(mcap_path)], text=True)
-        return {"info": output}
+        try:
+            # Run the `owl mcap info` command
+            output = subprocess.check_output(["owl", "mcap", "info", str(mcap_path)], text=True)
+            return {"info": output, "local": local}
 
-    except Exception as e:
-        logger.error(f"Error getting MCAP info: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error getting MCAP info: {str(e)}")
+        except Exception as e:
+            logger.error(f"Error getting MCAP info: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail=f"Error getting MCAP info: {str(e)}")
+    else:
+        raise HTTPException(status_code=502, detail="Remote files are not supported yet")
 
 
 @app.get("/api/mcap_metadata/{mcap_filename}")

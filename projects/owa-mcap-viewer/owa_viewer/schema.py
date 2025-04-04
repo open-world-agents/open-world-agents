@@ -1,13 +1,10 @@
 from pydantic import BaseModel
 
 
-class File(BaseModel):
-    name: str
-    url: str
-    size: int
-
-
-class FilePair(BaseModel):
-    mcap_file: str
-    mkv_file: str
+class OWAFile(BaseModel):
     basename: str
+    size: int
+    local: bool
+    url: str
+    url_mcap: str
+    url_mkv: str

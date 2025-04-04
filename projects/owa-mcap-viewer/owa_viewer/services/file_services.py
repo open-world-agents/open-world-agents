@@ -6,7 +6,7 @@ import fsspec.implementations
 from fsspec.implementations.local import LocalFileSystem
 from huggingface_hub import HfFileSystem
 
-from ..schema import File, FilePair
+from ..schema import OWAFile
 
 from dotenv import load_dotenv
 
@@ -16,7 +16,7 @@ EXPORT_PATH = os.environ.get("EXPORT_PATH", "./data")
 print(f"{EXPORT_PATH=}")
 
 
-def list_file(repo_id: str) -> list[File]:
+def list_file(repo_id: str) -> list[OWAFile]:
     """For a given repository, list all available data files."""
 
     if repo_id == "local":
@@ -33,22 +33,25 @@ def list_file(repo_id: str) -> list[File]:
         mcap_file = PurePosixPath(mcap_file)
         if fs.exists(mcap_file.with_suffix(".mkv")) and fs.exists(mcap_file.with_suffix(".mcap")):
             basename = (mcap_file.parent / mcap_file.stem).as_posix()
-            if protocol == "file":
+            if repo_id == "local":
                 basename = Path(basename).relative_to(EXPORT_PATH).as_posix()
-                item = f"/files/{basename}"
+                url = f"/files/{basename}"
+                local = True
             else:
                 basename = basename[len(f"datasets/{repo_id}/") :]
-                item = f"https://huggingface.co/{repo_id}/resolve/main/{basename}"
-            files.append(File(name=basename, url=item, size=fs.info(mcap_file).get("size", 0)))
+                url = f"https://huggingface.co/datasets/{repo_id}/resolve/main/{basename}"
+                local = False
+            files.append(
+                OWAFile(
+                    basename=basename,
+                    url=url,
+                    size=fs.info(mcap_file).get("size", 0),
+                    local=local,
+                    url_mcap=url + ".mcap",
+                    url_mkv=url + ".mkv",
+                )
+            )
     return files
-
-
-def list_filepair(repo_id: str) -> list[FilePair]:
-    file_pairs = []
-    files = list_file(repo_id)
-    for file in files:
-        file_pairs.append(FilePair(mcap_file=file.name + ".mcap", mkv_file=file.name + ".mkv", basename=file.name))
-    return file_pairs
 
 
 if __name__ == "__main__":
