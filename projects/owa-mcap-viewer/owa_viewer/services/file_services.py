@@ -1,5 +1,5 @@
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import fsspec
 import fsspec.implementations
@@ -18,7 +18,6 @@ print(f"{EXPORT_PATH=}")
 
 def list_file(repo_id: str) -> list[File]:
     """For a given repository, list all available data files."""
-    repo_id = "local"  # TODO: remove this line
 
     if repo_id == "local":
         protocol = "file"
@@ -28,13 +27,12 @@ def list_file(repo_id: str) -> list[File]:
         protocol = "hf"
         fs: HfFileSystem = fsspec.filesystem(protocol=protocol)
         path = f"datasets/{repo_id}"
-    # fs, path = url_to_fs("hf://datasets/open-world-agents/example_dataset/")
 
     files = []
     for mcap_file in fs.glob(f"{path}/**/*.mcap"):
-        mcap_file = Path(mcap_file)
-        basename = (mcap_file.parent / mcap_file.stem).as_posix()
+        mcap_file = PurePosixPath(mcap_file)
         if fs.exists(mcap_file.with_suffix(".mkv")) and fs.exists(mcap_file.with_suffix(".mcap")):
+            basename = (mcap_file.parent / mcap_file.stem).as_posix()
             if protocol == "file":
                 basename = Path(basename).relative_to(EXPORT_PATH).as_posix()
                 item = f"/files/{basename}"
