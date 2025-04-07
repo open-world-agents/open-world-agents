@@ -14,8 +14,7 @@ from rich.logging import RichHandler
 from mcap_owa.highlevel import OWAMcapReader
 from owa_viewer.routers import export_file
 from owa_viewer.schema import OWAFile
-from owa_viewer.services import file_services
-from owa_viewer.services.file_services import safe_join
+from owa_viewer.services.file_manager import FileManager
 
 # Set up logging, use rich handler
 logging.basicConfig(
@@ -67,7 +66,7 @@ async def read_root(request: Request):
 @app.get("/viewer")
 async def read_viewer(repo_id: str, request: Request):
     if data_cache.get(repo_id) is None:
-        data_cache[repo_id] = file_services.list_file(repo_id)
+        data_cache[repo_id] = FileManager.list_files(repo_id)
     files = data_cache[repo_id]
 
     # TODO: uncomment below lines
@@ -92,30 +91,17 @@ async def read_viewer(repo_id: str, request: Request):
 async def list_files(repo_id: str) -> list[OWAFile]:
     """List all available MCAP+MKV files"""
 
-    return file_services.list_file(repo_id)
+    return FileManager.list_files(repo_id)
 
 
 @app.get("/api/mcap_info")
 async def get_mcap_info(mcap_filename: str, local: bool = True):
     """Return the `owl mcap info` command output"""
+    mcap_path = None
+    is_temp = False
+
     try:
-        if local:
-            # join path
-            mcap_path = safe_join(file_services.EXPORT_PATH, mcap_filename)
-
-            if mcap_path is None or not mcap_path.exists():
-                raise HTTPException(status_code=404, detail="MCAP file not found")
-
-        else:
-            # download file
-            with tempfile.NamedTemporaryFile(suffix=".mcap", delete=False) as temp_mcap:
-                logger.info(f"Downloading MCAP file to: {temp_mcap.name}")
-
-                resp = requests.get(mcap_filename)
-                temp_mcap.write(resp.content)
-
-                mcap_path = temp_mcap.name
-
+        mcap_path, is_temp = FileManager.get_mcap_path(mcap_filename, local)
         logger.info(f"Getting MCAP info for: {mcap_path}")
 
         try:
@@ -128,33 +114,20 @@ async def get_mcap_info(mcap_filename: str, local: bool = True):
             raise HTTPException(status_code=500, detail=f"Error getting MCAP info: {str(e)}")
 
     finally:
-        # remove
-        if not local:
-            Path(mcap_path).unlink(missing_ok=False)
+        # Clean up temp file if needed
+        if is_temp and mcap_path:
+            FileManager.cleanup_temp_file(mcap_path)
 
 
 @app.get("/api/mcap_metadata")
 async def get_mcap_metadata(mcap_filename: str, local: bool = True):
     """Get metadata about an MCAP file including time range and topics"""
     mcap_path = None
+    is_temp = False
+
     try:
         if mcap_filename not in mcap_metadata_cache:  # metadata not cached
-            if local:
-                # check if local file exists
-                mcap_path = safe_join(file_services.EXPORT_PATH, mcap_filename)
-
-                if mcap_path is None or not mcap_path.exists():
-                    raise HTTPException(status_code=404, detail="MCAP file not found")
-
-            else:
-                # download remote file
-                with tempfile.NamedTemporaryFile(suffix=".mcap", delete=False) as temp_mcap:
-                    logger.info(f"Downloading MCAP file to: {temp_mcap.name}")
-
-                    resp = requests.get(mcap_filename)
-                    temp_mcap.write(resp.content)
-
-                mcap_path = temp_mcap.name
+            mcap_path, is_temp = FileManager.get_mcap_path(mcap_filename, local)
 
             # build metadata
             await build_mcap_metadata(mcap_path, mcap_filename)
@@ -168,8 +141,8 @@ async def get_mcap_metadata(mcap_filename: str, local: bool = True):
         # Return metadata about the file
         return {"start_time": metadata.start_time, "end_time": metadata.end_time, "topics": list(metadata.topics)}
     finally:
-        if not local and mcap_path:
-            Path(mcap_path).unlink(missing_ok=False)
+        if is_temp and mcap_path:
+            FileManager.cleanup_temp_file(mcap_path)
 
 
 @app.get("/api/mcap_data")
@@ -182,24 +155,11 @@ async def get_mcap_data(
 ):
     """Get MCAP data for a specific time range"""
     mcap_path = None
+    is_temp = False
+
     try:
-        # we need mcap data regardless of metadata
-        if local:
-            # check if local file exists
-            mcap_path = safe_join(file_services.EXPORT_PATH, mcap_filename)
-
-            if mcap_path is None or not mcap_path.exists():
-                raise HTTPException(status_code=404, detail="MCAP file not found")
-
-        else:
-            # download remote file
-            with tempfile.NamedTemporaryFile(suffix=".mcap", delete=False) as temp_mcap:
-                logger.info(f"Downloading MCAP file to: {temp_mcap.name}")
-
-                resp = requests.get(mcap_filename)
-                temp_mcap.write(resp.content)
-
-            mcap_path = temp_mcap.name
+        # Get the mcap file path, which might be a temporary downloaded file
+        mcap_path, is_temp = FileManager.get_mcap_path(mcap_filename, local)
 
         if mcap_filename not in mcap_metadata_cache:  # metadata not cached
             # build metadata
@@ -248,8 +208,9 @@ async def get_mcap_data(
             raise HTTPException(status_code=500, detail=f"Error fetching MCAP data: {str(e)}")
 
     finally:
-        if not local:
-            Path(mcap_path).unlink(missing_ok=False)
+        # Clean up temporary file if needed
+        if is_temp and mcap_path:
+            FileManager.cleanup_temp_file(mcap_path)
 
 
 async def build_mcap_metadata(mcap_path: Path, mcap_filename: str):
