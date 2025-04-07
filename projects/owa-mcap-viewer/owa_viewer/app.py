@@ -12,7 +12,6 @@ from fastapi.templating import Jinja2Templates
 import fsspec
 from huggingface_hub import HfFileSystem
 import requests
-from rich import print
 
 from mcap_owa.highlevel import OWAMcapReader
 from owa_viewer.routers import export_file
@@ -108,11 +107,10 @@ async def get_mcap_info(mcap_filename: str, local: bool = True):
 
         else:
             # download file
-            p = "https://huggingface.co/datasets/open-world-agents/example_dataset/resolve/main/example.mcap"
             with tempfile.NamedTemporaryFile(suffix=".mcap", delete=False) as temp_mcap:
-                print(f"Downloading MCAP file to: {temp_mcap.name}")
+                logger.info(f"Downloading MCAP file to: {temp_mcap.name}")
 
-                resp = requests.get(p)
+                resp = requests.get(mcap_filename)
                 temp_mcap.write(resp.content)
 
                 mcap_path = temp_mcap.name
@@ -146,11 +144,10 @@ async def get_mcap_metadata(mcap_filename: str, local: bool = True):
 
         else:
             # download file
-            p = "https://huggingface.co/datasets/open-world-agents/example_dataset/resolve/main/example.mcap"
             with tempfile.NamedTemporaryFile(suffix=".mcap", delete=False) as temp_mcap:
-                print(f"Downloading MCAP file to: {temp_mcap.name}")
+                logger.info(f"Downloading MCAP file to: {temp_mcap.name}")
 
-                resp = requests.get(p)
+                resp = requests.get(mcap_filename)
                 temp_mcap.write(resp.content)
 
             mcap_path = temp_mcap.name
@@ -187,11 +184,10 @@ async def get_mcap_data(
                 raise HTTPException(status_code=404, detail="MCAP file not found")
         else:
             # download file
-            p = "https://huggingface.co/datasets/open-world-agents/example_dataset/resolve/main/example.mcap"
             with tempfile.NamedTemporaryFile(suffix=".mcap", delete=False) as temp_mcap:
-                print(f"Downloading MCAP file to: {temp_mcap.name}")
+                logger.info(f"Downloading MCAP file to: {temp_mcap.name}")
 
-                resp = requests.get(p)
+                resp = requests.get(mcap_filename)
                 temp_mcap.write(resp.content)
 
             mcap_path = temp_mcap.name
