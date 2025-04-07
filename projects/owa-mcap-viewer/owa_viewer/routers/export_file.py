@@ -16,7 +16,7 @@ async def export_file(filename: str):
     """Serve an MKV video file"""
     file_path = safe_join(EXPORT_PATH, filename)
 
-    if not file_path.exists():
+    if file_path is None or not file_path.exists():
         logger.error(f"File not found: {file_path}")
         raise HTTPException(status_code=404, detail="File not found")
 

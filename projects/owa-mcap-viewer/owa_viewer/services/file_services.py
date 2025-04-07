@@ -1,7 +1,7 @@
+import logging
 import os
 from pathlib import Path, PurePosixPath
 
-from fastapi import HTTPException
 import fsspec
 import fsspec.implementations
 from dotenv import load_dotenv
@@ -15,17 +15,19 @@ load_dotenv()
 
 EXPORT_PATH = os.environ.get("EXPORT_PATH", "./data")
 EXPORT_PATH = Path(EXPORT_PATH).as_posix()
-print(f"{EXPORT_PATH=}")
+
+logger = logging.getLogger(__name__)
+logger.info(f"{EXPORT_PATH=}")
 
 
-def safe_join(base_dir: str, *paths: str) -> Path:
+def safe_join(base_dir: str, *paths: str) -> Path | None:
     """Join paths and ensure the result is within the base directory."""
     base = Path(base_dir).resolve()
     target = (base / Path(*paths)).resolve()
 
     if not str(target).startswith(str(base)):
-        print(f"Unsafe path: {target} is outside of base directory {base}")
-        raise HTTPException(status_code=404, detail="File not found")
+        logger.error(f"Unsafe path: {target} is outside of base directory {base}")
+        return None
 
     return target
 
