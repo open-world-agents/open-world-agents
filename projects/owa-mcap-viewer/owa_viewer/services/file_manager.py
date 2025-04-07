@@ -9,6 +9,7 @@ import fsspec.implementations
 import requests
 from dotenv import load_dotenv
 from fsspec.implementations.local import LocalFileSystem
+from mcap_owa.highlevel import OWAMcapReader
 from huggingface_hub import HfFileSystem
 from fastapi import HTTPException
 
@@ -24,6 +25,18 @@ logger = logging.getLogger(__name__)
 logger.info(f"{EXPORT_PATH=}")
 
 
+class McapMetadata:
+    def __init__(self):
+        self.start_time = None
+        self.end_time = None
+        self.topics = set()
+
+
+MCAP_METADATA_CACHE: dict[str, McapMetadata] = dict()
+
+OWAFILE_CACHE: dict[str, list[OWAFile]] = dict()
+
+
 class FileManager:
     """
     A static class to manage file operations for both local and remote files.
@@ -31,7 +44,7 @@ class FileManager:
     """
 
     @staticmethod
-    def safe_join(base_dir: str, *paths: str) -> Optional[Path]:
+    def safe_join(base_dir: str, *paths: str) -> Path | None:
         """Join paths and ensure the result is within the base directory."""
         base = Path(base_dir).resolve()
         target = (base / Path(*paths)).resolve()
@@ -43,7 +56,7 @@ class FileManager:
         return target
 
     @staticmethod
-    def list_files(repo_id: str) -> List[OWAFile]:
+    def list_files(repo_id: str) -> list[OWAFile]:
         """For a given repository, list all available data files."""
 
         if repo_id == "local":
@@ -81,7 +94,7 @@ class FileManager:
         return files
 
     @staticmethod
-    def get_mcap_path(mcap_filename: str, is_local: bool) -> Tuple[Path, bool]:
+    def get_mcap_path(mcap_filename: str, is_local: bool) -> tuple[Path, bool]:
         """
         Returns the path to a MCAP file. If the file is remote, it is downloaded first.
 
@@ -132,3 +145,41 @@ class FileManager:
                 logger.info(f"Cleaned up temporary file: {file_path}")
             except Exception as e:
                 logger.error(f"Error cleaning up temporary file {file_path}: {e}", exc_info=True)
+
+    @staticmethod
+    def get_mcap_metadata(mcap_filename: str, is_local: bool, download_: bool) -> tuple[McapMetadata, bool]:
+        """
+        Get metadata for a given MCAP file. If the file is remote, it is downloaded first.
+
+        """
+
+    @staticmethod
+    def build_mcap_metadata(mcap_path: Path, mcap_filename: str):
+        """Build metadata about an MCAP file (time range, topics, etc.)"""
+
+        if not Path(mcap_path).exists():
+            raise HTTPException(status_code=404, detail="MCAP file not found")
+
+        logger.info(f"Building metadata for MCAP file: {mcap_path}")
+
+        metadata = McapMetadata()
+
+        try:
+            with OWAMcapReader(mcap_path) as reader:
+                metadata.start_time = reader.start_time
+                metadata.end_time = reader.end_time
+                metadata.topics = set(reader.topics)
+
+                logger.info(
+                    f"Metadata built for {mcap_path}: {len(metadata.topics)} topics, "
+                    f"time range {metadata.start_time} to {metadata.end_time}"
+                )
+
+                # Store in the cache
+                MCAP_METADATA_CACHE[mcap_filename] = metadata
+
+                logger.info(f"Metadata cached for {mcap_filename}")
+
+        except Exception as e:
+            logger.error(f"Error building MCAP metadata: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail=f"Error building MCAP metadata: {str(e)}")

@@ -14,7 +14,7 @@ from rich.logging import RichHandler
 from mcap_owa.highlevel import OWAMcapReader
 from owa_viewer.routers import export_file
 from owa_viewer.schema import OWAFile
-from owa_viewer.services.file_manager import FileManager
+from owa_viewer.services.file_manager import MCAP_METADATA_CACHE, OWAFILE_CACHE, FileManager, McapMetadata
 
 # Set up logging, use rich handler
 logging.basicConfig(
@@ -43,18 +43,6 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # Setup Jinja2 templates
 templates = Jinja2Templates(directory="templates")
 
-# Cache for MCAP metadata
-mcap_metadata_cache = {}
-
-data_cache = {}
-
-
-class McapMetadata:
-    def __init__(self):
-        self.start_time = None
-        self.end_time = None
-        self.topics = set()
-
 
 @app.get("/")
 async def read_root(request: Request):
@@ -65,9 +53,9 @@ async def read_root(request: Request):
 
 @app.get("/viewer")
 async def read_viewer(repo_id: str, request: Request):
-    if data_cache.get(repo_id) is None:
-        data_cache[repo_id] = FileManager.list_files(repo_id)
-    files = data_cache[repo_id]
+    if OWAFILE_CACHE.get(repo_id) is None:
+        OWAFILE_CACHE[repo_id] = FileManager.list_files(repo_id)
+    files = OWAFILE_CACHE[repo_id]
 
     # TODO: uncomment below lines
     # size = sum(f.size for f in files)
@@ -126,15 +114,14 @@ async def get_mcap_metadata(mcap_filename: str, local: bool = True):
     is_temp = False
 
     try:
-        if mcap_filename not in mcap_metadata_cache:  # metadata not cached
+        if mcap_filename not in MCAP_METADATA_CACHE:  # metadata not cached
             mcap_path, is_temp = FileManager.get_mcap_path(mcap_filename, local)
 
-            # build metadata
-            await build_mcap_metadata(mcap_path, mcap_filename)
+            FileManager.build_mcap_metadata(mcap_path, mcap_filename)
         else:
             logger.info(f"Using cached metadata for {mcap_filename}")
 
-        metadata = mcap_metadata_cache.get(mcap_filename)
+        metadata: McapMetadata = MCAP_METADATA_CACHE.get(mcap_filename)
         if not metadata:
             raise HTTPException(status_code=500, detail="Failed to create MCAP metadata")
 
@@ -158,16 +145,15 @@ async def get_mcap_data(
     is_temp = False
 
     try:
-        # Get the mcap file path, which might be a temporary downloaded file
+        # We need the actual data
         mcap_path, is_temp = FileManager.get_mcap_path(mcap_filename, local)
 
-        if mcap_filename not in mcap_metadata_cache:  # metadata not cached
-            # build metadata
-            await build_mcap_metadata(mcap_path, mcap_filename)
+        if mcap_filename not in MCAP_METADATA_CACHE:  # metadata not cached
+            FileManager.build_mcap_metadata(mcap_path, mcap_filename)
         else:
             logger.info(f"Using cached metadata for {mcap_filename}")
 
-        metadata = mcap_metadata_cache.get(mcap_filename)
+        metadata = MCAP_METADATA_CACHE.get(mcap_filename)
         if not metadata:
             raise HTTPException(status_code=500, detail="Failed to create MCAP metadata")
 
@@ -211,37 +197,6 @@ async def get_mcap_data(
         # Clean up temporary file if needed
         if is_temp and mcap_path:
             FileManager.cleanup_temp_file(mcap_path)
-
-
-async def build_mcap_metadata(mcap_path: Path, mcap_filename: str):
-    """Build metadata about an MCAP file (time range, topics, etc.)"""
-
-    if not Path(mcap_path).exists():
-        raise HTTPException(status_code=404, detail="MCAP file not found")
-
-    logger.info(f"Building metadata for MCAP file: {mcap_path}")
-
-    metadata = McapMetadata()
-
-    try:
-        with OWAMcapReader(mcap_path) as reader:
-            metadata.start_time = reader.start_time
-            metadata.end_time = reader.end_time
-            metadata.topics = set(reader.topics)
-
-            logger.info(
-                f"Metadata built for {mcap_path}: {len(metadata.topics)} topics, "
-                f"time range {metadata.start_time} to {metadata.end_time}"
-            )
-
-            # Store in the cache
-            mcap_metadata_cache[mcap_filename] = metadata
-
-            logger.info(f"Metadata cached for {mcap_filename}")
-
-    except Exception as e:
-        logger.error(f"Error building MCAP metadata: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error building MCAP metadata: {str(e)}")
 
 
 if __name__ == "__main__":
