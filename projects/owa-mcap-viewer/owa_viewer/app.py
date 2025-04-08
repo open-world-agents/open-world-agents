@@ -47,7 +47,7 @@ templates = Jinja2Templates(directory="templates")
 @app.get("/")
 async def read_root(request: Request):
     return templates.TemplateResponse(
-        "index.html", {"request": request, "featured_datasets": ["open-world-agents/example_dataset"]}
+        "index.html", {"request": request, "featured_datasets": ["local", "open-world-agents/example_dataset"]}
     )
 
 
