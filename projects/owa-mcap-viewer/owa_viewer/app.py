@@ -1,11 +1,8 @@
 import logging
 import subprocess
-import tempfile
-from pathlib import Path
 from typing import Optional
-import numpy as np  # Add numpy import
 
-import requests
+import numpy as np  # Add numpy import
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -14,7 +11,7 @@ from rich.logging import RichHandler
 
 from mcap_owa.highlevel import OWAMcapReader
 from owa_viewer.routers import export_file
-from owa_viewer.schema import OWAFile, McapMetadata
+from owa_viewer.schema import McapMetadata, OWAFile
 from owa_viewer.services.file_manager import MCAP_METADATA_CACHE, OWAFILE_CACHE, FileManager
 
 # Set up logging, use rich handler

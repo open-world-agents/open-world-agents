@@ -2,16 +2,15 @@ import logging
 import os
 import tempfile
 from pathlib import Path, PurePosixPath
-from typing import Optional, List, Dict, Any, Tuple
 
 import fsspec
-import fsspec.implementations
 import requests
 from dotenv import load_dotenv
-from fsspec.implementations.local import LocalFileSystem
-from mcap_owa.highlevel import OWAMcapReader
-from huggingface_hub import HfFileSystem
 from fastapi import HTTPException
+from fsspec.implementations.local import LocalFileSystem
+from huggingface_hub import HfFileSystem
+
+from mcap_owa.highlevel import OWAMcapReader
 
 from ..schema import McapMetadata, OWAFile
 
