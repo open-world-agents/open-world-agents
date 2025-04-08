@@ -13,7 +13,7 @@ from mcap_owa.highlevel import OWAMcapReader
 from huggingface_hub import HfFileSystem
 from fastapi import HTTPException
 
-from ..schema import OWAFile
+from ..schema import McapMetadata, OWAFile
 
 load_dotenv()
 
@@ -23,13 +23,6 @@ EXPORT_PATH = Path(EXPORT_PATH).as_posix()
 
 logger = logging.getLogger(__name__)
 logger.info(f"{EXPORT_PATH=}")
-
-
-class McapMetadata:
-    def __init__(self):
-        self.start_time = None
-        self.end_time = None
-        self.topics = set()
 
 
 MCAP_METADATA_CACHE: dict[str, McapMetadata] = dict()
@@ -162,13 +155,13 @@ class FileManager:
 
         logger.info(f"Building metadata for MCAP file: {mcap_path}")
 
-        metadata = McapMetadata()
-
         try:
             with OWAMcapReader(mcap_path) as reader:
-                metadata.start_time = reader.start_time
-                metadata.end_time = reader.end_time
-                metadata.topics = set(reader.topics)
+                metadata = McapMetadata(
+                    start_time=reader.start_time,
+                    end_time=reader.end_time,
+                    topics=reader.topics,
+                )
 
                 logger.info(
                     f"Metadata built for {mcap_path}: {len(metadata.topics)} topics, "
