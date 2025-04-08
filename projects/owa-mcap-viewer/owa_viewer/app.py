@@ -3,6 +3,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 from typing import Optional
+import numpy as np  # Add numpy import
 
 import requests
 from fastapi import FastAPI, HTTPException, Query, Request
@@ -57,20 +58,21 @@ async def read_viewer(repo_id: str, request: Request):
         OWAFILE_CACHE[repo_id] = FileManager.list_files(repo_id)
     files = OWAFILE_CACHE[repo_id]
 
-    # TODO: uncomment below lines
-    # size = sum(f.size for f in files)
-    # # convert size to human readable format
-    # size_units = ["iB", "KiB", "MiB", "GiB", "TiB"]
-    # size_unit = min(len(size_units), np.floor(np.log2(size) / 10))
-    # size /= 1024**size_unit
-    # size = f"{size:.2f} {size_units[int(size_unit)]}"
-    size = -1
+    # Calculate total size and format it as human-readable
+    size = sum(f.size for f in files) if files else 0
+    # convert size to human readable format
+    size_units = ["B", "KiB", "MiB", "GiB", "TiB"]
+    size_unit = 0
+    if size > 0:
+        size_unit = min(len(size_units) - 1, int(np.floor(np.log2(max(1, size)) / 10)))
+        size /= 1024**size_unit
+    size_str = f"{size:.2f} {size_units[int(size_unit)]}"
 
     return templates.TemplateResponse(
         "viewer.html",
         {
             "request": request,
-            "dataset_info": {"repo_id": repo_id, "files": len(files), "size": size},
+            "dataset_info": {"repo_id": repo_id, "files": len(files), "size": size_str},
         },
     )
 
