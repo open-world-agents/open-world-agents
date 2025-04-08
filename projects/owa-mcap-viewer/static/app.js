@@ -45,13 +45,24 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log("Available file pairs:", data);
 
             fileList.innerHTML = '';
-            data.forEach(pair => {
+            data.forEach((pair, index) => {
                 const item = document.createElement('div');
                 item.className = 'file-item';
                 item.textContent = pair.basename;
                 item.addEventListener('click', () => loadFilePair(pair));
                 fileList.appendChild(item);
+
+                // Auto-select the first file in the list
+                if (index === 0) {
+                    item.classList.add('auto-select');
+                }
             });
+
+            // Automatically load the first file if available
+            if (data.length > 0) {
+                console.log("Auto-selecting the first file:", data[0].basename);
+                loadFilePair(data[0]);
+            }
         } catch (error) {
             console.error("Error fetching file pairs:", error);
             fileList.innerHTML = '<div class="error">Error loading files. Check console.</div>';
