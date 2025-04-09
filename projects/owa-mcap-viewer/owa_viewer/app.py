@@ -10,7 +10,7 @@ from fastapi.templating import Jinja2Templates
 from rich.logging import RichHandler
 
 from mcap_owa.highlevel import OWAMcapReader
-from owa_viewer.routers import export_file
+from owa_viewer.routers import export_file, import_file
 from owa_viewer.schema import McapMetadata, OWAFile
 from owa_viewer.services.file_manager import MCAP_METADATA_CACHE, OWAFILE_CACHE, FileManager
 
@@ -34,6 +34,7 @@ app.add_middleware(
 )
 
 app.include_router(export_file.router)
+app.include_router(import_file.router)  # Include the new router
 
 # Mount static files (CSS, JS)
 app.mount("/static", StaticFiles(directory="static"), name="static")

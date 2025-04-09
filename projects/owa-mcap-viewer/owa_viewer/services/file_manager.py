@@ -24,9 +24,9 @@ logger = logging.getLogger(__name__)
 logger.info(f"{EXPORT_PATH=}")
 
 
-MCAP_METADATA_CACHE: dict[str, McapMetadata] = dict()
+MCAP_METADATA_CACHE: dict[str, McapMetadata] = dict()  # key: mcap_filename, value: McapMetadata object
 
-OWAFILE_CACHE: dict[str, list[OWAFile]] = dict()
+OWAFILE_CACHE: dict[str, list[OWAFile]] = dict()  # key: repo_id, value: list of OWAFile objects
 
 
 class FileManager:
@@ -137,13 +137,6 @@ class FileManager:
                 logger.info(f"Cleaned up temporary file: {file_path}")
             except Exception as e:
                 logger.error(f"Error cleaning up temporary file {file_path}: {e}", exc_info=True)
-
-    @staticmethod
-    def get_mcap_metadata(mcap_filename: str, is_local: bool, download_: bool) -> tuple[McapMetadata, bool]:
-        """
-        Get metadata for a given MCAP file. If the file is remote, it is downloaded first.
-
-        """
 
     @staticmethod
     def build_mcap_metadata(mcap_path: Path, mcap_filename: str):

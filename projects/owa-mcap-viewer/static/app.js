@@ -770,4 +770,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize the application
     fetchFilePairs();
+
+    // Handle file uploads if we're in local mode
+    const uploadForm = document.getElementById('upload-form');
+    const uploadStatus = document.getElementById('upload-status');
+
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            uploadStatus.textContent = 'Uploading files...';
+            uploadStatus.className = 'uploading';
+
+            const formData = new FormData(uploadForm);
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    uploadStatus.textContent = 'Files uploaded successfully!';
+                    uploadStatus.className = 'success';
+
+                    // Clear the form
+                    uploadForm.reset();
+
+                    // Refresh the file list after a successful upload
+                    fetchFilePairs();
+                } else {
+                    uploadStatus.textContent = `Error: ${result.detail || 'Unknown error'}`;
+                    uploadStatus.className = 'error';
+                }
+            } catch (error) {
+                uploadStatus.textContent = `Upload failed: ${error.message}`;
+                uploadStatus.className = 'error';
+            }
+        });
+    }
 });

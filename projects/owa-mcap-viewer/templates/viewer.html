@@ -22,6 +22,26 @@
                 <p>Size: {{ dataset_info.size }}</p>
             </div>
 
+            {% if dataset_info.repo_id == "local" %}
+            <div class="upload-section">
+                <h2>Upload Files</h2>
+                <form id="upload-form" enctype="multipart/form-data">
+                    <div class="upload-pair">
+                        <div>
+                            <label for="mcap-file">MCAP File:</label>
+                            <input type="file" id="mcap-file" name="mcap_file" accept=".mcap" required>
+                        </div>
+                        <div>
+                            <label for="mkv-file">MKV File:</label>
+                            <input type="file" id="mkv-file" name="mkv_file" accept=".mkv" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="upload-button">Upload Files</button>
+                </form>
+                <div id="upload-status"></div>
+            </div>
+            {% endif %}
+
             <h2>Available Files</h2>
             <div id="file-list"></div>
         </div>
