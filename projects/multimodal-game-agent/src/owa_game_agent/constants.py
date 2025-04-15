@@ -42,17 +42,17 @@ class ENDPOINTS:
 
 
 # Timeouts and retry settings
-class TIMEOUTS:
+class TIMES:
     SERVER_STARTUP_MAX_RETRIES = 10
     SERVER_STARTUP_RETRY_INTERVAL = 1.0  # seconds
     TASK_CLEANUP_TIMEOUT = 2.0  # seconds
     AGENT_RESET_DELAY = 1.0  # seconds
     THREAD_JOIN_TIMEOUT = 2.0  # seconds
     EVALUATION_POLL_INTERVAL = 0.5  # seconds
+    KEYBOARD_PRESS_DELAY = 0.05  # seconds
+    BUSY_WAIT_PREVENT = 0.1  # seconds
 
 
 # Default values
 class DEFAULTS:
     DEFAULT_MODEL_ID = "HuggingFaceTB/SmolVLM2-500M-Video-Instruct"
-    KEYBOARD_PRESS_DELAY = 0.05  # seconds
-    ENV_CHECK_INTERVAL = 0.1  # seconds

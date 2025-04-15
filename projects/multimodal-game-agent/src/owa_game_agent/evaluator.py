@@ -12,7 +12,7 @@ from pydantic import BaseModel
 
 from owa_game_agent.agent import AgentAPIClient
 from owa_game_agent.commons import EvaluationResult, Task, handle_response_errors, run_server_background
-from owa_game_agent.constants import DEFAULTS, ENDPOINTS, NETWORK
+from owa_game_agent.constants import ENDPOINTS, NETWORK, TIMES
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ class Evaluator(ABC):
         self.evaluator_url = None
         self.agent_url = None
         self.agent_api_client: AgentAPIClient = None
-        self.task = None
+        self.current_task = None
         self.result = None
         self.result_lock = threading.Lock()  # Lock for self.result
         self.task_start_time = None
@@ -98,13 +98,13 @@ class Evaluator(ABC):
             return False
 
         self.stop_event.clear()
-        self.task = task
+        self.current_task = task
         self.task_start_time = time.time()
         self.result = None
         self.state = EvaluatorState.EVALUATING
 
         # Start monitoring thread
-        self.task_thread = threading.Thread(target=self._monitor_task, args=(self.task,), daemon=True)
+        self.task_thread = threading.Thread(target=self._monitor_task, args=(self.current_task,), daemon=True)
         self.task_thread.start()
 
         return True
@@ -117,33 +117,72 @@ class Evaluator(ABC):
             task (Task): The task configuration.
         """
 
-        # start a timer thread that will stop the task after a certain time
+        # start a timeout thread that will stop the task after a certain time
         def timeout_watcher():
             time.sleep(task.timeout)
             logger.debug("Task timed out. Stopping task.")
-            self.stop_event.set()
+            if (
+                self.current_task == task
+            ):  # NOTE: check if the task is the current task. Needed since we cannot kill the timer thread, and a new task might be running
+                self.stop_event.set()
+            else:
+                logger.debug("Task timed out, but task is not the current task. Ignoring.")
 
-        timer_thread = threading.Thread(target=timeout_watcher, daemon=True)
+        timeout_thread = threading.Thread(target=timeout_watcher, daemon=True)
+        timeout_thread.start()
+
+        # start a timer thread that will spawn `_check_env_continue_timer()` every interval
+        def timer_check():
+            while not self.stop_event.is_set():
+                if self.current_task != task or self.state != EvaluatorState.EVALUATING:
+                    return
+
+                # Spawn a new thread for each call to _check_env_continue_timer to prevent blocking
+                def run_check():
+                    try:
+                        continue_task = self._check_env_continue_timer(task)
+                        if not continue_task:
+                            logger.debug("Task stopped by `_check_env_continue_timer()`. Stopping task.")
+                            self.stop_event.set()
+                    except Exception as e:
+                        logger.error(f"Error in _check_env_continue_timer: {e}")
+
+                # Create and start a new thread for this check
+                check_thread = threading.Thread(target=run_check, daemon=True)
+                check_thread.start()
+
+                time.sleep(task.check_env_interval_seconds)
+            return  # finish the thread when stop_event is set
+
+        # Start the timer thread
+        timer_thread = threading.Thread(target=timer_check, daemon=True)
         timer_thread.start()
 
         start_time = time.time()
         while not self.stop_event.is_set():
-            # Check if the task has already been marked as finished
-            if self.state != EvaluatorState.EVALUATING:
+            # Check if the task has changed or if state has already changed
+            if self.current_task != task or self.state != EvaluatorState.EVALUATING:
                 return
             continue_task = self._check_env_continue(task)
             if not continue_task:
                 logger.debug("Task stopped by `check_env_continue()`. Stopping task.")
                 self.stop_event.set()
-            time.sleep(DEFAULTS.ENV_CHECK_INTERVAL)  # Sleep to avoid busy waiting
+            time.sleep(
+                TIMES.BUSY_WAIT_PREVENT
+            )  # NOTE: Sleep to avoid busy waiting. Removing this will cause high CPU usage and interfere other threads.
 
-        if self.state == EvaluatorState.EVALUATING:
+        # stop event is set, meaning the task should be stopped
+        assert self.stop_event.is_set(), "stop_event should be set when exiting the loop in `_monitor_task()`"
+        if self.current_task == task and self.state == EvaluatorState.EVALUATING:
             elapsed = time.time() - start_time
             logger.debug(f"Task stopped after {elapsed} seconds")
             # Stop the agent task
             self.agent_api_client.stop_task()
 
             self.process_finished_task(note=f"`_monitor_task()`: Task stopped after {elapsed} seconds")
+        else:
+            # NOTE: if we don't check current_task, previous task timer might stop the current task
+            logger.debug("Task stopped, but not the current task or not in EVALUATING state.")
 
     def process_finished_task(self, note: str = ""):
         """
@@ -172,7 +211,7 @@ class Evaluator(ABC):
 
                     self.state = EvaluatorState.SCORING
                     task_elapsed_time = time.time() - self.task_start_time
-                    self.result = self._score_task(self.task, task_elapsed_time, note)
+                    self.result = self._score_task(self.current_task, task_elapsed_time, note)
                     logger.debug(f"Task completed. Result: {self.result.model_dump()}")
                     self.state = EvaluatorState.READY
                 else:
@@ -182,7 +221,18 @@ class Evaluator(ABC):
 
     def _check_env_continue(self, task: Task) -> bool:
         """
-        Check the environment for a task, to see if the task should continue.
+        Check the environment for a task, to see if the task should continue. Blocks subsequent calls of this function.
+
+        Returns:
+            bool: True if the task should continue, False otherwise.
+
+        Might be overrided by subclasses to check the environment for a task.
+        """
+        return True
+
+    def _check_env_continue_timer(self, task: Task) -> bool:
+        """
+        Check the environment for a task, to see if the task should continue. Does not block subsequent calls of this function.
 
         Returns:
             bool: True if the task should continue, False otherwise.
@@ -317,7 +367,7 @@ class EvaluatorAPIServer:
         response.status_code = status.HTTP_200_OK
         return {
             "state": self.evaluator.state.name,
-            "current_task": self.evaluator.task.model_dump() if self.evaluator.task else None,
+            "current_task": self.evaluator.current_task.model_dump() if self.evaluator.current_task else None,
         }
 
     def _get_results(self, response: Response):

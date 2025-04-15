@@ -8,7 +8,7 @@ import requests
 from fastapi import Response
 from pydantic import BaseModel, Field
 
-from owa_game_agent.constants import ENDPOINTS, NETWORK, TIMEOUTS
+from owa_game_agent.constants import ENDPOINTS, NETWORK, TIMES
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +23,7 @@ class Task(BaseModel):
     window_name: str
     task_description: str
     timeout: int
+    check_env_interval_seconds: float = 0.1  # Used for an interval between calling _check_env_continue_timer()
     success_criteria: dict[str, Any]
 
 
@@ -65,7 +66,7 @@ def run_server_background(
 
     # Wait for server to be ready
     server_url = f"http://{host if host != NETWORK.DEFAULT_HOST else NETWORK.LOCALHOST}:{port}"
-    max_retries = TIMEOUTS.SERVER_STARTUP_MAX_RETRIES
+    max_retries = TIMES.SERVER_STARTUP_MAX_RETRIES
     for i in range(max_retries):
         try:
             response = requests.get(f"{server_url}{healthcheck_endpoint}")
@@ -79,7 +80,7 @@ def run_server_background(
             logger.error("Failed to connect to server")
             return None
 
-        time.sleep(TIMEOUTS.SERVER_STARTUP_RETRY_INTERVAL)
+        time.sleep(TIMES.SERVER_STARTUP_RETRY_INTERVAL)
 
 
 def handle_response_errors(response: Response, raise_error: bool = False):

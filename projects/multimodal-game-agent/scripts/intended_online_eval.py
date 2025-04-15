@@ -30,7 +30,7 @@ from owa.env.desktop.constants import VK
 from owa.env.gst.msg import FrameStamped
 from owa_game_agent.agent import Agent, AgentAPIClient
 from owa_game_agent.commons import EvaluationResult, Task
-from owa_game_agent.constants import DEFAULTS, NETWORK, TIMEOUTS
+from owa_game_agent.constants import NETWORK, TIMES
 from owa_game_agent.evaluator import Evaluator, EvaluatorAPIClient, EvaluatorState
 from rich import print
 
@@ -66,6 +66,15 @@ def get_current_frame_base64(window_name: str) -> str:
     frame_base64 = cv2.imencode(".png", frame.frame_arr)[1].tobytes()
     frame_base64 = base64.b64encode(frame_base64).decode("utf-8")
     return frame_base64
+
+
+"""
+(Recommended Implementation)
+MySuperHexagonAgent and MySuperHexagonEvaluator: 
+Agent does not decide task finish (returning only True for _play_env()), Evaluator decides task finish with _check_env_continue().
+_check_env_continue() is synchronous, so if it is blocked, the subsequent _check_env_continue() will be blocked too.
+_check_env_continue_timer() is asynchronous, so it will not block the subsequent _check_env_continue_timer().
+"""
 
 
 class MySuperHexagonAgent(Agent):
@@ -126,7 +135,7 @@ class MySuperHexagonAgent(Agent):
                 # Currently, this agent just presses the right arrow key
                 # Example keyboard input (pressing right arrow)
                 CALLABLES["keyboard.press"](VK.RIGHT)  # Right arrow
-                time.sleep(DEFAULTS.KEYBOARD_PRESS_DELAY)
+                time.sleep(TIMES.KEYBOARD_PRESS_DELAY)
                 CALLABLES["keyboard.release"](VK.RIGHT)
                 logger.debug(f"key {VK.RIGHT} pressed")
 
@@ -155,7 +164,18 @@ class MySuperHexagonEvaluator(Evaluator):
 
     def _check_env_continue(self, task: Task) -> bool:
         """
-        Check the environment for a task, to see if the task should continue.
+        Check the environment for a task, to see if the task should continue. Blocks subsequent calls of this function.
+
+        Returns:
+            bool: True if the task should continue, False otherwise.
+
+        Might be overrided by subclasses to check the environment for a task.
+        """
+        return True  # for this example, we do not use _check_env_continue(), since we want to check the environment in a non-blocking way
+
+    def _check_env_continue_timer(self, task: Task) -> bool:
+        """
+        Check the environment for a task, to see if the task should continue. Does not block subsequent calls of this function.
 
         Returns:
             bool: True if the task should continue, False otherwise.
@@ -295,8 +315,15 @@ class MySuperHexagonEvaluator(Evaluator):
 
             # for super hexagon, we need to press space
             CALLABLES["keyboard.press"](VK.SPACE)
-            time.sleep(DEFAULTS.KEYBOARD_PRESS_DELAY)
+            time.sleep(TIMES.KEYBOARD_PRESS_DELAY)
             CALLABLES["keyboard.release"](VK.SPACE)
+
+
+"""
+(Less Recommended Implementation)
+YourSuperHexagonAgent and YourSuperHexagonEvaluator: 
+Agent decides task finish by the return value of _play_env(), Evaluator only scores after task finish.
+"""
 
 
 class YourSuperHexagonAgent(Agent):
@@ -382,7 +409,7 @@ class YourSuperHexagonAgent(Agent):
             # Currently, this agent just presses the right arrow key
             # Example keyboard input (pressing right arrow)
             CALLABLES["keyboard.press"](VK.RIGHT)  # Right arrow
-            time.sleep(DEFAULTS.KEYBOARD_PRESS_DELAY)
+            time.sleep(TIMES.KEYBOARD_PRESS_DELAY)
             CALLABLES["keyboard.release"](VK.RIGHT)
             logger.debug(f"key {VK.RIGHT} pressed")
 
@@ -496,7 +523,7 @@ class YourSuperHexagonEvaluator(Evaluator):
 
         # for super hexagon, we need to press space
         CALLABLES["keyboard.press"](VK.SPACE)
-        time.sleep(DEFAULTS.KEYBOARD_PRESS_DELAY)
+        time.sleep(TIMES.KEYBOARD_PRESS_DELAY)
         CALLABLES["keyboard.release"](VK.SPACE)
 
 
@@ -515,6 +542,7 @@ def get_example_task() -> Task:
         window_name="Super Hexagon",
         task_description="Survive as long as possible. Maximum time is 60 seconds. A survival time over 10 seconds is considered a success.",
         timeout=60,
+        check_env_interval_seconds=0.1,
         success_criteria={"time_survived": 10},
     )
 
@@ -531,6 +559,7 @@ def get_example_task_2() -> Task:
         window_name="Hexagon Super",
         task_description="Survive as long as possible. Maximum time is 60 seconds. A survival time over 10 seconds is considered a success.",
         timeout=60,
+        check_env_interval_seconds=0.1,
         success_criteria={"time_survived": 10},
     )
 
@@ -588,7 +617,7 @@ def run_evaluation_client(agent_url: str, evaluator_url: str, task: Task):
         # wait for evaluator to be ready
         while evaluator_client.get_status()["state"] != EvaluatorState.READY.name:
             print(f"Evaluator is not ready: {evaluator_client.get_status()}")
-            time.sleep(TIMEOUTS.EVALUATION_POLL_INTERVAL)
+            time.sleep(TIMES.EVALUATION_POLL_INTERVAL)
         print(f"Evaluator is ready: {evaluator_client.get_status()}")
 
         print(f"Starting evaluation with task: {task.window_name}...")
@@ -605,7 +634,7 @@ def run_evaluation_client(agent_url: str, evaluator_url: str, task: Task):
                 if results:
                     print(f"Evaluation completed with results: {results}")
                     break
-                time.sleep(TIMEOUTS.EVALUATION_POLL_INTERVAL)
+                time.sleep(TIMES.EVALUATION_POLL_INTERVAL)
             except KeyboardInterrupt:
                 print("Interrupted by user. Exiting.")
                 break
@@ -643,7 +672,7 @@ def run_evaluation_client_with_server(
         return
 
     # Short delay to ensure servers are ready
-    time.sleep(TIMEOUTS.SERVER_STARTUP_RETRY_INTERVAL)
+    time.sleep(TIMES.SERVER_STARTUP_RETRY_INTERVAL)
 
     # Run evaluation
     print("Running evaluation...")

@@ -12,7 +12,7 @@ from fastapi import BackgroundTasks, FastAPI, Response, status
 from pydantic import BaseModel
 
 from owa_game_agent.commons import Task, handle_response_errors, run_server_background
-from owa_game_agent.constants import ENDPOINTS, NETWORK, TIMEOUTS
+from owa_game_agent.constants import ENDPOINTS, NETWORK, TIMES
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +73,9 @@ class Agent(ABC):
             start_time = time.time()
             # Start the environment loop that handles the stop_event
             while not self.stop_event.is_set():
+                if self.current_task != task:
+                    return  # Task has changed, exit the loop
+
                 # call user-implemented method _play_env()
                 continue_task = self._play_env(task)
 
@@ -205,7 +208,7 @@ class AgentAPIServer:
         self.agent.stop_event.set()
 
         # Wait for cleanup to actually complete
-        max_wait_time = TIMEOUTS.TASK_CLEANUP_TIMEOUT
+        max_wait_time = TIMES.TASK_CLEANUP_TIMEOUT
         start_time = time.time()
         while time.time() - start_time < max_wait_time:
             # AgentState should be READY after task is stopped
@@ -213,7 +216,7 @@ class AgentAPIServer:
                 logger.debug(f"Task cleanup completed successfully in {time.time() - start_time:.2f} seconds")
                 response.status_code = status.HTTP_200_OK
                 return {"success": True, "message": "Task stopped"}
-            time.sleep(0.1)  # Small sleep to avoid busy waiting
+            time.sleep(TIMES.BUSY_WAIT_PREVENT)  # Small sleep to avoid busy waiting
         else:
             # If we exit the loop normally (timeout), log an error
             logger.error(f"Task cleanup may not have completed properly after {max_wait_time} seconds")

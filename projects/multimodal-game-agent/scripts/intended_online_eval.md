@@ -63,7 +63,7 @@ class MySuperHexagonAgent(Agent):
                 # Currently, this agent just presses the right arrow key
                 # Example keyboard input (pressing right arrow)
                 CALLABLES["keyboard.press"](VK.RIGHT)  # Right arrow
-                time.sleep(DEFAULTS.KEYBOARD_PRESS_DELAY)
+                time.sleep(TIMES.KEYBOARD_PRESS_DELAY)
                 CALLABLES["keyboard.release"](VK.RIGHT)
                 logger.debug(f"key {VK.RIGHT} pressed")
 
@@ -257,7 +257,7 @@ class MySuperHexagonEvaluator(Evaluator):
 
             # for super hexagon, we need to press space
             CALLABLES["keyboard.press"](VK.SPACE)
-            time.sleep(DEFAULTS.KEYBOARD_PRESS_DELAY)
+            time.sleep(TIMES.KEYBOARD_PRESS_DELAY)
             CALLABLES["keyboard.release"](VK.SPACE)
 ```
 
