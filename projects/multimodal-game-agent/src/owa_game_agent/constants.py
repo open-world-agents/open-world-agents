@@ -52,3 +52,4 @@ class TIMES:
     KEYBOARD_PRESS_DELAY = 0.05  # seconds
     BUSY_WAIT_PREVENT_EVALUATOR = 0.1  # seconds
     BUSY_WAIT_PREVENT_AGENT = 0.01  # seconds, we want to be more responsive for the agent
+    TIMESTAMP_INTERVAL = 0.05  # seconds

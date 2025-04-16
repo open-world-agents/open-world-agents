@@ -22,7 +22,7 @@ class Task(BaseModel):
         default_factory=lambda: str(uuid.uuid4())
     )  # NOTE: every task should have a unique ID. DO NOT reuse the same task object.
     env_name: str
-    window_name: str
+    window_name: str  # NOTE: currently owa.env.desktop finds first window that is a superstring of window_name
     task_description: str
     timeout: int
     check_env_interval_seconds: float = 1.0  # Used for an interval between calling _check_env_continue_timer()

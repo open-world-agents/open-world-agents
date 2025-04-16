@@ -12,28 +12,35 @@ Key Features:
 """
 
 import base64
-from collections.abc import Callable
 import json
 import logging
+import re
 import threading
 import time
+from collections.abc import Callable
 from enum import Enum
 
 import cv2
-from owa.env.desktop.msg import KeyboardEvent
+import numpy as np
+import torch
 import typer
 from openai import OpenAI
+from rich import print
 from rich.logging import RichHandler
+from transformers import AutoModelForImageTextToText, AutoProcessor
 from typing_extensions import Annotated
 
 from owa.core.registry import CALLABLES, LISTENERS, RUNNABLES, activate_module
 from owa.env.desktop.constants import VK
+from owa.env.desktop.msg import KeyboardEvent
 from owa.env.gst.msg import FrameStamped
 from owa_game_agent.agent import Agent, AgentAPIClient
 from owa_game_agent.commons import EvaluationResult, Task
 from owa_game_agent.constants import NETWORK, TIMES
 from owa_game_agent.evaluator import Evaluator, EvaluatorAPIClient, EvaluatorState
-from rich import print
+from owa_game_agent.data import OWATrainingSample
+from owa_game_agent.data.datasets.smolvlm2 import sample_to_smolvlm_input
+from owa_game_agent.data.sample_processor import SampleProcessor
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -51,9 +58,11 @@ env_lock = threading.Lock()  # mutex lock for controlling the environment
 
 # --- Agent-Evaluator Implementation Examples --- #
 
+FPS = 60
 
-def get_current_frame_base64(window_name: str) -> str:
-    screen_capture = RUNNABLES["screen_capture"]().configure(fps=60, window_name=window_name)
+
+def get_current_frame_base64(window_name: str) -> tuple[str, np.ndarray]:
+    screen_capture = RUNNABLES["screen_capture"]().configure(fps=FPS, window_name=window_name)
     with screen_capture.session:
         # get a single frame
         frame: FrameStamped = screen_capture.grab()
@@ -69,19 +78,30 @@ def get_current_frame_base64(window_name: str) -> str:
     return frame_base64
 
 
+def get_recent_frames(window_name: str, num_frames: int = 3) -> list[FrameStamped]:
+    screen_capture = RUNNABLES["screen_capture"]().configure(fps=FPS, window_name=window_name)
+    frames: list[FrameStamped] = []
+    with screen_capture.session:
+        for _ in range(num_frames):
+            frame = screen_capture.grab()
+            frames.append(frame)
+    return frames
+
+
 """
 (Recommended Implementation)
 MySuperHexagonAgent and MySuperHexagonEvaluator: 
 Agent does not decide task finish (returning only True for _play_env()), Evaluator decides task finish with _check_env_continue().
 _check_env_continue() is synchronous, so if it is blocked, the subsequent _check_env_continue() will be blocked too.
 _check_env_continue_timer() is asynchronous, so it will not block the subsequent _check_env_continue_timer().
+Agent behavior is inferenced by a trained model.
 """
 
 
 class MySuperHexagonAgent(Agent):
     """Example implementation of an agent"""
 
-    def __init__(self):
+    def __init__(self, model_id: str):
         super().__init__()
 
         # Example: Super Hexagon implementation would use screen observations
@@ -92,7 +112,16 @@ class MySuperHexagonAgent(Agent):
         activate_module(
             "owa.env.gst"
         )  # https://open-world-agents.github.io/open-world-agents/env/plugins/gstreamer_env/
+
         self.openai_client = OpenAI()
+        self.model_id = model_id
+        self.processor = AutoProcessor.from_pretrained(model_id, padding_side="left")
+        self.model = AutoModelForImageTextToText.from_pretrained(
+            model_id,
+            torch_dtype=torch.bfloat16,
+            # load_in_4bit=True,
+            # _attn_implementation="flash_attention_2",
+        ).to("cuda")
 
         def on_keyboard_event(keyboard_event: KeyboardEvent):
             if keyboard_event.vk == VK.F10:
@@ -101,6 +130,96 @@ class MySuperHexagonAgent(Agent):
 
         keyboard_listener = LISTENERS["keyboard"]().configure(callback=on_keyboard_event)
         keyboard_listener.start()
+
+    # TODO : generate_response and _execute seems to be something that should be included in library
+    def _generate_response(self, sample: OWATrainingSample) -> str:
+        """Process the sample and generate a response using the VLM."""
+        sample_processor = SampleProcessor()
+        tokenized_sample = sample_processor.tokenize(sample)
+        vlm_input = sample_to_smolvlm_input(tokenized_sample)
+
+        example = {"messages": vlm_input.messages, "images": vlm_input.images}
+        examples = [example]
+        texts = []
+        images = []
+
+        for ex in examples:
+            assistant_prompt = ex["messages"].pop(-1)  # noqa: F841
+            texts.append(
+                self.processor.apply_chat_template(ex["messages"], tokenize=False, add_generation_prompt=True) + " "
+            )
+            images.append(ex["images"])
+
+        # profile: 38.7%
+        batch = self.processor(text=texts, images=images, return_tensors="pt", padding=True).to(
+            self.model.device, dtype=self.model.dtype
+        )
+
+        # profile: 57.9%
+        outputs = self.model.generate(**batch, logits_processor=[], do_sample=False, max_new_tokens=64)
+
+        output = outputs[0]
+        generated = self.processor.decode(output, skip_special_tokens=True)
+        return generated[generated.find("Assistant: ") + len("Assistant: ") :]
+
+    def _execute(self, generated: str, anchor_time: float, processing_time: float, task: Task) -> None:
+        """Execute the generated response as scheduled keyboard actions."""
+        tokens = re.findall(r"<(.*?)>", generated)
+        timestamp_list = []
+        events = []
+
+        # Parse tokens: build a list of timestamps and pair them with keyboard actions.
+        for token in tokens:
+            if token.startswith("TIMESTAMP"):
+                timestamp = int(token.split("_")[1])
+                # Each timestamp represents an absolute time: anchor_time + (timestamp * TIMESTAMP_INTERVAL)
+                timestamp_list.append(anchor_time + timestamp * TIMES.TIMESTAMP_INTERVAL)
+            elif token.startswith("KEYBOARD"):
+                if not timestamp_list:
+                    logger.warning("Found KEYBOARD without TIMESTAMP")
+                    return
+                ts = timestamp_list.pop(0)
+                vk, state = map(int, token.split("_")[1:])
+                events.append((ts, vk, state, token))
+            else:
+                logger.warning(f"Invalid token: {token}")
+                return
+
+        if not events:
+            return
+
+        # The first event's intended time
+        base_timestamp = events[0][0]  # e.g. anchor_time + 12 * 0.05 = anchor_time + 0.6
+
+        # Compute delay needed for the first event:
+        # Ideally, we want to execute the first event at base_timestamp.
+        # But if processing already took processing_time, then the remaining delay is:
+        first_delay = (base_timestamp - anchor_time) - processing_time
+        if first_delay < 0:
+            first_delay = 0
+
+        # Schedule the first event to run after first_delay seconds from now.
+        first_event_execution_time = time.time() + first_delay
+
+        # Execute events while preserving relative differences.
+        for original_time, vk, state, token in events:
+            # Calculate the time difference (delta) relative to the first event.
+            delta = original_time - base_timestamp
+            # The scheduled time for this event is:
+            scheduled_time = first_event_execution_time + delta
+            to_sleep = max(0, scheduled_time - time.time())
+            logger.info(f"Sleeping for {to_sleep:.2f}s, processing time {processing_time:.2f}s, token {token}")
+            time.sleep(to_sleep)
+
+            # Execute the key action.
+            with env_lock:
+                # make the window active
+                CALLABLES["window.make_active"](task.window_name)
+
+                if state:
+                    CALLABLES["keyboard.press"](vk)
+                else:
+                    CALLABLES["keyboard.release"](vk)
 
     def _play_env(self, task: Task) -> bool:
         """
@@ -116,35 +235,51 @@ class MySuperHexagonAgent(Agent):
             bool: True if the task should continue, False if the task should not continue
         """
 
-        with env_lock:
-            # make the window active
-            CALLABLES["window.make_active"](task.window_name)
+        # Check if the task should continue
+        def check_continue(task: Task) -> bool:
+            """
+            Check if the task should continue.
+            """
+            # In this version, evaluator will monitor and check the task. agent does not need to report termination.
+            return True
 
-            # Check if the task should continue
-            def check_continue(task: Task) -> bool:
-                """
-                Check if the task should continue.
-                """
-                # In this version, evaluator will monitor and check the task. agent does not need to report termination.
-                return True
+        if check_continue(task):
+            # Get recent frames. For now we just use a blocking call to get the frames.
+            start_frame_collect = time.time()
+            frames = get_recent_frames(task.window_name, num_frames=3)
+            frame_collect = time.time() - start_frame_collect
+            logger.debug(f"get_recent_frames() took {frame_collect:.2f}sec")
 
-            if check_continue(task):
-                # logger.debug(f"{self._play_env.__name__}(): task should continue")
+            # Get current keyboard state
+            state_keyboard = CALLABLES["keyboard.get_state"]().buttons - {1, 2, 4}
+            state_mouse = CALLABLES["mouse.get_state"]()
+            state_screen = []
+            for frame in frames:
+                state_screen.append((frame.timestamp_ns, frame.frame_arr))
 
-                # Normally, you would use your model to generate actions
+            # Store in sample
+            sample = OWATrainingSample(
+                state_keyboard=state_keyboard,
+                state_mouse=state_mouse,
+                state_screen=state_screen,
+                action_keyboard=[],
+                action_mouse=None,
+            )
 
-                # Currently, this agent just presses the right arrow key
-                # Example keyboard input (pressing right arrow)
-                CALLABLES["keyboard.press"](VK.RIGHT)  # Right arrow
-                time.sleep(TIMES.KEYBOARD_PRESS_DELAY)
-                CALLABLES["keyboard.release"](VK.RIGHT)
-                # logger.debug(f"key {VK.RIGHT} pressed")
+            # Process sample exactly as in 05_online_evaluation.py
+            now = time.time()
+            generated = self._generate_response(sample)
+            taken = time.time() - now
+            logger.debug(f"`_generate_response()`: {generated=}, {taken=}sec")
 
-                return True  # Continue the task
+            # Extract the action from the generated response
+            self._execute(generated, anchor_time=now, processing_time=taken, task=task)
 
-            else:
-                # logger.error(f"{self._play_env.__name__}(): task should not continue. This should not happen.")
-                return False  # Do not continue the task. Evaluation will be made by the evaluator.
+            return True  # Continue the task
+
+        else:
+            # logger.error(f"{self._play_env.__name__}(): task should not continue. This should not happen.")
+            return False  # Do not continue the task. Evaluation will be made by the evaluator.
 
 
 class MySuperHexagonEvaluator(Evaluator):
@@ -327,6 +462,7 @@ class MySuperHexagonEvaluator(Evaluator):
 (Less Recommended Implementation)
 YourSuperHexagonAgent and YourSuperHexagonEvaluator: 
 Agent decides task finish by the return value of _play_env(), Evaluator only scores after task finish.
+Agent only presses the right arrow key.
 """
 
 
@@ -571,14 +707,14 @@ def generate_example_task_2() -> Task:
 # --- Run Functions --- #
 
 
-def run_agent(host: str = NETWORK.DEFAULT_HOST, port: int = NETWORK.AGENT_PORT):
+def run_agent(model_id: str, host: str = NETWORK.DEFAULT_HOST, port: int = NETWORK.AGENT_PORT):
     """
     Run the agent server. Blocking.
 
     Args:
         model_id (str): The model ID to use for the agent.
     """
-    agent = MySuperHexagonAgent()
+    agent = MySuperHexagonAgent(model_id=model_id)
     print("Starting agent server")
     agent.run(host=host, port=port)
 
@@ -646,6 +782,7 @@ def run_evaluation_client(agent_url: str, evaluator_url: str, task_generator: Ca
 
 
 def run_evaluation_client_with_server(
+    model_id: str,
     task_generator: Callable[[], Task],
     agent_host: str = NETWORK.DEFAULT_HOST,
     agent_port: int = NETWORK.AGENT_PORT,
@@ -659,7 +796,7 @@ def run_evaluation_client_with_server(
     waits for them to be ready, and then runs an example evaluation against them.
     """
     # Create agent and evaluator instances
-    agent = MySuperHexagonAgent()
+    agent = MySuperHexagonAgent(model_id=model_id)
     evaluator = MySuperHexagonEvaluator()
 
     # Start agent server in background
@@ -687,7 +824,7 @@ def run_evaluation_client_with_server(
     input("Press Enter to exit...")
 
 
-def run_evaluation_client_with_server_parallel():
+def run_evaluation_client_with_server_parallel(model_id: str):
     """
     Run an example evaluation without blocking
 
@@ -701,6 +838,7 @@ def run_evaluation_client_with_server_parallel():
         thread = threading.Thread(
             target=run_evaluation_client_with_server,
             args=(
+                model_id,
                 task_generator,
                 NETWORK.DEFAULT_HOST,
                 port,
@@ -731,24 +869,27 @@ def main(
             help="Mode to run: 'agent', 'evaluator', 'run_client', 'run_client_with_server', 'run_parallel'",
         ),
     ] = Mode.RUN_CLIENT_WITH_SERVER.value,
+    model_id: Annotated[
+        str, typer.Option(help="Model ID or path to use for the agent")
+    ] = "__ignore__/SmolVLM2-256M-Video-Instruct-1e-4-10ep-8bs-3IMG",
 ):
     """
     Main entry point.
 
     Args:
         mode (Mode): The mode to run in.
-        model_id (str): The model ID to use for the agent.
+        model_id (str): The model ID or path to use for the agent.
     """
     if mode == Mode.AGENT:
-        run_agent()
+        run_agent(model_id)
     elif mode == Mode.EVALUATOR:
         run_evaluator()
     elif mode == Mode.RUN_CLIENT:
         run_evaluation_client(NETWORK._AGENT_URL, NETWORK._EVALUATOR_URL)
     elif mode == Mode.RUN_CLIENT_WITH_SERVER:
-        run_evaluation_client_with_server(generate_example_task)
+        run_evaluation_client_with_server(model_id, generate_example_task)
     elif mode == Mode.RUN_PARALLEL:
-        run_evaluation_client_with_server_parallel()
+        run_evaluation_client_with_server_parallel(model_id)
     else:
         raise ValueError(f"Unknown mode: {mode=}")
 
