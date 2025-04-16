@@ -63,6 +63,7 @@ FPS = 5
 
 
 def get_current_frame_base64(window_name: str) -> tuple[str, np.ndarray]:
+    """NOTE: this function is slow. Only use for evaluator, not agent."""
     screen_capture = RUNNABLES["screen_capture"]().configure(fps=FPS, window_name=window_name)
     with screen_capture.session:
         # get a single frame
