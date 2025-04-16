@@ -129,10 +129,10 @@ class Evaluator(ABC):
             if (
                 self.current_task == task
             ):  # NOTE: check if the task is the current task. Needed since we cannot kill the timer thread, and a new task might be running
-                logger.debug(f"Task timed out. Stopping task. {self.current_task=} {task=}")
+                logger.debug(f"Task timed out. Stopping task. {task=}")
                 self.stop_event.set()
             else:
-                logger.debug("Task timed out, but task is not the current task. Ignoring.")
+                logger.debug(f"Task timed out, but current task has changed. Ignoring. {self.current_task=} {task=}")
 
         timeout_thread = threading.Thread(target=timeout_watcher, daemon=True)
         timeout_thread.start()
@@ -188,7 +188,9 @@ class Evaluator(ABC):
             self.process_finished_task(note=f"`_monitor_task()`: Task stopped after {elapsed} seconds")
         else:
             # NOTE: if we don't check current_task, previous task timer might stop the current task
-            logger.debug("Task stopped, but not the current task or not in EVALUATING state. Ignoring.")
+            logger.debug(
+                f"Task stopped, but current task has changed or not in EVALUATING state. Ignoring. {self.current_task=} {task=}"
+            )
 
     def process_finished_task(self, note: str = ""):
         """
