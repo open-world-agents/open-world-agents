@@ -12,6 +12,7 @@ Key Features:
 """
 
 import base64
+from collections.abc import Callable
 import json
 import logging
 import threading
@@ -95,7 +96,7 @@ class MySuperHexagonAgent(Agent):
 
         def on_keyboard_event(keyboard_event: KeyboardEvent):
             if keyboard_event.vk == VK.F10:
-                logger.debug("Stopping agent")
+                logger.debug("Stopping agent with F10 key")
                 self.stop_event.set()
 
         keyboard_listener = LISTENERS["keyboard"]().configure(callback=on_keyboard_event)
@@ -137,7 +138,7 @@ class MySuperHexagonAgent(Agent):
                 CALLABLES["keyboard.press"](VK.RIGHT)  # Right arrow
                 time.sleep(TIMES.KEYBOARD_PRESS_DELAY)
                 CALLABLES["keyboard.release"](VK.RIGHT)
-                logger.debug(f"key {VK.RIGHT} pressed")
+                # logger.debug(f"key {VK.RIGHT} pressed")
 
                 return True  # Continue the task
 
@@ -154,7 +155,7 @@ class MySuperHexagonEvaluator(Evaluator):
 
         def on_keyboard_event(keyboard_event: KeyboardEvent):
             if keyboard_event.vk == VK.F10:
-                logger.debug("Stopping evaluator")
+                logger.debug("Stopping evaluator with F10 key")
                 self.stop_event.set()
 
         keyboard_listener = LISTENERS["keyboard"]().configure(callback=on_keyboard_event)
@@ -184,6 +185,9 @@ class MySuperHexagonEvaluator(Evaluator):
         """
         # In this version, evaluator will monitor and check the task. agent does not need to report termination.
 
+        # check if it is called in the correct interval
+        logger.debug(f"`_check_env_continue_timer()` called at: {time.time()=}, {task.check_env_interval_seconds=}")
+
         # we can also utilize task information
         # prompt = f"""Did you survive for at least {task.success_criteria["time_survived"]} seconds? Say only yes or no."""
         prompt = "This is a screenshot of a game called Super Hexagon. Can you see the text `PRESS SPACE TO RETRY` in the bottom? Say only yes or no."
@@ -211,7 +215,7 @@ class MySuperHexagonEvaluator(Evaluator):
             temperature=0.0,
         )
 
-        logger.debug(f"response: {response.output_text}")
+        logger.debug(f"GPT response: {response.output_text}")
 
         if "yes" in response.output_text.lower():
             return False  # if we can see the retry button, the task should not continue
@@ -273,7 +277,7 @@ class MySuperHexagonEvaluator(Evaluator):
             },
         )
 
-        logger.debug(f"response: {response.output_text}")
+        logger.debug(f"GPT response: {response.output_text}")
 
         try:
             score = json.loads(response.output_text)["score"]
@@ -394,7 +398,7 @@ class YourSuperHexagonAgent(Agent):
                 temperature=0.0,
             )
 
-            logger.debug(f"response: {response.output_text}")
+            logger.debug(f"GPT response: {response.output_text}")
 
             if "yes" in response.output_text.lower():
                 return False  # if we can see the retry button, the task should not continue
@@ -411,7 +415,7 @@ class YourSuperHexagonAgent(Agent):
             CALLABLES["keyboard.press"](VK.RIGHT)  # Right arrow
             time.sleep(TIMES.KEYBOARD_PRESS_DELAY)
             CALLABLES["keyboard.release"](VK.RIGHT)
-            logger.debug(f"key {VK.RIGHT} pressed")
+            # logger.debug(f"key {VK.RIGHT} pressed")
 
             return True  # Continue the task
 
@@ -482,7 +486,7 @@ class YourSuperHexagonEvaluator(Evaluator):
             },
         )
 
-        logger.debug(f"response: {response.output_text}")
+        logger.debug(f"GPT response: {response.output_text}")
 
         try:
             score = json.loads(response.output_text)["score"]
@@ -530,7 +534,7 @@ class YourSuperHexagonEvaluator(Evaluator):
 # --- Example Tasks --- #
 
 
-def get_example_task() -> Task:
+def generate_example_task() -> Task:
     """
     Get an example task for testing.
 
@@ -542,12 +546,12 @@ def get_example_task() -> Task:
         window_name="Super Hexagon",
         task_description="Survive as long as possible. Maximum time is 60 seconds. A survival time over 10 seconds is considered a success.",
         timeout=60,
-        check_env_interval_seconds=0.1,
+        check_env_interval_seconds=1.0,
         success_criteria={"time_survived": 10},
     )
 
 
-def get_example_task_2() -> Task:
+def generate_example_task_2() -> Task:
     """
     Get an example task for testing.
 
@@ -559,7 +563,7 @@ def get_example_task_2() -> Task:
         window_name="Hexagon Super",
         task_description="Survive as long as possible. Maximum time is 60 seconds. A survival time over 10 seconds is considered a success.",
         timeout=60,
-        check_env_interval_seconds=0.1,
+        check_env_interval_seconds=1.0,
         success_criteria={"time_survived": 10},
     )
 
@@ -588,7 +592,7 @@ def run_evaluator(host: str = NETWORK.DEFAULT_HOST, port: int = NETWORK.EVALUATO
     evaluator.run(host=host, port=port)
 
 
-def run_evaluation_client(agent_url: str, evaluator_url: str, task: Task):
+def run_evaluation_client(agent_url: str, evaluator_url: str, task_generator: Callable[[], Task]):
     """
     Run an example evaluation. Assumes the agent and evaluator servers are already running.
 
@@ -612,15 +616,16 @@ def run_evaluation_client(agent_url: str, evaluator_url: str, task: Task):
         print("Failed to register agent with evaluator. Exiting.")
         return
 
-    # Start evaluation
+    # Start evaluation. We run 3 tasks consecutively for demonstration purposes.
     for _ in range(3):
+        task = task_generator()
+
         # wait for evaluator to be ready
         while evaluator_client.get_status()["state"] != EvaluatorState.READY.name:
             print(f"Evaluator is not ready: {evaluator_client.get_status()}")
             time.sleep(TIMES.EVALUATION_POLL_INTERVAL)
         print(f"Evaluator is ready: {evaluator_client.get_status()}")
 
-        print(f"Starting evaluation with task: {task.window_name}...")
         if not evaluator_client.start_evaluation(task):
             print("Failed to start evaluation. Exiting.")
             return
@@ -641,7 +646,7 @@ def run_evaluation_client(agent_url: str, evaluator_url: str, task: Task):
 
 
 def run_evaluation_client_with_server(
-    task: Task,
+    task_generator: Callable[[], Task],
     agent_host: str = NETWORK.DEFAULT_HOST,
     agent_port: int = NETWORK.AGENT_PORT,
     evaluator_host: str = NETWORK.DEFAULT_HOST,
@@ -676,7 +681,7 @@ def run_evaluation_client_with_server(
 
     # Run evaluation
     print("Running evaluation...")
-    run_evaluation_client(agent_url, evaluator_url, task)
+    run_evaluation_client(agent_url, evaluator_url, task_generator)
 
     # Wait for user input to exit
     input("Press Enter to exit...")
@@ -688,15 +693,15 @@ def run_evaluation_client_with_server_parallel():
 
     This function runs run_evaluation_client_with_server() in parallel for multiple tasks.
     """
-    tasks = [get_example_task(), get_example_task_2()]
+    task_generators = [generate_example_task, generate_example_task_2]
 
     threads = []
     port = 8181
-    for task in tasks:
+    for task_generator in task_generators:
         thread = threading.Thread(
             target=run_evaluation_client_with_server,
             args=(
-                task,
+                task_generator,
                 NETWORK.DEFAULT_HOST,
                 port,
                 NETWORK.DEFAULT_HOST,
@@ -741,7 +746,7 @@ def main(
     elif mode == Mode.RUN_CLIENT:
         run_evaluation_client(NETWORK._AGENT_URL, NETWORK._EVALUATOR_URL)
     elif mode == Mode.RUN_CLIENT_WITH_SERVER:
-        run_evaluation_client_with_server(get_example_task())
+        run_evaluation_client_with_server(generate_example_task)
     elif mode == Mode.RUN_PARALLEL:
         run_evaluation_client_with_server_parallel()
     else:

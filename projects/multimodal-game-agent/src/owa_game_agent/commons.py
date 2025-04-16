@@ -18,12 +18,14 @@ logger = logging.getLogger(__name__)
 class Task(BaseModel):
     """Configuration for a task in an environment"""
 
-    task_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    task_id: str = Field(
+        default_factory=lambda: str(uuid.uuid4())
+    )  # NOTE: every task should have a unique ID. DO NOT reuse the same task object.
     env_name: str
     window_name: str
     task_description: str
     timeout: int
-    check_env_interval_seconds: float = 0.1  # Used for an interval between calling _check_env_continue_timer()
+    check_env_interval_seconds: float = 1.0  # Used for an interval between calling _check_env_continue_timer()
     success_criteria: dict[str, Any]
 
 

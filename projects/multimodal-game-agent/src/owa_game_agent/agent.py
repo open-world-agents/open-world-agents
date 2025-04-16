@@ -68,7 +68,14 @@ class Agent(ABC):
             task (Task): The task configuration.
         """
         try:
+            # Check if the task has already been run previously
+            if self.current_task and self.current_task.task_id == task.task_id:
+                logger.error("Detected reuse of previously run task. Please create a new task object.")
+                return
+
             self.stop_event.clear()
+
+            self.current_task = task
 
             start_time = time.time()
             # Start the environment loop that handles the stop_event
@@ -84,6 +91,10 @@ class Agent(ABC):
                     logger.debug(f"`_run_task()`: Agent task finished in {time.time() - start_time} seconds")
                     self._task_finished()
                     return
+
+                time.sleep(
+                    TIMES.BUSY_WAIT_PREVENT_AGENT
+                )  # NOTE: Sleep to avoid busy waiting. Removing this will cause high CPU usage and interfere other threads.
 
             # stop event has been set
             logger.debug(f"`_run_task()`: Agent task stopped in {time.time() - start_time} seconds")
@@ -188,7 +199,6 @@ class AgentAPIServer:
                 "error": f"Agent not ready. Current state: {self.agent.state.name}",
             }
 
-        self.agent.current_task = task
         self.agent.state = AgentState.RUNNING
         self.agent.stop_event.clear()
 
@@ -216,7 +226,7 @@ class AgentAPIServer:
                 logger.debug(f"Task cleanup completed successfully in {time.time() - start_time:.2f} seconds")
                 response.status_code = status.HTTP_200_OK
                 return {"success": True, "message": "Task stopped"}
-            time.sleep(TIMES.BUSY_WAIT_PREVENT)  # Small sleep to avoid busy waiting
+            time.sleep(TIMES.BUSY_WAIT_PREVENT_EVALUATOR)  # Small sleep to avoid busy waiting
         else:
             # If we exit the loop normally (timeout), log an error
             logger.error(f"Task cleanup may not have completed properly after {max_wait_time} seconds")

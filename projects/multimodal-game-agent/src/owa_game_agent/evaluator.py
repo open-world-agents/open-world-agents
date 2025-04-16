@@ -81,6 +81,11 @@ class Evaluator(ABC):
             logger.error("Agent not ready. Aborting evaluation.")
             return False
 
+        # Check if the task has already been run previously
+        if self.current_task and self.current_task.task_id == task.task_id:
+            logger.error("Detected reuse of previously run task. Please create a new task object.")
+            return False
+
         # Setup environment for the task
         try:
             self._setup_environment(task)
@@ -120,10 +125,11 @@ class Evaluator(ABC):
         # start a timeout thread that will stop the task after a certain time
         def timeout_watcher():
             time.sleep(task.timeout)
-            logger.debug("Task timed out. Stopping task.")
+
             if (
                 self.current_task == task
             ):  # NOTE: check if the task is the current task. Needed since we cannot kill the timer thread, and a new task might be running
+                logger.debug(f"Task timed out. Stopping task. {self.current_task=} {task=}")
                 self.stop_event.set()
             else:
                 logger.debug("Task timed out, but task is not the current task. Ignoring.")
@@ -168,7 +174,7 @@ class Evaluator(ABC):
                 logger.debug("Task stopped by `check_env_continue()`. Stopping task.")
                 self.stop_event.set()
             time.sleep(
-                TIMES.BUSY_WAIT_PREVENT
+                TIMES.BUSY_WAIT_PREVENT_EVALUATOR
             )  # NOTE: Sleep to avoid busy waiting. Removing this will cause high CPU usage and interfere other threads.
 
         # stop event is set, meaning the task should be stopped
@@ -182,7 +188,7 @@ class Evaluator(ABC):
             self.process_finished_task(note=f"`_monitor_task()`: Task stopped after {elapsed} seconds")
         else:
             # NOTE: if we don't check current_task, previous task timer might stop the current task
-            logger.debug("Task stopped, but not the current task or not in EVALUATING state.")
+            logger.debug("Task stopped, but not the current task or not in EVALUATING state. Ignoring.")
 
     def process_finished_task(self, note: str = ""):
         """

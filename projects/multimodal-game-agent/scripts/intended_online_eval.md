@@ -153,7 +153,7 @@ class MySuperHexagonEvaluator(Evaluator):
             temperature=0.0,
         )
 
-        logger.debug(f"response: {response.output_text}")
+        logger.debug(f"GPT response: {response.output_text}")
 
         if "yes" in response.output_text.lower():
             return False  # if we can see the retry button, the task should not continue
@@ -215,7 +215,7 @@ class MySuperHexagonEvaluator(Evaluator):
             },
         )
 
-        logger.debug(f"response: {response.output_text}")
+        logger.debug(f"GPT response: {response.output_text}")
 
         try:
             score = json.loads(response.output_text)["score"]
