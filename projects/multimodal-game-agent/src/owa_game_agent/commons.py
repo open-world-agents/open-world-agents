@@ -27,6 +27,7 @@ class Task(BaseModel):
     timeout: int
     check_env_interval_seconds: float = 1.0  # Used for an interval between calling _check_env_continue_timer()
     success_criteria: dict[str, Any]
+    num_frames: int = 3  # number of frames to capture and handle for the task
 
 
 class EvaluationResult(BaseModel):

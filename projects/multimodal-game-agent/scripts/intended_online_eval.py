@@ -22,6 +22,7 @@ from enum import Enum
 
 import cv2
 import numpy as np
+from owa.env.gst.screen.listeners import MetricManager
 import torch
 import typer
 from openai import OpenAI
@@ -58,7 +59,7 @@ env_lock = threading.Lock()  # mutex lock for controlling the environment
 
 # --- Agent-Evaluator Implementation Examples --- #
 
-FPS = 60
+FPS = 5
 
 
 def get_current_frame_base64(window_name: str) -> tuple[str, np.ndarray]:
@@ -76,16 +77,6 @@ def get_current_frame_base64(window_name: str) -> tuple[str, np.ndarray]:
     frame_base64 = cv2.imencode(".png", frame.frame_arr)[1].tobytes()
     frame_base64 = base64.b64encode(frame_base64).decode("utf-8")
     return frame_base64
-
-
-def get_recent_frames(window_name: str, num_frames: int = 3) -> list[FrameStamped]:
-    screen_capture = RUNNABLES["screen_capture"]().configure(fps=FPS, window_name=window_name)
-    frames: list[FrameStamped] = []
-    with screen_capture.session:
-        for _ in range(num_frames):
-            frame = screen_capture.grab()
-            frames.append(frame)
-    return frames
 
 
 """
@@ -127,12 +118,41 @@ class MySuperHexagonAgent(Agent):
             if keyboard_event.vk == VK.F10:
                 logger.debug("Stopping agent with F10 key")
                 self.stop_event.set()
+                exit(0)
 
         keyboard_listener = LISTENERS["keyboard"]().configure(callback=on_keyboard_event)
         keyboard_listener.start()
 
-    # TODO : generate_response and _execute seems to be something that should be included in library
-    def _generate_response(self, sample: OWATrainingSample) -> str:
+    def _init_task_hook(self, task: Task) -> None:
+        """A customizable hook for task initialization. Called by _run_task(). Use with caution."""
+        self.recent_frames = []
+        self.num_frames = task.num_frames
+
+        def on_screen_event(frame: FrameStamped, metric: MetricManager):
+            self.recent_frames.append(frame)
+            if len(self.recent_frames) > self.num_frames:
+                self.recent_frames.pop(0)
+
+        self.screen_listener = LISTENERS["screen"]().configure(
+            callback=on_screen_event, fps=FPS, window_name="Super Hexagon"
+        )
+        self.screen_listener.start()
+
+    def _finish_task_hook(self, task: Task) -> None:
+        """A customizable hook for task finishing. Called by _run_task(). Use with caution."""
+        self.screen_listener.stop()
+        self.screen_listener.join(TIMES.THREAD_JOIN_TIMEOUT)
+        self.recent_frames.clear()
+        self.num_frames = None
+        logger.debug("_finish_task_hook() finished")
+
+    def __get_recent_frames(self) -> list[FrameStamped]:
+        while len(self.recent_frames) < self.num_frames:
+            time.sleep(TIMES.BUSY_WAIT_PREVENT_AGENT)  # wait for the frames to be collected
+        return self.recent_frames[-self.num_frames :]
+
+    # TODO : generate_response() and execute() seems to be something that should be included in library
+    def __generate_response(self, sample: OWATrainingSample) -> str:
         """Process the sample and generate a response using the VLM."""
         sample_processor = SampleProcessor()
         tokenized_sample = sample_processor.tokenize(sample)
@@ -162,7 +182,7 @@ class MySuperHexagonAgent(Agent):
         generated = self.processor.decode(output, skip_special_tokens=True)
         return generated[generated.find("Assistant: ") + len("Assistant: ") :]
 
-    def _execute(self, generated: str, anchor_time: float, processing_time: float, task: Task) -> None:
+    def __execute(self, generated: str, anchor_time: float, processing_time: float, task: Task) -> None:
         """Execute the generated response as scheduled keyboard actions."""
         tokens = re.findall(r"<(.*?)>", generated)
         timestamp_list = []
@@ -246,16 +266,16 @@ class MySuperHexagonAgent(Agent):
         if check_continue(task):
             # Get recent frames. For now we just use a blocking call to get the frames.
             start_frame_collect = time.time()
-            frames = get_recent_frames(task.window_name, num_frames=3)
+            frames = self.__get_recent_frames()
             frame_collect = time.time() - start_frame_collect
-            logger.debug(f"get_recent_frames() took {frame_collect:.2f}sec")
+            logger.debug(f"__get_recent_frames() took {frame_collect}sec")
 
             # Get current keyboard state
             state_keyboard = CALLABLES["keyboard.get_state"]().buttons - {1, 2, 4}
             state_mouse = CALLABLES["mouse.get_state"]()
             state_screen = []
             for frame in frames:
-                state_screen.append((frame.timestamp_ns, frame.frame_arr))
+                state_screen.append((frame.timestamp_ns, frame.frame_arr))  # NOTE: is it ok to use frame.timestamp_ns?
 
             # Store in sample
             sample = OWATrainingSample(
@@ -268,12 +288,12 @@ class MySuperHexagonAgent(Agent):
 
             # Process sample exactly as in 05_online_evaluation.py
             now = time.time()
-            generated = self._generate_response(sample)
+            generated = self.__generate_response(sample)
             taken = time.time() - now
-            logger.debug(f"`_generate_response()`: {generated=}, {taken=}sec")
+            logger.debug(f"`__generate_response()`: {generated=}, {taken=}sec")
 
             # Extract the action from the generated response
-            self._execute(generated, anchor_time=now, processing_time=taken, task=task)
+            self.__execute(generated, anchor_time=now, processing_time=taken, task=task)
 
             return True  # Continue the task
 
@@ -292,6 +312,7 @@ class MySuperHexagonEvaluator(Evaluator):
             if keyboard_event.vk == VK.F10:
                 logger.debug("Stopping evaluator with F10 key")
                 self.stop_event.set()
+                exit(0)
 
         keyboard_listener = LISTENERS["keyboard"]().configure(callback=on_keyboard_event)
         keyboard_listener.start()

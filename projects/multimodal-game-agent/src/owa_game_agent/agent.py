@@ -60,6 +60,14 @@ class Agent(ABC):
         self._state = new_state
         logger.debug(f"Agent state changed: {old_state.name} -> {new_state.name}")
 
+    def _init_task_hook(self, task: Task) -> None:
+        """A customizable hook for task initialization. Called by _run_task(). Use with caution."""
+        return
+
+    def _finish_task_hook(self, task: Task) -> None:
+        """A customizable hook for task finishing. Called by _run_task(). Use with caution."""
+        return
+
     def _run_task(self, task: Task):
         """
         Run the task. Meant to be called in a background thread.
@@ -68,6 +76,7 @@ class Agent(ABC):
             task (Task): The task configuration.
         """
         try:
+            self._init_task_hook(task)
             # Check if the task has already been run previously
             if self.current_task and self.current_task.task_id == task.task_id:
                 logger.error("Detected reuse of previously run task. Please create a new task object.")
@@ -103,6 +112,7 @@ class Agent(ABC):
             logger.error(f"Error in task execution: {e} \n {traceback.format_exc()}")
         finally:
             self.state = AgentState.READY
+            self._finish_task_hook(task)
 
     def _task_finished(self) -> bool:
         """
