@@ -240,10 +240,10 @@ class MySuperHexagonAgent(Agent):
 
                 if state:
                     CALLABLES["keyboard.press"](vk)
-                    logger.warning(f"key {vk} pressed {task.task_id=}")
+                    logger.debug(f"key {vk} pressed {task.task_id=}")
                 else:
                     CALLABLES["keyboard.release"](vk)
-                    logger.warning(f"key {vk} released {task.task_id=}")
+                    logger.debug(f"key {vk} released {task.task_id=}")
 
     def _play_env(self, task: Task) -> bool:
         """
