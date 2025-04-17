@@ -11,6 +11,7 @@ Key Features:
 - Minimal asynchronous programming requirements for researchers
 """
 
+import _thread
 import base64
 import json
 import logging
@@ -22,7 +23,6 @@ from enum import Enum
 
 import cv2
 import numpy as np
-from owa.env.gst.screen.listeners import MetricManager
 import torch
 import typer
 from openai import OpenAI
@@ -35,13 +35,14 @@ from owa.core.registry import CALLABLES, LISTENERS, RUNNABLES, activate_module
 from owa.env.desktop.constants import VK
 from owa.env.desktop.msg import KeyboardEvent
 from owa.env.gst.msg import FrameStamped
+from owa.env.gst.screen.listeners import MetricManager
 from owa_game_agent.agent import Agent, AgentAPIClient
 from owa_game_agent.commons import EvaluationResult, Task
 from owa_game_agent.constants import NETWORK, TIMES
-from owa_game_agent.evaluator import Evaluator, EvaluatorAPIClient, EvaluatorState
 from owa_game_agent.data import OWATrainingSample
 from owa_game_agent.data.datasets.smolvlm2 import sample_to_smolvlm_input
 from owa_game_agent.data.sample_processor import SampleProcessor
+from owa_game_agent.evaluator import Evaluator, EvaluatorAPIClient, EvaluatorState
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -119,7 +120,7 @@ class MySuperHexagonAgent(Agent):
             if keyboard_event.vk == VK.F10:
                 logger.debug("Stopping agent with F10 key")
                 self.stop_event.set()
-                exit(0)
+                _thread.interrupt_main()
 
         keyboard_listener = LISTENERS["keyboard"]().configure(callback=on_keyboard_event)
         keyboard_listener.start()
@@ -313,7 +314,7 @@ class MySuperHexagonEvaluator(Evaluator):
             if keyboard_event.vk == VK.F10:
                 logger.debug("Stopping evaluator with F10 key")
                 self.stop_event.set()
-                exit(0)
+                _thread.interrupt_main()
 
         keyboard_listener = LISTENERS["keyboard"]().configure(callback=on_keyboard_event)
         keyboard_listener.start()
