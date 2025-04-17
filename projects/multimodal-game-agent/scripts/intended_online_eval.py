@@ -240,8 +240,10 @@ class MySuperHexagonAgent(Agent):
 
                 if state:
                     CALLABLES["keyboard.press"](vk)
+                    logger.warning(f"key {vk} pressed {task.task_id=}")
                 else:
                     CALLABLES["keyboard.release"](vk)
+                    logger.warning(f"key {vk} released {task.task_id=}")
 
     def _play_env(self, task: Task) -> bool:
         """
@@ -475,6 +477,8 @@ class MySuperHexagonEvaluator(Evaluator):
             # make the window active
             CALLABLES["window.make_active"](task.window_name)
 
+            CALLABLES["keyboard.release_all_keys"]()  # release all keys
+
             # for super hexagon, we need to press space
             CALLABLES["keyboard.press"](VK.SPACE)
             time.sleep(TIMES.KEYBOARD_PRESS_DELAY)
@@ -705,7 +709,7 @@ def generate_example_task() -> Task:
         window_name="Super Hexagon",
         task_description="Survive as long as possible. Maximum time is 60 seconds. A survival time over 10 seconds is considered a success.",
         timeout=60,
-        check_env_interval_seconds=1.0,
+        check_env_interval_seconds=2.0,
         success_criteria={"time_survived": 10},
     )
 
