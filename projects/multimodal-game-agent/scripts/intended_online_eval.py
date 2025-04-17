@@ -709,7 +709,7 @@ def generate_example_task() -> Task:
         window_name="Super Hexagon",
         task_description="Survive as long as possible. Maximum time is 60 seconds. A survival time over 10 seconds is considered a success.",
         timeout=60,
-        check_env_interval_seconds=2.0,
+        check_env_interval_seconds=3.0,
         success_criteria={"time_survived": 10},
     )
 
@@ -726,7 +726,7 @@ def generate_example_task_2() -> Task:
         window_name="Hexagon Super",
         task_description="Survive as long as possible. Maximum time is 60 seconds. A survival time over 10 seconds is considered a success.",
         timeout=60,
-        check_env_interval_seconds=1.0,
+        check_env_interval_seconds=3.0,
         success_criteria={"time_survived": 10},
     )
 
