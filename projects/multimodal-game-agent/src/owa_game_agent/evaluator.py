@@ -3,6 +3,7 @@ import threading
 import time
 from abc import ABC, abstractmethod
 from enum import Enum, auto
+from pathlib import Path
 from typing import Optional
 
 import requests
@@ -34,7 +35,7 @@ class Evaluator(ABC):
     The child class must implement the _score_task() and _setup_environment() methods.
     """
 
-    def __init__(self):
+    def __init__(self, report_jsonl_file_path: Optional[Path] = None):
         """
         Initialize the evaluator.
         """
@@ -49,6 +50,7 @@ class Evaluator(ABC):
         self.task_thread = None
         self.stop_event = threading.Event()
         self.api_server = None
+        self.report_jsonl_file_path = report_jsonl_file_path  # Optional report file for logging
 
     @property
     def state(self) -> EvaluatorState:
@@ -220,7 +222,22 @@ class Evaluator(ABC):
                     self.state = EvaluatorState.SCORING
                     task_elapsed_time = time.time() - self.task_start_time
                     self.result = self._score_task(self.current_task, task_elapsed_time, note)
-                    logger.debug(f"Task completed. Result: {self.result.model_dump()}")
+                    logger.info(f"Task completed. Result: {self.result.model_dump()}")
+
+                    # Log result to JSONL file if report_file_path is set
+                    if self.report_jsonl_file_path:
+                        try:
+                            # Create directory if it doesn't exist
+                            Path(self.report_jsonl_file_path).parent.mkdir(parents=True, exist_ok=True)
+                            # Append the result as JSON to the file
+                            with open(self.report_jsonl_file_path, "a") as f:
+                                f.write(self.result.model_dump_json() + "\n")
+                            logger.info(f"Evaluation result logged to {self.report_jsonl_file_path}")
+                        except Exception as e:
+                            logger.error(f"Failed to log evaluation result to file: {e}")
+                    else:
+                        logger.info("No report file path set. Skipping logging of evaluation result.")
+
                     self.state = EvaluatorState.READY
                 else:
                     logger.debug("Task already completed. Skipping scoring.")

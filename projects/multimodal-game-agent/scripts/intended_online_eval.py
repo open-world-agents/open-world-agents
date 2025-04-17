@@ -307,8 +307,8 @@ class MySuperHexagonAgent(Agent):
 class MySuperHexagonEvaluator(Evaluator):
     """Example implementation of an Evaluator"""
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, report_jsonl_file_path: str | None = None):
+        super().__init__(report_jsonl_file_path=report_jsonl_file_path)
 
         def on_keyboard_event(keyboard_event: KeyboardEvent):
             if keyboard_event.vk == VK.F10:
@@ -820,7 +820,7 @@ def run_evaluation_client_with_server(
     """
     # Create agent and evaluator instances
     agent = MySuperHexagonAgent(model_id=model_id)
-    evaluator = MySuperHexagonEvaluator()
+    evaluator = MySuperHexagonEvaluator(report_jsonl_file_path="report.jsonl")
 
     # Start agent server in background
     print("Starting agent server...")
