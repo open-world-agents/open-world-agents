@@ -1,21 +1,46 @@
 <!-- templates/index.html -->
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OWA Dataset Visualizer: {{ dataset_info.repo_id }}</title>
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="/static/style.css">
 </head>
+
 <body>
     <div class="container">
         <div class="sidebar">
             <h2>Dataset Info</h2>
             <div id="dataset-info">
-                <p>Repo ID: <a href="https://huggingface.co/datasets/{{ dataset_info.repo_id }}" target="_blank">{{ dataset_info.repo_id }}</a></p>
+                <p>Repo ID: {% if dataset_info.repo_id != "local" %}<a
+                        href="https://huggingface.co/datasets/{{ dataset_info.repo_id }}" target="_blank">{{
+                        dataset_info.repo_id }}</a>{% else %}{{ dataset_info.repo_id }}{% endif %}</p>
                 <p>Files: {{ dataset_info.files }}</p>
                 <p>Size: {{ dataset_info.size }}</p>
             </div>
+
+            {% if dataset_info.repo_id == "local" %}
+            <div class="upload-section">
+                <h2>Upload Files</h2>
+                <form id="upload-form" enctype="multipart/form-data">
+                    <div class="upload-pair">
+                        <div>
+                            <label for="mcap-file">MCAP File:</label>
+                            <input type="file" id="mcap-file" name="mcap_file" accept=".mcap" required>
+                        </div>
+                        <div>
+                            <label for="mkv-file">MKV File:</label>
+                            <input type="file" id="mkv-file" name="mkv_file" accept=".mkv" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="upload-button">Upload Files</button>
+                </form>
+                <div id="upload-status"></div>
+            </div>
+            {% endif %}
 
             <h2>Available Files</h2>
             <div id="file-list"></div>
@@ -66,4 +91,5 @@
     </script>
     <script src="/static/app.js"></script>
 </body>
+
 </html>

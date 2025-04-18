@@ -37,20 +37,24 @@ body {
     position: relative;
     margin-bottom: 20px;
     /* Add these new properties */
-    max-width: 1280px; /* Maximum width of the video container */
+    max-width: 1280px;
+    /* Maximum width of the video container */
     margin-left: auto;
     margin-right: auto;
-    background-color: #000; /* Background for letterboxing */
+    background-color: #000;
+    /* Background for letterboxing */
 }
 
 #video-player {
     width: 100%;
-    max-height: 70vh; /* Maximum height relative to viewport */
+    max-height: 70vh;
+    /* Maximum height relative to viewport */
     background-color: #000;
     /* Add these new properties */
     display: block;
     margin: 0 auto;
-    object-fit: contain; /* Maintains aspect ratio */
+    object-fit: contain;
+    /* Maintains aspect ratio */
 }
 
 .timeline {
@@ -76,13 +80,15 @@ body {
     gap: 20px;
 }
 
-.viz-window, .viz-keyboard, .viz-mouse {
+.viz-window,
+.viz-keyboard,
+.viz-mouse {
     flex: 1;
     min-width: 250px;
     background-color: #fff;
     padding: 15px;
     border-radius: 4px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* static/style.css (continued) */
@@ -127,7 +133,9 @@ body {
     transform: translate(-50%, -50%);
 }
 
-.keyboard-state, .keyboard-events, .mouse-events {
+.keyboard-state,
+.keyboard-events,
+.mouse-events {
     margin: 10px 0;
 }
 
@@ -166,33 +174,40 @@ body {
 
 /* Press events */
 .mouse-event.left.press {
-    background-color: #a8e6cf; /* Green, same as keyboard press */
+    background-color: #a8e6cf;
+    /* Green, same as keyboard press */
 }
 
 .mouse-event.right.press {
-    background-color: #bdb2ff; /* Purple */
+    background-color: #bdb2ff;
+    /* Purple */
 }
 
 .mouse-event.middle.press {
-    background-color: #ffe5d9; /* Light Pink */
+    background-color: #ffe5d9;
+    /* Light Pink */
 }
 
 /* Release events */
 .mouse-event.left.release {
-    background-color: #ffd3b6; /* Orange, same as keyboard release */
+    background-color: #ffd3b6;
+    /* Orange, same as keyboard release */
 }
 
 .mouse-event.right.release {
-    background-color: #d7c9ff; /* Light Purple */
+    background-color: #d7c9ff;
+    /* Light Purple */
 }
 
 .mouse-event.middle.release {
-    background-color: #ffc2c2; /* Pink */
+    background-color: #ffc2c2;
+    /* Pink */
 }
 
 /* Scroll events */
 .mouse-event.scroll {
-    background-color: #caffbf; /* Light Green */
+    background-color: #caffbf;
+    /* Light Green */
 }
 
 #file-list {
@@ -243,7 +258,9 @@ body {
 
 /* Loading spinner */
 @keyframes spinner {
-    to {transform: rotate(360deg);}
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .spinner {
@@ -271,13 +288,13 @@ body {
     .container {
         flex-direction: column;
     }
-    
+
     .sidebar {
         width: 100%;
         border-right: none;
         border-bottom: 1px solid #e1e1e1;
     }
-    
+
     .visualization {
         flex-direction: column;
     }
@@ -316,4 +333,70 @@ body {
     white-space: pre-wrap;
     word-wrap: break-word;
     width: 100%;
+}
+
+/* File upload styles */
+.upload-section {
+    margin-top: 20px;
+    margin-bottom: 10px;
+    padding: 0px 15px;
+    background-color: #f8f8f8;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}
+
+.upload-pair {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.upload-button {
+    padding: 8px 16px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.upload-button:hover {
+    background-color: #45a049;
+}
+
+#upload-status {
+    margin-top: 1px;
+    padding: 8px;
+    border-radius: 4px;
+}
+
+#upload-status.uploading {
+    background-color: #f0f8ff;
+    color: #0066cc;
+}
+
+#upload-status.success {
+    background-color: #e6ffe6;
+    color: #006600;
+}
+
+#upload-status.error {
+    background-color: #ffebeb;
+    color: #990000;
+}
+
+input[type="file"] {
+    padding: 5px;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    width: 100%;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
 }

@@ -10,7 +10,9 @@ dependencies = [
     "jinja2>=3.1.6",
     "mcap-owa-support==0.3.2",
     "owa-core==0.3.2",
+    "python-dotenv>=1.1.0",
     "python-multipart>=0.0.20",
+    "requests>=2.32.3",
 ]
 
 [build-system]

@@ -628,7 +628,9 @@ dependencies = [
     { name = "jinja2" },
     { name = "mcap-owa-support" },
     { name = "owa-core" },
+    { name = "python-dotenv" },
     { name = "python-multipart" },
+    { name = "requests" },
 ]
 
 [package.metadata]
@@ -638,7 +640,9 @@ requires-dist = [
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "mcap-owa-support", specifier = "==0.3.2" },
     { name = "owa-core", specifier = "==0.3.2" },
+    { name = "python-dotenv", specifier = ">=1.1.0" },
     { name = "python-multipart", specifier = ">=0.0.20" },
+    { name = "requests", specifier = ">=2.32.3" },
 ]
 
 [[package]]

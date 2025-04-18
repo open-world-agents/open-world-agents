@@ -1,10 +1,9 @@
 import logging
-from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 
-from ..services.file_services import EXPORT_PATH
+from ..services.file_manager import EXPORT_PATH, FileManager
 
 logger = logging.getLogger(__name__)
 
@@ -15,9 +14,9 @@ router = APIRouter(prefix="/files", tags=["export"], responses={404: {"descripti
 @router.get("/{filename}")
 async def export_file(filename: str):
     """Serve an MKV video file"""
-    file_path = Path(EXPORT_PATH) / filename
+    file_path = FileManager.safe_join(EXPORT_PATH, filename)
 
-    if not file_path.exists():
+    if file_path is None or not file_path.exists():
         logger.error(f"File not found: {file_path}")
         raise HTTPException(status_code=404, detail="File not found")
 
