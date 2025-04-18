@@ -5,13 +5,5 @@ exclude = [
 
 line-length = 119
 
-[format]
-# Use `\n` line endings for all files
-line-ending = "lf"
-
 [lint.isort]
-known-first-party = [
-    "mcap_owa",
-    "owa",
-    "owa_game_agent",
-]
+known-first-party = ["mcap_owa", "owa", "owa_game_agent"]
