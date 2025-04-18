@@ -77,5 +77,4 @@ def get_keyboard_state():
 def release_all_keys():
     keyboard_state: KeyboardState = get_keyboard_state()
     for key in keyboard_state.buttons:
-        key = vk_to_keycode(key) if isinstance(key, int) else key
-        keyboard_controller.release(key)
+        release(key)
