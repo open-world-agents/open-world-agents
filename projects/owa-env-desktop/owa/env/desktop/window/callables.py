@@ -26,7 +26,7 @@ if platform.system() == "Darwin":
                     int(bounds["Y"] + bounds["Height"]),
                 )
                 hWnd = window.get("kCGWindowNumber", 0)
-                return WindowInfo(title=title, rect=rect, hWnd=hWnd, window=window)
+                return WindowInfo(title=title, rect=rect, hWnd=hWnd)
         return None
 
 elif platform.system() == "Windows":
@@ -39,7 +39,7 @@ elif platform.system() == "Windows":
             title = active_window.title
             rect_coords = (rect.left, rect.top, rect.right, rect.bottom)
             hWnd = active_window._hWnd
-            return WindowInfo(title=title, rect=rect_coords, hWnd=hWnd, window=active_window)
+            return WindowInfo(title=title, rect=rect_coords, hWnd=hWnd)
         return None
 
 else:
@@ -70,7 +70,6 @@ def get_window_by_title(window_title_substring: str) -> WindowInfo:
             title=window.title,
             rect=(rect.left, rect.top, rect.right, rect.bottom),
             hWnd=window._hWnd,
-            window=window,
         )
     elif os_name == "Darwin":
         from Quartz import CGWindowListCopyWindowInfo, kCGNullWindowID, kCGWindowLayer, kCGWindowListOptionOnScreenOnly
@@ -98,7 +97,6 @@ def get_window_by_title(window_title_substring: str) -> WindowInfo:
                             int(bounds["Y"] + bounds["Height"]),
                         ),
                         hWnd=window.get("kCGWindowNumber", 0),
-                        window=window,
                     )
 
         raise ValueError(f"No window with title containing '{window_title_substring}' found.")
@@ -136,8 +134,23 @@ def is_active(window_title_substring: str):
 def make_active(window_title_substring: str):
     """Make the window with the title containing the substring active."""
 
-    window: WindowInfo = get_window_by_title(window_title_substring)
-    window.window.activate()
+    os_name = platform.system()
+    if os_name == "Windows":
+        import pygetwindow as gw
+
+        windows = gw.getWindowsWithTitle(window_title_substring)
+        if not windows:
+            raise ValueError(f"No window with title containing '{window_title_substring}' found.")
+
+        # Temporal workaround to deal with `cmd`'s behavior: it setup own title as the command it running.
+        # e.g. `owl window find abcd` will always find `cmd` window itself running command.
+        if "Conda" in windows[0].title:
+            windows.pop(0)
+
+        window = windows[0]  # NOTE: only return the first window matching the title
+        window.activate()
+    else:
+        raise NotImplementedError(f"Activation not implemented for this OS: {os_name}")
 
 
 CALLABLES.register("window.get_active_window")(get_active_window)
