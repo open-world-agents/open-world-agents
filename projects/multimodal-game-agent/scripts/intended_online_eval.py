@@ -373,6 +373,7 @@ class MySuperHexagonEvaluator(Evaluator):
                 }
             ],
             temperature=0.0,
+            timeout=10.0,
         )
 
         logger.debug(f"GPT response: {response.output_text}")
@@ -435,6 +436,7 @@ class MySuperHexagonEvaluator(Evaluator):
                     "strict": True,
                 },
             },
+            timeout=10.0,
         )
 
         logger.debug(f"GPT response: {response.output_text}")
