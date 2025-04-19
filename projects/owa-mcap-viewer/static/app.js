@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const mouseCursor = document.getElementById('mouse-cursor');
     const timeline = document.getElementById('timeline');
     const repoId = window.APP_CONFIG.repoId;
-    
+
     // State
     let currentFile = null;
     let currentData = {
@@ -31,39 +31,50 @@ document.addEventListener('DOMContentLoaded', () => {
     let isPlaying = false;
     let lastRenderTime = 0;
     let animationFrameId = null;
-    
+
     // Constants
     const DATA_WINDOW_SIZE = 10_000_000_000; // 10 seconds in nanoseconds
     const SEEK_BUFFER = 2_000_000_000; // 2 seconds buffer before current position
-    
+
     // Fetch list of available file pairs
     async function fetchFilePairs() {
         try {
             const response = await fetch(`/api/list_files?repo_id=${repoId}`);
             const data = await response.json();
-            
+
             console.log("Available file pairs:", data);
-            
+
             fileList.innerHTML = '';
-            data.forEach(pair => {
+            data.forEach((pair, index) => {
                 const item = document.createElement('div');
                 item.className = 'file-item';
                 item.textContent = pair.basename;
                 item.addEventListener('click', () => loadFilePair(pair));
                 fileList.appendChild(item);
+
+                // Auto-select the first file in the list
+                if (index === 0) {
+                    item.classList.add('auto-select');
+                }
             });
+
+            // Automatically load the first file if available
+            if (data.length > 0) {
+                console.log("Auto-selecting the first file:", data[0].basename);
+                loadFilePair(data[0]);
+            }
         } catch (error) {
             console.error("Error fetching file pairs:", error);
             fileList.innerHTML = '<div class="error">Error loading files. Check console.</div>';
         }
     }
-    
+
     // Load a specific MCAP+MKV pair
     async function loadFilePair(pair) {
         try {
             console.log("Loading file pair:", pair);
             currentFile = pair;
-            
+
             // Update UI to show selected file
             document.querySelectorAll('.file-item').forEach(item => {
                 item.classList.remove('active');
@@ -71,36 +82,41 @@ document.addEventListener('DOMContentLoaded', () => {
                     item.classList.add('active');
                 }
             });
-            
+
             // Clear previous data
             for (let topic in currentData) {
                 currentData[topic] = [];
             }
-            
+
             // Set loading state
             setLoadingState(true);
-            
+
             // Set the video source
-            console.log(`Setting video source to: /video/${pair.mkv_file}`);
-            videoSource.src = `/video/${pair.mkv_file}`;
+            if (pair.local) {
+                console.log(`Setting video source to: /files/${pair.url_mkv}`);
+                videoSource.src = `/files/${pair.url_mkv}`;
+            } else {
+                console.log(`Setting video source to: ${pair.url_mkv}`);
+                videoSource.src = pair.url_mkv;
+            }
             videoPlayer.load();
             console.log("Video source set successfully");
-            
+
             // Fetch MCAP metadata
-            console.log(`Fetching MCAP metadata: /api/mcap_metadata/${pair.mcap_file}`);
-            const metaResponse = await fetch(`/api/mcap_metadata/${pair.mcap_file}`);
+            console.log(`Fetching MCAP metadata: /api/mcap_metadata?mcap_filename=${pair.url_mcap}&local=${pair.local}`);
+            const metaResponse = await fetch(`/api/mcap_metadata?mcap_filename=${pair.url_mcap}&local=${pair.local}`);
             if (!metaResponse.ok) {
                 throw new Error(`HTTP error! status: ${metaResponse.status}`);
             }
-            
+
             metadata = await metaResponse.json();
             console.log("MCAP metadata loaded:", metadata);
 
-            await updateMcapInfo(pair.mcap_file);
-            
+            await updateMcapInfo(pair);
+
             // Initialize with data from the beginning
             await loadDataForTimeRange(metadata.start_time, null);
-            
+
             // Process the screen topics to find base time
             if (currentData.screen && currentData.screen.length > 0) {
                 const firstScreenEvent = currentData.screen[0];
@@ -112,13 +128,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.warn("No screen events found in MCAP data");
                 basePtsTime = 0;
             }
-            
+
             // Initialize UI with data
             renderInitialState();
-            
+
             // Add video event listeners
             setupVideoSync();
-            
+
             // Setup enhanced timeline (must be after data is loaded)
             setupEnhancedTimeline();
 
@@ -130,10 +146,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 isPlaying = true;
                 startVisualizationLoop();
             }
-            
+
             // Update timeline visualization
             updateTimelineLoadedRegions();
-            
+
         } catch (error) {
             console.error("Error loading file pair:", error);
             alert(`Error loading file: ${error.message}`);
@@ -142,32 +158,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function updateMcapInfo(mcapFilename) {
+    async function updateMcapInfo(pair) {
         try {
-            const response = await fetch(`/api/mcap_info/${mcapFilename}`);
+            const response = await fetch(`/api/mcap_info?mcap_filename=${pair.url_mcap}&local=${pair.local}`);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const mcapInfo = (await response.json())["info"];
-            
+
             // Replace literal "\n" with actual newlines and "\t" with actual tabs
             const formattedInfo = mcapInfo
                 .replace(/\\n/g, '\n')
                 .replace(/\\t/g, '\t');
-            
+
             document.getElementById('mcap-info').innerHTML = `<pre>${formattedInfo}</pre>`;
         } catch (error) {
             console.error('Error fetching MCAP info:', error);
-            document.getElementById('mcap-info').innerHTML = 
+            document.getElementById('mcap-info').innerHTML =
                 `<pre>Error loading MCAP info: ${error.message}</pre>`;
         }
     }
-    
+
     // Set loading state and update UI accordingly
     function setLoadingState(isLoading) {
-        const loadingIndicator = document.getElementById('loading-indicator') || 
-                                 document.createElement('div');
-        
+        const loadingIndicator = document.getElementById('loading-indicator') ||
+            document.createElement('div');
+
         if (isLoading) {
             loadingIndicator.id = 'loading-indicator';
             loadingIndicator.textContent = 'Loading data...';
@@ -178,62 +194,62 @@ document.addEventListener('DOMContentLoaded', () => {
             loadingIndicator.style.backgroundColor = '#ffe082';
             loadingIndicator.style.zIndex = '1000';
             loadingIndicator.style.borderRadius = '4px';
-            
+
             document.body.appendChild(loadingIndicator);
         } else if (document.getElementById('loading-indicator')) {
             document.body.removeChild(loadingIndicator);
         }
     }
-    
+
     // Load MCAP data for a specific time range
     // NOTE: starTime and endTime are pts time in nanoseconds.
     async function loadDataForTimeRange(startTime, endTime) {
         if (!currentFile || isLoading) return;
-        
+
         // Avoid duplicate loads for the same time
         if (lastLoadedTime && Math.abs(lastLoadedTime - startTime) < SEEK_BUFFER) {
             return;
         }
-        
+
         isLoading = true;
         setLoadingState(true);
-        
+
         try {
-            const url = new URL(`/api/mcap_data/${currentFile.mcap_file}`, window.location.origin);
+            const url = new URL(`/api/mcap_data?mcap_filename=${currentFile.url_mcap}&local=${currentFile.local}`, window.location.origin);
             url.searchParams.append('start_time', startTime);
             if (endTime) url.searchParams.append('end_time', endTime);
             url.searchParams.append('window_size', DATA_WINDOW_SIZE);
-            
+
             console.log(`Loading data for time range: ${startTime} to ${endTime || startTime + DATA_WINDOW_SIZE}`);
-            
+
             const response = await fetch(url);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            
+
             const newData = await response.json();
-            
+
             // Merge new data with existing data
             for (let topic in newData) {
                 // Clear old data for this time range
-                currentData[topic] = currentData[topic].filter(msg => 
-                    msg.timestamp < startTime || 
+                currentData[topic] = currentData[topic].filter(msg =>
+                    msg.timestamp < startTime ||
                     (endTime && msg.timestamp > endTime)
                 );
-                
+
                 // Add new data
                 currentData[topic] = [...currentData[topic], ...newData[topic]];
-                
+
                 // Sort by timestamp
                 currentData[topic].sort((a, b) => a.timestamp - b.timestamp);
             }
-            
+
             lastLoadedTime = startTime;
             console.log("Data loaded and merged successfully");
-            
+
             // Update timeline visualization after loading data
             updateTimelineLoadedRegions();
-            
+
         } catch (error) {
             console.error("Error loading data for time range:", error);
         } finally {
@@ -241,7 +257,7 @@ document.addEventListener('DOMContentLoaded', () => {
             setLoadingState(false);
         }
     }
-    
+
     // Set up video synchronization with MCAP data
     function setupVideoSync() {
         // Remove previous event listeners
@@ -249,17 +265,17 @@ document.addEventListener('DOMContentLoaded', () => {
             isPlaying = true;
             startVisualizationLoop();
         };
-        
+
         videoPlayer.onpause = () => {
             isPlaying = false;
             stopVisualizationLoop();
         };
-        
+
         videoPlayer.onseeking = handleSeeking;
-        
+
         // Remove the timeupdate listener since we'll use requestAnimationFrame
         videoPlayer.ontimeupdate = null;
-        
+
         console.log("Video sync setup complete");
     }
 
@@ -267,7 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (animationFrameId) {
             cancelAnimationFrame(animationFrameId);
         }
-        
+
         function render(timestamp) {
             // Limit updates to ~60fps
             if (timestamp - lastRenderTime >= 16.67) { // roughly 60fps (1000ms / 60)
@@ -275,84 +291,84 @@ document.addEventListener('DOMContentLoaded', () => {
                 checkDataLoading();
                 lastRenderTime = timestamp;
             }
-            
+
             if (isPlaying) {
                 animationFrameId = requestAnimationFrame(render);
             }
         }
-        
+
         animationFrameId = requestAnimationFrame(render);
     }
-    
+
     function stopVisualizationLoop() {
         if (animationFrameId) {
             cancelAnimationFrame(animationFrameId);
             animationFrameId = null;
         }
     }
-    
+
     // Add this function to handle data loading checks.
     // TODO: pause playback before we ensure the data is loaded.
     function checkDataLoading() {
         if (!metadata) return;
-        
+
         const videoTime = videoPlayer.currentTime || 0;
         const currentTimeNs = basePtsTime + (videoTime * 1000000000);
-        
+
         // If we're getting close to the end of our loaded data window, load more
         if (lastLoadedTime && currentTimeNs > lastLoadedTime + (DATA_WINDOW_SIZE * 0.7)) {
             loadDataForTimeRange(currentTimeNs - SEEK_BUFFER, currentTimeNs + DATA_WINDOW_SIZE);
         }
     }
-    
+
     // Handle seeking in the video
     function handleSeeking() {
         const videoTime = videoPlayer.currentTime || 0;
         const seekTimeNs = basePtsTime + (videoTime * 1000000000);
-        
+
         console.log(`Seeking to video time ${videoTime}s, MCAP time ${seekTimeNs}ns`);
-        
+
         // Load data for the new position
         loadDataForTimeRange(seekTimeNs - SEEK_BUFFER, seekTimeNs + DATA_WINDOW_SIZE)
             .then(() => {
                 // Update visualizations immediately after data is loaded
                 updateVisualizations();
             });
-            
+
         // Ensure visualization loop is in correct state
         if (isPlaying) {
             startVisualizationLoop();
         }
     }
-    
+
     // Update visualizations based on current video time
     function updateVisualizations() {
         if (!currentData) {
             console.warn("No data available for visualization");
             return;
         }
-        
+
         // If video isn't playing yet, use 0 as the current time
         const videoTime = videoPlayer.currentTime || 0;
         const currentTimeNs = basePtsTime + (videoTime * 1000000000);
-        
+
         // Update timeline marker
         const percentage = videoPlayer.duration ? (videoTime / videoPlayer.duration) * 100 : 0;
         timelineMarker.style.left = `${percentage}%`;
-        
+
         // Find the most recent events for each topic that occurred before currentTimeNs
         updateWindowInfo(currentTimeNs);
         updateKeyboardState(currentTimeNs);
         updateMouseState(currentTimeNs);
     }
-    
+
     // Update window information display
     function updateWindowInfo(currentTimeNs) {
         if (!currentData.window || currentData.window.length === 0) {
             windowInfo.innerHTML = 'No window data available';
             return;
         }
-        
+
         const event = findLastEventBeforeTime(currentData.window, currentTimeNs);
         if (event) {
             windowInfo.innerHTML = `
@@ -365,37 +381,37 @@ document.addEventListener('DOMContentLoaded', () => {
             windowInfo.innerHTML = 'No window events at current time';
         }
     }
-    
+
     // Update keyboard state display
     function updateKeyboardState(currentTimeNs) {
         const keyboardState = currentData['keyboard/state'] || [];
         const keyboardEvents = currentData['keyboard'] || [];
-        
+
         if (keyboardState.length === 0 && keyboardEvents.length === 0) {
             keyboardDisplay.innerHTML = 'No keyboard data available';
             return;
         }
-        
+
         // Get current state
         const stateEvent = findLastEventBeforeTime(keyboardState, currentTimeNs);
         // Get recent events (within last 500ms for visual feedback)
-        const recentEvents = keyboardEvents.filter(event => 
-            event.timestamp > currentTimeNs - 500000000 && 
+        const recentEvents = keyboardEvents.filter(event =>
+            event.timestamp > currentTimeNs - 500000000 &&
             event.timestamp <= currentTimeNs
         );
-        
+
         // Clear previous state
         keyboardDisplay.innerHTML = '';
-        
+
         // Create state section
         const stateSection = document.createElement('div');
         stateSection.className = 'keyboard-state';
         stateSection.innerHTML = '<h4>Current State</h4>';
-        
+
         if (stateEvent) {
             const pressedKeys = new Set((stateEvent.buttons || [])
                 .filter(vk => ![1, 2, 4].includes(vk)));
-            
+
             for (const key of pressedKeys) {
                 const keyElem = document.createElement('div');
                 keyElem.className = 'key pressed';
@@ -406,12 +422,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 stateSection.innerHTML += '<div>No keys pressed</div>';
             }
         }
-        
+
         // Create events section
         const eventsSection = document.createElement('div');
         eventsSection.className = 'keyboard-events';
         eventsSection.innerHTML = '<h4>Recent Events</h4>';
-        
+
         if (recentEvents.length > 0) {
             recentEvents.forEach(event => {
                 const eventElem = document.createElement('div');
@@ -422,55 +438,55 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             eventsSection.innerHTML += '<div>No recent events</div>';
         }
-        
+
         keyboardDisplay.appendChild(stateSection);
         keyboardDisplay.appendChild(eventsSection);
     }
-    
+
     // Update mouse state display
     function updateMouseState(currentTimeNs) {
         const mouseState = currentData['mouse/state'] || [];
         const mouseEvents = currentData['mouse'] || [];
-        
+
         if (mouseState.length === 0 && mouseEvents.length === 0) {
             mouseDisplay.innerHTML = '<div>No mouse data available</div>';
             mouseCursor.style.display = 'none';
             return;
         }
-        
+
         // Get current state and most recent event
         const stateEvent = findLastEventBeforeTime(mouseState, currentTimeNs);
         const lastEvent = findLastEventBeforeTime(mouseEvents, currentTimeNs);
-        
+
         // Use state event for position, but if there's a more recent mouse movement event, use that
         let currentEvent = stateEvent;
         if (lastEvent && (!stateEvent || lastEvent.timestamp > stateEvent.timestamp)) {
             currentEvent = lastEvent;
         }
-        
+
         // Get recent click and scroll events (within last 1000ms)
-        const recentSpecialEvents = mouseEvents.filter(event => 
+        const recentSpecialEvents = mouseEvents.filter(event =>
             (event.event_type === 'click' || event.event_type === 'scroll') &&
-            event.timestamp > currentTimeNs - 1000000000 && 
+            event.timestamp > currentTimeNs - 1000000000 &&
             event.timestamp <= currentTimeNs
         );
-    
+
         // Update cursor position and state
         if (currentEvent) {
             mouseCursor.style.display = 'block';
-            
+
             const displayWidth = mouseDisplay.clientWidth;
             const displayHeight = mouseDisplay.clientHeight;
             // TODO: Update these values based on actual screen resolution
             const screenWidth = 1920;
             const screenHeight = 1080;
-            
+
             const x = ((currentEvent.x || 0) / screenWidth) * displayWidth;
             const y = ((currentEvent.y || 0) / screenHeight) * displayHeight;
-            
+
             mouseCursor.style.left = `${x}px`;
             mouseCursor.style.top = `${y}px`;
-            
+
             // Update cursor appearance based on state and event type
             if (stateEvent && stateEvent.buttons && stateEvent.buttons.length > 0) {
                 // Mouse button is pressed
@@ -491,21 +507,21 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             mouseCursor.style.display = 'none';
         }
-    
+
         // Clear the mouse display (keeping the cursor)
         const cursor = mouseDisplay.querySelector('#mouse-cursor');
         mouseDisplay.innerHTML = '';
         mouseDisplay.appendChild(cursor);
-    
+
         // Add recent special events if any exist
         if (recentSpecialEvents.length > 0) {
             const eventsDiv = document.createElement('div');
             eventsDiv.className = 'mouse-events';
             eventsDiv.innerHTML = '<h4>Recent Events</h4>';
-            
+
             recentSpecialEvents.forEach(event => {
                 const eventElem = document.createElement('div');
-                
+
                 // Create class based on event type, button, and pressed state
                 let classes = ['mouse-event'];
                 if (event.event_type === 'click' && event.button) {
@@ -515,7 +531,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     classes.push('scroll');
                 }
                 eventElem.className = classes.join(' ');
-    
+
                 // Create event text
                 let eventText = '';
                 if (event.event_type === 'click') {
@@ -528,19 +544,19 @@ document.addEventListener('DOMContentLoaded', () => {
                         eventText += ` delta: ${event.dx || 0}, ${event.dy || 0}`;
                     }
                 }
-                
+
                 eventElem.textContent = eventText;
                 eventsDiv.appendChild(eventElem);
             });
-            
+
             mouseDisplay.appendChild(eventsDiv);
         }
     }
-    
+
     // Utility function to find the most recent event before a given time
     function findLastEventBeforeTime(events, time) {
         let lastEvent = null;
-        
+
         for (const event of events) {
             if (event.timestamp <= time) {
                 lastEvent = event;
@@ -549,17 +565,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
             }
         }
-        
+
         return lastEvent;
     }
-    
+
     // Render initial state of visualizations
     function renderInitialState() {
         windowInfo.innerHTML = 'Waiting for data...';
         keyboardDisplay.innerHTML = 'Waiting for data...';
         mouseCursor.style.display = 'none';
     }
-    
+
     // Helper function to convert virtual key codes to names
     function getKeyName(vk) {
         const keyMap = {
@@ -671,10 +687,10 @@ document.addEventListener('DOMContentLoaded', () => {
             222: '\'',
             223: '`'
         };
-        
+
         return keyMap[vk] || `VK${vk}`;
     }
-    
+
     // Enhanced timeline functionality
     function setupEnhancedTimeline() {
         // Add a seekable-time indicator to show loaded data ranges
@@ -685,73 +701,114 @@ document.addEventListener('DOMContentLoaded', () => {
             seekableTime.className = 'seekable-time';
             timeline.appendChild(seekableTime);
         }
-        
+
         // Handle clicking on the timeline to seek
         timeline.addEventListener('click', (e) => {
             if (!videoPlayer.duration) return;
-            
+
             const rect = timeline.getBoundingClientRect();
             const position = (e.clientX - rect.left) / rect.width;
             const seekTime = videoPlayer.duration * position;
-            
+
             // Seek the video
             videoPlayer.currentTime = seekTime;
         });
-        
+
         // Update the seekable range indicator
         updateSeekableRange();
-        
+
         console.log("Enhanced timeline setup complete");
     }
-    
+
     // Update the seekable range indicator
     function updateSeekableRange() {
         if (!videoPlayer.duration || !metadata) return;
-        
+
         const seekableTime = document.getElementById('seekable-time');
         if (!seekableTime) return;
-        
+
         // Calculate the loaded data range as a percentage of the video duration
         const videoStartTimeNs = basePtsTime;
         const videoEndTimeNs = basePtsTime + (videoPlayer.duration * 1000000000);
         const loadedStartTimeNs = lastLoadedTime || videoStartTimeNs;
         const loadedEndTimeNs = loadedStartTimeNs + DATA_WINDOW_SIZE;
-        
+
         // Convert to percentages
         const startPercent = ((loadedStartTimeNs - videoStartTimeNs) / (videoEndTimeNs - videoStartTimeNs)) * 100;
         const endPercent = ((loadedEndTimeNs - videoStartTimeNs) / (videoEndTimeNs - videoStartTimeNs)) * 100;
-        
+
         // Update the seekable-time element
         seekableTime.style.left = `${Math.max(0, startPercent)}%`;
         seekableTime.style.width = `${Math.min(100, endPercent) - Math.max(0, startPercent)}%`;
     }
-    
+
     // Timeline data loading visualization
     function updateTimelineLoadedRegions() {
         // Remove existing loaded regions
         document.querySelectorAll('.timeline-loaded').forEach(el => el.remove());
-        
+
         if (!metadata || !videoPlayer.duration) return;
-        
+
         // Get start and end time of loaded data in video seconds
         if (!lastLoadedTime) return;
-        
+
         const videoStart = (lastLoadedTime - basePtsTime) / 1000000000;
         const videoEnd = (lastLoadedTime + DATA_WINDOW_SIZE - basePtsTime) / 1000000000;
-        
+
         // Calculate position as percentage of video duration
         const startPercent = (videoStart / videoPlayer.duration) * 100;
         const widthPercent = ((videoEnd - videoStart) / videoPlayer.duration) * 100;
-        
+
         // Create loaded region indicator
         const loadedRegion = document.createElement('div');
         loadedRegion.className = 'timeline-loaded';
         loadedRegion.style.left = `${startPercent}%`;
         loadedRegion.style.width = `${widthPercent}%`;
-        
+
         timeline.appendChild(loadedRegion);
     }
-    
+
     // Initialize the application
     fetchFilePairs();
+
+    // Handle file uploads if we're in local mode
+    const uploadForm = document.getElementById('upload-form');
+    const uploadStatus = document.getElementById('upload-status');
+
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            uploadStatus.textContent = 'Uploading files...';
+            uploadStatus.className = 'uploading';
+
+            const formData = new FormData(uploadForm);
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    uploadStatus.textContent = 'Files uploaded successfully!';
+                    uploadStatus.className = 'success';
+
+                    // Clear the form
+                    uploadForm.reset();
+
+                    // Refresh the file list after a successful upload
+                    fetchFilePairs();
+                } else {
+                    uploadStatus.textContent = `Error: ${result.detail || 'Unknown error'}`;
+                    uploadStatus.className = 'error';
+                }
+            } catch (error) {
+                uploadStatus.textContent = `Upload failed: ${error.message}`;
+                uploadStatus.className = 'error';
+            }
+        });
+    }
 });
