@@ -76,6 +76,3 @@ class ElementFactory:
             pid = CALLABLES["window.get_pid_by_title"](window_name)
             properties["loopback-target-pid"] = pid
         return Element("wasapi2src", properties)
-
-    # TODO: add "loopback-target-pid" configurable wasapi2src element.
-    # "loopback-target-pid" is needed to capture the only audio from a specific process.
