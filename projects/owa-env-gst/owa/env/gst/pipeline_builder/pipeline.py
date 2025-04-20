@@ -61,11 +61,14 @@ def appsink_recorder_pipeline(
             screen_src |= (
                 "t. ! queue leaky=downstream ! d3d11download ! videoconvert ! fpsdisplaysink video-sink=fakesink"
             )
+        # in here, conversion to NV12 is required for nvd3d11h265enc to prevent alpha channel ignoring.
+        # also, usage of mfh264enc is avoided to prevent forceful odd-to-even resize.
+        # Related issue: https://gitlab.freedesktop.org/gstreamer/gstreamer/-/issues/4124
         screen_src |= "t. ! queue ! d3d11convert ! video/x-raw(memory:D3D11Memory),format=NV12 ! nvd3d11h265enc ! h265parse ! queue ! mux."
         src |= screen_src
 
     if record_audio:
-        src |= "wasapi2src do-timestamp=true loopback=true low-latency=true ! audioconvert ! avenc_aac ! queue ! mux."
+        src |= ElementFactory.wasapi2src(window_name=window_name) >> "audioconvert ! avenc_aac ! queue ! mux."
     if record_timestamp:
         src |= "utctimestampsrc interval=1 ! subparse ! queue ! mux."
 
@@ -112,11 +115,14 @@ def subprocess_recorder_pipeline(
             screen_src |= (
                 "t. ! queue leaky=downstream ! d3d11download ! videoconvert ! fpsdisplaysink video-sink=fakesink"
             )
+        # in here, conversion to NV12 is required for nvd3d11h265enc to prevent alpha channel ignoring.
+        # also, usage of mfh264enc is avoided to prevent forceful odd-to-even resize.
+        # Related issue: https://gitlab.freedesktop.org/gstreamer/gstreamer/-/issues/4124
         screen_src |= "t. ! queue ! d3d11convert ! video/x-raw(memory:D3D11Memory),format=NV12 ! nvd3d11h265enc ! h265parse ! queue ! mux."
         src |= screen_src
 
     if record_audio:
-        src |= "wasapi2src do-timestamp=true loopback=true low-latency=true ! audioconvert ! avenc_aac ! queue ! mux."
+        src |= ElementFactory.wasapi2src(window_name=window_name) >> "audioconvert ! avenc_aac ! queue ! mux."
     if record_timestamp:
         src |= "utctimestampsrc interval=1 ! subparse ! queue ! mux."
 
