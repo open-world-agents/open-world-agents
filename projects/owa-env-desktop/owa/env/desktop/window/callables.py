@@ -58,7 +58,6 @@ def get_window_by_title(window_title_substring: str) -> WindowInfo:
         import pygetwindow as gw
 
         windows = gw.getWindowsWithTitle(window_title_substring)
-        print(windows)
         if not windows:
             raise ValueError(f"No window with title containing '{window_title_substring}' found.")
 
