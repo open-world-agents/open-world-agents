@@ -62,5 +62,20 @@ class ElementFactory:
             >> ElementFactory.capsfilter(caps=f"video/x-raw(memory:D3D11Memory),{framerate}")
         )
 
+    @staticmethod
+    def wasapi2src(*, window_name: Optional[str] = None):
+        """https://gstreamer.freedesktop.org/documentation/wasapi2/wasapi2src.html"""
+        properties = {
+            "do-timestamp": "true",
+            "loopback": "true",
+            "low-latency": "true",
+            "loopback-mode": "include-process-tree",
+        }
+        if window_name is not None:
+            activate_module("owa.env.desktop")
+            pid = CALLABLES["window.get_pid_by_title"](window_name)
+            properties["loopback-target-pid"] = pid
+        return Element("wasapi2src", properties)
+
     # TODO: add "loopback-target-pid" configurable wasapi2src element.
     # "loopback-target-pid" is needed to capture the only audio from a specific process.

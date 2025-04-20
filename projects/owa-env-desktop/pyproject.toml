@@ -12,6 +12,7 @@ dependencies = [
     "bettercam>=1.0.0",
     "pynput>=1.8.0",
     "opencv-python>=4.11.0.86",
+    "pywin32>=310 ; sys_platform == 'win32'",
 ]
 
 [tool.uv.sources]
