@@ -1,4 +1,4 @@
-from owa.core.registry import CALLABLES, LISTENERS, RUNNABLES, activate_module
+from owa.core.registry import CALLABLES, LISTENERS, activate_module
 from owa.env.desktop.constants import VK
 from owa.env.desktop.msg import KeyboardEvent
 import _thread
