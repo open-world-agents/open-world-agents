@@ -14,6 +14,8 @@ from copy import deepcopy
 import line_profiler
 import torch
 import typer
+import _thread
+from trigger_speedhack import enable_speedhack, disable_speedhack
 from loguru import logger
 from tqdm import tqdm
 from transformers import AutoModelForImageTextToText, AutoProcessor
@@ -28,8 +30,8 @@ from owa_game_agent.data.sample_processor import SampleProcessor
 
 # Configuration constants
 WINDOW_NAME = "hexagon"
-FPS = 5
-MAX_SCREEN_FRAMES = 3
+FPS = 20
+MAX_SCREEN_FRAMES = 5
 MODEL_SAMPLE_DELAY = 10.0  # seconds
 TIMESTAMP_INTERVAL = 0.05  # seconds
 
@@ -55,7 +57,8 @@ class EventManager:
     def keyboard_callback(self, event):
         # Exit on ESC key
         if event.vk == 0x1B:
-            exit()
+            _thread.interrupt_main()
+            exit(0)
 
     def screen_callback(self, event):
         self.event_callback(event, topic="screen")
@@ -124,12 +127,15 @@ class Agent(Runnable):
                 continue
 
             now = time.time()
+            enable_speedhack()
             generated = self._generate_response(sample)
             taken = time.time() - now
             logger.info(f"Generated: {generated}, taken: {taken:.2f}s")
 
-            if CALLABLES["window.is_active"](WINDOW_NAME):
-                self.execute(generated, anchor_time=now, processing_time=taken)
+            disable_speedhack()
+            CALLABLES["window.make_active"](WINDOW_NAME)
+            taken = now  # NOTE: time stop
+            self.execute(generated, anchor_time=now, processing_time=taken)
 
     @line_profiler.profile
     def _generate_response(self, sample):
@@ -177,16 +183,21 @@ class Agent(Runnable):
             elif token.startswith("KEYBOARD"):
                 if not timestamp_list:
                     logger.warning("Found KEYBOARD without TIMESTAMP")
+                    time.sleep(0.25)
                     return
                 ts = timestamp_list.pop(0)
                 vk, state = map(int, token.split("_")[1:])
                 events.append((ts, vk, state, token))
             else:
                 logger.warning(f"Invalid token: {token}")
+                time.sleep(0.25)
                 return
 
         if not events:
+            time.sleep(0.25)
             return
+
+        start = time.time()
 
         # The first event's intended time
         base_timestamp = events[0][0]  # e.g. anchor_time + 12 * 0.05 = anchor_time + 0.6
@@ -201,6 +212,7 @@ class Agent(Runnable):
         # Schedule the first event to run after first_delay seconds from now.
         first_event_execution_time = time.time() + first_delay
 
+        s = time.time()
         # Execute events while preserving relative differences.
         for original_time, vk, state, token in events:
             # Calculate the time difference (delta) relative to the first event.
@@ -208,9 +220,11 @@ class Agent(Runnable):
             # The scheduled time for this event is:
             scheduled_time = first_event_execution_time + delta
             to_sleep = max(0, scheduled_time - time.time())
-            logger.info(
-                f"Sleeping for {to_sleep:.2f}s, processing time {processing_time:.2f}s, token {token}"
-            )
+            logger.info(f"Sleeping for {to_sleep:.2f}s, processing time {processing_time:.2f}s, token {token}")
+
+            if time.time() - s + to_sleep > 0.25:  # if event passes 0.25s, break
+                break
+
             time.sleep(to_sleep)
 
             # Execute the key action.
@@ -220,6 +234,10 @@ class Agent(Runnable):
                 CALLABLES["keyboard.release"](vk)
 
             self.event_manager.pbar.set_description(f"Executing: {token}, {vk}, {state}")
+
+        end = time.time()
+        if end - start < 0.25:
+            time.sleep(max(0, 0.25 - (end - start)))
 
 
 @contextmanager
