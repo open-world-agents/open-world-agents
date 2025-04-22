@@ -2,6 +2,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // DOM Elements
     const fileList = document.getElementById('file-list');
+    const uploadedFileList = document.getElementById('uploaded-file-list');
     const videoPlayer = document.getElementById('video-player');
     const videoSource = document.getElementById('video-source');
     const timelineMarker = document.getElementById('timeline-marker');
@@ -27,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastLoadedTime = null;
     let isLoading = false;
     let timelineControls = null;
+    let uploadedFiles = []; // Store uploaded files during session
 
     let isPlaying = false;
     let lastRenderTime = 0;
@@ -67,6 +69,24 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("Error fetching file pairs:", error);
             fileList.innerHTML = '<div class="error">Error loading files. Check console.</div>';
         }
+    }
+
+    // Function to update uploaded files list
+    function updateUploadedFilesList() {
+        uploadedFileList.innerHTML = '';
+
+        if (uploadedFiles.length === 0) {
+            uploadedFileList.innerHTML = '<div class="file-item-placeholder">No uploaded files yet</div>';
+            return;
+        }
+
+        uploadedFiles.forEach(pair => {
+            const item = document.createElement('div');
+            item.className = 'file-item';
+            item.textContent = pair.basename;
+            item.addEventListener('click', () => loadFilePair(pair));
+            uploadedFileList.appendChild(item);
+        });
     }
 
     // Load a specific MCAP+MKV pair
@@ -770,6 +790,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize the application
     fetchFilePairs();
+    updateUploadedFilesList();
 
     // Handle file uploads if we're in local mode
     const uploadForm = document.getElementById('upload-form');
@@ -791,10 +812,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 const result = await response.json();
+                const file_pair = result;
 
                 if (response.ok) {
                     uploadStatus.textContent = 'Files uploaded successfully!';
                     uploadStatus.className = 'success';
+
+                    console.log("Upload result:", file_pair);
+
+                    // Add the new file to our uploaded files list
+                    uploadedFiles.push(file_pair);
+
+                    // Update the UI
+                    updateUploadedFilesList();
+
+                    // Automatically load the newly uploaded file
+                    loadFilePair(file_pair);
+
+                    console.log("Auto-loading newly uploaded file:", file_pair);
 
                     // Clear the form
                     uploadForm.reset();

@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
 from ..services.file_manager import EXPORT_PATH, OWAFILE_CACHE, PUBLIC_HOSTING_MODE
+from ..schema import OWAFile
 
 logger = logging.getLogger(__name__)
 
@@ -13,10 +14,10 @@ router = APIRouter(prefix="/upload", tags=["import"], responses={404: {"descript
 
 
 @router.post("")
-async def import_files(
+async def import_file(
     mcap_file: UploadFile,
     mkv_file: UploadFile,
-):
+) -> OWAFile:
     """Import MCAP and MKV file pair"""
 
     # if public hosted and file size exceeds 100MB, raise an error
@@ -74,12 +75,13 @@ async def import_files(
             OWAFILE_CACHE.pop("local")  # Clear the cache for local repository
 
         # Return success response
-        return JSONResponse(
-            content={
-                "success": True,
-                "message": "Files uploaded successfully",
-                "filenames": {"mcap": mcap_file.filename, "mkv": mkv_file.filename},
-            }
+        return OWAFile(
+            basename=mcap_basename,
+            url=f"{mcap_file.filename}",
+            size=mcap_file.size,
+            local=True,
+            url_mcap=f"{mcap_file.filename}",
+            url_mkv=f"{mkv_file.filename}",
         )
 
     except Exception as e:

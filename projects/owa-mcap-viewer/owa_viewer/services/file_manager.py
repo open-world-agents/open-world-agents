@@ -109,8 +109,6 @@ class FileManager:
         is_temp = False
 
         if is_local:
-            if PUBLIC_HOSTING_MODE:
-                raise HTTPException(status_code=400, detail="is_local requires EXPORT_PATH to be set")
             # Check if local file exists
             mcap_path = FileManager.safe_join(EXPORT_PATH, mcap_filename)
 
