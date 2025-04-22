@@ -33,6 +33,7 @@ class ElementFactory:
         monitor_idx: Optional[int] = None,
         additional_properties: Optional[dict] = None,
     ):
+        """https://gstreamer.freedesktop.org/documentation/d3d11/d3d11screencapturesrc.html?gi-language=python"""
         properties = {
             "show-cursor": str(show_cursor).lower(),
             "do-timestamp": "true",
