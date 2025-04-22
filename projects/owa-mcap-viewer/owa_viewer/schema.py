@@ -1,3 +1,4 @@
+from typing import Optional
 from pydantic import BaseModel
 
 
@@ -9,6 +10,7 @@ class McapMetadata(BaseModel):
 
 class OWAFile(BaseModel):
     basename: str
+    original_basename: Optional[str] = None  # To store the original filename
     size: int
     local: bool
     url: str

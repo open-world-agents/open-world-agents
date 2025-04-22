@@ -1,6 +1,7 @@
 import logging
 import os
 import tempfile
+import re
 from pathlib import Path, PurePosixPath
 
 import fsspec
@@ -72,6 +73,16 @@ class FileManager:
             mcap_file = PurePosixPath(mcap_file)
             if fs.exists(mcap_file.with_suffix(".mkv")) and fs.exists(mcap_file.with_suffix(".mcap")):
                 basename = (mcap_file.parent / mcap_file.stem).as_posix()
+
+                # Extract original basename for randomly generated files
+                # Pattern matches: original_name_uuid where uuid is a standard UUID format
+                original_basename = None
+                if repo_id == "local":
+                    uuid_pattern = r"(.+)_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                    match = re.search(uuid_pattern, mcap_file.stem)
+                    if match:
+                        original_basename = match.group(1)
+
                 if repo_id == "local":
                     basename = PurePosixPath(basename).relative_to(EXPORT_PATH).as_posix()
                     url = f"{basename}"
@@ -80,9 +91,11 @@ class FileManager:
                     basename = basename[len(f"datasets/{repo_id}/") :]
                     url = f"https://huggingface.co/datasets/{repo_id}/resolve/main/{basename}"
                     local = False
+
                 files.append(
                     OWAFile(
                         basename=basename,
+                        original_basename=original_basename,
                         url=url,
                         size=fs.info(mcap_file).get("size", 0),
                         local=local,

@@ -50,7 +50,14 @@ document.addEventListener('DOMContentLoaded', () => {
             data.forEach((pair, index) => {
                 const item = document.createElement('div');
                 item.className = 'file-item';
-                item.textContent = pair.basename;
+
+                // Display original filename if available, otherwise use the basename
+                const displayName = pair.original_basename || pair.basename;
+                item.textContent = displayName;
+
+                // Store the unique filename as a data attribute for selection
+                item.dataset.uniqueId = pair.basename;
+
                 item.addEventListener('click', () => loadFilePair(pair));
                 fileList.appendChild(item);
 
@@ -83,7 +90,14 @@ document.addEventListener('DOMContentLoaded', () => {
         uploadedFiles.forEach(pair => {
             const item = document.createElement('div');
             item.className = 'file-item';
-            item.textContent = pair.basename;
+
+            // Use original filename for display if available
+            const displayName = pair.original_basename || pair.basename;
+            item.textContent = displayName;
+
+            // Store the unique filename as a data attribute for selection
+            item.dataset.uniqueId = pair.basename;
+
             item.addEventListener('click', () => loadFilePair(pair));
             uploadedFileList.appendChild(item);
         });
@@ -95,10 +109,10 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log("Loading file pair:", pair);
             currentFile = pair;
 
-            // Update UI to show selected file
+            // Update UI to show selected file - use the unique ID to select only the correct file
             document.querySelectorAll('.file-item').forEach(item => {
                 item.classList.remove('active');
-                if (item.textContent === pair.basename) {
+                if (item.dataset.uniqueId === pair.basename) {
                     item.classList.add('active');
                 }
             });

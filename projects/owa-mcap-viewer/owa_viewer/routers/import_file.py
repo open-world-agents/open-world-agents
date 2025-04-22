@@ -1,5 +1,6 @@
 import logging
 import shutil
+import uuid
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, UploadFile
@@ -50,37 +51,44 @@ async def import_file(
     export_path = Path(EXPORT_PATH)
     export_path.mkdir(exist_ok=True, parents=True)
 
-    # Save the files
-    mcap_save_path = export_path / mcap_file.filename
-    mkv_save_path = export_path / mkv_file.filename
+    # Generate a random filename to avoid conflicts
+    random_id = str(uuid.uuid4())
+    random_basename = f"{mcap_basename}_{random_id}"
 
-    # Check if files already exist
-    if mcap_save_path.exists() or mkv_save_path.exists():
-        raise HTTPException(status_code=409, detail="Files with these names already exist")
+    # Create filenames with random ID
+    random_mcap_filename = f"{random_basename}.mcap"
+    random_mkv_filename = f"{random_basename}.mkv"
+
+    # Save paths
+    mcap_save_path = export_path / random_mcap_filename
+    mkv_save_path = export_path / random_mkv_filename
 
     try:
-        # Save MCAP file
+        # Save MCAP file with random name
         with mcap_save_path.open("wb") as f:
             shutil.copyfileobj(mcap_file.file, f)
 
-        # Save MKV file
+        # Save MKV file with random name
         with mkv_save_path.open("wb") as f:
             shutil.copyfileobj(mkv_file.file, f)
 
-        logger.info(f"Successfully imported files: {mcap_file.filename}, {mkv_file.filename}")
+        logger.info(
+            f"Successfully imported files: {mcap_file.filename} as {random_mcap_filename}, {mkv_file.filename} as {random_mkv_filename}"
+        )
 
         # Force refresh of the file list cache
         if "local" in OWAFILE_CACHE:
             OWAFILE_CACHE.pop("local")  # Clear the cache for local repository
 
-        # Return success response
+        # Return success response with both original and random filenames
         return OWAFile(
-            basename=mcap_basename,
-            url=f"{mcap_file.filename}",
+            basename=random_basename,
+            original_basename=mcap_basename,
+            url=f"{random_basename}",
             size=mcap_file.size,
             local=True,
-            url_mcap=f"{mcap_file.filename}",
-            url_mkv=f"{mkv_file.filename}",
+            url_mcap=f"{random_mcap_filename}",
+            url_mkv=f"{random_mkv_filename}",
         )
 
     except Exception as e:
