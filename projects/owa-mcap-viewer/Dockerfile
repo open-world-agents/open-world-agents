@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Setup uv & vuv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv pip install virtual-uv
+    uv pip install virtual-uv --system
 
 # Create virtual environment
 RUN uv venv /opt/venv
@@ -26,13 +26,25 @@ RUN echo "source /opt/venv/bin/activate" >> /root/.bashrc
 
 RUN useradd -m -u 1000 user
 
-# Install LeRobot
-RUN git clone https://github.com/open-world-agents/open-world-agents /owa
+# Install OWA
+ARG CACHE_BUST=1
+RUN git clone --depth 1 https://github.com/open-world-agents/open-world-agents /owa
+WORKDIR /owa
+RUN --mount=type=cache,target=/home/user/.cache/uv \
+    vuv install --frozen
+
 WORKDIR /owa/projects/owa-mcap-viewer
 RUN --mount=type=cache,target=/home/user/.cache/uv \
-    --mount=type=bind,source=uv.lock,target=uv.lock \
-    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    vuv sync --frozen --no-install-project
+    # --mount=type=bind,source=uv.lock,target=uv.lock \
+    # --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    vuv install --frozen
 
+# Prepare example datasets
+RUN --mount=type=cache,target=/home/user/.cache/uv \
+    vuv pip install huggingface-hub
+RUN huggingface-cli download open-world-agents/example_dataset --repo-type dataset --local-dir /data
+ENV EXPORT_PATH=/data
+
+RUN chown -R user:user /owa /opt/venv /data
 COPY --chown=user . /owa/projects/owa-mcap-viewer
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "7860"]
+CMD ["uvicorn", "owa_viewer:app", "--host", "0.0.0.0", "--port", "7860"]

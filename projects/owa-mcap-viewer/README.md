@@ -1,7 +1,7 @@
 ## Usage
 
-1. Setup `DATA_DIR` environment variable.
+1. Setup `EXPORT_PATH` environment variable. You may setup `.env` instead.
     ```
-    export DATA_DIR=(path-to-your-folder-containing-mcap-and-mkvs)
+    export EXPORT_PATH=(path-to-your-folder-containing-mcap-and-mkvs)
 2. `vuv install`
-3. `python server.py`
+3. `uvicorn owa_viewer:app --host 0.0.0.0 --port 7860 --reload`

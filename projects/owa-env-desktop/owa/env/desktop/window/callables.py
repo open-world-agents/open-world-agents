@@ -4,16 +4,22 @@ from owa.core.registry import CALLABLES
 
 from ..msg import WindowInfo
 
-# === Definition of the `get_active_window` function ===
+# --- Platform utils ---
+_PLATFORM = platform.system()
+_IS_DARWIN = _PLATFORM == "Darwin"
+_IS_WINDOWS = _PLATFORM == "Windows"
 
-if platform.system() == "Darwin":
-    from Quartz import (
-        CGWindowListCopyWindowInfo,
-        kCGNullWindowID,
-        kCGWindowListOptionOnScreenOnly,
-    )
+# === Active Window Fetcher ===
 
-    def get_active_window():
+
+def get_active_window():
+    if _IS_DARWIN:
+        from Quartz import (
+            CGWindowListCopyWindowInfo,
+            kCGNullWindowID,
+            kCGWindowListOptionOnScreenOnly,
+        )
+
         windows = CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly, kCGNullWindowID)
         for window in windows:
             if window.get("kCGWindowLayer", 0) == 0:  # Frontmost window
@@ -29,10 +35,9 @@ if platform.system() == "Darwin":
                 return WindowInfo(title=title, rect=rect, hWnd=hWnd)
         return None
 
-elif platform.system() == "Windows":
-    import pygetwindow as gw
+    elif _IS_WINDOWS:
+        import pygetwindow as gw
 
-    def get_active_window():
         active_window = gw.getActiveWindow()
         if active_window is not None:
             rect = active_window._getWindowRect()
@@ -40,19 +45,16 @@ elif platform.system() == "Windows":
             rect_coords = (rect.left, rect.top, rect.right, rect.bottom)
             hWnd = active_window._hWnd
             return WindowInfo(title=title, rect=rect_coords, hWnd=hWnd)
-        return None
+        return WindowInfo(title="", rect=[0, 0, 0, 0], hWnd=-1)
+    else:
+        raise NotImplementedError(f"Platform {_PLATFORM} is not supported yet")
 
-else:
 
-    def get_active_window():
-        raise NotImplementedError(f"Platform {platform.system()} is not supported yet")
-
-# === Definition of the `get_window_by_title` function ===
+# === Window finder by title ===
 
 
 def get_window_by_title(window_title_substring: str) -> WindowInfo:
-    os_name = platform.system()
-    if os_name == "Windows":
+    if _IS_WINDOWS:
         import pygetwindow as gw
 
         windows = gw.getWindowsWithTitle(window_title_substring)
@@ -71,7 +73,8 @@ def get_window_by_title(window_title_substring: str) -> WindowInfo:
             rect=(rect.left, rect.top, rect.right, rect.bottom),
             hWnd=window._hWnd,
         )
-    elif os_name == "Darwin":
+
+    elif _IS_DARWIN:
         from Quartz import CGWindowListCopyWindowInfo, kCGNullWindowID, kCGWindowLayer, kCGWindowListOptionOnScreenOnly
 
         windows = CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly, kCGNullWindowID)
@@ -105,7 +108,24 @@ def get_window_by_title(window_title_substring: str) -> WindowInfo:
         raise NotImplementedError("Not implemented for Linux or other OS.")
 
 
-# === Definition of the `when_active` decorator ===
+# === PID extractor by window title ===
+
+
+def get_pid_by_title(window_title_substring: str) -> int:
+    """Get the PID of a window by its title."""
+    window = get_window_by_title(window_title_substring)
+    if _IS_WINDOWS:
+        import win32process
+
+        # win32process.GetWindowThreadProcessId returns (tid, pid)
+        _, pid = win32process.GetWindowThreadProcessId(window.hWnd)
+        return pid
+    else:
+        # Implement if needed for other OS
+        raise NotImplementedError(f"Getting PID by title not implemented for {_PLATFORM}")
+
+
+# === Active-window decorator and helper ===
 
 
 def when_active(window_title_substring: str):
@@ -127,8 +147,11 @@ def is_active(window_title_substring: str):
         window = get_window_by_title(window_title_substring)
     except ValueError:
         return False
+    active = get_active_window()
+    return active is not None and active.hWnd == window.hWnd
 
-    return get_active_window().hWnd == window.hWnd
+
+# === Registry ===
 
 
 def make_active(window_title_substring: str):
@@ -155,6 +178,7 @@ def make_active(window_title_substring: str):
 
 CALLABLES.register("window.get_active_window")(get_active_window)
 CALLABLES.register("window.get_window_by_title")(get_window_by_title)
+CALLABLES.register("window.get_pid_by_title")(get_pid_by_title)
 CALLABLES.register("window.when_active")(when_active)
 CALLABLES.register("window.is_active")(is_active)
 CALLABLES.register("window.make_active")(make_active)

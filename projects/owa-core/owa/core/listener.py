@@ -179,7 +179,7 @@ class ListenerProcess(ListenerMixin, RunnableProcess):
         """
         if not getattr(self, "_configured", False):
             raise RuntimeError(
-                "RunnableThread is not configured. Call configure() before start(). Or you may have overriden the configure method, not on_configure."
+                "RunnableProcess is not configured. Call configure() before start(). Or you may have overriden the configure method, not on_configure."
             )
 
         kwargs = {}
@@ -190,10 +190,10 @@ class ListenerProcess(ListenerMixin, RunnableProcess):
     @abstractmethod
     def loop(self, stop_event: mpEvent, callback: Callable):
         """
-        Main thread execution loop. Must be implemented by subclasses.
+        Main process execution loop. Must be implemented by subclasses.
 
         Args:
-            stop_event (threading.Event): An event that will be set when the thread should stop.
+            stop_event (multiprocessing.Event): An event that will be set when the process should stop.
                                         Check this event regularly and exit when it's set.
                                         If this argument is not present, the loop will be called without it.
             callback (Callable): The function to call when an event is detected.

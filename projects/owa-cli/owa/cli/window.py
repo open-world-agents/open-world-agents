@@ -14,7 +14,17 @@ def find(window_name: str):
     """
     activate_module("owa.env.desktop")
     window = CALLABLES["window.get_window_by_title"](window_name)
-    typer.echo(window)
+    typer.echo(f"Found window: {window}")
+    typer.echo(f"Title: {window.title}")
+    typer.echo(f"Rect: {window.rect}")
+    typer.echo(f"hWnd: {window.hWnd}")
+
+    try:
+        import win32process
+
+        typer.echo(f"PID: {win32process.GetWindowThreadProcessId(window.hWnd)[1]}")
+    except ImportError:
+        typer.echo("win32process module not available. PID information may not be accessible.")
 
 
 @app.command()

@@ -23,7 +23,7 @@ Here's what we've got in store for you!
     - **`OWAMcap` file format**: high-performance, self-contained, flexible container file format for multimodal desktop log data, powered by the open-source container file format [mcap](https://mcap.dev/). [Learn more...](data/data_format.md)
     - **`owl mcap record your-filename.mcap`**: powerful, efficient and easy-to-use desktop recorder. Contains keyboard/mouse and high-frequency screen data.
         - Powered by [`owa-env-gst`](env/plugins/gstreamer_env.md), ensuring superior performance compared to alternatives. [Learn more...](data/recorder/why.md)
-    - **🤗 [Hugging Face](https://huggingface.co/) Integration** (TODO): We'll accelerate the open-sourcing process and improve accessibility of multimodal desktop agent through integration with Huggingface. Stay Tuned!
+    - **🤗 [Hugging Face](https://huggingface.co/) Integration**: Upload your own dataset created by simple `owl mcap record` to huggingface and share with everyone! The era of open-source desktop data is **near and effortless**. Preview the dataset at [Hugging Face Spaces](https://huggingface.co/spaces/open-world-agents/visualize_dataset).
 
 ---
 
@@ -49,11 +49,9 @@ Here's what we've got in store for you!
         time_ns = CALLABLES["clock.time_ns"]()
         print(f"Current time in nanoseconds: {time_ns}")
 
-    # Create a listener for clock/tick event
-    tick = LISTENERS["clock/tick"]().configure(callback=callback)
+    # Create a listener for clock/tick event, Set listener to trigger every 1 second
+    tick = LISTENERS["clock/tick"]().configure(callback=callback, interval=1)
 
-    # Set listener to trigger every 1 second
-    tick.configure(interval=1)
     # Start the listener
     tick.start()
 
@@ -62,6 +60,7 @@ Here's what we've got in store for you!
 
     # Stop the listener and wait for it to finish
     tick.stop(), tick.join()
+
     ```
 
 - Record your own desktop usage data by just running `owl mcap record your-filename.mcap`. [Learn more...](data/recorder/install_and_usage.md)
