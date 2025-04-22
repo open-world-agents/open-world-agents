@@ -17,10 +17,10 @@ from ..schema import McapMetadata, OWAFile
 load_dotenv()
 
 # Configure export path
-EXPORT_PATH = os.environ.get("EXPORT_PATH", None)
-if EXPORT_PATH:
+export_path_env = os.environ.get("EXPORT_PATH", None)
+if export_path_env:
     PUBLIC_HOSTING_MODE = False
-    EXPORT_PATH = Path(EXPORT_PATH).as_posix()
+    EXPORT_PATH = Path(export_path_env).as_posix()
 else:
     PUBLIC_HOSTING_MODE = True  # if EXPORT_PATH is not set, we are in public hosting mode
     EXPORT_PATH = Path("./data").as_posix()  # default path for public hosting
