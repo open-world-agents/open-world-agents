@@ -46,6 +46,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             console.log("Available file pairs:", data);
 
+            // Check if there's a currently selected file before clearing the list
+            const currentlySelectedId = Array.from(document.querySelectorAll('.file-item.active'))
+                .find(item => item.parentElement === fileList)?.dataset.uniqueId;
+
             fileList.innerHTML = '';
             data.forEach((pair, index) => {
                 const item = document.createElement('div');
@@ -61,15 +65,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 item.addEventListener('click', () => loadFilePair(pair));
                 fileList.appendChild(item);
 
-                // Auto-select the first file in the list
-                if (index === 0) {
+                // Only add auto-select class to first item if no file was previously selected
+                if (index === 0 && !currentlySelectedId) {
                     item.classList.add('auto-select');
                 }
             });
 
-            // Automatically load the first file if available
-            if (data.length > 0) {
-                console.log("Auto-selecting the first file:", data[0].basename);
+            // Automatically load the first file only if no file is currently selected
+            if (data.length > 0 && !currentlySelectedId && !currentFile) {
+                console.log("No file is currently selected. Auto-selecting the first file:", data[0].basename);
                 loadFilePair(data[0]);
             }
         } catch (error) {
