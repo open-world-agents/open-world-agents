@@ -1,8 +1,8 @@
 import logging
 import subprocess
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
-import numpy as np  # Add numpy import
+import numpy as np
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -21,7 +21,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-
 app = FastAPI()
 
 # Enable CORS
@@ -33,6 +32,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Include routers
 app.include_router(export_file.router)
 app.include_router(import_file.router)  # Include the new router
 
@@ -41,6 +41,16 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Setup Jinja2 templates
 templates = Jinja2Templates(directory="templates")
+
+
+def format_size_human_readable(size: int) -> str:
+    """Convert size in bytes to human readable format."""
+    size_units = ["B", "KiB", "MiB", "GiB", "TiB"]
+    size_unit = 0
+    if size > 0:
+        size_unit = min(len(size_units) - 1, int(np.floor(np.log2(max(1, size)) / 10)))
+        size /= 1024**size_unit
+    return f"{size:.2f} {size_units[int(size_unit)]}"
 
 
 @app.get("/")
@@ -61,19 +71,14 @@ async def read_root(request: Request):
 
 @app.get("/viewer")
 async def read_viewer(repo_id: str, request: Request):
-    if OWAFILE_CACHE.get(repo_id) is None:
+    # Load files from cache or fetch new ones
+    if repo_id not in OWAFILE_CACHE:
         OWAFILE_CACHE[repo_id] = FileManager.list_files(repo_id)
     files = OWAFILE_CACHE[repo_id]
 
     # Calculate total size and format it as human-readable
-    size = sum(f.size for f in files) if files else 0
-    # convert size to human readable format
-    size_units = ["B", "KiB", "MiB", "GiB", "TiB"]
-    size_unit = 0
-    if size > 0:
-        size_unit = min(len(size_units) - 1, int(np.floor(np.log2(max(1, size)) / 10)))
-        size /= 1024**size_unit
-    size_str = f"{size:.2f} {size_units[int(size_unit)]}"
+    total_size = sum(f.size for f in files) if files else 0
+    size_str = format_size_human_readable(total_size)
 
     return templates.TemplateResponse(
         "viewer.html",
@@ -84,10 +89,9 @@ async def read_viewer(repo_id: str, request: Request):
     )
 
 
-@app.get("/api/list_files", response_model=list[OWAFile])
-async def list_files(repo_id: str) -> list[OWAFile]:
+@app.get("/api/list_files", response_model=List[OWAFile])
+async def list_files(repo_id: str) -> List[OWAFile]:
     """List all available MCAP+MKV files"""
-
     return FileManager.list_files(repo_id)
 
 
@@ -126,9 +130,9 @@ async def get_mcap_metadata(mcap_filename: str, local: bool = True):
     is_temp = False
 
     try:
-        if mcap_filename not in MCAP_METADATA_CACHE:  # metadata not cached
+        # Check cache first
+        if mcap_filename not in MCAP_METADATA_CACHE:
             mcap_path, is_temp = FileManager.get_mcap_path(mcap_filename, local)
-
             FileManager.build_mcap_metadata(mcap_path, mcap_filename)
         else:
             logger.info(f"Using cached metadata for {mcap_filename}")
@@ -157,10 +161,11 @@ async def get_mcap_data(
     is_temp = False
 
     try:
-        # We need the actual data
+        # Get actual MCAP file
         mcap_path, is_temp = FileManager.get_mcap_path(mcap_filename, local)
 
-        if mcap_filename not in MCAP_METADATA_CACHE:  # metadata not cached
+        # Ensure metadata is available
+        if mcap_filename not in MCAP_METADATA_CACHE:
             FileManager.build_mcap_metadata(mcap_path, mcap_filename)
         else:
             logger.info(f"Using cached metadata for {mcap_filename}")
@@ -169,46 +174,49 @@ async def get_mcap_data(
         if not metadata:
             raise HTTPException(status_code=500, detail="Failed to create MCAP metadata")
 
-        # If start_time is not provided, use the beginning of the file
+        # Set default time range if not provided
         if start_time is None:
             start_time = metadata.start_time
-
-        # If end_time is not provided, use start_time + window_size
         if end_time is None:
             end_time = start_time + window_size
 
         logger.info(f"Fetching MCAP data for time range: {start_time} to {end_time}")
+        return fetch_mcap_data(mcap_path, start_time, end_time)
 
-        # Define topics we're interested in
-        topics_of_interest = ["keyboard", "mouse", "screen", "window", "keyboard/state", "mouse/state"]
-
-        # Initialize result structure
-        topics_data = {topic: [] for topic in topics_of_interest}
-
-        try:
-            logger.info(f"Reading MCAP file: {mcap_path}")
-            with OWAMcapReader(mcap_path) as reader:
-                # Use the built-in filter parameters of iter_messages
-                for topic, timestamp, message in reader.iter_decoded_messages(
-                    topics=topics_of_interest, start_time=start_time, end_time=end_time
-                ):
-                    # topics_data[topic].append({"timestamp": timestamp, "data": message})
-                    message["timestamp"] = timestamp
-                    topics_data[topic].append(message)
-
-            total_messages = sum(len(msgs) for msgs in topics_data.values())
-            logger.info(f"Fetched {total_messages} messages for time range {start_time} to {end_time}")
-
-            return topics_data
-
-        except Exception as e:
-            logger.error(f"Error fetching MCAP data: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail=f"Error fetching MCAP data: {str(e)}")
-
+    except Exception as e:
+        logger.error(f"Error in get_mcap_data: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error processing MCAP data: {str(e)}")
     finally:
         # Clean up temporary file if needed
         if is_temp and mcap_path:
             FileManager.cleanup_temp_file(mcap_path)
+
+
+def fetch_mcap_data(mcap_path, start_time: int, end_time: int) -> Dict[str, List[Dict[str, Any]]]:
+    """Extract data from MCAP file for specified time range and topics."""
+    # Define topics we're interested in
+    topics_of_interest = ["keyboard", "mouse", "screen", "window", "keyboard/state", "mouse/state"]
+
+    # Initialize result structure
+    topics_data = {topic: [] for topic in topics_of_interest}
+
+    try:
+        logger.info(f"Reading MCAP file: {mcap_path}")
+        with OWAMcapReader(mcap_path) as reader:
+            # Use the built-in filter parameters of iter_messages
+            for topic, timestamp, message in reader.iter_decoded_messages(
+                topics=topics_of_interest, start_time=start_time, end_time=end_time
+            ):
+                message["timestamp"] = timestamp
+                topics_data[topic].append(message)
+
+        total_messages = sum(len(msgs) for msgs in topics_data.values())
+        logger.info(f"Fetched {total_messages} messages for time range {start_time} to {end_time}")
+
+        return topics_data
+    except Exception as e:
+        logger.error(f"Error fetching MCAP data: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error fetching MCAP data: {str(e)}")
 
 
 if __name__ == "__main__":

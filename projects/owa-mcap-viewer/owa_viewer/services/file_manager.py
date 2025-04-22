@@ -1,8 +1,9 @@
 import logging
 import os
-import tempfile
 import re
+import tempfile
 from pathlib import Path, PurePosixPath
+from typing import Dict, List, Optional, Tuple
 
 import fsspec
 import requests
@@ -15,6 +16,7 @@ from mcap_owa.highlevel import OWAMcapReader
 
 from ..schema import McapMetadata, OWAFile
 
+# Load environment variables
 load_dotenv()
 
 # Configure export path
@@ -29,10 +31,9 @@ else:
 logger = logging.getLogger(__name__)
 logger.info(f"{PUBLIC_HOSTING_MODE=} {EXPORT_PATH=}")
 
-
-MCAP_METADATA_CACHE: dict[str, McapMetadata] = dict()  # key: mcap_filename, value: McapMetadata object
-
-OWAFILE_CACHE: dict[str, list[OWAFile]] = dict()  # key: repo_id, value: list of OWAFile objects
+# Cache structures
+MCAP_METADATA_CACHE: Dict[str, McapMetadata] = {}  # key: mcap_filename, value: McapMetadata object
+OWAFILE_CACHE: Dict[str, List[OWAFile]] = {}  # key: repo_id, value: list of OWAFile objects
 
 
 class FileManager:
@@ -42,8 +43,17 @@ class FileManager:
     """
 
     @staticmethod
-    def safe_join(base_dir: str, *paths: str) -> Path | None:
-        """Join paths and ensure the result is within the base directory."""
+    def safe_join(base_dir: str, *paths: str) -> Optional[Path]:
+        """
+        Join paths and ensure the result is within the base directory.
+
+        Args:
+            base_dir: The base directory to constrain paths within
+            paths: Path components to join
+
+        Returns:
+            Path object if safe, None if path would escape base directory
+        """
         base = Path(base_dir).resolve()
         target = (base / Path(*paths)).resolve()
 
@@ -54,9 +64,17 @@ class FileManager:
         return target
 
     @staticmethod
-    def list_files(repo_id: str) -> list[OWAFile]:
-        """For a given repository, list all available data files."""
+    def list_files(repo_id: str) -> List[OWAFile]:
+        """
+        For a given repository, list all available data files.
 
+        Args:
+            repo_id: Repository ID ('local' or Hugging Face dataset ID)
+
+        Returns:
+            List of OWAFile objects
+        """
+        # Choose filesystem based on repo_id
         if repo_id == "local":
             if PUBLIC_HOSTING_MODE:
                 raise HTTPException(status_code=400, detail="repo_id=`local` requires EXPORT_PATH to be set")
@@ -68,6 +86,7 @@ class FileManager:
             fs: HfFileSystem = fsspec.filesystem(protocol=protocol)
             path = f"datasets/{repo_id}"
 
+        # Find all MCAP files with corresponding MKV files
         files = []
         for mcap_file in fs.glob(f"{path}/**/*.mcap"):
             mcap_file = PurePosixPath(mcap_file)
@@ -83,6 +102,7 @@ class FileManager:
                     if match:
                         original_basename = match.group(1)
 
+                # Prepare URL and path information
                 if repo_id == "local":
                     basename = PurePosixPath(basename).relative_to(EXPORT_PATH).as_posix()
                     url = f"{basename}"
@@ -106,7 +126,7 @@ class FileManager:
         return files
 
     @staticmethod
-    def get_mcap_path(mcap_filename: str, is_local: bool) -> tuple[Path, bool]:
+    def get_mcap_path(mcap_filename: str, is_local: bool) -> Tuple[Path, bool]:
         """
         Returns the path to a MCAP file. If the file is remote, it is downloaded first.
 
@@ -119,38 +139,63 @@ class FileManager:
                 - Path to the MCAP file
                 - Whether the path is a temporary file that should be deleted after use
         """
-        is_temp = False
-
         if is_local:
-            # Check if local file exists
-            mcap_path = FileManager.safe_join(EXPORT_PATH, mcap_filename)
-
-            if mcap_path is None or not mcap_path.exists():
-                raise HTTPException(status_code=404, detail="MCAP file not found")
-
+            return FileManager._get_local_mcap_path(mcap_filename)
         else:
-            # Download remote file
-            with tempfile.NamedTemporaryFile(suffix=".mcap", delete=False) as temp_mcap:
-                logger.info(f"Downloading MCAP file to: {temp_mcap.name}")
+            return FileManager._get_remote_mcap_path(mcap_filename)
 
-                try:
-                    resp = requests.get(mcap_filename)
-                    resp.raise_for_status()  # Raise exception for HTTP errors
-                    temp_mcap.write(resp.content)
-                except Exception as e:
-                    # Clean up the temp file if download fails
-                    Path(temp_mcap.name).unlink(missing_ok=True)
-                    logger.error(f"Error downloading MCAP file: {e}", exc_info=True)
-                    raise HTTPException(status_code=500, detail=f"Error downloading MCAP file: {str(e)}")
+    @staticmethod
+    def _get_local_mcap_path(mcap_filename: str) -> Tuple[Path, bool]:
+        """
+        Get the path to a local MCAP file.
 
-            mcap_path = Path(temp_mcap.name)
-            is_temp = True
+        Args:
+            mcap_filename: Local path to MCAP file
 
-        return mcap_path, is_temp
+        Returns:
+            Tuple of (file path, is_temporary)
+        """
+        mcap_path = FileManager.safe_join(EXPORT_PATH, mcap_filename)
+
+        if mcap_path is None or not mcap_path.exists():
+            raise HTTPException(status_code=404, detail="MCAP file not found")
+
+        return mcap_path, False
+
+    @staticmethod
+    def _get_remote_mcap_path(mcap_filename: str) -> Tuple[Path, bool]:
+        """
+        Download a remote MCAP file and return its local path.
+
+        Args:
+            mcap_filename: URL to the MCAP file
+
+        Returns:
+            Tuple of (file path, is_temporary)
+        """
+        with tempfile.NamedTemporaryFile(suffix=".mcap", delete=False) as temp_mcap:
+            logger.info(f"Downloading MCAP file to: {temp_mcap.name}")
+
+            try:
+                resp = requests.get(mcap_filename)
+                resp.raise_for_status()  # Raise exception for HTTP errors
+                temp_mcap.write(resp.content)
+            except Exception as e:
+                # Clean up the temp file if download fails
+                Path(temp_mcap.name).unlink(missing_ok=True)
+                logger.error(f"Error downloading MCAP file: {e}", exc_info=True)
+                raise HTTPException(status_code=500, detail=f"Error downloading MCAP file: {str(e)}")
+
+        return Path(temp_mcap.name), True
 
     @staticmethod
     def cleanup_temp_file(file_path: Path) -> None:
-        """Clean up a temporary file if it exists"""
+        """
+        Clean up a temporary file if it exists.
+
+        Args:
+            file_path: Path to the temporary file
+        """
         if file_path and file_path.exists():
             try:
                 file_path.unlink()
@@ -159,9 +204,15 @@ class FileManager:
                 logger.error(f"Error cleaning up temporary file {file_path}: {e}", exc_info=True)
 
     @staticmethod
-    def build_mcap_metadata(mcap_path: Path, mcap_filename: str):
-        """Build metadata about an MCAP file (time range, topics, etc.)"""
+    def build_mcap_metadata(mcap_path: Path, mcap_filename: str) -> None:
+        """
+        Build metadata about an MCAP file (time range, topics, etc.)
+        and store it in the cache.
 
+        Args:
+            mcap_path: Path to the MCAP file
+            mcap_filename: Identifier for the MCAP file (for caching)
+        """
         if not Path(mcap_path).exists():
             raise HTTPException(status_code=404, detail="MCAP file not found")
 
@@ -182,7 +233,6 @@ class FileManager:
 
                 # Store in the cache
                 MCAP_METADATA_CACHE[mcap_filename] = metadata
-
                 logger.info(f"Metadata cached for {mcap_filename}")
 
         except Exception as e:
