@@ -8,6 +8,8 @@ from ..repositories.cache_repository import CacheRepository, FileCacheRepository
 
 logger = logging.getLogger(__name__)
 
+CLEANUP_PERIOD = min(settings.FILE_CACHE_TTL or 10**9, settings.FILE_LIST_CACHE_TTL or 10**9)
+
 
 class CacheService:
     """Service for managing different types of caches"""
@@ -69,7 +71,7 @@ class CacheService:
         except Exception as e:
             logger.error(f"Error during cache cleanup: {e}", exc_info=True)
 
-    async def start_periodic_cleanup(self, interval_seconds: int = 5) -> None:
+    async def start_periodic_cleanup(self, interval_seconds: int = CLEANUP_PERIOD) -> None:
         """
         Start periodic cache cleanup in background
 
