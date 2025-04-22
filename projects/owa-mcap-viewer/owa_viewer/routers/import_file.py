@@ -26,6 +26,12 @@ async def import_files(
     if not mkv_file.filename.endswith(".mkv"):
         raise HTTPException(status_code=400, detail="MKV file must have .mkv extension")
 
+    # if file size exceeds 100MB, raise an error
+    if mcap_file.size > 100 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="MCAP File size exceeds 100MB limit")
+    if mkv_file.size > 100 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="MKV File size exceeds 100MB limit")
+
     # Make sure the base filenames match (excluding extensions)
     mcap_basename = Path(mcap_file.filename).stem
     mkv_basename = Path(mkv_file.filename).stem
