@@ -12,7 +12,7 @@ from rich.logging import RichHandler
 from mcap_owa.highlevel import OWAMcapReader
 from owa_viewer.routers import export_file, import_file
 from owa_viewer.schema import McapMetadata, OWAFile
-from owa_viewer.services.file_manager import MCAP_METADATA_CACHE, OWAFILE_CACHE, FileManager
+from owa_viewer.services.file_manager import MCAP_METADATA_CACHE, OWAFILE_CACHE, FileManager, EXPORT_PATH
 
 # Set up logging, use rich handler
 logging.basicConfig(
@@ -45,8 +45,17 @@ templates = Jinja2Templates(directory="templates")
 
 @app.get("/")
 async def read_root(request: Request):
+    featured_datasets = ["local", "open-world-agents/example_dataset", "open-world-agents/example_dataset2"]
+
+    if EXPORT_PATH is None:
+        featured_datasets.remove("local")
+
     return templates.TemplateResponse(
-        "index.html", {"request": request, "featured_datasets": ["local", "open-world-agents/example_dataset"]}
+        "index.html",
+        {
+            "request": request,
+            "featured_datasets": featured_datasets,
+        },
     )
 
 
