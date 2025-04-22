@@ -5,8 +5,9 @@ from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, UploadFile
 
-from ..schema import OWAFile
-from ..services.file_manager import EXPORT_PATH, OWAFILE_CACHE, PUBLIC_HOSTING_MODE
+from ..config import settings
+from ..models.file import OWAFile
+from ..services.cache_service import cache_service
 
 logger = logging.getLogger(__name__)
 
@@ -18,16 +19,26 @@ async def import_file(
     mcap_file: UploadFile,
     mkv_file: UploadFile,
 ) -> OWAFile:
-    """Import MCAP and MKV file pair"""
+    """
+    Import MCAP and MKV file pair
 
-    # if public hosted and file size exceeds 100MB, raise an error
-    if PUBLIC_HOSTING_MODE:
-        if mcap_file.size > 100 * 1024 * 1024:
+    Args:
+        mcap_file: MCAP file to import
+        mkv_file: MKV file to import
+
+    Returns:
+        OWAFile object with information about the imported files
+    """
+    # Check file size limits in public hosting mode
+    if settings.PUBLIC_HOSTING_MODE:
+        size_limit = 100 * 1024 * 1024  # 100MB
+
+        if mcap_file.size > size_limit:
             raise HTTPException(
                 status_code=400,
                 detail="MCAP File size exceeds 100MB limit. Please self-host the viewer for files larger than 100MB. For more info, see https://open-world-agents.github.io/open-world-agents/data/viewer.",
             )
-        if mkv_file.size > 100 * 1024 * 1024:
+        if mkv_file.size > size_limit:
             raise HTTPException(
                 status_code=400,
                 detail="MKV File size exceeds 100MB limit. Please self-host the viewer for files larger than 100MB. For more info, see https://open-world-agents.github.io/open-world-agents/data/viewer.",
@@ -47,8 +58,8 @@ async def import_file(
     if mcap_basename != mkv_basename:
         raise HTTPException(status_code=400, detail="MCAP and MKV files must have the same base filename")
 
-    # Ensure EXPORT_PATH exists
-    export_path = Path(EXPORT_PATH)
+    # Ensure export path exists
+    export_path = Path(settings.EXPORT_PATH)
     export_path.mkdir(exist_ok=True, parents=True)
 
     # Generate a random filename to avoid conflicts
@@ -76,9 +87,8 @@ async def import_file(
             f"Successfully imported files: {mcap_file.filename} as {random_mcap_filename}, {mkv_file.filename} as {random_mkv_filename}"
         )
 
-        # Force refresh of the file list cache
-        if "local" in OWAFILE_CACHE:
-            OWAFILE_CACHE.pop("local")  # Clear the cache for local repository
+        # Clear the cache for local repository to refresh the file list
+        cache_service.file_list_cache.delete("local")
 
         # Return success response with both original and random filenames
         return OWAFile(
