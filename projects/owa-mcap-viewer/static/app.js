@@ -806,7 +806,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchFilePairs();
     updateUploadedFilesList();
 
-    // Handle file uploads if we're in local mode
+    // Handle file uploads
     const uploadForm = document.getElementById('upload-form');
     const uploadStatus = document.getElementById('upload-status');
 
