@@ -24,12 +24,12 @@ async def import_files(
         if mcap_file.size > 100 * 1024 * 1024:
             raise HTTPException(
                 status_code=400,
-                detail="MCAP File size exceeds 100MB limit. Please self-host the viewer for files larger than 100MB.",
+                detail="MCAP File size exceeds 100MB limit. Please self-host the viewer for files larger than 100MB. For more info, see https://open-world-agents.github.io/open-world-agents/data/viewer.",
             )
         if mkv_file.size > 100 * 1024 * 1024:
             raise HTTPException(
                 status_code=400,
-                detail="MKV File size exceeds 100MB limit. Please self-host the viewer for files larger than 100MB.",
+                detail="MKV File size exceeds 100MB limit. Please self-host the viewer for files larger than 100MB. For more info, see https://open-world-agents.github.io/open-world-agents/data/viewer.",
             )
 
     # Validate file extensions
