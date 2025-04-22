@@ -47,7 +47,7 @@ templates = Jinja2Templates(directory="templates")
 async def read_root(request: Request):
     featured_datasets = ["local", "open-world-agents/example_dataset", "open-world-agents/example_dataset2"]
 
-    if EXPORT_PATH is None:
+    if PUBLIC_HOSTING_MODE:
         featured_datasets.remove("local")
 
     return templates.TemplateResponse(

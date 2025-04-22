@@ -5,7 +5,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
-from ..services.file_manager import EXPORT_PATH, OWAFILE_CACHE
+from ..services.file_manager import EXPORT_PATH, OWAFILE_CACHE, PUBLIC_HOSTING_MODE
 
 logger = logging.getLogger(__name__)
 
@@ -19,18 +19,25 @@ async def import_files(
 ):
     """Import MCAP and MKV file pair"""
 
+    # if public hosted and file size exceeds 100MB, raise an error
+    if PUBLIC_HOSTING_MODE:
+        if mcap_file.size > 100 * 1024 * 1024:
+            raise HTTPException(
+                status_code=400,
+                detail="MCAP File size exceeds 100MB limit. Please self-host the viewer for files larger than 100MB.",
+            )
+        if mkv_file.size > 100 * 1024 * 1024:
+            raise HTTPException(
+                status_code=400,
+                detail="MKV File size exceeds 100MB limit. Please self-host the viewer for files larger than 100MB.",
+            )
+
     # Validate file extensions
     if not mcap_file.filename.endswith(".mcap"):
         raise HTTPException(status_code=400, detail="MCAP file must have .mcap extension")
 
     if not mkv_file.filename.endswith(".mkv"):
         raise HTTPException(status_code=400, detail="MKV file must have .mkv extension")
-
-    # if file size exceeds 100MB, raise an error
-    if mcap_file.size > 100 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="MCAP File size exceeds 100MB limit")
-    if mkv_file.size > 100 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="MKV File size exceeds 100MB limit")
 
     # Make sure the base filenames match (excluding extensions)
     mcap_basename = Path(mcap_file.filename).stem

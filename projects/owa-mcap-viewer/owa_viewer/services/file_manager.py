@@ -20,6 +20,9 @@ load_dotenv()
 EXPORT_PATH = os.environ.get("EXPORT_PATH", None)
 if EXPORT_PATH:
     EXPORT_PATH = Path(EXPORT_PATH).as_posix()
+    PUBLIC_HOSTING_MODE = False
+else:
+    PUBLIC_HOSTING_MODE = True  # if EXPORT_PATH is not set, we are in public hosting mode
 
 logger = logging.getLogger(__name__)
 logger.info(f"{EXPORT_PATH=}")
@@ -53,7 +56,7 @@ class FileManager:
         """For a given repository, list all available data files."""
 
         if repo_id == "local":
-            if EXPORT_PATH is None:
+            if PUBLIC_HOSTING_MODE:
                 raise HTTPException(status_code=400, detail="repo_id=`local` requires EXPORT_PATH to be set")
             protocol = "file"
             fs: LocalFileSystem = fsspec.filesystem(protocol=protocol)
@@ -105,7 +108,7 @@ class FileManager:
         is_temp = False
 
         if is_local:
-            if EXPORT_PATH is None:
+            if PUBLIC_HOSTING_MODE:
                 raise HTTPException(status_code=400, detail="is_local requires EXPORT_PATH to be set")
             # Check if local file exists
             mcap_path = FileManager.safe_join(EXPORT_PATH, mcap_filename)
