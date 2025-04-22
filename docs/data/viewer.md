@@ -15,6 +15,7 @@ Note that this public hosted viewer has a 100MB upload file size limit. If you n
 1. Setup `EXPORT_PATH` environment variable. You may setup `.env` or use `export` command.
     ```
     export EXPORT_PATH=(path-to-your-folder-containing-mcap-and-mkvs)
+    ```
 2. Run `vuv install` for installing dependencies.
 3. Run the server with `uvicorn owa_viewer:app --host 0.0.0.0 --port 7860 --reload`
 4. Access `http://localhost:7860` in your browser.

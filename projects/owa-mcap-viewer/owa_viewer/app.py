@@ -104,6 +104,9 @@ async def get_mcap_info(mcap_filename: str, local: bool = True):
         try:
             # Run the `owl mcap info` command
             output = subprocess.check_output(["owl", "mcap", "info", str(mcap_path)], text=True)
+
+            # Parse only the relevant part of the output: `library:   mcap-owa-support 0.3.2; mcap 1.2.2 `
+            output = output[output.find("library:") :]
             return {"info": output, "local": local}
 
         except Exception as e:
