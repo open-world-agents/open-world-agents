@@ -3,7 +3,12 @@ import platform
 import typer
 
 from . import mcap, video
+from .utils import check_for_update
 
+# Check for updates on startup
+check_for_update()
+
+# Define the main Typer app
 app = typer.Typer()
 app.add_typer(mcap.app, name="mcap")
 app.add_typer(video.app, name="video")
