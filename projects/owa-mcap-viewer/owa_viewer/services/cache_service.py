@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -13,9 +14,11 @@ class CacheService:
 
     def __init__(self):
         """Initialize cache service with different cache repositories"""
-        self.metadata_cache = CacheRepository(settings.MCAP_CACHE_DIR, "metadata")
-        self.file_list_cache = CacheRepository(settings.MCAP_CACHE_DIR, "file_lists")
-        self.file_cache = FileCacheRepository(settings.MCAP_CACHE_DIR)
+        self.metadata_cache = CacheRepository(settings.CACHE_DIR, "metadata")
+        self.file_list_cache = CacheRepository(settings.CACHE_DIR, "file_lists")
+        self.file_cache = FileCacheRepository(settings.CACHE_DIR)
+        self._cleanup_task = None
+        self._stop_cleanup = False
 
     def get_cached_file(self, url: str) -> Optional[Path]:
         """
@@ -59,9 +62,45 @@ class CacheService:
         self.file_list_cache.set(repo_id, file_list)
 
     def cleanup(self) -> None:
-        """Clean up expired cache items"""
-        deleted_count = self.file_cache.cleanup_expired()
-        logger.info(f"Cleaned up {deleted_count} expired cached files")
+        """Run a single cache cleanup operation"""
+        try:
+            deleted_count = self.file_cache.cleanup_expired()
+            logger.info(f"Cleaned up {deleted_count} expired cached files")
+        except Exception as e:
+            logger.error(f"Error during cache cleanup: {e}", exc_info=True)
+
+    async def start_periodic_cleanup(self, interval_seconds: int = 5) -> None:
+        """
+        Start periodic cache cleanup in background
+
+        Args:
+            interval_seconds: Time between cleanup operations in seconds
+        """
+        self._stop_cleanup = False
+
+        async def cleanup_loop():
+            while not self._stop_cleanup:
+                try:
+                    self.cleanup()
+                except Exception as e:
+                    logger.error(f"Error in periodic cache cleanup: {e}", exc_info=True)
+                await asyncio.sleep(interval_seconds)
+
+        # Store the task so it can be cancelled later
+        self._cleanup_task = asyncio.create_task(cleanup_loop())
+        logger.info(f"Started periodic cache cleanup (every {interval_seconds} seconds)")
+
+    async def stop_periodic_cleanup(self) -> None:
+        """Stop the periodic cache cleanup task"""
+        if self._cleanup_task:
+            self._stop_cleanup = True
+            self._cleanup_task.cancel()
+            try:
+                await self._cleanup_task
+            except asyncio.CancelledError:
+                pass
+            self._cleanup_task = None
+            logger.info("Stopped periodic cache cleanup")
 
 
 # Create singleton instance

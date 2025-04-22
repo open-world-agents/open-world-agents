@@ -20,7 +20,24 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Handle application lifespan events"""
+    logger.info("Starting OWA Viewer application")
+    # Run immediate cleanup
+    cache_service.cleanup()
+    # Start periodic cleanup (every hour by default)
+    await cache_service.start_periodic_cleanup()
+
+    yield
+
+    logger.info("Shutting down OWA Viewer application")
+    # Stop periodic cleanup
+    await cache_service.stop_periodic_cleanup()
+
+
+app = FastAPI(lifespan=lifespan)
 
 # Enable CORS
 app.add_middleware(
@@ -75,16 +92,6 @@ async def read_viewer(repo_id: str, request: Request):
             "dataset_info": {"repo_id": repo_id, "files": len(files), "size": size_str},
         },
     )
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Handle application lifespan events"""
-    logger.info("Starting OWA Viewer application")
-    # Clean up expired cache items
-    cache_service.cleanup()
-    yield
-    logger.info("Shutting down OWA Viewer application")
 
 
 if __name__ == "__main__":

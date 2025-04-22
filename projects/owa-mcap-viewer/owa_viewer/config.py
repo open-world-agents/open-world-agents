@@ -16,9 +16,10 @@ class Settings(BaseSettings):
     PUBLIC_HOSTING_MODE: bool = not bool(os.environ.get("EXPORT_PATH"))
 
     # Cache settings
-    MCAP_CACHE_SIZE_LIMIT: int = int(os.environ.get("MCAP_CACHE_SIZE_LIMIT", 1024 * 1024 * 1024))  # 1GB default
-    MCAP_CACHE_TTL: int = int(os.environ.get("MCAP_CACHE_TTL", 3600))  # 1 hour default
-    MCAP_CACHE_DIR: str = os.environ.get("MCAP_CACHE_DIR", "./cache")
+    # MCAP_CACHE_SIZE_LIMIT: int = int(os.environ.get("MCAP_CACHE_SIZE_LIMIT", 1024 * 1024 * 1024))  # 1GB default, not implemented yet
+    FILE_CACHE_TTL: int = int(os.environ.get("FILE_CACHE_TTL", 600))  # 10 min default
+    DEFAULLT_CACHE_TTL: int | None = int(os.environ.get("DEFAULT_CACHE_TTL", 3600))  # 1 hour default
+    CACHE_DIR: str = os.environ.get("CACHE_DIR", "./cache")
 
     # Server settings
     PORT: int = int(os.environ.get("PORT", 7860))
@@ -35,4 +36,4 @@ class Settings(BaseSettings):
 settings = Settings()
 
 # Ensure cache directory exists
-Path(settings.MCAP_CACHE_DIR).mkdir(parents=True, exist_ok=True)
+Path(settings.CACHE_DIR).mkdir(parents=True, exist_ok=True)

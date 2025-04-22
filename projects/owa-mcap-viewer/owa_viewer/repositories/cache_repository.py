@@ -41,7 +41,7 @@ class CacheRepository(Generic[T]):
             value: Value to store
             ttl: Time-to-live in seconds (None for no expiration)
         """
-        ttl = ttl or settings.MCAP_CACHE_TTL
+        ttl = ttl or settings.DEFAULLT_CACHE_TTL
         self.cache.set(self._get_key(key), value, expire=ttl)
 
     def delete(self, key: str) -> None:
@@ -64,7 +64,7 @@ class CacheRepository(Generic[T]):
 class FileCacheRepository:
     """Repository for caching files on disk with metadata"""
 
-    def __init__(self, cache_dir: str = settings.MCAP_CACHE_DIR):
+    def __init__(self, cache_dir: str = settings.CACHE_DIR):
         """
         Initialize file cache repository
 
@@ -127,7 +127,7 @@ class FileCacheRepository:
         metadata = {
             "url": url,
             "created_at": time.time(),
-            "expires_at": time.time() + (ttl or settings.MCAP_CACHE_TTL) if ttl is not None else None,
+            "expires_at": time.time() + (ttl or settings.FILE_CACHE_TTL),
             "size": target_path.stat().st_size,
         }
         self.metadata_cache.set(file_id, metadata)
