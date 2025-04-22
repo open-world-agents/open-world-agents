@@ -30,10 +30,11 @@ from owa_game_agent.data.sample_processor import SampleProcessor
 
 # Configuration constants
 WINDOW_NAME = "hexagon"
-FPS = 20
-MAX_SCREEN_FRAMES = 5
+FPS = 10
+MAX_SCREEN_FRAMES = 3
 MODEL_SAMPLE_DELAY = 10.0  # seconds
 TIMESTAMP_INTERVAL = 0.05  # seconds
+INFERENCE_TIME_LIMIT = 0.25
 
 
 # Setup logger for use with tqdm
@@ -183,18 +184,18 @@ class Agent(Runnable):
             elif token.startswith("KEYBOARD"):
                 if not timestamp_list:
                     logger.warning("Found KEYBOARD without TIMESTAMP")
-                    time.sleep(0.25)
+                    time.sleep(INFERENCE_TIME_LIMIT)
                     return
                 ts = timestamp_list.pop(0)
                 vk, state = map(int, token.split("_")[1:])
                 events.append((ts, vk, state, token))
             else:
                 logger.warning(f"Invalid token: {token}")
-                time.sleep(0.25)
+                time.sleep(INFERENCE_TIME_LIMIT)
                 return
 
         if not events:
-            time.sleep(0.25)
+            time.sleep(INFERENCE_TIME_LIMIT)
             return
 
         start = time.time()
@@ -222,7 +223,7 @@ class Agent(Runnable):
             to_sleep = max(0, scheduled_time - time.time())
             logger.info(f"Sleeping for {to_sleep:.2f}s, processing time {processing_time:.2f}s, token {token}")
 
-            if time.time() - s + to_sleep > 0.25:  # if event passes 0.25s, break
+            if time.time() - s + to_sleep > INFERENCE_TIME_LIMIT:  # if event passes time limit, break
                 break
 
             time.sleep(to_sleep)
@@ -236,8 +237,8 @@ class Agent(Runnable):
             self.event_manager.pbar.set_description(f"Executing: {token}, {vk}, {state}")
 
         end = time.time()
-        if end - start < 0.25:
-            time.sleep(max(0, 0.25 - (end - start)))
+        if end - start < INFERENCE_TIME_LIMIT:
+            time.sleep(max(0, INFERENCE_TIME_LIMIT - (end - start)))
 
 
 @contextmanager
