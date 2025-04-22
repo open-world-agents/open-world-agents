@@ -26,7 +26,7 @@ else:
     EXPORT_PATH = Path("./data").as_posix()  # default path for public hosting
 
 logger = logging.getLogger(__name__)
-logger.info(f"{EXPORT_PATH=}")
+logger.info(f"{PUBLIC_HOSTING_MODE=} {EXPORT_PATH=}")
 
 
 MCAP_METADATA_CACHE: dict[str, McapMetadata] = dict()  # key: mcap_filename, value: McapMetadata object

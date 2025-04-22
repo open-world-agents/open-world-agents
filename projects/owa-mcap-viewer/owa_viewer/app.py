@@ -12,7 +12,7 @@ from rich.logging import RichHandler
 from mcap_owa.highlevel import OWAMcapReader
 from owa_viewer.routers import export_file, import_file
 from owa_viewer.schema import McapMetadata, OWAFile
-from owa_viewer.services.file_manager import MCAP_METADATA_CACHE, OWAFILE_CACHE, FileManager, EXPORT_PATH
+from owa_viewer.services.file_manager import MCAP_METADATA_CACHE, OWAFILE_CACHE, PUBLIC_HOSTING_MODE, FileManager
 
 # Set up logging, use rich handler
 logging.basicConfig(
