@@ -90,6 +90,7 @@ nav:
     - data/index.md
     - data/data_format.md
     - data/how_to_explorer_and_edit.md
+    - data/viewer.md
     # - Comparison with other data formats: data/comparison.md # Later
     - Desktop Recorder:
       - Why use OWA's Desktop Recorder: data/recorder/why.md

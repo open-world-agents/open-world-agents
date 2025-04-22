@@ -2,6 +2,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // DOM Elements
     const fileList = document.getElementById('file-list');
+    const uploadedFileList = document.getElementById('uploaded-file-list');
     const videoPlayer = document.getElementById('video-player');
     const videoSource = document.getElementById('video-source');
     const timelineMarker = document.getElementById('timeline-marker');
@@ -27,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastLoadedTime = null;
     let isLoading = false;
     let timelineControls = null;
+    let uploadedFiles = []; // Store uploaded files during session
 
     let isPlaying = false;
     let lastRenderTime = 0;
@@ -48,7 +50,14 @@ document.addEventListener('DOMContentLoaded', () => {
             data.forEach((pair, index) => {
                 const item = document.createElement('div');
                 item.className = 'file-item';
-                item.textContent = pair.basename;
+
+                // Display original filename if available, otherwise use the basename
+                const displayName = pair.original_basename || pair.basename;
+                item.textContent = displayName;
+
+                // Store the unique filename as a data attribute for selection
+                item.dataset.uniqueId = pair.basename;
+
                 item.addEventListener('click', () => loadFilePair(pair));
                 fileList.appendChild(item);
 
@@ -69,16 +78,41 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Function to update uploaded files list
+    function updateUploadedFilesList() {
+        uploadedFileList.innerHTML = '';
+
+        if (uploadedFiles.length === 0) {
+            uploadedFileList.innerHTML = '<div class="file-item-placeholder">No uploaded files yet</div>';
+            return;
+        }
+
+        uploadedFiles.forEach(pair => {
+            const item = document.createElement('div');
+            item.className = 'file-item';
+
+            // Use original filename for display if available
+            const displayName = pair.original_basename || pair.basename;
+            item.textContent = displayName;
+
+            // Store the unique filename as a data attribute for selection
+            item.dataset.uniqueId = pair.basename;
+
+            item.addEventListener('click', () => loadFilePair(pair));
+            uploadedFileList.appendChild(item);
+        });
+    }
+
     // Load a specific MCAP+MKV pair
     async function loadFilePair(pair) {
         try {
             console.log("Loading file pair:", pair);
             currentFile = pair;
 
-            // Update UI to show selected file
+            // Update UI to show selected file - use the unique ID to select only the correct file
             document.querySelectorAll('.file-item').forEach(item => {
                 item.classList.remove('active');
-                if (item.textContent === pair.basename) {
+                if (item.dataset.uniqueId === pair.basename) {
                     item.classList.add('active');
                 }
             });
@@ -770,8 +804,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize the application
     fetchFilePairs();
+    updateUploadedFilesList();
 
-    // Handle file uploads if we're in local mode
+    // Handle file uploads
     const uploadForm = document.getElementById('upload-form');
     const uploadStatus = document.getElementById('upload-status');
 
@@ -791,10 +826,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 const result = await response.json();
+                const file_pair = result;
 
                 if (response.ok) {
                     uploadStatus.textContent = 'Files uploaded successfully!';
                     uploadStatus.className = 'success';
+
+                    console.log("Upload result:", file_pair);
+
+                    // Add the new file to our uploaded files list
+                    uploadedFiles.push(file_pair);
+
+                    // Update the UI
+                    updateUploadedFilesList();
+
+                    // Automatically load the newly uploaded file
+                    loadFilePair(file_pair);
+
+                    console.log("Auto-loading newly uploaded file:", file_pair);
 
                     // Clear the form
                     uploadForm.reset();
