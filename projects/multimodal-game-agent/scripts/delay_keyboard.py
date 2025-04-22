@@ -1,9 +1,10 @@
-from owa.core.registry import CALLABLES, LISTENERS, activate_module
-from owa.env.desktop.constants import VK
-from owa.env.desktop.msg import KeyboardEvent
 import _thread
 import threading
 import time
+
+from owa.core.registry import CALLABLES, LISTENERS, activate_module
+from owa.env.desktop.constants import VK
+from owa.env.desktop.msg import KeyboardEvent
 
 DELAY = 0.4  # seconds
 
@@ -36,6 +37,7 @@ def on_keyboard_event(keyboard_event: KeyboardEvent):
 
 activate_module("owa.env.desktop")
 
+# Setup `block=True` also in Listener. https://pynput.readthedocs.io/en/latest/keyboard.html#pynput.keyboard.Listener
 keyboard_listener = LISTENERS["keyboard"]().configure(callback=on_keyboard_event)
 keyboard_listener.start()
 

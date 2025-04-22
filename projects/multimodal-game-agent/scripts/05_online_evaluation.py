@@ -4,6 +4,7 @@ Captures screen frames and provides keyboard controls based on model predictions
 """
 
 # Standard library imports
+import _thread
 import queue
 import re
 import time
@@ -14,13 +15,12 @@ from copy import deepcopy
 import line_profiler
 import torch
 import typer
-import _thread
-from trigger_speedhack import enable_speedhack, disable_speedhack
 from loguru import logger
 from tqdm import tqdm
 from transformers import AutoModelForImageTextToText, AutoProcessor
-# from transformers.models.smolvlm import SmolVLMProcessor
+from trigger_speedhack import disable_speedhack, enable_speedhack
 
+# from transformers.models.smolvlm import SmolVLMProcessor
 # Local imports
 from owa.core import Runnable
 from owa.core.registry import CALLABLES, LISTENERS, activate_module
