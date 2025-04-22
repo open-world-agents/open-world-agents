@@ -41,7 +41,7 @@ class CacheRepository(Generic[T]):
             value: Value to store
             ttl: Time-to-live in seconds (None for no expiration)
         """
-        ttl = ttl or settings.DEFAULLT_CACHE_TTL
+        ttl = ttl or settings.DEFAULT_CACHE_TTL
         self.cache.set(self._get_key(key), value, expire=ttl)
 
     def delete(self, key: str) -> None:

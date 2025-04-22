@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     # Cache settings
     # MCAP_CACHE_SIZE_LIMIT: int = int(os.environ.get("MCAP_CACHE_SIZE_LIMIT", 1024 * 1024 * 1024))  # 1GB default, not implemented yet
     FILE_CACHE_TTL: int = int(os.environ.get("FILE_CACHE_TTL", 600))  # 10 min default
-    DEFAULLT_CACHE_TTL: int | None = int(os.environ.get("DEFAULT_CACHE_TTL", 3600))  # 1 hour default
+    DEFAULT_CACHE_TTL: int | None = int(os.environ.get("DEFAULT_CACHE_TTL", 3600))  # 1 hour default
     CACHE_DIR: str = os.environ.get("CACHE_DIR", "./cache")
 
     # Server settings

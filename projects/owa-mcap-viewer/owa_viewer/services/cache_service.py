@@ -8,7 +8,7 @@ from ..repositories.cache_repository import CacheRepository, FileCacheRepository
 
 logger = logging.getLogger(__name__)
 
-CLEANUP_PERIOD = min(settings.FILE_CACHE_TTL or 10**9, settings.FILE_LIST_CACHE_TTL or 10**9)
+CLEANUP_PERIOD = min(settings.FILE_CACHE_TTL or 10**9, settings.DEFAULT_CACHE_TTL or 10**9)
 
 
 class CacheService:
