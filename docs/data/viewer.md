@@ -4,7 +4,7 @@ We provide a web-based viewer for users to easily visualize and check OWAMcap da
 
 ## Public hosted
 
-We offer a public hosted viewer at https://huggingface.co/spaces/open-world-agents/visualize_dataset.
+We offer a public hosted viewer at [https://huggingface.co/spaces/open-world-agents/visualize_dataset](https://huggingface.co/spaces/open-world-agents/visualize_dataset).
 
 You can provide a huggingface repo id, or you can also upload your own OWAMcap dataset file via the viewer.
 Note that this public hosted viewer has a 100MB upload file size limit. If you need to upload larger files, you may self-host the viewer.
