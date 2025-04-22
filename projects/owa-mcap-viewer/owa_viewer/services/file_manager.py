@@ -19,10 +19,11 @@ load_dotenv()
 # Configure export path
 EXPORT_PATH = os.environ.get("EXPORT_PATH", None)
 if EXPORT_PATH:
-    EXPORT_PATH = Path(EXPORT_PATH).as_posix()
     PUBLIC_HOSTING_MODE = False
+    EXPORT_PATH = Path(EXPORT_PATH).as_posix()
 else:
     PUBLIC_HOSTING_MODE = True  # if EXPORT_PATH is not set, we are in public hosting mode
+    EXPORT_PATH = Path("./data").as_posix()  # default path for public hosting
 
 logger = logging.getLogger(__name__)
 logger.info(f"{EXPORT_PATH=}")
