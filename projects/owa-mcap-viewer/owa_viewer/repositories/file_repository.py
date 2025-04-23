@@ -1,6 +1,6 @@
 import logging
 import tempfile
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 from typing import List, Tuple
 
 import fsspec
@@ -26,7 +26,7 @@ class FileRepository:
         Args:
             export_path: Path to local file storage
         """
-        self.export_path = export_path
+        self.export_path = Path(export_path).as_posix()
 
     def list_files(self, repo_id: str) -> List[OWAFile]:
         """
@@ -53,7 +53,7 @@ class FileRepository:
         # Find all MCAP files with corresponding MKV files
         files = []
         for mcap_file in fs.glob(f"{path}/**/*.mcap"):
-            mcap_file = PurePosixPath(mcap_file)
+            mcap_file = Path(mcap_file)
 
             # Only include if both MCAP and MKV files exist
             if fs.exists(mcap_file.with_suffix(".mkv")) and fs.exists(mcap_file):
@@ -69,13 +69,13 @@ class FileRepository:
                     # Fix the relative path handling
                     try:
                         # Convert both paths to consistent format before comparison
-                        export_path_posix = PurePosixPath(self.export_path.replace("\\", "/"))
-                        basename_posix = PurePosixPath(basename.replace("\\", "/"))
+                        export_path_posix = Path(self.export_path)
+                        basename_posix = Path(basename)
 
                         # Get the relative part by removing export_path prefix
-                        if basename.replace("\\", "/").startswith(str(export_path_posix)):
+                        if basename.startswith(str(export_path_posix)):
                             # Remove export_path prefix and leading slash if present
-                            rel_path = basename.replace("\\", "/")[len(str(export_path_posix)) :].lstrip("/")
+                            rel_path = basename[len(str(export_path_posix)) :].lstrip("/")
                         else:
                             # If not a direct prefix, use the basename as is
                             rel_path = basename_posix.name

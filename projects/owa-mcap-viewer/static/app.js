@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const windowInfo = document.getElementById('window-info');
     const keyboardDisplay = document.getElementById('keyboard-display');
     const mouseDisplay = document.getElementById('mouse-display');
-    const mouseCursor = document.getElementById('mouse-cursor');
+    let mouseCursor = document.getElementById('mouse-cursor');
     const timeline = document.getElementById('timeline');
     const repoId = window.APP_CONFIG.repoId;
 
@@ -547,9 +547,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Clear the mouse display (keeping the cursor)
-        const cursor = mouseDisplay.querySelector('#mouse-cursor');
+        function ensureMouseCursorExists() {
+            let cursor = mouseDisplay.querySelector('#mouse-cursor');
+            if (!cursor) {
+                cursor = document.createElement('div');
+                cursor.id = 'mouse-cursor';
+                // set any default styles here
+                mouseDisplay.appendChild(cursor);
+            }
+            return cursor;
+        }
+        const cursor = ensureMouseCursorExists();
         mouseDisplay.innerHTML = '';
         mouseDisplay.appendChild(cursor);
+        mouseCursor = cursor;
 
         // Add recent special events if any exist
         if (recentSpecialEvents.length > 0) {
