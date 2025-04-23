@@ -86,8 +86,8 @@ def main():
         for file in modified_files:
             run_git_command(["add", str(file)])
 
-        run_git_command(["commit", "-m", f"chore: update package versions to {version}"])
         tag_name = f"v{version}"
+        run_git_command(["commit", "-m", f"{tag_name}"])
         run_git_command(["tag", tag_name])
 
         print(f"✓ Version updates committed and tagged as {tag_name}.")
