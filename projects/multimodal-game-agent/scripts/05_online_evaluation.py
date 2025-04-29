@@ -30,8 +30,8 @@ from owa_game_agent.data.sample_processor import SampleProcessor
 
 # Configuration constants
 WINDOW_NAME = "hexagon"
-FPS = 10
-MAX_SCREEN_FRAMES = 3
+FPS = 20
+MAX_SCREEN_FRAMES = 5
 MODEL_SAMPLE_DELAY = 10.0  # seconds
 TIMESTAMP_INTERVAL = 0.05  # seconds
 INFERENCE_TIME_LIMIT = 0.25

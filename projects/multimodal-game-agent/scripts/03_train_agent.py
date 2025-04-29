@@ -53,6 +53,12 @@ if __name__ == "__main__":
         help="Path to JSONL file containing queries",
     )
     parser.add_argument(
+        "--eval_query_path",
+        type=str,
+        default=None,
+        help="Path to JSONL file containing evaluation queries",
+    )
+    parser.add_argument(
         "--output_dir",
         type=str,
         default="./output",
@@ -119,18 +125,28 @@ if __name__ == "__main__":
     # Dataset
     ################
     accelerator.print(f"Loading dataset from: {args.query_path}")
-    dataset = SmolVLM2Dataset(args.query_path, repeat_n=args.repeat_n)
+    train_dataset = SmolVLM2Dataset(args.query_path, repeat_n=args.repeat_n)
+    eval_dataset = SmolVLM2Dataset(
+        args.eval_query_path, repeat_n=args.repeat_n
+    ) if args.eval_query_path else None
 
     # Split dataset into train and validation
     rng = np.random.default_rng(
         seed=23
     )  # Needed to reproduce the same split per each run / per each device
-    train_indices = rng.choice(len(dataset), int(0.8 * len(dataset)), replace=False)
-    eval_indices = np.setdiff1d(np.arange(len(dataset)), train_indices)
 
     # Define train and eval datasets
-    train_dataset = Subset(dataset, train_indices)
-    eval_dataset = Subset(dataset, eval_indices)
+    if eval_dataset is None:
+        # Split the dataset into train and eval sets
+        rng.shuffle(train_dataset)
+        train_indices = rng.choice(
+            len(train_dataset), int(0.8 * len(train_dataset)), replace=False
+        )
+        eval_indices = np.setdiff1d(np.arange(len(train_dataset)), train_indices)
+
+        # Define train and eval datasets
+        train_dataset = Subset(train_dataset, train_indices)
+        eval_dataset = Subset(train_dataset, eval_indices)
 
     # Set seed for dataset loading
     set_seed(
