@@ -11,9 +11,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import typer
-from typing_extensions import Annotated
 from accelerate.utils import set_seed
 from tqdm import tqdm
+from typing_extensions import Annotated
 
 from mcap_owa.highlevel import OWAMcapReader
 from owa.core.time import TimeUnits
@@ -81,9 +81,7 @@ def extract_query(mcap_file: Path) -> list[OWAMcapQuery]:
     # Parallelizing query.to_sample()
     with ProcessPoolExecutor(max_workers=16) as executor:
         futures = {executor.submit(process_query, query): query for query in query_list}
-        for future in tqdm(
-            as_completed(futures), total=len(futures), desc="Processing queries"
-        ):
+        for future in tqdm(as_completed(futures), total=len(futures), desc="Processing queries"):
             result = future.result()
             if result:
                 queries.append(result)

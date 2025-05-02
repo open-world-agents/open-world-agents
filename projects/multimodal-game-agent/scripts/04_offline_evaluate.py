@@ -11,9 +11,7 @@ from owa_game_agent.data.datasets.smolvlm2 import SmolVLM2Dataset
 
 def evaluate(model, processor: SmolVLMProcessor, dataset: SmolVLM2Dataset):
     # Split dataset into train and validation
-    rng = np.random.default_rng(
-        seed=23
-    )  # Needed to reproduce the same split per each run / per each device
+    rng = np.random.default_rng(seed=23)  # Needed to reproduce the same split per each run / per each device
     train_indices = rng.choice(len(dataset), int(0.8 * len(dataset)), replace=False)
     eval_indices = np.setdiff1d(np.arange(len(dataset)), train_indices)
 
@@ -73,19 +71,12 @@ def evaluate_step(model, processor: SmolVLMProcessor, examples):
         assistant_prompt = ex["messages"].pop(-1)
         # BUG: Surprisingly, SmolVLM processor does NOT append "Assistant: " as generation prompt, but append "Assistant:"!
         # SEVERE bug because single space can be critical for the model to generate the correct response.
-        texts.append(
-            processor.apply_chat_template(
-                ex["messages"], tokenize=False, add_generation_prompt=True
-            )
-            + " "
-        )
+        texts.append(processor.apply_chat_template(ex["messages"], tokenize=False, add_generation_prompt=True) + " ")
         labels.append(assistant_prompt["content"][0]["text"])
         images.append(ex["images"])
 
     # Tokenize the texts and process the images
-    batch = processor(text=texts, images=images, return_tensors="pt", padding=True).to(
-        model.device, dtype=model.dtype
-    )
+    batch = processor(text=texts, images=images, return_tensors="pt", padding=True).to(model.device, dtype=model.dtype)
 
     input_ids = batch["input_ids"]  # noqa: F841
     attention_mask = batch["attention_mask"]  # noqa: F841
@@ -110,9 +101,7 @@ def evaluate_step(model, processor: SmolVLMProcessor, examples):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Train SmolVLM model on OWA game queries"
-    )
+    parser = argparse.ArgumentParser(description="Train SmolVLM model on OWA game queries")
     parser.add_argument(
         "--query_path",
         type=str,
