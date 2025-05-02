@@ -43,9 +43,7 @@ from trl import SFTConfig, SFTTrainer
 from owa_game_agent.data.datasets.smolvlm2 import SmolVLM2Dataset, collate_fn
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Train SmolVLM model on OWA game queries"
-    )
+    parser = argparse.ArgumentParser(description="Train SmolVLM model on OWA game queries")
     parser.add_argument(
         "--query_path",
         type=str,
@@ -70,24 +68,16 @@ if __name__ == "__main__":
         default="HuggingFaceTB/SmolVLM2-500M-Video-Instruct",
         help="Model ID",
     )
-    parser.add_argument(
-        "--num_epochs", type=int, default=20, help="Number of training epochs"
-    )
-    parser.add_argument(
-        "--batch_size", type=int, default=8, help="Batch size per device"
-    )
+    parser.add_argument("--num_epochs", type=int, default=20, help="Number of training epochs")
+    parser.add_argument("--batch_size", type=int, default=8, help="Batch size per device")
     parser.add_argument(
         "--gradient_accumulation_steps",
         type=int,
         default=1,
         help="Gradient accumulation steps",
     )
-    parser.add_argument(
-        "--learning_rate", type=float, default=4e-5, help="Learning rate"
-    )
-    parser.add_argument(
-        "--save_steps", type=int, default=1000, help="Save checkpoint every X steps"
-    )
+    parser.add_argument("--learning_rate", type=float, default=4e-5, help="Learning rate")
+    parser.add_argument("--save_steps", type=int, default=1000, help="Save checkpoint every X steps")
     parser.add_argument(
         "--repeat_n",
         type=int,
@@ -126,22 +116,16 @@ if __name__ == "__main__":
     ################
     accelerator.print(f"Loading dataset from: {args.query_path}")
     train_dataset = SmolVLM2Dataset(args.query_path, repeat_n=args.repeat_n)
-    eval_dataset = SmolVLM2Dataset(
-        args.eval_query_path, repeat_n=args.repeat_n
-    ) if args.eval_query_path else None
+    eval_dataset = SmolVLM2Dataset(args.eval_query_path, repeat_n=1) if args.eval_query_path else None
 
     # Split dataset into train and validation
-    rng = np.random.default_rng(
-        seed=23
-    )  # Needed to reproduce the same split per each run / per each device
+    rng = np.random.default_rng(seed=23)  # Needed to reproduce the same split per each run / per each device
 
     # Define train and eval datasets
     if eval_dataset is None:
         # Split the dataset into train and eval sets
         rng.shuffle(train_dataset)
-        train_indices = rng.choice(
-            len(train_dataset), int(0.8 * len(train_dataset)), replace=False
-        )
+        train_indices = rng.choice(len(train_dataset), int(0.8 * len(train_dataset)), replace=False)
         eval_indices = np.setdiff1d(np.arange(len(train_dataset)), train_indices)
 
         # Define train and eval datasets
@@ -149,9 +133,7 @@ if __name__ == "__main__":
         eval_dataset = Subset(train_dataset, eval_indices)
 
     # Set seed for dataset loading
-    set_seed(
-        23, device_specific=True
-    )  # device_specific must be True for multiple devices to load different data
+    set_seed(23, device_specific=True)  # device_specific must be True for multiple devices to load different data
 
     ################
     # Training arguments
