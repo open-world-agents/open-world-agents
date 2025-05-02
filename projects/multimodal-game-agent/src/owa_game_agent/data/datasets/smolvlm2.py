@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Any, List
 
+import albumentations as A
 import cv2
 import line_profiler
 import numpy as np
@@ -46,7 +47,7 @@ def pad_to_square(image: Image.Image) -> Image.Image:
 
 
 @line_profiler.profile  # profile: 0.266s
-def sample_to_smolvlm_input(sample: OWATrainingSample) -> SmolVLMInput:
+def sample_to_smolvlm_input(sample: OWATrainingSample, rotate_augment=False) -> SmolVLMInput:
     """
     Convert an OWATrainingSample to a SmolvlmInput object.
 
@@ -74,6 +75,28 @@ def sample_to_smolvlm_input(sample: OWATrainingSample) -> SmolVLMInput:
 
     # SmolVLM2 only takes a square image, so we will pad the images to make them square
     state_screen = [pad_to_square(image) for image in state_screen]
+
+    if rotate_augment:
+        # Rotate randomly with center (256, 256)
+        additional_targets = {}
+        for i in range(1, len(state_screen)):
+            additional_targets[f"image_{i}"] = "image"
+
+        transform = A.Compose(
+            [
+                A.Rotate(limit=(-180, 180), p=1.0),
+                A.CenterCrop(256, 256, p=1.0),
+                A.Resize(512, 512, p=1.0),
+            ],
+            additional_targets=additional_targets,
+        )
+        state_screen = [np.asarray(image) for image in state_screen]
+        state_screen = transform(
+            image=state_screen[0], **{f"image_{i}": image for i, image in enumerate(state_screen[1:], start=1)}
+        )
+        state_screen = [state_screen["image"]] + [state_screen[f"image_{i}"] for i in range(1, len(state_screen))]
+        # Convert to PIL image
+        state_screen = [Image.fromarray(image) for image in state_screen]
 
     # # resize to 512x512
     # state_screen = [image.resize((512, 512), Image.BICUBIC) for image in state_screen]
