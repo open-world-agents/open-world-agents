@@ -4,6 +4,7 @@ Script to update uv.lock files and commit changes.
 Updates lock files in projects and commits the changes.
 """
 
+import argparse
 import subprocess
 from pathlib import Path
 
@@ -48,7 +49,19 @@ def run_git_command(command: list[str]) -> None:
     return result.stdout.strip()
 
 
+def parse_arguments():
+    """Parse command-line arguments."""
+    parser = argparse.ArgumentParser(description="Update uv.lock files and optionally commit changes.")
+    parser.add_argument(
+        "--commit",
+        action="store_true",
+        help="Commit changes to git after updating uv.lock files.",
+    )
+    return parser.parse_args()
+
+
 def main():
+    args = parse_arguments()
     print("Updating uv.lock files...")
 
     # Find all project directories
@@ -70,7 +83,7 @@ def main():
         print("=======================")
 
     # Commit changes if any
-    if modified_dirs:
+    if args.commit and modified_dirs:
         print("Committing uv.lock updates...")
         for package_dir in modified_dirs:
             uv_lock_file = package_dir / "uv.lock"
@@ -82,10 +95,12 @@ def main():
         print("")
         print("To push changes to the remote repository:")
         print("  git push origin main")
+    elif not args.commit:
+        print("Skipping git commit as per the CLI argument.")
     else:
         print("No uv.lock files were modified. Nothing to commit.")
 
-    print("All uv.lock files have been updated and committed!")
+    print("All uv.lock files have been updated!")
 
 
 if __name__ == "__main__":
