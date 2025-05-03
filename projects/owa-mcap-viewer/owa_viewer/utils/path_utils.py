@@ -15,23 +15,11 @@ def safe_join(base_dir: str, *paths: str) -> Optional[Path]:
         Path object if safe, None if path would escape base directory
     """
     base = Path(base_dir).resolve()
+    target = (base / Path(*paths)).resolve()
 
-    # Reject paths with suspicious components
-    for part in paths:
-        if not part or ".." in part.split("/") or part.startswith("/"):
-            return None
-
-    # Join and validate
-    try:
-        target = (base / Path(*paths)).resolve()
-
-        # Ensure the target is a subpath of base_dir
-        if not str(target).startswith(str(base)):
-            return None
-
-        return target
-    except (ValueError, TypeError):
+    if not target.is_relative_to(base):
         return None
+    return target
 
 
 def extract_original_filename(filename: str) -> Optional[str]:

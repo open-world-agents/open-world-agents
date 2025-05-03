@@ -40,6 +40,7 @@ class FileService:
         # Get fresh list and cache it
         files = self.file_repository.list_files(repo_id)
         cache_service.set_file_list(repo_id, files)
+        logger.info(f"Cache miss for file list in {repo_id}, fetched {len(files)} files")
         return files
 
     def get_file_path(self, file_url: str, is_local: bool) -> Tuple[Path, bool]:
