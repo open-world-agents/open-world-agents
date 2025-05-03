@@ -4,7 +4,6 @@ Script to update uv.lock files and commit changes.
 Updates lock files in projects and commits the changes.
 """
 
-import argparse
 import subprocess
 from pathlib import Path
 
@@ -50,10 +49,6 @@ def run_git_command(command: list[str]) -> None:
 
 
 def main():
-    # Parse arguments
-    parser = argparse.ArgumentParser(description="Update uv.lock files and commit changes")
-    args = parser.parse_args()
-
     print("Updating uv.lock files...")
 
     # Find all project directories
