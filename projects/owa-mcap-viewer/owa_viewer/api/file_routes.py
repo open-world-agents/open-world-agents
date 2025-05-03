@@ -23,7 +23,9 @@ async def list_files(repo_id: str) -> List[OWAFile]:
         List of OWAFile objects
     """
     try:
-        return file_service.list_files(repo_id)
+        files = file_service.list_files(repo_id)
+        logger.info(f"Fetched {len(files)} files for repo_id: {repo_id}")
+        return files
     except AppError as e:
         # Re-raise application errors
         raise e

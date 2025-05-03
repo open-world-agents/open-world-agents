@@ -56,7 +56,7 @@ class FileRepository:
             mcap_file = Path(mcap_file)
 
             # Only include if both MCAP and MKV files exist
-            if fs.exists(mcap_file.with_suffix(".mkv")) and fs.exists(mcap_file):
+            if fs.exists(mcap_file.with_suffix(".mkv").as_posix()) and fs.exists(mcap_file.as_posix()):
                 basename = (mcap_file.parent / mcap_file.stem).as_posix()
 
                 # Extract original basename for local files
@@ -69,16 +69,11 @@ class FileRepository:
                     # Fix the relative path handling
                     try:
                         # Convert both paths to consistent format before comparison
-                        export_path_posix = Path(self.export_path)
-                        basename_posix = Path(basename)
+                        export_path_posix = Path(self.export_path).resolve()
+                        basename_posix = Path(basename).resolve()
 
                         # Get the relative part by removing export_path prefix
-                        if basename.startswith(str(export_path_posix)):
-                            # Remove export_path prefix and leading slash if present
-                            rel_path = basename[len(str(export_path_posix)) :].lstrip("/")
-                        else:
-                            # If not a direct prefix, use the basename as is
-                            rel_path = basename_posix.name
+                        rel_path = basename_posix.relative_to(export_path_posix).as_posix()
 
                         url = rel_path
                     except ValueError:
@@ -100,7 +95,8 @@ class FileRepository:
                         basename=mcap_file.stem,
                         original_basename=original_basename,
                         url=url,
-                        size=fs.info(mcap_file).get("size", 0),
+                        size=fs.info(mcap_file.with_suffix(".mkv").as_posix()).get("size", 0)
+                        + fs.info(mcap_file.as_posix()).get("size", 0),
                         local=local,
                         url_mcap=f"{url}.mcap" if url else f"{mcap_file.stem}.mcap",
                         url_mkv=f"{url}.mkv" if url else f"{mcap_file.stem}.mkv",
@@ -119,6 +115,7 @@ class FileRepository:
             Absolute path to the file
         """
         full_path = safe_join(self.export_path, file_path)
+        print(self.export_path, file_path, full_path)
         if not full_path or not full_path.exists():
             raise FileNotFoundError(file_path)
         return full_path

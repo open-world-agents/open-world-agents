@@ -10,7 +10,7 @@ def get_local_version() -> str:
         from importlib_metadata import version
 
     try:
-        __version__ = version("owa")
+        __version__ = version("owa.cli")
     except Exception:
         __version__ = "unknown"
 
