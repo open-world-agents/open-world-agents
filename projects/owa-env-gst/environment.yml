@@ -6,10 +6,10 @@ channels:
 dependencies:
   - python=3.11
   - pygobject
-  - gst-python==1.24.6
-  - gst-libav==1.24.6
-  - gstreamer==1.24.6
-  - gst-plugins-base==1.24.6
-  - gst-plugins-good==1.24.6
-  - gst-plugins-bad==1.24.6
-  - gst-plugins-ugly==1.24.6
+  - gst-python==1.24.11
+  - gst-libav==1.24.11
+  - gstreamer==1.24.11
+  - gst-plugins-base==1.24.11
+  - gst-plugins-good==1.24.11
+  - gst-plugins-bad==1.24.11
+  - gst-plugins-ugly==1.24.11
