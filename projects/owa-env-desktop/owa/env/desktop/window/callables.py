@@ -66,7 +66,7 @@ def get_window_by_title(window_title_substring: str) -> WindowInfo:
         if "Conda" in windows[0].title:
             windows.pop(0)
 
-        window = windows[0]
+        window = windows[0]  # NOTE: only return the first window matching the title
         rect = window._getWindowRect()
         return WindowInfo(
             title=window.title,
@@ -75,12 +75,7 @@ def get_window_by_title(window_title_substring: str) -> WindowInfo:
         )
 
     elif _IS_DARWIN:
-        from Quartz import (
-            CGWindowListCopyWindowInfo,
-            kCGNullWindowID,
-            kCGWindowLayer,
-            kCGWindowListOptionOnScreenOnly,
-        )
+        from Quartz import CGWindowListCopyWindowInfo, kCGNullWindowID, kCGWindowLayer, kCGWindowListOptionOnScreenOnly
 
         windows = CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly, kCGNullWindowID)
         for window in windows:
@@ -158,8 +153,32 @@ def is_active(window_title_substring: str):
 
 # === Registry ===
 
+
+def make_active(window_title_substring: str):
+    """Make the window with the title containing the substring active."""
+
+    os_name = platform.system()
+    if os_name == "Windows":
+        import pygetwindow as gw
+
+        windows = gw.getWindowsWithTitle(window_title_substring)
+        if not windows:
+            raise ValueError(f"No window with title containing '{window_title_substring}' found.")
+
+        # Temporal workaround to deal with `cmd`'s behavior: it setup own title as the command it running.
+        # e.g. `owl window find abcd` will always find `cmd` window itself running command.
+        if "Conda" in windows[0].title:
+            windows.pop(0)
+
+        window = windows[0]  # NOTE: only return the first window matching the title
+        window.activate()
+    else:
+        raise NotImplementedError(f"Activation not implemented for this OS: {os_name}")
+
+
 CALLABLES.register("window.get_active_window")(get_active_window)
 CALLABLES.register("window.get_window_by_title")(get_window_by_title)
 CALLABLES.register("window.get_pid_by_title")(get_pid_by_title)
 CALLABLES.register("window.when_active")(when_active)
 CALLABLES.register("window.is_active")(is_active)
+CALLABLES.register("window.make_active")(make_active)

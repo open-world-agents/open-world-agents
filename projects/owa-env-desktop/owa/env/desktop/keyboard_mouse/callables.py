@@ -71,3 +71,10 @@ def get_mouse_state():
 @CALLABLES.register("keyboard.get_state")
 def get_keyboard_state():
     return KeyboardState(buttons=get_vk_state())
+
+
+@CALLABLES.register("keyboard.release_all_keys")
+def release_all_keys():
+    keyboard_state: KeyboardState = get_keyboard_state()
+    for key in keyboard_state.buttons:
+        release(key)
