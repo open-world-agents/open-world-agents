@@ -1,6 +1,17 @@
 """
 ====================================================================
-     Dataset Processing Pipeline Overview - Spec Driven
+    Definition of Dataset for E2E Agent Training
+====================================================================
+
+"Dataset" may be defined as table containing following columns:
+- Source file: Path to the raw data file (e.g., MCAP, etc.)
+- Timestamp: Specific time point in the raw data file.
+    This timestamp is regarded as the "now" time in the agent system.
+- Sampling weight: Weight for sampling the data at this timestamp.
+    Common data may have a lower sampling weight, while rare data may have a higher sampling weight.
+
+====================================================================
+    Dataset Processing Pipeline Overview - Spec Driven
 ====================================================================
 
                     +-----------------------+
@@ -28,11 +39,11 @@
                     |       (MyDataset)      |
                     +------------------------+
 
-  Shared Spec
-  ───────────
-      PerceptionSamplingSpec (core/spec.py)
-          └─ Defines: topics/modalities, time window, sampling interval (uniform/discrete), etc.
-          └─ Always passed to both the reader (perception sampling) and the processor (model input builder).
+    Shared Spec
+    ───────────
+        PerceptionSamplingSpec (core/spec.py)
+            └─ Defines: topics/modalities, time window, sampling interval (uniform/discrete), etc.
+            └─ Always passed to both the reader (perception sampling) and the processor (model input builder).
 
 ----------------------------------------------------------------------
 Data Processing Cycle:
