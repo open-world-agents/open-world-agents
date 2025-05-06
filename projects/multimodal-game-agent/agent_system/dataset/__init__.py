@@ -10,6 +10,9 @@
 - Sampling weight: Weight for sampling the data at this timestamp.
     Common data may have a lower sampling weight, while rare data may have a higher sampling weight.
 
+Further preprocessing is defined separately from the dataset definition.
+Following contents introduces the preprocessing part:
+
 ====================================================================
     Dataset Processing Pipeline Overview - Spec Driven
 ====================================================================
