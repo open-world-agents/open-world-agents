@@ -717,32 +717,28 @@
 <h3 id="custom-envplugin-example">Custom EnvPlugin Example<a class="headerlink" href="#custom-envplugin-example" title="Permanent link">¶</a></h3>
 <p>Also, you can register your own EnvPlugin which contains custom <strong>Callable</strong>, <strong>Listener</strong>, or <strong>Runnable</strong>. For more information, see <a href="../custom_plugins/">Custom EnvPlugin</a>.</p>
 <p><em>Creating custom plugins allows you to extend the OWA environment with your own functionalities.</em></p>
-<p><div class="highlight"><pre><span></span><code><a href="#__codelineno-5-1" id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="c1"># Creating a custom module</span>
-<a href="#__codelineno-5-2" id="__codelineno-5-2" name="__codelineno-5-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.core.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">CALLABLES</span><span class="p">,</span> <span class="n">LISTENERS</span>
-<a href="#__codelineno-5-3" id="__codelineno-5-3" name="__codelineno-5-3"></a>
-<a href="#__codelineno-5-4" id="__codelineno-5-4" name="__codelineno-5-4"></a><span class="c1"># Register your custom callables</span>
-<a href="#__codelineno-5-5" id="__codelineno-5-5" name="__codelineno-5-5"></a><span class="nd">@CALLABLES</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">"my_module.add"</span><span class="p">)</span>
-<a href="#__codelineno-5-6" id="__codelineno-5-6" name="__codelineno-5-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">Add</span><span class="p">:</span>
-<a href="#__codelineno-5-7" id="__codelineno-5-7" name="__codelineno-5-7"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
-<a href="#__codelineno-5-8" id="__codelineno-5-8" name="__codelineno-5-8"></a>        <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
+<p><div class="highlight"><pre><span></span><code><a href="#__codelineno-5-1" id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<a href="#__codelineno-5-2" id="__codelineno-5-2" name="__codelineno-5-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">Listener</span>
+<a href="#__codelineno-5-3" id="__codelineno-5-3" name="__codelineno-5-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.core.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">CALLABLES</span><span class="p">,</span> <span class="n">LISTENERS</span>
+<a href="#__codelineno-5-4" id="__codelineno-5-4" name="__codelineno-5-4"></a>
+<a href="#__codelineno-5-5" id="__codelineno-5-5" name="__codelineno-5-5"></a><span class="c1"># Register your custom callables</span>
+<a href="#__codelineno-5-6" id="__codelineno-5-6" name="__codelineno-5-6"></a><span class="nd">@CALLABLES</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">"my_module.add"</span><span class="p">)</span>
+<a href="#__codelineno-5-7" id="__codelineno-5-7" name="__codelineno-5-7"></a><span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+<a href="#__codelineno-5-8" id="__codelineno-5-8" name="__codelineno-5-8"></a>    <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
 <a href="#__codelineno-5-9" id="__codelineno-5-9" name="__codelineno-5-9"></a>
 <a href="#__codelineno-5-10" id="__codelineno-5-10" name="__codelineno-5-10"></a><span class="c1"># Register a custom listener</span>
 <a href="#__codelineno-5-11" id="__codelineno-5-11" name="__codelineno-5-11"></a><span class="nd">@LISTENERS</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">"my_module/events"</span><span class="p">)</span>
-<a href="#__codelineno-5-12" id="__codelineno-5-12" name="__codelineno-5-12"></a><span class="k">class</span><span class="w"> </span><span class="nc">EventListener</span><span class="p">:</span>
-<a href="#__codelineno-5-13" id="__codelineno-5-13" name="__codelineno-5-13"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">configure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">callback</span><span class="p">):</span>
-<a href="#__codelineno-5-14" id="__codelineno-5-14" name="__codelineno-5-14"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">callback</span> <span class="o">=</span> <span class="n">callback</span>
-<a href="#__codelineno-5-15" id="__codelineno-5-15" name="__codelineno-5-15"></a>        <span class="k">return</span> <span class="bp">self</span>
-<a href="#__codelineno-5-16" id="__codelineno-5-16" name="__codelineno-5-16"></a>
-<a href="#__codelineno-5-17" id="__codelineno-5-17" name="__codelineno-5-17"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<a href="#__codelineno-5-18" id="__codelineno-5-18" name="__codelineno-5-18"></a>        <span class="c1"># Start listening for events</span>
-<a href="#__codelineno-5-19" id="__codelineno-5-19" name="__codelineno-5-19"></a>        <span class="k">pass</span>
+<a href="#__codelineno-5-12" id="__codelineno-5-12" name="__codelineno-5-12"></a><span class="k">class</span><span class="w"> </span><span class="nc">EventListener</span><span class="p">(</span><span class="n">Listener</span><span class="p">):</span>
+<a href="#__codelineno-5-13" id="__codelineno-5-13" name="__codelineno-5-13"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">on_configure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+<a href="#__codelineno-5-14" id="__codelineno-5-14" name="__codelineno-5-14"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="n">args</span>
+<a href="#__codelineno-5-15" id="__codelineno-5-15" name="__codelineno-5-15"></a>
+<a href="#__codelineno-5-16" id="__codelineno-5-16" name="__codelineno-5-16"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">loop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">stop_event</span><span class="p">,</span> <span class="n">callback</span><span class="p">):</span>
+<a href="#__codelineno-5-17" id="__codelineno-5-17" name="__codelineno-5-17"></a>        <span class="k">while</span> <span class="ow">not</span> <span class="n">stop_event</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
+<a href="#__codelineno-5-18" id="__codelineno-5-18" name="__codelineno-5-18"></a>            <span class="n">callback</span><span class="p">(</span><span class="s2">"Event"</span><span class="p">)</span>
+<a href="#__codelineno-5-19" id="__codelineno-5-19" name="__codelineno-5-19"></a>            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 <a href="#__codelineno-5-20" id="__codelineno-5-20" name="__codelineno-5-20"></a>
-<a href="#__codelineno-5-21" id="__codelineno-5-21" name="__codelineno-5-21"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<a href="#__codelineno-5-22" id="__codelineno-5-22" name="__codelineno-5-22"></a>        <span class="c1"># Stop listening</span>
-<a href="#__codelineno-5-23" id="__codelineno-5-23" name="__codelineno-5-23"></a>        <span class="k">pass</span>
-<a href="#__codelineno-5-24" id="__codelineno-5-24" name="__codelineno-5-24"></a>
-<a href="#__codelineno-5-25" id="__codelineno-5-25" name="__codelineno-5-25"></a><span class="c1"># Using the custom module</span>
-<a href="#__codelineno-5-26" id="__codelineno-5-26" name="__codelineno-5-26"></a><span class="n">result</span> <span class="o">=</span> <span class="n">CALLABLES</span><span class="p">[</span><span class="s2">"my_module.add"</span><span class="p">](</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>  <span class="c1"># Returns 8</span>
+<a href="#__codelineno-5-21" id="__codelineno-5-21" name="__codelineno-5-21"></a><span class="c1"># Using the custom module</span>
+<a href="#__codelineno-5-22" id="__codelineno-5-22" name="__codelineno-5-22"></a><span class="n">result</span> <span class="o">=</span> <span class="n">CALLABLES</span><span class="p">[</span><span class="s2">"my_module.add"</span><span class="p">](</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>  <span class="c1"># Returns 8</span>
 </code></pre></div>
 <em>In this example, we define a custom module with an add function and a custom event listener.</em></p>
 <h2 id="architecture-summary">Architecture Summary<a class="headerlink" href="#architecture-summary" title="Permanent link">¶</a></h2>
@@ -769,7 +765,7 @@
 <span class="md-icon" title="Last update">
 <svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"></path></svg>
 </span>
-<span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="April 18, 2025 02:27:39">April 18, 2025 02:27:39</span>
+<span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="May 6, 2025 08:39:22">May 6, 2025 08:39:22</span>
 </span>
 </aside>
 </article>
