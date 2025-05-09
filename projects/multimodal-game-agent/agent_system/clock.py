@@ -10,7 +10,17 @@ class Clock:
         self._is_paused = False
         self._pause_start = None  # Tracks when pause started
 
-    def get_time(self):
+    def get_time(self, unit="s"):
+        """
+        Returns the elapsed time since the clock started, excluding any time spent in the paused state.
+        """
+        time_ns = self._get_time_ns()
+        if unit == "ns":
+            return time_ns
+        elif unit == "s":
+            return time_ns / 1_000_000_000
+
+    def get_time_ns(self):
         """
         Returns the elapsed time in nanoseconds since the clock started,
         excluding any time spent in the paused state.
@@ -39,6 +49,16 @@ class Clock:
             # Add the duration of the pause to the paused time
             self._paused_time += (time.time_ns() - self._start_time) - self._pause_start
             self._pause_start = None  # Reset pause start
+
+    def sleep(self, duration: float):
+        """
+        Sleeps for the specified duration in seconds.
+        """
+        time.sleep(duration)
+
+
+def get_default_clock():
+    return Clock()
 
 
 if __name__ == "__main__":
