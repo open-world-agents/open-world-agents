@@ -12,10 +12,11 @@ import typer
 app = typer.Typer(
     help="""
 Analyze frame types and patterns in a video file.
-Video resize command is TODO; for now, run commands as `ffmpeg -i 0319_2.mkv -filter:v "crop=586:794:1504:450,fps=60" -c:v libx265 -x265-params "keyint=30:no-scenecut=1:bframes=0" -c:a copy 0319_22.mkv`
+Video resize command is TODO.
 """
 )
 
+# `ffmpeg -i 0319_2.mkv -filter:v "crop=586:794:1504:450,fps=60" -c:v libx265 -x265-params "keyint=30:no-scenecut=1:bframes=0" -c:a copy 0319_22.mkv`
 # TODO: add `gst-discoverer-1.0.exe`
 
 
