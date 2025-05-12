@@ -131,29 +131,25 @@ Also, you can register your own EnvPlugin which contains custom **Callable**, **
 *Creating custom plugins allows you to extend the OWA environment with your own functionalities.*
 
 ```python
-# Creating a custom module
+import time
+from owa.core import Listener
 from owa.core.registry import CALLABLES, LISTENERS
 
 # Register your custom callables
 @CALLABLES.register("my_module.add")
-class Add:
-    def __call__(self, a, b):
-        return a + b
+def __call__(a, b):
+    return a + b
 
 # Register a custom listener
 @LISTENERS.register("my_module/events")
-class EventListener:
-    def configure(self, callback):
-        self.callback = callback
-        return self
+class EventListener(Listener):
+    def on_configure(self, *args):
+        self.args = args
         
-    def start(self):
-        # Start listening for events
-        pass
-        
-    def stop(self):
-        # Stop listening
-        pass
+    def loop(self, *, stop_event, callback):
+        while not stop_event.is_set():
+            callback("Event")
+            time.sleep(1)
 
 # Using the custom module
 result = CALLABLES["my_module.add"](5, 3)  # Returns 8

@@ -97,6 +97,14 @@ def record(
         Optional[str], typer.Option(help="The name of the window to capture, substring of window name is supported")
     ] = None,
     monitor_idx: Annotated[Optional[int], typer.Option(help="The index of the monitor to capture")] = None,
+    width: Annotated[
+        Optional[int],
+        typer.Option(help="The width of the video. If None, the width will be determined by the source."),
+    ] = None,
+    height: Annotated[
+        Optional[int],
+        typer.Option(help="The height of the video. If None, the height will be determined by the source."),
+    ] = None,
     additional_args: Annotated[
         Optional[str],
         typer.Option(
@@ -151,6 +159,8 @@ def record(
         show_cursor=show_cursor,
         window_name=window_name,
         monitor_idx=monitor_idx,
+        width=width,
+        height=height,
         additional_properties=additional_properties,
         callback=screen_publisher_callback,
     )

@@ -31,6 +31,8 @@ class ElementFactory:
         fps: float = 60.0,
         window_name: Optional[str] = None,
         monitor_idx: Optional[int] = None,
+        width: Optional[int] = None,
+        height: Optional[int] = None,
         additional_properties: Optional[dict] = None,
     ):
         """https://gstreamer.freedesktop.org/documentation/d3d11/d3d11screencapturesrc.html?gi-language=python"""
@@ -55,12 +57,14 @@ class ElementFactory:
         if additional_properties is not None:
             properties.update(additional_properties)
 
-        framerate = f"framerate=0/1,max-framerate={framerate_float_to_str(fps)}"
+        framerate = f",framerate=0/1,max-framerate={framerate_float_to_str(fps)}"
+        size = f",width={width},height={height}" if width and height else ""
 
         return (
             Element("d3d11screencapturesrc", properties)
             >> Element("videorate", {"drop-only": "true"})
-            >> ElementFactory.capsfilter(caps=f"video/x-raw(memory:D3D11Memory),{framerate}")
+            >> Element("d3d11scale")
+            >> ElementFactory.capsfilter(caps="video/x-raw(memory:D3D11Memory)" + framerate + size)
         )
 
     @staticmethod

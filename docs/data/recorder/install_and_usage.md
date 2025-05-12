@@ -34,25 +34,40 @@ The OWA Recorder can be used to capture screen, audio, and various desktop event
 
 To start recording, use the following command:
 ```sh
-owl mcap record --help
-                                                                                                                                                
- Usage: owl mcap record [OPTIONS] FILE_LOCATION                                                                                                       
+$ owl mcap record --help
+ Usage: owl mcap record [OPTIONS] FILE_LOCATION
 
-╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *    file_location      TEXT  The location of the output file, use `.mkv` extension. [default: None] [required]                              │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Options ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --record-audio          --no-record-audio                 Whether to record audio [default: record-audio]                                    │
-│ --record-video          --no-record-video                 Whether to record video [default: record-video]                                    │
-│ --record-timestamp      --no-record-timestamp             Whether to record timestamp [default: record-timestamp]                            │
-│ --window-name                                    TEXT     The name of the window to capture, substring of window name is supported           │
-│                                                           [default: None]                                                                    │
-│ --monitor-idx                                    INTEGER  The index of the monitor to capture [default: None]                                │
-│ --install-completion                                      Install completion for the current shell.                                          │
-│ --show-completion                                         Show completion for the current shell, to copy it or customize the installation.   │
-│ --help                                                    Show this message and exit.                                                        │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Record screen, keyboard, mouse, and window events to an `.mcap` and `.mkv` file.
 
+
+╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ *    file_location      PATH  The location of the output file. If `output.mcap` is given as argument, the output     │
+│                               file would be `output.mcap` and `output.mkv`.                                          │
+│                               [default: None]                                                                        │
+│                               [required]                                                                             │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --record-audio        --no-record-audio                 Whether to record audio [default: record-audio]              │
+│ --record-video        --no-record-video                 Whether to record video [default: record-video]              │
+│ --record-timestamp    --no-record-timestamp             Whether to record timestamp [default: record-timestamp]      │
+│ --show-cursor         --no-show-cursor                  Whether to show the cursor in the capture                    │
+│                                                         [default: show-cursor]                                       │
+│ --window-name                                  TEXT     The name of the window to capture, substring of window name  │
+│                                                         is supported                                                 │
+│                                                         [default: None]                                              │
+│ --monitor-idx                                  INTEGER  The index of the monitor to capture [default: None]          │
+│ --width                                        INTEGER  The width of the video. If None, the width will be           │
+│                                                         determined by the source.                                    │
+│                                                         [default: None]                                              │
+│ --height                                       INTEGER  The height of the video. If None, the height will be         │
+│                                                         determined by the source.                                    │
+│                                                         [default: None]                                              │
+│ --additional-args                              TEXT     Additional arguments to pass to the pipeline. For detail,    │
+│                                                         see                                                          │
+│                                                         https://gstreamer.freedesktop.org/documentation/d3d11/d3d11… │
+│                                                         [default: None]                                              │
+│ --help                                                  Show this message and exit.                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 ### Example Usage

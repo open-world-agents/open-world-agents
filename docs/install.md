@@ -63,15 +63,15 @@ Before installation, we recommend setting up a virtual environment.
     1. Follow the [miniforge installation guide](https://github.com/conda-forge/miniforge?tab=readme-ov-file#install) to install `conda` and `mamba`. `mamba` is just a faster `conda`. If you've already installed `conda`, you may skip this step.
 
     2. Create & activate your virtual environment:
-       ```sh
-       $ conda create -n owa python=3.11 -y
-       $ conda activate owa
-       ```
+        ```sh
+        $ conda create -n owa python=3.11 -y
+        $ conda activate owa
+        ```
 
     3. (Optional) For Windows users who need desktop recorder:
-       ```sh
-       $ mamba env update --name owa --file projects/owa-env-gst/environment.yml
-       ```
+        ```sh
+        $ mamba env update --name owa --file projects/owa-env-gst/environment.yml
+        ```
 
 !!! tip
 
