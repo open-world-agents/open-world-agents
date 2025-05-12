@@ -29,6 +29,8 @@ def appsink_recorder_pipeline(
     fps: float = 60,
     window_name: Optional[str] = None,
     monitor_idx: Optional[int] = None,
+    width: Optional[int] = None,
+    height: Optional[int] = None,
     additional_properties: Optional[dict] = None,
 ) -> str:
     """Construct a GStreamer pipeline for screen capturing.
@@ -41,6 +43,8 @@ def appsink_recorder_pipeline(
         fps: The frame rate of the video.
         window_name: The name of the window to capture. If None, the entire screen will be captured.
         monitor_idx: The index of the monitor to capture. If None, the primary monitor will be captured.
+        width: The width of the video. If None, the width will be determined by the source.
+        height: The height of the video. If None, the height will be determined by the source.
     """
     assert filesink_location.endswith(".mkv"), "Only Matroska (.mkv) files are supported now."
 
@@ -52,6 +56,8 @@ def appsink_recorder_pipeline(
                 fps=fps,
                 window_name=window_name,
                 monitor_idx=monitor_idx,
+                width=width,
+                height=height,
                 additional_properties=additional_properties,
             )
             >> "identity name=ts silent=true"
@@ -87,6 +93,8 @@ def subprocess_recorder_pipeline(
     fps: float = 60,
     window_name: Optional[str] = None,
     monitor_idx: Optional[int] = None,
+    width: Optional[int] = None,
+    height: Optional[int] = None,
     additional_properties: Optional[dict] = None,
 ) -> str:
     """Construct a GStreamer pipeline for screen capturing.
@@ -99,6 +107,8 @@ def subprocess_recorder_pipeline(
         fps: The frame rate of the video.
         window_name: The name of the window to capture. If None, the entire screen will be captured.
         monitor_idx: The index of the monitor to capture. If None, the primary monitor will be captured.
+        width: The width of the video. If None, the width will be determined by the source.
+        height: The height of the video. If None, the height will be determined by the source.
     """
     assert filesink_location.endswith(".mkv"), "Only Matroska (.mkv) files are supported now."
 
@@ -109,6 +119,8 @@ def subprocess_recorder_pipeline(
             fps=fps,
             window_name=window_name,
             monitor_idx=monitor_idx,
+            width=width,
+            height=height,
             additional_properties=additional_properties,
         ) >> ElementFactory.tee(name="t")
         if enable_fpsdisplaysink:
@@ -135,6 +147,8 @@ def screen_capture_pipeline(
     fps: float = 60,
     window_name: Optional[str] = None,
     monitor_idx: Optional[int] = None,
+    width: Optional[int] = None,
+    height: Optional[int] = None,
     additional_properties: Optional[dict] = None,
 ) -> str:
     """
@@ -143,6 +157,8 @@ def screen_capture_pipeline(
         fps: The frame rate of the video.
         window_name: The name of the window to capture. If None, the entire screen will be captured.
         monitor_idx: The index of the monitor to capture. If None, the primary monitor will be captured.
+        width: The width of the video. If None, the width will be determined by the source.
+        height: The height of the video. If None, the height will be determined by the source.
         additional_properties: Additional properties to pass to the d3d11screencapturesrc element.
     """
 
@@ -151,6 +167,8 @@ def screen_capture_pipeline(
         fps=fps,
         window_name=window_name,
         monitor_idx=monitor_idx,
+        width=width,
+        height=height,
         additional_properties=additional_properties,
     )
     pipeline = src >> (
