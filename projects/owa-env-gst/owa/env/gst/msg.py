@@ -1,6 +1,6 @@
 import gc
 import threading
-from typing import Optional
+from typing import Optional, Tuple
 
 import av
 import numpy as np
@@ -135,6 +135,11 @@ class ScreenEmitted(OWAMessage):
     pts: int
     # Time since epoch as nanoseconds.
     utc_ns: int
+
+    # Original shape of the frame before rescale, e.g. (width, height)
+    original_shape: Optional[Tuple[int, int]] = None
+    # Rescaled shape of the frame, e.g. (width, height)
+    shape: Optional[Tuple[int, int]] = None
 
     _frame_arr: Optional[np.ndarray] = None
 

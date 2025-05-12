@@ -39,7 +39,28 @@ class AppsinkRecorder(GstPipelineRunner):
 
         identity = self.pipeline.get_by_name("ts")
 
+        notified_shape = None
+
+        def parse_shape_from_scale():
+            """Parse the shape from the d3d11scale element."""
+            scale = self.pipeline.get_by_name("d3d11scale0")
+            # Get the source and sink capabilities
+            sink_caps = scale.get_static_pad("sink").get_current_caps()
+            src_caps = scale.get_static_pad("src").get_current_caps()
+            if sink_caps and src_caps:
+                sink_structure = sink_caps.get_structure(0)
+                src_structure = src_caps.get_structure(0)
+                return (sink_structure.get_value("width"), sink_structure.get_value("height")), (
+                    src_structure.get_value("width"),
+                    src_structure.get_value("height"),
+                )
+            logger.warning("Failed to get sink or source capabilities.")
+            return None, None
+
         def buffer_probe_callback(pad: Gst.Pad, info: Gst.PadProbeInfo):
+            """Callback function to handle buffer probe events."""
+
+            nonlocal notified_shape
             buf = info.get_buffer()
             frame_time_ns = time.time_ns()
 
@@ -51,7 +72,21 @@ class AppsinkRecorder(GstPipelineRunner):
             if latency > 30 * Gst.MSECOND:
                 logger.warning(f"High latency: {latency / Gst.MSECOND:.2f}ms")
 
-            callback(ScreenEmitted(path=filesink_location, pts=buf.pts, utc_ns=frame_time_ns))
+            original_shape, shape = parse_shape_from_scale()
+            if notified_shape != (original_shape, shape):
+                logger.info(f"Original shape: {original_shape}, Rescaled shape: {shape}")
+                print(f"Original shape: {original_shape}, Rescaled shape: {shape}")
+                notified_shape = (original_shape, shape)
+
+            callback(
+                ScreenEmitted(
+                    path=filesink_location,
+                    pts=buf.pts,
+                    utc_ns=frame_time_ns,
+                    original_shape=original_shape,
+                    shape=shape,
+                )
+            )
             return Gst.PadProbeReturn.OK
 
         identity.get_static_pad("src").add_probe(Gst.PadProbeType.BUFFER, buffer_probe_callback)

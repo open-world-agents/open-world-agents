@@ -94,6 +94,9 @@ class GstMKVReader(MKVReader):
         self.close()
 
 
+# BUG: PyAV has "corrupted size vs. prev_size" error when `frame.to_ndarray(format="bgra")` is called for video "expert-jy-1.mkv"
+#      This bug does not occur when format does not contain `alpha` channel, e.g. "bgr24"
+#      Guessed reason is mismatch of width/height=770/512 and codec_width/codec_height=800/512.
 class PyAVMKVReader(MKVReader):
     def __init__(self, mkv_file_path: str, stream: str = "video_0"):
         # Parse the stream type and index
