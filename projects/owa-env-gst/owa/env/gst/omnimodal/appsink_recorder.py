@@ -74,8 +74,7 @@ class AppsinkRecorder(GstPipelineRunner):
 
             original_shape, shape = parse_shape_from_scale()
             if notified_shape != (original_shape, shape):
-                logger.info(f"Original shape: {original_shape}, Rescaled shape: {shape}")
-                print(f"Original shape: {original_shape}, Rescaled shape: {shape}")
+                logger.success(f"Video's original shape: {original_shape}, rescaled shape: {shape}")
                 notified_shape = (original_shape, shape)
 
             callback(
