@@ -3,7 +3,7 @@ from decord import VideoReader, cpu
 
 from owa.env.gst.mkv_reader import GstMKVReader, PyAVMKVReader
 
-VIDEO_PATH = "../../../tmp/output.mkv"
+VIDEO_PATH = "../../tmp/output.mkv"
 
 
 @line_profiler.profile
