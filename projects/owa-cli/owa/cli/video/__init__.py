@@ -1,3 +1,4 @@
+import json
 import shutil
 import statistics
 import subprocess
@@ -14,6 +15,8 @@ Analyze frame types and patterns in a video file.
 Video resize command is TODO; for now, run commands as `ffmpeg -i 0319_2.mkv -filter:v "crop=586:794:1504:450,fps=60" -c:v libx265 -x265-params "keyint=30:no-scenecut=1:bframes=0" -c:a copy 0319_22.mkv`
 """
 )
+
+# TODO: add `gst-discoverer-1.0.exe`
 
 
 def get_frame_data(video_path: str):
@@ -70,7 +73,6 @@ def get_video_info(video_path: str) -> Dict:
     ]
 
     result = subprocess.run(cmd, capture_output=True, text=True)
-    import json
 
     try:
         data = json.loads(result.stdout)
