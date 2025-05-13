@@ -1,7 +1,10 @@
-from agent_system.core.pipe import Pipe
-from agent_system.perception.provider import OWAMcapPerceptionReader
-from agent_system.pipeline.processors import apply_processor, lazy_load_images, perception_to_conversation
+import functools
+
 from torch.utils.data import Dataset
+
+from owa.agent.core import OWAMcapPerceptionReader, Pipe
+from owa.agent.systems.example import PERCEPTION_SAMPLING_SPEC
+from owa.agent.systems.example.processors import apply_processor, lazy_load_images, perception_to_conversation
 
 
 class MyDataset(Dataset):
@@ -9,10 +12,12 @@ class MyDataset(Dataset):
         # 1. Load query
         file_path, timestamp = self._data[idx]
         # 2. Load perception from file
-        current_perception = OWAMcapPerceptionReader(file_path).sample(now=timestamp)
+        current_perception = OWAMcapPerceptionReader(file_path).sample(now=timestamp, spec=PERCEPTION_SAMPLING_SPEC)
         # 3. Create pending thought
         pending_thought = (
-            Pipe([], current_perception, now=timestamp) | perception_to_conversation | lazy_load_images
+            Pipe([], current_perception, now=timestamp)
+            | functools.partial(perception_to_conversation, spec=PERCEPTION_SAMPLING_SPEC)
+            | lazy_load_images
         ).execute()
         # Note that apply_processor is done in collate_fn.
         return pending_thought

@@ -1,4 +1,3 @@
-"""
 ====================================================================
     Definition of Dataset for E2E Agent Training
 ====================================================================
@@ -119,4 +118,3 @@ Component Roles & Spec Usage:
 SUMMARY
 ----------------------------------------------------------------------
 - Unified, explicit PerceptionSamplingSpec guarantees full pipeline consistency and correctness, with no "lost" or "mismatched" data between recorded files and the model's expected inputs.
-"""

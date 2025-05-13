@@ -3,10 +3,12 @@ from queue import Queue
 
 from owa.agent.core import Clock, Rate
 from owa.agent.core.pipe import Pipe
+from owa.agent.core.spec import PerceptionSamplingSpec
 from owa.agent.core.utils import iter_queue
 from owa.core import Runnable
 
 from .processors import apply_processor, lazy_load_images, perception_to_conversation
+from .sampling_spec import PERCEPTION_SAMPLING_SPEC
 
 
 def decision_to_action(decision):
@@ -24,12 +26,14 @@ class RealTimeAgentCoordinator(Runnable):
         decision_queue: Queue,
         rate: float,
         clock: Clock | None = None,
+        perception_sampling_spec: PerceptionSamplingSpec = PERCEPTION_SAMPLING_SPEC,
     ):
         self._perception_queue = perception_queue
         self._thought_queue = thought_queue
         self._action_queue = action_queue
         self._decision_queue = decision_queue
         self._rate = Rate(rate, clock=clock)
+        self._perception_sampling_spec = perception_sampling_spec
 
     def loop(self, *, stop_event: threading.Event):
         perception_history = []  # Stores the history of perceptions
@@ -37,7 +41,10 @@ class RealTimeAgentCoordinator(Runnable):
             # 1. Perceive. From: PerceptionProvider
             current_perceptions = [*iter_queue(self._perception_queue)]
             perception_history, conversation = perception_to_conversation(
-                perception_history, current_perceptions, now=self._clock.get_time()
+                perception_history,
+                current_perceptions,
+                now=self._clock.get_time(),
+                spec=self._perception_sampling_spec,
             )
 
             # 2. Think. To: ModelWorker

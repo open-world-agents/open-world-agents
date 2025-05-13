@@ -1,8 +1,7 @@
-from agent_system.core.pipe import Pipe
-from agent_system.perception.provider import OWAMcapPerceptionReader
-from agent_system.pipeline.processors import perception_to_conversation
-
 from mcap_owa.highlevel import OWAMcapReader
+from owa.agent.core import OWAMcapPerceptionReader
+from owa.agent.systems.example import PERCEPTION_SAMPLING_SPEC
+from owa.agent.systems.example.processors import perception_to_conversation
 
 
 def iter_timestamps(valid_intervals):
@@ -19,8 +18,10 @@ def create_dataset():
             # e.g. representing valid interval with special key, ...
         for now in iter_timestamps(valid_intervals):
             try:
-                current_perception = OWAMcapPerceptionReader(file_path).sample(now)
-                perception_history, conversation = perception_to_conversation([], current_perception, now=now)
+                current_perception = OWAMcapPerceptionReader(file_path).sample(now, spec=PERCEPTION_SAMPLING_SPEC)
+                perception_history, conversation = perception_to_conversation(
+                    [], current_perception, now=now, spec=PERCEPTION_SAMPLING_SPEC
+                )
                 yield file_path, now, conversation
             except Exception:
                 pass

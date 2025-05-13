@@ -3,12 +3,10 @@ from contextlib import contextmanager
 from queue import Queue
 
 import typer
-from agent_system.agent.action_executor import ActionExecutor
-from agent_system.agent.coordinator import RealTimeAgentCoordinator
-from agent_system.agent.worker import ModelWorker
-from agent_system.core import get_default_clock
-from agent_system.perception.provider import PerceptionProvider
 from loguru import logger
+
+from owa.agent.core import get_default_clock
+from owa.agent.systems.example import ActionExecutor, ModelWorker, PerceptionProvider, RealTimeAgentCoordinator
 
 # TODO: init from yaml, with configurable provider/coordinator/worker/action_executor/...
 
