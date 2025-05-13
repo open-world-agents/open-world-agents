@@ -14,7 +14,7 @@ class Clock:
         """
         Returns the elapsed time since the clock started, excluding any time spent in the paused state.
         """
-        time_ns = self._get_time_ns()
+        time_ns = self.get_time_ns()
         if unit == "ns":
             return time_ns
         elif unit == "s":
@@ -65,12 +65,12 @@ if __name__ == "__main__":
     clock = Clock(start_time=10**9)
     print("Clock started")
     time.sleep(1)  # Simulate some elapsed time
-    print("Elapsed time (ns):", clock.get_time())
+    print("Elapsed time (s):", clock.get_time())
     clock.pause()
     print("Clock paused")
     time.sleep(1)  # Simulate some elapsed time while paused
-    print("Elapsed time (ns):", clock.get_time())
+    print("Elapsed time (s):", clock.get_time())
     clock.resume()
     print("Clock resumed")
     time.sleep(1)  # Simulate some elapsed time after resuming
-    print("Elapsed time (ns):", clock.get_time())
+    print("Elapsed time (s):", clock.get_time())

@@ -2,12 +2,15 @@ import time
 from contextlib import contextmanager
 from queue import Queue
 
+import typer
 from agent_system.agent.action_executor import ActionExecutor
 from agent_system.agent.coordinator import RealTimeAgentCoordinator
 from agent_system.agent.worker import ModelWorker
-from agent_system.core.event import Clock
+from agent_system.core import get_default_clock
 from agent_system.perception.provider import PerceptionProvider
 from loguru import logger
+
+# TODO: init from yaml, with configurable provider/coordinator/worker/action_executor/...
 
 
 @contextmanager
@@ -16,11 +19,15 @@ def setup_resources(model_id: str):
     thought_queue = Queue()
     decision_queue = Queue()
     action_queue = Queue()
-    clock = Clock()
+    clock = get_default_clock()
 
     perception_provider = PerceptionProvider().configure(perception_queue=perception_queue, clock=clock)
     agent_coordinator = RealTimeAgentCoordinator().configure(
-        perception_queue=perception_queue, decision_queue=decision_queue, clock=clock
+        perception_queue=perception_queue,
+        thought_queue=thought_queue,
+        decision_queue=decision_queue,
+        action_queue=action_queue,
+        rate=1.0,
     )
     model_worker = ModelWorker().configure(
         thought_queue=thought_queue, decision_queue=decision_queue, clock=clock, model_id=model_id
@@ -48,10 +55,14 @@ def setup_resources(model_id: str):
 
 
 def main(*args):
-    with setup_resources(*args) as resources:
+    with setup_resources(*args) as resources:  # noqa: F841
         try:
             # Keep main thread alive
             while True:
                 time.sleep(1)
         except KeyboardInterrupt:
             logger.info("Operation stopped by user.")
+
+
+if __name__ == "__main__":
+    typer.run(main)
