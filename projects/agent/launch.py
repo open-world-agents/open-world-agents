@@ -12,7 +12,7 @@ from owa.agent.systems.example import ActionExecutor, ModelWorker, PerceptionPro
 
 
 @contextmanager
-def setup_resources(model_id: str):
+def setup_resources():
     perception_queue = Queue()
     thought_queue = Queue()
     decision_queue = Queue()
@@ -28,7 +28,7 @@ def setup_resources(model_id: str):
         rate=1.0,
     )
     model_worker = ModelWorker().configure(
-        thought_queue=thought_queue, decision_queue=decision_queue, clock=clock, model_id=model_id
+        thought_queue=thought_queue, decision_queue=decision_queue, clock=clock, model_id="test_model"
     )
     action_executor = ActionExecutor().configure(action_queue=action_queue, clock=clock)
 
@@ -52,8 +52,8 @@ def setup_resources(model_id: str):
                 logger.error(f"Error stopping {name}: {e}")
 
 
-def main(*args):
-    with setup_resources(*args) as resources:  # noqa: F841
+def main():
+    with setup_resources() as resources:  # noqa: F841
         try:
             # Keep main thread alive
             while True:

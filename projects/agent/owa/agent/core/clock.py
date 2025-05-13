@@ -10,7 +10,7 @@ class Clock:
         self._is_paused = False
         self._pause_start = None  # Tracks when pause started
 
-    def get_time(self, unit="s"):
+    def get_time(self, unit="s") -> int | float:
         """
         Returns the elapsed time since the clock started, excluding any time spent in the paused state.
         """
@@ -20,7 +20,7 @@ class Clock:
         elif unit == "s":
             return time_ns / 1_000_000_000
 
-    def get_time_ns(self):
+    def get_time_ns(self) -> int:
         """
         Returns the elapsed time in nanoseconds since the clock started,
         excluding any time spent in the paused state.
