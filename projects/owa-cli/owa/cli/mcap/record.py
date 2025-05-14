@@ -183,8 +183,8 @@ def record(
             pbar.update()
 
             latency = time.time_ns() - publish_time
-            # warn if latency is too high, i.e., > 20ms
-            if latency > 20 * TimeUnits.MSECOND:
+            # warn if latency is too high, i.e., > 100ms
+            if latency > 100 * TimeUnits.MSECOND:
                 logger.warning(f"High latency: {latency / TimeUnits.MSECOND:.2f}ms while processing {topic} event.")
             writer.write_message(topic, event, publish_time=publish_time)
 

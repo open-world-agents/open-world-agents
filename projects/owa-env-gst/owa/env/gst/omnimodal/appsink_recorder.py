@@ -68,8 +68,8 @@ class AppsinkRecorder(GstPipelineRunner):
             elapsed = clock.get_time() - self.pipeline.get_base_time()
             latency = elapsed - buf.pts
 
-            # warn if latency is too high, e.g. > 30ms
-            if latency > 30 * Gst.MSECOND:
+            # warn if latency is too high, e.g. > 100ms
+            if latency > 100 * Gst.MSECOND:
                 logger.warning(f"High latency: {latency / Gst.MSECOND:.2f}ms")
 
             original_shape, shape = parse_shape_from_scale()

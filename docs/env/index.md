@@ -22,7 +22,7 @@ Time waits for no one—and neither do real-world agents. As we advance towards 
 
 - **Measured Reaction Times**: Agents operate within realistic timeframes, ensuring timely responses in dynamic settings.
 
-We prioritize minimizing latency within the framework, aiming for agent reaction times that match or surpass human capabilities. Throughout our codebase, we ensure latency doesn't exceed **30ms**. Check out how we achieve this in our [Appsink Recorder](https://github.com/open-world-agents/open-world-agents/blob/main/projects/owa-env-gst/owa/env/gst/omnimodal/appsink_recorder.py#L50), [Screen Listeners](https://github.com/open-world-agents/open-world-agents/blob/main/projects/owa-env-gst/owa/env/gst/screen/listeners.py#L88), and [Test Screen Listener](https://github.com/open-world-agents/open-world-agents/blob/main/projects/owa-env-gst/tests/test_screen_listener.py#L31).
+We prioritize minimizing latency within the framework, aiming for agent reaction times that match or surpass human capabilities. Throughout our codebase, we ensure latency doesn't exceed **30ms**. Check out how we achieve this in our [Screen Listeners](https://github.com/open-world-agents/open-world-agents/blob/main/projects/owa-env-gst/owa/env/gst/screen/listeners.py#L88), and [Test Screen Listener](https://github.com/open-world-agents/open-world-agents/blob/main/projects/owa-env-gst/tests/test_screen_listener.py#L31).
 
 ## Get Started Today
 
