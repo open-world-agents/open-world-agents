@@ -15,9 +15,9 @@ which contain (timestamp, topic, msg) triplets. It supports two main types of ev
 """
 
 from enum import Enum
-from typing import Any, Callable, List, Literal, Optional, Union
+from typing import Any, Callable, List, Literal, Optional, TypeAlias, Union
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class EventType(str, Enum):
@@ -44,8 +44,20 @@ class BaseSamplingStrategy(BaseModel):
     window_start: float = Field(..., description="Start time relative to 'now' (e.g., -0.25 seconds)")
     window_end: float = Field(..., description="End time relative to 'now' (e.g., 0 seconds)")
 
+    @property
+    def requires_future_info(self) -> bool:
+        """Check if the sampling strategy requires future information."""
+        return self.window_start > 0
+
+    @model_validator(mode="after")
+    def check_window(self) -> "BaseSamplingStrategy":
+        """Ensure that window_start is less than window_end."""
+        if self.window_start >= self.window_end:
+            raise ValueError(f"window_start {self.window_start} must be less than window_end {self.window_end}")
+        return self
+
     # Disallow extra fields. Since BaseSamplingStrategy is a base class,
-    # it's to prevent confusion between the subclasses.
+    # it's required to prevent confusion between the subclasses.
     model_config = ConfigDict(extra="forbid")
 
 
@@ -88,6 +100,15 @@ class DiscreteSamplingStrategy(BaseSamplingStrategy):
             raise ValueError("k must be specified when mode is first_k or last_k")
         return v
 
+    @model_validator(mode="after")
+    def validate_include_prior_state(self) -> "DiscreteSamplingStrategy":
+        """Ensure include_prior_state is set only if state_topic is provided and mode is not 'all'."""
+        if self.include_prior_state and not self.state_topic:
+            raise ValueError("include_prior_state requires a state_topic to be specified")
+        if self.mode != "all" and self.include_prior_state:
+            raise ValueError("include_prior_state is not applicable when mode is not 'all'")
+        return self
+
 
 class ContinuousSamplingStrategy(BaseSamplingStrategy):
     """
@@ -129,16 +150,16 @@ class ContinuousSamplingStrategy(BaseSamplingStrategy):
             raise ValueError("k must be specified when mode is first_k or last_k")
         return v
 
-    @field_validator("interpolate")
-    def validate_interpolate(cls, v, info):
+    @model_validator(mode="after")
+    def validate_interpolate(self):
         """Ensure interpolation function is provided if interpolate is True."""
-        if v and info.data.get("interpolation_fn") is None:
+        if self.interpolate and self.interpolation_fn is None:
             raise ValueError("interpolation_fn must be specified when interpolate is True")
-        return v
+        return self
 
 
 # Union type for any valid sampling strategy
-SamplingStrategy = Union[DiscreteSamplingStrategy, ContinuousSamplingStrategy]
+SamplingStrategy: TypeAlias = Union[DiscreteSamplingStrategy, ContinuousSamplingStrategy]
 
 
 class PerceptionSamplingSpec(BaseModel):

@@ -2,6 +2,8 @@ import math
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
+from loguru import logger
+
 from mcap_owa.highlevel import OWAMcapReader
 from owa.core.time import TimeUnits
 
@@ -124,13 +126,13 @@ class OWAMcapPerceptionReader:
             selected_msgs = msgs[-strategy.k :] if msgs else []
 
         # Convert selected messages to Event objects
-        print("=============================================")
-        print(f"Sampling discrete events: {strategy=}, {start_time_ns=}, {end_time_ns=}")
-        print(f"Number of messages: {len(msgs)}")
-        print(f"Number of selected messages: {len(selected_msgs)}")
-        print(f"Events: {events=}")
+        logger.debug("=============================================")
+        logger.debug(f"Sampling discrete events: {strategy=}, {start_time_ns=}, {end_time_ns=}")
+        logger.debug(f"Number of messages: {len(msgs)}")
+        logger.debug(f"Number of selected messages: {len(selected_msgs)}")
+        logger.debug(f"Events: {events=}")
         for topic, timestamp_ns, msg in selected_msgs:
-            print(f"{topic=}, {timestamp_ns=}, {msg=}")
+            logger.debug(f"{topic=}, {timestamp_ns=}, {msg=}")
 
             # Add the event
             events.append(

@@ -1,11 +1,12 @@
 import queue
 
 from owa.agent.core import Clock, Event
+from owa.agent.core.spec import PerceptionSamplingSpec
 from owa.core import Runnable
 
 
 class PerceptionProvider(Runnable):
-    def on_configure(self, perception_queue: queue.Queue[Event], clock: Clock):
+    def on_configure(self, perception_queue: queue.Queue[Event], spec: PerceptionSamplingSpec, clock: Clock):
         self._perception_queue = perception_queue
         self._clock = clock
 
