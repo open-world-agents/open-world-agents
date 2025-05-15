@@ -136,7 +136,7 @@ def test_subprocess_recorder(gstreamer):
     )
     expected_pipeline = (
         "d3d11screencapturesrc show-cursor=true do-timestamp=true window-capture-mode=client show-border=True ! "
-        "videorate drop-only=true ! video/x-raw(memory:D3D11Memory),framerate=0/1,max-framerate=60/1 ! "
+        "videorate drop-only=true ! d3d11scale ! video/x-raw(memory:D3D11Memory),framerate=0/1,max-framerate=60/1 ! "
         "tee name=t "
         "t. ! queue leaky=downstream ! d3d11download ! videoconvert ! fpsdisplaysink video-sink=fakesink "
         "t. ! queue ! d3d11convert ! video/x-raw(memory:D3D11Memory),format=NV12 ! nvd3d11h265enc ! h265parse ! queue ! mux. "
@@ -158,7 +158,7 @@ def test_screen_capture(gstreamer):
     pipeline = pipeline_builder.screen_capture_pipeline()
     expected_pipeline = (
         "d3d11screencapturesrc show-cursor=true do-timestamp=true window-capture-mode=client show-border=True ! "
-        "videorate drop-only=true ! video/x-raw(memory:D3D11Memory),framerate=0/1,max-framerate=60/1 ! "
+        "videorate drop-only=true ! d3d11scale ! video/x-raw(memory:D3D11Memory),framerate=0/1,max-framerate=60/1 ! "
         "queue leaky=downstream ! d3d11download ! videoconvert ! video/x-raw,format=BGRA ! "
         "appsink name=appsink sync=false max-buffers=1 drop=true emit-signals=true wait-on-eos=false"
     )

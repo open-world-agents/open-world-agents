@@ -68,14 +68,13 @@ class AppsinkRecorder(GstPipelineRunner):
             elapsed = clock.get_time() - self.pipeline.get_base_time()
             latency = elapsed - buf.pts
 
-            # warn if latency is too high, e.g. > 30ms
-            if latency > 30 * Gst.MSECOND:
+            # warn if latency is too high, e.g. > 100ms
+            if latency > 100 * Gst.MSECOND:
                 logger.warning(f"High latency: {latency / Gst.MSECOND:.2f}ms")
 
             original_shape, shape = parse_shape_from_scale()
             if notified_shape != (original_shape, shape):
-                logger.info(f"Original shape: {original_shape}, Rescaled shape: {shape}")
-                print(f"Original shape: {original_shape}, Rescaled shape: {shape}")
+                logger.success(f"Video's original shape: {original_shape}, rescaled shape: {shape}")
                 notified_shape = (original_shape, shape)
 
             callback(
