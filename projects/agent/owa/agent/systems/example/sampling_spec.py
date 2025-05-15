@@ -15,6 +15,15 @@ def update_keyboard_state(state: KeyboardState, new_event: KeyboardEvent):
     return state
 
 
+def keyboard_state_to_event(state: KeyboardState):
+    """Convert keyboard state to a list of events."""
+    events = []
+    # Eliminates the mouse key events (left, right, middle, x1, x2)
+    for key in state.buttons - {1, 2, 4, 5, 6}:
+        events.append(KeyboardEvent(event_type="press", vk=key))
+    return events
+
+
 def update_mouse_state(state: MouseState, new_event: MouseEvent):
     if new_event.event_type == "move":
         state.x = new_event.x
@@ -33,6 +42,17 @@ def update_mouse_state(state: MouseState, new_event: MouseEvent):
     return state
 
 
+def mouse_state_to_event(state: MouseState):
+    """Convert mouse state to a list of events."""
+    events = []
+    events.append(MouseEvent(event_type="move", x=state.x, y=state.y))
+    # Note that following code will generate events which are NOT equivalent to real events:
+    #   mouse position (x, y) where the click happens is unknown, so we use the last known position, but it's just a GUESS.
+    for button in state.buttons:
+        events.append(MouseEvent(event_type="click", x=state.x, y=state.y, button=button, pressed=True))
+    return events
+
+
 PERCEPTION_SAMPLING_SPEC = PerceptionSamplingSpec(
     inputs=[
         # Screen - continuous event with 20 fps
@@ -48,7 +68,7 @@ PERCEPTION_SAMPLING_SPEC = PerceptionSamplingSpec(
         ContinuousSamplingStrategy(
             topic="mouse",
             msg_filter=lambda x: x.event_type == "move",
-            window_start=-0.25 - 0.05,  # 0.05 seconds margin to ensure k=5
+            window_start=-0.5 - 0.05,  # 0.05 seconds margin to ensure k=5
             window_end=0,
             mode="last_k",
             k=5,
@@ -58,22 +78,24 @@ PERCEPTION_SAMPLING_SPEC = PerceptionSamplingSpec(
         DiscreteSamplingStrategy(
             topic="mouse",
             msg_filter=lambda x: x.event_type in ("click", "scroll"),
-            window_start=-0.25,
+            window_start=-0.5,
             window_end=0,
             mode="all",
             include_prior_state=True,
             state_topic="mouse/state",
             state_update_fn=update_mouse_state,
+            state_to_event_fn=mouse_state_to_event,
         ),
         # Keyboard - discrete event, get all events in window
         DiscreteSamplingStrategy(
             topic="keyboard",
-            window_start=-0.25,
+            window_start=-0.5,
             window_end=0,
             mode="all",
             include_prior_state=True,
             state_topic="keyboard/state",
             state_update_fn=update_keyboard_state,
+            state_to_event_fn=keyboard_state_to_event,
         ),
     ],
     outputs=[

@@ -77,6 +77,9 @@ class DiscreteSamplingStrategy(BaseSamplingStrategy):
     state_update_fn: Optional[Callable[[Any], Any]] = Field(
         None, description="Function to update state message given the raw event message"
     )
+    state_to_event_fn: Optional[Callable[[Any], Any]] = Field(
+        None, description="Function to convert state message to a format suitable for the main topic"
+    )
 
     @field_validator("k")
     def validate_k(cls, v, info):
@@ -115,12 +118,22 @@ class ContinuousSamplingStrategy(BaseSamplingStrategy):
     interpolate: bool = Field(
         False, description="Whether to interpolate between samples if exact timestamps aren't available"
     )
+    interpolation_fn: Optional[Callable[[Any], Any]] = Field(
+        None, description="Function to interpolate between samples if interpolate is True"
+    )
 
     @field_validator("k")
     def validate_k(cls, v, info):
         """Ensure k is provided when using first_k or last_k modes."""
         if info.data.get("mode") in ["first_k", "last_k"] and v is None:
             raise ValueError("k must be specified when mode is first_k or last_k")
+        return v
+
+    @field_validator("interpolate")
+    def validate_interpolate(cls, v, info):
+        """Ensure interpolation function is provided if interpolate is True."""
+        if v and info.data.get("interpolation_fn") is None:
+            raise ValueError("interpolation_fn must be specified when interpolate is True")
         return v
 
 

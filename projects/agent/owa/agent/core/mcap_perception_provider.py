@@ -3,6 +3,7 @@ import time
 from typing import Any, Dict, List, Optional, Tuple
 
 from mcap_owa.highlevel import OWAMcapReader
+from owa.core.time import TimeUnits
 
 from .event import Event
 from .spec import ContinuousSamplingStrategy, DiscreteSamplingStrategy, EventType, PerceptionSamplingSpec
@@ -37,8 +38,8 @@ class OWAMcapPerceptionReader:
         for strategy_list in [spec.inputs, spec.outputs]:
             for strategy in strategy_list:
                 # Calculate absolute time window in nanoseconds
-                start_time_ns = now + int(strategy.window_start * 1e9)
-                end_time_ns = now + int(strategy.window_end * 1e9)
+                start_time_ns = now + int(strategy.window_start * TimeUnits.SECOND)
+                end_time_ns = now + int(strategy.window_end * TimeUnits.SECOND)
 
                 # Handle discrete events
                 if strategy.event_type == EventType.DISCRETE:
@@ -64,22 +65,37 @@ class OWAMcapPerceptionReader:
         if strategy.include_prior_state and strategy.state_topic:
             # Get the most recent state before the window starts
             state_topic = strategy.state_topic
-            state_msgs = list(
+            for state_msg in self._reader.iter_decoded_messages(
+                topics=[state_topic],
+                end_time=start_time_ns,  # Before window starts
+                log_time_order=True,
+                reverse=True,  # Most recent first
+            ):
+                break
+            else:
+                # If no state message is found, raise an error
+                raise ValueError(f"State topic {state_topic} not found in the log before {start_time_ns} ns")
+
+            between_msgs = list(
                 self._reader.iter_decoded_messages(
-                    topics=[state_topic],
-                    end_time=start_time_ns,  # Before window starts
+                    topics=[strategy.topic],
+                    start_time=state_msg[1],  # Start from the state message
+                    end_time=start_time_ns,  # Up to the window start
                     log_time_order=True,
-                    reverse=True,  # Most recent first
+                    reverse=False,
                 )
             )
 
-            # If we found a state message, add it as an event
-            if state_msgs:
-                topic, timestamp_ns, msg = state_msgs[0]  # Take only the most recent
+            # Update the state message with strategy.state_update_fn
+            for topic, timestamp_ns, msg in between_msgs:
+                state_msg = (state_msg[0], timestamp_ns, strategy.state_update_fn(state_msg[2], msg))
+
+            # Convert the state message to an Event object
+            for msg in strategy.state_to_event_fn(state_msg[2]):
                 events.append(
                     Event(
-                        timestamp=timestamp_ns,
-                        topic=topic,
+                        timestamp=state_msg[1],
+                        topic=strategy.topic,
                         msg=msg,
                     )
                 )
@@ -108,10 +124,13 @@ class OWAMcapPerceptionReader:
             selected_msgs = msgs[-strategy.k :] if msgs else []
 
         # Convert selected messages to Event objects
+        print("=============================================")
+        print(f"Sampling discrete events: {strategy=}, {start_time_ns=}, {end_time_ns=}")
+        print(f"Number of messages: {len(msgs)}")
+        print(f"Number of selected messages: {len(selected_msgs)}")
+        print(f"Events: {events=}")
         for topic, timestamp_ns, msg in selected_msgs:
-            # If we have a state update function, apply it
-            if strategy.state_update_fn and events and events[-1].topic == strategy.state_topic:
-                events[-1].msg = strategy.state_update_fn(events[-1].msg, msg)
+            print(f"{topic=}, {timestamp_ns=}, {msg=}")
 
             # Add the event
             events.append(
@@ -186,18 +205,8 @@ class OWAMcapPerceptionReader:
                         if ts >= target_time and (after is None or ts < after[1]):
                             after = (topic, ts, msg)
 
-                    # If we have both before and after, we can interpolate
-                    # For now, just use the closest one (actual interpolation would depend on the message type)
-                    if before and after:
-                        if target_time - before[1] < after[1] - target_time:
-                            sampled_msgs.append(before)
-                        else:
-                            sampled_msgs.append(after)
-                    # If we only have one, use that
-                    elif before:
-                        sampled_msgs.append(before)
-                    elif after:
-                        sampled_msgs.append(after)
+                    # Interpolate the message with function given by the strategy
+                    sampled_msgs.append(strategy.interpolation_fn(before, after))
             else:
                 # Without interpolation, pick the closest message to each target time
                 for target_time in target_times:

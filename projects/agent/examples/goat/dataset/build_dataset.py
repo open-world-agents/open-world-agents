@@ -19,8 +19,11 @@ def iter_timestamps(valid_intervals):
         for timestamp in range(start, end, int(sample_interval() * TimeUnits.SECOND)):
             yield timestamp
 
+
 def validate_perception(current_perception):
-    for event in current_perception
+    for event in current_perception:
+        ...
+
 
 def create_dataset(dataset_path: Path):
     mcap_files = Path(dataset_path).rglob("*.mcap")

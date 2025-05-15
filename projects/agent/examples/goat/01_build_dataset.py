@@ -1,9 +1,11 @@
 from pathlib import Path
 from typing import Annotated
 
+import numpy as np
 import typer
 from dataset.build_dataset import create_dataset
 
+np.random.seed(23)
 app = typer.Typer()
 
 
