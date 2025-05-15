@@ -162,7 +162,7 @@ class ContinuousSamplingStrategy(BaseSamplingStrategy):
 SamplingStrategy: TypeAlias = Union[DiscreteSamplingStrategy, ContinuousSamplingStrategy]
 
 
-class PerceptionSamplingSpec(BaseModel):
+class PerceptionSamplingSpec(dict[str, SamplingStrategy]):
     """
     Complete specification for sampling events from an MCAP file.
 
@@ -200,22 +200,15 @@ class PerceptionSamplingSpec(BaseModel):
     ```
     """
 
-    inputs: List[SamplingStrategy] = Field(
-        default_factory=list, description="List of sampling strategies to apply to the MCAP file"
-    )
-    outputs: List[SamplingStrategy] = Field(
-        default_factory=list, description="List of sampling strategies to apply to the MCAP file"
-    )
-
     @property
     def start_time(self) -> float:
         """Earliest start time across all sampling strategies."""
-        return min(strategy.window_start for strategy in self.inputs + self.outputs)
+        return min(strategy.window_start for strategy in self.values())
 
     @property
     def end_time(self) -> float:
         """Latest end time across all sampling strategies."""
-        return max(strategy.window_end for strategy in self.inputs + self.outputs)
+        return max(strategy.window_end for strategy in self.values())
 
     @property
     def duration(self) -> float:

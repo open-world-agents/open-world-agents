@@ -7,7 +7,7 @@ from loguru import logger
 from mcap_owa.highlevel import OWAMcapReader
 from owa.core.time import TimeUnits
 
-from .event import Event
+from .event import Event, Perception
 from .spec import ContinuousSamplingStrategy, DiscreteSamplingStrategy, EventType, PerceptionSamplingSpec
 
 
@@ -22,7 +22,7 @@ class OWAMcapPerceptionReader:
     def __exit__(self, exc_type, exc_value, traceback):
         self._reader.__exit__()
 
-    def sample(self, now, *, spec: PerceptionSamplingSpec) -> list[Event]:
+    def sample(self, now, *, spec: PerceptionSamplingSpec) -> Perception:
         """
         Sample events from the MCAP file based on the provided specification.
 
@@ -34,24 +34,23 @@ class OWAMcapPerceptionReader:
             List of Event objects containing the sampled data
         """
         # Initialize result list
-        events = []
+        perception = Perception()
 
-        # Process all strategies (both inputs and outputs)
-        for strategy_list in [spec.inputs, spec.outputs]:
-            for strategy in strategy_list:
-                # Calculate absolute time window in nanoseconds
-                start_time_ns = now + int(strategy.window_start * TimeUnits.SECOND)
-                end_time_ns = now + int(strategy.window_end * TimeUnits.SECOND)
+        # Process all strategies
+        for channel, strategy in spec.items():
+            # Calculate absolute time window in nanoseconds
+            start_time_ns = now + int(strategy.window_start * TimeUnits.SECOND)
+            end_time_ns = now + int(strategy.window_end * TimeUnits.SECOND)
 
-                # Handle discrete events
-                if strategy.event_type == EventType.DISCRETE:
-                    events.extend(self._sample_discrete(strategy, start_time_ns, end_time_ns, now))
+            # Handle discrete events
+            if strategy.event_type == EventType.DISCRETE:
+                perception[channel] = self._sample_discrete(strategy, start_time_ns, end_time_ns, now)
 
-                # Handle continuous events
-                elif strategy.event_type == EventType.CONTINUOUS:
-                    events.extend(self._sample_continuous(strategy, start_time_ns, end_time_ns, now))
+            # Handle continuous events
+            elif strategy.event_type == EventType.CONTINUOUS:
+                perception[channel] = self._sample_continuous(strategy, start_time_ns, end_time_ns, now)
 
-        return events
+        return perception
 
     def _sample_discrete(
         self, strategy: DiscreteSamplingStrategy, start_time_ns: int, end_time_ns: int, now: int

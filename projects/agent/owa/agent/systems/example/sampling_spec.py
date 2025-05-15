@@ -54,9 +54,9 @@ def mouse_state_to_event(state: MouseState):
 
 
 PERCEPTION_SAMPLING_SPEC = PerceptionSamplingSpec(
-    inputs=[
+    **{
         # Screen - continuous event with 20 fps
-        ContinuousSamplingStrategy(
+        "inputs/screen": ContinuousSamplingStrategy(
             topic="screen",
             window_start=-0.25 - 0.05,  # 0.05 seconds margin to ensure k=5
             window_end=0,
@@ -65,7 +65,7 @@ PERCEPTION_SAMPLING_SPEC = PerceptionSamplingSpec(
             fps=20.0,  # sample from continuous events with 20fps = 0.05 seconds per frame
         ),
         # Mouse move - continuous event with 20 fps
-        ContinuousSamplingStrategy(
+        "inputs/mouse/move": ContinuousSamplingStrategy(
             topic="mouse",
             msg_filter=lambda x: x.event_type == "move",
             window_start=-0.5 - 0.05,  # 0.05 seconds margin to ensure k=5
@@ -75,7 +75,7 @@ PERCEPTION_SAMPLING_SPEC = PerceptionSamplingSpec(
             fps=20.0,
         ),
         # Mouse click/scroll - discrete event, get all events in window
-        DiscreteSamplingStrategy(
+        "inputs/mouse/click-scroll": DiscreteSamplingStrategy(
             topic="mouse",
             msg_filter=lambda x: x.event_type in ("click", "scroll"),
             window_start=-0.5,
@@ -87,7 +87,7 @@ PERCEPTION_SAMPLING_SPEC = PerceptionSamplingSpec(
             state_to_event_fn=mouse_state_to_event,
         ),
         # Keyboard - discrete event, get all events in window
-        DiscreteSamplingStrategy(
+        "inputs/keyboard": DiscreteSamplingStrategy(
             topic="keyboard",
             window_start=-0.5,
             window_end=0,
@@ -97,10 +97,8 @@ PERCEPTION_SAMPLING_SPEC = PerceptionSamplingSpec(
             state_update_fn=update_keyboard_state,
             state_to_event_fn=keyboard_state_to_event,
         ),
-    ],
-    outputs=[
         # Mouse move label - continuous event with 20 fps
-        ContinuousSamplingStrategy(
+        "outputs/mouse/move": ContinuousSamplingStrategy(
             topic="mouse",
             msg_filter=lambda x: x.event_type == "move",
             window_start=0,
@@ -109,7 +107,7 @@ PERCEPTION_SAMPLING_SPEC = PerceptionSamplingSpec(
             fps=20.0,  # 1/0.05 = 20 fps
         ),
         # Mouse click/scroll label - discrete event, get all events in label window
-        DiscreteSamplingStrategy(
+        "outputs/mouse/click-scroll": DiscreteSamplingStrategy(
             topic="mouse",
             msg_filter=lambda x: x.event_type in ("click", "scroll"),
             window_start=0,
@@ -117,11 +115,11 @@ PERCEPTION_SAMPLING_SPEC = PerceptionSamplingSpec(
             mode="all",
         ),
         # Keyboard label - discrete event, get all events in label window
-        DiscreteSamplingStrategy(
+        "outputs/keyboard": DiscreteSamplingStrategy(
             topic="keyboard",
             window_start=0,
             window_end=1,
             mode="all",
         ),
-    ],
+    }
 )
