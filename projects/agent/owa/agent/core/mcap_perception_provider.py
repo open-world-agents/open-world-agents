@@ -227,7 +227,13 @@ class OWAMcapPerceptionReader:
             selected_msgs = sampled_msgs
 
         # Convert selected messages to Event objects
+        logger.debug("=============================================")
+        logger.debug(f"Sampling continuous events: {strategy=}, {start_time_ns=}, {end_time_ns=}")
+        logger.debug(f"Number of messages: {len(msgs)}")
+        logger.debug(f"Number of selected messages: {len(selected_msgs)}")
+        logger.debug(f"Events: {events=}")
         for topic, timestamp_ns, msg in selected_msgs:
+            logger.debug(f"{topic=}, {timestamp_ns=}, {msg=}")
             events.append(
                 Event(
                     timestamp=timestamp_ns,
