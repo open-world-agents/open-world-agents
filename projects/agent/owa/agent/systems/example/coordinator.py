@@ -1,7 +1,5 @@
-import functools
 import queue
 import threading
-from queue import Queue
 
 from owa.agent.core import Clock, Rate, get_default_clock
 from owa.agent.core.pipe import Pipe
@@ -9,7 +7,7 @@ from owa.agent.core.spec import PerceptionSamplingSpec
 from owa.agent.core.utils import iter_queue
 from owa.core import Runnable
 
-from .processors import apply_processor, lazy_load_images, perception_to_conversation
+from .processors import lazy_load_images, perception_to_conversation
 from .sampling_spec import PERCEPTION_SAMPLING_SPEC
 
 
