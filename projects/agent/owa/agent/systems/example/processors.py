@@ -2,7 +2,7 @@ from owa.agent.core import Event, PerceptionSamplingSpec
 
 
 def perception_to_conversation(
-    perception_history, current_perception, *, now, spec: PerceptionSamplingSpec
+    perception_history: list[Event], current_perception: list[Event], *, now, spec: PerceptionSamplingSpec
 ) -> tuple[list[Event], dict]:
     """For events later than 'now', it's considered as future events('label')."""
     # Placeholder for the actual conversion logic
