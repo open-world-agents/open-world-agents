@@ -1,10 +1,15 @@
-from typing import Annotated, Literal
+from typing import Annotated, Literal, TypeAlias
 
 from annotated_types import Ge, Lt
 
 from owa.core.message import OWAMessage
 
+# Matches definition of Windows Virtual Key Codes
+# https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
+# or https://github.com/moses-palmer/pynput/blob/master/lib/pynput/_util/win32_vks.py
 UInt8 = Annotated[int, Ge(0), Lt(256)]
+# Matches definition of https://github.com/moses-palmer/pynput/blob/master/lib/pynput/mouse/_win32.py#L48
+MouseButton: TypeAlias = Literal["unknown", "left", "middle", "right", "x1", "x2"]
 
 
 class KeyboardState(OWAMessage):
@@ -16,7 +21,7 @@ class MouseState(OWAMessage):
     _type = "owa.env.desktop.msg.MouseState"
     x: int
     y: int
-    buttons: set[Literal["left", "middle", "right"]]
+    buttons: set[MouseButton]
 
 
 class KeyboardEvent(OWAMessage):
@@ -32,7 +37,7 @@ class MouseEvent(OWAMessage):
     event_type: Literal["move", "click", "scroll"]
     x: int
     y: int
-    button: str | None = None
+    button: MouseButton | None = None
     pressed: bool | None = None
     dx: int | None = None
     dy: int | None = None
