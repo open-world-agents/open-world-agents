@@ -4,8 +4,9 @@ import numpy as np
 
 from mcap_owa.highlevel import OWAMcapReader
 from owa.agent.core import OWAMcapPerceptionReader
-from owa.agent.systems.example import PERCEPTION_SPEC_DICT
-from owa.agent.systems.example.processors import perception_to_conversation
+from owa.agent.core.perception import Perception
+from owa.agent.systems.goat import PERCEPTION_SPEC_DICT
+from owa.agent.systems.goat.processors import perception_to_conversation
 from owa.core.time import TimeUnits
 
 
@@ -39,7 +40,7 @@ def create_dataset(dataset_path: Path):
                     current_perception = reader.sample(now, spec=PERCEPTION_SPEC_DICT)
                     validate_perception(current_perception)
                     perception_history, conversation = perception_to_conversation(
-                        [], current_perception, now=now, spec=PERCEPTION_SPEC_DICT
+                        Perception(), current_perception, now=now, spec=PERCEPTION_SPEC_DICT
                     )
                     yield file_path, now, conversation
                 except Exception:

@@ -35,6 +35,9 @@ class RealTimeAgentCoordinator(Runnable):
         self._perception_spec_dict = perception_spec_dict
 
     def loop(self, *, stop_event: threading.Event):
+        # To prevent cold-start, we need to wait for the first perception
+        self._clock.sleep(2 + self._perception_spec_dict.duration)
+
         perception_history = Perception()  # Stores the history of perceptions
         while not stop_event.is_set():
             # 1. Perceive. From: PerceptionProvider

@@ -52,9 +52,17 @@ class Clock:
 
     def sleep(self, duration: float):
         """
-        Sleeps for the specified duration in seconds.
+        Sleeps until the specified duration (in seconds) has passed according to the clock's own time,
+        i.e., simulation time, not wall-clock time. If paused, waits until resumed.
         """
-        time.sleep(duration)
+        start = self.get_time()
+        while True:
+            if not self._is_paused:
+                now = self.get_time()
+                if now - start >= duration:
+                    break
+            # TODO: more efficient "sleep_until" implementation, without busy waiting
+            time.sleep(0.01)
 
 
 def get_default_clock():

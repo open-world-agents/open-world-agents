@@ -18,7 +18,7 @@ class OWAMcapPerceptionReader:
     def __exit__(self, exc_type, exc_value, traceback):
         self._reader.__exit__()
 
-    def sample(self, now, *, spec: PerceptionSpecDict) -> Perception:
+    def sample(self, now: int, *, spec: PerceptionSpecDict) -> Perception:
         """
         Sample events from the MCAP file based on the provided specification.
 
@@ -33,16 +33,16 @@ class OWAMcapPerceptionReader:
         perception = Perception()
 
         # Process all strategies
-        for channel, strategy in spec.items():
+        for channel, perception_spec in spec.items():
             # Calculate absolute time window in nanoseconds
-            start_time_ns = now + int(strategy.window_start * TimeUnits.SECOND)
-            end_time_ns = now + int(strategy.window_end * TimeUnits.SECOND)
+            start_time_ns = now + int(perception_spec.window_start * TimeUnits.SECOND)
+            end_time_ns = now + int(perception_spec.window_end * TimeUnits.SECOND)
 
-            perception[channel] = self._sample(strategy, start_time_ns, end_time_ns, now)
+            perception[channel] = self._sample(perception_spec, start_time_ns, end_time_ns, now)
 
         return perception
 
-    def _sample(self, spec: PerceptionSpec, start_time_ns: int, end_time_ns: int, now: float) -> List[Event]:
+    def _sample(self, spec: PerceptionSpec, start_time_ns: int, end_time_ns: int, now: int) -> List[Event]:
         """
         Sample continuous events according to the given strategy.
 
@@ -53,7 +53,7 @@ class OWAMcapPerceptionReader:
         # Get all events in the specified window
         msgs = list(
             self._reader.iter_decoded_messages(
-                topics=[spec.topic],
+                topics=spec.topics,
                 start_time=start_time_ns,
                 end_time=end_time_ns,
                 log_time_order=True,
@@ -61,68 +61,7 @@ class OWAMcapPerceptionReader:
             )
         )
 
-        # Filter messages if a filter is specified
-        if spec.msg_filter:
-            msgs = [(topic, ts, msg) for topic, ts, msg in msgs if spec.msg_filter(msg)]
-
-        # If there are no messages in the window, return empty list
-        if not msgs:
-            return events
-
-        # Apply the specified sampling mode
-        if spec.mode == "all":
-            selected_msgs = msgs
-        elif spec.mode == "first_k":
-            selected_msgs = msgs[: spec.k]
-        elif spec.mode == "last_k":
-            selected_msgs = msgs[-spec.k :] if msgs else []
-        else:
-            # Default to all messages if mode isn't recognized
-            selected_msgs = msgs
-
-        # If we need to sample at a specific FPS, do additional processing
-        if spec.fps > 0:
-            # Calculate time between samples in nanoseconds
-            interval_ns = int(1e9 / spec.fps)
-
-            # Sample at regular intervals
-            sampled_msgs = []
-            target_times = range(start_time_ns, end_time_ns, interval_ns)
-
-            if spec.interpolate:
-                # Interpolate to get samples at exact times
-                for target_time in target_times:
-                    # Find messages before and after target time
-                    before = None
-                    after = None
-
-                    for topic, ts, msg in selected_msgs:
-                        if ts <= target_time and (before is None or ts > before[1]):
-                            before = (topic, ts, msg)
-                        if ts >= target_time and (after is None or ts < after[1]):
-                            after = (topic, ts, msg)
-
-                    # Interpolate the message with function given by the spec
-                    sampled_msgs.append(spec.interpolation_fn(before, after))
-            else:
-                # Without interpolation, pick the closest message to each target time
-                for target_time in target_times:
-                    closest = None
-                    min_diff = float("inf")
-
-                    for topic, ts, msg in selected_msgs:
-                        diff = abs(ts - target_time)
-                        if diff < min_diff:
-                            min_diff = diff
-                            closest = (topic, ts, msg)
-
-                    if closest:
-                        sampled_msgs.append(closest)
-
-            selected_msgs = sampled_msgs
-
-        # Convert selected messages to Event objects
-        for topic, timestamp_ns, msg in selected_msgs:
+        for topic, timestamp_ns, msg in msgs:
             events.append(
                 Event(
                     timestamp=timestamp_ns,

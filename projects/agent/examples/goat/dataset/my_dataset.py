@@ -3,8 +3,8 @@ import functools
 from torch.utils.data import Dataset
 
 from owa.agent.core import OWAMcapPerceptionReader, Pipe
-from owa.agent.systems.example import PERCEPTION_SPEC_DICT
-from owa.agent.systems.example.processors import apply_processor, lazy_load_images, perception_to_conversation
+from owa.agent.systems.goat import PERCEPTION_SPEC_DICT
+from owa.agent.systems.goat.processors import apply_processor, lazy_load_images, perception_to_conversation
 
 
 class MyDataset(Dataset):
