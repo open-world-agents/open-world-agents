@@ -27,11 +27,11 @@ class PerceptionProvider(Runnable):
     ):
         self._perception_queue = perception_queue
         self._clock = clock
+        self._spec = spec
         self._callbacks = defaultdict(list)
 
         for channel, spec in spec.items():
             self.setup_spec(channel, spec)
-        self.setup_listeners()
 
     def loop(self, *, stop_event):
         with self.setup_listeners() as resources:
@@ -39,16 +39,15 @@ class PerceptionProvider(Runnable):
                 self._clock.sleep(1)
 
     def setup_spec(self, channel: str, spec: PerceptionSpec):
+        # TODO?: more efficient processing utilizing spec.sample_configs
         for topic in spec.topics:
 
             def callback(event):
-                return self._perception_queue[topic].put_nowait(
+                return self._perception_queue[channel].put_nowait(
                     Event(timestamp=self._clock.get_time_ns(), topic=topic, msg=event)
                 )
 
-            self._callbacks[channel].append(callback)
-
-        # TODO?: more efficient processing utilizing spec.sample_configs
+            self._callbacks[topic].append(callback)
 
     def _handle_callbacks(self, channel: str, x):
         """Invoke all callbacks for a given channel with argument x."""

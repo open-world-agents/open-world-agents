@@ -1,25 +1,29 @@
-from owa.agent.core import Event, Perception, PerceptionSpecDict
+from owa.agent.core.perception import Perception, PerceptionSpecDict, apply_spec
 
 
 def perception_to_conversation(
-    perception_history: Perception, current_perception: Perception, *, now, spec: PerceptionSpecDict
+    perception_history: Perception, current_perception: Perception, *, now: int, spec: PerceptionSpecDict
 ) -> tuple[Perception, dict]:
     """For events later than 'now', it's considered as future events('label')."""
-    # Placeholder for the actual conversion logic
-    if current_perception:
+    # TODO: implement sampling and trimming logic
+    perception_history += current_perception
+    perception_history, info = apply_spec(perception_history, now=now, spec=spec)
+    if perception_history:
+        items = "Summary of Perception History:\n"
+        for channel, events in perception_history.items():
+            # items.append(channel, len(events))
+            items += f"{channel}: {len(events)} events\n"
+
         conversation = [
             {
                 "role": "assistant",
                 "content": [
-                    {"type": "text", "text": [*current_perception.values()][0][0].msg},
+                    {"type": "text", "text": items},
                 ],
             },
         ]
     else:
         conversation = None
-    perception_history.extend(current_perception)
-    # Leave only the latest perception in the history
-    perception_history = perception_history[-1:]
     return perception_history, conversation
 
 

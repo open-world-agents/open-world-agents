@@ -41,6 +41,7 @@ def setup_resources():
     ]
     for resource, name in resources:
         resource.start()
+        logger.info(f"Started {name}")
     try:
         yield resources
     finally:
@@ -48,6 +49,7 @@ def setup_resources():
             try:
                 resource.stop()
                 resource.join(timeout=5)
+                assert not resource.is_alive(), f"{name} is still alive after stop"
                 logger.info(f"Stopped {name}")
             except Exception as e:
                 logger.error(f"Error stopping {name}: {e}")

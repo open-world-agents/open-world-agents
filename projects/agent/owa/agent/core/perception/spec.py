@@ -35,7 +35,7 @@ class BasePerceptionSpec(BaseModel):
 class SamplingConfig(BaseModel):
     """
     Configuration for sampling events from a (near-)continuous events.
-    Only messages satisfying `sample_if` are modified by this config.
+    Only messages satisfying `sample_if` are modified by this config. Others remains same.
     If `sample_if` is None, all messages are sampled.
 
     Args:
@@ -67,7 +67,7 @@ class SamplingConfig(BaseModel):
 class TrimConfig(BaseModel):
     """
     Configuration for trimming events, e.g. parse only the first or last K events within a time window.
-    Only messages satisfying `trim_if` are modified by this config.
+    Only messages satisfying `trim_if` are modified by this config. Others remains same.
     If `trim_if` is None, all messages are trimmed.
 
     patterns:
@@ -87,9 +87,12 @@ class TrimConfig(BaseModel):
 class PerceptionSpec(BasePerceptionSpec):
     """
     Configuration for sampling and trimming events from a stream.
+
     Processing pipeline:
-        1. Apply sample_configs to filter and sample raw events
-        2. Then apply trim_configs to further refine the sampled events.
+        1. Apply `sample_configs` to filter and sample raw events.
+        2. Then apply `trim_configs` to further refine the sampled events.
+
+    Each PerceptionSpec applies to a single channel.
     """
 
     sample_configs: List[SamplingConfig] = Field(

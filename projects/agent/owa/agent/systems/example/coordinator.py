@@ -44,7 +44,7 @@ class RealTimeAgentCoordinator(Runnable):
             perception_history, conversation = perception_to_conversation(
                 perception_history,
                 current_perceptions,
-                now=self._clock.get_time(),
+                now=self._clock.get_time_ns(),
                 spec=self._perception_spec_dict,
             )
 

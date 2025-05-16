@@ -1,5 +1,6 @@
 from loguru import logger
 
+from owa.agent.core import Event
 from owa.agent.core.perception import PerceptionSpec, PerceptionSpecDict, SamplingConfig, TrimConfig
 from owa.env.desktop.msg import KeyboardEvent, KeyboardState, MouseEvent, MouseState
 
@@ -54,8 +55,9 @@ def mouse_state_to_event(state: MouseState):
 
 
 # Functions for sampling and trimming decisions
-def is_move_event(event):
-    return event.event_type == "move"
+def is_move_event(event: Event) -> bool:
+    msg: MouseEvent = event.msg
+    return msg.event_type == "move"
 
 
 PERCEPTION_SPEC_DICT = PerceptionSpecDict(

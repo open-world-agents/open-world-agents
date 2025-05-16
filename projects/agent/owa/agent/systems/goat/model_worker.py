@@ -18,15 +18,20 @@ class ModelWorker(Runnable):
         # Model inference logic
         # Placeholder for the actual model inference logic
         while not stop_event.is_set():
-            thought = self._thought_queue.get()
+            try:
+                # NOTE: this sleep at least 1 seconds to avoid busy waiting
+                thought = self._thought_queue.get(timeout=1)
+            except queue.Empty:
+                continue
+
             inputs = apply_processor(thought, processor=self._processor)
             # Process the thought and generate a decision
             decision = self.inference(inputs)
             self._decision_queue.put_nowait(decision)
-            self._clock.sleep(1)
 
     def inference(self, inputs):
         # Placeholder for the actual processing logic
         # Implement your model inference logic here
         decision = f"No there's no {inputs['input_ids'][-len('dragon') :]}"
+        self._clock.sleep(0.05)  # Simulate processing time
         return decision
