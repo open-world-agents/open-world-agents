@@ -1,3 +1,5 @@
+import time
+
 from pynput.keyboard import Listener as KeyboardListener
 from pynput.mouse import Button
 from pynput.mouse import Listener as MouseListener
@@ -7,6 +9,7 @@ from owa.core.registry import LISTENERS
 
 from ..msg import KeyboardEvent, MouseEvent
 from ..utils import key_to_vk
+from .callables import get_keyboard_state, get_mouse_state
 
 
 @LISTENERS.register("keyboard")
@@ -48,3 +51,29 @@ class MouseListenerWrapper(Listener):
 
     def stop(self):
         self.listener.stop()
+
+
+@LISTENERS.register("keyboard/state")
+class KeyboardStateListener(Listener):
+    """
+    Calls callback every second with the keyboard state.
+    """
+
+    def loop(self, stop_event):
+        while not stop_event.is_set():
+            state = get_keyboard_state()
+            self.callback(state)
+            time.sleep(1)
+
+
+@LISTENERS.register("mouse/state")
+class MouseStateListener(Listener):
+    """
+    Calls callback every second with the mouse state.
+    """
+
+    def loop(self, stop_event):
+        while not stop_event.is_set():
+            state = get_mouse_state()
+            self.callback(state)
+            time.sleep(1)
