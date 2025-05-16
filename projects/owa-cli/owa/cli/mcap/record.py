@@ -23,7 +23,7 @@ queue = Queue()
 MCAP_LOCATION = None
 
 
-def callback(event, topic=None):
+def callback(event, *, topic):
     queue.put((topic, event, time.time_ns()))
 
 
@@ -34,18 +34,10 @@ def keyboard_publisher_callback(event):
     callback(event, topic="keyboard")
 
 
-def mouse_publisher_callback(event):
-    callback(event, topic="mouse")
-
-
 def screen_publisher_callback(event):
     global MCAP_LOCATION
     event.path = Path(event.path).relative_to(MCAP_LOCATION.parent).as_posix()
     callback(event, topic="screen")
-
-
-def standard_callback(event, *, topic):
-    callback(event, topic=topic)
 
 
 def publish_window_info():
@@ -88,13 +80,13 @@ def setup_resources(
     # Instantiate all listeners and recorder etc.
     recorder = LISTENERS["owa.env.gst/omnimodal/appsink_recorder"]()
     keyboard_listener = LISTENERS["keyboard"]().configure(callback=keyboard_publisher_callback)
-    mouse_listener = LISTENERS["mouse"]().configure(callback=mouse_publisher_callback)
-    window_listener = LISTENERS["window"]().configure(callback=lambda event: standard_callback(event, topic="window"))
+    mouse_listener = LISTENERS["mouse"]().configure(callback=lambda event: callback(event, topic="mouse"))
+    window_listener = LISTENERS["window"]().configure(callback=lambda event: callback(event, topic="window"))
     keyboard_state_listener = LISTENERS["keyboard/state"]().configure(
-        callback=lambda event: standard_callback(event, topic="keyboard/state")
+        callback=lambda event: callback(event, topic="keyboard/state")
     )
     mouse_state_listener = LISTENERS["mouse/state"]().configure(
-        callback=lambda event: standard_callback(event, topic="mouse/state")
+        callback=lambda event: callback(event, topic="mouse/state")
     )
     # Configure recorder
     recorder.configure(
