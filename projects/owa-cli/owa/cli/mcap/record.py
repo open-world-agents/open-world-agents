@@ -9,7 +9,6 @@
 # [tool.uv.sources]
 # open-world-agents = { path = "../" }
 # ///
-import threading
 import time
 from pathlib import Path
 from queue import Queue
@@ -55,6 +54,10 @@ def screen_publisher_callback(event):
     global MCAP_LOCATION
     event.path = Path(event.path).relative_to(MCAP_LOCATION.parent).as_posix()
     callback(event, topic="screen")
+
+
+def standard_callback(event, *, topic):
+    callback(event, topic=topic)
 
 
 def publish_window_info():
@@ -128,7 +131,8 @@ def record(
         if not delete:
             print("The recording is aborted.")
             raise typer.Abort()
-        output_file.unlink()
+        output_file.unlink(missing_ok=True)
+        output_file.with_suffix(".mkv").unlink(missing_ok=True)
         logger.warning(f"Deleted existing file {output_file}")
 
     if window_name is not None:
@@ -146,6 +150,13 @@ def record(
     recorder = LISTENERS["owa.env.gst/omnimodal/appsink_recorder"]()
     keyboard_listener = LISTENERS["keyboard"]().configure(callback=keyboard_publisher_callback)
     mouse_listener = LISTENERS["mouse"]().configure(callback=mouse_publisher_callback)
+    window_listener = LISTENERS["window"]().configure(callback=lambda event: standard_callback(event, topic="window"))
+    keyboard_state_listener = LISTENERS["keyboard/state"]().configure(
+        callback=lambda event: standard_callback(event, topic="keyboard/state")
+    )
+    mouse_state_listener = LISTENERS["mouse/state"]().configure(
+        callback=lambda event: standard_callback(event, topic="mouse/state")
+    )
 
     additional_properties = {}
     if additional_args is not None:
@@ -165,7 +176,7 @@ def record(
         additional_properties=additional_properties,
         callback=screen_publisher_callback,
     )
-    window_thread = threading.Thread(target=publish_window_info, daemon=True)
+
     writer = OWAMcapWriter(output_file)
     pbar = tqdm(desc="Recording", unit="event", dynamic_ncols=True)
 
@@ -176,7 +187,9 @@ def record(
         recorder.start()
         keyboard_listener.start()
         mouse_listener.start()
-        window_thread.start()
+        window_listener.start()
+        keyboard_state_listener.start()
+        mouse_state_listener.start()
 
         while True:
             topic, event, publish_time = queue.get()
@@ -209,6 +222,16 @@ def record(
             mouse_listener.stop()
             keyboard_listener.join(timeout=5)
             mouse_listener.join(timeout=5)
+        except Exception as e:
+            logger.error(f"Error occurred while stopping the listeners: {e}")
+
+        try:
+            window_listener.stop()
+            keyboard_state_listener.stop()
+            mouse_state_listener.stop()
+            window_listener.join(timeout=5)
+            keyboard_state_listener.join(timeout=5)
+            mouse_state_listener.join(timeout=5)
         except Exception as e:
             logger.error(f"Error occurred while stopping the listeners: {e}")
 
