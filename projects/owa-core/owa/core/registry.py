@@ -62,6 +62,8 @@ RUNNABLES: Registry[Runnable] = Registry(registry_type=RegistryType.RUNNABLES)
 _MODULES: Registry[OwaEnvInterface] = Registry(registry_type=RegistryType.MODULES)
 
 
+# TODO: implement `namespace` argument. must call with CALLABLES["namespace/abcd"]
+# TODO: unify naming convention for callables/listeners/runnables
 def activate_module(entrypoint):
     """
     Activate a module by its entrypoint. Modules are expected to have an `activate` function, following OwaEnvInterface.
