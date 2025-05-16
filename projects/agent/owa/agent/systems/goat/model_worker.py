@@ -1,5 +1,7 @@
 import queue
 
+import numpy as np
+
 from owa.agent.core import Clock
 from owa.core import Runnable
 
@@ -32,6 +34,7 @@ class ModelWorker(Runnable):
     def inference(self, inputs):
         # Placeholder for the actual processing logic
         # Implement your model inference logic here
-        decision = f"No there's no {inputs['input_ids'][-len('dragon') :]}"
+        # decision = f"No there's no {inputs['input_ids'][-len('dragon') :]}"
+        decision = f"I want to press key {np.random.randint(1, 10)}"
         self._clock.sleep(0.05)  # Simulate processing time
         return decision

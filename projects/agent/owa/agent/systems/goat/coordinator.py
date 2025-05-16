@@ -11,10 +11,8 @@ from .perception_spec import PERCEPTION_SPEC_DICT
 from .processors import lazy_load_images, perception_to_conversation
 
 
-def decision_to_action(decision):
-    # Placeholder function to convert decision to action
-    # Implement your logic here
-    return None
+def decision_to_action(decision: str) -> str:
+    return decision[-1]  # digit
 
 
 class RealTimeAgentCoordinator(Runnable):
