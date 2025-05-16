@@ -7,7 +7,7 @@ from loguru import logger
 
 from owa.agent.core import get_default_clock
 from owa.agent.core.perception import PerceptionQueue
-from owa.agent.systems.example import ActionExecutor, ModelWorker, PerceptionProvider, RealTimeAgentCoordinator
+from owa.agent.systems.goat import ActionExecutor, ModelWorker, PerceptionProvider, RealTimeAgentCoordinator
 
 # TODO: init from yaml, with configurable provider/coordinator/worker/action_executor/...
 

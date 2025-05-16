@@ -1,5 +1,3 @@
-import queue
-
 from owa.agent.core import Clock, Event
 from owa.agent.core.perception import PerceptionQueue, PerceptionSpecDict
 from owa.core import Runnable
