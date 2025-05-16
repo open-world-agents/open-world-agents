@@ -6,6 +6,7 @@ import typer
 from loguru import logger
 
 from owa.agent.core import get_default_clock
+from owa.agent.core.perception import PerceptionQueue
 from owa.agent.systems.example import ActionExecutor, ModelWorker, PerceptionProvider, RealTimeAgentCoordinator
 
 # TODO: init from yaml, with configurable provider/coordinator/worker/action_executor/...
@@ -13,7 +14,7 @@ from owa.agent.systems.example import ActionExecutor, ModelWorker, PerceptionPro
 
 @contextmanager
 def setup_resources():
-    perception_queue = Queue()
+    perception_queue = PerceptionQueue()
     thought_queue = Queue()
     decision_queue = Queue()
     action_queue = Queue()

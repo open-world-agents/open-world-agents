@@ -2,13 +2,13 @@ import queue
 import threading
 
 from owa.agent.core import Clock, Rate, get_default_clock
+from owa.agent.core.perception import PerceptionQueue, PerceptionSpecDict
 from owa.agent.core.pipe import Pipe
-from owa.agent.core.spec import PerceptionSamplingSpec
 from owa.agent.core.utils import iter_queue
 from owa.core import Runnable
 
+from .perception_spec import PERCEPTION_SPEC_DICT
 from .processors import lazy_load_images, perception_to_conversation
-from .sampling_spec import PERCEPTION_SAMPLING_SPEC
 
 
 def decision_to_action(decision):
@@ -20,13 +20,13 @@ def decision_to_action(decision):
 class RealTimeAgentCoordinator(Runnable):
     def on_configure(
         self,
-        perception_queue: queue.Queue,
+        perception_queue: PerceptionQueue,
         thought_queue: queue.Queue,
         action_queue: queue.Queue,
         decision_queue: queue.Queue,
         rate: float,
         clock: Clock | None = None,
-        perception_sampling_spec: PerceptionSamplingSpec = PERCEPTION_SAMPLING_SPEC,
+        perception_spec_dict: PerceptionSpecDict = PERCEPTION_SPEC_DICT,
     ):
         self._perception_queue = perception_queue
         self._thought_queue = thought_queue
@@ -34,18 +34,18 @@ class RealTimeAgentCoordinator(Runnable):
         self._decision_queue = decision_queue
         self._clock = clock or get_default_clock()
         self._rate = Rate(rate, clock=clock)
-        self._perception_sampling_spec = perception_sampling_spec
+        self._perception_spec_dict = perception_spec_dict
 
     def loop(self, *, stop_event: threading.Event):
         perception_history = []  # Stores the history of perceptions
         while not stop_event.is_set():
             # 1. Perceive. From: PerceptionProvider
-            current_perceptions = [*iter_queue(self._perception_queue)]
+            current_perceptions = self._perception_queue.iter_queue()
             perception_history, conversation = perception_to_conversation(
                 perception_history,
                 current_perceptions,
                 now=self._clock.get_time(),
-                spec=self._perception_sampling_spec,
+                spec=self._perception_spec_dict,
             )
 
             # 2. Think. To: ModelWorker
