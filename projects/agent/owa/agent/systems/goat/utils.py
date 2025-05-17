@@ -265,7 +265,7 @@ if __name__ == "__main__":
         Event(
             timestamp=500 * TimeUnits.MSECOND,
             topic="click",
-            msg=MouseEvent(event_type="click", x=1504, y=1027, pressed=False),
+            msg=MouseEvent(event_type="click", x=1504, y=1027, button="right", pressed=False),
         ),
     ]
     token_strs = processor.tokenize(events)
