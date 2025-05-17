@@ -221,7 +221,7 @@ class EventProcessor:
             elif isinstance(msg, MouseEvent):
                 tokens += self.mouse_tokenizer.to_tokens(msg, screen_size or self.config.screen_size)
             elif isinstance(msg, ScreenEmitted):
-                tokens += self.config.SCREEN_TOKEN_FORMAT
+                tokens += [self.config.SCREEN_TOKEN_FORMAT]
             else:
                 tokens.append("<UNKNOWN_EVENT>")
             result.append("".join(tokens))
