@@ -21,7 +21,7 @@ def test_screen_capture_warmup(screen_capture):
     assert frame_msg.frame_arr.shape[2] == 4 and frame_msg.frame_arr.ndim == 3, (
         f"Expected RGBA frame but got {frame_msg.frame_arr.shape}"
     )
-    print(f"timestamp_ns: {frame_msg.timestamp_ns}, frame_arr.shape: {frame_msg.frame_arr.shape}")
+    print(f"utc_ns: {frame_msg.utc_ns}, frame_arr.shape: {frame_msg.frame_arr.shape}")
 
 
 def test_screen_capture_timing(screen_capture):
