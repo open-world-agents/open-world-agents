@@ -13,7 +13,7 @@ from loguru import logger
 from owa.core.registry import LISTENERS
 
 from ..gst_runner import GstPipelineRunner
-from ..msg import FrameStamped
+from ..msg import ScreenEmitted
 from ..pipeline_builder import screen_capture_pipeline
 from ..utils import sample_to_ndarray
 
@@ -92,7 +92,7 @@ def build_screen_callback(callback):
         timestamp_ns = metadata["frame_time_ns"]
         metric_manager.append(timestamp_ns, latency)
 
-        message = FrameStamped(timestamp_ns=timestamp_ns, frame_arr=frame_arr)
+        message = ScreenEmitted(utc_ns=timestamp_ns, frame_arr=frame_arr)
         params = inspect.signature(callback).parameters
         if len(params) == 1:
             callback(message)
