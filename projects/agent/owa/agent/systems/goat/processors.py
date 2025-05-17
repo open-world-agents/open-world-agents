@@ -21,7 +21,6 @@ def perception_to_conversation(
     perception_history: Perception, current_perception: Perception, *, now: int, spec: PerceptionSpecDict
 ) -> tuple[Perception, dict]:
     """For events later than 'now', it's considered as future events('label')."""
-    # TODO: implement sampling and trimming logic
     perception_history += current_perception
     perception_history, info = apply_spec(perception_history, now=now, spec=spec)
     if perception_history:

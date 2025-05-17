@@ -1,6 +1,10 @@
 from pathlib import Path
+from typing import Generator
 
 import numpy as np
+from datasets import Dataset
+from loguru import logger
+from tqdm import tqdm
 
 from mcap_owa.highlevel import OWAMcapReader
 from owa.agent.core import OWAMcapPerceptionReader
@@ -17,16 +21,16 @@ def sample_interval():
 
 def iter_timestamps(valid_intervals):
     for start, end in valid_intervals:
-        for timestamp in range(start, end, int(sample_interval() * TimeUnits.SECOND)):
-            yield timestamp
+        min_time = start - int(PERCEPTION_SPEC_DICT.start_time * TimeUnits.SECOND)
+        max_time = end - int(PERCEPTION_SPEC_DICT.end_time * TimeUnits.SECOND)
+        # Generate timestamps in the range [min_time, max_time]
+        current_time = min_time
+        while current_time < max_time:
+            yield current_time
+            current_time += int(sample_interval() * TimeUnits.SECOND)
 
 
-def validate_perception(current_perception):
-    for event in current_perception:
-        ...
-
-
-def create_dataset(dataset_path: Path):
+def _generate_dataset(dataset_path: Path) -> Generator[dict, None, None]:
     mcap_files = Path(dataset_path).rglob("*.mcap")
     for file_path in mcap_files:
         with OWAMcapReader(file_path) as reader:
@@ -34,17 +38,33 @@ def create_dataset(dataset_path: Path):
             valid_intervals = [((reader.start_time + reader.end_time) // 2, reader.end_time)]  # Example intervals
             # In real implementation, these intervals are derived by various logics.
             # e.g. representing valid interval with special key, ...
-        with OWAMcapPerceptionReader(file_path) as reader:
-            for now in iter_timestamps(valid_intervals):
-                try:
-                    current_perception = reader.sample(now, spec=PERCEPTION_SPEC_DICT)
-                    validate_perception(current_perception)
-                    perception_history, conversation = perception_to_conversation(
-                        Perception(), current_perception, now=now, spec=PERCEPTION_SPEC_DICT
-                    )
-                    yield file_path, now, conversation
-                except Exception:
-                    import traceback
+        for now in iter_timestamps(valid_intervals):
+            yield {"file_path": file_path.as_posix(), "timestamp": now}
 
-                    traceback.print_exc()
-                    pass
+
+def create_dataset(dataset_path: Path) -> Dataset:
+    """
+    Create a dataset from the given directory containing .mcap files.
+    """
+    dataset = Dataset.from_generator(_generate_dataset, gen_kwargs={"dataset_path": dataset_path})
+    return dataset
+
+
+def generate_conversation(dataset: Dataset) -> Dataset:
+    """Generate and append new column, 'conversation', to the dataset."""
+
+    def add_conversation(examples):
+        conversations = []
+        for file_path, now in zip(examples["file_path"], examples["timestamp"]):
+            with OWAMcapPerceptionReader(file_path) as reader:
+                current_perception = reader.sample(now, spec=PERCEPTION_SPEC_DICT)
+                perception_history, conversation = perception_to_conversation(
+                    Perception(), current_perception, now=now, spec=PERCEPTION_SPEC_DICT
+                )
+                conversations.append(conversation)
+        examples["conversation"] = conversations
+        return examples
+
+    # dataset = dataset.map(add_conversation, num_proc=16, batched=True, desc="Generating conversations")
+    dataset.set_transform(add_conversation)
+    return dataset
