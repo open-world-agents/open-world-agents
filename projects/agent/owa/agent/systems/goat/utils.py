@@ -7,13 +7,14 @@ from pydantic.dataclasses import dataclass
 from owa.agent.core import Event
 from owa.core.time import TimeUnits
 from owa.env.desktop.msg import KeyboardEvent, MouseEvent
+from owa.env.gst.msg import ScreenEmitted
 
 
 @dataclass
 class EventProcessorConfig:
     timestamp_min_ns: int = -2 * TimeUnits.SECOND
     timestamp_max_ns: int = 2 * TimeUnits.SECOND
-    timestamp_interval_ns: int = 33 * TimeUnits.MSECOND  # 33ms == 30fps
+    timestamp_interval_ns: int = 20 * TimeUnits.MSECOND  # 20ms == 50fps
     timestamp_token_format: str = "<TIMESTAMP_{idx}>"
     # all token count = (timestamp_max_ns - timestamp_min_ns) / timestamp_interval_ns + 1
 
@@ -31,6 +32,8 @@ class EventProcessorConfig:
     # Also within quantization, regard the screen_size. normalize the x, y coordinate to [0, 1] and then quantize (x, y) to [0, 255]
     # e.g. <MOUSE_move><RQ_0_253_45><RQ_1_255_100><RQ_2_88_201></MOUSE_move>
     # <MOUSE_click_left_press>, <MOUSE_scroll_0_1>
+
+    SCREEN_TOKEN_FORMAT: str = "<image>"
 
 
 class MouseTokenizer:
@@ -217,6 +220,8 @@ class EventProcessor:
                 tokens.append(self._tokenize_keyboard(msg))
             elif isinstance(msg, MouseEvent):
                 tokens += self.mouse_tokenizer.to_tokens(msg, screen_size or self.config.screen_size)
+            elif isinstance(msg, ScreenEmitted):
+                tokens += self.config.SCREEN_TOKEN_FORMAT
             else:
                 tokens.append("<UNKNOWN_EVENT>")
             result.append("".join(tokens))
@@ -232,9 +237,14 @@ class EventProcessor:
 
             timestamp = self._detokenize_timestamp(tokens[0])
             if len(tokens) < 2:
+                events.append(Event(timestamp=timestamp, topic="unknown", msg=None))
                 continue
 
             token = tokens[1]
+            if token == "<UNKNOWN_EVENT>":
+                events.append(Event(timestamp=timestamp, topic="unknown", msg=None))
+                continue
+
             keyboard_ev = self._detokenize_keyboard(token)
             if keyboard_ev:
                 events.append(Event(timestamp=timestamp, topic="keyboard", msg=keyboard_ev))
@@ -242,6 +252,8 @@ class EventProcessor:
                 mouse_ev, _ = self.mouse_tokenizer.from_tokens(tokens, 1, screen_size)
                 if mouse_ev:
                     events.append(Event(timestamp=timestamp, topic="mouse", msg=mouse_ev))
+            elif token == self.config.SCREEN_TOKEN_FORMAT:
+                events.append(Event(timestamp=timestamp, topic="screen", msg=ScreenEmitted(path="", pts=0)))
         return events
 
 
@@ -252,6 +264,7 @@ if __name__ == "__main__":
     events = [
         Event(timestamp=-50 * TimeUnits.MSECOND, topic="keyboard", msg=KeyboardEvent(event_type="press", vk=65)),
         Event(timestamp=-10 * TimeUnits.MSECOND, topic="mouse", msg=MouseEvent(event_type="move", x=10, y=20)),
+        Event(timestamp=0, topic="screen", msg=ScreenEmitted(path="output.mkv", pts=123 * TimeUnits.MSECOND)),
         Event(
             timestamp=125 * TimeUnits.MSECOND,
             topic="mouse",
