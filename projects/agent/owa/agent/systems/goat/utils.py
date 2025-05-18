@@ -6,39 +6,146 @@ from pydantic.dataclasses import dataclass
 
 from owa.agent.core import Event
 from owa.core.time import TimeUnits
-from owa.env.desktop.msg import KeyboardEvent, MouseEvent
+from owa.env.desktop.msg import KeyboardEvent, MouseButton, MouseEvent
 from owa.env.gst.msg import ScreenEmitted
 
 
 @dataclass
 class EventProcessorConfig:
+    # Timestamp config
     timestamp_min_ns: int = -2 * TimeUnits.SECOND
     timestamp_max_ns: int = 2 * TimeUnits.SECOND
     timestamp_interval_ns: int = 20 * TimeUnits.MSECOND  # 20ms == 50fps
     timestamp_token_format: str = "<TIMESTAMP_{idx}>"
-    # all token count = (timestamp_max_ns - timestamp_min_ns) / timestamp_interval_ns + 1
+    # Each timestamp interval encodes a moment in time within the allowed window.
 
-    keyboard_vk: int = 256
+    # Keyboard config
+    keyboard_vk_count: int = 256
     keyboard_token_format: str = "<KEYBOARD_{vk}_{pressed}>"
     # e.g. <KEYBOARD_65_press>, <KEYBOARD_65_release>
-    # all token count = (keyboard_vk + 1) * 2
 
-    mouse_tokens: list[int] = Field(default_factory=lambda: [256, 256, 256])
+    # Mouse config
+    mouse_move_bins: list[int] = Field(default_factory=lambda: [16, 16, 16])
     screen_size: tuple[int, int] = (1920, 1080)
-    mouse_move_format: str = "<MOUSE_move_{level}_{idx_x}_{idx_y}>"
-    mouse_click_format: str = "<MOUSE_click_{button}_{pressed}>"
-    mouse_scroll_format: str = "<MOUSE_scroll_{dx}_{dy}>"
-    # For move, we utilize residual-quantize. [256, 256, 256] can quantize 2D space into 256*256*256 with 3 token, which fits to 16M pixels ~= 12.3% of FHD
-    # Also within quantization, regard the screen_size. normalize the x, y coordinate to [0, 1] and then quantize (x, y) to [0, 255]
-    # e.g. <MOUSE_move><RQ_0_253_45><RQ_1_255_100><RQ_2_88_201></MOUSE_move>
-    # <MOUSE_click_left_press>, <MOUSE_scroll_0_1>
+    mouse_move_token_format: str = "<MOUSE_move_{level}_{idx_x}_{idx_y}>"
+    mouse_click_token_format: str = "<MOUSE_click_{button}_{pressed}>"
+    mouse_scroll_token_format: str = "<MOUSE_scroll_{dx}_{dy}>"
+    # For move, we utilize residual-quantize; e.g., [16,16,16] means three levels, 16 bins per level. This fits 4096 pixel wide, which is wider than FHD(1920)
+    # See MouseProcessor for token scheme.
 
-    SCREEN_TOKEN_FORMAT: str = "<image>"
+    screen_token: str = "<image>"
+
+    @property
+    def timestamp_tokens(self) -> list[str]:
+        """
+        All unique timestamp tokens over the configured window and interval.
+
+        Returns:
+            list[str]: Each of the tokens in the interval, with index.
+        """
+        count = ((self.timestamp_max_ns - self.timestamp_min_ns) // self.timestamp_interval_ns) + 1
+        return [self.timestamp_token_format.format(idx=idx) for idx in range(count)]
+
+    @property
+    def keyboard_tokens(self) -> list[str]:
+        """
+        All unique keyboard event tokens (one for press, one for release per key).
+
+        Returns:
+            list[str]: Each in <KEYBOARD_{vk}_{press|release}> form.
+        """
+        tokens = []
+        for vk in range(self.keyboard_vk_count):
+            tokens.append(self.keyboard_token_format.format(vk=vk, pressed="press"))
+            tokens.append(self.keyboard_token_format.format(vk=vk, pressed="release"))
+        return tokens
+
+    @property
+    def mouse_move_tokens(self) -> list[str]:
+        """
+        All unique mouse move tokens (token types) for all quantization levels.
+
+        For each quantization level, all (idx_x,idx_y) pairs are tokenized; sum over all levels.
+        Special tokens for <MOUSE_move> and </MOUSE_move> not included.
+
+        Returns:
+            list[str]: Each as <MOUSE_move_{level}_{idx_x}_{idx_y}>
+        Example:
+            mouse_move_bins = [256,256,256] => 256*256*3 = 196,608 tokens
+        """
+        tokens = []
+        for level, bins in enumerate(self.mouse_move_bins):
+            for idx_x in range(bins):
+                for idx_y in range(bins):
+                    tokens.append(self.mouse_move_token_format.format(level=level, idx_x=idx_x, idx_y=idx_y))
+        return tokens
+
+    @property
+    def mouse_click_tokens(self) -> list[str]:
+        """
+        All unique mouse click tokens, for all buttons and both press/release states.
+
+        Returns:
+            list[str]: Each as <MOUSE_click_{button}_{press|release}>
+        """
+        tokens = []
+        buttons = MouseButton.__args__
+        for button in buttons:
+            for pressed in ["press", "release"]:
+                tokens.append(self.mouse_click_token_format.format(button=button, pressed=pressed))
+        return tokens
+
+    @property
+    def mouse_scroll_tokens(self) -> list[str]:
+        """
+        All mouse scroll tokens, i.e. possible (dx, dy) directions.
+        In practice, token set is limited (e.g., dx/dy in [-1,0,1]).
+
+        Returns:
+            list[str]: Each as <MOUSE_scroll_{dx}_{dy}>
+        """
+        tokens = []
+        for dx in [-1, 0, 1]:
+            for dy in [-1, 0, 1]:
+                tokens.append(self.mouse_scroll_token_format.format(dx=dx, dy=dy))
+        return tokens
+
+    @property
+    def screen_tokens(self) -> list[str]:
+        """
+        All unique screen marker tokens.
+        Usually just 1: "<image>".
+
+        Returns:
+            list[str]: [screen_token]
+        """
+        return [self.screen_token]
+
+    def summary(self) -> str:
+        """
+        Returns a string summary of unique token counts for each event/token type,
+        under the current configuration.
+        """
+        return (
+            f"Timestamp tokens: {len(self.timestamp_tokens)}\n"
+            f"Keyboard tokens: {len(self.keyboard_tokens)}\n"
+            f"Mouse move tokens: {len(self.mouse_move_tokens)}\n"
+            f"Mouse click tokens: {len(self.mouse_click_tokens)}\n"
+            f"Mouse scroll tokens: {len(self.mouse_scroll_tokens)}\n"
+            f"Screen tokens: {len(self.screen_tokens)}"
+        )
 
 
-class MouseTokenizer:
+def limit(x, low=0, high=1):
+    """
+    Limit x to the range [low, high].
+    """
+    return max(low, min(x, high))
+
+
+class MouseProcessor:
     def __init__(self, config: EventProcessorConfig):
-        self.cfg = config
+        self.config = config
 
     def move_tokens(self, event: MouseEvent, screen_size: Optional[Tuple[int, int]] = None) -> List[str]:
         """
@@ -46,21 +153,23 @@ class MouseTokenizer:
         Returns: [<MOUSE_move>, <move_level_0>, ... <move_level_n>, </MOUSE_move>]
         """
         if screen_size is None:
-            screen_size = self.cfg.screen_size
+            screen_size = self.config.screen_size
         x, y = event.x, event.y
-        fx = x / max(screen_size[0] - 1, 1)
-        fy = y / max(screen_size[1] - 1, 1)
+        fx = limit(x / screen_size[0])
+        fy = limit(y / screen_size[1])
 
         # Jointly quantize the pair (x, y) repeatedly at each level
         vx, vy = fx, fy
         tokens = []
-        for i, nbins in enumerate(self.cfg.mouse_tokens):
-            idx_x = int(round(vx * (nbins - 1)))
-            idx_y = int(round(vy * (nbins - 1)))
-            tokens.append(self.cfg.mouse_move_format.format(level=i, idx_x=idx_x, idx_y=idx_y))
+        for i, nbins in enumerate(self.config.mouse_move_bins):
+            # Using floor instead of round for better accuracy
+            idx_x = int(vx * nbins)
+            idx_y = int(vy * nbins)
+            tokens.append(self.config.mouse_move_token_format.format(level=i, idx_x=idx_x, idx_y=idx_y))
             # Calculate residuals for next level and normalize into [0, 1]
-            vx = min(max(vx * (nbins - 1) - idx_x + 0.5, 0.0), 1.0)
-            vy = min(max(vy * (nbins - 1) - idx_y + 0.5, 0.0), 1.0)
+            vx = vx * nbins - idx_x
+            vy = vy * nbins - idx_y
+            # vx and vy should already be in [0, 1) due to using floor
         return ["<MOUSE_move>"] + tokens + ["</MOUSE_move>"]
 
     def move_inv(self, tokens: Sequence[str], screen_size: Optional[Tuple[int, int]] = None) -> Tuple[int, int]:
@@ -68,7 +177,7 @@ class MouseTokenizer:
         Inverse of move_tokens - reconstruct (x, y).
         """
         if screen_size is None:
-            screen_size = self.cfg.screen_size
+            screen_size = self.config.screen_size
 
         # Extract indices from tokens
         indices = []
@@ -81,27 +190,24 @@ class MouseTokenizer:
         # Sort by level to ensure correct order
         indices.sort(key=lambda x: x[0])
 
-        if not indices:
-            return 0, 0  # Fallback if no valid tokens
+        if len(indices) != len(self.config.mouse_move_bins):
+            raise ValueError(
+                f"Expected {len(self.config.mouse_move_bins)} levels, but got {len(indices)} levels in tokens."
+            )
 
-        # The residual quantization reconstruction
-        x_normalized, y_normalized = 0.0, 0.0
-        factor = 1.0
+        fx = fy = 0
+        # Apply refinements from subsequent levels
+        for i in reversed(range(len(indices))):
+            level, idx_x, idx_y = indices[i]
+            nbins = self.config.mouse_move_bins[i]
 
-        for i, (_, idx_x, idx_y) in enumerate(indices):
-            nbins = self.cfg.mouse_tokens[i]
-            bin_size = 1.0 / (nbins - 1) if nbins > 1 else 1.0
-
-            # Add the contribution from this level
-            x_normalized += idx_x * bin_size * factor
-            y_normalized += idx_y * bin_size * factor
-
-            # Reduce contribution factor for next level
-            factor *= bin_size
+            # Calculate the residuals
+            fx = (fx + idx_x) / nbins
+            fy = (fy + idx_y) / nbins
 
         # Convert normalized coordinates to pixel coordinates
-        pix_x = int(round(x_normalized * (screen_size[0] - 1)))
-        pix_y = int(round(y_normalized * (screen_size[1] - 1)))
+        pix_x = int(round(fx * (screen_size[0] - 1)))
+        pix_y = int(round(fy * (screen_size[1] - 1)))
 
         return pix_x, pix_y
 
@@ -111,7 +217,7 @@ class MouseTokenizer:
         """
         button = event.button or "unknown"
         press_str = "press" if bool(event.pressed) else "release"
-        return self.cfg.mouse_click_format.format(button=button, pressed=press_str)
+        return self.config.mouse_click_token_format.format(button=button, pressed=press_str)
 
     def scroll_token(self, event: MouseEvent) -> str:
         """
@@ -119,7 +225,7 @@ class MouseTokenizer:
         """
         dx = event.dx if event.dx is not None else 0
         dy = event.dy if event.dy is not None else 0
-        return self.cfg.mouse_scroll_format.format(dx=dx, dy=dy)
+        return self.config.mouse_scroll_token_format.format(dx=dx, dy=dy)
 
     def to_tokens(self, event: MouseEvent, screen_size: Optional[Tuple[int, int]] = None) -> List[str]:
         """
@@ -143,7 +249,7 @@ class MouseTokenizer:
         Returns (MouseEvent, new idx)
         """
         if screen_size is None:
-            screen_size = self.cfg.screen_size
+            screen_size = self.config.screen_size
 
         # move tokens always first
         if idx >= len(tokens) or tokens[idx] != "<MOUSE_move>":
@@ -182,7 +288,7 @@ class MouseTokenizer:
 class EventProcessor:
     def __init__(self, config: EventProcessorConfig = EventProcessorConfig()):
         self.config = config
-        self.mouse_tokenizer = MouseTokenizer(config)
+        self.mouse_processor = MouseProcessor(config)
 
     def _tokenize_timestamp(self, timestamp: int) -> str:
         cfg = self.config
@@ -219,9 +325,9 @@ class EventProcessor:
             if isinstance(msg, KeyboardEvent):
                 tokens.append(self._tokenize_keyboard(msg))
             elif isinstance(msg, MouseEvent):
-                tokens += self.mouse_tokenizer.to_tokens(msg, screen_size or self.config.screen_size)
+                tokens += self.mouse_processor.to_tokens(msg, screen_size or self.config.screen_size)
             elif isinstance(msg, ScreenEmitted):
-                tokens += [self.config.SCREEN_TOKEN_FORMAT]
+                tokens += [self.config.screen_token]
             else:
                 tokens.append("<UNKNOWN_EVENT>")
             result.append("".join(tokens))
@@ -270,10 +376,10 @@ class EventProcessor:
             if keyboard_ev:
                 events.append(Event(timestamp=timestamp, topic="keyboard", msg=keyboard_ev))
             elif token == "<MOUSE_move>":
-                mouse_ev, _ = self.mouse_tokenizer.from_tokens(tokens, 1, screen_size)
+                mouse_ev, _ = self.mouse_processor.from_tokens(tokens, 1, screen_size)
                 if mouse_ev:
                     events.append(Event(timestamp=timestamp, topic="mouse", msg=mouse_ev))
-            elif token == self.config.SCREEN_TOKEN_FORMAT:
+            elif token == self.config.screen_token:
                 # This ScreenEmitted is always reconstructed as path="", pts=0
                 events.append(Event(timestamp=timestamp, topic="screen", msg=ScreenEmitted(path="", pts=0)))
 
@@ -283,7 +389,9 @@ class EventProcessor:
 # --- Example usage ---
 
 if __name__ == "__main__":
-    processor = EventProcessor(EventProcessorConfig())
+    config = EventProcessorConfig()
+    print(config.summary())
+    processor = EventProcessor(config=config)
     events = [
         Event(timestamp=-50 * TimeUnits.MSECOND, topic="keyboard", msg=KeyboardEvent(event_type="press", vk=65)),
         Event(timestamp=-10 * TimeUnits.MSECOND, topic="mouse", msg=MouseEvent(event_type="move", x=10, y=20)),
@@ -304,11 +412,11 @@ if __name__ == "__main__":
             msg=MouseEvent(event_type="click", x=1504, y=1027, button="right", pressed=False),
         ),
     ]
+    # events = [Event(timestamp=-10 * TimeUnits.MSECOND, topic="mouse", msg=MouseEvent(event_type="move", x=10, y=20))]
     token_strs = processor.tokenize(events)
     print("Tokenized:")
     for t in token_strs:
         print(f"  {t}")
-    # <TIMESTAMP_97><KEYBOARD_65_press><TIMESTAMP_99><MOUSE_move><MOUSE_move_0_1_5><MOUSE_move_1_211_58><MOUSE_move_2_216_72></MOUSE_move><TIMESTAMP_100><image><TIMESTAMP_106><MOUSE_move><MOUSE_move_0_1_5><MOUSE_move_1_245_118><MOUSE_move_2_187_139></MOUSE_move><MOUSE_click_left_press><TIMESTAMP_106><MOUSE_move><MOUSE_move_0_2_210><MOUSE_move_1_126_152><MOUSE_move_2_69_208></MOUSE_move><MOUSE_scroll_0_-1><TIMESTAMP_125><MOUSE_move><MOUSE_move_0_200_243><MOUSE_move_1_90_54><MOUSE_move_2_202_68></MOUSE_move><MOUSE_click_right_release>
     print("".join(token_strs))
 
     print("\nDetokenized:")
