@@ -1,5 +1,7 @@
 import queue
 
+from loguru import logger
+
 from owa.core import Runnable
 from owa.core.registry import CALLABLES, activate_module
 
@@ -20,7 +22,4 @@ class ActionExecutor(Runnable):
                 continue
 
             # Execute the action
-            if action.isdigit():
-                CALLABLES["keyboard.type"](action)
-            else:
-                print(f"Unknown action: {action}")
+            logger.info(f"Executing action: {action}")

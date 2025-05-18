@@ -1,3 +1,4 @@
+import sys
 import time
 from contextlib import contextmanager
 from queue import Queue
@@ -7,17 +8,39 @@ from loguru import logger
 
 from owa.agent.core import get_default_clock
 from owa.agent.core.perception import PerceptionQueue
-from owa.agent.systems.goat import ActionExecutor, ModelWorker, PerceptionProvider, RealTimeAgentCoordinator
+from owa.agent.systems.goat import (
+    PERCEPTION_SPEC_DICT,
+    ActionExecutor,
+    EventProcessor,
+    ModelWorker,
+    PerceptionProvider,
+    RealTimeAgentCoordinator,
+)
 
 # TODO: init from yaml, with configurable provider/coordinator/worker/action_executor/...
+# TODO: add EventProcessor init from config
+
+
+def configure_logging():
+    logger.remove()
+    logger.add(
+        sys.stderr,
+        level="INFO",
+        colorize=True,
+        format="<green>{time:HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
+    )
+    logger.add("launch.log", level="DEBUG", encoding="utf-8")
 
 
 @contextmanager
 def setup_resources():
+    configure_logging()
+
     perception_queue = PerceptionQueue()
-    thought_queue = Queue()
+    thought_queue = Queue(maxsize=1)  # no task parallelism in model worker
     decision_queue = Queue()
     action_queue = Queue()
+    event_processor = EventProcessor()
     clock = get_default_clock()
 
     perception_provider = PerceptionProvider().configure(perception_queue=perception_queue, clock=clock)
@@ -26,10 +49,15 @@ def setup_resources():
         thought_queue=thought_queue,
         decision_queue=decision_queue,
         action_queue=action_queue,
+        perception_spec_dict=PERCEPTION_SPEC_DICT,
+        event_processor=event_processor,
         rate=1.0,
     )
     model_worker = ModelWorker().configure(
-        thought_queue=thought_queue, decision_queue=decision_queue, clock=clock, model_id="test_model"
+        thought_queue=thought_queue,
+        decision_queue=decision_queue,
+        clock=clock,
+        model_id="HuggingFaceTB/SmolVLM2-256M-Video-Instruct",
     )
     action_executor = ActionExecutor().configure(action_queue=action_queue, clock=clock)
 

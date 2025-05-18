@@ -180,7 +180,7 @@ class MouseTokenizer:
 
 
 class EventProcessor:
-    def __init__(self, config: EventProcessorConfig):
+    def __init__(self, config: EventProcessorConfig = EventProcessorConfig()):
         self.config = config
         self.mouse_tokenizer = MouseTokenizer(config)
 
@@ -228,9 +228,30 @@ class EventProcessor:
         return result
 
     def detokenize(self, token_strs: List[str], screen_size: Optional[Tuple[int, int]] = None) -> List[Event]:
+        """
+        Accepts either a list of per-event token strings, or a single string containing
+        a concatenation of multiple tokenized events (e.g. "".join(token_strs)).
+        Returns a list of restored events.
+        """
         events = []
         screen_size = screen_size if screen_size is not None else self.config.screen_size
-        for s in token_strs:
+
+        # If input is a single long string, split at every <TIMESTAMP_\d+>
+        if len(token_strs) == 1 and token_strs[0].count("<TIMESTAMP_") > 1:
+            s = token_strs[0]
+            # Find all indices of <TIMESTAMP_\d+>
+            matches = list(re.finditer(r"<TIMESTAMP_\d+>", s))
+            event_strings = []
+            for i, m in enumerate(matches):
+                start = m.start()
+                # event goes from start to start of *next* match, or to end of string
+                end = matches[i + 1].start() if i + 1 < len(matches) else len(s)
+                event_strings.append(s[start:end])
+        else:
+            event_strings = token_strs  # already split
+
+        for s in event_strings:
+            # Extract all tokens (e.g. <SOMETHING>)
             tokens = re.findall(r"<[^>]+>", s)
             if not tokens or not tokens[0].startswith("<TIMESTAMP_"):
                 continue
@@ -253,7 +274,9 @@ class EventProcessor:
                 if mouse_ev:
                     events.append(Event(timestamp=timestamp, topic="mouse", msg=mouse_ev))
             elif token == self.config.SCREEN_TOKEN_FORMAT:
+                # This ScreenEmitted is always reconstructed as path="", pts=0
                 events.append(Event(timestamp=timestamp, topic="screen", msg=ScreenEmitted(path="", pts=0)))
+
         return events
 
 
@@ -273,7 +296,7 @@ if __name__ == "__main__":
         Event(
             timestamp=126 * TimeUnits.MSECOND,
             topic="mouse",
-            msg=MouseEvent(event_type="scroll", x=15, y=25, dx=0, dy=-1),
+            msg=MouseEvent(event_type="scroll", x=15, y=889, dx=0, dy=-1),
         ),
         Event(
             timestamp=500 * TimeUnits.MSECOND,
@@ -285,8 +308,11 @@ if __name__ == "__main__":
     print("Tokenized:")
     for t in token_strs:
         print(f"  {t}")
+    # <TIMESTAMP_97><KEYBOARD_65_press><TIMESTAMP_99><MOUSE_move><MOUSE_move_0_1_5><MOUSE_move_1_211_58><MOUSE_move_2_216_72></MOUSE_move><TIMESTAMP_100><image><TIMESTAMP_106><MOUSE_move><MOUSE_move_0_1_5><MOUSE_move_1_245_118><MOUSE_move_2_187_139></MOUSE_move><MOUSE_click_left_press><TIMESTAMP_106><MOUSE_move><MOUSE_move_0_2_210><MOUSE_move_1_126_152><MOUSE_move_2_69_208></MOUSE_move><MOUSE_scroll_0_-1><TIMESTAMP_125><MOUSE_move><MOUSE_move_0_200_243><MOUSE_move_1_90_54><MOUSE_move_2_202_68></MOUSE_move><MOUSE_click_right_release>
+    print("".join(token_strs))
 
     print("\nDetokenized:")
+    # token_strs = ["".join(token_strs)]
     events_restored = processor.detokenize(token_strs)
     for e in events_restored:
         print(f"  {e}")

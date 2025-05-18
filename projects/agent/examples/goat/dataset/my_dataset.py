@@ -16,7 +16,7 @@ class MyDataset(Dataset):
         # 3. Create pending thought
         pending_thought = (
             Pipe([], current_perception, now=timestamp)
-            | functools.partial(perception_to_conversation, spec=PERCEPTION_SPEC_DICT)
+            | functools.partial(perception_to_conversation, is_training=True, spec=PERCEPTION_SPEC_DICT)
             | lazy_load_images
         ).execute()
         # Note that apply_processor is done in collate_fn.
@@ -24,5 +24,5 @@ class MyDataset(Dataset):
 
 
 def collate_fn(processor, batch):
-    batch = apply_processor(processor, batch)
+    batch = apply_processor(processor, batch, is_training=True)
     return batch

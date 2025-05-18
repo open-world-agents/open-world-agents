@@ -59,7 +59,7 @@ def generate_conversation(dataset: Dataset) -> Dataset:
             with OWAMcapPerceptionReader(file_path) as reader:
                 current_perception = reader.sample(now, spec=PERCEPTION_SPEC_DICT)
                 perception_history, conversation = perception_to_conversation(
-                    Perception(), current_perception, now=now, spec=PERCEPTION_SPEC_DICT
+                    Perception(), current_perception, now=now, spec=PERCEPTION_SPEC_DICT, is_training=True
                 )
                 conversations.append(conversation)
         examples["conversation"] = conversations
