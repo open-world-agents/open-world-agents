@@ -81,7 +81,7 @@ class TrimConfig(BaseModel):
     trim_if: Optional[Callable[[Any], bool]] = Field(
         None, description="Function to determine if a message should be trimmed. If None, all messages are trimmed."
     )
-    trim_k: Optional[int] = Field(None, description="Number of events to trim when mode is first_k or last_k")
+    trim_k: int = Field(..., description="Number of events to trim when mode is first_k or last_k")
 
 
 class PerceptionSpec(BasePerceptionSpec):
