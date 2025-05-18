@@ -2,14 +2,12 @@ import queue
 import threading
 
 from loguru import logger
-from tqdm import tqdm
 
 from owa.agent.core import Clock, Event, Rate, get_default_clock
 from owa.agent.core.perception import Perception, PerceptionQueue, PerceptionSpecDict
 from owa.agent.core.pipe import Pipe
 from owa.core import Runnable
 
-from .perception_spec import PERCEPTION_SPEC_DICT
 from .processors import lazy_load_images, perception_to_conversation
 from .utils import EventProcessor
 

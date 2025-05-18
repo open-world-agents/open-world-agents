@@ -3,7 +3,7 @@ import queue
 from loguru import logger
 
 from owa.core import Runnable
-from owa.core.registry import CALLABLES, activate_module
+from owa.core.registry import CALLABLES, activate_module  # noqa: F401
 
 
 class ActionExecutor(Runnable):

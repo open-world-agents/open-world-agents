@@ -3,8 +3,6 @@ from typing import Generator
 
 import numpy as np
 from datasets import Dataset
-from loguru import logger
-from tqdm import tqdm
 
 from mcap_owa.highlevel import OWAMcapReader
 from owa.agent.core import OWAMcapPerceptionReader

@@ -34,7 +34,7 @@ class PerceptionProvider(Runnable):
             self.setup_spec(channel, spec)
 
     def loop(self, *, stop_event):
-        with self.setup_listeners() as resources:
+        with self.setup_listeners() as resources:  # noqa: F841
             while not stop_event.is_set():
                 self._clock.sleep(1)
 

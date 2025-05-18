@@ -1,6 +1,5 @@
 import queue
 
-import numpy as np
 import torch
 from transformers.models.smolvlm import SmolVLMForConditionalGeneration, SmolVLMProcessor
 

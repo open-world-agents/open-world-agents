@@ -4,7 +4,6 @@ import threading
 from owa.agent.core import Clock, Rate, get_default_clock
 from owa.agent.core.perception import PerceptionQueue, PerceptionSpecDict
 from owa.agent.core.pipe import Pipe
-from owa.agent.core.utils import iter_queue
 from owa.core import Runnable
 
 from .perception_spec import PERCEPTION_SPEC_DICT

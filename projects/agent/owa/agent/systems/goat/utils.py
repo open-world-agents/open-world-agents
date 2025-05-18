@@ -1,5 +1,5 @@
 import re
-from typing import Any, List, Optional, Sequence, Tuple
+from typing import List, Optional, Sequence, Tuple
 
 from pydantic import Field
 from pydantic.dataclasses import dataclass

@@ -1,4 +1,4 @@
-from owa.agent.core import Event, Perception, PerceptionSpecDict
+from owa.agent.core import Perception, PerceptionSpecDict
 
 
 def perception_to_conversation(

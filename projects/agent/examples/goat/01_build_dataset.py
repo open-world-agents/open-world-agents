@@ -1,8 +1,6 @@
 from pathlib import Path
 from typing import Annotated
 
-import numpy as np
-import orjson
 import typer
 from accelerate.utils import set_seed
 from dataset.build_dataset import create_dataset, generate_conversation
@@ -21,7 +19,7 @@ def main(
     for idx, data in enumerate(dataset.take(3)):
         print(data)  # Process the data as needed
 
-    # dataset = generate_conversation(dataset)
+    dataset = generate_conversation(dataset)
 
     dataset.save_to_disk(output_path)
 
