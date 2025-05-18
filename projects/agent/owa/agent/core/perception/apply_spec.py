@@ -25,8 +25,8 @@ def apply_spec(perception: Perception, *, now: int, spec: PerceptionSpecDict) ->
         original_count = len(events)
 
         # Filter events within the window, using now as reference
-        window_start = now + topic_spec.window_start * TimeUnits.SECOND
-        window_end = now + topic_spec.window_end * TimeUnits.SECOND
+        window_start = int(now + topic_spec.window_start * TimeUnits.SECOND)
+        window_end = int(now + topic_spec.window_end * TimeUnits.SECOND)
         events_in_window = [e for e in events if window_start <= e.timestamp <= window_end]
 
         # Apply sampling configs
