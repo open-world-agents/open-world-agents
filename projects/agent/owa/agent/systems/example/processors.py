@@ -1,9 +1,9 @@
-from owa.agent.core import Event, PerceptionSamplingSpec
+from owa.agent.core import Event, Perception, PerceptionSpecDict
 
 
 def perception_to_conversation(
-    perception_history: list[Event], current_perception: list[Event], *, now, spec: PerceptionSamplingSpec
-) -> tuple[list[Event], dict]:
+    perception_history: Perception, current_perception: Perception, *, now, spec: PerceptionSpecDict
+) -> tuple[Perception, dict]:
     """For events later than 'now', it's considered as future events('label')."""
     # Placeholder for the actual conversion logic
     if current_perception:
@@ -11,7 +11,7 @@ def perception_to_conversation(
             {
                 "role": "assistant",
                 "content": [
-                    {"type": "text", "text": current_perception[0].msg},
+                    {"type": "text", "text": [*current_perception.values()][0][0].msg},
                 ],
             },
         ]

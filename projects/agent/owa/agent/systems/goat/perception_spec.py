@@ -1,6 +1,7 @@
 from loguru import logger
 
-from owa.agent.core.spec import ContinuousSamplingStrategy, DiscreteSamplingStrategy, PerceptionSamplingSpec
+from owa.agent.core import Event
+from owa.agent.core.perception import PerceptionSpec, PerceptionSpecDict, SamplingConfig, TrimConfig
 from owa.env.desktop.msg import KeyboardEvent, KeyboardState, MouseEvent, MouseState
 
 
@@ -53,75 +54,54 @@ def mouse_state_to_event(state: MouseState):
     return events
 
 
-PERCEPTION_SAMPLING_SPEC = PerceptionSamplingSpec(
-    inputs=[
-        # Screen - continuous event with 20 fps
-        ContinuousSamplingStrategy(
-            topic="screen",
-            window_start=-0.25 - 0.05,  # 0.05 seconds margin to ensure k=5
+# Functions for sampling and trimming decisions
+def is_move_event(event: Event) -> bool:
+    msg: MouseEvent = event.msg
+    return msg.event_type == "move"
+
+
+PERCEPTION_SPEC_DICT = PerceptionSpecDict(
+    {
+        # Screen - continuous event with 20 fps sampling
+        "inputs/screen": PerceptionSpec(
+            topics=["screen"],
+            window_start=-0.25 - 0.05,  # 0.05 seconds margin to ensure enough `k` samples
             window_end=0,
-            mode="last_k",  # Get the last k frames
-            k=5,
-            fps=20.0,  # sample from continuous events with 20fps = 0.05 seconds per frame
-        ),
-        # Mouse move - continuous event with 20 fps
-        ContinuousSamplingStrategy(
-            topic="mouse",
-            msg_filter=lambda x: x.event_type == "move",
-            window_start=-0.5 - 0.05,  # 0.05 seconds margin to ensure k=5
-            window_end=0,
-            mode="last_k",
-            k=5,
-            fps=20.0,
-        ),
-        # Mouse click/scroll - discrete event, get all events in window
-        DiscreteSamplingStrategy(
-            topic="mouse",
-            msg_filter=lambda x: x.event_type in ("click", "scroll"),
-            window_start=-0.5,
-            window_end=0,
-            mode="all",
-            include_prior_state=True,
-            state_topic="mouse/state",
-            state_update_fn=update_mouse_state,
-            state_to_event_fn=mouse_state_to_event,
+            sample_configs=[SamplingConfig(sampling_rate=20.0)],
+            trim_configs=[TrimConfig(trim_mode="last_k", trim_k=5)],
         ),
         # Keyboard - discrete event, get all events in window
-        DiscreteSamplingStrategy(
-            topic="keyboard",
+        "inputs/keyboard": PerceptionSpec(topics=["keyboard"], window_start=-0.5, window_end=0),
+        # Mouse - move(20Hz) and click/scroll(all)
+        "inputs/mouse": PerceptionSpec(
+            topics=["mouse"],
             window_start=-0.5,
             window_end=0,
-            mode="all",
-            include_prior_state=True,
-            state_topic="keyboard/state",
-            state_update_fn=update_keyboard_state,
-            state_to_event_fn=keyboard_state_to_event,
+            sample_configs=[SamplingConfig(sample_if=is_move_event, sampling_rate=20.0)],
+            trim_configs=[TrimConfig(trim_if=is_move_event, trim_mode="last_k", trim_k=5)],
         ),
-    ],
-    outputs=[
-        # Mouse move label - continuous event with 20 fps
-        ContinuousSamplingStrategy(
-            topic="mouse",
-            msg_filter=lambda x: x.event_type == "move",
-            window_start=0,
-            window_end=1,
-            mode="all",
-            fps=20.0,  # 1/0.05 = 20 fps
+        # Keyboard/Mouse state - needed to ensure stateful processing of `click` or `press`/`release` events
+        # FIXME: I've thought about this a lot, but I don't know the answer. Maybe some improvement is needed.
+        "inputs/keyboard/state": PerceptionSpec(
+            topics=["keyboard/state"],
+            window_start=-0.5,
+            window_end=0,
+            trim_configs=[TrimConfig(trim_mode="first_k", trim_k=1)],
         ),
-        # Mouse click/scroll label - discrete event, get all events in label window
-        DiscreteSamplingStrategy(
-            topic="mouse",
-            msg_filter=lambda x: x.event_type in ("click", "scroll"),
-            window_start=0,
-            window_end=1,
-            mode="all",
+        "inputs/mouse/state": PerceptionSpec(
+            topics=["mouse/state"],
+            window_start=-0.5,
+            window_end=0,
+            trim_configs=[TrimConfig(trim_mode="first_k", trim_k=1)],
         ),
         # Keyboard label - discrete event, get all events in label window
-        DiscreteSamplingStrategy(
-            topic="keyboard",
+        "outputs/keyboard": PerceptionSpec(topics=["keyboard"], window_start=0, window_end=1),
+        # Mouse move label - continuous event with 20 fps
+        "outputs/mouse": PerceptionSpec(
+            topics=["mouse"],
             window_start=0,
             window_end=1,
-            mode="all",
+            sample_configs=[SamplingConfig(sample_if=is_move_event, sampling_rate=20.0)],
         ),
-    ],
+    }
 )

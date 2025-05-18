@@ -23,13 +23,13 @@ Following contents introduces the preprocessing part:
                                 |
                                 v
                   +-------------------------------+
-                  |    Perception Sampling         |   Uses PerceptionSamplingSpec     <------+
+                  |    Perception Sampling         |   Uses PerceptionSpecDict         <------+
                   | (OWAMcapPerceptionReader)      |   - Guarantees lower bound info          |
                   +---------------+---------------+                                           |
                                   |     Raw Perceptions                                       |
                                   v                                                           |
                   +-------------------------------+                                           |
-                  |   Processing Pipeline         |   Uses PerceptionSamplingSpec             |
+                  |   Processing Pipeline         |   Uses PerceptionSpecDict                 |
                   | (perception_to_conversation,  |   - Builds/arranges best model input  <---+
                   |  lazy_load_images,            |
                   |  apply_processor)             |
@@ -43,7 +43,7 @@ Following contents introduces the preprocessing part:
 
     Shared Spec
     ───────────
-        PerceptionSamplingSpec (core/spec.py)
+        PerceptionSpecDict (core/spec.py)
             └─ Defines: topics/modalities, time window, sampling interval (uniform/discrete), etc.
             └─ Always passed to both the reader (perception sampling) and the processor (model input builder).
 
@@ -57,11 +57,11 @@ Data Processing Cycle:
 Key Components:
 ----------------------------------------------------------------------
 1. Perception Sampling
-    - Extracts raw perceptions from recorded data files at specific timestamps, driven by PerceptionSamplingSpec
+    - Extracts raw perceptions from recorded data files at specific timestamps, driven by PerceptionSpecDict
     - OWAMcapPerceptionReader: Reads perception data from MCAP files
-        • Receives PerceptionSamplingSpec (guarantees lower bound of info: ensures all events/images required by the spec are fetched)
+        • Receives PerceptionSpecDict (guarantees lower bound of info: ensures all events/images required by the spec are fetched)
 2. Processing Pipeline
-    - Converts raw perceptions into model-ready training samples, also utilizing PerceptionSamplingSpec
+    - Converts raw perceptions into model-ready training samples, also utilizing PerceptionSpecDict
     - Steps/pipeline:
         • perception_to_conversation: Formats perceptions into the exact structure required, selects/arranges window & rate as dictated by the spec
         • lazy_load_images: Loads and prepares image data on demand
@@ -73,7 +73,7 @@ Key Components:
 ----------------------------------------------------------------------
 Core Design Principle:
 ----------------------------------------------------------------------
-The dataset processing pipeline reuses the same utility functions and passes the same PerceptionSamplingSpec
+The dataset processing pipeline reuses the same utility functions and passes the same PerceptionSpecDict
 used in the agent system during inference, ensuring consistency between training and production.
     - Eliminates discrepancies and mismatches in data processing
     - Reduces maintenance by maximizing code sharing
