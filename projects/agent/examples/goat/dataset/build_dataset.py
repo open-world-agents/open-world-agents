@@ -32,6 +32,7 @@ def _generate_dataset(dataset_path: Path) -> Generator[dict, None, None]:
     mcap_files = Path(dataset_path).rglob("*.mcap")
     for file_path in mcap_files:
         with OWAMcapReader(file_path) as reader:
+            # TODO: implement here
             valid_intervals = [(reader.start_time, reader.end_time)]  # Example intervals
             valid_intervals = [((reader.start_time + reader.end_time) // 2, reader.end_time)]  # Example intervals
             # In real implementation, these intervals are derived by various logics.

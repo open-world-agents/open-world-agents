@@ -179,3 +179,7 @@ def verify_tokenizer(model_id: str = "HuggingFaceTB/SmolVLM2-256M-Video-Instruc"
     D = test_tokenizer(tokenizer)
 
     assert A == B == C == D
+
+
+if __name__ == "__main__":
+    app()

@@ -21,6 +21,9 @@ def main(
 
     dataset = generate_conversation(dataset)
 
+    # TODO: implement "sampling_weight" column to the dataset, which is used to deal with unbalanced dataset.
+    # e.g. too much "forward" events must  have lower sampling weight.
+
     dataset.save_to_disk(output_path)
 
 
