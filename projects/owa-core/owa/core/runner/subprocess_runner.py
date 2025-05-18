@@ -124,12 +124,11 @@ class SubprocessRunner(RunnableThread):
             # Sleep briefly to avoid busy waiting while checking status
             self._stop_event.wait(0.5)
 
-        # Wait for the process to terminate fully with timeout
-        rt = self._process.wait(5)
-        if rt == 0:
-            logger.info("SubprocessRunner terminated successfully.")
-        else:
-            logger.error(f"SubprocessRunner terminated with return code {rt}")
+        # Grants time for the process to stop signal gracefully
+        try:
+            self._process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            ...
 
     def cleanup(self):
         """
@@ -140,11 +139,14 @@ class SubprocessRunner(RunnableThread):
         2. Forceful killing if termination times out
         3. Error logging for any issues during cleanup
         """
-        if self._process and self._process.poll() is None:
+        if self._process is None:
+            return
+        rt = self._process.poll()
+        if rt is None:
             try:
                 # Try graceful termination first
                 self._process.terminate()
-                self._process.wait(timeout=5)
+                rt = self._process.wait(timeout=5)
             except subprocess.TimeoutExpired:
                 # If graceful termination fails, forcefully kill the process
                 self._process.kill()
@@ -155,6 +157,12 @@ class SubprocessRunner(RunnableThread):
 
                 traceback.print_exc()
                 pass  # Continue cleanup despite errors
+
+        # Inform about the termination status
+        if rt == 0:
+            logger.info("SubprocessRunner terminated successfully.")
+        else:
+            logger.error(f"SubprocessRunner terminated with return code {rt}")
 
         # Clear the process reference
         self._process = None

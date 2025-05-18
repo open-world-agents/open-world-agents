@@ -3,7 +3,7 @@ from collections import deque
 
 from owa.core.registry import RUNNABLES
 
-from ..msg import FrameStamped
+from ..msg import ScreenEmitted
 from .listeners import ScreenListener
 
 
@@ -48,12 +48,12 @@ class ScreenCapture(ScreenListener):
         super().on_configure(callback=on_frame, *args, **kwargs)
         return self
 
-    def grab(self) -> FrameStamped:
+    def grab(self) -> ScreenEmitted:
         """
         Get the most recent frame (blocks until frame is available).
 
         Returns:
-            FrameStamped: Latest captured frame with timestamp.
+            ScreenEmitted: Latest captured frame with timestamp.
 
         Raises:
             TimeoutError: If no frame is received within 1 second.
