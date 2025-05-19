@@ -31,7 +31,7 @@ def perception_to_conversation(
     is_training: bool,
     spec: PerceptionSpecDict | None = None,
     event_processor: EventProcessor | None = None,
-) -> tuple[Perception, dict]:
+) -> tuple[Perception, SmolVLMInput | None]:
     """For events later than 'now', it's considered as future events('label')."""
 
     if spec is None:
@@ -51,12 +51,12 @@ def perception_to_conversation(
             + perception_history["inputs/screen"],
             key=lambda x: x.timestamp,
         )
-        tokenized_history = "".join(event_processor.tokenize(event_history))
+        tokenized_history = "".join(event_processor.tokenize(event_history, now=now))
 
         event_label = sorted(
             perception_history["outputs/keyboard"] + perception_history["outputs/mouse"], key=lambda x: x.timestamp
         )
-        tokenized_label = "".join(event_processor.tokenize(event_label))
+        tokenized_label = "".join(event_processor.tokenize(event_label, now=now))
 
         messages = [
             {

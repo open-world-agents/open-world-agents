@@ -317,10 +317,10 @@ class EventProcessor:
                 return KeyboardEvent(event_type=event_type, vk=vk)
         return None
 
-    def tokenize(self, events: List[Event], screen_size: Optional[Tuple[int, int]] = None) -> List[str]:
+    def tokenize(self, events: List[Event], now: int = 0, screen_size: Optional[Tuple[int, int]] = None) -> List[str]:
         result = []
         for event in events:
-            tokens = [self._tokenize_timestamp(event.timestamp)]
+            tokens = [self._tokenize_timestamp(event.timestamp - now)]
             msg = event.msg
             if isinstance(msg, KeyboardEvent):
                 tokens.append(self._tokenize_keyboard(msg))

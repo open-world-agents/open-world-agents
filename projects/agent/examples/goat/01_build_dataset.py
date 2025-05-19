@@ -3,7 +3,7 @@ from typing import Annotated
 
 import typer
 from accelerate.utils import set_seed
-from dataset.build_dataset import create_dataset, generate_conversation
+from dataset.build_dataset import create_dataset, generate_conversation, generate_sampling_weight
 from datasets import Dataset
 
 set_seed(23)
@@ -20,11 +20,13 @@ def main(
         print(data)  # Process the data as needed
 
     dataset = generate_conversation(dataset)
+    dataset = generate_sampling_weight(dataset)
 
     # TODO: implement "sampling_weight" column to the dataset, which is used to deal with unbalanced dataset.
     # e.g. too much "forward" events must  have lower sampling weight.
 
     dataset.save_to_disk(output_path)
+    dataset.to_json(output_path.with_suffix(".jsonl"), lines=True)
 
 
 if __name__ == "__main__":

@@ -81,6 +81,10 @@ class IntervalUnion(BaseModel):
     def from_tuple(cls, intervals: List[Tuple[int, int]]) -> "IntervalUnion":
         return cls(intervals=[IntervalUnit(start_time=interval[0], end_time=interval[1]) for interval in intervals])
 
+    @classmethod
+    def from_range(cls, start_time: int, end_time: int) -> "IntervalUnion":
+        return cls(intervals=[IntervalUnit(start_time=start_time, end_time=end_time)])
+
     def to_tuple(self) -> List[Tuple[int, int]]:
         return [(interval.start_time, interval.end_time) for interval in self.intervals]
 
@@ -142,5 +146,5 @@ if __name__ == "__main__":
         intervals=[IntervalUnit(start_time=1, end_time=3), IntervalUnit(start_time=2, end_time=4)]
     )
     print(interval)
-    interval -= IntervalUnion(intervals=[IntervalUnit(start_time=2, end_time=3)])
+    interval -= IntervalUnion.from_tuple([(2, 3)])
     print(interval)
