@@ -3,8 +3,9 @@ from typing import Annotated
 
 import typer
 from accelerate.utils import set_seed
-from dataset.build_dataset import create_dataset, generate_conversation, generate_sampling_weight
 from datasets import DatasetDict
+
+from dataset.build_dataset import create_dataset, generate_conversation, generate_sampling_weight
 
 set_seed(23)
 app = typer.Typer()

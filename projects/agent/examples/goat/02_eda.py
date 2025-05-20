@@ -2,8 +2,9 @@ from pathlib import Path
 
 import orjson
 import typer
-from dataset.utils import transform
 from datasets import DatasetDict, load_from_disk
+
+from dataset.utils import transform
 
 app = typer.Typer()
 

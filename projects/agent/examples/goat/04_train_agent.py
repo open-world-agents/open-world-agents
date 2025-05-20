@@ -36,11 +36,12 @@ import numpy as np
 import torch
 from accelerate import Accelerator
 from accelerate.utils import set_seed
-from dataset.utils import RepeatingDataset, collate_fn, transform
 from datasets import DatasetDict, load_from_disk
 from torch.utils.data import Subset
 from transformers import AutoModelForImageTextToText, AutoProcessor
 from trl import SFTConfig, SFTTrainer
+
+from dataset.utils import RepeatingDataset, collate_fn, transform
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train SmolVLM model on OWA game queries")

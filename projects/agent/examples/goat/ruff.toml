@@ -6,4 +6,5 @@ line-length = 119
 known-first-party = [
     "mcap_owa",
     "owa",
+    "dataset",
 ]
