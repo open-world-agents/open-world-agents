@@ -52,6 +52,7 @@ class FileRepository:
 
         # Find all MCAP files with corresponding MKV files
         files = []
+        # NOTE: local glob skip symlinked directory, which is weird.
         for mcap_file in fs.glob(f"{path}/**/*.mcap"):
             mcap_file = Path(mcap_file)
 
