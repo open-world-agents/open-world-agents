@@ -25,8 +25,8 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Handle application lifespan events"""
     logger.info("Starting OWA Viewer application")
-    # Run immediate cleanup
-    cache_service.cleanup()
+    # Run immediate clear
+    cache_service.clear()
     # Start periodic cleanup (every hour by default)
     await cache_service.start_periodic_cleanup()
 
