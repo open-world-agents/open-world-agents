@@ -210,7 +210,7 @@ class OWAMcapPerceptionReader:
 
 def create_dataset():
     for file_path in ["file1.mcap", "file2.mcap"]:
-        with OWAMcapReader(file_path) as reader:
+        with OWAMcapReader(file_path) as reader:  # noqa: F841
             valid_intervals = [(0, 1000), (2000, 3000)]  # Example intervals
             # In real implementation, these intervals are derived by various logics.
             # e.g. representing valid interval with special key, ...
@@ -219,7 +219,7 @@ def create_dataset():
                 current_perception = OWAMcapPerceptionReader(file_path).sample(now)
                 pending_thought = Pipe([], [], current_perception, now=now) | perception_to_conversation
                 yield file_path, now, pending_thought
-            except Exception as e:
+            except Exception as e:  # noqa: F841
                 ...
 
 
