@@ -60,6 +60,26 @@ enqueue_thought = lambda x: None  # Placeholder for the actual implementation
 enqueue_action = lambda: None  # Placeholder for the actual implementation
 
 
+def dequeue_perceptions(perception_queue):
+    """Get all available perceptions from the queue without blocking."""
+    perceptions = []
+    while not perception_queue.empty():
+        try:
+            perception = perception_queue.get_nowait()
+            perceptions.append(perception)
+        except Queue.Empty:
+            break
+    return perceptions
+
+
+def dequeue_decision(decision_queue):
+    """Get the latest decision from the queue, or None if no decision is available."""
+    try:
+        return decision_queue.get_nowait()
+    except Queue.Empty:
+        return None
+
+
 class RealTimeAgentCoordinator(Runnable):
     def on_configure(self, perception_queue: Queue, decision_queue: Queue, clock: Clock):
         self._perception_queue = perception_queue  # from AgentExecutor to Agent
@@ -210,6 +230,13 @@ def iter_timestamps(valid_intervals):
 
 
 class MyDataset:
+    def __init__(self, data):
+        """Initialize with a list of file paths and timestamps."""
+        self._data = data
+
+    def __len__(self):
+        return len(self._data)
+
     def __getitem__(self, idx):
         # 1. Get input from the queue
         file_path, timestamp = self._data[idx]
@@ -220,9 +247,18 @@ class MyDataset:
         )
         # mllm_preprocess is done at data collator in batch.
 
-        return pending_thought
+        return pending_thought.execute()
 
 
-def collate_fn(batch):
-    batch = lazy_load_images(batch)
-    return batch
+def collate_fn(batch, processor=None):
+    """Process a batch of data samples."""
+    if processor is None:
+        return batch
+
+    # Apply any batch-level processor operations
+    processed_batch = []
+    for item in batch:
+        processed_item = apply_processor(processor, item)
+        processed_batch.append(processed_item)
+
+    return processed_batch

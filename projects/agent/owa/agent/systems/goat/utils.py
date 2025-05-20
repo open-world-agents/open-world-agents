@@ -292,8 +292,8 @@ class EventProcessor:
 
     def _tokenize_timestamp(self, timestamp: int) -> str:
         cfg = self.config
-        clipped = min(max(timestamp, cfg.timestamp_min_ns), cfg.timestamp_max_ns)
-        idx = int((clipped - cfg.timestamp_min_ns) // cfg.timestamp_interval_ns)
+        mod = timestamp % (cfg.timestamp_max_ns - cfg.timestamp_min_ns)
+        idx = int((mod - cfg.timestamp_min_ns) // cfg.timestamp_interval_ns)
         return cfg.timestamp_token_format.format(idx=idx)
 
     def _detokenize_timestamp(self, token: str) -> int:
@@ -317,11 +317,71 @@ class EventProcessor:
                 return KeyboardEvent(event_type=event_type, vk=vk)
         return None
 
-    def tokenize(self, events: List[Event], now: int = 0, screen_size: Optional[Tuple[int, int]] = None) -> List[str]:
+    def _filter_repeated_key_presses(self, events: List[Event]) -> List[Event]:
+        """
+        Filter out repeated keyboard press events, keeping only the first and last press
+        in a sequence of identical key presses within the same press-release cycle.
+
+        Properly handles multiple press-release cycles for the same key.
+
+        Args:
+            events: List of input events
+
+        Returns:
+            Filtered list of events with redundant key presses removed
+        """
+        if not events:
+            return []
+
+        # Track active press sequences by key (vk)
+        active_sequences = {}  # vk -> (start_idx, current_idx)
+        # Track all indices to remove
+        indices_to_remove = set()
+
+        for i, event in enumerate(events):
+            if event.topic == "keyboard" and isinstance(event.msg, KeyboardEvent):
+                vk = event.msg.vk
+                event_type = event.msg.event_type
+
+                if event_type == "press":
+                    # New or continued press sequence
+                    if vk in active_sequences:
+                        # We have a previous press without a release yet
+                        # Update the end of the sequence
+                        start_idx, current_idx = active_sequences[vk]
+
+                        # Mark the middle press events for removal
+                        # (but keep first and current one)
+                        if current_idx != start_idx:  # If we already have at least 2 presses
+                            indices_to_remove.add(current_idx)  # Remove the previous "last" press
+
+                        # Update the current press position
+                        active_sequences[vk] = (start_idx, i)
+                    else:
+                        # Start a new press sequence
+                        active_sequences[vk] = (i, i)
+
+                elif event_type == "release":
+                    # End of a press sequence
+                    if vk in active_sequences:
+                        active_sequences.pop(vk)
+
+        # Create filtered event list
+        return [event for i, event in enumerate(events) if i not in indices_to_remove]
+
+    def tokenize(self, events: List[Event], screen_size: Optional[Tuple[int, int]] = None) -> List[str]:
+        if not events:
+            return []
+
+        # Filter out redundant key press events
+        filtered_events = self._filter_repeated_key_presses(events)
+
+        # Process the filtered events
         result = []
-        for event in events:
-            tokens = [self._tokenize_timestamp(event.timestamp - now)]
+        for event in filtered_events:
+            tokens = [self._tokenize_timestamp(event.timestamp)]
             msg = event.msg
+
             if isinstance(msg, KeyboardEvent):
                 tokens.append(self._tokenize_keyboard(msg))
             elif isinstance(msg, MouseEvent):
@@ -330,7 +390,9 @@ class EventProcessor:
                 tokens += [self.config.screen_token]
             else:
                 tokens.append("<UNKNOWN_EVENT>")
+
             result.append("".join(tokens))
+
         return result
 
     def detokenize(self, token_strs: List[str], screen_size: Optional[Tuple[int, int]] = None) -> List[Event]:
@@ -394,6 +456,8 @@ if __name__ == "__main__":
     processor = EventProcessor(config=config)
     events = [
         Event(timestamp=-50 * TimeUnits.MSECOND, topic="keyboard", msg=KeyboardEvent(event_type="press", vk=65)),
+        Event(timestamp=-45 * TimeUnits.MSECOND, topic="keyboard", msg=KeyboardEvent(event_type="press", vk=65)),
+        Event(timestamp=-35 * TimeUnits.MSECOND, topic="keyboard", msg=KeyboardEvent(event_type="press", vk=65)),
         Event(timestamp=-10 * TimeUnits.MSECOND, topic="mouse", msg=MouseEvent(event_type="move", x=10, y=20)),
         Event(timestamp=0, topic="screen", msg=ScreenEmitted(path="output.mkv", pts=123 * TimeUnits.MSECOND)),
         Event(

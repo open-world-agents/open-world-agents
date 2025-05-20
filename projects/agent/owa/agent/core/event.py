@@ -1,9 +1,11 @@
-from typing import Any
+from typing import Generic, TypeVar
 
 from pydantic import BaseModel
 
+T = TypeVar("T")
 
-class Event(BaseModel):
+
+class Event(BaseModel, Generic[T]):
     timestamp: int
     topic: str
-    msg: Any
+    msg: T

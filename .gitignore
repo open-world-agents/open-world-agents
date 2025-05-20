@@ -1,8 +1,12 @@
 *.log
+*.err
+*.out
 .env
+wandb/
 
 # Temporary directory
 /tmp/
+/projects/agent/examples/goat/tmp
 
 # documentation site
 /site/

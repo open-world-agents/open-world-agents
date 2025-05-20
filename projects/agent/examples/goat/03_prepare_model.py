@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Annotated
 
 import torch
 import typer
@@ -13,11 +12,13 @@ app = typer.Typer()
 
 @app.command()
 def prepare_model(
-    save_path: Annotated[Path, typer.Option("--save_path")],
-    event_config: EventProcessorConfig,
+    save_path: Path,
     model_id: str = "HuggingFaceTB/SmolVLM2-256M-Video-Instruct",
-    apply_semantic_init: bool = False,
+    apply_semantic_init: bool = True,
 ):
+    # TODO: make this configurable
+    event_config = EventProcessorConfig()
+
     # Load base model and processor
     model = AutoModelForImageTextToText.from_pretrained(model_id, torch_dtype=torch.bfloat16)
 
@@ -56,24 +57,14 @@ def prepare_model(
     tokens_to_expand.extend(event_config.mouse_scroll_tokens)
     tokens_to_expand.extend(event_config.screen_tokens)
 
-    processor.tokenizer.add_tokens(tokens_to_expand)
+    assert processor.tokenizer.add_tokens(tokens_to_expand) == len(tokens_to_expand)
     model.resize_token_embeddings(len(processor.tokenizer))
     # Outputs:
     # > The new embeddings will be initialized from a multivariate normal distribution that has old embeddings' mean and covariance. As described in this article: https://nlp.stanford.edu/~johnhew/vocab-expansion.html. To disable this, use `mean_resizing=False`
     # > The new lm_head weights will be initialized from a multivariate normal distribution that has old embeddings' mean and covariance. As described in this article: https://nlp.stanford.edu/~johnhew/vocab-expansion.html. To disable this, use `mean_resizing=False`
 
     after_token_count = len(processor.tokenizer)
-    print(f"After token count: {after_token_count}")
-
-    added_token_count = (
-        len(event_config.keyboard_tokens)
-        + len(event_config.timestamp_tokens)
-        + len(event_config.mouse_move_tokens)
-        + len(event_config.mouse_click_tokens)
-        + len(event_config.mouse_scroll_tokens)
-        + len(event_config.screen_tokens)
-    )
-    assert after_token_count == before_token_count + added_token_count
+    print(f"After token count: {after_token_count}. Note that <image> was already in the tokenizer.")
 
     # ===============================
     # Semantic embedding initialization via heuristics

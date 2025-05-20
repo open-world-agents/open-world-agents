@@ -2,12 +2,12 @@ from pathlib import Path
 from typing import Generator
 
 import numpy as np
-from datasets import Dataset, DatasetInfo
+from datasets import Dataset, DatasetDict, DatasetInfo
 
 from mcap_owa.highlevel import OWAMcapReader
 from owa.agent.core import OWAMcapPerceptionReader
 from owa.agent.core.perception import Perception
-from owa.agent.systems.goat import PERCEPTION_SPEC_DICT
+from owa.agent.systems.goat import PERCEPTION_SPEC_DICT, EventProcessor
 from owa.agent.systems.goat.processors import perception_to_conversation
 from owa.core.time import TimeUnits
 from owa.env.desktop.constants import VK
@@ -32,8 +32,7 @@ def iter_timestamps(valid_intervals: list[tuple[int, int]]) -> Generator[int, No
             current_time += int(sample_interval() * TimeUnits.SECOND)
 
 
-def _generate_dataset(dataset_path: Path) -> Generator[dict, None, None]:
-    mcap_files = Path(dataset_path).rglob("*.mcap")
+def _generate_train_dataset(mcap_files: list[Path]) -> Generator[dict, None, None]:
     for file_path in mcap_files:
         valid_intervals = []
         with OWAMcapReader(file_path) as reader:
@@ -49,23 +48,47 @@ def _generate_dataset(dataset_path: Path) -> Generator[dict, None, None]:
             yield {"file_path": file_path.as_posix(), "timestamp": now}
 
 
-def create_dataset(dataset_path: Path) -> Dataset:
-    """
-    Create a dataset from the given directory containing .mcap files.
-    """
-    dataset = Dataset.from_generator(_generate_dataset, gen_kwargs={"dataset_path": dataset_path})
-    dataset.info.update(
-        DatasetInfo(
-            description="",
-            dataset_name="open-world-agents/goat",
-            homepage="https://github.com/open-world-agents",
-        )
+def _generate_test_dataset(mcap_files: list[Path]) -> Generator[dict, None, None]:
+    for file_path in mcap_files:
+        valid_intervals = []
+        with OWAMcapReader(file_path) as reader:
+            for topic, timestamp, msg in reader.iter_decoded_messages(topics=["keyboard"]):
+                if msg.event_type == "release" and msg.vk == RECORD_START_STOP_KEY:
+                    valid_intervals.append(timestamp)
+                elif msg.vk == RECORD_PAUSE_KEY:
+                    raise NotImplementedError("Pause key is not implemented")
+        valid_intervals = list(zip(valid_intervals[::2], valid_intervals[1::2]))
+        # Filter only intervals longer than 30 seconds (SUPER HEXAGON)
+        valid_intervals = list(filter(lambda x: x[1] - x[0] > 30 * TimeUnits.SECOND, valid_intervals))
+        for now in iter_timestamps(valid_intervals):
+            yield {"file_path": file_path.as_posix(), "timestamp": now}
+
+
+def create_dataset(train_path: Path, test_path: Path) -> DatasetDict:
+    train_files = list(Path(train_path).rglob("*.mcap"))
+    test_files = list(Path(test_path).rglob("*.mcap"))
+
+    train_dataset = Dataset.from_generator(
+        _generate_train_dataset, gen_kwargs={"mcap_files": train_files}, split="train"
     )
-    return dataset
+    test_dataset = Dataset.from_generator(_generate_test_dataset, gen_kwargs={"mcap_files": test_files}, split="test")
+
+    info_to_update = DatasetInfo(
+        description="",
+        dataset_name="open-world-agents/goat",
+        homepage="https://github.com/open-world-agents",
+    )
+    train_dataset.info.update(info_to_update)
+    test_dataset.info.update(info_to_update)
+
+    dataset_dict = DatasetDict({"train": train_dataset, "test": test_dataset})
+    return dataset_dict
 
 
-def generate_conversation(dataset: Dataset) -> Dataset:
+def generate_conversation(dataset: DatasetDict) -> DatasetDict:
     """Generate and append new column, 'conversation', to the dataset."""
+
+    event_processor = EventProcessor()  # TODO: make this configurable
 
     def add_conversation(examples):
         conversations = []
@@ -73,18 +96,23 @@ def generate_conversation(dataset: Dataset) -> Dataset:
             with OWAMcapPerceptionReader(file_path) as reader:
                 current_perception = reader.sample(now, spec=PERCEPTION_SPEC_DICT)
                 perception_history, conversation = perception_to_conversation(
-                    Perception(), current_perception, now=now, spec=PERCEPTION_SPEC_DICT, is_training=True
+                    Perception(),
+                    current_perception,
+                    now=now,
+                    spec=PERCEPTION_SPEC_DICT,
+                    is_training=True,
+                    event_processor=event_processor,
                 )
                 conversations.append(conversation.model_dump_json(exclude_none=True))
         examples["conversation"] = conversations
         return examples
 
-    dataset = dataset.map(add_conversation, num_proc=16, batched=True, desc="Generating conversations")
+    dataset = dataset.map(add_conversation, num_proc=16, batched=True, batch_size=16, desc="Generating conversations")
     # dataset.set_transform(add_conversation)
     return dataset
 
 
-def generate_sampling_weight(dataset: Dataset) -> Dataset:
+def generate_sampling_weight(dataset: DatasetDict) -> DatasetDict:
     """Generate and append new column, 'sampling_weight', to the dataset."""
 
     def add_sampling_weight(examples):

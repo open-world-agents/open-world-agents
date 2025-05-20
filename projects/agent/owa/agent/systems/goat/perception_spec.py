@@ -65,9 +65,9 @@ PERCEPTION_SPEC_DICT = PerceptionSpecDict(
         # Screen - continuous event with 20 fps sampling
         "inputs/screen": PerceptionSpec(
             topics=["screen"],
-            window_start=-0.25 - 0.05,  # 0.05 seconds margin to ensure enough `k` samples
+            window_start=-0.50 - 0.05,  # 0.05 seconds margin to ensure enough `k` samples
             window_end=0,
-            sample_configs=[SamplingConfig(sampling_rate=20.0)],
+            sample_configs=[SamplingConfig(sampling_rate=10.0)],
             trim_configs=[TrimConfig(trim_mode="last_k", trim_k=5)],
         ),
         # Keyboard - discrete event, get all events in window
@@ -103,5 +103,31 @@ PERCEPTION_SPEC_DICT = PerceptionSpecDict(
             window_end=1,
             sample_configs=[SamplingConfig(sample_if=is_move_event, sampling_rate=20.0)],
         ),
+    }
+)
+
+
+PERCEPTION_SPEC_DICT = PerceptionSpecDict(
+    {
+        # Screen - continuous event with 20 fps sampling
+        "inputs/screen": PerceptionSpec(
+            topics=["screen"],
+            window_start=-0.50 - 0.05,  # 0.05 seconds margin to ensure enough `k` samples
+            window_end=0,
+            sample_configs=[SamplingConfig(sampling_rate=10.0)],
+            trim_configs=[TrimConfig(trim_mode="last_k", trim_k=5)],
+        ),
+        # Keyboard - discrete event, get all events in window
+        "inputs/keyboard": PerceptionSpec(topics=["keyboard"], window_start=-0.5, window_end=0),
+        # Keyboard/Mouse state - needed to ensure stateful processing of `click` or `press`/`release` events
+        # FIXME: I've thought about this a lot, but I don't know the answer. Maybe some improvement is needed.
+        "inputs/keyboard/state": PerceptionSpec(
+            topics=["keyboard/state"],
+            window_start=-0.5,
+            window_end=0,
+            trim_configs=[TrimConfig(trim_mode="first_k", trim_k=1)],
+        ),
+        # Keyboard label - discrete event, get all events in label window
+        "outputs/keyboard": PerceptionSpec(topics=["keyboard"], window_start=0, window_end=1),
     }
 )

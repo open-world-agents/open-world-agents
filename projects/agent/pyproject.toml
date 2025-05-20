@@ -9,6 +9,7 @@ dependencies = [
     "datasets>=3.6.0",
     "fastapi[standard]>=0.115.12",
     "line-profiler>=4.2.0",
+    "matplotlib>=3.10.3",
     "num2words>=0.5.14",
     "openai>=1.76.2",
     "owa",

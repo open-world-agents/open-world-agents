@@ -1,11 +1,13 @@
 import warnings
-from typing import Any
+from pathlib import Path
 
 import torch
-from pydantic import BaseModel
+from PIL import Image
+from pydantic import BaseModel, ConfigDict
 from transformers import GPT2TokenizerFast
 from transformers.models.smolvlm import SmolVLMProcessor
 
+from owa.agent.core import Event
 from owa.agent.core.perception import Perception, PerceptionSpecDict, apply_spec
 from owa.env.gst.msg import ScreenEmitted
 
@@ -19,7 +21,9 @@ Given past event trajectory, predict the future sequence of event.
 
 
 class SmolVLMInput(BaseModel):
-    images: list[Any]
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    images: list[Event[ScreenEmitted] | Image.Image]
     messages: list[dict]
 
 
@@ -51,18 +55,20 @@ def perception_to_conversation(
             + perception_history["inputs/screen"],
             key=lambda x: x.timestamp,
         )
-        tokenized_history = "".join(event_processor.tokenize(event_history, now=now))
+        tokenized_history = "".join(event_processor.tokenize(event_history))
+
+        now_string = f"\nNow: {event_processor._tokenize_timestamp(now)}"
 
         event_label = sorted(
             perception_history["outputs/keyboard"] + perception_history["outputs/mouse"], key=lambda x: x.timestamp
         )
-        tokenized_label = "".join(event_processor.tokenize(event_label, now=now))
+        tokenized_label = "".join(event_processor.tokenize(event_label))
 
         messages = [
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": CHAT_INSTRUCTION + tokenized_history},
+                    {"type": "text", "text": CHAT_INSTRUCTION + tokenized_history + now_string},
                 ],
             }
         ]
@@ -81,10 +87,12 @@ def perception_to_conversation(
     return perception_history, conversation
 
 
-def lazy_load_images(conversation):
+def lazy_load_images(conversation, *, mcap_path: str | None = None):
     images = []
     for event in conversation.images:
         msg: ScreenEmitted = event.msg
+        if mcap_path is not None:
+            msg.path = (Path(mcap_path).parent / msg.path).as_posix()
         images.append(msg.to_pil_image())
     conversation.images = images
     return conversation
