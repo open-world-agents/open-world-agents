@@ -15,8 +15,9 @@ from .utils import EventProcessor
 
 def decision_to_action(decision: str, *, now: int, event_processor: EventProcessor) -> list[Event]:
     events = event_processor.detokenize(decision)
+    recon_now = event_processor.detokenize(event_processor._tokenize_timestamp(now))[0].timestamp
     for event in events:
-        event.timestamp = event.timestamp + now
+        event.timestamp = (event.timestamp - recon_now) % event_processor.timestamp_range + now
     return events
 
 
@@ -77,7 +78,7 @@ class RealTimeAgentCoordinator(Runnable):
                 # TODO: more safe, atomic way to handle queue
                 try:
                     self._thought_queue.get_nowait()
-                    logger.info("[THINK] Thought queue is full, removing the oldest thought")
+                    logger.debug("[THINK] Thought queue is full, removing the oldest thought")
                 except queue.Empty:
                     ...
                 self._thought_queue.put_nowait(pending_thought)  # Enqueue the generated thought

@@ -57,7 +57,7 @@ def setup_resources():
         thought_queue=thought_queue,
         decision_queue=decision_queue,
         clock=clock,
-        model_id="HuggingFaceTB/SmolVLM2-256M-Video-Instruct",
+        model_id=r"C:\Users\MilkClouds\Downloads\SmolVLM2-256M-Video-Instruct-1e4-norotaug-repeat5-epoch20",
     )
     action_executor = ActionExecutor().configure(action_queue=action_queue, clock=clock)
 

@@ -293,7 +293,8 @@ class EventProcessor:
     def _tokenize_timestamp(self, timestamp: int) -> str:
         cfg = self.config
         mod = timestamp % (cfg.timestamp_max_ns - cfg.timestamp_min_ns)
-        idx = int((mod - cfg.timestamp_min_ns) // cfg.timestamp_interval_ns)
+        idx = mod // cfg.timestamp_interval_ns
+        assert 0 <= idx < len(cfg.timestamp_tokens), f"Timestamp {timestamp} out of range"
         return cfg.timestamp_token_format.format(idx=idx)
 
     def _detokenize_timestamp(self, token: str) -> int:
@@ -449,6 +450,13 @@ class EventProcessor:
                 events.append(Event(timestamp=timestamp, topic="screen", msg=ScreenEmitted(path="", pts=0)))
 
         return events
+
+    @property
+    def timestamp_range(self) -> int:
+        """
+        Returns the range of timestamps in nanoseconds.
+        """
+        return self.config.timestamp_max_ns - self.config.timestamp_min_ns
 
 
 # --- Example usage ---
