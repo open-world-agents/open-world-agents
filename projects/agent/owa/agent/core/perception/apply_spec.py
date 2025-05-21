@@ -19,8 +19,9 @@ def apply_spec(perception: Perception, *, now: int, spec: PerceptionSpecDict) ->
     result = Perception()
     info = {}
 
-    for topic in perception.keys():
-        events = perception[topic]
+    for topic, events in perception.items():
+        if topic not in spec:
+            continue
         topic_spec: PerceptionSpec = spec[topic]
         original_count = len(events)
 

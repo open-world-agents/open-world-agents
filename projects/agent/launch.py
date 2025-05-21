@@ -51,7 +51,7 @@ def setup_resources():
         action_queue=action_queue,
         perception_spec_dict=PERCEPTION_SPEC_DICT,
         event_processor=event_processor,
-        rate=1.0,
+        rate=20.0,
     )
     model_worker = ModelWorker().configure(
         thought_queue=thought_queue,

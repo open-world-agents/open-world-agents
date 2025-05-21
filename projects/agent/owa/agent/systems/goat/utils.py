@@ -395,12 +395,15 @@ class EventProcessor:
 
         return result
 
-    def detokenize(self, token_strs: List[str], screen_size: Optional[Tuple[int, int]] = None) -> List[Event]:
+    def detokenize(self, token_strs: str | List[str], screen_size: Optional[Tuple[int, int]] = None) -> List[Event]:
         """
         Accepts either a list of per-event token strings, or a single string containing
         a concatenation of multiple tokenized events (e.g. "".join(token_strs)).
         Returns a list of restored events.
         """
+        if isinstance(token_strs, str):
+            token_strs = [token_strs]
+
         events = []
         screen_size = screen_size if screen_size is not None else self.config.screen_size
 
@@ -456,7 +459,6 @@ if __name__ == "__main__":
     processor = EventProcessor(config=config)
     events = [
         Event(timestamp=-50 * TimeUnits.MSECOND, topic="keyboard", msg=KeyboardEvent(event_type="press", vk=65)),
-        Event(timestamp=-45 * TimeUnits.MSECOND, topic="keyboard", msg=KeyboardEvent(event_type="press", vk=65)),
         Event(timestamp=-35 * TimeUnits.MSECOND, topic="keyboard", msg=KeyboardEvent(event_type="press", vk=65)),
         Event(timestamp=-10 * TimeUnits.MSECOND, topic="mouse", msg=MouseEvent(event_type="move", x=10, y=20)),
         Event(timestamp=0, topic="screen", msg=ScreenEmitted(path="output.mkv", pts=123 * TimeUnits.MSECOND)),

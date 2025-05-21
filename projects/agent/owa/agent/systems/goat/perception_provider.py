@@ -10,7 +10,8 @@ from owa.core.registry import LISTENERS, activate_module
 
 from .perception_spec import PERCEPTION_SPEC_DICT
 
-WINDOW_NAME = None
+# TODO: make this configurable
+WINDOW_NAME = "Super Hexagon"
 # TODO: adjust FPS per PerceptionSpecDict for more efficient processing
 # Note that FPS=60 works well without problem since it certainly ensures "upper bound" of the perceived info.
 FPS = 60

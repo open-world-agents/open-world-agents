@@ -9,11 +9,14 @@ from owa.agent.core.pipe import Pipe
 from owa.core import Runnable
 
 from .processors import lazy_load_images, perception_to_conversation
+from .trigger_speedhack import disable_speedhack, enable_speedhack
 from .utils import EventProcessor
 
 
-def decision_to_action(decision: str, *, event_processor: EventProcessor) -> list[Event]:
+def decision_to_action(decision: str, *, now: int, event_processor: EventProcessor) -> list[Event]:
     events = event_processor.detokenize(decision)
+    for event in events:
+        event.timestamp = event.timestamp + now
     return events
 
 
@@ -28,6 +31,7 @@ class RealTimeAgentCoordinator(Runnable):
         perception_spec_dict: PerceptionSpecDict,
         rate: float,
         clock: Clock | None = None,
+        world_pause: bool = False,
     ):
         self._perception_queue = perception_queue
         self._thought_queue = thought_queue
@@ -37,6 +41,7 @@ class RealTimeAgentCoordinator(Runnable):
         self._rate = Rate(rate, clock=clock)
         self._perception_spec_dict = perception_spec_dict
         self._event_processor = event_processor
+        self._world_pause = world_pause
 
     def loop(self, *, stop_event: threading.Event):
         # To prevent cold-start, we need to wait for the first perception
@@ -49,10 +54,11 @@ class RealTimeAgentCoordinator(Runnable):
             current_perceptions = self._perception_queue.iter_queue()
             logger.trace(f"[PERCEIVE] Current perceptions: {current_perceptions!r}")
 
+            now = self._clock.get_time_ns()
             perception_history, conversation = perception_to_conversation(
                 perception_history,
                 current_perceptions,
-                now=self._clock.get_time_ns(),
+                now=now,
                 is_training=False,
                 spec=self._perception_spec_dict,
                 event_processor=self._event_processor,
@@ -61,6 +67,10 @@ class RealTimeAgentCoordinator(Runnable):
 
             # 2. Think. To: ModelWorker
             if conversation is not None:
+                if self._world_pause:
+                    self._clock.pause()
+                    enable_speedhack()
+
                 logger.debug("[THINK] Starting thought generation for conversation")
                 pending_thought = (Pipe(conversation) | lazy_load_images).execute()
                 logger.debug(f"[THINK] Enqueueing thought: {pending_thought!r}")
@@ -74,9 +84,14 @@ class RealTimeAgentCoordinator(Runnable):
 
             # 3. Act. From: ModelWorker, To: ActionExecutor
             try:
-                decision = self._decision_queue.get_nowait()
+                if not self._world_pause:
+                    decision = self._decision_queue.get_nowait()
+                else:
+                    decision = self._decision_queue.get()
+                    self._clock.resume()
+                    disable_speedhack()
                 logger.info(f"[DECISION] Received decision: {decision!r}")
-                actions = decision_to_action(decision, event_processor=self._event_processor)
+                actions = decision_to_action(decision, now=now, event_processor=self._event_processor)
                 logger.debug(f"[ACTION] Parsed actions: {actions!r}")
                 for action in actions:
                     logger.trace(f"[ACTION] Enqueueing action: {action!r}")
