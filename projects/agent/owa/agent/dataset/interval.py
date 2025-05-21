@@ -24,6 +24,10 @@ class Interval(BaseModel):
     def __repr__(self) -> str:
         return f"[{self.start}, {self.end})"
 
+    def __iter__(self) -> Iterator[int]:
+        yield self.start
+        yield self.end
+
     @property
     def length(self) -> int:
         """Return the length of this interval."""

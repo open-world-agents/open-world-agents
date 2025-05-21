@@ -33,7 +33,7 @@ def visualize(dataset_path: Path):
 def transform_debug(examples, *, decode_images: bool = True):
     conversation = [orjson.loads(x) for x in examples["conversation"]]
     examples = {
-        "images": [x["images"] for x in conversation],
+        # "images": [x["images"] for x in conversation],
         "messages": [x["messages"] for x in conversation],
     }
     return examples
