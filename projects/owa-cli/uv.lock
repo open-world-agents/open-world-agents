@@ -486,7 +486,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "loguru", specifier = ">=0.7.3" },
-    { name = "opencv-python", specifier = ">=4.11.0.86" },
+    { name = "opencv-python", specifier = ">=4.11.0" },
     { name = "pydantic", specifier = ">=2.10.6" },
 ]
 
@@ -500,20 +500,20 @@ dependencies = [
     { name = "owa-core" },
     { name = "pygetwindow", marker = "sys_platform == 'win32'" },
     { name = "pynput" },
-    { name = "pyobjc-framework-applicationservices", marker = "sys_platform == 'Darwin'" },
-    { name = "pyobjc-framework-quartz", marker = "sys_platform == 'Darwin'" },
+    { name = "pyobjc-framework-applicationservices", marker = "sys_platform == 'darwin'" },
+    { name = "pyobjc-framework-quartz", marker = "sys_platform == 'darwin'" },
     { name = "pywin32", marker = "sys_platform == 'win32'" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "bettercam", specifier = ">=1.0.0" },
-    { name = "opencv-python", specifier = ">=4.11.0.86" },
+    { name = "opencv-python", specifier = ">=4.11.0" },
     { name = "owa-core", editable = "../owa-core" },
     { name = "pygetwindow", marker = "sys_platform == 'win32'", specifier = ">=0.0.9" },
     { name = "pynput", specifier = ">=1.8.0" },
-    { name = "pyobjc-framework-applicationservices", marker = "sys_platform == 'Darwin'", specifier = ">=11.0" },
-    { name = "pyobjc-framework-quartz", marker = "sys_platform == 'Darwin'", specifier = ">=11.0" },
+    { name = "pyobjc-framework-applicationservices", marker = "sys_platform == 'darwin'", specifier = ">=11.0" },
+    { name = "pyobjc-framework-quartz", marker = "sys_platform == 'darwin'", specifier = ">=11.0" },
     { name = "pywin32", marker = "sys_platform == 'win32'", specifier = ">=310" },
 ]
 
@@ -533,7 +533,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "av", specifier = ">=14.3.0" },
-    { name = "opencv-python", specifier = ">=4.11.0.86" },
+    { name = "opencv-python", specifier = ">=4.11.0" },
     { name = "owa-core", editable = "../owa-core" },
     { name = "pillow", specifier = ">=11.1.0" },
     { name = "pygobject-stubs", specifier = ">=2.12.0" },

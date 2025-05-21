@@ -7,11 +7,11 @@ from pathlib import Path
 
 # Mapping of OS/arch to corresponding download URLs
 MCAP_CLI_DOWNLOAD_URLS = {
-    "linux-amd64": "https://github.com/foxglove/mcap/releases/download/releases%2Fmcap-cli%2Fv0.0.51/mcap-linux-amd64",
-    "linux-arm64": "https://github.com/foxglove/mcap/releases/download/releases%2Fmcap-cli%2Fv0.0.51/mcap-linux-arm64",
-    "darwin-amd64": "https://github.com/foxglove/mcap/releases/download/releases%2Fmcap-cli%2Fv0.0.51/mcap-macos-amd64",
-    "darwin-arm64": "https://github.com/foxglove/mcap/releases/download/releases%2Fmcap-cli%2Fv0.0.51/mcap-macos-arm64",
-    "windows-amd64": "https://github.com/foxglove/mcap/releases/download/releases%2Fmcap-cli%2Fv0.0.51/mcap-windows-amd64.exe",
+    "linux-amd64": "https://github.com/foxglove/mcap/releases/download/releases%2Fmcap-cli%2Fv0.0.53/mcap-linux-amd64",
+    "linux-arm64": "https://github.com/foxglove/mcap/releases/download/releases%2Fmcap-cli%2Fv0.0.53/mcap-linux-arm64",
+    "darwin-amd64": "https://github.com/foxglove/mcap/releases/download/releases%2Fmcap-cli%2Fv0.0.53/mcap-macos-amd64",
+    "darwin-arm64": "https://github.com/foxglove/mcap/releases/download/releases%2Fmcap-cli%2Fv0.0.53/mcap-macos-arm64",
+    "windows-amd64": "https://github.com/foxglove/mcap/releases/download/releases%2Fmcap-cli%2Fv0.0.53/mcap-windows-amd64.exe",
 }
 
 
