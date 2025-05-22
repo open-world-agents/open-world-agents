@@ -15,7 +15,7 @@ Desktop recorder for Windows that captures screen, audio, keyboard, mouse, and w
 - **Complete desktop recording**: Video, audio, keyboard/mouse events, window events
 - **High performance**: Hardware-accelerated, low resource usage with Windows APIs and [GStreamer](https://gstreamer.freedesktop.org/). Video encoded by [H265/HEVC](https://en.wikipedia.org/wiki/High_Efficiency_Video_Coding) ensures both high-quality and low bitrate.
 - **Single command operation**: `ocap FILE_LOCATION` (stop with Ctrl+C)
-- **Simple architecture**: Core recording logic in a [single Python file](https://github.com/open-world-agents/open-world-agents/blob/main/projects/ocap/owa/ocap/record.py), making it easy to verify and customize
+- **Simple architecture**: Core recording logic in a [single Python file with 250 lines](https://github.com/open-world-agents/open-world-agents/blob/main/projects/ocap/owa/ocap/record.py), making it easy to verify and customize
 - **Modern data formats**: Video with embedded timestamps in MKV, events in [MCAP format](https://mcap.dev/) for efficient storage, fast querying, and cross-language compatibility
 
 ## Getting Started in 30 Seconds
