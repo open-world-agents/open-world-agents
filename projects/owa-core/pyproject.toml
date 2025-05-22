@@ -1,11 +1,11 @@
 [project]
 name = "owa-core"
-version = "0.3.6"
+version = "0.3.7"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "opencv-python>=4.11.0.86",
+    "opencv-python>=4.11.0",
     "loguru>=0.7.3",
     "pydantic>=2.10.6",
 ]

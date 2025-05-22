@@ -63,7 +63,10 @@ class CacheService:
         """Cache file list"""
         self.file_list_cache.set(repo_id, file_list)
 
-    def cleanup(self) -> None:
+    def clear(self) -> None:
+        self.file_list_cache.clear()
+
+    def cleanup_expired(self) -> None:
         """Run a single cache cleanup operation"""
         try:
             deleted_count = self.file_cache.cleanup_expired()
@@ -83,7 +86,7 @@ class CacheService:
         async def cleanup_loop():
             while not self._stop_cleanup:
                 try:
-                    self.cleanup()
+                    self.cleanup_expired()
                 except Exception as e:
                     logger.error(f"Error in periodic cache cleanup: {e}", exc_info=True)
                 await asyncio.sleep(interval_seconds)
