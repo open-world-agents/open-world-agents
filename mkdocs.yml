@@ -92,9 +92,7 @@ nav:
     - data/how_to_explorer_and_edit.md
     - data/viewer.md
     # - Comparison with other data formats: data/comparison.md # Later
-    - Desktop Recorder:
-      - Why use OWA's Desktop Recorder: data/recorder/why.md
-      - Install & Usage: data/recorder/install_and_usage.md
+    - data/ocap.md
   - 🚀 Awesome Examples (WIP):
     - Multimodal Game Agent: examples/multimodal_game_agent.md
     - Omniparse + InternLM GUI Agent: examples/gui_agent.md
