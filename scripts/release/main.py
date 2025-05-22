@@ -96,6 +96,13 @@ def new_version(
     """
     print(f"Setting all package versions to: {version}")
 
+    # Check if the version tag already exists
+    tag_name = f"v{version}"
+    existing_tags = run_git_command(["tag"]).splitlines()
+    if tag_name in existing_tags:
+        print(f"! Error: Tag '{tag_name}' already exists. Aborting version update.")
+        raise typer.Exit(code=1)
+
     # Find all project directories
     package_dirs = get_package_dirs()
     modified_files = []
