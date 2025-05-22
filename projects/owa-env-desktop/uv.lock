@@ -136,7 +136,7 @@ wheels = [
 
 [[package]]
 name = "owa-core"
-version = "0.3.8a1"
+version = "0.3.9a1"
 source = { editable = "../owa-core" }
 dependencies = [
     { name = "loguru" },
@@ -153,7 +153,7 @@ requires-dist = [
 
 [[package]]
 name = "owa-env-desktop"
-version = "0.3.8a1"
+version = "0.3.9a1"
 source = { editable = "." }
 dependencies = [
     { name = "bettercam", marker = "sys_platform == 'win32'" },
