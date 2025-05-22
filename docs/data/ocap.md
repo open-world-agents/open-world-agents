@@ -1,150 +1,108 @@
 # ocap
 
-High-performance, omnimodal desktop recorder for Windows — capture screen, audio, keyboard, mouse, and window events, all at once.
+Desktop recorder for Windows that captures screen, audio, keyboard, mouse, and window events with high performance.
 
----
+![ocap recording demo](../images/ocap-demo.gif)
 
-## 🚀 What is ocap?
+## What is ocap?
 
-**ocap** (Omnimodal CAPture) is a powerful, efficient, and easy-to-use recording tool built for the _open-world-agents_ project. It captures every important desktop signal — **screen video, audio, keyboard/mouse input, and window events** — and saves them in a synchronized, analysis-ready format.  
+**ocap** (Omnimodal CAPture) captures all essential desktop signals in a synchronized format - screen video, audio, keyboard/mouse input, and window events. Built for the _open-world-agents_ project but suitable for any desktop recording needs.
 
-Whether you need precise workflow reproducibility, training data for agents, or simple screen+event capture, `ocap` delivers seamless performance in a lightweight package.
+> **TL;DR**: The most complete, high-performance desktop recording tool for Windows that captures everything in one command.
 
----
+## Key Features
 
-## ✅ Key Features
+- **Complete desktop recording**: Video, audio, keyboard/mouse events, window events
+- **High performance**: Hardware-accelerated, low resource usage with Windows APIs and [GStreamer](https://gstreamer.freedesktop.org/). Video encoded by [H265/HEVC](https://en.wikipedia.org/wiki/High_Efficiency_Video_Coding) ensures both high-quality and low bitrate.
+- **Single command operation**: `ocap FILE_LOCATION` (stop with Ctrl+C)
+- **Simple architecture**: Core recording logic in a [single Python file](https://github.com/open-world-agents/open-world-agents/blob/main/projects/ocap/owa/ocap/record.py), making it easy to verify and customize
+- **Modern data formats**: Video with embedded timestamps in MKV, events in [MCAP format](https://mcap.dev/) for efficient storage, fast querying, and cross-language compatibility
 
-- **🔹 One Command, Everything Logged**
-    - Quick-start:  
-      ```sh
-      ocap record FILE_LOCATION
-      ```
-      Stop anytime: <kbd>Ctrl</kbd>+<kbd>C</kbd>
+## Getting Started in 30 Seconds
 
-- **🖥️ Omnimodal Desktop Recording**
-    - Simultaneously saves:
-        - **Video, Audio, & Timestamps** in a single `.mkv` file (timestamps embedded as subtitles)
-        - **Keyboard, Mouse, Window events** in [mcap format](https://mcap.dev/)
-    - [Data format details](data_format.md)
+```sh
+# Install (Option 1): Download and unzip from releases
+# Install (Option 2): conda install owa-ocap
 
-- **🎛️ Highly Flexible Options**
-    - Control framerate, select specific windows/monitors, toggle cursor display, etc.
+# Start recording your desktop
+ocap my-recording
 
-- **⚡ Native Performance**
-    - Hardware-accelerated pipelines via DXGI/WGC for video & WASAPI for audio
-    - Low CPU/GPU usage, high FPS; ideal even for intensive workflows or games
-    - Built on the powerful [GStreamer](https://gstreamer.freedesktop.org/) multimedia framework, enabling both high performance and exceptional flexibility for advanced users and developers.
+# Stop with Ctrl+C when done
+```
 
----
+Your recording files will be ready to use immediately!
 
-## 📊 Feature Comparison
+## Feature Comparison
 
-| **Feature**                           | **ocap** | **[wcap](https://github.com/mmozeiko/wcap)** | **[pillow](https://github.com/python-pillow/Pillow)/[mss](https://github.com/BoboTiG/python-mss)** |
-|---------------------------------------|----------|-----------------------------------------------|--------------------------------------------------------------------|
-| Screen+audio+events                   | ✅ Yes   | ❌ No                                        | ❌ No                                                             |
-| Keyboard/mouse logging                | ✅ Yes   | ❌ No                                        | ❌ No                                                             |
-| Window event logging                  | ✅ Yes   | ❌ No                                        | ❌ No                                                             |
-| Timestamp (as subtitles)              | ✅ Yes   | ❌ No                                        | ❌ No                                                             |
-| Python API support                    | ✅ Yes   | ❌ No                                        | ❌ No                                                             |
-| Latest Windows API support            | ✅ Yes   | ✅ Yes                                        | ❌ No (legacy APIs only)                                          |
-| Hardware-accelerated encoding         | ✅ Yes   | ✅ Yes                                        | ❌ No                                                             |
-| High FPS (>100 FPS)                   | ✅ Yes   | ✅ Yes                                        | ❌ No                                                             |
-| Optional mouse cursor                 | ✅ Yes   | ✅ Yes                                        | ❌ No                                                             |
+| **Feature**                              | **ocap**                 | [OBS](https://obsproject.com/) | [wcap](https://github.com/mmozeiko/wcap) | [pillow](https://github.com/python-pillow/Pillow)/[mss](https://github.com/BoboTiG/python-mss) |
+|------------------------------------------|--------------------------|--------------------------------|------------------------------------------|----------------------------------|
+| Advanced data formats (MCAP/MKV)     | ✅ Yes                   | ❌ No                          | ❌ No                                    | ❌ No                            |
+| Timestamp aligned logging                | ✅ Yes                   | ❌ No                          | ❌ No                                    | ❌ No                            |
+| Customizable event definition & Listener | ✅ Yes                   | ❌ No                          | ❌ No                                    | ❌ No                            |
+| Single python file                       | ✅ Yes                   | ❌ No                          | ❌ No                                    | ❌ No                            |
+| Audio + Window + Keyboard + Mouse        | ✅ Yes                   | ⚠️ Partial                    | ❌ No                                    | ❌ No                            |
+| Hardware-accelerated encoder             | ✅ Yes                   | ✅ Yes                         | ✅ Yes                                   | ❌ No                            |
+| Supports latest Windows APIs             | ✅ Yes                   | ✅ Yes                         | ✅ Yes                                   | ❌ No (legacy APIs only)         |
+| Optional mouse cursor capture            | ✅ Yes                   | ✅ Yes                         | ✅ Yes                                   | ❌ No                            |
 
+## Technical Architecture
 
----
+ocap is built on GStreamer for media processing with a clean, maintainable architecture:
 
-## ⚡ Performance Benchmark
+![ocap architecture](../images/ocap-architecture.png)
 
-ocap consistently **outperforms other screen recorders** written in Python:
+- **Easily verifiable and customizable**: Extensive [OWA's Env](../../env) design enables customizable, single [`record.py`](https://github.com/open-world-agents/open-world-agents/blob/main/projects/ocap/owa/ocap/record.py)
+- **Native performance**: Direct integration with Windows APIs ([DXGI](https://learn.microsoft.com/en-us/windows/win32/direct3ddxgi/d3d10-graphics-programming-guide-dxgi)/[WGC](https://learn.microsoft.com/en-us/uwp/api/windows.graphics.capture?view=winrt-26100) for video, [WASAPI](https://learn.microsoft.com/en-us/windows/win32/coreaudio/wasapi) for audio)
 
-| **Library**    | **Avg. Time/Frame** | **Relative Speed**  |
-|----------------|---------------------|---------------------|
-| **ocap**       | **5.7 ms**          | ⚡ **1× (Fastest)**  |
-| pyscreenshot   | 33 ms               | 🚶‍♂️ 5.8× slower     |
-| PIL            | 34 ms               | 🚶‍♂️ 6.0× slower     |
-| MSS            | 37 ms               | 🚶‍♂️ 6.5× slower     |
-| PyQt5          | 137 ms              | 🐢 24× slower       |
+## Installation & Usage
 
-📌 **Tested on:** Intel i5-11400, GTX 1650  
-ocap achieves **higher FPS and lower CPU/GPU usage**, even in high-load scenarios.
-
----
-
-## 🖥️ Installation & Usage
-
-### Supported OS & Hardware
-
-- **Windows 10+** (Tier 1): Direct3D 11 integration, fully optimized
-    - **GPU:** NVIDIA (other GPU support in progress)
-- **Other OS:** _macOS_/**Linux**: Work in progress
-
-**⚠️ System Requirements:**  
-Performance demands are similar to [OBS](https://obsproject.com/) — to run ocap alongside games or heavy apps, similar hardware is recommended.
+### Supported Systems
+- **Windows 10+** (NVIDIA GPUs recommended)
+- **Other OS:** macOS/Linux support in progress
 
 ### Quick Installation
-
-1. Download `ocap.zip` from [OWA releases](https://github.com/open-world-agents/open-world-agents/releases)
-2. Unzip `ocap.zip`
-3. Run in one of two ways:
-    - Double-click `run.bat` in Windows Explorer (opens a terminal with virtual environment)
-        - Use: `ocap --help`
-    - Or in CLI: `run.bat --help` (equivalent to `ocap --help`)
-4. Ready!
-
-#### Manual Install
-
-See [Installation Guide](../install.md) — **GStreamer** must be installed (see guide).
-
----
+1. Download `ocap.zip` from [releases](https://github.com/open-world-agents/open-world-agents/releases)
+2. Unzip and run either:
+   - Double-click `run.bat` (opens terminal with virtual environment)
+   - Or in CLI: `run.bat --help`
 
 ### Basic Usage
 
-Start screen, audio, and desktop event recording:
-
 ```sh
-ocap output  # writes output.mcap and output.mkv
+ocap --help                         # See the help!
+ocap FILENAME --window-name "App"   # Record specific window
+ocap FILENAME --monitor-idx 1       # Record specific monitor
+ocap FILENAME --fps 144             # Set framerate
+ocap FILENAME --no-record-audio     # Disable audio
 ```
 
-**Common Options:**
-```sh
-ocap output.mkv --window-name "App"      # a window by name
-ocap output.mkv --monitor-idx 1          # Record a specific monitor
-ocap output.mkv --no-record-audio        # Disable audio
-ocap output.mkv --fps 144                # Specify frame rate
-```
+Press Ctrl+C to stop recording.
 
-Press <kbd>Ctrl</kbd>+<kbd>C</kbd> to stop.
+### Output Files
+- `.mcap` — Event log (keyboard, mouse, windows)
+- `.mkv`  — Video/audio with embedded timestamps
 
-> See all options:
-```sh
-ocap --help
-```
+## Common Use Cases
 
-- `--record-audio` / `--no-record-audio`
-- `--record-video` / `--no-record-video`
-- `--window-name TEXT`
-- `--monitor-idx INTEGER`
-- `--show-cursor` / `--no-show-cursor`
-- `--width INTEGER`, `--height INTEGER`
-- `--additional-args TEXT`
-- ...and more!
+- **AI Training Data Collection**: Record all inputs/outputs for training machine learning models
+- **User Experience Research**: Capture detailed user interactions for UX studies
+- **Automated Testing**: Record application behavior for regression testing
+- **Tutorial Creation**: Create high-quality, synchronized tutorials with all interactions visible
 
-#### Output
+## FAQ
 
-- `.mcap` — Machine-readable event log (keyboard, mouse, windows, etc.)
-- `.mkv`  — Video/audio file (with embedded timestamp subtitles!)
+### How much disk space do recordings use?
+Approximately 100MB per minute for 1080p recording with H265 encoding.
 
-For format specs, see [Data Format Guide](data_format.md).
+### Can I customize what events are recorded?
+Yes, you can enable/disable audio, keyboard, mouse and window event recording.
 
----
+### Will ocap slow down my computer?
+ocap is designed for minimal performance impact, using hardware acceleration when available.
 
-## 💡 Tips & Additional Info
+## When to Use ocap
 
-- **Performance:** Hardware-accelerated, supports >144 FPS and <1ms event latency for responsive capture.
-- **Latency:** Warnings appear if latency exceeds 20–30ms when writing or capturing (should rarely appear unless under very high load).
----
-
-**Made for OWA (open-world-agents), but open for any workflow seeking full-fidelity, synchronized desktop capture.**
-
----
+- **Agent training data collection**: Captures all inputs and outputs
+- **Workflow reproducibility**: Records exact steps with timing
+- **Performance testing**: Low-overhead recording even during intensive tasks
+- **Simple screen recording**: When you need more than just video
