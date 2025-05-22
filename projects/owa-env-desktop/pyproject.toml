@@ -1,6 +1,6 @@
 [project]
 name = "owa-env-desktop"
-version = "0.3.7"
+version = "0.3.8"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -9,7 +9,7 @@ dependencies = [
     "pygetwindow>=0.0.9 ; sys_platform == 'win32'",
     "pyobjc-framework-Quartz>=11.0; sys_platform == 'darwin'",
     "pyobjc-framework-ApplicationServices>=11.0; sys_platform == 'darwin'",
-    "bettercam>=1.0.0",
+    "bettercam>=1.0.0 ; sys_platform == 'win32'",
     "pynput>=1.8.0",
     "opencv-python>=4.11.0",
     "pywin32>=310 ; sys_platform == 'win32'",

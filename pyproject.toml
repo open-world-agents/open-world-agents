@@ -1,6 +1,6 @@
 [project]
 name = "owa"
-version = "0.3.7"
+version = "0.3.8"
 description = "Everything you need to build state-of-the-art foundation multimodal desktop agent, end-to-end."
 readme = "README.md"
 requires-python = ">=3.11"
