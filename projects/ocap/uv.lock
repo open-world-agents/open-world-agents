@@ -374,7 +374,7 @@ wheels = [
 
 [[package]]
 name = "ocap"
-version = "0.3.9a2"
+version = "0.3.9a3"
 source = { editable = "." }
 dependencies = [
     { name = "owa-cli" },
@@ -461,13 +461,14 @@ wheels = [
 
 [[package]]
 name = "owa-cli"
-version = "0.3.9a2"
+version = "0.3.9a3"
 source = { editable = "../owa-cli" }
 dependencies = [
     { name = "loguru" },
     { name = "mcap-owa-support" },
     { name = "orjson" },
     { name = "owa-core" },
+    { name = "packaging" },
     { name = "plotext" },
     { name = "pydantic" },
     { name = "requests" },
@@ -481,6 +482,7 @@ requires-dist = [
     { name = "mcap-owa-support", editable = "../mcap-owa-support" },
     { name = "orjson", specifier = ">=3.10.15" },
     { name = "owa-core", editable = "../owa-core" },
+    { name = "packaging", specifier = ">=25.0" },
     { name = "plotext", specifier = ">=5.3.2" },
     { name = "pydantic", specifier = ">=2.10.6" },
     { name = "requests", specifier = ">=2.32.3" },
@@ -490,7 +492,7 @@ requires-dist = [
 
 [[package]]
 name = "owa-core"
-version = "0.3.9a2"
+version = "0.3.9a3"
 source = { editable = "../owa-core" }
 dependencies = [
     { name = "loguru" },
@@ -507,7 +509,7 @@ requires-dist = [
 
 [[package]]
 name = "owa-env-desktop"
-version = "0.3.9a2"
+version = "0.3.9a3"
 source = { editable = "../owa-env-desktop" }
 dependencies = [
     { name = "bettercam", marker = "sys_platform == 'win32'" },
@@ -534,7 +536,7 @@ requires-dist = [
 
 [[package]]
 name = "owa-env-gst"
-version = "0.3.9a2"
+version = "0.3.9a3"
 source = { editable = "../owa-env-gst" }
 dependencies = [
     { name = "av" },
@@ -553,6 +555,15 @@ requires-dist = [
     { name = "pillow", specifier = ">=11.1.0" },
     { name = "pygobject-stubs", specifier = ">=2.12.0" },
     { name = "tqdm", specifier = ">=4.67.1" },
+]
+
+[[package]]
+name = "packaging"
+version = "25.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/a1/d4/1fc4078c65507b51b96ca8f8c3ba19e6a61c8253c72794544580a7b6c24d/packaging-25.0.tar.gz", hash = "sha256:d443872c98d677bf60f6a1f2f8c1cb748e8fe762d2bf9d3148b5599295b0fc4f", size = 165727, upload_time = "2025-04-19T11:48:59.673Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/20/12/38679034af332785aac8774540895e234f4d07f7545804097de4b666afd8/packaging-25.0-py3-none-any.whl", hash = "sha256:29572ef2b1f17581046b3a2227d5c611fb25ec70ca1ba8554b24b0e69331a484", size = 66469, upload_time = "2025-04-19T11:48:57.875Z" },
 ]
 
 [[package]]

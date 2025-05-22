@@ -884,7 +884,7 @@ wheels = [
 
 [[package]]
 name = "owa"
-version = "0.3.9a2"
+version = "0.3.9a3"
 source = { editable = "." }
 dependencies = [
     { name = "mcap-owa-support" },
@@ -940,13 +940,14 @@ dev = [
 
 [[package]]
 name = "owa-cli"
-version = "0.3.9a2"
+version = "0.3.9a3"
 source = { editable = "projects/owa-cli" }
 dependencies = [
     { name = "loguru" },
     { name = "mcap-owa-support" },
     { name = "orjson" },
     { name = "owa-core" },
+    { name = "packaging" },
     { name = "plotext" },
     { name = "pydantic" },
     { name = "requests" },
@@ -960,6 +961,7 @@ requires-dist = [
     { name = "mcap-owa-support", editable = "projects/mcap-owa-support" },
     { name = "orjson", specifier = ">=3.10.15" },
     { name = "owa-core", editable = "projects/owa-core" },
+    { name = "packaging", specifier = ">=25.0" },
     { name = "plotext", specifier = ">=5.3.2" },
     { name = "pydantic", specifier = ">=2.10.6" },
     { name = "requests", specifier = ">=2.32.3" },
@@ -969,7 +971,7 @@ requires-dist = [
 
 [[package]]
 name = "owa-core"
-version = "0.3.9a2"
+version = "0.3.9a3"
 source = { editable = "projects/owa-core" }
 dependencies = [
     { name = "loguru" },
@@ -986,7 +988,7 @@ requires-dist = [
 
 [[package]]
 name = "owa-env-desktop"
-version = "0.3.9a2"
+version = "0.3.9a3"
 source = { editable = "projects/owa-env-desktop" }
 dependencies = [
     { name = "bettercam", marker = "sys_platform == 'win32'" },
@@ -1013,7 +1015,7 @@ requires-dist = [
 
 [[package]]
 name = "owa-env-gst"
-version = "0.3.9a2"
+version = "0.3.9a3"
 source = { editable = "projects/owa-env-gst" }
 dependencies = [
     { name = "av" },
