@@ -814,16 +814,19 @@ wheels = [
 
 [[package]]
 name = "ocap"
-version = "0.3.9a3"
-source = { registry = "https://pypi.org/simple" }
+version = "0.3.9a4"
+source = { editable = "projects/ocap" }
 dependencies = [
     { name = "owa-cli" },
     { name = "owa-env-desktop" },
     { name = "owa-env-gst" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/fd/5c/ac61b0a7df2cd91576a08314f80f3d0a765610068af32f6bd14277d084f1/ocap-0.3.9a3.tar.gz", hash = "sha256:a6fea1bece49f8854064cdcc3a2ba4035c442cdf36d634ffa0ad66dede456ae9", size = 55846 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/75/df/635f1e833a0aee5a130c63d199eb2d03525f3e737bee17beb8a0acaa6bf1/ocap-0.3.9a3-py3-none-any.whl", hash = "sha256:bd98625ab25644ddac041e0c5200114435c7d953068726d5d033d7c3ae7591a2", size = 4560 },
+
+[package.metadata]
+requires-dist = [
+    { name = "owa-cli", editable = "projects/owa-cli" },
+    { name = "owa-env-desktop", editable = "projects/owa-env-desktop" },
+    { name = "owa-env-gst", editable = "projects/owa-env-gst" },
 ]
 
 [[package]]
@@ -937,7 +940,7 @@ requires-dist = [
     { name = "mkdocs-mermaid2-plugin", marker = "extra == 'docs'", specifier = ">=1.1.1" },
     { name = "mkdocs-redirects", marker = "extra == 'docs'", specifier = ">=1.2.2" },
     { name = "mkdocstrings", extras = ["python"], marker = "extra == 'docs'", specifier = ">=0.24.0" },
-    { name = "ocap" },
+    { name = "ocap", editable = "projects/ocap" },
     { name = "owa-cli", editable = "projects/owa-cli" },
     { name = "owa-core", editable = "projects/owa-core" },
     { name = "owa-env-desktop", editable = "projects/owa-env-desktop" },
