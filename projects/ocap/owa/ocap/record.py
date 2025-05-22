@@ -15,7 +15,7 @@ from owa.core.time import TimeUnits
 
 # how to use loguru with tqdm: https://github.com/Delgan/loguru/issues/135
 logger.remove()
-logger.add(lambda msg: tqdm.write(msg, end=""), filter="owa.cli", colorize=True)
+logger.add(lambda msg: tqdm.write(msg, end=""), filter="owa.ocap", colorize=True)
 # TODO: apply https://loguru.readthedocs.io/en/stable/resources/recipes.html#configuring-loguru-to-be-used-by-a-library-or-an-application
 logger.add(lambda msg: tqdm.write(msg, end=""), level="INFO", filter="owa.env.gst", colorize=True)
 
