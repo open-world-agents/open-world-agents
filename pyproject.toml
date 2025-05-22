@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "mcap-owa-support",
+    "ocap",
     "owa-cli",
     "owa-core",
     "owa-env-desktop",
