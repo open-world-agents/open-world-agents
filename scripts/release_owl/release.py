@@ -27,6 +27,7 @@ def update_pyproject_toml(revert=False):
 
 def install_project():
     subprocess.run(["uv", "pip", "install", "projects/owa-cli"], check=True)
+    subprocess.run(["uv", "pip", "install", "projects/owa-recorder"], check=True)
     print("Installed project dependencies.")
 
 

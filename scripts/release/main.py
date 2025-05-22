@@ -26,6 +26,7 @@ PROJECTS = [
     "projects/owa-core",
     "projects/owa-env-desktop",
     "projects/owa-env-gst",
+    "projects/owa-recorder",
 ]
 
 

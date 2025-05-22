@@ -9,8 +9,6 @@ dependencies = [
     "mcap-owa-support",
     "orjson>=3.10.15",
     "owa-core",
-    "owa-env-desktop",
-    "owa-env-gst",
     "plotext>=5.3.2",
     "pydantic>=2.10.6",
     "tqdm>=4.67.1",
@@ -19,8 +17,6 @@ dependencies = [
 
 [tool.uv.sources]
 owa-core = { path = "../owa-core", editable = true }
-owa-env-desktop = { path = "../owa-env-desktop", editable = true }
-owa-env-gst = { path = "../owa-env-gst", editable = true }
 mcap-owa-support = { path = "../mcap-owa-support", editable = true }
 
 [build-system]

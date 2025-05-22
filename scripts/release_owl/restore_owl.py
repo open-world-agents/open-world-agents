@@ -30,6 +30,7 @@ description = "Simple wrapper to restore owl command"
 
 [project.scripts]
 owl = "owa.cli:app"
+record = "owa.cli.mcap.record:main"
 """)
 
         try:

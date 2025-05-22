@@ -237,5 +237,9 @@ def record(
                 logger.info(f"Output file saved to {output_file}")
 
 
-if __name__ == "__main__":
+def main():
     typer.run(record)
+
+
+if __name__ == "__main__":
+    main()
