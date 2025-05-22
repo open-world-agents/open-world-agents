@@ -898,7 +898,7 @@ wheels = [
 
 [[package]]
 name = "owa"
-version = "0.3.9a3"
+version = "0.3.9a4"
 source = { editable = "." }
 dependencies = [
     { name = "mcap-owa-support" },
@@ -956,7 +956,7 @@ dev = [
 
 [[package]]
 name = "owa-cli"
-version = "0.3.9a3"
+version = "0.3.9a4"
 source = { editable = "projects/owa-cli" }
 dependencies = [
     { name = "loguru" },
@@ -987,7 +987,7 @@ requires-dist = [
 
 [[package]]
 name = "owa-core"
-version = "0.3.9a3"
+version = "0.3.9a4"
 source = { editable = "projects/owa-core" }
 dependencies = [
     { name = "loguru" },
@@ -1004,7 +1004,7 @@ requires-dist = [
 
 [[package]]
 name = "owa-env-desktop"
-version = "0.3.9a3"
+version = "0.3.9a4"
 source = { editable = "projects/owa-env-desktop" }
 dependencies = [
     { name = "bettercam", marker = "sys_platform == 'win32'" },
@@ -1024,14 +1024,14 @@ requires-dist = [
     { name = "owa-core", editable = "projects/owa-core" },
     { name = "pygetwindow", marker = "sys_platform == 'win32'", specifier = ">=0.0.9" },
     { name = "pynput", specifier = ">=1.8.0" },
-    { name = "pyobjc-framework-applicationservices", marker = "sys_platform == 'darwin'", specifier = ">=11.0" },
-    { name = "pyobjc-framework-quartz", marker = "sys_platform == 'darwin'", specifier = ">=11.0" },
+    { name = "pyobjc-framework-applicationservices", marker = "sys_platform == 'darwin'", specifier = ">=10.1" },
+    { name = "pyobjc-framework-quartz", marker = "sys_platform == 'darwin'", specifier = ">=10.1" },
     { name = "pywin32", marker = "sys_platform == 'win32'", specifier = ">=307" },
 ]
 
 [[package]]
 name = "owa-env-gst"
-version = "0.3.9a3"
+version = "0.3.9a4"
 source = { editable = "projects/owa-env-gst" }
 dependencies = [
     { name = "av" },
