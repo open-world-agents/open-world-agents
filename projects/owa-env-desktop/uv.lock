@@ -136,7 +136,7 @@ wheels = [
 
 [[package]]
 name = "owa-core"
-version = "0.3.8"
+version = "0.3.8a1"
 source = { editable = "../owa-core" }
 dependencies = [
     { name = "loguru" },
@@ -153,7 +153,7 @@ requires-dist = [
 
 [[package]]
 name = "owa-env-desktop"
-version = "0.3.8"
+version = "0.3.8a1"
 source = { editable = "." }
 dependencies = [
     { name = "bettercam", marker = "sys_platform == 'win32'" },
@@ -175,7 +175,7 @@ requires-dist = [
     { name = "pynput", specifier = ">=1.8.0" },
     { name = "pyobjc-framework-applicationservices", marker = "sys_platform == 'darwin'", specifier = ">=11.0" },
     { name = "pyobjc-framework-quartz", marker = "sys_platform == 'darwin'", specifier = ">=11.0" },
-    { name = "pywin32", marker = "sys_platform == 'win32'", specifier = ">=310" },
+    { name = "pywin32", marker = "sys_platform == 'win32'", specifier = ">=307" },
 ]
 
 [[package]]

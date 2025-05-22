@@ -884,7 +884,7 @@ wheels = [
 
 [[package]]
 name = "owa"
-version = "0.3.8"
+version = "0.3.8a1"
 source = { editable = "." }
 dependencies = [
     { name = "mcap-owa-support" },
@@ -940,15 +940,13 @@ dev = [
 
 [[package]]
 name = "owa-cli"
-version = "0.3.8"
+version = "0.3.8a1"
 source = { editable = "projects/owa-cli" }
 dependencies = [
     { name = "loguru" },
     { name = "mcap-owa-support" },
     { name = "orjson" },
     { name = "owa-core" },
-    { name = "owa-env-desktop" },
-    { name = "owa-env-gst" },
     { name = "plotext" },
     { name = "pydantic" },
     { name = "tqdm" },
@@ -961,8 +959,6 @@ requires-dist = [
     { name = "mcap-owa-support", editable = "projects/mcap-owa-support" },
     { name = "orjson", specifier = ">=3.10.15" },
     { name = "owa-core", editable = "projects/owa-core" },
-    { name = "owa-env-desktop", editable = "projects/owa-env-desktop" },
-    { name = "owa-env-gst", editable = "projects/owa-env-gst" },
     { name = "plotext", specifier = ">=5.3.2" },
     { name = "pydantic", specifier = ">=2.10.6" },
     { name = "tqdm", specifier = ">=4.67.1" },
@@ -971,7 +967,7 @@ requires-dist = [
 
 [[package]]
 name = "owa-core"
-version = "0.3.8"
+version = "0.3.8a1"
 source = { editable = "projects/owa-core" }
 dependencies = [
     { name = "loguru" },
@@ -988,7 +984,7 @@ requires-dist = [
 
 [[package]]
 name = "owa-env-desktop"
-version = "0.3.8"
+version = "0.3.8a1"
 source = { editable = "projects/owa-env-desktop" }
 dependencies = [
     { name = "bettercam", marker = "sys_platform == 'win32'" },
@@ -1010,12 +1006,12 @@ requires-dist = [
     { name = "pynput", specifier = ">=1.8.0" },
     { name = "pyobjc-framework-applicationservices", marker = "sys_platform == 'darwin'", specifier = ">=11.0" },
     { name = "pyobjc-framework-quartz", marker = "sys_platform == 'darwin'", specifier = ">=11.0" },
-    { name = "pywin32", marker = "sys_platform == 'win32'", specifier = ">=310" },
+    { name = "pywin32", marker = "sys_platform == 'win32'", specifier = ">=307" },
 ]
 
 [[package]]
 name = "owa-env-gst"
-version = "0.3.8"
+version = "0.3.8a1"
 source = { editable = "projects/owa-env-gst" }
 dependencies = [
     { name = "av" },

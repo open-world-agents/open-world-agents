@@ -108,7 +108,7 @@ wheels = [
 
 [[package]]
 name = "owa-core"
-version = "0.3.8"
+version = "0.3.8a1"
 source = { editable = "." }
 dependencies = [
     { name = "loguru" },
