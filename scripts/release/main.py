@@ -22,11 +22,11 @@ app = typer.Typer(help="OWA Release Manager - A tool for managing OWA package re
 PROJECTS = [
     ".",
     "projects/mcap-owa-support",
+    "projects/ocap",
     "projects/owa-cli",
     "projects/owa-core",
     "projects/owa-env-desktop",
     "projects/owa-env-gst",
-    "projects/owa-recorder",
 ]
 
 
