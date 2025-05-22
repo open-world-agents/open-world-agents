@@ -1,5 +1,5 @@
 """
-This script is used to restore the owl command after the release process.
+This script is used to restore the ocap command after the release process.
 This process is needed to prevent `Failed to canonicalize script path` error.
 The cause is `python`'s path is changed after the release process.
 In principal, `conda-unpack` must restore the original path, but it does not work as expected.
@@ -24,13 +24,13 @@ build-backend = "hatchling.build"
 bypass-selection = true
 
 [project]
-name = "owl-wrapper"
+name = "ocap-wrapper"
 version = "0.1.0"
-description = "Simple wrapper to restore owl command"
+description = "Simple wrapper to restore ocap command"
 
 [project.scripts]
 owl = "owa.cli:app"
-record = "owa.cli.mcap.record:main"
+ocap = "owa.ocap.record:main"
 """)
 
         try:
@@ -38,7 +38,7 @@ record = "owa.cli.mcap.record:main"
                 [sys.executable, "-m", "pip", "install", temp_dir], stdout=subprocess.DEVNULL, stderr=subprocess.PIPE
             )
         except Exception as e:
-            print(f"Error restoring owl command: {e}")
+            print(f"Error restoring ocap command: {e}")
 
 
 if __name__ == "__main__":

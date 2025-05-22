@@ -12,11 +12,7 @@ app.command()(convert.convert)
 app.command()(info.info)
 
 # if Windows and both `owa.env.desktop` and `owa.env.gst` are installed, add `record` command
-if (
-    platform.system() == "Windows"
-    and importlib.util.find_spec("owa.env.desktop")
-    and importlib.util.find_spec("owa.env.gst")
-):
-    from . import record
+if importlib.util.find_spec("owa.ocap"):
+    from owa.ocap import record
 
-    app.command()(record.record)
+    app.command()(record)
