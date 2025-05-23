@@ -25,15 +25,17 @@ Open World Agents is a comprehensive framework that streamlines your agent's lif
 
 ## What Can You Build?
 
-🤖 **Desktop Automation Agents**: Build AI agents that can navigate complex desktop applications, automate workflows, and interact with any software
+**Anything that runs on desktop.** Open World Agents provides a universal interface to interact with any desktop application, game, or software through vision, keyboard, and mouse control. If a human can do it on a computer, you can build an AI agent to automate it.
 
-📊 **Training Datasets**: Capture high-quality multimodal datasets of human computer interactions for training foundation models
+🤖 **Desktop Automation Agents**: Navigate complex applications, automate workflows, and interact with any software interface
 
-🤗 **Community Datasets**: Access a growing collection of open-source OWAMcap datasets on HuggingFace for immediate use
+🎮 **Game AI Agents**: Master complex games by understanding visual interfaces, game mechanics, and real-time decision making
 
-🎮 **Game AI**: Create agents that can play and master complex games by understanding visual interfaces and game mechanics
+📊 **Multimodal Training Datasets**: Capture high-quality human-computer interaction data for training foundation models
 
-📈 **Benchmarks & Evaluation**: Create and run real-time benchmarks for desktop agents.
+🤗 **Community-Driven Datasets**: Access and contribute to a growing collection of open-source OWAMcap datasets on HuggingFace
+
+📈 **Real-Time Benchmarks**: Create and evaluate desktop agent performance across diverse applications and tasks
 
 ## Project Structure
 
@@ -89,7 +91,7 @@ This installs: `mcap-owa-support`, `ocap`, `owa-cli`, `owa-core`, `owa-env-deskt
 
 > ⚠️ **GStreamer Required**: `ocap` requires GStreamer for video processing. Use `conda install owa-env-gst` for easy setup.
 
-**ocap** (Omnimodal CAPture) is a high-performance desktop recorder that captures screen video, audio, keyboard/mouse events, and window events in synchronized formats. Built with Windows APIs and GStreamer for hardware-accelerated recording with H265/HEVC encoding.
+**ocap** (Omnimodal CAPture) is a high-performance desktop recorder that captures screen video, audio, keyboard/mouse events, and window events in synchronized formats. Built with Windows APIs and GStreamer for hardware-accelerated recording with H265/HEVC encoding. [Learn more...](docs/data/ocap.md)
 
 - **Complete recording**: Video + audio + keyboard/mouse + window events
 - **High performance**: Hardware-accelerated, ~100MB/min for 1080p
