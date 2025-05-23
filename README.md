@@ -1,4 +1,16 @@
-### Everything you need to build state-of-the-art foundation multimodal desktop agent, end-to-end.
+<div align="center">
+  <img src="docs/images/owa-logo.jpg" alt="Open World Agents" width="300"/>
+  
+  # 🚀 Open World Agents
+  
+  **Everything you need to build state-of-the-art foundation multimodal desktop agent, end-to-end.**
+  
+  [![Documentation](https://img.shields.io/badge/docs-mkdocs-blue)](https://open-world-agents.github.io/open-world-agents/)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+  [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+  [![GitHub stars](https://img.shields.io/github/stars/open-world-agents/open-world-agents?style=social)](https://github.com/open-world-agents/open-world-agents/stargazers)
+  
+</div>
 
 ## Overview
 
@@ -231,4 +243,3 @@ This project is released under the MIT License. See the [LICENSE](LICENSE) file 
 ---
 
 **🚧 Work in Progress**: We're actively developing this framework. Stay tuned for more updates and examples!
->>>>>>> 290a2cc (docs: better readme's draft)
