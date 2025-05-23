@@ -11,4 +11,11 @@ To address this gap, open-world-agents provides the following three solutions:
 2. **Desktop Recorder - `ocap your-filename.mcap`**: A powerful, efficient, and easy-to-use desktop recorder that captures keyboard/mouse and high-frequency screen data.
     - Powered by [`owa-env-gst`](../env/plugins/gstreamer_env.md), ensuring superior performance compared to alternatives. [Learn more...](recorder/why.md)
 
-3. **🤗 [Hugging Face](https://huggingface.co/) Integration**: Upload your own dataset created by simple `ocap` to huggingface and share with everyone! The era of open-source desktop data is **near and effortless**. Preview the dataset at [Hugging Face Spaces](https://huggingface.co/spaces/open-world-agents/visualize_dataset).
+3. **🤗 [Hugging Face](https://huggingface.co/) Integration & Community Ecosystem**: The largest collection of open-source desktop interaction datasets in OWAMcap format.
+    - **Growing Dataset Collection**: Hundreds of community-contributed datasets covering diverse workflows, applications, and interaction patterns
+    - **Easy Upload & Sharing**: Upload your `ocap` recordings directly to HuggingFace with one command
+    - **Standardized Format**: All datasets use the unified OWAMcap format for seamless integration
+    - **Interactive Visualization**: Preview any dataset at [Hugging Face Spaces](https://huggingface.co/spaces/open-world-agents/visualize_dataset)
+    - **Browse Available Datasets**: [🤗 datasets?other=owamcap](https://huggingface.co/datasets?other=owamcap)
+
+> 🚀 **Community Impact**: With OWA's streamlined recording and sharing pipeline, the open-source desktop agent community has rapidly grown from zero to hundreds of publicly available multimodal datasets, democratizing access to high-quality training data.

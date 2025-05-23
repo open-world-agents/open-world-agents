@@ -12,261 +12,234 @@
   
 </div>
 
----
+## Overview
 
-## 🌟 What is Open World Agents?
+**Everything you need to build state-of-the-art foundation multimodal desktop agents, end-to-end.**
 
-Open World Agents (OWA) is a **comprehensive framework** for building, training, and deploying multimodal desktop agents that can interact with real-world applications in real-time. Unlike traditional RL environments that operate in simulated worlds, OWA enables agents to learn and operate directly on actual desktop environments with **sub-30ms latency**.
+Open World Agents is a comprehensive framework for building AI agents that can interact with any desktop application through vision, keyboard, and mouse control. From data capture to model training and real-time evaluation, we provide the complete toolkit:
 
-### 🎯 Key Capabilities
+- **OWA Core & Environment**: Asynchronous, event-driven interface for real-time agents with dynamic plugin activation
+- **Data Capture & Format**: High-performance desktop recording with the `OWAMcap` format powered by [mcap](https://mcap.dev/)
+- **Environment Plugins**: Pre-built plugins for desktop automation, screen capture, and more
+- **CLI Tools**: Command-line utilities for recording, analyzing, and managing agent data
 
-- **🎬 Real-Time Screen Capture**: Hardware-accelerated H.265 encoding with DirectX 11 + GStreamer
-- **🖱️ Precise Input Simulation**: Sub-millisecond mouse, keyboard, and window interactions
-- **📊 Multimodal Data Recording**: Synchronized screen, audio, input events in efficient MCAP format
-- **🤖 Agent Training Pipeline**: End-to-end data collection → model training → deployment workflow
-- **⚡ Production Performance**: 6x faster than alternatives with <30ms end-to-end latency
+## What Can You Build?
 
-### 🏗️ Why OWA?
+**Anything that runs on desktop.** Open World Agents provides a universal interface to interact with any desktop application, game, or software through vision, keyboard, and mouse control. If a human can do it on a computer, you can build an AI agent to automate it.
 
-Traditional agent frameworks like OpenAI Gym assume infinite processing time with `env.step()`. **Real-world agents need to react instantly**—just like humans interacting with computers. OWA's asynchronous, event-driven architecture enables true real-time agent interactions.
+🤖 **Desktop Automation Agents**: Navigate complex applications, automate workflows, and interact with any software interface
 
-## 📦 Repository Structure
+🎮 **Game AI Agents**: Master complex games by understanding visual interfaces, game mechanics, and real-time decision making
 
-OWA is organized as a **monorepo** with multiple independent Python packages, following **namespace package** conventions for clean modularity:
+📊 **Multimodal Training Datasets**: Capture high-quality human-computer interaction data for training foundation models
+
+🤗 **Community-Driven Datasets**: Access and contribute to a growing collection of open-source OWAMcap datasets on HuggingFace
+
+📈 **Real-Time Benchmarks**: Create and evaluate desktop agent performance across diverse applications and tasks
+
+## Project Structure
+
+The repository is organized as a monorepo with multiple sub-repositories under the `projects/` directory. Each sub-repository is a self-contained Python package installable via `pip` or [`uv`](https://docs.astral.sh/uv/) and follows namespace packaging conventions.
 
 ```
 open-world-agents/
 ├── projects/
-│   ├── owa-core/           # 🏗️  Core framework & registry system
-│   ├── owa-env-desktop/    # 🖱️  Desktop interaction plugins
-│   ├── owa-env-gst/        # 🎬  GStreamer-based capture engine
-│   ├── owa-cli/            # 🖥️  Command-line interface tools
-│   ├── ocap/               # 📹  Desktop recorder application
-│   ├── mcap-owa-support/   # 📦  MCAP format support library
-│   └── owa-mcap-viewer/    # 👁️  Data visualization tools
-├── docs/                   # 📖  Documentation website
-└── examples/               # 🧪  Example agents & tutorials
+│   ├── mcap-owa-support/     # OWAMcap format support
+│   ├── owa-core/             # Core framework and registry system
+│   ├── owa-cli/              # Command-line tools (ocap, owl)
+│   ├── owa-env-desktop/      # Desktop environment plugin
+│   ├── owa-env-example/      # Example environment implementations
+│   ├── owa-env-gst/          # GStreamer-based screen capture
+│   └── [your-plugin]/        # Contribute your own plugins!
+├── docs/                     # Documentation
+└── README.md
 ```
 
-## 🚀 Quick Start
+## Python Packages
 
-### 📥 Installation
+All OWA packages are installed in the `owa` namespace (e.g., `owa.core`, `owa.cli`, `owa.env.desktop`). We recommend using [`uv`](https://docs.astral.sh/uv/) as the package manager.
 
-**Option 1: Full Installation (Recommended)**
+> 📦 **Lockstep Versioning**: All first-party OWA packages follow lockstep versioning, meaning they share the same version number to ensure compatibility and simplify dependency management.
 
-```bash
-# Clone the repository
-git clone https://github.com/open-world-agents/open-world-agents
-cd open-world-agents
+### The `owa` meta-package
 
-# Install with uv (recommended)
-uv sync --inexact
+[![owa](https://img.shields.io/pypi/v/owa?label=owa)](https://pypi.org/project/owa/) [![owa](https://img.shields.io/conda/vn/conda-forge/owa?label=conda)](https://anaconda.org/conda-forge/owa)
 
-# Or with pip
-pip install -e projects/owa-core -e projects/owa-cli -e projects/ocap
-```
-
-**Option 2: PyPI Installation (Experimental)**
+The easiest way to get started is to install the [**owa**](pyproject.toml) meta-package, which includes all core components and environment plugins:
 
 ```bash
 pip install owa
+# or
+conda install owa
 ```
 
-> **⚠️ Platform Requirements**: Currently supports **Windows 10/11** with **NVIDIA GPU** for optimal performance. macOS/Linux support planned.
+This installs: `mcap-owa-support`, `ocap`, `owa-cli`, `owa-core`, `owa-env-desktop`, and `owa-env-gst`.
 
-### 🎬 Record Your First Dataset
+### Core Packages
 
-```bash
-# Start recording desktop interactions
-ocap my-first-recording.mcap
+| Name | Release in PyPI | Conda | Description |
+|------|-----------------|-------|-------------|
+| [`owa.core`](projects/owa-core) | [![owa-core](https://img.shields.io/pypi/v/owa-core?label=owa-core)](https://pypi.org/project/owa-core/) | [![owa-core](https://img.shields.io/conda/vn/conda-forge/owa-core?label=conda)](https://anaconda.org/conda-forge/owa-core) | Framework foundation with registry system |
+| [`owa.cli`](projects/owa-cli) | [![owa-cli](https://img.shields.io/pypi/v/owa-cli?label=owa-cli)](https://pypi.org/project/owa-cli/) | [![owa-cli](https://img.shields.io/conda/vn/conda-forge/owa-cli?label=conda)](https://anaconda.org/conda-forge/owa-cli) | Command-line tools (`owl`) for data analysis |
+| [`mcap-owa-support`](projects/mcap-owa-support) | [![mcap-owa-support](https://img.shields.io/pypi/v/mcap-owa-support?label=mcap-owa-support)](https://pypi.org/project/mcap-owa-support/) | [![mcap-owa-support](https://img.shields.io/conda/vn/conda-forge/mcap-owa-support?label=conda)](https://anaconda.org/conda-forge/mcap-owa-support) | OWAMcap format support and utilities |
 
-# Interact with your desktop...
-# Press Ctrl+C to stop
+### CLI Tools
 
-# Explore the recorded data
-ocap info my-first-recording.mcap
-ocap cat my-first-recording.mcap --n 10
-```
+| Name | Release in PyPI | Conda | Description |
+|------|-----------------|-------|-------------|
+| [`ocap`](projects/ocap) | [![ocap](https://img.shields.io/pypi/v/ocap?label=ocap)](https://pypi.org/project/ocap/) | [![ocap](https://img.shields.io/conda/vn/conda-forge/ocap?label=conda)](https://anaconda.org/conda-forge/ocap) | Desktop recorder for multimodal data capture |
 
-### 🤖 Build Your First Agent
+> ⚠️ **GStreamer Required**: `ocap` requires GStreamer for video processing. Use `conda install owa-env-gst` for easy setup.
+
+**ocap** (Omnimodal CAPture) is a high-performance desktop recorder that captures screen video, audio, keyboard/mouse events, and window events in synchronized formats. Built with Windows APIs and GStreamer for hardware-accelerated recording with H265/HEVC encoding. [Learn more...](docs/data/ocap.md)
+
+- **Complete recording**: Video + audio + keyboard/mouse + window events
+- **High performance**: Hardware-accelerated, ~100MB/min for 1080p
+- **Simple usage**: `ocap my-recording` (stop with Ctrl+C)
+- **Modern formats**: MKV for video, MCAP for events
+
+### Environment Plugins
+
+| Name | Release in PyPI | Conda | Description |
+|------|-----------------|-------|-------------|
+| [`owa.env.desktop`](projects/owa-env-desktop) | [![owa-env-desktop](https://img.shields.io/pypi/v/owa-env-desktop?label=owa-env-desktop)](https://pypi.org/project/owa-env-desktop/) | [![owa-env-desktop](https://img.shields.io/conda/vn/conda-forge/owa-env-desktop?label=conda)](https://anaconda.org/conda-forge/owa-env-desktop) | Mouse, keyboard, window event handling |
+| [`owa.env.gst`](projects/owa-env-gst) | [![owa-env-gst](https://img.shields.io/pypi/v/owa-env-gst?label=owa-env-gst)](https://pypi.org/project/owa-env-gst/) | [![owa-env-gst](https://img.shields.io/conda/vn/conda-forge/owa-env-gst?label=conda)](https://anaconda.org/conda-forge/owa-env-gst) | GStreamer-powered screen capture (**6x faster**) |
+| [`owa.env.example`](projects/owa-env-example) | - | - | Reference implementations for learning |
+
+> ⚠️ **GStreamer Required**: Packages marked with video capabilities need GStreamer installed. To utilize full features, install with `conda`, not `pip`.
+
+> 💡 **Extensible Design**: Built for the community! Easily create custom plugins like `owa-env-minecraft` or `owa-env-web` to extend functionality.
+
+## Quick Start
+
+### Basic Environment Usage
 
 ```python
 import time
 from owa.core.registry import CALLABLES, LISTENERS, activate_module
 
-# Activate desktop environment
-activate_module("owa.env.desktop")
-activate_module("owa.env.gst")
+# Activate the standard environment module
+activate_module("owa.env.std")
 
-def on_screen_update(frame, metrics):
-    print(f"📸 New frame: {frame.frame_arr.shape}")
-    print(f"⚡ Latency: {metrics.latency*1000:.1f}ms")
+def callback():
+    time_ns = CALLABLES["clock.time_ns"]()
+    print(f"Current time: {time_ns}")
 
-# Start real-time screen capture
-screen = LISTENERS["screen"]().configure(
-    callback=on_screen_update,
-    fps=60,
-    show_cursor=True
-)
+# Create a listener for clock/tick event (every 1 second)
+tick = LISTENERS["clock/tick"]().configure(callback=callback, interval=1)
 
-with screen.session:
-    print("🎯 Agent is watching your screen...")
-    time.sleep(5)
+# Start listening
+tick.start()
+time.sleep(2)
+tick.stop(), tick.join()
 ```
 
-## 📚 Package Ecosystem
+### Desktop Recording & Dataset Sharing
 
-### Core Framework
-
-| Package                           | PyPI       | Description                                           | Installation           |
-| --------------------------------- | ---------- | ----------------------------------------------------- | ---------------------- |
-| **[owa-core](projects/owa-core)** | `owa-core` | 🏗️ Core registry system, base classes, and utilities  | `pip install owa-core` |
-| **[owa-cli](projects/owa-cli)**   | `owa-cli`  | 🖥️ Command-line tools for data analysis and debugging | `pip install owa-cli`  |
-
-### Environment Plugins
-
-| Package                                         | PyPI              | Description                                       | Installation                  |
-| ----------------------------------------------- | ----------------- | ------------------------------------------------- | ----------------------------- |
-| **[owa-env-desktop](projects/owa-env-desktop)** | `owa-env-desktop` | 🖱️ Mouse, keyboard, window interaction handlers   | `pip install owa-env-desktop` |
-| **[owa-env-gst](projects/owa-env-gst)**         | `owa-env-gst`     | 🎬 Hardware-accelerated screen capture with H.265 | Requires GStreamer + conda    |
-
-### Data & Recording
-
-| Package                                           | PyPI               | Description                          | Installation                   |
-| ------------------------------------------------- | ------------------ | ------------------------------------ | ------------------------------ |
-| **[ocap](projects/ocap)**                         | `ocap`             | 📹 High-performance desktop recorder | `pip install ocap`             |
-| **[mcap-owa-support](projects/mcap-owa-support)** | `mcap-owa-support` | 📦 MCAP format encoders/decoders     | `pip install mcap-owa-support` |
-| **[owa-mcap-viewer](projects/owa-mcap-viewer)**   | `owa-mcap-viewer`  | 👁️ Interactive data visualization    | `pip install owa-mcap-viewer`  |
-
-### Experimental
-
-| Package                                         | Description                            | Status         |
-| ----------------------------------------------- | -------------------------------------- | -------------- |
-| **[owa-env-example](projects/owa-env-example)** | 📚 Example environment implementations | 🧪 Development |
-
-> **💡 Pro Tip**: Install the `owa` meta-package to get core components automatically. For specialized needs, install individual packages.
-
-## 🏗️ Architecture Overview
-
-OWA follows an **event-driven, plugin-based architecture** that separates concerns and enables modular development:
-
-### 🔌 Plugin System
-
-- **Callables**: Synchronous function calls (`mouse.click()`, `window.focus()`)
-- **Listeners**: Asynchronous event handlers (screen capture, keyboard monitoring)
-- **Runnables**: Long-running background processes (continuous recording)
-
-**📖 Learn More**: [Environment System Guide](https://open-world-agents.github.io/open-world-agents/env/) | [Plugin Development](https://open-world-agents.github.io/open-world-agents/env/custom_plugins/) | [Core Implementation](projects/owa-core/)
-
-### 📊 Data Pipeline
-
-1. **Capture**: Real-time multimodal data collection
-2. **Storage**: Efficient MCAP format with ZSTD compression
-3. **Processing**: Event synchronization and analysis
-4. **Training**: Integration with ML frameworks
-5. **Deployment**: Production agent execution
-
-**📖 Learn More**: [Data Formats](https://open-world-agents.github.io/open-world-agents/data/data_format/) | [MCAP Specification](https://open-world-agents.github.io/open-world-agents/data/ocap/) | [Recording Tools](projects/ocap/)
-
-### ⚡ Performance Optimizations
-
-- **Hardware Acceleration**: DirectX 11 + NVIDIA GPU encoding
-- **Zero-Copy Operations**: Minimize memory allocations
-- **Asynchronous Processing**: Non-blocking event handling
-- **Efficient Compression**: 80%+ size reduction with ZSTD
-
-**📖 Learn More**: [GStreamer Engine](https://open-world-agents.github.io/open-world-agents/env/plugins/gstreamer_env/) | [Performance Benchmarks](https://open-world-agents.github.io/open-world-agents/env/plugins/gstreamer_env/#performance-advantages) | [Technical Deep Dive](projects/owa-env-gst/)
-
-### 🛠️ Implementation Details
-
-- **Registry Pattern**: [Core Registry System](projects/owa-core/owa/core/registry.py) - Dynamic plugin activation and management
-- **Message System**: [Base Message Classes](projects/owa-core/owa/core/message.py) - Standardized event communication
-- **Screen Capture**: [Hardware-Accelerated Pipeline](projects/owa-env-gst/owa/env/gst/pipeline_builder/) - DirectX 11 + H.265 encoding
-- **Desktop Integration**: [Windows API Wrappers](projects/owa-env-desktop/) - Mouse, keyboard, window control
-
-## 🎓 Learn More
-
-### 📖 Documentation
-
-- **[Getting Started Guide](https://open-world-agents.github.io/open-world-agents/)**
-- **[Environment System](https://open-world-agents.github.io/open-world-agents/env/)**
-- **[Data Formats](https://open-world-agents.github.io/open-world-agents/data/)**
-- **[API Reference](https://open-world-agents.github.io/open-world-agents/api/)**
-
-### 🧪 Examples & Tutorials
-
-- **Desktop Game Agent**: Train an agent to play browser games
-- **GUI Automation**: Automate complex desktop workflows
-- **Data Collection**: Build custom recording pipelines
-- **Real-time Inference**: Deploy agents in production
-
-### 🤝 Community
-
-- **[GitHub Issues](https://github.com/open-world-agents/open-world-agents/issues)**: Bug reports and feature requests
-- **[Discussions](https://github.com/open-world-agents/open-world-agents/discussions)**: Community Q&A
-- **[Contributing Guide](https://open-world-agents.github.io/open-world-agents/contributing/)**: How to contribute
-
-## 🔄 Versioning
-
-We follow [Semantic Versioning](https://semver.org/) (SemVer) for all packages:
-
-- **0.x.x**: Development phase - breaking changes may occur
-- **1.x.x**: Stable API - breaking changes only on major versions
-- **Lockstep Versioning**: All first-party packages share the same version number
-
-> **⚠️ API Stability**: Modules starting with underscore `_` are internal APIs and should not be imported directly. Only use public APIs from `owa.*` namespaces.
-
-## 🤝 Contributing
-
-We welcome contributions from the community! Here's how you can help:
-
-### 🐛 Report Issues
-
-Found a bug? Have a feature request? [Open an issue](https://github.com/open-world-agents/open-world-agents/issues/new)!
-
-### 🔧 Development Setup
+Record your desktop usage data and share with the community:
 
 ```bash
-# Fork the repository on GitHub
-git clone https://github.com/YOUR-USERNAME/open-world-agents
-cd open-world-agents
+# Install desktop recorder
+conda install ocap
 
-# Set up development environment
-uv sync --all-extras --dev
-pre-commit install
+# Record desktop activity (includes video, audio, events)
+ocap my-session
 
-# Run tests
-pytest
+# Upload to HuggingFace, browse community datasets!
+# Visit: https://huggingface.co/datasets?other=owamcap
 ```
 
-### 📝 Areas for Contribution
+### Access Community Datasets
 
-- **🌍 Platform Support**: macOS/Linux compatibility
-- **🎮 Environment Plugins**: New application integrations
-- **📊 ML Integrations**: Training pipeline improvements
-- **📖 Documentation**: Tutorials and examples
-- **🧪 Testing**: Test coverage and CI/CD
+> 🚧 **TODO**: Community dataset access functionality is under development.
 
-## 📄 License
+```python
+# Load datasets from HuggingFace
+from owa.data import load_dataset
 
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+# Browse available OWAMcap datasets
+datasets = load_dataset.list_available(format="owamcap")
 
-## 🏆 Acknowledgments
+# Load a specific dataset
+data = load_dataset("username/desktop-workflow-v1")
+```
 
-OWA builds upon excellent open-source technologies:
+### Data Format Preview
 
-- **[GStreamer](https://gstreamer.freedesktop.org/)**: Multimedia processing framework
-- **[MCAP](https://mcap.dev/)**: Modular container format for multimodal data
-- **[Material for MkDocs](https://squidfunk.github.io/mkdocs-material/)**: Documentation framework
+```bash
+$ owl mcap info example.mcap
+library:   mcap-owa-support 0.3.2; mcap 1.2.2
+profile:   owa
+messages:  1062
+duration:  8.8121584s
+start:     2025-05-23T20:04:01.7269392+09:00 (1747998241.726939200)
+end:       2025-05-23T20:04:10.5390976+09:00 (1747998250.539097600)
+compression:
+        zstd: [1/1 chunks] [113.42 KiB/17.52 KiB (84.55%)] [1.99 KiB/sec]
+channels:
+        (1) keyboard/state    9 msgs (1.02 Hz)    : owa.env.desktop.msg.KeyboardState [jsonschema]
+        (2) mouse/state       9 msgs (1.02 Hz)    : owa.env.desktop.msg.MouseState [jsonschema]
+        (3) window            9 msgs (1.02 Hz)    : owa.env.desktop.msg.WindowInfo [jsonschema]
+        (4) screen          523 msgs (59.35 Hz)   : owa.env.gst.msg.ScreenEmitted [jsonschema]
+        (5) mouse           510 msgs (57.87 Hz)   : owa.env.desktop.msg.MouseEvent [jsonschema]
+        (6) keyboard          2 msgs (0.23 Hz)    : owa.env.desktop.msg.KeyboardEvent [jsonschema]
+channels: 6
+attachments: 0
+metadata: 0
+```
+
+## Installation
+
+### Quick Start
+
+```bash
+# Full installation with video processing capabilities and gstreamer
+conda install owa
+
+# For headless servers (data processing/ML training only)
+pip install owa
+```
+
+> 💡 **GStreamer Dependencies**: 
+> - **Need video recording/processing?** Use `conda install owa` or `conda install owa-env-gst`
+> - **Headless server/data processing only?** `pip install owa` is sufficient
+> - **Why conda for GStreamer?** GStreamer has complex native dependencies (pygobject, gst-python, gst-plugins, etc.) that conda handles automatically
+
+### Editable Install (Development)
+
+For development or contributing to the project, you can install packages in editable mode. For detailed development setup instructions, see the [Installation Guide](docs/install.md).
+
+
+## Features
+
+- **🔄 Asynchronous Processing**: Real-time event handling with Callables, Listeners, and Runnables
+- **🧩 Dynamic Plugin System**: Runtime plugin activation and registration
+- **📊 High-Performance Data**: 6x faster screen capture with GStreamer integration
+- **🤗 HuggingFace Ecosystem**: Access growing collection of community OWAMcap datasets
+- **🗂️ OWAMcap Format**: Self-contained, flexible multimodal data containers
+- **🛠️ Extensible**: Community-driven plugin ecosystem
+
+## Documentation
+
+- **Full Documentation**: https://open-world-agents.github.io/open-world-agents/
+- **Environment Guide**: [docs/env/](docs/env/)
+- **Data Format**: [docs/data/](docs/data/)
+- **Plugin Development**: [docs/env/custom_plugins.md](docs/env/custom_plugins.md)
+
+## Contributing
+
+We welcome contributions! Whether you're:
+- Building new environment plugins
+- Improving performance
+- Adding documentation
+- Reporting bugs
+
+Please see our [Contributing Guide](docs/contributing.md) for details.
+
+## License
+
+This project is released under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ---
 
-<div align="center">
-  
-  **Ready to build the future of desktop agents?**
-  
-  🚀 **[Get Started Now](https://open-world-agents.github.io/open-world-agents/)** | 📖 **[Read the Docs](https://open-world-agents.github.io/open-world-agents/)** | 💬 **[Join Discussions](https://github.com/open-world-agents/open-world-agents/discussions)**
-  
-  *Star ⭐ this repository if you find it useful!*
-  
-</div>
+**🚧 Work in Progress**: We're actively developing this framework. Stay tuned for more updates and examples!
