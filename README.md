@@ -133,14 +133,13 @@ conda install ocap
 # Record desktop activity (includes video, audio, events)
 ocap my-session
 
-# Upload to HuggingFace (coming soon)
-owl dataset upload my-session.mcap --name "my-workflow-demo"
-
-# Browse community datasets
+# Upload to HuggingFace, browse community datasets!
 # Visit: https://huggingface.co/datasets?other=owamcap
 ```
 
 ### Access Community Datasets
+
+> 🚧 **TODO**: Community dataset access functionality is under development.
 
 ```python
 # Load datasets from HuggingFace
