@@ -1,6 +1,6 @@
 [project]
 name = "owa-cli"
-version = "0.3.7"
+version = "0.3.9a4"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -9,18 +9,16 @@ dependencies = [
     "mcap-owa-support",
     "orjson>=3.10.15",
     "owa-core",
-    "owa-env-desktop",
-    "owa-env-gst",
+    "packaging>=25.0",
     "plotext>=5.3.2",
     "pydantic>=2.10.6",
+    "requests>=2.32.3",
     "tqdm>=4.67.1",
     "typer>=0.15.1",
 ]
 
 [tool.uv.sources]
 owa-core = { path = "../owa-core", editable = true }
-owa-env-desktop = { path = "../owa-env-desktop", editable = true }
-owa-env-gst = { path = "../owa-env-gst", editable = true }
 mcap-owa-support = { path = "../mcap-owa-support", editable = true }
 
 [build-system]

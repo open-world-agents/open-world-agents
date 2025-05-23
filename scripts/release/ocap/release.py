@@ -26,12 +26,12 @@ def update_pyproject_toml(revert=False):
 
 
 def install_project():
-    subprocess.run(["uv", "pip", "install", "projects/owa-cli"], check=True)
+    subprocess.run(["uv", "pip", "install", "projects/ocap"], check=True)
     print("Installed project dependencies.")
 
 
 def pack_conda_env():
-    subprocess.run(["conda-pack", "-n", ENV_NAME, "--output", "scripts/release_owl/env.tar.gz"], check=True)
+    subprocess.run(["conda-pack", "-n", ENV_NAME, "--output", "scripts/release/ocap/env.tar.gz"], check=True)
     print("Packed conda environment.")
 
 

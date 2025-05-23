@@ -22,6 +22,7 @@ app = typer.Typer(help="OWA Release Manager - A tool for managing OWA package re
 PROJECTS = [
     ".",
     "projects/mcap-owa-support",
+    "projects/ocap",
     "projects/owa-cli",
     "projects/owa-core",
     "projects/owa-env-desktop",
@@ -95,6 +96,13 @@ def new_version(
     optionally updates the lockfiles, commits the changes, and creates a git tag.
     """
     print(f"Setting all package versions to: {version}")
+
+    # Check if the version tag already exists
+    tag_name = f"v{version}"
+    existing_tags = run_git_command(["tag"]).splitlines()
+    if tag_name in existing_tags:
+        print(f"! Error: Tag '{tag_name}' already exists. Aborting version update.")
+        raise typer.Exit(code=1)
 
     # Find all project directories
     package_dirs = get_package_dirs()
