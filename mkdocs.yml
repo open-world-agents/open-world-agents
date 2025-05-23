@@ -5,6 +5,8 @@ repo_name: open-world-agents
 
 theme:
   name: material
+  logo: images/owa-logo.jpg
+  favicon: images/owa-logo.jpg
   features:
     # - navigation.tabs # I think omitting this is better to show Awesome Examples
     - navigation.sections
@@ -75,7 +77,7 @@ nav:
     - Welcome to OWA: index.md
     - Help with OWA: help_with_owa.md
     - Installation: install.md
-    - Contributing: contributing.md 
+    - Contributing: contributing.md
     # - Changelog: changelog.md # Later
   - Project Overview: project_overview.md
   - Env in OWA:
