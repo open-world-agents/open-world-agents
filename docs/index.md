@@ -89,7 +89,7 @@ Here's what we've got in store for you!
 - Curious about `OWAMCap` format? see following: (Note that `cat` output is a created example.)
 
 ```
-$ ocap info example.mcap
+$ owl mcap info example.mcap
 library:   mcap-owa-support 0.1.0; mcap 1.2.2
 profile:   owa
 messages:  2124

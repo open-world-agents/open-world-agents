@@ -35,12 +35,12 @@ What exactly does the OWAMcap format contain? Let's demonstrate with an example 
 
 Let's examine the contents of an OWAMcap file using the `ocap` command-line tool (Open World agents Desktop Recorder).
 
-#### File Summary with `ocap info`
+#### File Summary with `owl mcap info`
 
 First, we can get an overview of the file structure:
 
 ```
-$ ocap info example.mcap
+$ owl mcap info example.mcap
 library:   mcap-owa-support 0.1.0; mcap 1.2.2
 profile:   owa
 messages:  518
