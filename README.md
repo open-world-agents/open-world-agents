@@ -11,6 +11,18 @@ Open World Agents is a comprehensive framework that streamlines your agent's lif
 - **Environment Plugins**: Pre-built plugins for desktop automation, screen capture, and more
 - **CLI Tools**: Command-line utilities for recording, analyzing, and managing agent data
 
+## What Can You Build?
+
+🤖 **Desktop Automation Agents**: Build AI agents that can navigate complex desktop applications, automate workflows, and interact with any software
+
+📊 **Training Datasets**: Capture high-quality multimodal datasets of human computer interactions for training foundation models
+
+🤗 **Community Datasets**: Access a growing collection of open-source OWAMcap datasets on HuggingFace for immediate use
+
+🎮 **Game AI**: Create agents that can play and master complex games by understanding visual interfaces and game mechanics
+
+📈 **Benchmarks & Evaluation**: Create and run real-time benchmarks for desktop agents.
+
 ## Project Structure
 
 The repository is organized as a monorepo with multiple sub-repositories under the `projects/` directory. Each sub-repository is a self-contained Python package installable via `pip` or [`uv`](https://docs.astral.sh/uv/) and follows namespace packaging conventions.
@@ -108,9 +120,9 @@ time.sleep(2)
 tick.stop(), tick.join()
 ```
 
-### Desktop Recording
+### Desktop Recording & Dataset Sharing
 
-Record your desktop usage data:
+Record your desktop usage data and share with the community:
 
 ```bash
 # Install desktop recorder
@@ -119,9 +131,24 @@ conda install ocap
 # Record desktop activity (includes video, audio, events)
 ocap my-session
 
-# Analyze recorded data
-owl mcap info my-session.mcap
-owl mcap cat my-session.mcap --n 10
+# Upload to HuggingFace (coming soon)
+owl dataset upload my-session.mcap --name "my-workflow-demo"
+
+# Browse community datasets
+# Visit: https://huggingface.co/datasets?other=owamcap
+```
+
+### Access Community Datasets
+
+```python
+# Load datasets from HuggingFace
+from owa.data import load_dataset
+
+# Browse available OWAMcap datasets
+datasets = load_dataset.list_available(format="owamcap")
+
+# Load a specific dataset
+data = load_dataset("username/desktop-workflow-v1")
 ```
 
 ### Data Format Preview
@@ -175,7 +202,7 @@ For development or contributing to the project, you can install packages in edit
 - **🔄 Asynchronous Processing**: Real-time event handling with Callables, Listeners, and Runnables
 - **🧩 Dynamic Plugin System**: Runtime plugin activation and registration
 - **📊 High-Performance Data**: 6x faster screen capture with GStreamer integration
-- **🤗 HuggingFace Integration**: Easy dataset sharing and collaboration
+- **🤗 HuggingFace Ecosystem**: Access growing collection of community OWAMcap datasets
 - **🗂️ OWAMcap Format**: Self-contained, flexible multimodal data containers
 - **🛠️ Extensible**: Community-driven plugin ecosystem
 
