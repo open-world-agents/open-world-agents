@@ -69,9 +69,9 @@ exit /b 0
     :: Return to original directory
     cd ..
 
-    :: Restore `owl` command
-    echo Restoring `owl` command...
-    python restore_owl.py
+    :: Restore `ocap` command
+    echo Restoring `ocap` command...
+    python restore_ocap.py
 
     exit /b 0
 
@@ -80,17 +80,17 @@ exit /b 0
     if "%~1"=="" (
         call :OpenInteractiveShell
     ) else (
-        call :ExecuteOWLCommand %*
+        call :ExecuteOCAPCommand %*
     )
     exit /b %errorlevel%
 
-:ExecuteOWLCommand
-    echo Running owl with arguments: %*
+:ExecuteOCAPCommand
+    echo Running ocap with arguments: %*
     python -m owa.cli %*
     set ERR=%errorlevel%
     
     if %ERR% neq 0 (
-        echo [ERROR] Failed to run owl with exit code %ERR%
+        echo [ERROR] Failed to run ocap with exit code %ERR%
         exit /b %ERR%
     )
     exit /b 0

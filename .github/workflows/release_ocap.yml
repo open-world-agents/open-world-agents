@@ -1,4 +1,4 @@
-name: owl Release
+name: ocap Release
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  release_owl:
+  release_ocap:
     runs-on: windows-latest
 
     env:
@@ -60,13 +60,13 @@ jobs:
         run: uv pip install conda-pack
 
       - name: Generate Release Files
-        run: python scripts/release_owl/release.py
+        run: python scripts/release/ocap/release.py
 
       - name: Upload Release Files
         uses: actions/upload-artifact@v4
         with:
-          name: owl
+          name: ocap
           path: |
-            scripts/release_owl/env.tar.gz
-            scripts/release_owl/run.bat
-            scripts/release_owl/restore_owl.py
+            scripts/release/ocap/env.tar.gz
+            scripts/release/ocap/run.bat
+            scripts/release/ocap/restore_ocap.py
