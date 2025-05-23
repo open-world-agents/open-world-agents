@@ -1,6 +1,6 @@
 [project]
 name = "owa-env-desktop"
-version = "0.3.9a4"
+version = "0.3.9a5"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
