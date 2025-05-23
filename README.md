@@ -4,9 +4,9 @@
 
 **Everything you need to build state-of-the-art foundation multimodal desktop agents, end-to-end.**
 
-Open World Agents is a comprehensive framework that streamlines your agent's lifecycle from data capture to model training and real-time evaluation. The repository contains essential components for building multimodal desktop agents:
+Open World Agents is a comprehensive framework for building AI agents that can interact with any desktop application through vision, keyboard, and mouse control. From data capture to model training and real-time evaluation, we provide the complete toolkit:
 
-- **OWA Core & Environment**: Asynchronous, event-driven environmental interface for real-time agents with dynamic plugin activation
+- **OWA Core & Environment**: Asynchronous, event-driven interface for real-time agents with dynamic plugin activation
 - **Data Capture & Format**: High-performance desktop recording with the `OWAMcap` format powered by [mcap](https://mcap.dev/)
 - **Environment Plugins**: Pre-built plugins for desktop automation, screen capture, and more
 - **CLI Tools**: Command-line utilities for recording, analyzing, and managing agent data
