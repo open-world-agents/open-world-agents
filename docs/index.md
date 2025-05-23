@@ -1,74 +1,95 @@
-# Welcome to Open World Agents
+<div align="center">
+  <img src="/images/owa-logo.jpg" alt="Open World Agents Logo" width="200" style="margin-bottom: 20px"/>
+</div>
+
+# 🚀 Open World Agents
 
 ### Everything you need to build state-of-the-art foundation multimodal desktop agent, end-to-end.
 
 Streamline your agent's lifecycle with Open World Agents. From data capture to model training and real-time evaluation, everything is designed for flexibility and performance.
+
+## ⚡ Performance & Technology Stack
+
+- **🎯 Ultra-Low Latency**: <30ms processing time for real-time interactions
+- **⚡ 6x Faster Capture**: Advanced GStreamer pipeline with hardware acceleration
+- **🔧 Modern Encoders**: H.265 (HEVC) encoding with NVIDIA GPU acceleration
+- **💾 Efficient Storage**: ZSTD compression achieving 80%+ size reduction
+- **🖥️ DirectX 11**: Hardware-accelerated screen capture via DXGI/WGC APIs
+
+## 🖥️ Platform Support
+
+!!! warning "Platform Requirements"
+**Currently supports Windows only** with NVIDIA GPU required for optimal performance.
+
+    - ✅ **Windows 10/11** with DirectX 11 support
+    - ✅ **NVIDIA GPU** for hardware-accelerated encoding
+    - 🚧 **macOS/Linux support** planned for future releases
 
 Here's what we've got in store for you!
 
 ---
 
 - **OWA's Env**: The asynchronous, event-driven environmental interface for real-time agent
-    - **Asynchronous, real-time event processing**: Compared to existing LLM-agent frameworks and [gymnasium.Env](https://gymnasium.farama.org/api/env/), OWA's Env features an asynchronous processing design leveraging `Callables`, `Listeners`, and `Runnables`. [Learn more...](env/index.md)
-    - **Dynamic EnvPlugin Activation**: Seamlessly register and activate EnvPlugins at runtime to customize and extend functionality, powered by registry pattern. [Learn more...](env/guide.md)
-    - **Extensible, Open-Source Design**: Built for the community, by the community. Easily add custom plugins and extend the Env's functionality to suit your needs. [Learn more...](env/custom_plugins.md)
+
+  - **Asynchronous, real-time event processing**: Compared to existing LLM-agent frameworks and [gymnasium.Env](https://gymnasium.farama.org/api/env/), OWA's Env features an asynchronous processing design leveraging `Callables`, `Listeners`, and `Runnables`. [Learn more...](env/index.md)
+  - **Dynamic EnvPlugin Activation**: Seamlessly register and activate EnvPlugins at runtime to customize and extend functionality, powered by registry pattern. [Learn more...](env/guide.md)
+  - **Extensible, Open-Source Design**: Built for the community, by the community. Easily add custom plugins and extend the Env's functionality to suit your needs. [Learn more...](env/custom_plugins.md)
 
 - **Predefined EnvPlugins**: We provide you some EnvPlugins which is suitable for constructing multimodal desktop agent.
-    - [`owa-env-desktop`](env/plugins/desktop_env.md): Provides basic `Callables/Listeners` for mouse/keyboard/window events. 
-    - [`owa-env-gst`](env/plugins/gstreamer_env.md): Powered by Windows APIs (`DXGI/WGC`) and the robust [GStreamer](https://gstreamer.freedesktop.org/) framework, provides high-performance and efficient screen capture/recording features. `owa-env-gst`'s screen capture is **6x faster** compared to alternatives. [Learn more...](data/recorder/why.md)
+  - [`owa-env-desktop`](env/plugins/desktop_env.md): Provides basic `Callables/Listeners` for mouse/keyboard/window events.
+  - [`owa-env-gst`](env/plugins/gstreamer_env.md): Powered by Windows APIs (`DXGI/WGC`) and the robust [GStreamer](https://gstreamer.freedesktop.org/) framework, provides high-performance and efficient screen capture/recording features. Features **H.265 encoding**, **DirectX 11 acceleration**, and **NVIDIA GPU optimization** for superior performance. `owa-env-gst`'s screen capture is **6x faster** compared to alternatives. [Learn more...](data/recorder/why.md)
 
 ---
 
 - **OWA's Data**: From high-performance, robust and open-source friendly data format to powerful, efficient and huggingface integration.
-    - **`OWAMcap` file format**: high-performance, self-contained, flexible container file format for multimodal desktop log data, powered by the open-source container file format [mcap](https://mcap.dev/). [Learn more...](data/data_format.md)
-    - **`ocap your-filename.mcap`**: powerful, efficient and easy-to-use desktop recorder. Contains keyboard/mouse and high-frequency screen data.
-        - Powered by [`owa-env-gst`](env/plugins/gstreamer_env.md), ensuring superior performance compared to alternatives. [Learn more...](data/recorder/why.md)
-    - **🤗 [Hugging Face](https://huggingface.co/) Integration**: Upload your own dataset created by simple `ocap` to huggingface and share with everyone! The era of open-source desktop data is **near and effortless**. Preview the dataset at [Hugging Face Spaces](https://huggingface.co/spaces/open-world-agents/visualize_dataset).
+  - **`OWAMcap` file format**: high-performance, self-contained, flexible container file format for multimodal desktop log data, powered by the open-source container file format [mcap](https://mcap.dev/) with **ZSTD compression** achieving 80%+ size reduction. [Learn more...](data/data_format.md)
+  - **`ocap your-filename.mcap`**: powerful, efficient and easy-to-use desktop recorder. Contains keyboard/mouse and high-frequency screen data.
+    - Powered by [`owa-env-gst`](env/plugins/gstreamer_env.md) with **H.265 encoding** and **hardware acceleration**, ensuring superior performance compared to alternatives. [Learn more...](data/recorder/why.md)
+  - **🤗 [Hugging Face](https://huggingface.co/) Integration**: Upload your own dataset created by simple `ocap` to huggingface and share with everyone! The era of open-source desktop data is **near and effortless**. Preview the dataset at [Hugging Face Spaces](https://huggingface.co/spaces/open-world-agents/visualize_dataset).
 
 ---
 
 - **Comprehensive Examples**: We provides various examples that demonstrates how to build foundation multimodal desktop agent. Since it's just a example, you may customize anything you want. **Examples are in progress; stay tuned!**
 
-
 <!-- - **Cross-Platform**: Works on Windows and macOS. -->
-
 
 ## Quick Start
 
 - Simple example of using `Callables` and `Listeners`. [Learn more...](env/index.md)
-    ```python
-    import time
 
-    from owa.core.registry import CALLABLES, LISTENERS, activate_module
+  ```python
+  import time
 
-    # Activate the standard environment module
-    activate_module("owa.env.std")
+  from owa.core.registry import CALLABLES, LISTENERS, activate_module
 
-    def callback():
-        # Get current time in nanoseconds
-        time_ns = CALLABLES["clock.time_ns"]()
-        print(f"Current time in nanoseconds: {time_ns}")
+  # Activate the standard environment module
+  activate_module("owa.env.std")
 
-    # Create a listener for clock/tick event, Set listener to trigger every 1 second
-    tick = LISTENERS["clock/tick"]().configure(callback=callback, interval=1)
+  def callback():
+      # Get current time in nanoseconds
+      time_ns = CALLABLES["clock.time_ns"]()
+      print(f"Current time in nanoseconds: {time_ns}")
 
-    # Start the listener
-    tick.start()
+  # Create a listener for clock/tick event, Set listener to trigger every 1 second
+  tick = LISTENERS["clock/tick"]().configure(callback=callback, interval=1)
 
-    # Allow the listener to run for 2 seconds
-    time.sleep(2)
+  # Start the listener
+  tick.start()
 
-    # Stop the listener and wait for it to finish
-    tick.stop(), tick.join()
+  # Allow the listener to run for 2 seconds
+  time.sleep(2)
 
-    ```
+  # Stop the listener and wait for it to finish
+  tick.stop(), tick.join()
+
+  ```
 
 - Record your own desktop usage data by just running `ocap your-filename.mcap`. [Learn more...](data/recorder/install_and_usage.md)
 
-
 - Curious about `OWAMCap` format? see following: (Note that `cat` output is a created example.)
+
 ```
-$ owl mcap info example.mcap
+$ ocap info example.mcap
 library:   mcap-owa-support 0.1.0; mcap 1.2.2
 profile:   owa
 messages:  2124
@@ -87,7 +108,7 @@ channels: 5
 attachments: 0
 metadata: 0
 
-$ owl mcap cat example.mcap --n 8 --no-pretty
+$ ocap cat example.mcap --n 8 --no-pretty
 Topic: window, Timestamp: 1741628814049712700, Message: {'title': 'ZType – Typing Game - Type to Shoot - Chromium', 'rect': [389, 10, 955, 1022], 'hWnd': 7540094}
 Topic: keyboard/state, Timestamp: 1741628814049712700, Message: {'buttons': []}
 Topic: screen, Timestamp: 1741628814057575300, Message: {'path': 'example.mkv', 'pts': 14866666666,

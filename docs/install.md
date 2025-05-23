@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="/images/owa-logo.jpg" alt="OWA Installation" width="150" style="margin-bottom: 20px"/>
+</div>
+
 # Installation Guide
 
 ## Installing from source
@@ -40,7 +44,7 @@ If you **do not require** efficient screen capture with `owa-env-gst`, installat
     !!! tip
         When using `pip` instead of `uv`, **the installation order matters** because `pip` can't recognize `[tool.uv.sources]` in `pyproject.toml`.
 
-!!! tip 
+!!! tip
 
     `open-world-agents` is a mono-repo which is composed with multiple sub-repository and most sub-repositories are `pip`-installable python package in itself.
 
@@ -76,7 +80,7 @@ Before installation, we recommend setting up a virtual environment.
 !!! tip
 
     You can use other virtual environment tools, but to fully utilize `owa-env-gst`, you must install GStreamer with `conda/mamba`.
-    
+
     Note: GStreamer is only needed if you plan to capture screens.
 
 #### Setup `uv` (2/3)
@@ -127,20 +131,20 @@ Installation is simple as:
     $ pip install owa
     ```
 
-
-
 There're several packages related to `open-world-agents`.
 
 - PyPI packages:
-    - `owa-core`: Contains only the core logic to manage OWA's EnvPlugin
-    - `owa`: Contains several base EnvPlugins along with `owa-core` (requires separate GStreamer installation)
-    - Note that we're adopting lockstep versioning, which provides same version for each first-party sub-projects. e.g. following version specification is valid:
-    ```sh
-    pip install owa-core==0.3.2 owa-cli==0.3.2 owa-env-desktop==0.3.2
-    ```
+
+  - `owa-core`: Contains only the core logic to manage OWA's EnvPlugin
+  - `owa`: Contains several base EnvPlugins along with `owa-core` (requires separate GStreamer installation)
+  - Note that we're adopting lockstep versioning, which provides same version for each first-party sub-projects. e.g. following version specification is valid:
+
+  ```sh
+  pip install owa-core==0.3.2 owa-cli==0.3.2 owa-env-desktop==0.3.2
+  ```
 
 - Conda packages (Coming soon):
-    - `owa`: Complete package including all dependencies (GStreamer bundled)
-    - The conda package will eliminate the need to install GStreamer separately
-    - In the future, users will be able to simply run `conda install -c conda-forge owa` to get a fully functional installation
-    - Note: This implementation is still in progress and not yet available
+  - `owa`: Complete package including all dependencies (GStreamer bundled)
+  - The conda package will eliminate the need to install GStreamer separately
+  - In the future, users will be able to simply run `conda install -c conda-forge owa` to get a fully functional installation
+  - Note: This implementation is still in progress and not yet available
