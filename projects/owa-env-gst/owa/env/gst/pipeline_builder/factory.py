@@ -57,7 +57,8 @@ class ElementFactory:
         if additional_properties is not None:
             properties.update(additional_properties)
 
-        framerate = f",framerate=0/1,max-framerate={framerate_float_to_str(fps)}"
+        # for VFR(Variable Frame Rate) support, use framerate=0/1,max-framerate=60/1
+        framerate = f",framerate={framerate_float_to_str(fps)}"
         size = f",width={width},height={height}" if width and height else ""
 
         return (
