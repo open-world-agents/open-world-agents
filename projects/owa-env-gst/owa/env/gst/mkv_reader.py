@@ -129,10 +129,10 @@ class PyAVMKVReader(MKVReader):
         self.end_time = end_time
 
         # Convert to stream's time base
-        start_ts = int(start_time / self.stream.time_base)
+        start_ts = int(start_time * av.time_base)
 
         # Seek to the start position (with backward flag to ensure we get keyframe)
-        self.container.seek(start_ts, stream=self.stream, backward=True)
+        self.container.seek(start_ts, backward=True)
 
         return self
 

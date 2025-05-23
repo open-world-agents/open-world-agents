@@ -67,13 +67,13 @@ class PyAVVideoReader:
                     raise ValueError("No video stream found in the file.")
 
                 # Calculate the seek position in terms of stream time base
-                seek_timestamp = int(target_time / stream.time_base)
+                seek_timestamp = int(target_time * av.time_base)
 
                 # Flush the decoder before seeking
                 # container.flush_buffers()
 
                 # Seek to the nearest keyframe before the target time
-                container.seek(seek_timestamp, any_frame=False, backward=True, stream=stream)
+                container.seek(seek_timestamp)
 
                 for frame in container.decode(stream):
                     frame_time = frame.pts * stream.time_base
