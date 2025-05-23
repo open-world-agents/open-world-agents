@@ -74,31 +74,31 @@ markdown_extensions:
 
 nav:
   - Get Started:
-      - Welcome to OWA: index.md
-      - Help with OWA: help_with_owa.md
-      - Installation: install.md
-      - Contributing: contributing.md
+    - Welcome to OWA: index.md
+    - Help with OWA: help_with_owa.md
+    - Installation: install.md
+    - Contributing: contributing.md
     # - Changelog: changelog.md # Later
   - Project Overview: project_overview.md
   - Env in OWA:
-      - env/index.md
-      - env/guide.md
-      - Custom EnvPlugins: env/custom_plugins.md
-      - Lists of EnvPlugins:
-          - Standard Environment: env/plugins/std.md
-          - Desktop Environment: env/plugins/desktop_env.md
-          - Gstreamer Environment: env/plugins/gstreamer_env.md
+    - env/index.md
+    - env/guide.md
+    - Custom EnvPlugins: env/custom_plugins.md
+    - Lists of EnvPlugins:
+      - Standard Environment: env/plugins/std.md
+      - Desktop Environment: env/plugins/desktop_env.md
+      - Gstreamer Environment: env/plugins/gstreamer_env.md
   - Data in OWA:
-      - data/index.md
-      - data/data_format.md
-      - data/how_to_explorer_and_edit.md
-      - data/viewer.md
-      # - Comparison with other data formats: data/comparison.md # Later
-      - data/ocap.md
+    - data/index.md
+    - data/data_format.md
+    - data/how_to_explorer_and_edit.md
+    - data/viewer.md
+    # - Comparison with other data formats: data/comparison.md # Later
+    - data/ocap.md
   - 🚀 Awesome Examples (WIP):
-      - Multimodal Game Agent: examples/multimodal_game_agent.md
-      - Omniparse + InternLM GUI Agent: examples/gui_agent.md
-      - Interactve World Model: examples/interactive_world_model.md
-      - Usage with transformers: examples/usage_with_transformers.md
-      - Usage with LLM Inference Engines(ollama, ...): examples/usage_with_llm.md
+    - Multimodal Game Agent: examples/multimodal_game_agent.md
+    - Omniparse + InternLM GUI Agent: examples/gui_agent.md
+    - Interactve World Model: examples/interactive_world_model.md
+    - Usage with transformers: examples/usage_with_transformers.md
+    - Usage with LLM Inference Engines(ollama, ...): examples/usage_with_llm.md
   # - API Reference: api_reference.md # Later
