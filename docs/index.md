@@ -69,21 +69,22 @@ Here's what we've got in store for you!
 - Curious about `OWAMCap` format? see following: (Note that `cat` output is a created example.)
 ```
 $ owl mcap info example.mcap
-library:   mcap-owa-support 0.1.0; mcap 1.2.2
+library:   mcap-owa-support 0.3.2; mcap 1.2.2
 profile:   owa
-messages:  2124
-duration:  17.6543448s
-start:     2025-03-11T02:46:39.0329786+09:00 (1741628799.032978600)
-end:       2025-03-11T02:46:56.6873234+09:00 (1741628816.687323400)
+messages:  1062
+duration:  8.8121584s
+start:     2025-05-23T20:04:01.7269392+09:00 (1747998241.726939200)
+end:       2025-05-23T20:04:10.5390976+09:00 (1747998250.539097600)
 compression:
-        zstd: [1/1 chunks] [173.83 KiB/28.29 KiB (83.73%)] [1.60 KiB/sec]
+        zstd: [1/1 chunks] [113.42 KiB/17.52 KiB (84.55%)] [1.99 KiB/sec]
 channels:
-        (1) window            18 msgs (1.02 Hz)    : owa.env.desktop.msg.WindowInfo [jsonschema]
-        (2) keyboard/state    18 msgs (1.02 Hz)    : owa.env.desktop.msg.KeyboardState [jsonschema]
-        (3) mouse           1064 msgs (60.27 Hz)   : owa.env.desktop.msg.MouseEvent [jsonschema]
-        (4) screen           978 msgs (55.40 Hz)   : owa.env.gst.msg.ScreenEmitted [jsonschema]
-        (5) keyboard          46 msgs (2.61 Hz)    : owa.env.desktop.msg.KeyboardEvent [jsonschema]
-channels: 5
+        (1) keyboard/state    9 msgs (1.02 Hz)    : owa.env.desktop.msg.KeyboardState [jsonschema]
+        (2) mouse/state       9 msgs (1.02 Hz)    : owa.env.desktop.msg.MouseState [jsonschema]
+        (3) window            9 msgs (1.02 Hz)    : owa.env.desktop.msg.WindowInfo [jsonschema]
+        (4) screen          523 msgs (59.35 Hz)   : owa.env.gst.msg.ScreenEmitted [jsonschema]
+        (5) mouse           510 msgs (57.87 Hz)   : owa.env.desktop.msg.MouseEvent [jsonschema]
+        (6) keyboard          2 msgs (0.23 Hz)    : owa.env.desktop.msg.KeyboardEvent [jsonschema]
+channels: 6
 attachments: 0
 metadata: 0
 
