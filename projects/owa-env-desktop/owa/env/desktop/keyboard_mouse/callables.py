@@ -58,23 +58,28 @@ def press_repeat_key(key, press_time: float, initial_delay: float = 0.5, repeat_
 
 
 @CALLABLES.register("mouse.get_state")
-def get_mouse_state():
-    x, y = mouse_controller.position
+def get_mouse_state() -> MouseState:
+    """Get the current mouse state including position and pressed buttons."""
+    position = mouse_controller.position
+    if position is None:
+        position = (-1, -1)  # Fallback if position cannot be retrieved
     mouse_buttons = set()
     buttons = get_vk_state()
     for button, vk in {"left": 1, "right": 2, "middle": 4}.items():
         if vk in buttons:
             mouse_buttons.add(button)
-    return MouseState(x=x, y=y, buttons=mouse_buttons)
+    return MouseState(x=position.x, y=position.y, buttons=mouse_buttons)
 
 
 @CALLABLES.register("keyboard.get_state")
-def get_keyboard_state():
+def get_keyboard_state() -> KeyboardState:
+    """Get the current keyboard state including pressed keys."""
     return KeyboardState(buttons=get_vk_state())
 
 
 @CALLABLES.register("keyboard.release_all_keys")
 def release_all_keys():
+    """Release all currently pressed keys on the keyboard."""
     keyboard_state: KeyboardState = get_keyboard_state()
     for key in keyboard_state.buttons:
         release(key)
