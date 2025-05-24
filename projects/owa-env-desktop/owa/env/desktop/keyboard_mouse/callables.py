@@ -68,7 +68,7 @@ def get_mouse_state() -> MouseState:
     for button, vk in {"left": 1, "right": 2, "middle": 4}.items():
         if vk in buttons:
             mouse_buttons.add(button)
-    return MouseState(x=position.x, y=position.y, buttons=mouse_buttons)
+    return MouseState(x=position[0], y=position[1], buttons=mouse_buttons)
 
 
 @CALLABLES.register("keyboard.get_state")
