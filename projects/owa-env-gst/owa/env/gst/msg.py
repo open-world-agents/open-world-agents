@@ -147,6 +147,10 @@ class ScreenEmitted(OWAMessage):
         if self.frame_arr is None:
             if self.path is None or self.pts is None:
                 raise ValueError("ScreenEmitted requires either 'frame_arr' or both 'path' and 'pts' to be provided.")
+        if self.frame_arr is not None:
+            # If frame_arr is provided, set shape and original_shape based on its dimensions
+            h, w = self.frame_arr.shape[:2]
+            self.shape = (w, h)
 
     def lazy_load(self) -> np.ndarray:
         """
