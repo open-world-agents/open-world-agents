@@ -10,47 +10,36 @@ from tqdm import tqdm
 from typing_extensions import Annotated
 
 from mcap_owa.highlevel import OWAMcapWriter
-from owa.core.registry import CALLABLES, LISTENERS, activate_module
+from owa.core.registry import LISTENERS, activate_module
 from owa.core.time import TimeUnits
 
 # TODO: apply https://loguru.readthedocs.io/en/stable/resources/recipes.html#configuring-loguru-to-be-used-by-a-library-or-an-application
 logger.remove()
 # how to use loguru with tqdm: https://github.com/Delgan/loguru/issues/135
-logger.add(lambda msg: tqdm.write(msg, end=""), filter={"owa.ocap": "DEBUG", "owa.envgst": "INFO"}, colorize=True)
+logger.add(lambda msg: tqdm.write(msg, end=""), filter={"owa.ocap": "DEBUG", "owa.env.gst": "INFO"}, colorize=True)
 
-queue = Queue()
+event_queue = Queue()
 MCAP_LOCATION = None
 
 
-def callback(event, *, topic):
-    queue.put((topic, event, time.time_ns()))
+def enqueue_event(event, *, topic):
+    event_queue.put((topic, event, time.time_ns()))
 
 
-def keyboard_publisher_callback(event):
+def keyboard_monitor_callback(event):
     # info only for F1-F12 keys
     if 0x70 <= event.vk <= 0x7B and event.event_type == "press":
         logger.info(f"F1-F12 key pressed: F{event.vk - 0x70 + 1}")
-    callback(event, topic="keyboard")
+    enqueue_event(event, topic="keyboard")
 
 
-def screen_publisher_callback(event):
+def screen_capture_callback(event):
     global MCAP_LOCATION
     event.path = Path(event.path).relative_to(MCAP_LOCATION.parent).as_posix()
-    callback(event, topic="screen")
+    enqueue_event(event, topic="screen")
 
 
-def publish_window_info():
-    while True:
-        active_window = CALLABLES["window.get_active_window"]()
-        keyboard_state = CALLABLES["keyboard.get_state"]()
-        mouse_state = CALLABLES["mouse.get_state"]()
-        callback(active_window, topic="window")
-        callback(keyboard_state, topic="keyboard/state")
-        callback(mouse_state, topic="mouse/state")
-        time.sleep(1)
-
-
-def configure():
+def configure_module():
     activate_module("owa.env.desktop")
     activate_module("owa.env.gst")
 
@@ -76,17 +65,17 @@ def setup_resources(
     height: Optional[int],
     additional_properties: dict,
 ):
-    configure()
+    configure_module()
     # Instantiate all listeners and recorder etc.
     recorder = LISTENERS["owa.env.gst/omnimodal/appsink_recorder"]()
-    keyboard_listener = LISTENERS["keyboard"]().configure(callback=keyboard_publisher_callback)
-    mouse_listener = LISTENERS["mouse"]().configure(callback=lambda event: callback(event, topic="mouse"))
-    window_listener = LISTENERS["window"]().configure(callback=lambda event: callback(event, topic="window"))
+    keyboard_listener = LISTENERS["keyboard"]().configure(callback=keyboard_monitor_callback)
+    mouse_listener = LISTENERS["mouse"]().configure(callback=lambda event: enqueue_event(event, topic="mouse"))
+    window_listener = LISTENERS["window"]().configure(callback=lambda event: enqueue_event(event, topic="window"))
     keyboard_state_listener = LISTENERS["keyboard/state"]().configure(
-        callback=lambda event: callback(event, topic="keyboard/state")
+        callback=lambda event: enqueue_event(event, topic="keyboard/state")
     )
     mouse_state_listener = LISTENERS["mouse/state"]().configure(
-        callback=lambda event: callback(event, topic="mouse/state")
+        callback=lambda event: enqueue_event(event, topic="mouse/state")
     )
     # Configure recorder
     recorder.configure(
@@ -101,8 +90,9 @@ def setup_resources(
         width=width,
         height=height,
         additional_properties=additional_properties,
-        callback=screen_publisher_callback,
+        callback=screen_capture_callback,
     )
+
     resources = [
         (recorder, "recorder"),
         (keyboard_listener, "keyboard listener"),
@@ -111,7 +101,6 @@ def setup_resources(
         (keyboard_state_listener, "keyboard state listener"),
         (mouse_state_listener, "mouse state listener"),
     ]
-    # --- Start resources ---
     for resource, name in resources:
         resource.start()
         logger.debug(f"Started {name}")
@@ -128,7 +117,7 @@ def setup_resources(
                 logger.error(f"Error stopping {name}: {e}")
 
 
-def parse_additional_args(additional_args: Optional[str]) -> dict:
+def parse_additional_properties(additional_args: Optional[str]) -> dict:
     additional_properties = {}
     if additional_args is not None:
         for arg in additional_args.split(","):
@@ -137,7 +126,7 @@ def parse_additional_args(additional_args: Optional[str]) -> dict:
     return additional_properties
 
 
-def check_and_prepare_output_files(file_location: Path):
+def ensure_output_files_ready(file_location: Path):
     output_file = file_location.with_suffix(".mcap")
     if not output_file.parent.exists():
         output_file.parent.mkdir(parents=True, exist_ok=True)
@@ -187,7 +176,7 @@ def record(
 ):
     """Record screen, keyboard, mouse, and window events to an `.mcap` and `.mkv` file."""
     global MCAP_LOCATION
-    output_file = check_and_prepare_output_files(file_location)
+    output_file = ensure_output_files_ready(file_location)
     MCAP_LOCATION = output_file
 
     if window_name is not None:
@@ -200,7 +189,7 @@ def record(
             "- Full screen mode in games works well if the video output matches your monitor resolution (e.g., 1920x1080)\n"
             "- Any non-fullscreen capture will have misaligned mouse coordinates in the recording"
         )
-    additional_properties = parse_additional_args(additional_args)
+    additional_properties = parse_additional_properties(additional_args)
 
     logger.info(USER_INSTRUCTION)
 
@@ -220,7 +209,7 @@ def record(
         with OWAMcapWriter(output_file) as writer, tqdm(desc="Recording", unit="event", dynamic_ncols=True) as pbar:
             try:
                 while True:
-                    topic, event, publish_time = queue.get()
+                    topic, event, publish_time = event_queue.get()
                     pbar.update()
                     latency = time.time_ns() - publish_time
                     # warn if latency is too high, i.e., > 100ms
