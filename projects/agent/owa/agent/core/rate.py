@@ -1,5 +1,4 @@
-import time
-from typing import Callable, Optional
+from typing import Optional
 
 from .clock import Clock, get_default_clock
 
@@ -9,12 +8,11 @@ class Rate:
     Utility class to maintain a fixed execution rate (Hz).
     """
 
-    def __init__(self, rate: float, clock: Optional[Clock] = None, sleep_fn: Optional[Callable[[float], None]] = None):
+    def __init__(self, rate: float, clock: Optional[Clock] = None):
         """
         Args:
             rate (float): Frequency in Hz. Must be > 0.
             clock (Clock, optional): Clock instance to use. Defaults to system clock.
-            sleep_fn (Callable, optional): Function to use for sleeping. Defaults to time.sleep.
         Raises:
             ValueError: If rate is not positive.
         """
@@ -23,7 +21,6 @@ class Rate:
         self.rate = rate
         self._interval = 1.0 / rate
         self.clock = clock if clock is not None else get_default_clock()
-        self._sleep_fn = sleep_fn if sleep_fn is not None else time.sleep
         self.reset()
 
     def sleep(self) -> None:
@@ -33,7 +30,7 @@ class Rate:
         now = self.clock.get_time()
         elapsed = now - self._last_time
         to_sleep = max(0.0, self._interval - elapsed)
-        self._sleep_fn(to_sleep)
+        self.clock.sleep(to_sleep)
         self._last_time = self.clock.get_time()
 
     def reset(self) -> None:

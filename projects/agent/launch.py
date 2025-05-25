@@ -54,6 +54,7 @@ def setup_resources():
         event_processor=event_processor,
         rate=20.0,
         clock=clock,
+        world_pause=False,  # Set to True to pause the world. If set to True, adjust rate to 4.0/2.0
     )
     model_worker = ModelWorker().configure(
         thought_queue=thought_queue,
@@ -61,7 +62,7 @@ def setup_resources():
         clock=clock,
         model_id=r"C:\Users\MilkClouds\Downloads\SmolVLM2-256M",
     )
-    action_executor = ActionExecutor().configure(action_queue=action_queue, clock=clock)
+    action_executor = ActionExecutor().configure(action_queue=action_queue, clock=clock, preempt=True)
 
     resources = [
         (perception_provider, "perception_provider"),

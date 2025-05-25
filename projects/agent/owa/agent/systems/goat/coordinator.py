@@ -96,9 +96,7 @@ class RealTimeAgentCoordinator(Runnable):
                 logger.info(f"[DECISION] Received decision: {decision!r}")
                 actions = decision_to_action(decision, now=now, event_processor=self._event_processor)
                 logger.debug(f"[ACTION] Parsed actions: {actions!r}")
-                for action in actions:
-                    logger.trace(f"[ACTION] Enqueueing action: {action!r}")
-                    self._action_queue.put_nowait(action)  # Enqueue the action
+                self._action_queue.put_nowait(actions)  # Enqueue the action
             except queue.Empty:
                 logger.debug("[DECISION] No decision available this tick")
                 ...  # No decision available, continue
