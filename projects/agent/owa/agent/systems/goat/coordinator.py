@@ -31,14 +31,14 @@ class RealTimeAgentCoordinator(Runnable):
         event_processor: EventProcessor,
         perception_spec_dict: PerceptionSpecDict,
         rate: float,
-        clock: Clock | None = None,
+        clock: Clock,
         world_pause: bool = False,
     ):
         self._perception_queue = perception_queue
         self._thought_queue = thought_queue
         self._action_queue = action_queue
         self._decision_queue = decision_queue
-        self._clock = clock or get_default_clock()
+        self._clock = clock
         self._rate = Rate(rate, clock=clock)
         self._perception_spec_dict = perception_spec_dict
         self._event_processor = event_processor
@@ -64,6 +64,8 @@ class RealTimeAgentCoordinator(Runnable):
                 spec=self._perception_spec_dict,
                 event_processor=self._event_processor,
             )
+            logger.trace(f"[PERCEIVE] Updated perception history: {perception_history!r}")
+            logger.trace(f"now: {now}, tick: {tick}")
             logger.trace(f"[CONVERSATION] New conversation: {conversation!r}")
 
             # 2. Think. To: ModelWorker

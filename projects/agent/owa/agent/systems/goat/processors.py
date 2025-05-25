@@ -48,7 +48,9 @@ def perception_to_conversation(
 
     perception_history += current_perception
     perception_history, info = apply_spec(perception_history, now=now, spec=spec)
-    if perception_history:
+    # Due to implementation of SmolVLMProcessor, we need at least one screen event to create a conversation.
+    # Yes, bad design.
+    if len(perception_history["inputs/screen"]) > 0:
         event_history = sorted(
             perception_history["inputs/keyboard"]
             + perception_history["inputs/mouse"]

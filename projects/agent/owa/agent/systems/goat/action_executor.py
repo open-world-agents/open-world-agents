@@ -11,6 +11,7 @@ from owa.core.time import TimeUnits
 from owa.env.desktop.msg import KeyboardEvent, MouseEvent
 
 
+# TODO: simulation-time aware action execution
 class ActionExecutor(Runnable):
     def on_configure(self, action_queue: queue.Queue[Event], clock: Clock):
         self._action_queue = action_queue
@@ -33,6 +34,7 @@ class ActionExecutor(Runnable):
             if event.timestamp > current_time:
                 # Calculate delay needed
                 delay = (event.timestamp - current_time) / TimeUnits.SECOND  # Convert to seconds
+                # delay = delay * 4  # Scale the delay, TODO: remove this
                 if delay > 0:
                     threading.Timer(delay, self._execute_action, args=(action_msg,)).start()
                 else:

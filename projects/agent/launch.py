@@ -6,7 +6,7 @@ from queue import Queue
 import typer
 from loguru import logger
 
-from owa.agent.core import get_default_clock
+from owa.agent.core import Clock
 from owa.agent.core.perception import PerceptionQueue
 from owa.agent.systems.goat import (
     PERCEPTION_SPEC_DICT,
@@ -27,9 +27,10 @@ def configure_logging():
         sys.stderr,
         level="INFO",
         colorize=True,
+        filter={"owa.env.gst": False},
         format="<green>{time:HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
     )
-    logger.add("launch.log", level="DEBUG", encoding="utf-8")
+    logger.add("launch.log", level="TRACE", encoding="utf-8")
 
 
 @contextmanager
@@ -41,7 +42,7 @@ def setup_resources():
     decision_queue = Queue()
     action_queue = Queue()
     event_processor = EventProcessor()
-    clock = get_default_clock()
+    clock = Clock(scale=1.0)
 
     perception_provider = PerceptionProvider().configure(perception_queue=perception_queue, clock=clock)
     agent_coordinator = RealTimeAgentCoordinator().configure(
@@ -52,12 +53,13 @@ def setup_resources():
         perception_spec_dict=PERCEPTION_SPEC_DICT,
         event_processor=event_processor,
         rate=20.0,
+        clock=clock,
     )
     model_worker = ModelWorker().configure(
         thought_queue=thought_queue,
         decision_queue=decision_queue,
         clock=clock,
-        model_id=r"C:\Users\MilkClouds\Downloads\SmolVLM2-256M-Video-Instruct-1e4-norotaug-repeat5-epoch20",
+        model_id=r"C:\Users\MilkClouds\Downloads\SmolVLM2-256M",
     )
     action_executor = ActionExecutor().configure(action_queue=action_queue, clock=clock)
 
