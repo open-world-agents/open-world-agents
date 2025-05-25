@@ -42,10 +42,10 @@ class Registry(Generic[T]):
     def __contains__(self, name: str) -> bool:
         return name in self._registry
 
-    def __getitem__(self, name: str) -> Type[T]:
+    def __getitem__(self, name: str) -> T:
         return self._registry[name]
 
-    def get(self, name: str) -> Optional[Type[T]]:
+    def get(self, name: str) -> Optional[T]:
         return self._registry.get(name)
 
     # List all the registered items
@@ -70,7 +70,7 @@ def activate_module(entrypoint):
         return _MODULES[entrypoint]
 
     try:
-        entrypoint_module = importlib.import_module(entrypoint)
+        entrypoint_module: OwaEnvInterface = importlib.import_module(entrypoint)
     except ModuleNotFoundError as e:
         if e.name == entrypoint:
             print(f"Module '{entrypoint}' not found.")
@@ -78,6 +78,7 @@ def activate_module(entrypoint):
             raise e
 
     try:
+        # Check if the module satisfies the OwaEnvInterface
         entrypoint_module.activate()
     except AttributeError as e:
         if e.args[0] == f"module '{entrypoint}' has no attribute 'activate'":
