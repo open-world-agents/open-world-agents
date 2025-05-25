@@ -16,7 +16,7 @@ def find(window_name: str):
     window = CALLABLES["window.get_window_by_title"](window_name)
     height, width = window.rect[3] - window.rect[1], window.rect[2] - window.rect[0]
     typer.echo(f"Found window: {window}")
-    typer.echo(f"Title: {window.title} ({height}x{width})")
+    typer.echo(f"Title: {window.title} ({width}x{height})")
     typer.echo(f"Rect: {window.rect}")
     typer.echo(f"hWnd: {window.hWnd}")
 
