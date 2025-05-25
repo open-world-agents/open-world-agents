@@ -13,11 +13,10 @@ from mcap_owa.highlevel import OWAMcapWriter
 from owa.core.registry import CALLABLES, LISTENERS, activate_module
 from owa.core.time import TimeUnits
 
-# how to use loguru with tqdm: https://github.com/Delgan/loguru/issues/135
-logger.remove()
-logger.add(lambda msg: tqdm.write(msg, end=""), filter="owa.ocap", colorize=True)
 # TODO: apply https://loguru.readthedocs.io/en/stable/resources/recipes.html#configuring-loguru-to-be-used-by-a-library-or-an-application
-logger.add(lambda msg: tqdm.write(msg, end=""), level="INFO", filter="owa.env.gst", colorize=True)
+logger.remove()
+# how to use loguru with tqdm: https://github.com/Delgan/loguru/issues/135
+logger.add(lambda msg: tqdm.write(msg, end=""), filter={"owa.ocap": "DEBUG", "owa.envgst": "INFO"}, colorize=True)
 
 queue = Queue()
 MCAP_LOCATION = None

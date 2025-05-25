@@ -5,7 +5,7 @@
 
 import importlib
 from enum import StrEnum
-from typing import Callable, Dict, Generic, Optional, Type, TypeVar
+from typing import Callable, Dict, Generic, Optional, TypeVar
 
 from .callable import Callable as CallableCls
 from .listener import Listener as ListenerCls
