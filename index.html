@@ -1217,39 +1217,40 @@
 <li>
 <p>Curious about <code>OWAMCap</code> format? see following: (Note that <code>cat</code> output is a created example.)
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>$ owl mcap info example.mcap
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>library:   mcap-owa-support 0.1.0; mcap 1.2.2
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>library:   mcap-owa-support 0.3.2; mcap 1.2.2
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>profile:   owa
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>messages:  2124
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>duration:  17.6543448s
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>start:     2025-03-11T02:46:39.0329786+09:00 (1741628799.032978600)
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>end:       2025-03-11T02:46:56.6873234+09:00 (1741628816.687323400)
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>messages:  1062
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>duration:  8.8121584s
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>start:     2025-05-23T20:04:01.7269392+09:00 (1747998241.726939200)
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>end:       2025-05-23T20:04:10.5390976+09:00 (1747998250.539097600)
 <a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>compression:
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>        zstd: [1/1 chunks] [173.83 KiB/28.29 KiB (83.73%)] [1.60 KiB/sec]
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>        zstd: [1/1 chunks] [113.42 KiB/17.52 KiB (84.55%)] [1.99 KiB/sec]
 <a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>channels:
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>        (1) window            18 msgs (1.02 Hz)    : owa.env.desktop.msg.WindowInfo [jsonschema]
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>        (2) keyboard/state    18 msgs (1.02 Hz)    : owa.env.desktop.msg.KeyboardState [jsonschema]
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>        (3) mouse           1064 msgs (60.27 Hz)   : owa.env.desktop.msg.MouseEvent [jsonschema]
-<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>        (4) screen           978 msgs (55.40 Hz)   : owa.env.gst.msg.ScreenEmitted [jsonschema]
-<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>        (5) keyboard          46 msgs (2.61 Hz)    : owa.env.desktop.msg.KeyboardEvent [jsonschema]
-<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>channels: 5
-<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>attachments: 0
-<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>metadata: 0
-<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>
-<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>$ owl mcap cat example.mcap --n 8 --no-pretty
-<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>Topic: window, Timestamp: 1741628814049712700, Message: {&#39;title&#39;: &#39;ZType – Typing Game - Type to Shoot - Chromium&#39;, &#39;rect&#39;: [389, 10, 955, 1022], &#39;hWnd&#39;: 7540094}
-<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>Topic: keyboard/state, Timestamp: 1741628814049712700, Message: {&#39;buttons&#39;: []}
-<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>Topic: screen, Timestamp: 1741628814057575300, Message: {&#39;path&#39;: &#39;example.mkv&#39;, &#39;pts&#39;: 14866666666,
-<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>
-<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>... (additional lines omitted for brevity) ...
-<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>
-<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>Topic: keyboard, Timestamp: 1741628814978561600, Message: {&#39;event_type&#39;: &#39;press&#39;, &#39;vk&#39;: 162}
-<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a>Topic: keyboard, Timestamp: 1741628815015522100, Message: {&#39;event_type&#39;: &#39;release&#39;, &#39;vk&#39;: 162}
-<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a>Topic: window, Timestamp: 1741628815050666400, Message: {&#39;title&#39;: &#39;data_format.md - open-world-agents - Visual Studio Code&#39;, &#39;rect&#39;: [-8, -8, 1928, 1040], &#39;hWnd&#39;: 133438}
-<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a>
-<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a>... (additional lines omitted for brevity) ...
-<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a>
-<a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a>Topic: mouse, Timestamp: 1741628816438561600, Message: {&#39;event_type&#39;: &#39;move&#39;, &#39;x&#39;: 950, &#39;y&#39;: 891}
-<a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a>Topic: mouse, Timestamp: 1741628816441655400, Message: {&#39;event_type&#39;: &#39;click&#39;, &#39;x&#39;: 950, &#39;y&#39;: 891, &#39;button&#39;: &#39;left&#39;, &#39;pressed&#39;: true}
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>        (1) keyboard/state    9 msgs (1.02 Hz)    : owa.env.desktop.msg.KeyboardState [jsonschema]
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>        (2) mouse/state       9 msgs (1.02 Hz)    : owa.env.desktop.msg.MouseState [jsonschema]
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>        (3) window            9 msgs (1.02 Hz)    : owa.env.desktop.msg.WindowInfo [jsonschema]
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>        (4) screen          523 msgs (59.35 Hz)   : owa.env.gst.msg.ScreenEmitted [jsonschema]
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>        (5) mouse           510 msgs (57.87 Hz)   : owa.env.desktop.msg.MouseEvent [jsonschema]
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>        (6) keyboard          2 msgs (0.23 Hz)    : owa.env.desktop.msg.KeyboardEvent [jsonschema]
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>channels: 6
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>attachments: 0
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>metadata: 0
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>$ owl mcap cat example.mcap --n 8 --no-pretty
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>Topic: window, Timestamp: 1741628814049712700, Message: {&#39;title&#39;: &#39;ZType – Typing Game - Type to Shoot - Chromium&#39;, &#39;rect&#39;: [389, 10, 955, 1022], &#39;hWnd&#39;: 7540094}
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>Topic: keyboard/state, Timestamp: 1741628814049712700, Message: {&#39;buttons&#39;: []}
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>Topic: screen, Timestamp: 1741628814057575300, Message: {&#39;path&#39;: &#39;example.mkv&#39;, &#39;pts&#39;: 14866666666,
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>... (additional lines omitted for brevity) ...
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>
+<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a>Topic: keyboard, Timestamp: 1741628814978561600, Message: {&#39;event_type&#39;: &#39;press&#39;, &#39;vk&#39;: 162}
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a>Topic: keyboard, Timestamp: 1741628815015522100, Message: {&#39;event_type&#39;: &#39;release&#39;, &#39;vk&#39;: 162}
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a>Topic: window, Timestamp: 1741628815050666400, Message: {&#39;title&#39;: &#39;data_format.md - open-world-agents - Visual Studio Code&#39;, &#39;rect&#39;: [-8, -8, 1928, 1040], &#39;hWnd&#39;: 133438}
+<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a>
+<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a>... (additional lines omitted for brevity) ...
+<a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a>
+<a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a>Topic: mouse, Timestamp: 1741628816438561600, Message: {&#39;event_type&#39;: &#39;move&#39;, &#39;x&#39;: 950, &#39;y&#39;: 891}
+<a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a>Topic: mouse, Timestamp: 1741628816441655400, Message: {&#39;event_type&#39;: &#39;click&#39;, &#39;x&#39;: 950, &#39;y&#39;: 891, &#39;button&#39;: &#39;left&#39;, &#39;pressed&#39;: true}
 </code></pre></div></p>
 </li>
 </ul>
@@ -1285,7 +1286,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="May 22, 2025 05:56:40">May 22, 2025 05:56:40</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="May 23, 2025 11:29:51">May 23, 2025 11:29:51</span>
   </span>
 
     
