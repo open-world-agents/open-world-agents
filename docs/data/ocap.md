@@ -2,7 +2,11 @@
 
 Desktop recorder for Windows that captures screen, audio, keyboard, mouse, and window events with high performance.
 
-![ocap recording demo](../images/ocap-demo.gif)
+<!-- ![ocap recording demo](../images/ocap-demo.gif) -->
+
+<video controls>
+    <source src="../ocap.mkv" type="video/mp4">
+</video>
 
 ## What is ocap?
 
@@ -49,7 +53,37 @@ Your recording files will be ready to use immediately!
 
 ocap is built on GStreamer for media processing with a clean, maintainable architecture:
 
-![ocap architecture](../images/ocap-architecture.png)
+```mermaid
+flowchart TD
+    %% Input Sources
+    A[owa.env.desktop] --> B[Keyboard Events]
+    A --> C[Mouse Events] 
+    A --> D[Window Events]
+    E[owa.env.gst] --> F[Screen Capture]
+    E --> G[Audio Capture]
+    
+    %% Core Processing
+    B --> H[Event Queue]
+    C --> H
+    D --> H
+    F --> H
+    F --> I[Video/Audio Pipeline]
+    G --> I
+    
+    %% Outputs
+    H --> J[MCAP Writer]
+    I --> K[MKV Pipeline]
+    
+    %% Files
+    J --> L[📄 events.mcap]
+    K --> M[🎥 video.mkv]
+    
+    style A fill:#e1f5fe
+    style E fill:#e1f5fe
+    style H fill:#fff3e0
+    style L fill:#e8f5e8
+    style M fill:#e8f5e8
+```
 
 - **Easily verifiable and customizable**: Extensive [OWA's Env](../../env) design enables customizable, single [`record.py`](https://github.com/open-world-agents/open-world-agents/blob/main/projects/ocap/owa/ocap/record.py)
 - **Native performance**: Direct integration with Windows APIs ([DXGI](https://learn.microsoft.com/en-us/windows/win32/direct3ddxgi/d3d10-graphics-programming-guide-dxgi)/[WGC](https://learn.microsoft.com/en-us/uwp/api/windows.graphics.capture?view=winrt-26100) for video, [WASAPI](https://learn.microsoft.com/en-us/windows/win32/coreaudio/wasapi) for audio)
@@ -72,7 +106,7 @@ ocap is built on GStreamer for media processing with a clean, maintainable archi
 ocap --help                         # See the help!
 ocap FILENAME --window-name "App"   # Record specific window
 ocap FILENAME --monitor-idx 1       # Record specific monitor
-ocap FILENAME --fps 144             # Set framerate
+ocap FILENAME --fps 60              # Set framerate
 ocap FILENAME --no-record-audio     # Disable audio
 ```
 
