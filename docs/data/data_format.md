@@ -7,17 +7,36 @@ OWAMcap is a specification for using the open-source [mcap](https://mcap.dev/) c
 **What makes a file "OWAMcap":**
 
 - Standard mcap file format with OWA profile designation
-- Messages implementing OWA's `BaseMessage` interface
-- Specific message types for desktop interaction data (mouse, keyboard, screen, etc.)
+- OWA's predefined message types for desktop interaction data (mouse, keyboard, screen, etc.)
 - Optimized storage strategies (e.g., external video files referenced from mcap)
 
 !!! tip "So, what exactly is mcap?"
-    mcap is a format that records various timestamped events like keyboard inputs, mouse movements, and screen captures. OWAMcap leverages this by defining specific message schemas for desktop interaction data. See the [Format Specification](#internals-owamcap-format-specification) for details.
+    mcap is a format that records various timestamped events like keyboard inputs, mouse movements, and screen captures. OWAMcap leverages this by defining specific message schemas for desktop interaction data. See the [Format Specification](#format-specification) for details.
+
+<!-- TODO: Add animated GIF showing mcap timeline with different data types (mouse, keyboard, screen) -->
+![OWAMcap Timeline Visualization](../images/owamcap-timeline.svg)
+*Visualization of how OWAMcap stores multimodal data with precise timestamps*
 
 ## The Vision: A Universal Standard for Desktop Interaction Data
 
 ### The Current Problem
 The biggest obstacle to building foundation models for desktop automation is **data fragmentation**. Each research group collects data in proprietary formats, making it nearly impossible to combine datasets. This mirrors the robotics community, where enormous resources are continuously wasted converting between incompatible formats instead of advancing research.
+
+**Real-World Example: Open-X Embodiment's Herculean Effort**
+
+The [Open-X Embodiment](https://robotics-transformer-x.github.io/) project perfectly illustrates this challenge. To create their unified robotics dataset, researchers had to:
+
+- **Manually convert 22 different datasets** from completely different formats
+- **Spend months** writing custom parsers for each proprietary format
+- **Standardize** action spaces, observation formats, and metadata schemas
+- **Validate** data integrity across heterogeneous sources
+- **Maintain** conversion scripts as source datasets evolved
+
+This massive undertaking required an entire team's effort for what should have been a straightforward data combination task. **The same challenge now faces desktop automation**.
+
+<!-- TODO: Add infographic showing data conversion complexity -->
+![Data Format Conversion Complexity](images/format-conversion-complexity.svg)
+*Illustration of the exponential complexity when converting between N different proprietary formats*
 
 ### OWAMcap as the Universal Standard
 OWAMcap establishes a unified foundation that enables:
@@ -39,6 +58,10 @@ Imagine a future where:
 - Individual researchers access and combine datasets from multiple sources seamlessly
 - Foundation models train on massive, diverse datasets spanning different applications
 
+<!-- TODO: Add before/after comparison diagram -->
+![Before and After OWAMcap](images/before-after-owamcap.png)
+*Before: Fragmented data silos requiring costly conversion. After: Direct dataset combination with OWAMcap*
+
 ### The Community Impact
 By establishing OWAMcap as a standard, we redirect enormous resources currently spent on data format conversion toward actual research and model development. This is particularly crucial for foundation models, which require vast amounts of diverse data to achieve their full potential.
 
@@ -46,6 +69,10 @@ By establishing OWAMcap as a standard, we redirect enormous resources currently 
     The desktop automation field is at a critical juncture. Without standardization, we risk repeating robotics' mistakes: researchers spending months on format conversion, valuable datasets remaining isolated, and foundation models unable to reach their potential due to fragmented training data.
 
 ## Technical Innovation: Hybrid Storage Strategy
+
+<!-- TODO: Add architectural diagram showing mcap + external video storage -->
+![Hybrid Storage Architecture](images/hybrid-storage-architecture.svg)
+*OWAMcap's innovative approach: lightweight mcap metadata with external video storage*
 
 OWAMcap's most innovative feature is its approach to video data:
 
@@ -76,11 +103,22 @@ class ScreenEmitted(OWAMessage):
 
 **Benefits**: Storage efficiency, library compatibility, lazy loading, and seamless integration with existing video tools.
 
+<!-- TODO: Add storage comparison chart -->
+![Storage Efficiency Comparison](images/storage-comparison.png)
+*Storage size comparison: Traditional formats vs. OWAMcap's hybrid approach*
+
 ## Usage Example
 
 Sample datasets demonstrating the format:
 - `example.mcap` [[Download]](https://github.com/open-world-agents/open-world-agents/blob/main/docs/data/example.mcap) - Metadata and timestamps
 - `example.mkv` [[Download]](https://github.com/open-world-agents/open-world-agents/blob/main/docs/data/example.mkv) - Video data
+
+<!-- TODO: Add interactive demo or video walkthrough -->
+<video controls width="100%">
+  <source src="videos/owamcap-demo.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+*Interactive demonstration of loading and exploring OWAMcap data*
 
 ### File Overview
 ```bash
@@ -140,15 +178,18 @@ class BaseMessage(ABC):
 ### Design Rationale
 
 **Why mcap?** 
+
 Few open-source formats support heterogeneous timestamped data. ROS bagfiles require heavy ROS dependencies, while mcap is self-contained and optimized for random access—critical for VLA model training.
 
 **Why external video storage?**
+
 - Video codecs (H.264, H.265) are highly optimized
 - Maintains compatibility with existing video libraries
 - Enables selective frame loading for large datasets
 - Prevents metadata files from becoming unwieldy
 
 **Why standardization matters?**
+
 Without OWAMcap, the desktop automation field risks repeating robotics' mistakes: fragmented datasets, wasted conversion efforts, and limited foundation model potential. By establishing this standard early, we enable the community to focus on advancing capabilities rather than solving compatibility problems.
 
 !!! success "The Bottom Line"
