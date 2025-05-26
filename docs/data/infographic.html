@@ -19,59 +19,54 @@
             max-width: 600px;
             margin-left: auto;
             margin-right: auto;
-            height: 300px;
+            height: 300px; /* Default height for mobile */
             max-height: 400px;
         }
-        @media (min-width: 768px) {
+        @media (min-width: 768px) { /* md breakpoint */
             .chart-container {
-                height: 350px;
+                height: 350px; /* Taller for larger screens */
             }
         }
         .section-title {
-            font-size: 2.25rem;
+            font-size: 2.25rem; /* 36px */
             font-weight: 700;
             color: #FF6B6B; /* Primary */
             margin-bottom: 1rem;
             text-align: center;
         }
         .sub-title {
-            font-size: 1.5rem;
+            font-size: 1.5rem; /* 24px */
             font-weight: 600;
             color: #4ECDC4; /* Secondary */
             margin-bottom: 0.75rem;
         }
         .card {
             background-color: white;
-            border-radius: 0.5rem;
+            border-radius: 0.5rem; /* 8px */
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        .stat-number {
-            font-size: 3rem;
-            font-weight: 700;
-            color: #45B7D1; /* Accent */
+            padding: 1.5rem; /* 24px */
+            margin-bottom: 2rem; /* 32px */
         }
         .flow-box {
             border: 2px solid #4ECDC4; /* Secondary */
-            padding: 1rem;
-            border-radius: 0.375rem;
+            padding: 1rem; /* 16px */
+            border-radius: 0.375rem; /* 6px */
             text-align: center;
-            background-color: #F0FFFF;
+            background-color: #F0FFFF; /* Azure light */
             min-height: 60px;
             display: flex;
             align-items: center;
             justify-content: center;
         }
         .flow-arrow {
-            font-size: 2rem;
+            font-size: 2rem; /* 32px */
             color: #4ECDC4; /* Secondary */
-            margin: 0 0.5rem;
+            margin: 0 0.5rem; /* 8px */
             align-self: center;
         }
         .benefit-icon {
-            font-size: 1.5rem;
-            margin-right: 0.5rem;
+            font-size: 1.5rem; /* 24px */
+            margin-right: 0.5rem; /* 8px */
             color: #FF6B6B; /* Primary */
         }
         .header-gradient {
@@ -79,12 +74,29 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        .tooltip-custom {
-            background: rgba(0,0,0,0.7);
-            color: white;
-            border-radius: 4px;
-            padding: 8px;
+        .code-snippet-bg {
+            background-color: #2d2d2d; /* Dark background for code */
+            color: #f8f8f2; /* Light text for code */
+            padding: 1rem;
+            border-radius: 0.375rem;
+            overflow-x: auto;
+            max-height: 300px; /* Limit height and allow scroll */
         }
+        .code-snippet-bg code {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.875rem; /* 14px */
+            white-space: pre;
+        }
+        /* Highlighting for Python code snippet */
+        .code-snippet-bg .token.keyword { color: #f92672; } /* e.g., class, from, import */
+        .code-snippet-bg .token.string { color: #e6db74; } /* Strings */
+        .code-snippet-bg .token.comment { color: #75715e; } /* Comments */
+        .code-snippet-bg .token.class-name { color: #a6e22e; } /* Class names */
+        .code-snippet-bg .token.property { color: #fd971f; } /* Property names */
+        .code-snippet-bg .token.number { color: #ae81ff; } /* Numbers */
+        .code-snippet-bg .token.operator { color: #f92672; } /* Operators */
+        .code-snippet-bg .token.punctuation { color: #f8f8f2; } /* Punctuation */
+
     </style>
 </head>
 <body class="antialiased">
@@ -123,46 +135,60 @@
         <section id="problem" class="mb-16">
             <div class="card">
                 <h2 class="section-title">The Challenge: Data Fragmentation</h2>
-                <p class="text-lg mb-6 text-center">The primary obstacle to advancing desktop automation with foundation models is <b>data fragmentation</b>. Research groups often collect data in proprietary formats, making dataset combination nearly impossible and mirroring costly inefficiencies seen in the robotics community.</p>
+                <p class="text-lg mb-6 text-center">The primary obstacle to advancing desktop automation with foundation models is <b>data fragmentation</b>. Research groups often collect data in proprietary formats with varying internal structures, making dataset combination nearly impossible and mirroring costly inefficiencies seen in the robotics community.</p>
 
-                <div class="grid md:grid-cols-2 gap-8 items-center">
+                <div class="grid md:grid-cols-2 gap-8 items-start">
                     <div>
                         <h3 class="sub-title">The Open-X Embodiment Herculean Effort</h3>
                         <p class="mb-4 text-gray-700">The <a href="https://robotics-transformer-x.github.io/" target="_blank" class="text-[#45B7D1] hover:underline">Open-X Embodiment</a> project highlights this issue. Researchers had to:</p>
                         <ul class="list-disc list-inside space-y-1 text-gray-700 bg-red-50 p-4 rounded-md">
                             <li>Manually convert <strong>22 different datasets</strong></li>
                             <li>Spend <strong>months</strong> writing custom parsers</li>
-                            <li>Standardize action spaces, observations, and metadata</li>
-                            <li>Validate data integrity across diverse sources</li>
-                            <li>Maintain numerous conversion scripts</li>
+                            <li>Standardize action spaces, observations, and metadata across diverse configurations</li>
+                            <li>Validate data integrity across varied sources</li>
+                            <li>Maintain numerous complex conversion scripts</li>
                         </ul>
                         <p class="mt-4 text-gray-700">This massive undertaking underscores the critical need for a unified data standard in desktop automation.</p>
                     </div>
-                    <div class="text-center">
-                        <h3 class="sub-title">Conversion Complexity</h3>
-                        <div class="p-6 bg-amber-50 rounded-lg shadow">
-                            <p class="stat-number text-[#FFD166]">N*(N-1)</p>
-                            <p class="text-xl font-semibold text-gray-700">Potential Pairwise Conversions</p>
-                            <p class="mt-2 text-gray-600">Without a standard, converting between N formats requires a rapidly growing number of unique parsers and conversion routines, stifling collaboration and progress.</p>
+                    <div>
+                        <h3 class="sub-title text-center">Conversion Complexity Illustrated</h3>
+                        <div class="p-6 bg-amber-50 rounded-lg shadow text-left">
+                            <p class="text-lg font-semibold text-gray-700 mb-2">Example: Diverse Dataset Configurations</p>
+                            <div class="code-snippet-bg text-left"> <pre><code class="language-python">
+<span class="token comment"># Excerpt from oxe_dataset_configs.py</span>
+<span class="token comment"># Source: https://github.com/octo-models/octo/blob/main/octo/data/oxe/oxe_dataset_configs.py</span>
+<span class="token class-name">OXE_DATASET_CONFIGS</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+  <span class="token string">"fractal20220817_data"</span><span class="token punctuation">:</span> <span class="token punctuation">{</span>
+    <span class="token string">"image_obs_keys"</span><span class="token punctuation">:</span> <span class="token punctuation">{</span><span class="token string">"primary"</span><span class="token punctuation">:</span> <span class="token string">"image"</span><span class="token punctuation">,</span> <span class="token string">"secondary"</span><span class="token punctuation">:</span> <span class="token keyword">None</span><span class="token punctuation">,</span> <span class="token string">"wrist"</span><span class="token punctuation">:</span> <span class="token keyword">None</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token string">"depth_obs_keys"</span><span class="token punctuation">:</span> <span class="token punctuation">{</span><span class="token string">"primary"</span><span class="token punctuation">:</span> <span class="token keyword">None</span><span class="token punctuation">,</span> <span class="token string">"secondary"</span><span class="token punctuation">:</span> <span class="token keyword">None</span><span class="token punctuation">,</span> <span class="token string">"wrist"</span><span class="token punctuation">:</span> <span class="token keyword">None</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token string">"proprio_encoding"</span><span class="token punctuation">:</span> <span class="token class-name">ProprioEncoding</span><span class="token punctuation">.</span><span class="token property">POS_QUAT</span><span class="token punctuation">,</span>
+    <span class="token string">"action_encoding"</span><span class="token punctuation">:</span> <span class="token class-name">ActionEncoding</span><span class="token punctuation">.</span><span class="token property">EEF_POS</span><span class="token punctuation">,</span>
+  <span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token string">"bridge_dataset"</span><span class="token punctuation">:</span> <span class="token punctuation">{</span>
+    <span class="token string">"image_obs_keys"</span><span class="token punctuation">:</span> <span class="token punctuation">{</span><span class="token string">"primary"</span><span class="token punctuation">:</span> <span class="token string">"image_0"</span><span class="token punctuation">,</span> <span class="token string">"secondary"</span><span class="token punctuation">:</span> <span class="token string">"image_1"</span><span class="token punctuation">,</span> <span class="token string">"wrist"</span><span class="token punctuation">:</span> <span class="token keyword">None</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token string">"depth_obs_keys"</span><span class="token punctuation">:</span> <span class="token punctuation">{</span><span class="token string">"primary"</span><span class="token punctuation">:</span> <span class="token keyword">None</span><span class="token punctuation">,</span> <span class="token string">"secondary"</span><span class="token punctuation">:</span> <span class="token keyword">None</span><span class="token punctuation">,</span> <span class="token string">"wrist"</span><span class="token punctuation">:</span> <span class="token keyword">None</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token string">"proprio_encoding"</span><span class="token punctuation">:</span> <span class="token class-name">ProprioEncoding</span><span class="token punctuation">.</span><span class="token property">POS_EULER</span><span class="token punctuation">,</span>
+    <span class="token string">"action_encoding"</span><span class="token punctuation">:</span> <span class="token class-name">ActionEncoding</span><span class="token punctuation">.</span><span class="token property">EEF_POS</span><span class="token punctuation">,</span>
+  <span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token string">"taco_play"</span><span class="token punctuation">:</span> <span class="token punctuation">{</span>
+    <span class="token string">"image_obs_keys"</span><span class="token punctuation">:</span> <span class="token punctuation">{</span>
+        <span class="token string">"primary"</span><span class="token punctuation">:</span> <span class="token string">"rgb_static"</span><span class="token punctuation">,</span>
+        <span class="token string">"secondary"</span><span class="token punctuation">:</span> <span class="token keyword">None</span><span class="token punctuation">,</span>
+        <span class="token string">"wrist"</span><span class="token punctuation">:</span> <span class="token string">"rgb_gripper"</span><span class="token punctuation">,</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token string">"depth_obs_keys"</span><span class="token punctuation">:</span> <span class="token punctuation">{</span>
+        <span class="token string">"primary"</span><span class="token punctuation">:</span> <span class="token string">"depth_static"</span><span class="token punctuation">,</span>
+        <span class="token string">"secondary"</span><span class="token punctuation">:</span> <span class="token keyword">None</span><span class="token punctuation">,</span>
+        <span class="token string">"wrist"</span><span class="token punctuation">:</span> <span class="token string">"depth_gripper"</span><span class="token punctuation">,</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token string">"proprio_encoding"</span><span class="token punctuation">:</span> <span class="token class-name">ProprioEncoding</span><span class="token punctuation">.</span><span class="token property">POS_EULER</span><span class="token punctuation">,</span>
+    <span class="token string">"action_encoding"</span><span class="token punctuation">:</span> <span class="token class-name">ActionEncoding</span><span class="token punctuation">.</span><span class="token property">EEF_POS</span><span class="token punctuation">,</span>
+  <span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token comment"># ... and many more configurations ...</span>
+<span class="token punctuation">}</span></code></pre>
+                            </div>
+                            <p class="mt-3 text-gray-600">Each dataset requires unique parsing and mapping for its specific observation keys, proprioception, and action encodings, dramatically increasing conversion effort without a standard.</p>
                         </div>
-                    </div>
-                </div>
-                 <div class="mt-8">
-                    <h3 class="sub-title text-center mb-4">Visualizing the Bottleneck</h3>
-                    <div class="flex flex-col items-center space-y-2 md:space-y-0 md:flex-row md:justify-around md:items-stretch">
-                        <div class="flow-box w-full md:w-1/4">Format A</div>
-                        <div class="flow-arrow hidden md:block">&#10231;</div>
-                        <div class="flow-box w-full md:w-1/4">Format B</div>
-                        <div class="flow-arrow hidden md:block">&#10231;</div>
-                        <div class="flow-box w-full md:w-1/4">Format C</div>
-                        <div class="flow-arrow hidden md:block">&#10231;</div>
-                        <div class="flow-box w-full md:w-1/4">Format N...</div>
-                    </div>
-                    <div class="flex justify-center my-4">
-                        <div class="flow-arrow text-4xl transform rotate-90 md:rotate-0">&#129095;</div>
-                    </div>
-                    <div class="flow-box w-full md:w-1/2 mx-auto bg-red-100 border-red-500">
-                        <p class="font-semibold">Costly & Time-Consuming Custom Conversions for Each Pair</p>
                     </div>
                 </div>
             </div>
@@ -177,10 +203,10 @@
                     <div>
                         <h3 class="sub-title">Before OWAMcap: Fragmented Silos</h3>
                         <div class="space-y-4 p-4 border border-dashed border-gray-300 rounded-md">
-                            <div class="flow-box bg-red-50">Dataset A (Proprietary)</div>
-                            <div class="flow-box bg-red-50">Dataset B (Proprietary)</div>
-                            <div class="flow-box bg-red-50">Dataset C (Proprietary)</div>
-                            <div class="text-center text-gray-500 my-2">&#11015; Costly Conversions &#11015;</div>
+                            <div class="flow-box bg-red-50">Dataset A (Proprietary Format & Config)</div>
+                            <div class="flow-box bg-red-50">Dataset B (Proprietary Format & Config)</div>
+                            <div class="flow-box bg-red-50">Dataset C (Proprietary Format & Config)</div>
+                            <div class="text-center text-gray-500 my-2">&#11015; Costly, Complex Conversions &#11015;</div>
                             <div class="flow-box bg-yellow-50">Limited, Inconsistent Data for Models</div>
                         </div>
                     </div>
@@ -238,11 +264,11 @@
                     <div class="flow-arrow text-4xl mb-2 transform rotate-90 md:rotate-0">&#129095;</div>
                     <div class="flex flex-col md:flex-row justify-around w-full space-y-2 md:space-y-0">
                         <div class="flow-box w-full md:w-2/5 bg-green-100 border-green-500">
-                            <p class="font-semibold">MCAP File (.mcap)</p>
+                            <p class="font-semibold mr-2">MCAP File (.mcap)</p>
                             <p class="text-sm">Metadata, Timestamps, Frame References</p>
                         </div>
                         <div class="flow-box w-full md:w-2/5 bg-green-100 border-green-500">
-                            <p class="font-semibold">External Video File (.mkv)</p>
+                            <p class="font-semibold mr-2">External Video File (.mkv)</p>
                             <p class="text-sm">Efficiently Encoded Video Data</p>
                         </div>
                     </div>
@@ -280,19 +306,19 @@
                 <div class="grid md:grid-cols-2 gap-8 items-start">
                     <div>
                         <h3 class="sub-title">File Overview: <code>example.mcap</code></h3>
-                        <div class="bg-gray-800 text-green-400 p-4 rounded-md text-sm overflow-x-auto">
+                        <div class="code-snippet-bg text-sm">
                             <pre><code>library:     mcap-owa-support 0.1.0; mcap 1.2.2
 profile:     owa
 messages:    518
 duration:    6.86s
 compression: zstd (80.44% reduction)
 channels:
-  (1) window          7 msgs (1.02 Hz): WindowInfo
-  (2) keyboard/state  7 msgs (1.02 Hz): KeyboardState
-  (3) mouse/state     7 msgs (1.02 Hz): MouseState
-  (4) mouse         115 msgs (16.77 Hz): MouseEvent
-  (5) screen        362 msgs (52.80 Hz): ScreenEmitted
-  (6) keyboard       20 msgs (2.92 Hz): KeyboardEvent</code></pre>
+  (1) window           7 msgs (1.02 Hz): WindowInfo
+  (2) keyboard/state   7 msgs (1.02 Hz): KeyboardState
+  (3) mouse/state      7 msgs (1.02 Hz): MouseState
+  (4) mouse          115 msgs (16.77 Hz): MouseEvent
+  (5) screen         362 msgs (52.80 Hz): ScreenEmitted
+  (6) keyboard        20 msgs (2.92 Hz): KeyboardEvent</code></pre>
                         </div>
                         <div class="mt-4 p-4 bg-blue-50 rounded-lg">
                             <p class="text-xl font-semibold text-[#45B7D1]">Key Insight:</p>
@@ -310,7 +336,7 @@ channels:
 
                 <div class="mt-10">
                     <h3 class="sub-title">Example Messages:</h3>
-                     <div class="bg-gray-800 text-green-400 p-4 rounded-md text-sm overflow-x-auto">
+                     <div class="code-snippet-bg text-sm">
                         <pre><code>Topic: window, Message: {'title': 'ZType – Typing Game - Chromium', 'rect': [389, 10, 955, 1022]}
 Topic: mouse, Message: {'event_type': 'move', 'x': 1597, 'y': 1112}
 Topic: screen, Message: {'path': 'example.mkv', 'pts': 14866666666, 'utc_ns': 1741628814056571100}
@@ -363,10 +389,12 @@ Topic: keyboard, Message: {'event_type': 'release', 'vk': 162}</code></pre>
         const secondaryColor = '#4ECDC4';
         const accentColor = '#45B7D1';
         const yellowColor = '#FFD166';
-        const purpleColor = '#9751A1';
-        const lightGrayColor = '#F7F7F7';
+        const purpleColor = '#9751A1'; // A slightly different purple for chart variety
+        const lightCoralColor = '#F08080';
 
+        // Helper function to process labels for charts (wrap long text)
         function processLabel(label, maxLength = 16) {
+            if (typeof label !== 'string') return label; // Return if not a string (e.g. already array)
             if (label.length > maxLength) {
                 const words = label.split(' ');
                 const lines = [];
@@ -380,19 +408,19 @@ Topic: keyboard, Message: {'event_type': 'release', 'vk': 162}</code></pre>
                     }
                 }
                 lines.push(currentLine.trim());
-                return lines;
+                return lines; // Return as an array of strings for multi-line labels
             }
-            return label;
+            return label; // Return as a single string if short enough
         }
         
         const tooltipTitleCallback = function(tooltipItems) {
             const item = tooltipItems[0];
             let label = item.chart.data.labels[item.dataIndex];
+            // If label was processed into an array by processLabel, join it back for tooltip title
             if (Array.isArray(label)) {
               return label.join(' ');
-            } else {
-              return label;
             }
+            return label;
         };
 
         const commonChartOptions = {
@@ -401,7 +429,8 @@ Topic: keyboard, Message: {'event_type': 'release', 'vk': 162}</code></pre>
             plugins: {
                 legend: {
                     labels: {
-                        color: '#3A3A3A'
+                        color: '#3A3A3A',
+                        font: { size: 11 } // Smaller font for legend
                     }
                 },
                 tooltip: {
@@ -415,17 +444,23 @@ Topic: keyboard, Message: {'event_type': 'release', 'vk': 162}</code></pre>
                     borderWidth: 1,
                     padding: 10,
                     callbacks: {
-                        title: tooltipTitleCallback
+                         title: tooltipTitleCallback // Use the callback for potentially multi-line titles
                     }
                 }
             },
             scales: {
                 x: {
-                    ticks: { color: '#3A3A3A' },
+                    ticks: { 
+                        color: '#3A3A3A',
+                        font: { size: 10 }, // Smaller font for x-axis labels
+                        maxRotation: 0, // Prevent label rotation
+                        autoSkip: true,
+                        maxTicksLimit: 5 // Limit number of ticks if too many labels
+                    },
                     grid: { display: false }
                 },
                 y: {
-                    ticks: { color: '#3A3A3A' },
+                    ticks: { color: '#3A3A3A', font: {size: 10} },
                     grid: { color: '#E0E0E0' } 
                 }
             }
@@ -472,7 +507,7 @@ Topic: keyboard, Message: {'event_type': 'release', 'vk': 162}</code></pre>
                             accentColor,
                             yellowColor,
                             purpleColor,
-                            '#F08080' // Light Coral
+                            lightCoralColor
                         ],
                         hoverOffset: 4
                     }]
@@ -483,15 +518,15 @@ Topic: keyboard, Message: {'event_type': 'release', 'vk': 162}</code></pre>
                     plugins: {
                         legend: {
                             position: 'bottom',
-                            labels: { color: '#3A3A3A' }
+                            labels: { color: '#3A3A3A', font: {size: 11} }
                         },
-                        tooltip: {
-                             enabled: true,
-                             backgroundColor: 'rgba(58, 58, 58, 0.9)',
-                             titleColor: '#FFFFFF',
-                             bodyColor: '#FFFFFF',
-                             callbacks: {
-                                title: tooltipTitleCallback,
+                        tooltip: { // Specific tooltip for doughnut, if needed
+                            enabled: true,
+                            backgroundColor: 'rgba(58, 58, 58, 0.9)',
+                            titleColor: '#FFFFFF',
+                            bodyColor: '#FFFFFF',
+                            callbacks: {
+                                title: tooltipTitleCallback, // Use the callback
                                 label: function(context) {
                                     let label = context.dataset.label || '';
                                     if (label) {
@@ -500,9 +535,14 @@ Topic: keyboard, Message: {'event_type': 'release', 'vk': 162}</code></pre>
                                     if (context.parsed !== null) {
                                         label += context.parsed;
                                     }
-                                    return label;
+                                    // Get the original label text (could be an array if processed)
+                                    let originalLabel = context.chart.data.labels[context.dataIndex];
+                                    if (Array.isArray(originalLabel)) {
+                                        originalLabel = originalLabel.join(' '); // Join if it was split
+                                    }
+                                    return `${originalLabel}: ${context.parsed}`;
                                 }
-                             }
+                            }
                         }
                     }
                 }

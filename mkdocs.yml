@@ -90,7 +90,8 @@ nav:
       - Gstreamer Environment: env/plugins/gstreamer_env.md
   - Data in OWA:
     - data/index.md
-    - data/data_format.md
+    # - data/data_format.md
+    - Introducing OWAMcap: data/infographic.html
     - data/ocap.md
     - data/how_to_explorer_and_edit.md
     - data/viewer.md
