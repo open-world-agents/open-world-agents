@@ -69,10 +69,9 @@ Learn from complete implementations and training pipelines.
 
 | Resource | Description |
 |----------|-------------|
-| **[Contributing Guide](contributing.md)** | Development setup, bug reports, feature proposals |
-| **[Project Overview](project_overview.md)** | Technical architecture and design decisions |
-| **[FAQ](faq_dev.md)** | Common questions and troubleshooting |
 | **[Installation Guide](install.md)** | Detailed installation instructions |
+| **[Contributing Guide](contributing.md)** | Development setup, bug reports, feature proposals |
+| **[FAQ](faq_dev.md)** | Common questions and troubleshooting |
 
 ---
 
