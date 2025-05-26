@@ -14,28 +14,22 @@
 
 ## Overview
 
-**Everything you need to build state-of-the-art foundation multimodal desktop agents, end-to-end.**
-
-Open World Agents is a comprehensive framework for building AI agents that can interact with any desktop application through vision, keyboard, and mouse control. From data capture to model training and real-time evaluation, we provide the complete toolkit:
+Open World Agents is a comprehensive framework for building AI agents that interact with desktop applications through vision, keyboard, and mouse control. Complete toolkit from data capture to model training and evaluation:
 
 - **OWA Core & Environment**: Asynchronous, event-driven interface for real-time agents with dynamic plugin activation
-- **Data Capture & Format**: High-performance desktop recording with the `OWAMcap` format powered by [mcap](https://mcap.dev/)
+- **Data Capture & Format**: High-performance desktop recording with `OWAMcap` format powered by [mcap](https://mcap.dev/)
 - **Environment Plugins**: Pre-built plugins for desktop automation, screen capture, and more
 - **CLI Tools**: Command-line utilities for recording, analyzing, and managing agent data
 
 ## What Can You Build?
 
-**Anything that runs on desktop.** Open World Agents provides a universal interface to interact with any desktop application, game, or software through vision, keyboard, and mouse control. If a human can do it on a computer, you can build an AI agent to automate it.
+**Anything that runs on desktop.** If a human can do it on a computer, you can build an AI agent to automate it.
 
-🤖 **Desktop Automation Agents**: Navigate complex applications, automate workflows, and interact with any software interface
-
-🎮 **Game AI Agents**: Master complex games by understanding visual interfaces, game mechanics, and real-time decision making
-
-📊 **Multimodal Training Datasets**: Capture high-quality human-computer interaction data for training foundation models
-
-🤗 **Community-Driven Datasets**: Access and contribute to a growing collection of open-source OWAMcap datasets on HuggingFace
-
-📈 **Real-Time Benchmarks**: Create and evaluate desktop agent performance across diverse applications and tasks
+🤖 **Desktop Automation**: Navigate applications, automate workflows, interact with any software  
+🎮 **Game AI**: Master complex games through visual understanding and real-time decision making  
+📊 **Training Datasets**: Capture high-quality human-computer interaction data for foundation models  
+🤗 **Community Datasets**: Access and contribute to growing OWAMcap datasets on HuggingFace  
+📈 **Benchmarks**: Create and evaluate desktop agent performance across diverse tasks  
 
 ## Project Structure
 
@@ -55,13 +49,7 @@ open-world-agents/
 └── README.md
 ```
 
-## Python Packages
-
-All OWA packages are installed in the `owa` namespace (e.g., `owa.core`, `owa.cli`, `owa.env.desktop`). We recommend using [`uv`](https://docs.astral.sh/uv/) as the package manager.
-
-> 📦 **Lockstep Versioning**: All first-party OWA packages follow lockstep versioning, meaning they share the same version number to ensure compatibility and simplify dependency management.
-
-### The `owa` meta-package
+## Core Packages
 
 [![owa](https://img.shields.io/pypi/v/owa?label=owa)](https://pypi.org/project/owa/) [![owa](https://img.shields.io/conda/vn/conda-forge/owa?label=conda)](https://anaconda.org/conda-forge/owa)
 
@@ -73,42 +61,53 @@ pip install owa
 conda install owa
 ```
 
-This installs: `mcap-owa-support`, `ocap`, `owa-cli`, `owa-core`, `owa-env-desktop`, and `owa-env-gst`.
+All OWA packages are installed in the `owa` namespace (e.g., `owa.core`, `owa.cli`, `owa.env.desktop`). We recommend using [`uv`](https://docs.astral.sh/uv/) as the package manager.
 
-### Core Packages
 
 | Name | Release in PyPI | Conda | Description |
 |------|-----------------|-------|-------------|
 | [`owa.core`](projects/owa-core) | [![owa-core](https://img.shields.io/pypi/v/owa-core?label=owa-core)](https://pypi.org/project/owa-core/) | [![owa-core](https://img.shields.io/conda/vn/conda-forge/owa-core?label=conda)](https://anaconda.org/conda-forge/owa-core) | Framework foundation with registry system |
 | [`owa.cli`](projects/owa-cli) | [![owa-cli](https://img.shields.io/pypi/v/owa-cli?label=owa-cli)](https://pypi.org/project/owa-cli/) | [![owa-cli](https://img.shields.io/conda/vn/conda-forge/owa-cli?label=conda)](https://anaconda.org/conda-forge/owa-cli) | Command-line tools (`owl`) for data analysis |
 | [`mcap-owa-support`](projects/mcap-owa-support) | [![mcap-owa-support](https://img.shields.io/pypi/v/mcap-owa-support?label=mcap-owa-support)](https://pypi.org/project/mcap-owa-support/) | [![mcap-owa-support](https://img.shields.io/conda/vn/conda-forge/mcap-owa-support?label=conda)](https://anaconda.org/conda-forge/mcap-owa-support) | OWAMcap format support and utilities |
+| [`ocap`](projects/ocap) 🎥 | [![ocap](https://img.shields.io/pypi/v/ocap?label=ocap)](https://pypi.org/project/ocap/) | [![ocap](https://img.shields.io/conda/vn/conda-forge/ocap?label=conda)](https://anaconda.org/conda-forge/ocap) | Desktop recorder for multimodal data capture |
+| [`owa.env.desktop`](projects/owa-env-desktop) | [![owa-env-desktop](https://img.shields.io/pypi/v/owa-env-desktop?label=owa-env-desktop)](https://pypi.org/project/owa-env-desktop/) | [![owa-env-desktop](https://img.shields.io/conda/vn/conda-forge/owa-env-desktop?label=conda)](https://anaconda.org/conda-forge/owa-env-desktop) | Mouse, keyboard, window event handling |
+| [`owa.env.gst`](projects/owa-env-gst) 🎥 | [![owa-env-gst](https://img.shields.io/pypi/v/owa-env-gst?label=owa-env-gst)](https://pypi.org/project/owa-env-gst/) | [![owa-env-gst](https://img.shields.io/conda/vn/conda-forge/owa-env-gst?label=conda)](https://anaconda.org/conda-forge/owa-env-gst) | GStreamer-powered screen capture (**[6x faster](#high-performance-screen-capture)**) |
+| [`owa.env.example`](projects/owa-env-example) | - | - | Reference implementations for learning |
 
-### CLI Tools
+> 🎥 **Video Processing Packages**: Packages marked with 🎥 (including `owa`) require GStreamer for full functionality (recording, real-time capture). For headless training/data processing only, GStreamer is optional. Use `conda install` for complete features, `pip install` works for basic functionality.
 
-| Name | Release in PyPI | Conda | Description |
-|------|-----------------|-------|-------------|
-| [`ocap`](projects/ocap) | [![ocap](https://img.shields.io/pypi/v/ocap?label=ocap)](https://pypi.org/project/ocap/) | [![ocap](https://img.shields.io/conda/vn/conda-forge/ocap?label=conda)](https://anaconda.org/conda-forge/ocap) | Desktop recorder for multimodal data capture |
+> 📦 **Lockstep Versioning**: All first-party OWA packages follow lockstep versioning, meaning they share the same version number to ensure compatibility and simplify dependency management.
 
-> ⚠️ **GStreamer Required**: `ocap` requires GStreamer for video processing. Use `conda install owa-env-gst` for easy setup.
+> 💡 **Extensible Design**: Built for the community! Easily create custom plugins like `owa-env-minecraft` or `owa-env-web` to extend functionality.
 
-**ocap** (Omnimodal CAPture) is a high-performance desktop recorder that captures screen video, audio, keyboard/mouse events, and window events in synchronized formats. Built with Windows APIs and GStreamer for hardware-accelerated recording with H265/HEVC encoding. [Learn more...](docs/data/ocap.md)
+## Community Packages
+
+**Help us grow the ecosystem!** 🌱 Community-contributed environment plugins extend OWA's capabilities to specialized domains.
+
+*Example plugin ideas from the community:*
+
+| Example Name | Description | 
+|--------------|-------------|
+| `owa.env.minecraft` | Minecraft automation & bot framework |
+| `owa.env.web` | Browser automation via WebDriver |
+| `owa.env.mobile` | Android/iOS device control |
+| `owa.env.cad` | CAD software automation (AutoCAD, SolidWorks) |
+| `owa.env.trading` | Financial trading platform integration |
+
+> 💡 **Want to contribute?** Check our [Plugin Development Guide](docs/env/custom_plugins.md) to create your own `owa.env.*` package!
+> 
+> 💭 **These are just examples!** The community decides what plugins to build. Propose your own ideas or create plugins for any domain you're passionate about.
+
+### Desktop Recording with `ocap`
+
+**ocap** (Omnimodal CAPture) is a high-performance desktop recorder that captures screen video, audio, keyboard/mouse events, and window events in synchronized formats. Built with Windows APIs and GStreamer for hardware-accelerated recording with H265/HEVC encoding.
 
 - **Complete recording**: Video + audio + keyboard/mouse + window events
 - **High performance**: Hardware-accelerated, ~100MB/min for 1080p
 - **Simple usage**: `ocap my-recording` (stop with Ctrl+C)
 - **Modern formats**: MKV for video, MCAP for events
 
-### Environment Plugins
-
-| Name | Release in PyPI | Conda | Description |
-|------|-----------------|-------|-------------|
-| [`owa.env.desktop`](projects/owa-env-desktop) | [![owa-env-desktop](https://img.shields.io/pypi/v/owa-env-desktop?label=owa-env-desktop)](https://pypi.org/project/owa-env-desktop/) | [![owa-env-desktop](https://img.shields.io/conda/vn/conda-forge/owa-env-desktop?label=conda)](https://anaconda.org/conda-forge/owa-env-desktop) | Mouse, keyboard, window event handling |
-| [`owa.env.gst`](projects/owa-env-gst) | [![owa-env-gst](https://img.shields.io/pypi/v/owa-env-gst?label=owa-env-gst)](https://pypi.org/project/owa-env-gst/) | [![owa-env-gst](https://img.shields.io/conda/vn/conda-forge/owa-env-gst?label=conda)](https://anaconda.org/conda-forge/owa-env-gst) | GStreamer-powered screen capture (**6x faster**) |
-| [`owa.env.example`](projects/owa-env-example) | - | - | Reference implementations for learning |
-
-> ⚠️ **GStreamer Required**: Packages marked with video capabilities need GStreamer installed. To utilize full features, install with `conda`, not `pip`.
-
-> 💡 **Extensible Design**: Built for the community! Easily create custom plugins like `owa-env-minecraft` or `owa-env-web` to extend functionality.
+> 📖 **Detailed Documentation**: See [Desktop Recording Guide](docs/data/ocap.md) for complete setup, usage examples, and troubleshooting.
 
 ## Quick Start
 
@@ -133,6 +132,43 @@ tick.start()
 time.sleep(2)
 tick.stop(), tick.join()
 ```
+
+### High-Performance Screen Capture
+
+```python
+import time
+from owa.core.registry import CALLABLES, LISTENERS, activate_module
+
+# Activate gst environment
+activate_module("owa.env.gst")
+
+def on_screen_update(frame, metrics):
+    print(f"📸 New frame: {frame.frame_arr.shape}")
+    print(f"⚡ Latency: {metrics.latency*1000:.1f}ms")
+
+# Start real-time screen capture
+screen = LISTENERS["screen"]().configure(
+    callback=on_screen_update, fps=60, show_cursor=True
+)
+
+with screen.session:
+    print("🎯 Agent is watching your screen...")
+    time.sleep(5)
+```
+
+Powered by the powerful Gstreamer and Windows API, our implementation is **6x** faster than comparatives.
+
+| **Library**        | **Avg. Time per Frame** | **Relative Speed**    |
+|--------------------|------------------------|-----------------------|
+| **owa.env.gst**   | **5.7 ms**              | ⚡ **1× (Fastest)**    |
+| `pyscreenshot`    | 33 ms                   | 🚶‍♂️ 5.8× slower       |
+| `PIL`             | 34 ms                   | 🚶‍♂️ 6.0× slower       |
+| `MSS`             | 37 ms                   | 🚶‍♂️ 6.5× slower       |
+| `PyQt5`           | 137 ms                  | 🐢 24× slower         |
+
+📌 **Tested on:** Intel i5-11400, GTX 1650  
+
+Not only does `owa.env.gst` **achieve higher FPS**, but it also maintains **lower CPU/GPU usage**, making it the ideal choice for screen recording. Same applies for `ocap`, since it internally imports `owa.env.gst`.
 
 ### Desktop Recording & Dataset Sharing
 

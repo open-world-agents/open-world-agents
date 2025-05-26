@@ -16,7 +16,15 @@ Below are sample datasets you can download and explore:
 
 There are multiple ways to explore OWAMcap files. Here are three methods:
 
-### 1. Using the `owl` Command Line Tool
+### 1. [OWA Dataset Visualizer](https://huggingface.co/spaces/open-world-agents/visualize_dataset)
+
+<div align="center">
+  <img src="../viewer.png" alt="OWA Dataset Visualizer"/>
+</div>
+
+Click `Choose File` at `Upload Files`. Note that uploading file is inappropriate for large file. To visualize large file, self-host dataset visualizer by your own. [Learn more...](viewer.md)
+
+### 2. Using the `owl` Command Line Tool
 
 The `owl` (Open World agents cLi) tool provides a convenient way to inspect MCAP files.
 
@@ -61,7 +69,7 @@ Topic: screen, Timestamp: 1741628814073392700, Message: {'path': 'example.mkv', 
 Topic: keyboard, Timestamp: 1741628815015522100, Message: {'event_type': 'release', 'vk': 162}
 ```
 
-### 2. Using `OWAMcapReader` in Python
+### 3. Using `OWAMcapReader` in Python
 
 You can programmatically access the MCAP data using the Python API:
 
@@ -82,7 +90,7 @@ if __name__ == "__main__":
     main()
 ```
 
-### 3. Using a Media Player (e.g., VLC)
+### 4. Using a Media Player (e.g., VLC)
 
 For visual exploration of the data:
 

@@ -5,6 +5,8 @@ repo_name: open-world-agents
 
 theme:
   name: material
+  logo: images/owa-logo.jpg
+  favicon: images/owa-logo.jpg
   features:
     # - navigation.tabs # I think omitting this is better to show Awesome Examples
     - navigation.sections
@@ -88,11 +90,12 @@ nav:
       - Gstreamer Environment: env/plugins/gstreamer_env.md
   - Data in OWA:
     - data/index.md
-    - data/data_format.md
+    # - data/data_format.md
+    - Introducing OWAMcap: data/infographic.html
+    - Comparison with LeRobot: data/comparison_with_lerobot.md
+    - data/ocap.md
     - data/how_to_explorer_and_edit.md
     - data/viewer.md
-    # - Comparison with other data formats: data/comparison.md # Later
-    - data/ocap.md
   - 🚀 Awesome Examples (WIP):
     - Multimodal Game Agent: examples/multimodal_game_agent.md
     - Omniparse + InternLM GUI Agent: examples/gui_agent.md

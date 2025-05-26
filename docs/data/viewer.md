@@ -1,5 +1,9 @@
 # Viewer for OWAMcap
 
+<div align="center">
+  <img src="../viewer.png" alt="OWA Dataset Visualizer"/>
+</div>
+
 We provide a web-based viewer for users to easily visualize and check OWAMcap datasets.
 
 ## Public hosted
