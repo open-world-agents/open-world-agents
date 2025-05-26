@@ -30,9 +30,7 @@ Build reactive desktop agents with our asynchronous environment system.
 **Built-in Plugins:**  
 
 - **[Desktop Environment](env/plugins/desktop_env.md)** - Mouse, keyboard, and window event handling
-
 - **[GStreamer Environment](env/plugins/gstreamer_env.md)** - High-performance screen capture (**6x faster** than alternatives)
-
 - **[Standard Environment](env/plugins/std.md)** - Basic utilities and timing functions
 
 ### 📊 Data Infrastructure
@@ -62,9 +60,7 @@ Learn from complete implementations and training pipelines.
 **🌱 Growing Ecosystem**: OWA is designed for extensibility. Community contributions include:  
 
 - Custom environment plugins (`owa.env.minecraft`, `owa.env.web`, etc.)  
-
 - Specialized data processors and analyzers  
-
 - Novel agent architectures and training methods  
 
 **🤗 HuggingFace Integration**: Upload and share datasets created with `ocap`. Preview datasets at [HuggingFace Spaces](https://huggingface.co/spaces/open-world-agents/visualize_dataset).
