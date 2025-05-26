@@ -79,7 +79,6 @@ nav:
     - Installation: install.md
     - Contributing: contributing.md 
     # - Changelog: changelog.md # Later
-  - Project Overview: project_overview.md
   - Env in OWA:
     - env/index.md
     - env/guide.md

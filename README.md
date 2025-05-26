@@ -61,7 +61,7 @@ pip install owa
 conda install owa
 ```
 
-All OWA packages are installed in the `owa` namespace (e.g., `owa.core`, `owa.cli`, `owa.env.desktop`). We recommend using [`uv`](https://docs.astral.sh/uv/) as the package manager.
+All OWA packages use namespace packaging and are installed in the `owa` namespace (e.g., `owa.core`, `owa.cli`, `owa.env.desktop`). For more detail, see [Packaging namespace packages](https://packaging.python.org/en/latest/guides/packaging-namespace-packages/). We recommend using [`uv`](https://docs.astral.sh/uv/) as the package manager.
 
 
 | Name | Release in PyPI | Conda | Description |
