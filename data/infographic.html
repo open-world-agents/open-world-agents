@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OWAMcap: A Universal Standard for Desktop Interaction Data</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F7F7F7; /* Neutral Light */
+            color: #3A3A3A; /* Neutral Dark */
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px; /* Default height for mobile */
+            max-height: 400px;
+        }
+        @media (min-width: 768px) { /* md breakpoint */
+            .chart-container {
+                height: 350px; /* Taller for larger screens */
+            }
+        }
+        .section-title {
+            font-size: 2.25rem; /* 36px */
+            font-weight: 700;
+            color: #FF6B6B; /* Primary */
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .sub-title {
+            font-size: 1.5rem; /* 24px */
+            font-weight: 600;
+            color: #4ECDC4; /* Secondary */
+            margin-bottom: 0.75rem;
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.5rem; /* 8px */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            padding: 1.5rem; /* 24px */
+            margin-bottom: 2rem; /* 32px */
+        }
+        .flow-box {
+            border: 2px solid #4ECDC4; /* Secondary */
+            padding: 1rem; /* 16px */
+            border-radius: 0.375rem; /* 6px */
+            text-align: center;
+            background-color: #F0FFFF; /* Azure light */
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .flow-arrow {
+            font-size: 2rem; /* 32px */
+            color: #4ECDC4; /* Secondary */
+            margin: 0 0.5rem; /* 8px */
+            align-self: center;
+        }
+        .benefit-icon {
+            font-size: 1.5rem; /* 24px */
+            margin-right: 0.5rem; /* 8px */
+            color: #FF6B6B; /* Primary */
+        }
+        .header-gradient {
+            background: linear-gradient(90deg, #FF6B6B, #4ECDC4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .code-snippet-bg {
+            background-color: #2d2d2d; /* Dark background for code */
+            color: #f8f8f2; /* Light text for code */
+            padding: 1rem;
+            border-radius: 0.375rem;
+            overflow-x: auto;
+            max-height: 300px; /* Limit height and allow scroll */
+        }
+        .code-snippet-bg code {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.875rem; /* 14px */
+            white-space: pre;
+        }
+        /* Highlighting for Python code snippet */
+        .code-snippet-bg .token.keyword { color: #f92672; } /* e.g., class, from, import */
+        .code-snippet-bg .token.string { color: #e6db74; } /* Strings */
+        .code-snippet-bg .token.comment { color: #75715e; } /* Comments */
+        .code-snippet-bg .token.class-name { color: #a6e22e; } /* Class names */
+        .code-snippet-bg .token.property { color: #fd971f; } /* Property names */
+        .code-snippet-bg .token.number { color: #ae81ff; } /* Numbers */
+        .code-snippet-bg .token.operator { color: #f92672; } /* Operators */
+        .code-snippet-bg .token.punctuation { color: #f8f8f2; } /* Punctuation */
+
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="py-8 bg-white shadow-md">
+        <div class="container mx-auto px-6 text-center">
+            <h1 class="text-4xl md:text-5xl font-bold header-gradient">Introducing OWAMcap</h1>
+            <p class="mt-4 text-lg text-gray-700">A Universal Standard for Desktop Interaction Data</p>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-6 py-12">
+
+        <section id="overview" class="mb-16">
+            <div class="card">
+                <h2 class="section-title">What is OWAMcap?</h2>
+                <p class="text-lg mb-6 text-center">OWAMcap is a specification for using the open-source <a href="https://mcap.dev/" target="_blank" class="text-[#45B7D1] hover:underline">mcap</a> container file format with Open World Agents (OWA) message definitions. It defines how to structure multimodal desktop log data within standard mcap files using OWA-specific message schemas.</p>
+                
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="sub-title">Key Characteristics:</h3>
+                        <ul class="list-disc list-inside space-y-2 text-gray-700">
+                            <li>Standard mcap file format with OWA profile designation</li>
+                            <li>OWA's predefined message types for desktop interaction data (mouse, keyboard, screen, etc.)</li>
+                            <li>Optimized storage strategies (e.g., external video files referenced from mcap)</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="sub-title">Understanding MCAP:</h3>
+                        <p class="text-gray-700">MCAP is a modular container file format for heterogeneous, timestamped data. It's designed for robotics and autonomous systems, ideal for recording various data streams like sensor inputs, logs, and system states. OWAMcap leverages this robust format by defining specific message schemas tailored for desktop interaction data, enabling precise recording and replay of user activities.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="problem" class="mb-16">
+            <div class="card">
+                <h2 class="section-title">The Challenge: Data Fragmentation</h2>
+                <p class="text-lg mb-6 text-center">The primary obstacle to advancing desktop automation with foundation models is <b>data fragmentation</b>. Research groups often collect data in proprietary formats with varying internal structures, making dataset combination nearly impossible and mirroring costly inefficiencies seen in the robotics community.</p>
+
+                <div class="grid md:grid-cols-2 gap-8 items-start">
+                    <div>
+                        <h3 class="sub-title">The Open-X Embodiment Herculean Effort</h3>
+                        <p class="mb-4 text-gray-700">The <a href="https://robotics-transformer-x.github.io/" target="_blank" class="text-[#45B7D1] hover:underline">Open-X Embodiment</a> project highlights this issue. Researchers had to:</p>
+                        <ul class="list-disc list-inside space-y-1 text-gray-700 bg-red-50 p-4 rounded-md">
+                            <li>Manually convert <strong>22 different datasets</strong></li>
+                            <li>Spend <strong>months</strong> writing custom parsers</li>
+                            <li>Standardize action spaces, observations, and metadata across diverse configurations</li>
+                            <li>Validate data integrity across varied sources</li>
+                            <li>Maintain numerous complex conversion scripts</li>
+                        </ul>
+                        <p class="mt-4 text-gray-700">This massive undertaking underscores the critical need for a unified data standard in desktop automation.</p>
+                    </div>
+                    <div>
+                        <h3 class="sub-title text-center">Conversion Complexity Illustrated</h3>
+                        <div class="p-6 bg-amber-50 rounded-lg shadow text-left">
+                            <p class="text-lg font-semibold text-gray-700 mb-2">Example: Diverse Dataset Configurations</p>
+                            <div class="code-snippet-bg text-left"> <pre><code class="language-python">
+<span class="token comment"># Excerpt from oxe_dataset_configs.py</span>
+<span class="token comment"># Source: https://github.com/octo-models/octo/blob/main/octo/data/oxe/oxe_dataset_configs.py</span>
+<span class="token class-name">OXE_DATASET_CONFIGS</span> <span class="token operator">=</span> <span class="token punctuation">{</span>
+  <span class="token string">"fractal20220817_data"</span><span class="token punctuation">:</span> <span class="token punctuation">{</span>
+    <span class="token string">"image_obs_keys"</span><span class="token punctuation">:</span> <span class="token punctuation">{</span><span class="token string">"primary"</span><span class="token punctuation">:</span> <span class="token string">"image"</span><span class="token punctuation">,</span> <span class="token string">"secondary"</span><span class="token punctuation">:</span> <span class="token keyword">None</span><span class="token punctuation">,</span> <span class="token string">"wrist"</span><span class="token punctuation">:</span> <span class="token keyword">None</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token string">"depth_obs_keys"</span><span class="token punctuation">:</span> <span class="token punctuation">{</span><span class="token string">"primary"</span><span class="token punctuation">:</span> <span class="token keyword">None</span><span class="token punctuation">,</span> <span class="token string">"secondary"</span><span class="token punctuation">:</span> <span class="token keyword">None</span><span class="token punctuation">,</span> <span class="token string">"wrist"</span><span class="token punctuation">:</span> <span class="token keyword">None</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token string">"proprio_encoding"</span><span class="token punctuation">:</span> <span class="token class-name">ProprioEncoding</span><span class="token punctuation">.</span><span class="token property">POS_QUAT</span><span class="token punctuation">,</span>
+    <span class="token string">"action_encoding"</span><span class="token punctuation">:</span> <span class="token class-name">ActionEncoding</span><span class="token punctuation">.</span><span class="token property">EEF_POS</span><span class="token punctuation">,</span>
+  <span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token string">"bridge_dataset"</span><span class="token punctuation">:</span> <span class="token punctuation">{</span>
+    <span class="token string">"image_obs_keys"</span><span class="token punctuation">:</span> <span class="token punctuation">{</span><span class="token string">"primary"</span><span class="token punctuation">:</span> <span class="token string">"image_0"</span><span class="token punctuation">,</span> <span class="token string">"secondary"</span><span class="token punctuation">:</span> <span class="token string">"image_1"</span><span class="token punctuation">,</span> <span class="token string">"wrist"</span><span class="token punctuation">:</span> <span class="token keyword">None</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token string">"depth_obs_keys"</span><span class="token punctuation">:</span> <span class="token punctuation">{</span><span class="token string">"primary"</span><span class="token punctuation">:</span> <span class="token keyword">None</span><span class="token punctuation">,</span> <span class="token string">"secondary"</span><span class="token punctuation">:</span> <span class="token keyword">None</span><span class="token punctuation">,</span> <span class="token string">"wrist"</span><span class="token punctuation">:</span> <span class="token keyword">None</span><span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token string">"proprio_encoding"</span><span class="token punctuation">:</span> <span class="token class-name">ProprioEncoding</span><span class="token punctuation">.</span><span class="token property">POS_EULER</span><span class="token punctuation">,</span>
+    <span class="token string">"action_encoding"</span><span class="token punctuation">:</span> <span class="token class-name">ActionEncoding</span><span class="token punctuation">.</span><span class="token property">EEF_POS</span><span class="token punctuation">,</span>
+  <span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token string">"taco_play"</span><span class="token punctuation">:</span> <span class="token punctuation">{</span>
+    <span class="token string">"image_obs_keys"</span><span class="token punctuation">:</span> <span class="token punctuation">{</span>
+        <span class="token string">"primary"</span><span class="token punctuation">:</span> <span class="token string">"rgb_static"</span><span class="token punctuation">,</span>
+        <span class="token string">"secondary"</span><span class="token punctuation">:</span> <span class="token keyword">None</span><span class="token punctuation">,</span>
+        <span class="token string">"wrist"</span><span class="token punctuation">:</span> <span class="token string">"rgb_gripper"</span><span class="token punctuation">,</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token string">"depth_obs_keys"</span><span class="token punctuation">:</span> <span class="token punctuation">{</span>
+        <span class="token string">"primary"</span><span class="token punctuation">:</span> <span class="token string">"depth_static"</span><span class="token punctuation">,</span>
+        <span class="token string">"secondary"</span><span class="token punctuation">:</span> <span class="token keyword">None</span><span class="token punctuation">,</span>
+        <span class="token string">"wrist"</span><span class="token punctuation">:</span> <span class="token string">"depth_gripper"</span><span class="token punctuation">,</span>
+    <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token string">"proprio_encoding"</span><span class="token punctuation">:</span> <span class="token class-name">ProprioEncoding</span><span class="token punctuation">.</span><span class="token property">POS_EULER</span><span class="token punctuation">,</span>
+    <span class="token string">"action_encoding"</span><span class="token punctuation">:</span> <span class="token class-name">ActionEncoding</span><span class="token punctuation">.</span><span class="token property">EEF_POS</span><span class="token punctuation">,</span>
+  <span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token comment"># ... and many more configurations ...</span>
+<span class="token punctuation">}</span></code></pre>
+                            </div>
+                            <p class="mt-3 text-gray-600">Each dataset requires unique parsing and mapping for its specific observation keys, proprioception, and action encodings, dramatically increasing conversion effort without a standard.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="solution" class="mb-16">
+            <div class="card">
+                <h2 class="section-title">The Solution: OWAMcap as the Standard</h2>
+                <p class="text-lg mb-6 text-center">OWAMcap establishes a unified foundation, enabling seamless data integration and accelerating foundation model development for desktop automation.</p>
+                
+                <div class="grid md:grid-cols-2 gap-8 items-start">
+                    <div>
+                        <h3 class="sub-title">Before OWAMcap: Fragmented Silos</h3>
+                        <div class="space-y-4 p-4 border border-dashed border-gray-300 rounded-md">
+                            <div class="flow-box bg-red-50">Dataset A (Proprietary Format & Config)</div>
+                            <div class="flow-box bg-red-50">Dataset B (Proprietary Format & Config)</div>
+                            <div class="flow-box bg-red-50">Dataset C (Proprietary Format & Config)</div>
+                            <div class="text-center text-gray-500 my-2">&#11015; Costly, Complex Conversions &#11015;</div>
+                            <div class="flow-box bg-yellow-50">Limited, Inconsistent Data for Models</div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="sub-title">After OWAMcap: Unified Ecosystem</h3>
+                         <div class="space-y-4 p-4 border border-dashed border-green-300 rounded-md">
+                            <div class="flow-box bg-green-50">Dataset A (OWAMcap)</div>
+                            <div class="flow-box bg-green-50">Dataset B (OWAMcap)</div>
+                            <div class="flow-box bg-green-50">Dataset C (OWAMcap)</div>
+                             <div class="text-center text-green-500 my-2">&#11015; Direct Combination &#11015;</div>
+                            <div class="flow-box bg-teal-500 text-white">OWAMcap Unified Format</div>
+                             <div class="text-center text-green-500 my-2">&#11015; Efficient Access &#11015;</div>
+                            <div class="flow-box bg-blue-500 text-white">Large-Scale Foundation Models</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-12">
+                    <h3 class="sub-title text-center">Key Benefits of Standardization:</h3>
+                    <div class="grid md:grid-cols-3 gap-6 mt-4">
+                        <div class="text-center p-4">
+                            <span class="benefit-icon">&#128279;</span>
+                            <h4 class="font-semibold text-lg mb-1">Seamless Data Integration</h4>
+                            <p class="text-sm text-gray-600">Directly combine datasets from different sources without costly custom conversions.</p>
+                        </div>
+                        <div class="text-center p-4">
+                            <span class="benefit-icon">&#128640;</span>
+                            <h4 class="font-semibold text-lg mb-1">Foundation Model Enablement</h4>
+                            <p class="text-sm text-gray-600">Provide aggregated, diverse data in a unified format for efficient model training.</p>
+                        </div>
+                        <div class="text-center p-4">
+                            <span class="benefit-icon">&#128101;</span>
+                            <h4 class="font-semibold text-lg mb-1">Breaking Down Data Silos</h4>
+                            <p class="text-sm text-gray-600">Foster collaboration by enabling easy sharing and combination of desktop interaction data.</p>
+                        </div>
+                    </div>
+                </div>
+                 <p class="mt-8 text-center text-lg font-semibold text-[#45B7D1]">By establishing OWAMcap, resources shift from data wrangling to actual research and model development.</p>
+            </div>
+        </section>
+
+        <section id="technical-innovation" class="mb-16">
+            <div class="card">
+                <h2 class="section-title">Technical Innovation: Hybrid Storage</h2>
+                <p class="text-lg mb-6 text-center">OWAMcap's innovative hybrid storage strategy optimizes for both efficiency and usability by separating video data from metadata.</p>
+
+                <h3 class="sub-title text-center mb-4">Hybrid Storage Architecture</h3>
+                <div class="flex flex-col items-center p-4 border border-gray-200 rounded-md">
+                    <div class="flex flex-col md:flex-row justify-around w-full mb-4 space-y-2 md:space-y-0">
+                        <div class="flow-box w-full md:w-2/5">Desktop Events (Mouse, Keyboard, Window)</div>
+                        <div class="flow-box w-full md:w-2/5">Screen Capture (Video Stream)</div>
+                    </div>
+                    <div class="flow-arrow text-4xl mb-2 transform rotate-90 md:rotate-0">&#129095;</div>
+                    <div class="flow-box w-full md:w-1/2 mb-4 bg-blue-100 border-blue-500">OWAMcap Recorder / Writer</div>
+                    <div class="flow-arrow text-4xl mb-2 transform rotate-90 md:rotate-0">&#129095;</div>
+                    <div class="flex flex-col md:flex-row justify-around w-full space-y-2 md:space-y-0">
+                        <div class="flow-box w-full md:w-2/5 bg-green-100 border-green-500">
+                            <p class="font-semibold mr-2">MCAP File (.mcap)</p>
+                            <p class="text-sm">Metadata, Timestamps, Frame References</p>
+                        </div>
+                        <div class="flow-box w-full md:w-2/5 bg-green-100 border-green-500">
+                            <p class="font-semibold mr-2">External Video File (.mkv)</p>
+                            <p class="text-sm">Efficiently Encoded Video Data</p>
+                        </div>
+                    </div>
+                     <div class="flow-arrow text-4xl mt-2 transform rotate-90 md:rotate-0">&#129093;</div>
+                     <div class="flow-box w-full md:w-1/2 mt-2 bg-blue-100 border-blue-500">OWAMcap Reader (Lazy Loading from both)</div>
+                </div>
+                <p class="text-center mt-4 text-gray-700">This approach stores bulky video data in optimized external files (e.g., `.mkv`), while lightweight metadata, timestamps, and frame references reside in the `.mcap` file. This results in minimal `.mcap` file sizes and frame-accurate synchronization.</p>
+
+                <div class="grid md:grid-cols-2 gap-8 mt-10 items-center">
+                    <div>
+                        <h3 class="sub-title">Benefits of Hybrid Storage:</h3>
+                        <ul class="list-disc list-inside space-y-2 text-gray-700">
+                            <li><strong>Storage Efficiency:</strong> Significantly smaller mcap files.</li>
+                            <li><strong>Library Compatibility:</strong> Leverages existing, highly optimized video codecs and tools.</li>
+                            <li><strong>Lazy Loading:</strong> Enables on-demand loading of specific video frames, crucial for large datasets.</li>
+                            <li><strong>Tool Integration:</strong> Seamless use with standard video processing libraries.</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="sub-title text-center">Storage Efficiency Comparison</h3>
+                        <div class="chart-container">
+                            <canvas id="storageComparisonChart"></canvas>
+                        </div>
+                        <p class="text-center text-sm text-gray-600 mt-2">Conceptual comparison of storage for raw data vs. OWAMcap's metadata-only mcap file.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="usage-example" class="mb-16">
+            <div class="card">
+                <h2 class="section-title">OWAMcap in Action</h2>
+                <p class="text-lg mb-6 text-center">An example dataset (`example.mcap` and `example.mkv`) demonstrates the structure and efficiency of OWAMcap.</p>
+                
+                <div class="grid md:grid-cols-2 gap-8 items-start">
+                    <div>
+                        <h3 class="sub-title">File Overview: <code>example.mcap</code></h3>
+                        <div class="code-snippet-bg text-sm">
+                            <pre><code>library:     mcap-owa-support 0.1.0; mcap 1.2.2
+profile:     owa
+messages:    518
+duration:    6.86s
+compression: zstd (80.44% reduction)
+channels:
+  (1) window           7 msgs (1.02 Hz): WindowInfo
+  (2) keyboard/state   7 msgs (1.02 Hz): KeyboardState
+  (3) mouse/state      7 msgs (1.02 Hz): MouseState
+  (4) mouse          115 msgs (16.77 Hz): MouseEvent
+  (5) screen         362 msgs (52.80 Hz): ScreenEmitted
+  (6) keyboard        20 msgs (2.92 Hz): KeyboardEvent</code></pre>
+                        </div>
+                        <div class="mt-4 p-4 bg-blue-50 rounded-lg">
+                            <p class="text-xl font-semibold text-[#45B7D1]">Key Insight:</p>
+                            <p class="text-gray-700">Only <strong>21 KiB</strong> for 6.86 seconds of rich, multimodal interaction data, thanks to external video storage and efficient compression (80.44% reduction).</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="sub-title text-center">Message Distribution (518 Total)</h3>
+                        <div class="chart-container">
+                            <canvas id="messageDistributionChart"></canvas>
+                        </div>
+                        <p class="text-center text-sm text-gray-600 mt-2">Distribution of message types within the <code>example.mcap</code> file.</p>
+                    </div>
+                </div>
+
+                <div class="mt-10">
+                    <h3 class="sub-title">Example Messages:</h3>
+                     <div class="code-snippet-bg text-sm">
+                        <pre><code>Topic: window, Message: {'title': 'ZType – Typing Game - Chromium', 'rect': [389, 10, 955, 1022]}
+Topic: mouse, Message: {'event_type': 'move', 'x': 1597, 'y': 1112}
+Topic: screen, Message: {'path': 'example.mkv', 'pts': 14866666666, 'utc_ns': 1741628814056571100}
+Topic: keyboard, Message: {'event_type': 'release', 'vk': 162}</code></pre>
+                    </div>
+                    <p class="mt-4 text-gray-700">This structured, timestamped data enables precise reconstruction of user interactions synchronized with screen captures, and crucially, allows for direct combination with datasets from other sources using the OWAMcap standard.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="rationale" class="mb-16">
+            <div class="card">
+                <h2 class="section-title">Why OWAMcap Matters</h2>
+                <p class="text-lg mb-6 text-center">The design choices behind OWAMcap are deliberate, aiming to create a practical and powerful standard for the desktop automation community.</p>
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div class="p-4 bg-indigo-50 rounded-lg">
+                        <h3 class="sub-title text-indigo-600">Why MCAP?</h3>
+                        <p class="text-gray-700">MCAP is self-contained, supports heterogeneous timestamped data, and is optimized for random access—critical for training large vision-language-action (VLA) models. It avoids heavy dependencies unlike formats like ROS bagfiles.</p>
+                    </div>
+                    <div class="p-4 bg-purple-50 rounded-lg">
+                        <h3 class="sub-title text-purple-600">Why External Video?</h3>
+                        <ul class="list-disc list-inside space-y-1 text-gray-700">
+                            <li>Highly optimized video codecs (H.264, etc.).</li>
+                            <li>Maintains compatibility with existing video tools.</li>
+                            <li>Enables selective frame loading for large datasets.</li>
+                            <li>Prevents metadata files from becoming unwieldy.</li>
+                        </ul>
+                    </div>
+                    <div class="p-4 bg-pink-50 rounded-lg">
+                        <h3 class="sub-title text-pink-600">Why Standardization?</h3>
+                        <p class="text-gray-700">Without a standard like OWAMcap, the desktop automation field risks repeating robotics' costly mistakes: fragmented datasets, wasted conversion efforts, and limited foundation model potential. Standardization enables collaborative progress.</p>
+                    </div>
+                </div>
+                <div class="mt-10 p-6 bg-teal-600 text-white rounded-lg shadow-lg">
+                    <h3 class="text-2xl font-semibold mb-3 text-center">The Bottom Line</h3>
+                    <p class="text-lg text-center">OWAMcap transforms desktop interaction data from isolated, proprietary collections into a unified, accessible resource. It's not just a file format—it's the foundational infrastructure for collaborative progress and building the next generation of foundation models in desktop automation.</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="py-8 bg-gray-800 text-gray-300 text-center">
+        <p>&copy; 2024 Open World Agents Initiative. OWAMcap Specification.</p>
+        <p>Learn more about <a href="https://mcap.dev/" target="_blank" class="text-[#4ECDC4] hover:underline">mcap</a>.</p>
+    </footer>
+
+    <script>
+        const primaryColor = '#FF6B6B';
+        const secondaryColor = '#4ECDC4';
+        const accentColor = '#45B7D1';
+        const yellowColor = '#FFD166';
+        const purpleColor = '#9751A1'; // A slightly different purple for chart variety
+        const lightCoralColor = '#F08080';
+
+        // Helper function to process labels for charts (wrap long text)
+        function processLabel(label, maxLength = 16) {
+            if (typeof label !== 'string') return label; // Return if not a string (e.g. already array)
+            if (label.length > maxLength) {
+                const words = label.split(' ');
+                const lines = [];
+                let currentLine = '';
+                for (const word of words) {
+                    if ((currentLine + word).length > maxLength && currentLine.length > 0) {
+                        lines.push(currentLine.trim());
+                        currentLine = word + ' ';
+                    } else {
+                        currentLine += word + ' ';
+                    }
+                }
+                lines.push(currentLine.trim());
+                return lines; // Return as an array of strings for multi-line labels
+            }
+            return label; // Return as a single string if short enough
+        }
+        
+        const tooltipTitleCallback = function(tooltipItems) {
+            const item = tooltipItems[0];
+            let label = item.chart.data.labels[item.dataIndex];
+            // If label was processed into an array by processLabel, join it back for tooltip title
+            if (Array.isArray(label)) {
+              return label.join(' ');
+            }
+            return label;
+        };
+
+        const commonChartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#3A3A3A',
+                        font: { size: 11 } // Smaller font for legend
+                    }
+                },
+                tooltip: {
+                    enabled: true,
+                    mode: 'index',
+                    intersect: false,
+                    backgroundColor: 'rgba(58, 58, 58, 0.9)', // Neutral Dark with alpha
+                    titleColor: '#FFFFFF',
+                    bodyColor: '#FFFFFF',
+                    borderColor: accentColor,
+                    borderWidth: 1,
+                    padding: 10,
+                    callbacks: {
+                         title: tooltipTitleCallback // Use the callback for potentially multi-line titles
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { 
+                        color: '#3A3A3A',
+                        font: { size: 10 }, // Smaller font for x-axis labels
+                        maxRotation: 0, // Prevent label rotation
+                        autoSkip: true,
+                        maxTicksLimit: 5 // Limit number of ticks if too many labels
+                    },
+                    grid: { display: false }
+                },
+                y: {
+                    ticks: { color: '#3A3A3A', font: {size: 10} },
+                    grid: { color: '#E0E0E0' } 
+                }
+            }
+        };
+
+
+        const storageCtx = document.getElementById('storageComparisonChart');
+        if (storageCtx) {
+            new Chart(storageCtx, {
+                type: 'bar',
+                data: {
+                    labels: [processLabel('Traditional Format (Video Embedded)'), processLabel('Another Traditional Format'), processLabel('OWAMcap (Metadata Only)')],
+                    datasets: [{
+                        label: 'Approx. Storage Size (Conceptual)',
+                        data: [100, 80, 0.5], 
+                        backgroundColor: [primaryColor, secondaryColor, accentColor],
+                        borderColor: [primaryColor, secondaryColor, accentColor],
+                        borderWidth: 1
+                    }]
+                },
+                options: { ...commonChartOptions }
+            });
+        }
+
+        const messagesCtx = document.getElementById('messageDistributionChart');
+        if (messagesCtx) {
+            new Chart(messagesCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: [
+                        processLabel('ScreenEmitted (Frames)'), 
+                        processLabel('MouseEvent'), 
+                        processLabel('KeyboardEvent'), 
+                        processLabel('WindowInfo'), 
+                        processLabel('KeyboardState'), 
+                        processLabel('MouseState')
+                    ],
+                    datasets: [{
+                        label: 'Message Count',
+                        data: [362, 115, 20, 7, 7, 7],
+                        backgroundColor: [
+                            primaryColor,
+                            secondaryColor,
+                            accentColor,
+                            yellowColor,
+                            purpleColor,
+                            lightCoralColor
+                        ],
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#3A3A3A', font: {size: 11} }
+                        },
+                        tooltip: { // Specific tooltip for doughnut, if needed
+                            enabled: true,
+                            backgroundColor: 'rgba(58, 58, 58, 0.9)',
+                            titleColor: '#FFFFFF',
+                            bodyColor: '#FFFFFF',
+                            callbacks: {
+                                title: tooltipTitleCallback, // Use the callback
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += context.parsed;
+                                    }
+                                    // Get the original label text (could be an array if processed)
+                                    let originalLabel = context.chart.data.labels[context.dataIndex];
+                                    if (Array.isArray(originalLabel)) {
+                                        originalLabel = originalLabel.join(' '); // Join if it was split
+                                    }
+                                    return `${originalLabel}: ${context.parsed}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
