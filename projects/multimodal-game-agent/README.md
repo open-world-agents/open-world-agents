@@ -37,9 +37,9 @@
     ```
 4. Prepare token-expanded model.
     ```sh
-    python scripts/02_tokenize_queries.py prepare $CHECKPOINT_DIR/SmolVLM2-500M-Video-Instruct-expanded --apply-semantic-init
+    python scripts/02_tokenize_queries.py prepare --save_path $CHECKPOINT_DIR/SmolVLM2-500M-Video-Instruct-expanded --apply-semantic-init
     ```
-5. Check your dataset in your eye.
+5. Check your dataset with your eyes.
     ```sh
     python scripts/02_tokenize_queries.py collator --query_path super_hexagon.jsonl --model-id $CHECKPOINT_DIR/SmolVLM2-500M-Video-Instruct-expanded
     ```
@@ -50,7 +50,7 @@
         ```
     2. Using srun
         ```sh
-        srun --gpus 8 --cpus-per-task 128 --nodes=1 accelerate launch scripts/03_train_agent.py --query_path super_hexagon.jsonl --model_id $CHECKPOINT_DIR/SmolVLM2-500M-Video-Instruct-expanded --output_dir $CHECKPOINT_DIR/checkpoints/super_hexagon/repeat_10-epoch_20-lr4e-5-seminit_arrow --repeat_n 10 --num_epochs 20 --learning_rate 4e-5
+        srun --gpus 8 --cpus-per-task 128 --nodes=1 accelerate launch scripts/03_train_agent.py --query_path super_hexagon.jsonl --eval_query_path super_hexagon.jsonl --model_id $CHECKPOINT_DIR/SmolVLM2-500M-Video-Instruct-expanded --output_dir $CHECKPOINT_DIR/checkpoints/super_hexagon/repeat_10-epoch_20-lr4e-5-seminit_arrow --repeat_n 10 --num_epochs 20 --learning_rate 4e-5
         ```
 7. Offline-evaluate your model.
     ```sh
