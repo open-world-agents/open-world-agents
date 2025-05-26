@@ -6,8 +6,9 @@ from pathlib import Path
 from typing import Any, Iterable, Iterator, Optional, Tuple, TypeAlias, Union
 
 import requests
-import semantic_version
 from mcap.reader import McapReader, make_reader
+from packaging import version
+from packaging.specifiers import SpecifierSet
 
 from mcap_owa.decoder import DecoderFactory
 
@@ -60,11 +61,19 @@ class OWAMcapReader:
 
         # Check version compatibility
         libversion = header.library
-        m = re.match(r"mcap-owa-support (?P<version>[\d.]+); mcap (?P<mcap_version>[\d.]+)", libversion)
+        m = re.match(
+            r"mcap-owa-support (?P<version>[\d\.]+[a-zA-Z0-9\-]*)\s*;\s*mcap (?P<mcap_version>[\d\.]+[a-zA-Z0-9\-]*)",
+            libversion,
+        )
 
-        # assert by semantic versioning: patch version change is backward compatible
-        if not semantic_version.match(f"~{m['version']}", __version__):
-            warnings.warn(f"Reader version {__version__} may not be compatible with writer version {m['version']}")
+        # Use packaging.version instead of semantic_version for PEP 440 compliance
+        file_version_str = m["version"]
+        current_version = version.Version(__version__)
+
+        # ~=X.Y.Z is equivalent to >=X.Y.Z, ==X.Y.* (allows patch-level changes)
+        specifier = SpecifierSet(f"~={file_version_str}")
+        if current_version not in specifier:
+            warnings.warn(f"Reader version {__version__} may not be compatible with writer version {file_version_str}")
 
     def finish(self):
         """Close the file and release resources."""
