@@ -13,7 +13,6 @@ OWAMcap is a specification for using the open-source [mcap](https://mcap.dev/) c
 !!! tip "So, what exactly is mcap?"
     mcap is a format that records various timestamped events like keyboard inputs, mouse movements, and screen captures. OWAMcap leverages this by defining specific message schemas for desktop interaction data. See the [Format Specification](#format-specification) for details.
 
-<!-- TODO: Add animated GIF showing mcap timeline with different data types (mouse, keyboard, screen) -->
 ![OWAMcap Timeline Visualization](../images/owamcap-timeline.svg)
 *Visualization of how OWAMcap stores multimodal data with precise timestamps*
 
@@ -123,21 +122,21 @@ Sample datasets demonstrating the format:
 ### File Overview
 ```bash
 $ owl mcap info example.mcap
-library:   mcap-owa-support 0.1.0; mcap 1.2.2
+library:   mcap-owa-support 0.3.2; mcap 1.2.2
 profile:   owa
-messages:  518
-duration:  6.86s
-compression: zstd (80.44% reduction)
+messages:  751029
+duration:  1h27m38.9810357s
+compression: zstd (86.96% reduction)
 channels:
-    (1) window       7 msgs (1.02 Hz) : WindowInfo
-    (2) keyboard/state  7 msgs (1.02 Hz) : KeyboardState  
-    (3) mouse/state     7 msgs (1.02 Hz) : MouseState
-    (4) mouse         115 msgs (16.77 Hz): MouseEvent
-    (5) screen        362 msgs (52.80 Hz): ScreenEmitted
-    (6) keyboard       20 msgs (2.92 Hz) : KeyboardEvent
+    (1) window          5257 msgs (1.00 Hz) : WindowInfo
+    (2) keyboard/state  5256 msgs (1.00 Hz) : KeyboardState  
+    (3) mouse/state     5256 msgs (1.00 Hz) : MouseState
+    (4) screen        303524 msgs (57.72 Hz): ScreenEmitted
+    (5) mouse         429580 msgs (81.69 Hz): MouseEvent
+    (6) keyboard        2156 msgs (2.92 Hz) : KeyboardEvent
 ```
 
-**Key insight**: Only 48.19 KiB for 6.86 seconds of multimodal data, thanks to external video storage.
+**Key insight**: Only 21 MiB for 1.5 hours of multimodal data, thanks to external video storage.
 
 ### Message Examples
 ```bash
