@@ -92,10 +92,10 @@ nav:
     - data/index.md
     # - data/data_format.md
     - Introducing OWAMcap: data/infographic.html
+    - Comparison with LeRobot: data/comparison_with_lerobot.md
     - data/ocap.md
     - data/how_to_explorer_and_edit.md
     - data/viewer.md
-    - Comparison with LeRobot: data/comparison_with_lerobot.md
   - 🚀 Awesome Examples (WIP):
     - Multimodal Game Agent: examples/multimodal_game_agent.md
     - Omniparse + InternLM GUI Agent: examples/gui_agent.md

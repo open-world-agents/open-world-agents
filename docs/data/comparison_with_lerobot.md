@@ -9,11 +9,13 @@ Both OWAMcap and LeRobotDataset address the critical need for standardized multi
 To properly compare OWAMcap and LeRobotDataset, we need to understand that they operate at different architectural levels. Rather than comparing them directly, we analyze three distinct layers of the data stack:
 
 **Why Three Layers?**
+
 - **Container Format**: The fundamental storage mechanism (MCAP vs Parquet) - how binary data is organized, indexed, and accessed on disk
 - **Data Schema**: The message definitions and domain-specific structures built on top of containers (OWAMcap vs LeRobotDataset) - what types of data are stored and how they're structured
 - **Library Ecosystem**: The software dependencies and tooling required for practical usage (mcap-owa-support vs lerobot) - what you actually install and import
 
 This separation is crucial because:
+
 - At the container level, we're comparing MCAP (used by OWAMcap) vs Parquet (used by LeRobotDataset)
 - At the schema level, we're comparing domain-specific message definitions for desktop automation vs robotics
 - At the library level, we're comparing the practical overhead of using each solution
@@ -37,6 +39,7 @@ The container format determines how raw data is stored, accessed, and streamed. 
 While MCAP vs Parquet represents the container comparison, OWAMcap vs LeRobotDataset represents the data schema comparison—how domain-specific message types and structures are defined on top of these containers.
 
 **Commonalities:**
+
 - Both use lazy-loading for video frames to optimize storage and memory usage
 - Both store frame references in primary files with external video storage
 
@@ -68,7 +71,8 @@ class KeyboardEvent(OWAMessage):
 ````
 
 **Domain Specialization Impact:**
-- **OWAMcap**: Constraint enables seamless integration across diverse desktop tasks (web browsing, document editing, gaming)
+
+- **OWAMcap**: Pre-defined messages enables seamless integration across diverse desktop tasks (web browsing, document editing, gaming)
 - **LeRobotDataset**: Generic structure requires domain-specific adaptations for each robot platform
 
 ### Layer 3: Library Ecosystem
@@ -129,6 +133,7 @@ Channel 3: keyboard   [t2, t5, t9, ...]
 Native time-indexed access across all modalities.
 
 **Parquet Approach:**
+
 Requires manual timestamp alignment across separate files or complex table joins.
 
 ## Desktop vs Robotics Domain Specificity
@@ -144,6 +149,7 @@ Requires manual timestamp alignment across separate files or complex table joins
 ### Message Type Diversity
 
 **Desktop automation** requires capturing:
+
 - Window focus changes
 - Application state transitions  
 - UI element interactions
@@ -151,6 +157,7 @@ Requires manual timestamp alignment across separate files or complex table joins
 - Input device variations
 
 **Robotics** typically focuses on:
+
 - Joint positions/velocities
 - End-effector poses
 - Sensor readings
@@ -206,7 +213,6 @@ for batch_files in file_batches:
 | Use Case | **Recommended Format** | **Rationale** |
 |----------|----------------------|---------------|
 | **Desktop Foundation Models** | OWAMcap | Native message types, efficient storage, minimal overhead |
-| **Cross-Domain Research** | LeRobotDataset | Established ecosystem, comprehensive tooling |
 | **Production Desktop Agents** | OWAMcap | Lightweight deployment, crash-safe logging |
 | **Academic Robotics** | LeRobotDataset | Community adoption, existing model compatibility |
 
