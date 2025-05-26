@@ -91,10 +91,10 @@ nav:
   - Data in OWA:
     - data/index.md
     - data/data_format.md
+    - data/ocap.md
     - data/how_to_explorer_and_edit.md
     - data/viewer.md
     # - Comparison with other data formats: data/comparison.md # Later
-    - data/ocap.md
   - 🚀 Awesome Examples (WIP):
     - Multimodal Game Agent: examples/multimodal_game_agent.md
     - Omniparse + InternLM GUI Agent: examples/gui_agent.md
