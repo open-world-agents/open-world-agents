@@ -109,6 +109,7 @@ class ScreenEmitted(OWAMessage):
 ## Usage Example
 
 Sample datasets demonstrating the format:
+
 - `example.mcap` [[Download]](https://github.com/open-world-agents/open-world-agents/blob/main/docs/data/example.mcap) - Metadata and timestamps
 - `example.mkv` [[Download]](https://github.com/open-world-agents/open-world-agents/blob/main/docs/data/example.mkv) - Video data
 
@@ -153,6 +154,7 @@ This structured data enables precise reconstruction of user interactions synchro
 
 ### Technical Definition
 OWAMcap consists of:
+
 - **Base**: Standard mcap format with JSON schema
 - **Profile**: `owa` designation in mcap metadata  
 - **Messages**: Must implement [`BaseMessage`](https://github.com/open-world-agents/open-world-agents/blob/main/projects/owa-core/owa/core/message.py#L7) interface
