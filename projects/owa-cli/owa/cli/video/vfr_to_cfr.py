@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Optional
 
 import typer
+from tqdm import tqdm
 
 
 def is_vfr(file_path):
@@ -77,6 +78,9 @@ def convert_to_cfr(file_path):
     Returns:
         str: Status message
     """
+    temp_dir = None
+    backup_file = None
+
     try:
         # Create a temporary directory and file
         temp_dir = tempfile.mkdtemp()
@@ -126,9 +130,12 @@ def convert_to_cfr(file_path):
         # Replace the original file with the temporary file
         shutil.move(str(temp_file), str(file_path))
 
+        # Verify the replacement worked
+        if not file_path.exists() or file_path.stat().st_size < 1000:
+            raise Exception("File replacement failed")
+
         # Remove backup if everything worked
-        if file_path.exists() and file_path.stat().st_size > 1000:
-            backup_file.unlink(missing_ok=True)
+        backup_file.unlink(missing_ok=True)
 
         # Clean up temp directory
         shutil.rmtree(temp_dir, ignore_errors=True)
@@ -137,13 +144,17 @@ def convert_to_cfr(file_path):
 
     except Exception as e:
         # Clean up temporary directory if it exists
-        if "temp_dir" in locals() and os.path.exists(temp_dir):
+        if temp_dir and os.path.exists(temp_dir):
             shutil.rmtree(temp_dir, ignore_errors=True)
 
         # Restore from backup if needed
-        backup_file = file_path.with_suffix(f"{file_path.suffix}.bak")
-        if backup_file.exists() and (not file_path.exists() or file_path.stat().st_size < 1000):
-            shutil.move(str(backup_file), str(file_path))
+        if backup_file and backup_file.exists():
+            if not file_path.exists() or file_path.stat().st_size < 1000:
+                shutil.move(str(backup_file), str(file_path))
+                return f"Error converting '{file_path.name}': {str(e)} (original file restored)"
+            else:
+                # Remove backup if original is intact
+                backup_file.unlink(missing_ok=True)
 
         return f"Error converting '{file_path.name}': {str(e)}"
 
@@ -190,8 +201,13 @@ def process_directory(directory, max_workers=None):
 
     print(f"Found {len(mkv_files)} .mkv files in '{directory_path.name}'. Checking for VFR...")
 
-    # Filter for VFR files
-    vfr_files = [file for file in mkv_files if is_vfr(file)]
+    # Filter for VFR files with progress bar
+    vfr_files = []
+    with tqdm(mkv_files, desc="Analyzing files for VFR", unit="file") as pbar:
+        for file in pbar:
+            pbar.set_postfix_str(f"Checking {file.name}")
+            if is_vfr(file):
+                vfr_files.append(file)
 
     print(f"Found {len(vfr_files)} VFR files out of {len(mkv_files)} total .mkv files.")
 
@@ -199,18 +215,22 @@ def process_directory(directory, max_workers=None):
         print("No VFR files to convert. Exiting.")
         return
 
-    # Convert VFR files to CFR in parallel
+    # Convert VFR files to CFR in parallel with progress bar
     print(f"Converting {len(vfr_files)} files to CFR...")
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-        future_to_file = {executor.submit(convert_to_cfr, file): file for file in vfr_files}
+    with tqdm(total=len(vfr_files), desc="Converting to CFR", unit="file") as pbar:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_file = {executor.submit(convert_to_cfr, file): file for file in vfr_files}
 
-        for future in concurrent.futures.as_completed(future_to_file):
-            file = future_to_file[future]
-            try:
-                result = future.result()
-                print(result)
-            except Exception as e:
-                print(f"Error processing '{file.name}': {e}")
+            for future in concurrent.futures.as_completed(future_to_file):
+                file = future_to_file[future]
+                try:
+                    result = future.result()
+                    pbar.set_postfix_str(f"Completed {file.name}")
+                    print(result)
+                except Exception as e:
+                    print(f"Error processing '{file.name}': {e}")
+                finally:
+                    pbar.update(1)
 
 
 def main(
