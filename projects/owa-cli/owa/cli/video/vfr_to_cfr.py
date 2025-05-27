@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Optional
 
 import typer
+from tqdm import tqdm
 
 
 def is_vfr(file_path):
@@ -190,8 +191,13 @@ def process_directory(directory, max_workers=None):
 
     print(f"Found {len(mkv_files)} .mkv files in '{directory_path.name}'. Checking for VFR...")
 
-    # Filter for VFR files
-    vfr_files = [file for file in mkv_files if is_vfr(file)]
+    # Filter for VFR files with progress bar
+    vfr_files = []
+    with tqdm(mkv_files, desc="Analyzing files for VFR", unit="file") as pbar:
+        for file in pbar:
+            pbar.set_postfix_str(f"Checking {file.name}")
+            if is_vfr(file):
+                vfr_files.append(file)
 
     print(f"Found {len(vfr_files)} VFR files out of {len(mkv_files)} total .mkv files.")
 
@@ -199,18 +205,22 @@ def process_directory(directory, max_workers=None):
         print("No VFR files to convert. Exiting.")
         return
 
-    # Convert VFR files to CFR in parallel
+    # Convert VFR files to CFR in parallel with progress bar
     print(f"Converting {len(vfr_files)} files to CFR...")
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-        future_to_file = {executor.submit(convert_to_cfr, file): file for file in vfr_files}
+    with tqdm(total=len(vfr_files), desc="Converting to CFR", unit="file") as pbar:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_file = {executor.submit(convert_to_cfr, file): file for file in vfr_files}
 
-        for future in concurrent.futures.as_completed(future_to_file):
-            file = future_to_file[future]
-            try:
-                result = future.result()
-                print(result)
-            except Exception as e:
-                print(f"Error processing '{file.name}': {e}")
+            for future in concurrent.futures.as_completed(future_to_file):
+                file = future_to_file[future]
+                try:
+                    result = future.result()
+                    pbar.set_postfix_str(f"Completed {file.name}")
+                    print(result)
+                except Exception as e:
+                    print(f"Error processing '{file.name}': {e}")
+                finally:
+                    pbar.update(1)
 
 
 def main(
