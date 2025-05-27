@@ -47,6 +47,9 @@ Based on OBS Studio recommended specs + NVIDIA GPU requirements:
     - Or in CLI: `run.bat --help`
 
 ### Option 2: Conda Install
+
+[![conda-forge](https://img.shields.io/conda/vn/conda-forge/ocap.svg)](https://anaconda.org/conda-forge/ocap)
+
 ```sh
 $ conda install ocap
 ```
