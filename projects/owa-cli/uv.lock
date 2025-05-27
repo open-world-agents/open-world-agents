@@ -230,8 +230,8 @@ dependencies = [
     { name = "mcap" },
     { name = "orjson" },
     { name = "owa-core" },
+    { name = "packaging" },
     { name = "requests" },
-    { name = "semantic-version" },
 ]
 
 [package.metadata]
@@ -240,8 +240,8 @@ requires-dist = [
     { name = "mcap", specifier = ">=1.2.2" },
     { name = "orjson", specifier = ">=3.10.15" },
     { name = "owa-core", editable = "../owa-core" },
+    { name = "packaging", specifier = ">=25.0" },
     { name = "requests", specifier = ">=2.32.3" },
-    { name = "semantic-version", specifier = ">=2.10.0" },
 ]
 
 [[package]]
@@ -308,7 +308,7 @@ wheels = [
 
 [[package]]
 name = "owa-cli"
-version = "0.3.9a6"
+version = "0.3.9"
 source = { editable = "." }
 dependencies = [
     { name = "loguru" },
@@ -339,7 +339,7 @@ requires-dist = [
 
 [[package]]
 name = "owa-core"
-version = "0.3.9a6"
+version = "0.3.9"
 source = { editable = "../owa-core" }
 dependencies = [
     { name = "loguru" },
@@ -494,15 +494,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/a1/53/830aa4c3066a8ab0ae9a9955976fb770fe9c6102117c8ec4ab3ea62d89e8/rich-14.0.0.tar.gz", hash = "sha256:82f1bc23a6a21ebca4ae0c45af9bdbc492ed20231dcb63f297d6d1021a9d5725", size = 224078, upload-time = "2025-03-30T14:15:14.23Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/0d/9b/63f4c7ebc259242c89b3acafdb37b41d1185c07ff0011164674e9076b491/rich-14.0.0-py3-none-any.whl", hash = "sha256:1c9491e1951aac09caffd42f448ee3d04e58923ffe14993f6e83068dc395d7e0", size = 243229, upload-time = "2025-03-30T14:15:12.283Z" },
-]
-
-[[package]]
-name = "semantic-version"
-version = "2.10.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/7d/31/f2289ce78b9b473d582568c234e104d2a342fd658cc288a7553d83bb8595/semantic_version-2.10.0.tar.gz", hash = "sha256:bdabb6d336998cbb378d4b9db3a4b56a1e3235701dc05ea2690d9a997ed5041c", size = 52289, upload-time = "2022-05-26T13:35:23.454Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/6a/23/8146aad7d88f4fcb3a6218f41a60f6c2d4e3a72de72da1825dc7c8f7877c/semantic_version-2.10.0-py2.py3-none-any.whl", hash = "sha256:de78a3b8e0feda74cabc54aab2da702113e33ac9d9eb9d2389bcf1f58b7d9177", size = 15552, upload-time = "2022-05-26T13:35:21.206Z" },
 ]
 
 [[package]]
