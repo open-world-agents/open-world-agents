@@ -78,6 +78,9 @@ def convert_to_cfr(file_path):
     Returns:
         str: Status message
     """
+    temp_dir = None
+    backup_file = None
+
     try:
         # Create a temporary directory and file
         temp_dir = tempfile.mkdtemp()
@@ -127,9 +130,12 @@ def convert_to_cfr(file_path):
         # Replace the original file with the temporary file
         shutil.move(str(temp_file), str(file_path))
 
+        # Verify the replacement worked
+        if not file_path.exists() or file_path.stat().st_size < 1000:
+            raise Exception("File replacement failed")
+
         # Remove backup if everything worked
-        if file_path.exists() and file_path.stat().st_size > 1000:
-            backup_file.unlink(missing_ok=True)
+        backup_file.unlink(missing_ok=True)
 
         # Clean up temp directory
         shutil.rmtree(temp_dir, ignore_errors=True)
@@ -138,13 +144,17 @@ def convert_to_cfr(file_path):
 
     except Exception as e:
         # Clean up temporary directory if it exists
-        if "temp_dir" in locals() and os.path.exists(temp_dir):
+        if temp_dir and os.path.exists(temp_dir):
             shutil.rmtree(temp_dir, ignore_errors=True)
 
         # Restore from backup if needed
-        backup_file = file_path.with_suffix(f"{file_path.suffix}.bak")
-        if backup_file.exists() and (not file_path.exists() or file_path.stat().st_size < 1000):
-            shutil.move(str(backup_file), str(file_path))
+        if backup_file and backup_file.exists():
+            if not file_path.exists() or file_path.stat().st_size < 1000:
+                shutil.move(str(backup_file), str(file_path))
+                return f"Error converting '{file_path.name}': {str(e)} (original file restored)"
+            else:
+                # Remove backup if original is intact
+                backup_file.unlink(missing_ok=True)
 
         return f"Error converting '{file_path.name}': {str(e)}"
 
