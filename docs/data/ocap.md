@@ -136,10 +136,11 @@ flowchart TD
 
 ## Troubleshooting
 
-- **Record terminates right after start?** Re-run same command multiple times. It's because of crash in GStreamer, where the cause is unknown.
-- **Audio not recording?** In default setting, only audio from target process is recorded. You can turn off by manually editing [gstreamer pipeline](https://github.com/open-world-agents/open-world-agents/blob/fbbfdd8d3b5f9695cf295e860467776575fb1046/projects/owa-env-gst/owa/env/gst/pipeline_builder/factory.py#L71).
-- **Large file sizes?** Easiest way to reduce file size is adjusting [`gop-size`](https://gstreamer.freedesktop.org/documentation/nvcodec/nvd3d11h265enc.html?gi-language=c#nvd3d11h265enc:gop-size) parameter in `nvd3d11h265enc` element. Check [pipeline.py](https://github.com/open-world-agents/open-world-agents/blob/3b339897ed8eb15ac04b527c0ef1fb5baf52a2e2/projects/owa-env-gst/owa/env/gst/pipeline_builder/pipeline.py)
-- **Performance tips:** Close unnecessary applications before recording, use SSD storage for better write performance, record to different drive than your OS drive
+- **Record terminates right after start?** Re-run the same command a few times. This is due to an intermittent GStreamer crash with an unknown cause.
+- **GStreamer error message box appears on first run?** This is a known issue where GStreamer may show error dialogs the first time you run `ocap`. These messages do not affect recording—simply close the dialogs and continue. `ocap` will function normally.
+- **Audio not recording?** By default, only audio from the target process is recorded. To change this, manually edit the [GStreamer pipeline](https://github.com/open-world-agents/open-world-agents/blob/fbbfdd8d3b5f9695cf295e860467776575fb1046/projects/owa-env-gst/owa/env/gst/pipeline_builder/factory.py#L71).
+- **Large file sizes?** Reduce file size by adjusting the [`gop-size`](https://gstreamer.freedesktop.org/documentation/nvcodec/nvd3d11h265enc.html?gi-language=c#nvd3d11h265enc:gop-size) parameter in the `nvd3d11h265enc` element. See [pipeline.py](https://github.com/open-world-agents/open-world-agents/blob/3b339897ed8eb15ac04b527c0ef1fb5baf52a2e2/projects/owa-env-gst/owa/env/gst/pipeline_builder/pipeline.py).
+- **Performance tips:** Close unnecessary applications before recording, use SSD storage for better write performance, and record to a different drive than your OS drive.
 
 ## FAQ
 
