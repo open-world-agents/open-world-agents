@@ -1,5 +1,7 @@
 # ocap
 
+[![ocap](https://img.shields.io/pypi/v/ocap?label=ocap)](https://pypi.org/project/ocap/) [![gstreamer-bundle](https://img.shields.io/conda/vn/open-world-agents/gstreamer-bundle?label=gstreamer-bundle)](https://anaconda.org/open-world-agents/gstreamer-bundle)
+
 High-performance desktop recorder for Windows. Captures screen, audio, keyboard, mouse, and window events.
 
 <!-- ![ocap recording demo](../images/ocap-demo.gif) -->
@@ -46,12 +48,16 @@ Based on OBS Studio recommended specs + NVIDIA GPU requirements:
     - Double-click `run.bat` (opens terminal with virtual environment)
     - Or in CLI: `run.bat --help`
 
-### Option 2: Conda Install
+### Option 2: Package Install
 
-[![conda-forge](https://img.shields.io/conda/vn/conda-forge/ocap.svg)](https://anaconda.org/conda-forge/ocap)
+All OWA packages are available on PyPI:
 
 ```sh
-$ conda install ocap
+# Install GStreamer dependencies first (for video recording)
+$ conda install open-world-agents::gstreamer-bundle
+
+# Install ocap
+$ pip install ocap
 ```
 
 ### Basic Usage

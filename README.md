@@ -51,30 +51,28 @@ open-world-agents/
 
 ## Core Packages
 
-[![owa](https://img.shields.io/pypi/v/owa?label=owa)](https://pypi.org/project/owa/) [![owa](https://img.shields.io/conda/vn/conda-forge/owa?label=conda)](https://anaconda.org/conda-forge/owa)
+[![owa](https://img.shields.io/pypi/v/owa?label=owa)](https://pypi.org/project/owa/)
 
 The easiest way to get started is to install the [**owa**](pyproject.toml) meta-package, which includes all core components and environment plugins:
 
 ```bash
 pip install owa
-# or
-conda install owa
 ```
 
 All OWA packages use namespace packaging and are installed in the `owa` namespace (e.g., `owa.core`, `owa.cli`, `owa.env.desktop`). For more detail, see [Packaging namespace packages](https://packaging.python.org/en/latest/guides/packaging-namespace-packages/). We recommend using [`uv`](https://docs.astral.sh/uv/) as the package manager.
 
 
-| Name | Release in PyPI | Conda | Description |
-|------|-----------------|-------|-------------|
-| [`owa.core`](projects/owa-core) | [![owa-core](https://img.shields.io/pypi/v/owa-core?label=owa-core)](https://pypi.org/project/owa-core/) | [![owa-core](https://img.shields.io/conda/vn/conda-forge/owa-core?label=conda)](https://anaconda.org/conda-forge/owa-core) | Framework foundation with registry system |
-| [`owa.cli`](projects/owa-cli) | [![owa-cli](https://img.shields.io/pypi/v/owa-cli?label=owa-cli)](https://pypi.org/project/owa-cli/) | [![owa-cli](https://img.shields.io/conda/vn/conda-forge/owa-cli?label=conda)](https://anaconda.org/conda-forge/owa-cli) | Command-line tools (`owl`) for data analysis |
-| [`mcap-owa-support`](projects/mcap-owa-support) | [![mcap-owa-support](https://img.shields.io/pypi/v/mcap-owa-support?label=mcap-owa-support)](https://pypi.org/project/mcap-owa-support/) | [![mcap-owa-support](https://img.shields.io/conda/vn/conda-forge/mcap-owa-support?label=conda)](https://anaconda.org/conda-forge/mcap-owa-support) | OWAMcap format support and utilities |
-| [`ocap`](projects/ocap) 🎥 | [![ocap](https://img.shields.io/pypi/v/ocap?label=ocap)](https://pypi.org/project/ocap/) | [![ocap](https://img.shields.io/conda/vn/conda-forge/ocap?label=conda)](https://anaconda.org/conda-forge/ocap) | Desktop recorder for multimodal data capture |
-| [`owa.env.desktop`](projects/owa-env-desktop) | [![owa-env-desktop](https://img.shields.io/pypi/v/owa-env-desktop?label=owa-env-desktop)](https://pypi.org/project/owa-env-desktop/) | [![owa-env-desktop](https://img.shields.io/conda/vn/conda-forge/owa-env-desktop?label=conda)](https://anaconda.org/conda-forge/owa-env-desktop) | Mouse, keyboard, window event handling |
-| [`owa.env.gst`](projects/owa-env-gst) 🎥 | [![owa-env-gst](https://img.shields.io/pypi/v/owa-env-gst?label=owa-env-gst)](https://pypi.org/project/owa-env-gst/) | [![owa-env-gst](https://img.shields.io/conda/vn/conda-forge/owa-env-gst?label=conda)](https://anaconda.org/conda-forge/owa-env-gst) | GStreamer-powered screen capture (**[6x faster](#high-performance-screen-capture)**) |
-| [`owa.env.example`](projects/owa-env-example) | - | - | Reference implementations for learning |
+| Name | Release in PyPI | Description |
+|------|-----------------|-------------|
+| [`owa.core`](projects/owa-core) | [![owa-core](https://img.shields.io/pypi/v/owa-core?label=owa-core)](https://pypi.org/project/owa-core/) | Framework foundation with registry system |
+| [`owa.cli`](projects/owa-cli) | [![owa-cli](https://img.shields.io/pypi/v/owa-cli?label=owa-cli)](https://pypi.org/project/owa-cli/) | Command-line tools (`owl`) for data analysis |
+| [`mcap-owa-support`](projects/mcap-owa-support) | [![mcap-owa-support](https://img.shields.io/pypi/v/mcap-owa-support?label=mcap-owa-support)](https://pypi.org/project/mcap-owa-support/) | OWAMcap format support and utilities |
+| [`ocap`](projects/ocap) 🎥 | [![ocap](https://img.shields.io/pypi/v/ocap?label=ocap)](https://pypi.org/project/ocap/) | Desktop recorder for multimodal data capture |
+| [`owa.env.desktop`](projects/owa-env-desktop) | [![owa-env-desktop](https://img.shields.io/pypi/v/owa-env-desktop?label=owa-env-desktop)](https://pypi.org/project/owa-env-desktop/) | Mouse, keyboard, window event handling |
+| [`owa.env.gst`](projects/owa-env-gst) 🎥 | [![owa-env-gst](https://img.shields.io/pypi/v/owa-env-gst?label=owa-env-gst)](https://pypi.org/project/owa-env-gst/) | GStreamer-powered screen capture (**[6x faster](#high-performance-screen-capture)**) |
+| [`owa.env.example`](projects/owa-env-example) | - | Reference implementations for learning |
 
-> 🎥 **Video Processing Packages**: Packages marked with 🎥 (including `owa`) require GStreamer for full functionality (recording, real-time capture). For headless training/data processing only, GStreamer is optional. Use `conda install` for complete features, `pip install` works for basic functionality.
+> 🎥 **Video Processing Packages**: Packages marked with 🎥 require GStreamer dependencies. Install `conda install open-world-agents::gstreamer-bundle` first for full functionality.
 
 > 📦 **Lockstep Versioning**: All first-party OWA packages follow lockstep versioning, meaning they share the same version number to ensure compatibility and simplify dependency management.
 
@@ -175,8 +173,8 @@ Not only does `owa.env.gst` **achieve higher FPS**, but it also maintains **lowe
 Record your desktop usage data and share with the community:
 
 ```bash
-# Install desktop recorder
-conda install ocap
+# Install GStreamer dependencies (for video recording) and ocap
+conda install open-world-agents::gstreamer-bundle && pip install ocap
 
 # Record desktop activity (includes video, audio, events)
 ocap my-session
@@ -229,17 +227,23 @@ metadata: 0
 ### Quick Start
 
 ```bash
-# Full installation with video processing capabilities and gstreamer
-conda install owa
+# Install all OWA packages
+pip install owa
 
-# For headless servers (data processing/ML training only)
+# For video recording/processing, install GStreamer dependencies first:
+conda install open-world-agents::gstreamer-bundle
 pip install owa
 ```
 
-> 💡 **GStreamer Dependencies**: 
-> - **Need video recording/processing?** Use `conda install owa` or `conda install owa-env-gst`
-> - **Headless server/data processing only?** `pip install owa` is sufficient
-> - **Why conda for GStreamer?** GStreamer has complex native dependencies (pygobject, gst-python, gst-plugins, etc.) that conda handles automatically
+> 💡 **When do you need GStreamer?**
+> - **Video recording** with `ocap` desktop recorder
+> - **Real-time screen capture** with `owa.env.gst`
+> - **Video processing** capabilities
+>
+> **Skip GStreamer if you only need:**
+> - Data processing and analysis
+> - ML training on existing datasets
+> - Headless server environments
 
 ### Editable Install (Development)
 
