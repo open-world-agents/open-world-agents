@@ -3,14 +3,14 @@ from packaging.version import parse as parse_version
 from rich import print
 
 
-def get_local_version() -> str:
+def get_local_version(package_name: str = "owa.cli") -> str:
     try:
         from importlib.metadata import version
     except ImportError:  # For Python <3.8
         from importlib_metadata import version
 
     try:
-        __version__ = version("owa.cli")
+        __version__ = version(package_name)
     except Exception:
         __version__ = "unknown"
 
@@ -25,7 +25,7 @@ def get_latest_release() -> str:
     return tag.lstrip("v")  # Remove leading "v" if present
 
 
-def check_for_update() -> bool:
+def check_for_update(package_name: str = "owa.cli") -> bool:
     """
     Check for updates and print a message if a new version is available.
 
@@ -33,7 +33,7 @@ def check_for_update() -> bool:
         bool: True if the local version is up to date, False otherwise.
     """
     try:
-        local_version = get_local_version()
+        local_version = get_local_version(package_name)
         latest_version = get_latest_release()
         if parse_version(latest_version) > parse_version(local_version):
             print(f"""
