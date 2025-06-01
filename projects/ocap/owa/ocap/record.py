@@ -226,6 +226,10 @@ def record(
 
 
 def main():
+    from owa.cli.utils import check_for_update
+
+    # Check for updates on startup
+    check_for_update("ocap")
     typer.run(record)
 
 
