@@ -1,6 +1,6 @@
 [project]
 name = "owa-env-gst"
-version = "0.3.9"
+version = "0.3.9.post1"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"

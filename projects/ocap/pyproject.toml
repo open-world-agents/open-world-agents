@@ -1,6 +1,6 @@
 [project]
 name = "ocap"
-version = "0.3.9"
+version = "0.3.9.post1"
 description = "High-performance, omnimodal desktop recorder for Windows"
 readme = "README.md"
 requires-python = ">=3.11"
