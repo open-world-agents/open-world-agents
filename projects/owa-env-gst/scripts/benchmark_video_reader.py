@@ -1,16 +1,18 @@
 import line_profiler
 from decord import VideoReader, cpu
+from tqdm import tqdm
 
 from owa.env.gst.mkv_reader import GstMKVReader, PyAVMKVReader
 
 VIDEO_PATH = "../../tmp/output.mkv"
+MAX_FRAMES = 10**9
 
 
 @line_profiler.profile
 def test_gst():
     with GstMKVReader(VIDEO_PATH) as reader:
-        for idx, frame in enumerate(reader.iter_frames()):
-            if idx == 120:
+        for idx, frame in tqdm(enumerate(reader.iter_frames())):
+            if idx == MAX_FRAMES:
                 break
             print(frame["pts"], frame["data"].shape)
 
@@ -18,8 +20,8 @@ def test_gst():
 @line_profiler.profile
 def test_av():
     with PyAVMKVReader(VIDEO_PATH) as reader:
-        for idx, frame in enumerate(reader.iter_frames()):
-            if idx == 120:
+        for idx, frame in tqdm(enumerate(reader.iter_frames())):
+            if idx == MAX_FRAMES:
                 break
             print(frame["pts"], frame["data"].shape)
 
@@ -27,8 +29,8 @@ def test_av():
 @line_profiler.profile
 def test_decord():
     vr = VideoReader(VIDEO_PATH, ctx=cpu(0))
-    for idx in range(len(vr)):
-        if idx == 120:
+    for idx in tqdm(range(len(vr))):
+        if idx == MAX_FRAMES:
             break
         frame = vr[idx]
         print(idx, frame.shape)
