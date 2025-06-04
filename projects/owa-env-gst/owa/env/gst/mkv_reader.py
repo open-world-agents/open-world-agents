@@ -1,6 +1,6 @@
 import platform
 from abc import ABC, abstractmethod
-from queue import Empty, Queue
+from queue import Empty, Full, Queue
 from typing import Self
 
 import av
@@ -71,18 +71,36 @@ class GstMKVReader(MKVReader):
     def _sample_callback(self, sample):
         frame_arr = sample_to_ndarray(sample)
         data = {"data": frame_arr, "pts": sample.get_buffer().pts}
-        self.frame_queue.put(data)  # Add the frame to the queue
+        try:
+            self.frame_queue.put_nowait(data)  # Use put_nowait to avoid blocking callback if queue is full
+        except Full:
+            # Handle queue full scenario, e.g., log a warning or drop frame if acceptable
+            # For now, we'll let it drop if the queue is full, as appsink also has max-buffers
+            pass
 
     def iter_frames(self):
         self.runner.start()  # Start the runner
-        while self.runner.is_alive():
-            try:
-                data = self.frame_queue.get(timeout=1)
-                yield data  # Yield frames as they become available
-            except Empty:
-                continue
-        self.runner.stop()  # Stop the runner
-        self.runner.join()  # Wait for the runner to finish
+        try:
+            while self.runner.is_alive():
+                try:
+                    data = self.frame_queue.get(timeout=1.0)  # Wait up to 1 second for a frame
+                    yield data
+                except Empty:
+                    # Runner is alive, but queue was empty for the timeout duration. Continue waiting.
+                    continue
+
+            # Runner is no longer alive (e.g., EOS or error).
+            # Drain any remaining frames that were already in the queue.
+            while True:
+                try:
+                    data = self.frame_queue.get_nowait()  # Non-blocking get
+                    yield data
+                except Empty:
+                    # Queue is empty, all frames processed.
+                    break
+        finally:
+            self.runner.stop()  # Ensure runner is stopped
+            self.runner.join()  # Wait for the runner thread to finish
 
     def close(self):
         self.runner.cleanup()
