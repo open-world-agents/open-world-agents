@@ -1,126 +1,15 @@
-import gc
-import threading
+from fractions import Fraction
 from typing import Optional, Tuple
 
-import av
 import cv2
 import numpy as np
 from PIL import Image
 from pydantic import Field
 from pydantic.json_schema import SkipJsonSchema
 
+from owa.core.io.video import VideoReader
 from owa.core.message import OWAMessage
 from owa.core.time import TimeUnits
-
-
-# BUG: PyAV has "corrupted size vs. prev_size" error when `frame.to_ndarray(format="bgra")` is called for video "expert-jy-1.mkv"
-#      This bug does not occur when format does not contain `alpha` channel, e.g. "bgr24"
-#      Guessed reason is mismatch of width/height=770/512 and codec_width/codec_height=800/512.
-class PyAVVideoReader:
-    """Class responsible for reading video files and extracting frames at specified timestamps."""
-
-    _GC_COLLECT_COUNT = 0
-    _GC_COLLECTION_INTERVAL = 10  # Run garbage collection every 10 video opens
-
-    _video_container_cache = {}
-    _cache_lock = threading.Lock()
-    _max_cache_size = 4  # Default maximum number of cached containers
-
-    def __init__(self, max_cache_size=None):
-        """Initialize VideoReader with an optional cache size."""
-        if max_cache_size is not None:
-            self._max_cache_size = max_cache_size
-
-    def get_frame_at_pts(self, video_path, pts_ns):
-        """
-        Extract a frame from a video at a specified PTS (in nanoseconds).
-
-        Args:
-            video_path (str): Path to the video file
-            pts_ns (int): Presentation timestamp in nanoseconds
-
-        Returns:
-            np.ndarray: The frame as a RGB array
-
-        Raises:
-            FileNotFoundError: If the video file does not exist
-            ValueError: If a frame at the specified PTS cannot be found
-        """
-        # Increment GC counter and occasionally run garbage collection
-        PyAVVideoReader._GC_COLLECT_COUNT += 1
-        if PyAVVideoReader._GC_COLLECT_COUNT % self._GC_COLLECTION_INTERVAL == 0:
-            # Mandatory to prevent memory leaks when processing many videos
-            gc.collect()
-
-        try:
-            # Get the video container from cache or open a new one
-            # container = self._get_video_container(video_path)
-            # TODO: lock per video file
-            with av.open(video_path) as container:
-                # Convert PTS from nanoseconds to seconds
-                target_time = pts_ns / TimeUnits.SECOND
-
-                # Select the first video stream
-                try:
-                    stream = next(s for s in container.streams if s.type == "video")
-                except StopIteration:
-                    raise ValueError("No video stream found in the file.")
-
-                # Calculate the seek position in terms of stream time base
-                seek_timestamp = int(target_time * av.time_base)
-
-                # Flush the decoder before seeking
-                # container.flush_buffers()
-
-                # Seek to the nearest keyframe before the target time
-                container.seek(seek_timestamp)
-
-                for frame in container.decode(stream):
-                    frame_time = frame.pts * stream.time_base
-                    if frame_time >= target_time:
-                        # Convert frame to RGB format (avoid alpha for safety)
-                        rgb_frame = frame.to_ndarray(format="rgb24")
-                        return rgb_frame
-
-                raise ValueError(f"No frame found at PTS: {pts_ns} ns")
-
-        except FileNotFoundError:
-            raise FileNotFoundError(f"Video file not found: {video_path}")
-        except av.FFmpegError as e:
-            raise ValueError(f"Error opening video file: {e}")
-
-    def _get_video_container(self, video_path):
-        """
-        Get a video container from cache or create a new one.
-        Thread-safe implementation with size limiting.
-        """
-        with self._cache_lock:
-            # Check if it's already cached
-            if video_path in self._video_container_cache:
-                return self._video_container_cache[video_path]
-
-            # If cache is full, remove the oldest entry
-            if len(self._video_container_cache) >= self._max_cache_size:
-                oldest_key = next(iter(self._video_container_cache))
-                oldest_container = self._video_container_cache.pop(oldest_key)
-                oldest_container.close()
-
-            # Open a new container and add it to the cache
-            container = av.open(video_path)
-            self._video_container_cache[video_path] = container
-            return container
-
-    def clear_cache(self):
-        """Close and clear all cached video containers."""
-        with self._cache_lock:
-            for container in self._video_container_cache.values():
-                container.close()
-            self._video_container_cache.clear()
-        gc.collect()
-
-
-# Global video reader instance
-_video_reader = PyAVVideoReader()
 
 
 class ScreenEmitted(OWAMessage):
@@ -152,7 +41,7 @@ class ScreenEmitted(OWAMessage):
             h, w = self.frame_arr.shape[:2]
             self.shape = (w, h)
 
-    def lazy_load(self) -> np.ndarray:
+    def lazy_load(self, *, force_close: bool = False) -> np.ndarray:
         """
         Lazy load the frame data if not already set.
         This is called when the object is created and frame_arr is None.
@@ -160,15 +49,24 @@ class ScreenEmitted(OWAMessage):
             np.ndarray: the frame as a BGRA array.
         """
         if self.frame_arr is None and self.path is not None and self.pts is not None:
-            # Always load as RGB for safety, then convert to BGRA for consumers.
-            rgb_array = _video_reader.get_frame_at_pts(self.path, self.pts)
-            self.frame_arr = cv2.cvtColor(rgb_array, cv2.COLOR_RGB2BGRA)
-            # Set shape based on the loaded frame (width, height)
-            # Note: OpenCV shape is (height, width, channels), but width/height tuple is (width, height).
-            h, w = self.frame_arr.shape[:2]
-            shape_tuple = (w, h)
-            self.shape = shape_tuple
-            self.original_shape = shape_tuple
+            # Convert PTS from nanoseconds to seconds for VideoReader
+            pts_seconds = Fraction(self.pts, TimeUnits.SECOND)
+
+            with VideoReader(self.path, force_close=force_close) as reader:
+                frame = reader.read_frame(pts=pts_seconds)
+                if frame is None:
+                    raise ValueError(f"No frame found at PTS: {self.pts} ns")
+
+                # Convert to RGB first, then to BGRA for consumers
+                rgb_array = frame.to_ndarray(format="rgb24")
+                self.frame_arr = cv2.cvtColor(rgb_array, cv2.COLOR_RGB2BGRA)
+
+                # Set shape based on the loaded frame (width, height)
+                h, w = self.frame_arr.shape[:2]
+                shape_tuple = (w, h)
+                self.shape = shape_tuple
+                self.original_shape = shape_tuple
+
         return self.frame_arr
 
     def to_pil_image(self) -> Image.Image:
@@ -205,9 +103,6 @@ def main():
     print(frame)
     print(frame.to_pil_image())
     print(frame.shape)
-
-    # Clean up at the end
-    _video_reader.clear_cache()
 
 
 if __name__ == "__main__":
