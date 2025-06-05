@@ -15,158 +15,110 @@ from loguru import logger
 # Type aliases
 SECOND_TYPE = Union[float, Fraction]
 DUPLICATE_TOLERANCE_SECOND: Fraction = Fraction(1, 120)
+PTSUnit = Literal["pts", "sec"]
 
 # Garbage collection counters for PyAV reference cycles
-# Reference: https://github.com/pytorch/vision/blob/428a54c96e82226c0d2d8522e9cbfdca64283da0/torchvision/io/video.py#L53-L55
 _CALLED_TIMES = 0
 _GC_COLLECTION_INTERVAL = 10
 
 
-# Thread-safe container cache with reference counting
 class ContainerCache:
-    _instance = None
-
-    @classmethod
-    def get_instance(cls, max_size=10, inactive_timeout=10**9):
-        if cls._instance is None:
-            cls._instance = ContainerCache(max_size, inactive_timeout)
-        return cls._instance
+    """Thread-safe container cache with automatic cleanup."""
 
     def __init__(self, max_size=10, inactive_timeout=10**9):
-        self._containers = {}  # Maps path to (container, ref_count, last_accessed)
+        self._cache = {}  # path -> (container, ref_count, last_accessed)
         self._lock = threading.RLock()
         self.max_size = max_size
         self.inactive_timeout = inactive_timeout
-
-        # Register cleanup function
         atexit.register(self.close_all)
 
     def get_container(self, video_path: Path, mode: str = "r") -> av.container.Container:
-        """Get or create and cache a PyAV container with reference counting."""
+        """Get or create cached container with reference counting."""
         path_str = str(video_path)
-        current_time = time.time()
 
         with self._lock:
-            # Clean up inactive containers first
-            self._cleanup_inactive(current_time)
+            self._cleanup_inactive()
 
-            # If the container exists and is in read mode (reusable)
-            if path_str in self._containers and mode == "r":
-                container, ref_count, _ = self._containers[path_str]
-                self._containers[path_str] = (container, ref_count + 1, current_time)
-                logger.debug(f"Reusing cached container for {path_str} (refs: {ref_count + 1})")
+            # Reuse existing read-mode container
+            if path_str in self._cache and mode == "r":
+                container, refs, _ = self._cache[path_str]
+                self._cache[path_str] = (container, refs + 1, time.time())
                 return container
 
-            # Create a new container
+            # Create new container
             container = av.open(path_str, mode)
 
-            # Only cache read-mode containers
+            # Cache read-mode containers only
             if mode == "r":
-                # Check if we need to evict
-                if len(self._containers) >= self.max_size:
-                    self._evict_lru()
-
-                self._containers[path_str] = (container, 1, current_time)
-                logger.debug(f"Created new cached container for {path_str}")
+                if len(self._cache) >= self.max_size:
+                    self._evict_unused()
+                self._cache[path_str] = (container, 1, time.time())
 
             return container
 
     def release_container(self, video_path: Path) -> None:
-        """Decrease reference count for a container and close if no more references."""
+        """Decrease reference count."""
         path_str = str(video_path)
-        current_time = time.time()
 
         with self._lock:
-            if path_str not in self._containers:
-                logger.warning(f"Attempted to release non-cached container: {path_str}")
-                return
+            if path_str in self._cache:
+                container, refs, _ = self._cache[path_str]
+                self._cache[path_str] = (container, max(0, refs - 1), time.time())
 
-            container, ref_count, _ = self._containers[path_str]
+    def force_close_container(self, video_path: Path) -> None:
+        """Immediately close and remove container."""
+        path_str = str(video_path)
 
-            if ref_count <= 1:
-                # Last reference, but don't close immediately - just set ref_count to 0
-                # and update timestamp for potential reuse
-                self._containers[path_str] = (container, 0, current_time)
-                logger.debug(f"Container for {path_str} has no more references (but kept in cache)")
-            else:
-                # Decrement reference count and update timestamp
-                self._containers[path_str] = (container, ref_count - 1, current_time)
-                logger.debug(f"Released container for {path_str} (refs: {ref_count - 1})")
-
-    def _cleanup_inactive(self, current_time):
-        """Clean up containers that haven't been accessed for a while and have ref_count = 0."""
-        for path in list(self._containers.keys()):
-            container, ref_count, last_accessed = self._containers[path]
-            # If container is not in use and hasn't been accessed for a while
-            if ref_count == 0 and (current_time - last_accessed) > self.inactive_timeout:
-                try:
-                    logger.debug(
-                        f"Closing inactive container: {path} (inactive for {current_time - last_accessed:.1f}s)"
-                    )
-                    container.close()
-                except Exception as e:
-                    logger.warning(f"Error closing inactive container {path}: {e}")
-                finally:
-                    del self._containers[path]
-
-    def _evict_lru(self):
-        """Evict the least recently used container with ref_count == 0."""
-        lru_path = None
-        lru_time = float("inf")
-
-        # Find the least recently used container with ref_count == 0
-        for path, (_, ref_count, last_accessed) in self._containers.items():
-            if ref_count == 0 and last_accessed < lru_time:
-                lru_path = path
-                lru_time = last_accessed
-
-        # If we found one, close and remove it
-        if lru_path:
-            container, _, _ = self._containers[lru_path]
-            try:
-                logger.debug(f"Evicting least recently used container: {lru_path}")
-                container.close()
-            except Exception as e:
-                logger.warning(f"Error closing container during eviction {lru_path}: {e}")
-            finally:
-                del self._containers[lru_path]
-                return True
-
-        logger.warning("Cache full and all containers are in use. Cannot evict any container.")
-        return False
+        with self._lock:
+            if path_str in self._cache:
+                container, _, _ = self._cache.pop(path_str)
+                self._safe_close(container, path_str)
 
     def close_all(self) -> None:
         """Close all cached containers."""
         with self._lock:
-            for path_str, (container, _, _) in list(self._containers.items()):
-                try:
-                    logger.debug(f"Closing container for {path_str} during cleanup")
-                    container.close()
-                except Exception as e:
-                    logger.warning(f"Error closing container {path_str}: {e}")
+            for path_str, (container, _, _) in list(self._cache.items()):
+                self._safe_close(container, path_str)
+            self._cache.clear()
 
-            self._containers.clear()
+    def _cleanup_inactive(self):
+        """Remove unused containers that are too old."""
+        current_time = time.time()
+        to_remove = []
 
-    def force_close_container(self, video_path: Path) -> None:
-        """Force immediate closure of a specific container, removing it from cache."""
-        path_str = str(video_path)
+        for path, (container, refs, last_used) in self._cache.items():
+            if refs == 0 and (current_time - last_used) > self.inactive_timeout:
+                to_remove.append((path, container))
 
-        with self._lock:
-            if path_str in self._containers:
-                container, ref_count, _ = self._containers[path_str]
-                try:
-                    logger.debug(f"Force closing container for {path_str} (refs: {ref_count})")
-                    container.close()
-                except Exception as e:
-                    logger.warning(f"Error force closing container {path_str}: {e}")
-                finally:
-                    del self._containers[path_str]
-            else:
-                logger.debug(f"Container {path_str} not in cache, nothing to force close")
+        for path, container in to_remove:
+            self._cache.pop(path, None)
+            self._safe_close(container, path)
+
+    def _evict_unused(self):
+        """Remove oldest unused container."""
+        oldest_path = None
+        oldest_time = float("inf")
+
+        for path, (_, refs, last_used) in self._cache.items():
+            if refs == 0 and last_used < oldest_time:
+                oldest_path = path
+                oldest_time = last_used
+
+        if oldest_path:
+            container, _, _ = self._cache.pop(oldest_path)
+            self._safe_close(container, oldest_path)
+
+    @staticmethod
+    def _safe_close(container, path_str):
+        """Safely close container with error handling."""
+        try:
+            container.close()
+        except Exception as e:
+            logger.warning(f"Error closing container {path_str}: {e}")
 
 
-# Create the singleton container cache
-_container_cache = ContainerCache.get_instance(max_size=10)
+# Global cache instance
+_container_cache = ContainerCache(max_size=10)
 
 
 def get_video_container(video_path: Path) -> av.container.InputContainer:
@@ -175,7 +127,7 @@ def get_video_container(video_path: Path) -> av.container.InputContainer:
 
 
 def release_video_container(video_path: Path) -> None:
-    """Release a container reference, potentially making it eligible for eviction."""
+    """Release a container reference."""
     _container_cache.release_container(video_path)
 
 
@@ -189,27 +141,17 @@ def force_close_video_container(video_path: Path) -> None:
     _container_cache.force_close_container(video_path)
 
 
-# Define PTSUnit as a Literal type for clarity
-PTSUnit = Literal["pts", "sec"]
-
-
 class VideoWriter:
-    """
-    VideoWriter uses PyAV to write video frames with optional support for VFR (Variable Frame Rate).
-    References:
-      - https://stackoverflow.com/questions/65213302/how-to-write-variable-frame-rate-videos-in-python
-      - https://github.com/PyAV-Org/PyAV/blob/main/examples/numpy/generate_video_with_pts.py
-      - Design Reference: https://pytorch.org/vision/stable/generated/torchvision.io.read_video.html
-    """
+    """VideoWriter uses PyAV to write video frames with VFR/CFR support."""
 
     def __init__(
         self, video_path: Union[str, os.PathLike, Path], fps: Optional[float] = None, vfr: bool = False, **kwargs
     ):
         """
         Args:
-            video_path (Path): The path to the output video file.
-            fps (float, optional): Nominal frames per second. Required if vfr is False or if pts is not provided per frame.
-            vfr (bool): Whether to use Variable Frame Rate. If False, configures a constant frame rate.
+            video_path: Output video file path
+            fps: Frames per second (required for CFR or when pts not provided)
+            vfr: Use Variable Frame Rate
             **kwargs: Additional codec parameters
         """
         self.video_path = Path(video_path)
@@ -218,36 +160,26 @@ class VideoWriter:
         self._closed = False
         self.past_pts = None
 
-        # Process optional codec parameters with defaults
-        self.codec_params = {
-            # "bit_rate": kwargs.get("bit_rate", 20 * (2**20)),  # 20 Mbps
-            "gop_size": kwargs.get("gop_size", 30),
-        }
+        # Setup codec parameters
+        self.codec_params = {"gop_size": kwargs.get("gop_size", 30)}
 
-        # Open container and setup stream
+        # Initialize container and stream
         self.container = av.open(str(video_path), mode="w")
         self._setup_stream()
 
     def _setup_stream(self):
-        """Configure video stream based on VFR or CFR settings."""
+        """Configure video stream for VFR or CFR."""
         if self.vfr:
-            # VFR: use fine-grained time_base for variable timestamps
-            if self.fps is not None:
-                logger.warning("fps is provided but vfr is True. Using fps for time_base but allowing variable PTS.")
             self.stream = self.container.add_stream("h264", rate=-1)
-            self.stream.pix_fmt = "yuv420p"
-            self._time_base = Fraction(1, 60000)  # Fine-grained timestamps for VFR
+            self._time_base = Fraction(1, 60000)  # Fine-grained for VFR
         else:
-            # CFR: require fps and configure fixed time_base
-            if self.fps is None:
-                raise ValueError("fps must be provided for constant frame rate (vfr=False)")
-            if self.fps <= 0:
-                raise ValueError("fps must be a positive number")
+            if not self.fps or self.fps <= 0:
+                raise ValueError("fps must be positive for CFR (vfr=False)")
             self.stream = self.container.add_stream("h264", rate=int(self.fps))
-            self.stream.pix_fmt = "yuv420p"
             self._time_base = Fraction(1, int(self.fps))
 
-        # Apply common stream settings
+        # Apply settings
+        self.stream.pix_fmt = "yuv420p"
         self.stream.time_base = self._time_base
         self.stream.codec_context.time_base = self._time_base
         for key, value in self.codec_params.items():
@@ -259,99 +191,86 @@ class VideoWriter:
         pts: Optional[Union[int, SECOND_TYPE]] = None,
         pts_unit: PTSUnit = "pts",
     ) -> Dict[str, Any]:
-        """
-        Write a frame to the video. If pts is None, it will be set to the next frame (using fps).
-
-        Args:
-            frame (av.VideoFrame | np.ndarray): The frame to write.
-            pts (int | float | Fraction | None): The PTS value of the frame. If None, computes next PTS (requires fps).
-            pts_unit ("pts" | "sec"): Unit of the provided pts.
-
-        Returns:
-            dict: A simple dict containing 'source' (file path) and 'timestamp' (in seconds).
-        """
+        """Write a frame to the video."""
         global _CALLED_TIMES
         _CALLED_TIMES += 1
         if _CALLED_TIMES % _GC_COLLECTION_INTERVAL == 0:
             gc.collect()
 
-        if not isinstance(frame, (av.VideoFrame, np.ndarray)):
-            raise TypeError("frame must be av.VideoFrame or np.ndarray")
-
-        # Convert numpy array to VideoFrame if needed
+        # Convert numpy to VideoFrame
         if isinstance(frame, np.ndarray):
             frame = av.VideoFrame.from_ndarray(frame, format="rgb24")
+        elif not isinstance(frame, av.VideoFrame):
+            raise TypeError("frame must be av.VideoFrame or np.ndarray")
 
-        # Determine pts_as_pts (integer) based on provided pts or next sequential
-        if pts is None:
-            if self.fps is None:
-                raise ValueError("fps must be provided if pts is not provided.")
-            if self.past_pts is None:
-                pts_as_pts = 0
-            else:
-                # For CFR and VFR, use time_base conversion of one frame interval
-                pts_increment = self.sec_to_pts(Fraction(1, int(self.fps)))
-                pts_as_pts = self.past_pts + pts_increment
-        else:
-            if pts_unit == "pts":
-                if not isinstance(pts, int):
-                    raise TypeError("pts must be int if pts_unit is 'pts'")
-                pts_as_pts = pts
-            elif pts_unit == "sec":
-                if not isinstance(pts, (float, Fraction)):
-                    raise TypeError("pts must be float or Fraction if pts_unit is 'sec'")
-                pts_as_pts = self.sec_to_pts(pts)
-            else:
-                raise ValueError(f"Invalid pts_unit: {pts_unit}")
-
-        # Convert to seconds for timestamp
+        # Calculate PTS
+        pts_as_pts = self._calculate_pts(pts, pts_unit)
         pts_as_sec = self.pts_to_sec(pts_as_pts)
-        logger.debug(f"Writing frame with PTS={pts_as_pts}, Time={float(pts_as_sec):.3f}s")
 
-        # Filter duplicate frames within tolerance
-        if self.past_pts is not None and pts_as_pts - self.past_pts < self.sec_to_pts(DUPLICATE_TOLERANCE_SECOND):
-            logger.warning(
-                f"Duplicate frame detected at {float(pts_as_sec):.2f}s "
-                f"(previous: {float(self.pts_to_sec(self.past_pts)):.2f}s) in {self.video_path}. Skipping."
-            )
+        # Skip duplicate frames
+        if self._is_duplicate(pts_as_pts, pts_as_sec):
             return {"source": str(self.video_path), "timestamp": float(pts_as_sec)}
 
-        # Assign pts and encode
+        # Write frame
         frame.pts = pts_as_pts
-        # Set stream dimensions on first frame
         self.stream.width = frame.width
         self.stream.height = frame.height
+
         for packet in self.stream.encode(frame):
             self.container.mux(packet)
 
         self.past_pts = pts_as_pts
         return {"source": str(self.video_path), "timestamp": float(pts_as_sec)}
 
+    def _calculate_pts(self, pts, pts_unit):
+        """Calculate PTS value in pts units."""
+        if pts is None:
+            if not self.fps:
+                raise ValueError("fps required when pts not provided")
+            if self.past_pts is None:
+                return 0
+            return self.past_pts + self.sec_to_pts(Fraction(1, int(self.fps)))
+
+        if pts_unit == "pts":
+            if not isinstance(pts, int):
+                raise TypeError("pts must be int when pts_unit is 'pts'")
+            return pts
+        elif pts_unit == "sec":
+            if not isinstance(pts, (float, Fraction)):
+                raise TypeError("pts must be float/Fraction when pts_unit is 'sec'")
+            return self.sec_to_pts(pts)
+        else:
+            raise ValueError(f"Invalid pts_unit: {pts_unit}")
+
+    def _is_duplicate(self, pts_as_pts, pts_as_sec):
+        """Check if frame is duplicate within tolerance."""
+        if self.past_pts is not None and pts_as_pts - self.past_pts < self.sec_to_pts(DUPLICATE_TOLERANCE_SECOND):
+            logger.warning(f"Duplicate frame at {float(pts_as_sec):.2f}s in {self.video_path}. Skipping.")
+            return True
+        return False
+
     def pts_to_sec(self, pts: int) -> Fraction:
         return pts * self.stream.codec_context.time_base
 
     def sec_to_pts(self, sec: SECOND_TYPE) -> int:
         if not isinstance(sec, (float, Fraction)):
-            raise TypeError("sec must be a numeric type (float or Fraction)")
+            raise TypeError("sec must be numeric")
         return int(sec / self.stream.codec_context.time_base)
 
     def close(self) -> None:
-        """Finalize writing and close the container."""
+        """Finalize and close the container."""
         if self._closed:
             return
 
-        # Flush encoder
         try:
+            # Flush encoder
             for packet in self.stream.encode():
                 self.container.mux(packet)
+            self.container.close()
         except Exception as e:
-            logger.error(f"Error encoding final packets: {e}")
+            logger.error(f"Error closing VideoWriter: {e}")
         finally:
-            try:
-                self.container.close()
-                self._closed = True
-            except Exception as e:
-                logger.error(f"Error closing container: {e}")
+            self._closed = True
 
     def __enter__(self) -> "VideoWriter":
         return self
@@ -361,122 +280,95 @@ class VideoWriter:
 
 
 class VideoReader:
-    """
-    VideoReader uses PyAV to read video frames based on start and end timestamps (in seconds).
-    """
+    """VideoReader uses PyAV to read video frames with caching support."""
 
     def __init__(self, video_path: Union[str, os.PathLike, Path], force_close: bool = False):
         """
         Args:
-            video_path (Union[str, os.PathLike, Path]): The path to the input video file.
-            force_close (bool): If True, forces complete container closure on close() instead of using cache.
+            video_path: Input video file path
+            force_close: Force complete closure instead of using cache
         """
         self.video_path = Path(video_path)
         self.force_close = force_close
-        # Always use cached container, but handle force_close in close() method
         self.container = get_video_container(self.video_path)
 
     def read_frames(
-        self,
-        start_pts: SECOND_TYPE = 0.0,
-        end_pts: Optional[SECOND_TYPE] = None,
-        fps: Optional[float] = None,
+        self, start_pts: SECOND_TYPE = 0.0, end_pts: Optional[SECOND_TYPE] = None, fps: Optional[float] = None
     ) -> Generator[av.VideoFrame, None, None]:
-        """
-        Yield frames between start_pts (inclusive) and end_pts (exclusive) in seconds.
-
-        Args:
-            start_pts (float | Fraction): Start time in seconds.
-            end_pts (float | Fraction | None): End time in seconds. If None, reads until end.
-                Negative values indicate time relative to the end of the video (like Python indexing).
-            fps (float | None): If set, yield frames sampled at this rate (Hz).
-        """
+        """Yield frames between start_pts and end_pts in seconds."""
         global _CALLED_TIMES
         _CALLED_TIMES += 1
         if _CALLED_TIMES % _GC_COLLECTION_INTERVAL == 0:
             gc.collect()
 
-        if not isinstance(start_pts, (float, int, Fraction)):
-            raise TypeError("start_pts must be float, int, or Fraction")
-
         # Handle negative end_pts (Python-style indexing)
         if end_pts is not None and float(end_pts) < 0:
-            # Get video duration in seconds
             if self.container.duration is None:
-                raise ValueError("Video duration is not available, cannot handle negative end_pts.")
-            else:
-                duration = self.container.duration / av.time_base
-                end_pts = duration + float(end_pts)
-                logger.debug(f"Negative end_pts converted to {end_pts}s (video duration: {duration}s)")
+                raise ValueError("Video duration unavailable for negative end_pts")
+            duration = self.container.duration / av.time_base
+            end_pts = duration + float(end_pts)
 
-        if end_pts is None:
-            end_pts = float("inf")
-        elif not isinstance(end_pts, (float, int, Fraction)):
-            raise TypeError("end_pts must be float, Fraction, or None")
+        end_pts = float(end_pts) if end_pts is not None else float("inf")
 
-        video_stream = self.container.streams.video[0]
-        logger.debug(f"Video average rate: {video_stream.average_rate}")
+        # Seek to start position
         timestamp_ts = int(av.time_base * float(start_pts))
         self.container.seek(timestamp_ts)
 
         if fps is None:
-            # Yield all frames in the interval
-            for frame in self.container.decode(video=0):
-                if frame.time is None:
-                    raise ValueError("Frame time is None, cannot read frames without valid timestamps.")
-                if frame.time < float(start_pts):
-                    continue
-                if frame.time > float(end_pts):
-                    break
-                yield frame
+            # Yield all frames in interval
+            yield from self._yield_all_frames(float(start_pts), end_pts)
         else:
-            # Sample frames at the given fps
+            # Sample at specified fps
             if fps <= 0:
-                raise ValueError("fps must be a positive number")
-            interval = 1.0 / fps
-            next_time = float(start_pts)
-            for frame in self.container.decode(video=0):
-                if frame.time is None:
-                    raise ValueError("Frame time is None, cannot read frames without valid timestamps.")
-                if frame.time < float(start_pts):
-                    continue
-                if frame.time > float(end_pts):
-                    break
-                # Only yield frames at or after the next_time
-                if frame.time + 1e-8 >= next_time:
-                    frame.duration = interval / video_stream.time_base  # Set duration for the frame
-                    yield frame
-                    next_time += interval
-                    # Skip ahead if frame.time is much larger than next_time (e.g., VFR)
-                    if frame.time > next_time:
-                        # Catch up next_time to current frame.time + interval
-                        missed = int((frame.time - next_time) // interval) + 1
-                        next_time += missed * interval
+                raise ValueError("fps must be positive")
+            yield from self._yield_sampled_frames(float(start_pts), end_pts, fps)
+
+    def _yield_all_frames(self, start_pts, end_pts):
+        """Yield all frames in time range."""
+        for frame in self.container.decode(video=0):
+            if frame.time is None:
+                raise ValueError("Frame time is None")
+            if frame.time < start_pts:
+                continue
+            if frame.time > end_pts:
+                break
+            yield frame
+
+    def _yield_sampled_frames(self, start_pts, end_pts, fps):
+        """Yield frames sampled at specified fps."""
+        interval = 1.0 / fps
+        next_time = start_pts
+        video_stream = self.container.streams.video[0]
+
+        for frame in self.container.decode(video=0):
+            if frame.time is None:
+                raise ValueError("Frame time is None")
+            if frame.time < start_pts:
+                continue
+            if frame.time > end_pts:
+                break
+
+            if frame.time + 1e-8 >= next_time:
+                frame.duration = interval / video_stream.time_base
+                yield frame
+                next_time += interval
+
+                # Handle VFR gaps
+                if frame.time > next_time:
+                    missed = int((frame.time - next_time) // interval) + 1
+                    next_time += missed * interval
 
     def read_frame(self, pts: SECOND_TYPE = 0.0) -> av.VideoFrame:
-        """
-        Read and return the first frame at or after the given timestamp (in seconds).
-
-        Args:
-            pts (float | Fraction): Time in seconds to seek.
-
-        Returns:
-            av.VideoFrame: The first frame found.
-
-        Raises:
-            ValueError: If no frame is found.
-        """
+        """Read single frame at or after given timestamp."""
         for frame in self.read_frames(start_pts=pts, end_pts=None):
             return frame
         raise ValueError(f"Frame not found at {float(pts):.2f}s in {self.video_path}")
 
     def close(self) -> None:
-        """Release the container reference or close completely if force_close was set."""
+        """Release container reference or force close."""
         if self.force_close:
-            # Force immediate closure and removal from cache
             force_close_video_container(self.video_path)
         else:
-            # Use normal cached release
             release_video_container(self.video_path)
 
     def __enter__(self) -> "VideoReader":
