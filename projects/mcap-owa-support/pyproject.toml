@@ -3,6 +3,7 @@ name = "mcap-owa-support"
 dynamic = ["version"]
 description = "OWA support for the Python MCAP library"
 readme = "README.md"
+license = { text = "MIT" }
 requires-python = ">=3.11"
 dependencies = [
     "owa-core",
