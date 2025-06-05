@@ -54,8 +54,6 @@ class ScreenEmitted(OWAMessage):
 
             with VideoReader(self.path, force_close=force_close) as reader:
                 frame = reader.read_frame(pts=pts_seconds)
-                if frame is None:
-                    raise ValueError(f"No frame found at PTS: {self.pts} ns")
 
                 # Convert to RGB first, then to BGRA for consumers
                 rgb_array = frame.to_ndarray(format="rgb24")
