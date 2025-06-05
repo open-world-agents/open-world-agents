@@ -18,6 +18,7 @@ DUPLICATE_TOLERANCE_SECOND: Fraction = Fraction(1, 120)
 PTSUnit = Literal["pts", "sec"]
 
 # Garbage collection counters for PyAV reference cycles
+# Reference: https://github.com/pytorch/vision/blob/428a54c96e82226c0d2d8522e9cbfdca64283da0/torchvision/io/video.py#L53-L55
 _CALLED_TIMES = 0
 _GC_COLLECTION_INTERVAL = 10
 
@@ -142,7 +143,13 @@ def force_close_video_container(video_path: Path) -> None:
 
 
 class VideoWriter:
-    """VideoWriter uses PyAV to write video frames with VFR/CFR support."""
+    """VideoWriter uses PyAV to write video frames with VFR/CFR support.
+
+    References:
+        - https://stackoverflow.com/questions/65213302/how-to-write-variable-frame-rate-videos-in-python
+        - https://github.com/PyAV-Org/PyAV/blob/main/examples/numpy/generate_video_with_pts.py
+        - Design Reference: https://pytorch.org/vision/stable/generated/torchvision.io.read_video.html
+    """
 
     def __init__(
         self, video_path: Union[str, os.PathLike, Path], fps: Optional[float] = None, vfr: bool = False, **kwargs
