@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-01_mcap_to_hf.py
+01_raw_events_to_event_dataset.py
 
-This script processes MCAP files from given directories to produce a Hugging Face DatasetDict with
+This script processes raw event data from MCAP files in given directories to produce a Hugging Face DatasetDict with
 "train" and "test" splits. You can supply separate directories for training and testing; if no test directory is provided,
 a certain percentage of training files will be randomly split into a test set.
 
 Usage (CLI):
-    python 01_mcap_to_hf.py \
+    python 01_raw_events_to_event_dataset.py \
         --train_dir /path/to/train_folder \
         [--test_dir /path/to/test_folder] \
         [--test_percent 0.2] \
@@ -17,7 +17,7 @@ Usage (CLI):
 
     - If --test_dir is omitted, test set is formed by randomly sampling `test_percent` fraction of files in train_dir.
     - --rate topic=Hz can be repeated to apply drop-only downsampling per topic. Defaults to mouse=60, screen=20 if omitted.
-    - Output is saved (optional) as a DatasetDict with "train" and "test" keys.
+    - Output is saved (optional) as an event dataset with "train" and "test" keys.
 """
 
 import json
@@ -73,12 +73,12 @@ def parse_rate_argument(rate_args: List[str]) -> Dict[str, float]:
     return rate_settings
 
 
-def process_file(
+def process_raw_events_file(
     file_path: str,
     rate_settings: Dict[str, float],
 ) -> List[Dict]:
     """
-    Process a single MCAP file to extract events, applying rate-limiting
+    Process a single MCAP file to extract raw events, applying rate-limiting
     (drop-only) per topic.
 
     Args:
@@ -126,9 +126,9 @@ def process_file(
     return events
 
 
-def generate_examples(file_paths: List[str], rate_settings: Dict[str, float], num_workers: int = 4):
+def generate_event_examples(file_paths: List[str], rate_settings: Dict[str, float], num_workers: int = 4):
     """
-    Generator function that yields event examples by processing each MCAP file
+    Generator function that yields event examples by processing each raw events file
     in parallel using multiple processes.
 
     Args:
@@ -141,7 +141,7 @@ def generate_examples(file_paths: List[str], rate_settings: Dict[str, float], nu
     """
     total_files = len(file_paths)
     with ProcessPoolExecutor(max_workers=num_workers) as executor:
-        future_to_path = {executor.submit(process_file, fp, rate_settings): fp for fp in file_paths}
+        future_to_path = {executor.submit(process_raw_events_file, fp, rate_settings): fp for fp in file_paths}
         with tqdm(total=total_files, desc="Processing files", unit="file") as pbar:
             for future in as_completed(future_to_path):
                 fp = future_to_path[future]
@@ -155,14 +155,14 @@ def generate_examples(file_paths: List[str], rate_settings: Dict[str, float], nu
                     pbar.update(1)
 
 
-def create_hf_dataset(
+def create_event_dataset(
     file_paths: List[Path],
     rate_settings: Dict[str, float],
     num_workers: int = 4,
     split: str = "train",
 ) -> HFDataset:
     """
-    Create a Hugging Face Dataset from the given MCAP file paths by streaming
+    Create a Hugging Face event dataset from the given MCAP file paths by streaming
     examples from a generator.
 
     Args:
@@ -184,8 +184,8 @@ def create_hf_dataset(
         }
     )
 
-    hf_dataset = HFDataset.from_generator(
-        generate_examples,
+    event_dataset = HFDataset.from_generator(
+        generate_event_examples,
         gen_kwargs={
             "file_paths": file_path_strs,
             "rate_settings": rate_settings,
@@ -199,9 +199,9 @@ def create_hf_dataset(
         dataset_name="open-world-agents/goat",
         homepage="https://github.com/open-world-agents",
     )
-    hf_dataset.info.update(info_to_update)
+    event_dataset.info.update(info_to_update)
 
-    return hf_dataset
+    return event_dataset
 
 
 @app.command()
@@ -239,11 +239,11 @@ def main(
         4, "--num-workers", "-n", help="Number of parallel worker processes for reading files."
     ),
     output_dir: Optional[Path] = typer.Option(
-        None, "--output-dir", "-o", help="Directory to save the resulting HF DatasetDict via save_to_disk."
+        None, "--output-dir", "-o", help="Directory to save the resulting event dataset via save_to_disk."
     ),
 ):
     """
-    Generate a Hugging Face DatasetDict with 'train' and 'test' splits from MCAP files in specified directories.
+    Generate a Hugging Face event dataset with 'train' and 'test' splits from raw MCAP files in specified directories.
     If --test_dir is omitted, randomly split files in train_dir according to --test_percent.
     """
     # 1. Validate test_percent
@@ -298,9 +298,9 @@ def main(
             typer.echo("Aborting because no output directory was provided.", err=True)
             raise typer.Exit(code=1)
 
-    # 6. Create HF Datasets for train and test
-    train_dataset = create_hf_dataset(train_files, rate_settings, num_workers, split="train")
-    test_dataset = create_hf_dataset(test_files, rate_settings, num_workers, split="test")
+    # 6. Create event datasets for train and test
+    train_dataset = create_event_dataset(train_files, rate_settings, num_workers, split="train")
+    test_dataset = create_event_dataset(test_files, rate_settings, num_workers, split="test")
 
     # 7. Combine into DatasetDict
     dataset_dict = DatasetDict({"train": train_dataset, "test": test_dataset})
