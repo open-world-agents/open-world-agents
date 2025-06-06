@@ -62,9 +62,17 @@ RUNNABLES: Registry[Runnable] = Registry(registry_type=RegistryType.RUNNABLES)
 _MODULES: Registry[OwaEnvInterface] = Registry(registry_type=RegistryType.MODULES)
 
 
-def activate_module(entrypoint):
+def activate_module(entrypoint: str) -> OwaEnvInterface:
     """
-    Activate a module by its entrypoint. Modules are expected to have an `activate` function, following OwaEnvInterface.
+    Activate a module by its entrypoint.
+
+    Modules are expected to have an `activate` function, following OwaEnvInterface.
+
+    Args:
+        entrypoint: The module entrypoint to activate (e.g., "owa.env.desktop")
+
+    Returns:
+        The activated module instance
     """
     if entrypoint in _MODULES:
         return _MODULES[entrypoint]
@@ -73,18 +81,16 @@ def activate_module(entrypoint):
         entrypoint_module: OwaEnvInterface = importlib.import_module(entrypoint)
     except ModuleNotFoundError as e:
         if e.name == entrypoint:
-            print(f"Module '{entrypoint}' not found.")
-        else:
-            raise e
+            raise Exception(f"Module '{entrypoint}' not found. Please ensure it is installed.") from e
+        raise e
 
     try:
         # Check if the module satisfies the OwaEnvInterface
         entrypoint_module.activate()
     except AttributeError as e:
         if e.args[0] == f"module '{entrypoint}' has no attribute 'activate'":
-            print(f"Module '{entrypoint}' has no attribute 'activate'. Please define it.")
-        else:
-            raise e
+            raise Exception(f"Module '{entrypoint}' has no attribute 'activate'. Please define it.") from e
+        raise e
 
     _MODULES.register(entrypoint)(entrypoint_module)
     return entrypoint_module
