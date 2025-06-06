@@ -57,5 +57,10 @@ jobs:
         run: uv sync --inexact --dev # turn on --inexact to prevent removing gst packages
 
       - name: Run pytest (will also pick it up)
-        run: |
-          pytest
+        run: pytest
+      
+      - name: Install owa-env-example
+        run: uv pip install -e projects/owa-env-example
+
+      - name: Run pytest for owa-env-example
+        run: pytest projects/owa-env-example/tests

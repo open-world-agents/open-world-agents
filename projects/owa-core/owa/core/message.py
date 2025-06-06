@@ -69,7 +69,7 @@ class OWAMessage(BaseModel, BaseMessage):
     should inherit from this class.
     """
 
-    model_config = {"extra": "forbid", "validate_assignment": True}
+    model_config = {"extra": "forbid"}
 
     # _type is defined as a class attribute, not a Pydantic field
     # Subclasses should override this
