@@ -1,5 +1,6 @@
 import importlib
 import io
+import warnings
 from typing import Any, Dict, Optional
 
 import orjson
@@ -47,6 +48,9 @@ class DecoderFactory(McapDecoderFactory):
                     self._decoders[schema.id] = decoder
                 except ImportError:
                     # Fall back to dictionary decoding on import error
+                    warnings.warn(
+                        f"Failed to import module {module} for schema {schema.name}. Falling back to dictionary decoding."
+                    )
                     self._decoders[schema.id] = lambda data: EasyDict(orjson.loads(data))
                     return self._decoders[schema.id](message_data)
                 except AttributeError as e:
