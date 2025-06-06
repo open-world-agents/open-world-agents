@@ -1,5 +1,3 @@
-import pytest
-
 from owa.data import load_dataset
 
 
