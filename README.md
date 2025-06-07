@@ -113,17 +113,16 @@ All OWA packages use namespace packaging and are installed in the `owa` namespac
 
 ```python
 import time
-from owa.core.registry import CALLABLES, LISTENERS, activate_module
+from owa.core.registry import CALLABLES, LISTENERS
 
-# Activate the standard environment module
-activate_module("owa.env.std")
+# Components automatically available - no activation needed!
 
 def callback():
-    time_ns = CALLABLES["clock.time_ns"]()
+    time_ns = CALLABLES["std/time_ns"]()
     print(f"Current time: {time_ns}")
 
-# Create a listener for clock/tick event (every 1 second)
-tick = LISTENERS["clock/tick"]().configure(callback=callback, interval=1)
+# Create a listener for std/tick event (every 1 second)
+tick = LISTENERS["std/tick"]().configure(callback=callback, interval=1)
 
 # Start listening
 tick.start()
@@ -135,17 +134,16 @@ tick.stop(), tick.join()
 
 ```python
 import time
-from owa.core.registry import CALLABLES, LISTENERS, activate_module
+from owa.core.registry import CALLABLES, LISTENERS
 
-# Activate gst environment
-activate_module("owa.env.gst")
+# Components automatically available - no activation needed!
 
 def on_screen_update(frame, metrics):
     print(f"📸 New frame: {frame.frame_arr.shape}")
     print(f"⚡ Latency: {metrics.latency*1000:.1f}ms")
 
 # Start real-time screen capture
-screen = LISTENERS["screen"]().configure(
+screen = LISTENERS["gst/screen"]().configure(
     callback=on_screen_update, fps=60, show_cursor=True
 )
 
@@ -253,7 +251,7 @@ For development or contributing to the project, you can install packages in edit
 ## Features
 
 - **🔄 Asynchronous Processing**: Real-time event handling with Callables, Listeners, and Runnables
-- **🧩 Dynamic Plugin System**: Runtime plugin activation and registration
+- **🧩 Zero-Configuration Plugin System**: Automatic plugin discovery via Entry Points
 - **📊 High-Performance Data**: 6x faster screen capture with GStreamer integration
 - **🤗 HuggingFace Ecosystem**: Access growing collection of community OWAMcap datasets
 - **🗂️ OWAMcap Format**: Self-contained, flexible multimodal data containers
