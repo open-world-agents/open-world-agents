@@ -305,7 +305,10 @@ class EntryPointPluginRegistry:
     def import_component(self, module_path: str):
         """Import component from module path."""
         import importlib
-        module_name, component_name = module_path.split(":")
+        try:
+            module_name, component_name = module_path.split(":", 1)
+        except ValueError:
+            raise ValueError(f"Invalid module path format: '{module_path}'. Expected format: 'module_name:component_name'")
         module = importlib.import_module(module_name)
         return getattr(module, component_name)
 
