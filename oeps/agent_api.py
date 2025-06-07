@@ -1,3 +1,5 @@
+# TODO: propose oep for evaluator-agent design.
+
 # ================ Definition of the `agent` API ================================
 
 from owa.evaluate import Evaluator
