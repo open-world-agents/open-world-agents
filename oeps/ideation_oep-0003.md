@@ -301,11 +301,14 @@ class EntryPointPluginRegistry:
         }
         return registries.get(component_type)
 
+
     def import_component(self, module_path: str):
         """Import component from module path."""
+        import importlib
         module_name, component_name = module_path.split(":")
-        module = __import__(module_name, fromlist=[component_name])
+        module = importlib.import_module(module_name)
         return getattr(module, component_name)
+
 
 # Global entry point registry instance
 entry_point_registry = EntryPointPluginRegistry()
