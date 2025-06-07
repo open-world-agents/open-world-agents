@@ -10,6 +10,9 @@ gst-launch-1.0 -e -v videotestsrc is-live=true ! x264enc ! h264parse ! queue ! m
     matroskamux name=mux ! filesink location=output_with_subtitles.mkv
 """
 
+# ruff: noqa: F841, F401
+# ruff: noqa: E402
+# To suppress the warning for E402, waiting for https://github.com/astral-sh/ruff/issues/3711
 import gi
 
 gi.require_version("Gst", "1.0")
