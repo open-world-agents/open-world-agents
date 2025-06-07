@@ -1,3 +1,10 @@
+"""
+GStreamer-based environment plugin for Open World Agents.
+
+This module provides high-performance screen capture and recording capabilities
+using GStreamer pipelines with the entry points-based discovery system.
+"""
+
 import os
 import platform
 import subprocess
@@ -23,10 +30,7 @@ os.environ["GST_PLUGIN_PATH"] = os.path.join(os.path.dirname(os.path.abspath(__f
 from . import pipeline_builder
 from .gst_runner import GstPipelineRunner
 
+__all__ = ["pipeline_builder", "GstPipelineRunner", "plugin_spec"]
 
-def activate():
-    from . import screen  # noqa
-    from . import omnimodal  # noqa
-
-
-__all__ = ["pipeline_builder", "activate", "GstPipelineRunner"]
+# Import plugin_spec from separate module to avoid circular imports
+from .plugin_spec import plugin_spec

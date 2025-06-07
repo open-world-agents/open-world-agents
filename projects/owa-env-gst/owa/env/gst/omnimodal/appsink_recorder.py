@@ -12,8 +12,6 @@ from pathlib import Path
 from gi.repository import Gst
 from loguru import logger
 
-from owa.core.registry import LISTENERS
-
 from ..gst_runner import GstPipelineRunner
 from ..msg import ScreenEmitted
 from ..pipeline_builder import appsink_recorder_pipeline
@@ -22,7 +20,6 @@ if not Gst.is_initialized():
     Gst.init(None)
 
 
-@LISTENERS.register("owa.env.gst/omnimodal/appsink_recorder")
 class AppsinkRecorder(GstPipelineRunner):
     def on_configure(self, filesink_location, *args, callback, **kwargs) -> bool:
         # if filesink_location does not exist, create it and warn the user
