@@ -1,8 +1,9 @@
 # ================ Entry Points-Based Plugin Discovery ================================
 # Implements automatic plugin discovery and registration using Python entry points
 
+import os
 import sys
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 from loguru import logger
 
@@ -15,7 +16,8 @@ if sys.version_info < (3, 10):
 else:
     from importlib.metadata import entry_points
 
-# logger.disable("owa.core.plugin_discovery")
+if not os.getenv("OWA_ENABLE_PLUGIN_DISCOVERY_LOGS", "false").lower() == "true":
+    logger.disable("owa.core.plugin_discovery")
 
 
 class PluginDiscovery:
@@ -152,33 +154,39 @@ class PluginDiscovery:
         logger.info(f"Registered {registered_count} components for plugin '{plugin_name}'")
         return registered_count
 
-    def get_plugin_info(self, plugin_name: Optional[str] = None) -> Dict:
+    def get_plugin_info(self, plugin_name: Optional[Union[str, list[str]]] = None) -> tuple[Dict, Dict]:
         """
         Get information about discovered plugins.
 
         Args:
-            plugin_name: Specific plugin name, or None for all plugins
+            plugin_name: Specific plugin name(s), or None for all plugins.
+                        Can be a single plugin name (str) or a list of plugin names (list[str]).
 
         Returns:
-            Dictionary with plugin information
+            Tuple of (discovered_plugins, failed_plugins) dictionaries
         """
-        if plugin_name:
-            if plugin_name in self.discovered_plugins:
-                return {plugin_name: self.discovered_plugins[plugin_name].model_dump()}
-            elif plugin_name in self.failed_plugins:
-                return {plugin_name: {"error": self.failed_plugins[plugin_name]}}
-            else:
-                return {}
+        discovered = {}
+        failed = {}
+
+        if plugin_name is not None:
+            # Convert single plugin name to list for uniform handling
+            plugin_names = [plugin_name] if isinstance(plugin_name, str) else plugin_name
+
+            for name in plugin_names:
+                if name in self.discovered_plugins:
+                    discovered[name] = self.discovered_plugins[name].model_dump()
+                elif name in self.failed_plugins:
+                    failed[name] = self.failed_plugins[name]
+            return discovered, failed
 
         # Return all plugins
-        result = {}
         for name, spec in self.discovered_plugins.items():
-            result[name] = spec.model_dump()
+            discovered[name] = spec.model_dump()
 
         for name, error in self.failed_plugins.items():
-            result[name] = {"error": error}
+            failed[name] = error
 
-        return result
+        return discovered, failed
 
 
 # Global plugin discovery instance
