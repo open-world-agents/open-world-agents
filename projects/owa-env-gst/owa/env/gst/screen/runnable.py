@@ -1,13 +1,10 @@
 import threading
 from collections import deque
 
-from owa.core.registry import RUNNABLES
-
 from ..msg import ScreenEmitted
 from .listeners import ScreenListener
 
 
-@RUNNABLES.register("screen_capture")
 class ScreenCapture(ScreenListener):
     """
     Screen capture thread using GStreamer pipeline.

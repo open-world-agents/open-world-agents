@@ -2,14 +2,13 @@ To see detailed implementation, skim over [owa_env_gst](https://github.com/open-
 
 ## Examples
 
-- example of `screen` listener
+- example of `gst/screen` listener
     ```python
-    from owa.core.registry import LISTENERS, activate_module
+    from owa.core.registry import LISTENERS
     import cv2
     import numpy as np
 
-    # Activate the GStreamer module
-    activate_module("owa.env.gst")
+    # Components automatically available - no activation needed!
 
     # Define a callback to process frames
     def process_frame(frame):
@@ -18,7 +17,7 @@ To see detailed implementation, skim over [owa_env_gst](https://github.com/open-
         cv2.waitKey(1)
 
     # Create and configure the listener
-    screen = LISTENERS["screen"]().configure(
+    screen = LISTENERS["gst/screen"]().configure(
         callback=process_frame,
         fps=30,
         show_cursor=True
@@ -39,13 +38,13 @@ To see detailed implementation, skim over [owa_env_gst](https://github.com/open-
     screen.configure(callback=process_with_metrics)
     ```
 
-- example of `screen_capture` runnable
+- example of `gst/screen_capture` runnable
     ```python
-    from owa.core.registry import RUNNABLES, activate_module
-    
-    activate_module("owa.env.gst")
-    screen_capture = RUNNABLES["screen_capture"]().configure(fps=60)
-    
+    from owa.core.registry import RUNNABLES
+
+    # Components automatically available - no activation needed!
+    screen_capture = RUNNABLES["gst/screen_capture"]().configure(fps=60)
+
     with screen_capture.session:
         for _ in range(10):
             frame = screen_capture.grab()

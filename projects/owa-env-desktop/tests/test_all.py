@@ -2,19 +2,13 @@ import time
 
 import pytest
 
-from owa.core.registry import CALLABLES, LISTENERS, activate_module
+from owa.core.registry import CALLABLES, LISTENERS
 from owa.env.desktop.msg import WindowInfo
-
-
-# Automatically activate the desktop module for all tests in this session.
-@pytest.fixture(scope="session", autouse=True)
-def activate_owa_desktop():
-    activate_module("owa.env.desktop")
 
 
 def test_screen_capture():
     # Test that the screen capture returns an image with the expected dimensions.
-    capture_func = CALLABLES["screen.capture"]
+    capture_func = CALLABLES["desktop/screen.capture"]
     image = capture_func()
     # Check the color channel count. shape should be (H, W, 3)
     assert image.ndim == 3 and image.shape[2] == 3, "Expected 3-color channel image"
@@ -24,14 +18,14 @@ def test_screen_capture():
 
 def test_get_active_window():
     # Test that the active window function returns a non-None value.
-    active_window = CALLABLES["window.get_active_window"]()
+    active_window = CALLABLES["desktop/window.get_active_window"]()
     assert active_window is not None, "Active window returned None"
 
 
 def test_get_window_by_title():
     # Test retrieving a window by a specific title.
     try:
-        window_instance = CALLABLES["window.get_window_by_title"]("open-world-agents")
+        window_instance = CALLABLES["desktop/window.get_window_by_title"]("open-world-agents")
     except ValueError:
         window_instance = None
 
@@ -43,26 +37,26 @@ def test_get_window_by_title():
         assert isinstance(window_instance, WindowInfo), "Expected window instance to be a WindowInfo"
 
 
-def test_mouse_click(monkeypatch):
+def test_mouse_click():
     # Test that the mouse-click callable can be triggered.
     # Instead of causing a real click, we'll replace it temporarily with a fake.
     captured = []
 
-    def fake_click(button, clicks, **kwargs):
+    def fake_click(button, clicks):
         captured.append((button, clicks))
         return "clicked"
 
     # Save the original function so we can restore it
-    original_click = CALLABLES["mouse.click"]
-    CALLABLES.register("mouse.click")(fake_click)
+    original_click = CALLABLES["desktop/mouse.click"]
+    CALLABLES.register("desktop/mouse.click", fake_click, is_instance=True)
 
     try:
-        result = CALLABLES["mouse.click"]("left", 2)
+        result = CALLABLES["desktop/mouse.click"]("left", 2)
         assert result == "clicked", "Fake click did not return expected result"
         assert captured == [("left", 2)], f"Expected captured click data [('left', 2)], got {captured}"
     finally:
         # Restore the original function no matter what.
-        CALLABLES.register("mouse.click")(original_click)
+        CALLABLES.register("desktop/mouse.click", original_click, is_instance=True)
 
 
 def test_keyboard_listener():
@@ -73,7 +67,7 @@ def test_keyboard_listener():
         received_events.append((event_type, key))
 
     # Create and configure the listener.
-    keyboard_listener = LISTENERS["keyboard"]().configure(callback=on_keyboard_event)
+    keyboard_listener = LISTENERS["desktop/keyboard"]().configure(callback=on_keyboard_event)
     keyboard_listener.start()
 
     # In a real-world scenario, the listener would capture actual events.

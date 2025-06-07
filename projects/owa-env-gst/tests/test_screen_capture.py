@@ -2,13 +2,12 @@ import time
 
 import pytest
 
-from owa.core.registry import RUNNABLES, activate_module
+from owa.core import RUNNABLES
 
 
 @pytest.fixture(scope="module")
 def screen_capture():
-    activate_module("owa.env.gst")
-    capture = RUNNABLES["screen_capture"]().configure(fps=60)
+    capture = RUNNABLES["gst/screen_capture"]().configure(fps=60)
     with capture.session:
         yield capture
 

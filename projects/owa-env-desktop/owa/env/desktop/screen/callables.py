@@ -1,7 +1,3 @@
-from owa.core.registry import CALLABLES
-
-
-@CALLABLES.register("screen.capture")
 def capture_screen():
     """
     Capture the screen.

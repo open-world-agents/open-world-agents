@@ -1,7 +1,5 @@
 from typing import Optional
 
-from owa.core.registry import CALLABLES, activate_module
-
 from ..utils import framerate_float_to_str
 from .element import Element
 
@@ -47,8 +45,10 @@ class ElementFactory:
             "show-border": True,
         }
         if window_name is not None:
-            activate_module("owa.env.desktop")
-            window = CALLABLES["window.get_window_by_title"](window_name)
+            from owa.core import get_component
+
+            get_window_by_title = get_component("callables", namespace="desktop", name="window.get_window_by_title")
+            window = get_window_by_title(window_name)
             properties["window-handle"] = window.hWnd
 
         if monitor_idx is not None:
@@ -78,7 +78,9 @@ class ElementFactory:
             "loopback-mode": "include-process-tree",
         }
         if window_name is not None:
-            activate_module("owa.env.desktop")
-            pid = CALLABLES["window.get_pid_by_title"](window_name)
+            from owa.core import get_component
+
+            get_pid_by_title = get_component("callables", namespace="desktop", name="window.get_pid_by_title")
+            pid = get_pid_by_title(window_name)
             properties["loopback-target-pid"] = pid
         return Element("wasapi2src", properties)

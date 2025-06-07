@@ -24,7 +24,7 @@ Build reactive desktop agents with our asynchronous environment system.
 | Component | Description |
 |-----------|-------------|
 | **[Core Concepts](env/index.md)** | `Callables`, `Listeners`, and `Runnables` for real-time processing |
-| **[Environment Guide](env/guide.md)** | Dynamic plugin activation and registry patterns |
+| **[Environment Guide](env/guide.md)** | Zero-configuration plugin system and CLI tools |
 | **[Custom Plugins](env/custom_plugins.md)** | Create your own environment extensions |
 
 **Built-in Plugins:**  

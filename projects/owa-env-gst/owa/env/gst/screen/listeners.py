@@ -10,8 +10,6 @@ gi.require_version("Gst", "1.0")
 from gi.repository import Gst
 from loguru import logger
 
-from owa.core.registry import LISTENERS
-
 from ..gst_runner import GstPipelineRunner
 from ..msg import ScreenEmitted
 from ..pipeline_builder import screen_capture_pipeline
@@ -102,7 +100,6 @@ def build_screen_callback(callback):
     return screen_callback
 
 
-@LISTENERS.register("screen")
 class ScreenListener(GstPipelineRunner):
     """
     GStreamer-based screen capture listener.

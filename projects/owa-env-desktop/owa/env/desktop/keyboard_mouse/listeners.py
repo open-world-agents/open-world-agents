@@ -5,14 +5,12 @@ from pynput.mouse import Button
 from pynput.mouse import Listener as MouseListener
 
 from owa.core.listener import Listener
-from owa.core.registry import LISTENERS
 
 from ..msg import KeyboardEvent, MouseEvent
 from ..utils import key_to_vk
 from .callables import get_keyboard_state, get_mouse_state
 
 
-@LISTENERS.register("keyboard")
 class KeyboardListenerWrapper(Listener):
     def on_configure(self):
         self.listener = KeyboardListener(on_press=self.on_press, on_release=self.on_release)
@@ -32,7 +30,6 @@ class KeyboardListenerWrapper(Listener):
         self.listener.stop()
 
 
-@LISTENERS.register("mouse")
 class MouseListenerWrapper(Listener):
     def on_configure(self):
         self.listener = MouseListener(on_move=self.on_move, on_click=self.on_click, on_scroll=self.on_scroll)
@@ -53,7 +50,6 @@ class MouseListenerWrapper(Listener):
         self.listener.stop()
 
 
-@LISTENERS.register("keyboard/state")
 class KeyboardStateListener(Listener):
     """
     Calls callback every second with the keyboard state.
@@ -66,7 +62,6 @@ class KeyboardStateListener(Listener):
             time.sleep(1)
 
 
-@LISTENERS.register("mouse/state")
 class MouseStateListener(Listener):
     """
     Calls callback every second with the mouse state.

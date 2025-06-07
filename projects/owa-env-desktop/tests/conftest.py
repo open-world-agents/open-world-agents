@@ -1,5 +1,3 @@
-"""Pytest configuration for owa-env-example tests."""
-
 import pytest
 
 from owa.core.registry import CALLABLES, LISTENERS, RUNNABLES

@@ -10,7 +10,7 @@ from tqdm import tqdm
 from typing_extensions import Annotated
 
 from mcap_owa.highlevel import OWAMcapWriter
-from owa.core.registry import LISTENERS, activate_module
+from owa.core import LISTENERS, get_plugin_discovery
 from owa.core.time import TimeUnits
 
 # TODO: apply https://loguru.readthedocs.io/en/stable/resources/recipes.html#configuring-loguru-to-be-used-by-a-library-or-an-application
@@ -39,9 +39,10 @@ def screen_capture_callback(event):
     enqueue_event(event, topic="screen")
 
 
-def configure_module():
-    activate_module("owa.env.desktop")
-    activate_module("owa.env.gst")
+def check_plugin():
+    plugin_discovery = get_plugin_discovery()
+    success, failed = plugin_discovery.get_plugin_info(["desktop", "gst"])
+    assert len(success) == 2, f"Failed to load plugins: {failed}"
 
 
 USER_INSTRUCTION = """
@@ -65,16 +66,18 @@ def setup_resources(
     height: Optional[int],
     additional_properties: dict,
 ):
-    configure_module()
+    check_plugin()
     # Instantiate all listeners and recorder etc.
-    recorder = LISTENERS["owa.env.gst/omnimodal/appsink_recorder"]()
-    keyboard_listener = LISTENERS["keyboard"]().configure(callback=keyboard_monitor_callback)
-    mouse_listener = LISTENERS["mouse"]().configure(callback=lambda event: enqueue_event(event, topic="mouse"))
-    window_listener = LISTENERS["window"]().configure(callback=lambda event: enqueue_event(event, topic="window"))
-    keyboard_state_listener = LISTENERS["keyboard/state"]().configure(
+    recorder = LISTENERS["gst/omnimodal.appsink_recorder"]()
+    keyboard_listener = LISTENERS["desktop/keyboard"]().configure(callback=keyboard_monitor_callback)
+    mouse_listener = LISTENERS["desktop/mouse"]().configure(callback=lambda event: enqueue_event(event, topic="mouse"))
+    window_listener = LISTENERS["desktop/window"]().configure(
+        callback=lambda event: enqueue_event(event, topic="window")
+    )
+    keyboard_state_listener = LISTENERS["desktop/keyboard_state"]().configure(
         callback=lambda event: enqueue_event(event, topic="keyboard/state")
     )
-    mouse_state_listener = LISTENERS["mouse/state"]().configure(
+    mouse_state_listener = LISTENERS["desktop/mouse_state"]().configure(
         callback=lambda event: enqueue_event(event, topic="mouse/state")
     )
     # Configure recorder
