@@ -1,8 +1,12 @@
-# Automatic Plugin Discovery and Unified Naming for OWA
+# Entry Points-Based Plugin Discovery and Unified Naming for OWA
 
-## Vision: Zero-Configuration Plugin Ecosystem
+## Vision: Standard Python Plugin Ecosystem
 
-Imagine a developer Bob who wants to create an environment plugin "example". Instead of manually calling `activate_module()`, the system automatically discovers and registers all installed plugins. Users can then access components using a unified naming convention and flexible access patterns.
+Imagine a developer Bob who wants to create an environment plugin "example". Following Python's standard plugin architecture using Entry Points (as described in the [official Python packaging guide](https://packaging.python.org/en/latest/guides/creating-and-discovering-plugins/)), Bob declares his plugin in `pyproject.toml`. The system automatically discovers and registers all installed plugins without requiring manual activation.
+
+## Python Standards for Plugin Discovery
+
+We follow the official Python packaging guide's **"Using package metadata"** approach with Entry Points. This is the most robust and standard method for plugin discovery in Python.
 
 ## Unified Naming Convention
 
@@ -14,114 +18,42 @@ All components now use the same `namespace/name` pattern:
 
 This eliminates the inconsistency between `namespace.name` (callables) and `namespace/name` (listeners/runnables).
 
-## Plugin Specification Format
+## Entry Points-Based Plugin Declaration
 
-Bob defines his plugin using a simple YAML specification:
+### Plugin Package Structure (Hybrid Approach)
 
-```yaml
-# plugin.yaml
-namespace: example
-version: 0.1.0
-description: Example environment plugin for Open World Agents
-author: Bob's AI Solutions
-homepage: https://github.com/bob/owa-env-example
+Bob can choose between two structures based on plugin complexity:
 
-# Unified component mapping - all use namespace/name
-components:
-  callables:
-    print: "owa.env.example.callables:enhanced_print"
-    add: "owa.env.example.callables:add_numbers"
-    calculate: "owa.env.example.callables:calculator"
-
-  listeners:
-    events: "owa.env.example.listeners:EventListener"
-    timer: "owa.env.example.listeners:TimerListener"
-
-  runnables:
-    processor: "owa.env.example.runnables:DataProcessor"
-    counter: "owa.env.example.runnables:CounterRunnable"
-
-  messages:
-    event: "owa.env.example.messages:EventMessage"
-```
-
-### Alternative: Python-based Specification
-
-```python
-# plugin.py
-from owa.core.plugin_spec import PluginSpec
-
-plugin_spec = PluginSpec(
-    namespace="example",
-    version="0.1.0",
-    description="Example environment plugin",
-    author="Bob's AI Solutions",
-    components={
-        "callables": {
-            "print": "owa.env.example.callables:enhanced_print",
-            "add": "owa.env.example.callables:add_numbers",
-        },
-        "listeners": {
-            "events": "owa.env.example.listeners:EventListener",
-        },
-        "runnables": {
-            "processor": "owa.env.example.runnables:DataProcessor",
-        },
-        "messages": {
-            "event": "owa.env.example.messages:EventMessage",
-        }
-    }
-)
-```
-
-### Simple Package Structure
-
-Bob's plugin follows the standard OWA plugin structure:
-
+**Option 1: Simple Module (for small plugins)**
 ```
 owa-env-example/
-├── pyproject.toml                    # Package metadata (handled by pip)
-├── README.md                         # Documentation
+├── pyproject.toml                    # Entry point declaration
+├── README.md
+├── owa/
+│   └── env/
+│       └── example.py                # All components in one file
+└── tests/
+    └── test_example.py
+```
+
+**Option 2: Package Structure (for complex plugins)**
+```
+owa-env-example/
+├── pyproject.toml                    # Entry point declaration
+├── README.md
 ├── owa/
 │   └── env/
 │       └── example/
-│           ├── __init__.py           # Plugin specification and activation
-│           ├── plugin.yaml           # Plugin specification (included in package)
+│           ├── __init__.py           # Plugin specification
 │           ├── callables.py          # Callable implementations
 │           ├── listeners.py          # Listener implementations
-│           ├── runnables.py          # Runnable implementations
-│           └── messages.py           # Message type definitions
-└── tests/                            # Tests (optional)
+│           └── runnables.py          # Runnable implementations
+└── tests/
     ├── test_callables.py
-    ├── test_listeners.py
-    └── test_runnables.py
+    └── test_listeners.py
 ```
 
-### Package Configuration for YAML Inclusion
-
-To include `plugin.yaml` in the installed package, Bob needs to configure `pyproject.toml`:
-
-```toml
-# pyproject.toml
-[project]
-name = "owa-env-example"
-version = "0.1.0"
-description = "Example environment plugin for Open World Agents"
-dependencies = ["owa-core"]
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.hatch.build.targets.wheel]
-packages = ["owa"]
-
-# Include YAML files in the package
-[tool.hatch.build.targets.wheel.force-include]
-"owa/env/example/plugin.yaml" = "owa/env/example/plugin.yaml"
-```
-
-Or using setuptools approach:
+### Entry Point Declaration
 
 ```toml
 # pyproject.toml
@@ -135,11 +67,103 @@ dependencies = ["owa-core"]
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools.package-data]
-"owa.env.example" = ["*.yaml", "*.yml"]
+# Entry point declaration - this is the key part!
+[project.entry-points."owa.env.plugins"]
+example = "owa.env.example:plugin_spec"
 ```
 
-## Automatic Plugin Discovery
+### Plugin Specification
+
+```python
+# owa/env/example.py (for simple module) or owa/env/example/__init__.py (for package)
+from owa.core.plugin_spec import PluginSpec
+
+plugin_spec = PluginSpec(
+    namespace="example",
+    version="0.1.0",
+    description="Example environment plugin",
+    author="Bob's AI Solutions",
+    components={
+        "callables": {
+            "print": "owa.env.example:enhanced_print",  # Simple module
+            "add": "owa.env.example:add_numbers",
+        },
+        "listeners": {
+            "events": "owa.env.example:EventListener",
+        },
+        "runnables": {
+            "processor": "owa.env.example:DataProcessor",
+        }
+    }
+)
+
+# Component implementations can be in the same file (simple) or imported from submodules (complex)
+```
+
+### Example Implementation
+
+**Simple Module Approach (owa/env/example.py):**
+```python
+from owa.core.plugin_spec import PluginSpec
+
+# Plugin specification
+plugin_spec = PluginSpec(
+    namespace="example",
+    version="0.1.0",
+    description="Example environment plugin",
+    author="Bob's AI Solutions",
+    components={
+        "callables": {
+            "add": "owa.env.example:add_numbers",
+            "print": "owa.env.example:enhanced_print",
+        },
+        "listeners": {
+            "events": "owa.env.example:EventListener",
+        },
+        "runnables": {
+            "processor": "owa.env.example:DataProcessor",
+        }
+    }
+)
+
+# Component implementations in the same file
+def add_numbers(a: int, b: int) -> int:
+    """Add two numbers."""
+    return a + b
+
+def enhanced_print(message: str, level: str = "info") -> str:
+    """Enhanced printing with formatting."""
+    formatted = f"[{level.upper()}] {message}"
+    print(formatted)
+    return formatted
+
+class EventListener:
+    """Example event listener."""
+    def configure(self, callback=None):
+        self.callback = callback
+        return self
+
+    @property
+    def session(self):
+        return self
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass
+
+class DataProcessor:
+    """Example data processor."""
+    def configure(self, batch_size=100):
+        self.batch_size = batch_size
+        return self
+
+    def start(self):
+        print(f"Starting processor with batch size {self.batch_size}")
+```
+
+## Entry Points-Based Plugin Discovery
 
 ### Zero-Configuration Usage
 
@@ -149,7 +173,7 @@ Users install Bob's plugin using standard pip:
 pip install owa-env-example
 ```
 
-**No `activate_module()` needed!** The system automatically discovers and registers all installed plugins:
+**No `activate_module()` needed!** The system automatically discovers plugins via Entry Points and registers all components:
 
 ```python
 from owa.core.registry import CALLABLES, LISTENERS, RUNNABLES
@@ -192,67 +216,59 @@ result = add_func(5, 3)
 
 # Method 3: Get all components in a namespace
 example_callables = get_component("callables", namespace="example")
-# Returns: {"add": <function>, "print": <function>, "calculate": <function>}
+# Returns: {"add": <function>, "print": <function>}
 
 # Method 4: List available components
 all_callables = list_components("callables")
 example_only = list_components("callables", namespace="example")
 ```
 
-## Automatic Discovery Implementation
+## Entry Points Discovery Implementation
 
 ### Plugin Discovery and Registration
 
-The system automatically discovers and registers plugins on startup:
+The system automatically discovers plugins via Entry Points on startup:
 
 ```python
-# Enhanced discovery and registration system
-import importlib
-import pkgutil
-from pathlib import Path
-from typing import Dict, Optional
+# Entry Points-based discovery and registration system
+import pkg_resources
+from typing import Dict
 from owa.core.plugin_spec import PluginSpec
 from owa.core.registry import CALLABLES, LISTENERS, RUNNABLES
 
-class AutoPluginRegistry:
-    """Automatically discover and register plugins."""
+class EntryPointPluginRegistry:
+    """Discover and register plugins using Entry Points."""
 
     def __init__(self):
         self.discovered_plugins = {}
         self.auto_discover()
 
-    def auto_discover(self, namespace: str = "owa.env"):
-        """Automatically discover and register all plugins."""
-        plugins = self.discover_plugins(namespace)
+    def auto_discover(self):
+        """Automatically discover and register all plugins via Entry Points."""
+        plugins = self.discover_plugins()
 
         for plugin_name, spec in plugins.items():
             self.register_plugin_components(spec)
             self.discovered_plugins[plugin_name] = spec
 
-    def discover_plugins(self, namespace: str = "owa.env") -> Dict[str, PluginSpec]:
-        """Discover all installed plugins in the namespace."""
+    def discover_plugins(self) -> Dict[str, PluginSpec]:
+        """Discover all plugins via Entry Points."""
         discovered = {}
 
-        try:
-            ns_module = importlib.import_module(namespace)
+        # Use pkg_resources to find all entry points in the 'owa.env.plugins' group
+        for entry_point in pkg_resources.iter_entry_points('owa.env.plugins'):
+            try:
+                # Load the plugin specification
+                plugin_spec = entry_point.load()
 
-            # Scan for both package and module plugins
-            for finder, name, ispkg in pkgutil.iter_modules(ns_module.__path__):
-                plugin_path = f"{namespace}.{name}"
+                if isinstance(plugin_spec, PluginSpec):
+                    discovered[entry_point.name] = plugin_spec
+                    print(f"Discovered plugin: {entry_point.name} v{plugin_spec.version}")
+                else:
+                    print(f"Warning: {entry_point.name} does not provide a valid PluginSpec")
 
-                try:
-                    # Try to load plugin specification
-                    spec = self.load_plugin_spec(plugin_path, ispkg)
-                    if spec:
-                        discovered[spec.namespace] = spec
-
-                except Exception as e:
-                    # Log but don't fail discovery for individual plugins
-                    print(f"Warning: Could not load plugin {plugin_path}: {e}")
-
-        except ImportError:
-            # Namespace doesn't exist, return empty
-            pass
+            except Exception as e:
+                print(f"Warning: Could not load plugin {entry_point.name}: {e}")
 
         return discovered
 
@@ -271,6 +287,7 @@ class AutoPluginRegistry:
                     # Import and register the component
                     component = self.import_component(module_path)
                     registry.register(full_name)(component)
+                    print(f"Registered {component_type}: {full_name}")
 
                 except Exception as e:
                     print(f"Warning: Could not register {full_name}: {e}")
@@ -287,64 +304,31 @@ class AutoPluginRegistry:
     def import_component(self, module_path: str):
         """Import component from module path."""
         module_name, component_name = module_path.split(":")
-        module = importlib.import_module(module_name)
+        module = __import__(module_name, fromlist=[component_name])
         return getattr(module, component_name)
 
-    def load_plugin_spec(self, plugin_path: str, is_package: bool) -> Optional[PluginSpec]:
-        """Load plugin specification from various sources."""
-        if is_package:
-            return self.load_package_plugin(plugin_path)
-        else:
-            return self.load_module_plugin(plugin_path)
-
-    def load_package_plugin(self, plugin_path: str) -> Optional[PluginSpec]:
-        """Load plugin from package structure."""
-        try:
-            module = importlib.import_module(plugin_path)
-
-            # Method 1: Try programmatic specification first (most reliable)
-            if hasattr(module, 'plugin_spec'):
-                return module.plugin_spec
-
-            # Method 2: Try YAML specification using importlib.resources
-            try:
-                import importlib.resources as resources
-
-                # Try to read YAML from package resources
-                for spec_file in ["plugin.yaml", "plugin.yml"]:
-                    try:
-                        if resources.is_resource(plugin_path, spec_file):
-                            yaml_content = resources.read_text(plugin_path, spec_file)
-                            return PluginSpec.from_yaml(yaml_content)
-                    except (FileNotFoundError, AttributeError):
-                        continue
-
-            except ImportError:
-                # Fallback for older Python versions
-                if hasattr(module, '__file__') and module.__file__:
-                    module_dir = Path(module.__file__).parent
-                    for spec_file in ["plugin.yaml", "plugin.yml"]:
-                        spec_path = module_dir / spec_file
-                        if spec_path.exists():
-                            return PluginSpec.from_file(spec_path)
-
-        except Exception as e:
-            print(f"Warning: Could not load plugin spec from {plugin_path}: {e}")
-        return None
-
-    def load_module_plugin(self, plugin_path: str) -> Optional[PluginSpec]:
-        """Load plugin from module file."""
-        try:
-            module = importlib.import_module(plugin_path)
-            if hasattr(module, 'plugin_spec'):
-                return module.plugin_spec
-        except Exception:
-            pass
-        return None
-
-# Global auto-registry instance
-auto_registry = AutoPluginRegistry()
+# Global entry point registry instance
+entry_point_registry = EntryPointPluginRegistry()
 ```
+
+### How Entry Points Discovery Works
+
+1. **Plugin Declaration**: Plugins declare themselves in `pyproject.toml`:
+   ```toml
+   [project.entry-points."owa.env.plugins"]
+   example = "owa.env.example:plugin_spec"
+   ```
+
+2. **Automatic Discovery**: On OWA startup, the system scans all installed packages for entry points in the `"owa.env.plugins"` group
+
+3. **Plugin Loading**: For each entry point found:
+   - Load the specified module (`owa.env.example`)
+   - Get the specified object (`plugin_spec`)
+   - Validate it's a `PluginSpec` instance
+
+4. **Component Registration**: Register all components with unified `namespace/name` pattern
+
+5. **Error Handling**: Log warnings for problematic plugins but continue discovery
 
 ## Enhanced Component Access API
 
@@ -507,9 +491,9 @@ $ owl env list callables
 
 ## Implementation Roadmap
 
-### Phase 1: Automatic Discovery and Unified Naming (Next Steps)
+### Phase 1: Entry Points-Based Discovery and Unified Naming (Next Steps)
 - 🔄 Remove `activate_module()` requirement
-- 🔄 Implement automatic plugin discovery on startup
+- 🔄 Implement Entry Points-based plugin discovery on startup
 - 🔄 Unify all component naming to `namespace/name` format
 - 🔄 Add flexible component access API (`get_component`, `list_components`)
 - 🔄 Update CLI tools to support new patterns
@@ -522,10 +506,11 @@ $ owl env list callables
 
 ### Key Design Changes
 
-1. **Zero Configuration**: No more `activate_module()` - plugins work immediately after `pip install`
-2. **Unified Naming**: All components use `namespace/name` pattern consistently
-3. **Flexible Access**: Multiple ways to access components (direct, by namespace, by type)
-4. **Automatic Discovery**: System automatically finds and registers all installed plugins
+1. **Standard Plugin Discovery**: Use Python's standard Entry Points mechanism
+2. **Zero Configuration**: No more `activate_module()` - plugins work immediately after `pip install`
+3. **Unified Naming**: All components use `namespace/name` pattern consistently
+4. **Flexible Access**: Multiple ways to access components (direct, by namespace, by type)
+5. **Robust Discovery**: Entry Points provide reliable, metadata-based plugin discovery
 
 ### Migration from Current System
 
@@ -540,7 +525,7 @@ time_func = CALLABLES["clock.time_ns"]  # dot notation
 listener = LISTENERS["example/events"]  # slash notation
 ```
 
-**After (New System):**
+**After (Entry Points System):**
 ```python
 from owa.core.registry import CALLABLES, LISTENERS
 # No activate_module needed!
@@ -555,55 +540,49 @@ example_callables = get_component("callables", namespace="example")
 
 ### Benefits
 
-1. **Simpler Usage**: No need to remember which plugins to activate
-2. **Consistent Naming**: All components follow the same pattern
-3. **Better Discovery**: Easy to explore what's available
-4. **Flexible Access**: Multiple ways to get components based on use case
-5. **Automatic Registration**: Plugins work immediately after installation
+1. **Python Standard**: Uses official Python packaging standards for plugin discovery
+2. **Simpler Usage**: No need to remember which plugins to activate
+3. **Consistent Naming**: All components follow the same pattern
+4. **Better Discovery**: Easy to explore what's available
+5. **Flexible Access**: Multiple ways to get components based on use case
+6. **Automatic Registration**: Plugins work immediately after installation
+7. **Robust**: Entry Points are more reliable than filesystem scanning
 
 ## Technical Implementation Notes
 
-### YAML File Inclusion in Packages
+### Entry Points vs Other Discovery Methods
 
-For YAML specifications to work, plugin developers need to ensure the YAML files are included in their packages. There are several approaches:
+**Why Entry Points?**
+1. **Python Standard**: Official Python packaging mechanism for plugins
+2. **Metadata-based**: No filesystem scanning required
+3. **Reliable**: Works consistently across different Python environments
+4. **Tool Support**: Supported by pip, setuptools, and other packaging tools
+5. **Performance**: Fast discovery using package metadata
 
-**Option 1: Use Python specification (Recommended)**
-```python
-# owa/env/example/__init__.py
-from owa.core.plugin_spec import PluginSpec
+### Entry Points Discovery Process
 
-plugin_spec = PluginSpec(
-    namespace="example",
-    version="0.1.0",
-    description="Example environment plugin",
-    author="Bob's AI Solutions",
-    components={
-        "callables": {
-            "print": "owa.env.example.callables:enhanced_print",
-            "add": "owa.env.example.callables:add_numbers",
-        },
-        # ... other components
-    }
-)
-```
+1. **Package Installation**: When `pip install owa-env-example` runs:
+   - Entry point metadata is stored in package metadata
+   - No special file inclusion configuration needed
 
-**Option 2: Include YAML in package data**
-```toml
-# pyproject.toml
-[tool.setuptools.package-data]
-"owa.env.example" = ["*.yaml", "*.yml"]
-```
+2. **Plugin Discovery**: On OWA startup:
+   - System calls `pkg_resources.iter_entry_points('owa.env.plugins')`
+   - Finds all packages that declared entry points in this group
+   - Loads each plugin specification via the entry point
 
-**Option 3: Use importlib.resources for YAML access**
-The discovery system uses `importlib.resources` to properly access YAML files from installed packages, which works correctly with pip-installed packages.
+3. **Component Registration**: For each discovered plugin:
+   - Parse plugin specification
+   - Register all components with unified `namespace/name` naming
+   - Handle errors gracefully with warnings
 
-### Plugin Discovery Process
+4. **Ready to Use**: Components are immediately available in registries
 
-1. **Scan namespace**: System scans `owa.env` namespace for installed packages
-2. **Load specifications**: For each package, try to load plugin specification:
-   - First: Look for `plugin_spec` variable in `__init__.py`
-   - Second: Look for `plugin.yaml`/`plugin.yml` using `importlib.resources`
-3. **Register components**: Parse specification and register all components with unified naming
-4. **Handle errors**: Log warnings for problematic plugins but continue discovery
+### Plugin Developer Workflow
 
-This approach ensures that plugins work immediately after `pip install` without requiring manual activation.
+1. **Create plugin code** with `plugin_spec` variable
+2. **Declare entry point** in `pyproject.toml`
+3. **Build and publish** package normally
+4. **Users install** with `pip install`
+5. **Components work immediately** - no activation needed
+
+This approach is simpler, more reliable, and follows Python standards compared to filesystem-based discovery methods.
