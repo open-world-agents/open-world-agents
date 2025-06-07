@@ -18,7 +18,7 @@ def test_screen_capture(temp_output_dir):
     """Test basic recorder functionality with minimal recording time."""
     output_file = temp_output_dir / "output.mkv"
 
-    recorder = RUNNABLES["gst/omnimodal/subprocess_recorder"]()
+    recorder = RUNNABLES["gst/omnimodal.subprocess_recorder"]()
     recorder.configure(filesink_location=str(output_file), window_name="open-world-agents")
 
     try:

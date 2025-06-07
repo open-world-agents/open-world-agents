@@ -67,14 +67,14 @@ def setup_resources(
 ):
     configure_module()
     # Instantiate all listeners and recorder etc.
-    recorder = LISTENERS["owa.env.gst/omnimodal/appsink_recorder"]()
+    recorder = LISTENERS["gst/omnimodal.appsink_recorder"]()
     keyboard_listener = LISTENERS["keyboard"]().configure(callback=keyboard_monitor_callback)
     mouse_listener = LISTENERS["mouse"]().configure(callback=lambda event: enqueue_event(event, topic="mouse"))
     window_listener = LISTENERS["window"]().configure(callback=lambda event: enqueue_event(event, topic="window"))
-    keyboard_state_listener = LISTENERS["keyboard/state"]().configure(
+    keyboard_state_listener = LISTENERS["keyboard_state"]().configure(
         callback=lambda event: enqueue_event(event, topic="keyboard/state")
     )
-    mouse_state_listener = LISTENERS["mouse/state"]().configure(
+    mouse_state_listener = LISTENERS["mouse_state"]().configure(
         callback=lambda event: enqueue_event(event, topic="mouse/state")
     )
     # Configure recorder

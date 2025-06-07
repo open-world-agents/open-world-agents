@@ -1,9 +1,10 @@
 # ================ Plugin Specification System ================================
 # Defines the PluginSpec class for entry points-based plugin discovery
 
+import re
 from typing import Dict, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 
 class PluginSpec(BaseModel):
@@ -12,6 +13,10 @@ class PluginSpec(BaseModel):
 
     This class defines the structure that plugins must follow when declaring
     their components via entry points.
+
+    Validation Rules (OEP-0003):
+    - namespace MUST consist of only letters, numbers, underscores, and hyphens
+    - component names SHOULD consist of only letters, numbers, underscores, and dots
     """
 
     namespace: str
@@ -24,6 +29,41 @@ class PluginSpec(BaseModel):
         "extra": "forbid",  # Don't allow extra fields
         "str_strip_whitespace": True,  # Strip whitespace from strings
     }
+
+    @field_validator("namespace")
+    @classmethod
+    def validate_namespace(cls, v: str) -> str:
+        """
+        Validate namespace according to OEP-0003 rules.
+
+        namespace MUST consist of only letters, numbers, underscores, and hyphens.
+        """
+        if not re.match(r"^[a-zA-Z0-9_-]+$", v):
+            raise ValueError(
+                f"Namespace '{v}' is invalid. "
+                "Namespace MUST consist of only letters, numbers, underscores, and hyphens."
+            )
+        return v
+
+    @field_validator("components")
+    @classmethod
+    def validate_component_names(cls, v: Dict[str, Dict[str, str]]) -> Dict[str, Dict[str, str]]:
+        """
+        Validate component names according to OEP-0003 rules.
+
+        OEP-0003 Naming Convention:
+        - Components consist of letters, numbers, underscores, and dots
+        - Examples: "screen_capture", "mouse.click", "omnimodal.recorder"
+        """
+        for component_type, components in v.items():
+            for name in components.keys():
+                # Check allowed characters: alphanumeric, underscores, dots
+                if not re.match(r"^[a-zA-Z0-9_.]+$", name):
+                    raise ValueError(
+                        f"Component name '{name}' in '{component_type}' is invalid. "
+                        "Component names SHOULD consist of only letters, numbers, underscores, and dots."
+                    )
+        return v
 
     def validate_components(self) -> None:
         """

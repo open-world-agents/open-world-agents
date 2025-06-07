@@ -15,11 +15,11 @@ plugin_spec = PluginSpec(
     components={
         "listeners": {
             "screen": "owa.env.gst.screen.listeners:ScreenListener",
-            "omnimodal/appsink_recorder": "owa.env.gst.omnimodal.appsink_recorder:AppsinkRecorder",
+            "omnimodal.appsink_recorder": "owa.env.gst.omnimodal.appsink_recorder:AppsinkRecorder",
         },
         "runnables": {
             "screen_capture": "owa.env.gst.screen.runnable:ScreenCapture",
-            "omnimodal/subprocess_recorder": "owa.env.gst.omnimodal.subprocess_recorder:SubprocessRecorder",
+            "omnimodal.subprocess_recorder": "owa.env.gst.omnimodal.subprocess_recorder:SubprocessRecorder",
         },
     },
 )
