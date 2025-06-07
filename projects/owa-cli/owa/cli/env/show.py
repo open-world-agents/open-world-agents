@@ -1,11 +1,10 @@
 import sys
-from typing import Optional
 
 import typer
 from rich.console import Console
 from rich.tree import Tree
 
-from owa.core import get_component, list_components
+from owa.core import list_components
 
 console = Console()
 

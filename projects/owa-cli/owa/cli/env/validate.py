@@ -24,7 +24,7 @@ def validate_plugin(
         spec = PluginSpec.from_yaml(spec_file)
 
         # Create validation tree
-        tree = Tree(f"✅ Plugin Specification Valid")
+        tree = Tree("✅ Plugin Specification Valid")
         tree.add(f"├── Namespace: {spec.namespace}")
         tree.add(f"├── Version: {spec.version}")
         tree.add(f"├── Author: {spec.author}")

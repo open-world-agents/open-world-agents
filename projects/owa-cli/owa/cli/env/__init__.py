@@ -1,6 +1,5 @@
 import typer
 from rich.console import Console
-from rich.tree import Tree
 
 from . import list, show, validate
 
