@@ -47,7 +47,9 @@ def get_component(component_type: str, namespace: Optional[str] = None, name: Op
         # Get all components
         all_components = {}
         for component_name in _get_all_component_names(registry):
-            all_components[component_name] = registry[component_name]
+            component = registry.get(component_name)
+            if component is not None:
+                all_components[component_name] = component
         return all_components
 
 
