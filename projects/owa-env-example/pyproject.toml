@@ -1,7 +1,7 @@
 [project]
 name = "owa-env-example"
 version = "0.1.0"
-description = "Example environment plugin for Open World Agents demonstrating OEP-0003"
+description = "Example environment plugin for Open World Agents"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

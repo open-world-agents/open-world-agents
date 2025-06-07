@@ -2,7 +2,7 @@ import time
 
 from owa.core import Listener
 
-# Export time_ns function for OEP-0003 discovery
+# Export time_ns function for plugin discovery
 time_ns = time.time_ns
 
 S_TO_NS = 1_000_000_000

@@ -8,8 +8,8 @@ from .plugin_spec import PluginSpec
 from .registry import CALLABLES, LISTENERS, RUNNABLES, LazyImportRegistry, Registry
 from .runnable import Runnable
 
-# Note: Auto-discovery disabled for now to avoid hanging issues
-# Call auto_discover_plugins() or discover_and_register_plugins() manually
+# Automatically discover and register plugins on import
+auto_discover_plugins()
 
 __all__ = [
     # Core components
@@ -25,7 +25,6 @@ __all__ = [
     "PluginSpec",
     "discover_and_register_plugins",
     "get_plugin_discovery",
-    "auto_discover_plugins",
     # Component access API
     "get_component",
     "get_component_info",
