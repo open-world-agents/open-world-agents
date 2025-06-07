@@ -11,6 +11,9 @@ dependencies = [
     "pydantic>=2.10.6",
 ]
 
+[project.entry-points."owa.env.plugins"]
+std = "owa.env.std:plugin_spec"
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

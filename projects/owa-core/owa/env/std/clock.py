@@ -3,13 +3,23 @@ import time
 from owa.core import Listener
 from owa.core.registry import CALLABLES, LISTENERS
 
-CALLABLES.register("clock.time_ns")(time.time_ns)
+
+# Create a named function for entry points compatibility
+def time_ns_func():
+    """Get current time in nanoseconds."""
+    return time.time_ns()
+
+
+# Register with both old and new naming for backwards compatibility
+CALLABLES.register("clock.time_ns")(time.time_ns)  # Legacy dot notation
+CALLABLES.register("std/time_ns")(time_ns_func)  # New unified notation
 
 S_TO_NS = 1_000_000_000
 
 
 # tick listener
-@LISTENERS.register("clock/tick")
+@LISTENERS.register("clock/tick")  # Legacy slash notation
+@LISTENERS.register("std/tick")  # New unified notation
 class ClockTickListener(Listener):
     def on_configure(self, *, interval=1):
         self.interval = interval * S_TO_NS
