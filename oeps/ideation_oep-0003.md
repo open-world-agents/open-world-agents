@@ -18,6 +18,9 @@ All components now use the same `namespace/name` pattern:
 
 This eliminates the inconsistency between `namespace.name` (callables) and `namespace/name` (listeners/runnables).
 
+namespace MUST be consisted of only letter/number/underscores/hyphens.
+name SHOULD be consisted of only letter/number/underscores/dots.
+
 ## Entry Points-Based Plugin Declaration
 
 ### Plugin Package Structure (Hybrid Approach)
