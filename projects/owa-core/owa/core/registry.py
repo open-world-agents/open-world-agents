@@ -40,8 +40,8 @@ class Registry(Generic[T]):
     def __getitem__(self, name: str) -> T:
         return self._registry[name]
 
-    def get(self, name: str) -> Optional[T]:
-        return self._registry.get(name)
+    def get(self, name: str, default: Optional[T] = None) -> Optional[T]:
+        return self._registry.get(name, default)
 
     def __repr__(self) -> str:
         return repr(self._registry)
@@ -118,6 +118,13 @@ class LazyImportRegistry(Registry[T]):
             return component
 
         raise KeyError(f"'{name}' not found in registry")
+
+    def get(self, name: str, default: Optional[T] = None) -> Optional[T]:
+        """Get a component with lazy loading support, returning default if not found."""
+        try:
+            return self[name]  # Use __getitem__ to trigger lazy loading
+        except KeyError:
+            return default
 
     def __contains__(self, name: str) -> bool:
         """Check if a component is registered."""
