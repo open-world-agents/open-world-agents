@@ -1,15 +1,14 @@
 import time
 
 from owa.core import Listener
-from owa.core.registry import CALLABLES, LISTENERS
 
-CALLABLES.register("clock.time_ns")(time.time_ns)
+# Export time_ns function for OEP-0003 discovery
+time_ns = time.time_ns
 
 S_TO_NS = 1_000_000_000
 
 
 # tick listener
-@LISTENERS.register("clock/tick")
 class ClockTickListener(Listener):
     def on_configure(self, *, interval=1):
         self.interval = interval * S_TO_NS
