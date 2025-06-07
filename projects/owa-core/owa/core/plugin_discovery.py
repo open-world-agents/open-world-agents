@@ -15,6 +15,8 @@ if sys.version_info < (3, 10):
 else:
     from importlib.metadata import entry_points
 
+# logger.disable("owa.core.plugin_discovery")
+
 
 class PluginDiscovery:
     """

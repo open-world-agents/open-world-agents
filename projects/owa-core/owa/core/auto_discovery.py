@@ -19,12 +19,6 @@ def _should_auto_discover() -> bool:
     if os.environ.get("OWA_DISABLE_AUTO_DISCOVERY", "").lower() in ("1", "true", "yes"):
         return False
 
-    # Allow disabling during testing (but enable by default for plugin tests)
-    if os.environ.get("PYTEST_CURRENT_TEST") and os.environ.get(
-        "OWA_ENABLE_AUTO_DISCOVERY_IN_TESTS", ""
-    ).lower() not in ("1", "true", "yes"):
-        return False
-
     return True
 
 

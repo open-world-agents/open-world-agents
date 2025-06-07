@@ -123,6 +123,13 @@ class LazyImportRegistry(Registry[T]):
         """Check if a component is registered."""
         return name in self._registry or name in self._import_paths
 
+    def __repr__(self) -> str:
+        """Show both loaded and unloaded components."""
+        loaded = list(self._registry.keys())
+        unloaded = list(self._import_paths.keys())
+        all_components = sorted(set(loaded + unloaded))
+        return f"LazyImportRegistry({all_components})"
+
 
 # Now specify the types of the registries
 CALLABLES: LazyImportRegistry[CallableCls] = LazyImportRegistry(registry_type=RegistryType.CALLABLES)
