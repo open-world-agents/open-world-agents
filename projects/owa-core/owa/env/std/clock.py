@@ -10,16 +10,14 @@ def time_ns_func():
     return time.time_ns()
 
 
-# Register with both old and new naming for backwards compatibility
-CALLABLES.register("clock.time_ns")(time.time_ns)  # Legacy dot notation
-CALLABLES.register("std/time_ns")(time_ns_func)  # New unified notation
+# Register with unified naming only
+CALLABLES.register("std/time_ns")(time_ns_func)
 
 S_TO_NS = 1_000_000_000
 
 
 # tick listener
-@LISTENERS.register("clock/tick")  # Legacy slash notation
-@LISTENERS.register("std/tick")  # New unified notation
+@LISTENERS.register("std/tick")
 class ClockTickListener(Listener):
     def on_configure(self, *, interval=1):
         self.interval = interval * S_TO_NS

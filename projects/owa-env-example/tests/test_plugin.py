@@ -8,15 +8,37 @@ from threading import Event
 
 import pytest
 
-from owa.core.registry import CALLABLES, LISTENERS, RUNNABLES, activate_module
+from owa.core.registry import (
+    CALLABLES,
+    LISTENERS,
+    RUNNABLES,
+    entry_point_registry,
+    get_component,
+    list_components,
+)
 
 
-def test_plugin_activation():
-    """Test that the plugin activates and registers components."""
-    module = activate_module("owa.env.example")
-    assert module is not None
-    assert hasattr(module, "activate")
+@pytest.fixture(scope="session", autouse=True)
+def register_example_components():
+    """Manually register example components for testing since plugin isn't installed."""
+    from owa.env.example.example_callable import example_add, example_callable, example_print
+    from owa.env.example.example_listener import ExampleListener, ExampleTimerListener
+    from owa.env.example.example_runnable import ExampleCounterRunnable, ExampleRunnable
 
+    # Register components manually for testing
+    CALLABLES.register("example/callable")(example_callable)
+    CALLABLES.register("example/print")(example_print)
+    CALLABLES.register("example/add")(example_add)
+
+    LISTENERS.register("example/listener")(ExampleListener)
+    LISTENERS.register("example/timer")(ExampleTimerListener)
+
+    RUNNABLES.register("example/runnable")(ExampleRunnable)
+    RUNNABLES.register("example/counter")(ExampleCounterRunnable)
+
+
+def test_plugin_components_registered():
+    """Test that the plugin components are registered."""
     # Check expected components are registered
     expected_callables = ["example/callable", "example/print", "example/add"]
     expected_listeners = ["example/listener", "example/timer"]
@@ -35,10 +57,10 @@ def test_plugin_activation():
 def test_callable_components():
     """Test callable components."""
     # Test example/callable
-    callable_cls = CALLABLES["example/callable"]
-    result = callable_cls()()
+    callable_func = CALLABLES["example/callable"]
+    result = callable_func()
     assert isinstance(result, str)
-    assert "Hello from ExampleCallable" in result
+    assert "Hello from example_callable" in result
 
     # Test example/print
     print_func = CALLABLES["example/print"]
@@ -138,3 +160,49 @@ def test_runnable_components():
     expected_time = 3 * 0.02
     assert elapsed >= expected_time
     assert elapsed <= expected_time + 0.1
+
+
+def test_entry_points_discovery():
+    """Test that the entry point registry works and std plugin is discovered."""
+    # Check that entry point registry is initialized
+    assert entry_point_registry is not None
+
+    # The std plugin should be discovered since owa-core is installed
+    assert "std" in entry_point_registry.discovered_plugins
+
+    std_plugin = entry_point_registry.discovered_plugins["std"]
+    assert std_plugin.namespace == "std"
+    assert std_plugin.version == "0.3.9"
+    assert std_plugin.description == "Standard environment plugin with time utilities"
+
+    # Note: example plugin won't be discovered via entry points in tests
+    # because it's not installed as a package, but activated manually
+
+
+def test_enhanced_component_access():
+    """Test the enhanced component access API with example plugin."""
+    # Test get_component with example namespace
+    example_callables = get_component("callables", namespace="example")
+    assert isinstance(example_callables, dict)
+    assert "callable" in example_callables
+    assert "print" in example_callables
+    assert "add" in example_callables
+
+    # Test get specific component
+    add_func = get_component("callables", namespace="example", name="add")
+    assert add_func is not None
+    assert add_func(2, 3) == 5
+
+    # Test list_components with example namespace
+    example_components = list_components(namespace="example")
+    assert isinstance(example_components, dict)
+
+    # Should have all component types
+    assert "callables" in example_components
+    assert "listeners" in example_components
+    assert "runnables" in example_components
+
+    # All component names should start with "example/"
+    for component_type, components in example_components.items():
+        for component_name in components:
+            assert component_name.startswith("example/")

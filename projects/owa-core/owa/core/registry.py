@@ -9,7 +9,6 @@ from typing import Any, Callable, Dict, Generic, List, Optional, TypeVar
 
 from .callable import Callable as CallableCls
 from .listener import Listener as ListenerCls
-from .owa_env_interface import OwaEnvInterface
 from .runnable import Runnable
 
 
@@ -17,7 +16,6 @@ class RegistryType(StrEnum):
     CALLABLES = "callables"
     LISTENERS = "listeners"
     RUNNABLES = "runnables"
-    MODULES = "modules"
     UNKNOWN = "unknown"
 
 
@@ -58,42 +56,7 @@ CALLABLES: Registry[CallableCls] = Registry(registry_type=RegistryType.CALLABLES
 LISTENERS: Registry[ListenerCls] = Registry(registry_type=RegistryType.LISTENERS)
 RUNNABLES: Registry[Runnable] = Registry(registry_type=RegistryType.RUNNABLES)
 
-# _MODULES is managed by the activate_module function
-_MODULES: Registry[OwaEnvInterface] = Registry(registry_type=RegistryType.MODULES)
-
-
-def activate_module(entrypoint: str) -> OwaEnvInterface:
-    """
-    Activate a module by its entrypoint.
-
-    Modules are expected to have an `activate` function, following OwaEnvInterface.
-
-    Args:
-        entrypoint: The module entrypoint to activate (e.g., "owa.env.desktop")
-
-    Returns:
-        The activated module instance
-    """
-    if entrypoint in _MODULES:
-        return _MODULES[entrypoint]
-
-    try:
-        entrypoint_module: OwaEnvInterface = importlib.import_module(entrypoint)
-    except ModuleNotFoundError as e:
-        if e.name == entrypoint:
-            raise Exception(f"Module '{entrypoint}' not found. Please ensure it is installed.") from e
-        raise e
-
-    try:
-        # Check if the module satisfies the OwaEnvInterface
-        entrypoint_module.activate()
-    except AttributeError as e:
-        if e.args[0] == f"module '{entrypoint}' has no attribute 'activate'":
-            raise Exception(f"Module '{entrypoint}' has no attribute 'activate'. Please define it.") from e
-        raise e
-
-    _MODULES.register(entrypoint)(entrypoint_module)
-    return entrypoint_module
+# Legacy activate_module support has been removed in favor of entry points-based discovery
 
 
 # ================ Entry Points-Based Plugin Discovery ========================

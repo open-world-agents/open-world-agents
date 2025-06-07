@@ -24,6 +24,4 @@ plugin_spec = PluginSpec(
 )
 
 
-def activate():
-    """Legacy activation function for backwards compatibility."""
-    from . import clock  # noqa
+# Legacy activate() function removed - plugin now uses entry points discovery

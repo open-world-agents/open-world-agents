@@ -2,25 +2,21 @@ import time
 
 import pytest
 
-from owa.core.registry import CALLABLES, LISTENERS, activate_module
+from owa.core.registry import CALLABLES, LISTENERS
 
-
-# Automatically activate the desktop module for all tests in this session.
-@pytest.fixture(scope="session", autouse=True)
-def activate_owa_desktop():
-    activate_module("owa.env.std")
+# No activation needed - std plugin is auto-discovered via entry points
 
 
 @pytest.mark.timeout(2)
 def test_clock():
-    assert "clock.time_ns" in CALLABLES
-    assert "clock/tick" in LISTENERS
+    assert "std/time_ns" in CALLABLES
+    assert "std/tick" in LISTENERS
 
     def callback():
-        called_time.append(CALLABLES["clock.time_ns"]())
+        called_time.append(CALLABLES["std/time_ns"]())
         print(called_time)
 
-    tick = LISTENERS["clock/tick"]().configure(callback=callback, interval=1)
+    tick = LISTENERS["std/tick"]().configure(callback=callback, interval=1)
 
     called_time = []
     tick.start()

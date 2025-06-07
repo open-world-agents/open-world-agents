@@ -11,10 +11,10 @@ from typing import Callable
 from loguru import logger
 
 from owa.core import Listener
-from owa.core.registry import LISTENERS
+
+# Registry imports removed - components now registered via entry points
 
 
-@LISTENERS.register("example/listener")
 class ExampleListener(Listener):
     """
     Example listener that periodically calls a callback with a message.
@@ -60,7 +60,6 @@ class ExampleListener(Listener):
             stop_event.wait(self.interval)
 
 
-@LISTENERS.register("example/timer")
 class ExampleTimerListener(Listener):
     """
     Example timer listener that calls a callback after a specified delay.

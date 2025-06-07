@@ -57,21 +57,15 @@ def test_plugin_spec_validation():
 
 def test_unified_naming_std_plugin():
     """Test that std plugin components are available with unified naming."""
-    # Test new unified naming
+    # Test unified naming
     assert "std/time_ns" in CALLABLES
     assert "std/tick" in LISTENERS
 
-    # Test backwards compatibility
-    assert "clock.time_ns" in CALLABLES
-    assert "clock/tick" in LISTENERS
+    # Test that components work correctly
+    time_func = CALLABLES["std/time_ns"]
 
-    # Test that both point to working components
-    time_func_new = CALLABLES["std/time_ns"]
-    time_func_old = CALLABLES["clock.time_ns"]
-
-    # Both should return valid timestamps
-    assert isinstance(time_func_new(), int)
-    assert isinstance(time_func_old(), int)
+    # Should return valid timestamps
+    assert isinstance(time_func(), int)
 
 
 def test_get_component_api():
@@ -136,18 +130,7 @@ def test_entry_point_registry_initialization():
     assert std_plugin.version == "0.3.9"
 
 
-def test_backwards_compatibility():
-    """Test that old activation method still works."""
-    from owa.core.registry import activate_module
-
-    # This should work without errors (already activated by entry points)
-    module = activate_module("owa.env.std")
-    assert module is not None
-    assert hasattr(module, "activate")
-
-    # Components should still be available
-    assert "clock.time_ns" in CALLABLES
-    assert "clock/tick" in LISTENERS
+# Backwards compatibility test removed - activate_module no longer supported
 
 
 def test_component_functionality():

@@ -1,12 +1,15 @@
 [project]
 name = "owa-env-example"
 version = "0.1.0"
-description = "Add your description here"
+description = "Example environment plugin for Open World Agents"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "owa-core"
 ]
+
+[project.entry-points."owa.env.plugins"]
+example = "owa.env.example:plugin_spec"
 
 [tool.uv.sources]
 owa-core = { path = "../owa-core", editable = true }

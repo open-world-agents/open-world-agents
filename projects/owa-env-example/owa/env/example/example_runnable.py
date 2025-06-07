@@ -10,10 +10,10 @@ from pathlib import Path
 from threading import Event
 
 from owa.core import Runnable
-from owa.core.registry import RUNNABLES
+
+# Registry imports removed - components now registered via entry points
 
 
-@RUNNABLES.register("example/runnable")
 class ExampleRunnable(Runnable):
     """
     Example runnable that performs a simple background task.
@@ -62,7 +62,6 @@ class ExampleRunnable(Runnable):
                 stop_event.wait(self.interval)
 
 
-@RUNNABLES.register("example/counter")
 class ExampleCounterRunnable(Runnable):
     """
     Example counter runnable that counts up to a maximum value.
