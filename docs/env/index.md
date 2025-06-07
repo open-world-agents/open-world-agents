@@ -10,7 +10,7 @@ Traditional environmental interfaces like [gymnasium.Env](https://gymnasium.fara
 
 - **Asynchronous Event Processing**: Leverage `Callables`, `Listeners`, and `Runnables` for real-time interaction. No more waiting for `env.step()`—the world doesn't stop, and neither should your agent. [Learn more...](guide.md)
 
-- **Zero-Configuration Plugin System**: Plugins are automatically discovered via Entry Points when installed with `pip install`. No manual activation needed—components are immediately available with unified `namespace/name` patterns. [Learn more...](guide.md)
+- **Zero-Configuration Plugin System**: Plugins are automatically discovered via Entry Points when installed with `pip install`. No manual activation needed—components are immediately available with unified `namespace/name` patterns. Includes powerful CLI tools for plugin management. [Learn more...](guide.md)
 
 - **Extensible, Open-Source Design**: Built for the community, by the community. Create plugins using Python packaging standards and share them easily. [Learn more...](custom_plugins.md)
 

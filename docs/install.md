@@ -169,6 +169,7 @@ python -c "from owa.core.registry import CALLABLES; print('✅ Core installed')"
 
 # Test CLI tools
 owl --help
+owl env list  # List discovered plugins
 ocap --help
 
 # Test GStreamer (if installed)

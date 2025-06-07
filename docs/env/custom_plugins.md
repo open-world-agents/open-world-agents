@@ -69,7 +69,37 @@ You can write & contribute your own EnvPlugin using the Entry Points-based syste
 
 7. **Install and Test**: Install your plugin with `pip install -e .` and test that components are automatically available.
 
-8. **Contribute**: Make a PR following the [Contributing Guide](../contributing.md).
+8. **Validate Plugin**: Use the CLI to validate your plugin specification:
+   ```bash
+   # Validate plugin specification (if using YAML format)
+   owl env validate ./plugin.yaml
+
+   # List your plugin to verify it's discovered
+   owl env list --namespace myplugin
+
+   # Show detailed component information
+   owl env show myplugin --components
+   ```
+
+9. **Contribute**: Make a PR following the [Contributing Guide](../contributing.md).
+
+## CLI Tools for Plugin Development
+
+The `owl env` command provides helpful tools for plugin development:
+
+```bash
+# Discover and list your plugin
+$ owl env list --namespace myplugin
+
+# Show detailed component information
+$ owl env show myplugin --components
+
+# List specific component types
+$ owl env list --component-type callables
+
+# Validate plugin specifications (for YAML-based specs)
+$ owl env validate ./plugin.yaml
+```
 
 ## Key Benefits of Entry Points System
 
@@ -78,6 +108,7 @@ You can write & contribute your own EnvPlugin using the Entry Points-based syste
 - **Unified Naming**: All components use `namespace/name` pattern for consistency
 - **Python Standards**: Follows official Python packaging guidelines
 - **Lazy Loading**: Components are imported only when accessed for better performance
+- **CLI Support**: Rich command-line tools for plugin management and validation
 
 
 

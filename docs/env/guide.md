@@ -172,6 +172,69 @@ graph LR;
     EP --> R[Registry]
 ```
 
+## CLI Tools for Plugin Management
+
+The `owl env` command provides powerful tools for managing and exploring plugins:
+
+### Plugin Discovery and Listing
+
+```bash
+# List all discovered plugins
+$ owl env list
+
+# List plugins in specific namespace
+$ owl env list --namespace example
+
+# List specific component types
+$ owl env list --component-type callables
+$ owl env list --component-type listeners
+$ owl env list --component-type runnables
+```
+
+### Plugin Information
+
+```bash
+# Show plugin summary
+$ owl env show example
+
+# Show detailed component information
+$ owl env show example --components
+```
+
+### Plugin Development
+
+```bash
+# Validate plugin specifications
+$ owl env validate ./plugin.yaml
+```
+
+### Example CLI Output
+
+```bash
+$ owl env list
+📦 Discovered Plugins
+├── ├── desktop
+│   ├── ├── Callables: 20
+│   └── ├── Listeners: 5
+├── ├── example
+│   ├── ├── Callables: 3
+│   ├── ├── Listeners: 2
+│   └── └── Runnables: 2
+└── ├── std
+    ├── ├── Callables: 1
+    └── ├── Listeners: 1
+
+$ owl env show example --components
+📦 Plugin: example
+├── ├── Callables: 3
+├── ├── Listeners: 2
+└── └── Runnables: 2
+🔧 Callables
+├── ├── example/callable
+├── ├── example/print
+└── ├── example/add
+```
+
 ## Additional Resources
 
 - For standard module details: [owa-env-std](plugins/std.md)

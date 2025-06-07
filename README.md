@@ -152,6 +152,21 @@ with screen.session:
     time.sleep(5)
 ```
 
+### Plugin Management with CLI
+
+Explore and manage plugins using the `owl env` command:
+
+```bash
+# List all discovered plugins
+$ owl env list
+
+# Show detailed plugin information
+$ owl env show example --components
+
+# List specific component types
+$ owl env list --component-type callables
+```
+
 Powered by the powerful Gstreamer and Windows API, our implementation is **6x** faster than comparatives.
 
 | **Library**        | **Avg. Time per Frame** | **Relative Speed**    |
