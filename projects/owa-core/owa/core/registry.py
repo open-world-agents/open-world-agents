@@ -94,9 +94,12 @@ class LazyImportRegistry(Registry[T]):
             # Parse import path: "module.path:object_name"
             if ":" in import_path:
                 module_path, object_name = import_path.split(":", 1)
-            else:
+            elif "." in import_path:
                 # Fallback: assume last part is the object name
                 module_path, object_name = import_path.rsplit(".", 1)
+            else:
+                raise ValueError(f"Invalid import path format: {import_path}. Must contain ':' or '.'")
+
 
             module = importlib.import_module(module_path)
             component = getattr(module, object_name)
