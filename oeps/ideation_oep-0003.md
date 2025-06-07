@@ -137,30 +137,13 @@ def enhanced_print(message: str, level: str = "info") -> str:
     print(formatted)
     return formatted
 
-class EventListener:
+class EventListener(Listener):
     """Example event listener."""
-    def configure(self, callback=None):
-        self.callback = callback
-        return self
 
-    @property
-    def session(self):
-        return self
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        pass
-
-class DataProcessor:
-    """Example data processor."""
-    def configure(self, batch_size=100):
-        self.batch_size = batch_size
-        return self
-
-    def start(self):
-        print(f"Starting processor with batch size {self.batch_size}")
+class DataProcessor(Runnable):
+    """Example runnable component."""
+    def on_configure(self, batch_size: int):
+        ...
 ```
 
 ## Entry Points-Based Plugin Discovery
@@ -199,28 +182,50 @@ processor = RUNNABLES["example/processor"]().configure(batch_size=100)
 processor.start()
 ```
 
-### Flexible Component Access
+### Flexible Component Access with Lazy Loading
 
-The system provides multiple ways to access components:
+The system provides multiple ways to access components with built-in lazy loading for optimal performance:
 
 ```python
 from owa.core.registry import CALLABLES, get_component, list_components
 
-# Method 1: Direct registry access (unified naming)
-add_func = CALLABLES["example/add"]
+# Method 1: Direct registry access (unified naming) - import happens here
+add_func = CALLABLES["example/add"]  # Module imported when component is retrieved from registry
+result = add_func(5, 3)  # Function already loaded, just execute
+
+# Method 2: Alternative syntax for better ergonomics
+add_func = get_component("callables", "example", "add")  # Import happens during retrieval
 result = add_func(5, 3)
 
-# Method 2: Namespace + name access
-add_func = get_component("callables", namespace="example", name="add")
-result = add_func(5, 3)
-
-# Method 3: Get all components in a namespace
+# Method 3: Get all components in a namespace - imports happen during retrieval
 example_callables = get_component("callables", namespace="example")
-# Returns: {"add": <function>, "print": <function>}
+# Returns: {"add": <function>, "print": <function>} - all imported when retrieved
 
-# Method 4: List available components
-all_callables = list_components("callables")
+# Method 4: List available components (metadata only, no imports)
+all_callables = list_components("callables")  # Only metadata, no imports
 example_only = list_components("callables", namespace="example")
+```
+
+### Lazy Loading Requirements
+
+**All plugin components must be lazy-loaded** to ensure optimal startup performance and memory usage:
+
+1. **Registration Phase**: Only plugin metadata and import paths are stored, no actual imports occur
+2. **Retrieval Phase**: Component modules are imported only when retrieved from registry (`CALLABLES["name"]`)
+3. **Execution Phase**: Already-imported components are executed directly
+4. **Caching**: Once imported during retrieval, components are cached for subsequent retrievals
+5. **Error Handling**: Import errors occur during retrieval, allowing graceful handling and partial plugin functionality
+
+### Interface Design
+
+New design supports two primary access patterns:
+
+```python
+# Pattern 1: Dictionary-style access
+result = CALLABLES["example/add"](5, 3)
+
+# Pattern 2: Function-based access
+result = get_component("callables", "example", "add")(5, 3)
 ```
 
 ## Entry Points Discovery Implementation
@@ -230,94 +235,16 @@ example_only = list_components("callables", namespace="example")
 The system automatically discovers plugins via Entry Points on startup:
 
 ```python
-# Entry Points-based discovery and registration system
-import pkg_resources
-from typing import Dict
-from owa.core.plugin_spec import PluginSpec
-from owa.core.registry import CALLABLES, LISTENERS, RUNNABLES
+import sys
+if sys.version_info < (3, 10):
+    from importlib_metadata import entry_points
+else:
+    from importlib.metadata import entry_points
 
-class EntryPointPluginRegistry:
-    """Discover and register plugins using Entry Points."""
-
-    def __init__(self):
-        self.discovered_plugins = {}
-        self.auto_discover()
-
-    def auto_discover(self):
-        """Automatically discover and register all plugins via Entry Points."""
-        plugins = self.discover_plugins()
-
-        for plugin_name, spec in plugins.items():
-            self.register_plugin_components(spec)
-            self.discovered_plugins[plugin_name] = spec
-
-    def discover_plugins(self) -> Dict[str, PluginSpec]:
-        """Discover all plugins via Entry Points."""
-        discovered = {}
-
-        # Use pkg_resources to find all entry points in the 'owa.env.plugins' group
-        for entry_point in pkg_resources.iter_entry_points('owa.env.plugins'):
-            try:
-                # Load the plugin specification
-                plugin_spec = entry_point.load()
-
-                if isinstance(plugin_spec, PluginSpec):
-                    discovered[entry_point.name] = plugin_spec
-                    print(f"Discovered plugin: {entry_point.name} v{plugin_spec.version}")
-                else:
-                    print(f"Warning: {entry_point.name} does not provide a valid PluginSpec")
-
-            except Exception as e:
-                print(f"Warning: Could not load plugin {entry_point.name}: {e}")
-
-        return discovered
-
-    def register_plugin_components(self, spec: PluginSpec):
-        """Register all components from a plugin specification."""
-        for component_type, components in spec.components.items():
-            registry = self.get_registry(component_type)
-            if not registry:
-                continue
-
-            for name, module_path in components.items():
-                # Use unified namespace/name pattern
-                full_name = f"{spec.namespace}/{name}"
-
-                try:
-                    # Import and register the component
-                    component = self.import_component(module_path)
-                    registry.register(full_name)(component)
-                    print(f"Registered {component_type}: {full_name}")
-
-                except Exception as e:
-                    print(f"Warning: Could not register {full_name}: {e}")
-
-    def get_registry(self, component_type: str):
-        """Get the appropriate registry for component type."""
-        registries = {
-            "callables": CALLABLES,
-            "listeners": LISTENERS,
-            "runnables": RUNNABLES,
-        }
-        return registries.get(component_type)
-
-
-    def import_component(self, module_path: str):
-        """Import component from module path."""
-        import importlib
-        try:
-            module_name, component_name = module_path.split(":", 1)
-        except ValueError:
-            raise ValueError(f"Invalid module path format: '{module_path}'. Expected format: 'module_name:component_name'")
-        module = importlib.import_module(module_name)
-        return getattr(module, component_name)
-
-
-# Global entry point registry instance
-entry_point_registry = EntryPointPluginRegistry()
+discovered_plugins = entry_points(group='owa.env.plugins')
 ```
 
-### How Entry Points Discovery Works
+### How Entry Points Discovery Works with Lazy Loading
 
 1. **Plugin Declaration**: Plugins declare themselves in `pyproject.toml`:
    ```toml
@@ -327,14 +254,23 @@ entry_point_registry = EntryPointPluginRegistry()
 
 2. **Automatic Discovery**: On OWA startup, the system scans all installed packages for entry points in the `"owa.env.plugins"` group
 
-3. **Plugin Loading**: For each entry point found:
+3. **Plugin Metadata Loading**: For each entry point found:
    - Load the specified module (`owa.env.example`)
    - Get the specified object (`plugin_spec`)
    - Validate it's a `PluginSpec` instance
 
-4. **Component Registration**: Register all components with unified `namespace/name` pattern
+4. **Component Registration (Lazy)**: Register component metadata only:
+   - Store import paths (`"owa.env.example:add_numbers"`) in registry
+   - **No actual imports occur** - components remain unloaded
+   - Use unified `namespace/name` pattern for registration
 
-5. **Error Handling**: Log warnings for problematic plugins but continue discovery
+5. **Component Retrieval (Lazy Loading)**: When `CALLABLES["example/add"]` is called:
+   - Check if component is already loaded (cache hit)
+   - If not loaded, import the module and get the component
+   - Cache the imported component for future use
+   - Return the loaded component
+
+6. **Error Handling**: Import errors are deferred to retrieval time, allowing partial plugin functionality
 
 ## Enhanced Component Access API
 
@@ -497,26 +433,34 @@ $ owl env list callables
 
 ## Implementation Roadmap
 
-### Phase 1: Entry Points-Based Discovery and Unified Naming (Next Steps)
+### Phase 1: Entry Points-Based Discovery with Lazy Loading (Next Steps)
 - 🔄 Remove `activate_module()` requirement
 - 🔄 Implement Entry Points-based plugin discovery on startup
+- 🔄 **Implement lazy loading for all plugin components**
 - 🔄 Unify all component naming to `namespace/name` format
-- 🔄 Add flexible component access API (`get_component`, `list_components`)
+- 🔄 Remove `@CALLABLES.register()` and similar decorators from all plugins
+- 🔄 **Add enhanced component access API with lazy loading support**
+- 🔄 **Implement low-level lazy loading control interface**
 - 🔄 Update CLI tools to support new patterns
 
-### Phase 2: Enhanced Developer Experience (Future)
+### Phase 2: Interface Enhancement and Developer Experience
+- 📋 **Evaluate and implement improved component access interfaces**
+- 📋 **Add type safety and IDE support for component access**
 - 📋 Plugin template generator (`owl env create`)
 - 📋 Plugin validation tools
 - 📋 Better documentation and examples
 - 📋 Migration tools for existing plugins
+- 📋 **Performance monitoring and optimization tools for lazy loading**
 
 ### Key Design Changes
 
 1. **Standard Plugin Discovery**: Use Python's standard Entry Points mechanism
 2. **Zero Configuration**: No more `activate_module()` - plugins work immediately after `pip install`
 3. **Unified Naming**: All components use `namespace/name` pattern consistently
-4. **Flexible Access**: Multiple ways to access components (direct, by namespace, by type)
-5. **Robust Discovery**: Entry Points provide reliable, metadata-based plugin discovery
+4. **Lazy Loading**: Components are imported only when retrieved from registry, not during registration
+5. **Enhanced Access Patterns**: Multiple interface options including `CALLABLES["a/b"]` and `get_component("callables", "a", "b")`
+6. **Flexible Access**: Multiple ways to access components (direct, by namespace, by type)
+7. **Robust Discovery**: Entry Points provide reliable, metadata-based plugin discovery
 
 ### Migration from Current System
 
@@ -549,10 +493,13 @@ example_callables = get_component("callables", namespace="example")
 1. **Python Standard**: Uses official Python packaging standards for plugin discovery
 2. **Simpler Usage**: No need to remember which plugins to activate
 3. **Consistent Naming**: All components follow the same pattern
-4. **Better Discovery**: Easy to explore what's available
-5. **Flexible Access**: Multiple ways to get components based on use case
-6. **Automatic Registration**: Plugins work immediately after installation
-7. **Robust**: Entry Points are more reliable than filesystem scanning
+4. **Optimal Performance**: Lazy loading ensures fast startup and minimal memory usage
+5. **Better Discovery**: Easy to explore what's available without loading everything
+6. **Flexible Access**: Multiple interface options and ways to get components based on use case
+7. **Advanced Control**: Low-level lazy loading control for performance optimization
+8. **Automatic Registration**: Plugins work immediately after installation
+9. **Robust**: Entry Points are more reliable than filesystem scanning
+10. **Scalable**: System performance doesn't degrade with large numbers of installed plugins
 
 ## Technical Implementation Notes
 
@@ -565,7 +512,7 @@ example_callables = get_component("callables", namespace="example")
 4. **Tool Support**: Supported by pip, setuptools, and other packaging tools
 5. **Performance**: Fast discovery using package metadata
 
-### Entry Points Discovery Process
+### Entry Points Discovery Process with Lazy Loading
 
 1. **Package Installation**: When `pip install owa-env-example` runs:
    - Entry point metadata is stored in package metadata
@@ -576,12 +523,18 @@ example_callables = get_component("callables", namespace="example")
    - Finds all packages that declared entry points in this group
    - Loads each plugin specification via the entry point
 
-3. **Component Registration**: For each discovered plugin:
+3. **Component Registration (Lazy)**: For each discovered plugin:
    - Parse plugin specification
-   - Register all components with unified `namespace/name` naming
+   - Register component metadata only (import paths) with unified `namespace/name` naming
+   - **No actual component imports occur** - components remain unloaded
    - Handle errors gracefully with warnings
 
-4. **Ready to Use**: Components are immediately available in registries
+4. **Component Retrieval (Lazy Loading)**: When components are accessed:
+   - `CALLABLES["example/add"]` triggers import of the component
+   - Component is cached for subsequent access
+   - Import errors are handled at retrieval time
+
+5. **Ready to Use**: Component metadata is immediately available, actual components loaded on demand
 
 ### Plugin Developer Workflow
 
