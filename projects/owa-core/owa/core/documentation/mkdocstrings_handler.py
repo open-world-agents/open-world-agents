@@ -6,7 +6,7 @@ OWA's plugin structure and can generate documentation automatically.
 """
 
 import inspect
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 try:
     from mkdocstrings import BaseHandler
