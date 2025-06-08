@@ -12,6 +12,7 @@ jobs:
 
     env:
       UV_PROJECT_ENVIRONMENT: "C:\\Users\\runneradmin\\miniconda3\\envs\\owa"
+      VIRTUAL_ENV: "C:\\Users\\runneradmin\\miniconda3\\envs\\owa"
       # below line is legacy line, but I'm keeping it here for reference to know where the packages are installed
       # GST_PLUGIN_PATH: "D:\\a\\open-world-agents\\open-world-agents\\projects\\owa-env-gst\\gst-plugins"
     
