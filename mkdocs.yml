@@ -40,6 +40,10 @@ plugins:
           options:
             docstring_style: google
             show_source: true
+        envplugin:
+          options:
+            show_plugin_metadata: true
+            include_source_links: true
   - git-revision-date-localized:
       type: datetime
   - mermaid2
@@ -83,7 +87,10 @@ nav:
     - env/index.md
     - env/guide.md
     - Custom EnvPlugins: env/custom_plugins.md
+    - Documentation Validation: env/documentation_validation.md
+    - Documentation Quick Reference: env/documentation_quick_reference.md
     - Lists of EnvPlugins:
+      - env/plugins/example.md
       - Standard Environment: env/plugins/std.md
       - Desktop Environment: env/plugins/desktop_env.md
       - Gstreamer Environment: env/plugins/gstreamer_env.md
