@@ -44,13 +44,13 @@ owl env validate-docs --strict --min-coverage 95
 ### Plugin Overview
 ```markdown
 ::: example
-    handler: envplugin
+    handler: owa
 ```
 
 ### Individual Component
 ```markdown
 ::: example/mouse.click
-    handler: envplugin
+    handler: owa
     options:
       show_signature: true
       show_examples: true
@@ -62,7 +62,7 @@ owl env validate-docs --strict --min-coverage 95
 plugins:
   - mkdocstrings:
       handlers:
-        envplugin:
+        owa:
           options:
             show_plugin_metadata: true
             include_source_links: true

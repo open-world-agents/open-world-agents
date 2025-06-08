@@ -1,2 +1,2 @@
 ::: example
-    handler: envplugin
+    handler: owa

@@ -19,7 +19,7 @@ except ImportError:
     class BaseHandler:
         """Dummy base handler when mkdocstrings is not available."""
 
-        name = "envplugin"
+        name = "owa"
         domain = "py"
         fallback_theme = "material"
 
@@ -31,7 +31,7 @@ from ..plugin_discovery import get_plugin_discovery
 from ..registry import CALLABLES, LISTENERS, RUNNABLES
 
 
-class EnvPluginHandler(BaseHandler):
+class OWAHandler(BaseHandler):
     """
     Minimal mkdocstrings handler for OWA EnvPlugin components.
 
@@ -39,7 +39,7 @@ class EnvPluginHandler(BaseHandler):
     using the familiar mkdocstrings syntax.
     """
 
-    name = "envplugin"
+    name = "owa"
     domain = "py"
     fallback_theme = "material"
 
@@ -250,12 +250,12 @@ class EnvPluginHandler(BaseHandler):
     def _render_plugin(self, data: dict, options: dict) -> str:
         """Render plugin overview."""
         html = f"""
-        <div class="envplugin-plugin">
+        <div class="owa-plugin">
             <h2>Plugin: {data["namespace"]}</h2>
             <p><strong>Version:</strong> {data["version"]}</p>
             <p><strong>Description:</strong> {data["description"]}</p>
             {f"<p><strong>Author:</strong> {data['author']}</p>" if data.get("author") else ""}
-            
+
             <h3>Components</h3>
         """
 
@@ -276,17 +276,17 @@ class EnvPluginHandler(BaseHandler):
     def _render_component(self, data: dict, options: dict) -> str:
         """Render individual component."""
         html = f"""
-        <div class="envplugin-component">
+        <div class="owa-component">
             <h2>{data["full_name"]}</h2>
             <p><strong>Type:</strong> {data["component_type"]}</p>
             {f"<p><strong>Signature:</strong> <code>{data['signature']}</code></p>" if data.get("signature") else ""}
-            
+
             {f"<div class='docstring'>{data['docstring']}</div>" if data.get("docstring") else "<p>No documentation available.</p>"}
         </div>
         """
         return html
 
 
-def get_handler(**kwargs) -> EnvPluginHandler:
+def get_handler(**kwargs) -> OWAHandler:
     """Entry point for mkdocstrings handler registration."""
-    return EnvPluginHandler(**kwargs)
+    return OWAHandler(**kwargs)
