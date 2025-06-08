@@ -83,7 +83,7 @@ def _show_overview_stats(all_data: List[Dict], detailed: bool):
     namespace_counts = Counter(item["namespace"] for item in all_data)
     
     # Create overview tree
-    tree = Tree(f"📊 Plugin Ecosystem Statistics")
+    tree = Tree("📊 Plugin Ecosystem Statistics")
     
     # Overall counts
     overview = tree.add("📈 Overview")
@@ -292,7 +292,7 @@ def health_check():
                 console.print(f"  • {warning}")
     
     # Summary
-    console.print(f"\n📊 [bold]Summary:[/bold]")
+    console.print("\n📊 [bold]Summary:[/bold]")
     console.print(f"  • Total components: {total_components}")
     console.print(f"  • Loaded components: {loaded_components}")
     console.print(f"  • Namespaces: {len(namespace_counts)}")
