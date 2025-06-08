@@ -3,7 +3,7 @@
 
 from typing import Any, Dict, List, Optional
 
-from .registry import CALLABLES, LISTENERS, RUNNABLES, LazyImportRegistry
+from .registry import CALLABLES, LISTENERS, RUNNABLES, MESSAGES, LazyImportRegistry
 
 
 def get_component(component_type: str, namespace: Optional[str] = None, name: Optional[str] = None) -> Any:
@@ -16,7 +16,7 @@ def get_component(component_type: str, namespace: Optional[str] = None, name: Op
     3. get_component("callables")  # Returns all callables
 
     Args:
-        component_type: Type of component ("callables", "listeners", "runnables")
+        component_type: Type of component ("callables", "listeners", "runnables", "messages")
         namespace: Optional namespace filter
         name: Optional specific component name
 
@@ -95,6 +95,7 @@ def list_components(component_type: Optional[str] = None, namespace: Optional[st
             "callables": CALLABLES,
             "listeners": LISTENERS,
             "runnables": RUNNABLES,
+            "messages": MESSAGES,
         }
 
     result = {}
@@ -128,6 +129,7 @@ def get_registry(component_type: str) -> Optional[LazyImportRegistry]:
         "callables": CALLABLES,
         "listeners": LISTENERS,
         "runnables": RUNNABLES,
+        "messages": MESSAGES,
     }
     return registries.get(component_type)
 

@@ -20,19 +20,24 @@ def show_plugin(
     details: bool = typer.Option(False, "--details", "-d", help="Show import paths and load status"),
     table_format: bool = typer.Option(False, "--table", help="Display components in table format"),
     inspect: Optional[str] = typer.Option(None, "--inspect", "-i", help="Inspect specific component (show docstring/signature)"),
+    messages: bool = typer.Option(False, "--messages", "-m", help="Show message types"),
 ):
     """Show detailed information about a plugin with enhanced filtering and inspection options."""
 
     # Validate component type
-    if component_type and component_type not in ["callables", "listeners", "runnables"]:
+    valid_types = ["callables", "listeners", "runnables", "messages"]
+    if component_type and component_type not in valid_types:
         console.print(
-            f"[red]Error: Invalid component type '{component_type}'. Must be one of: callables, listeners, runnables[/red]"
+            f"[red]Error: Invalid component type '{component_type}'. Must be one of: {', '.join(valid_types)}[/red]"
         )
         sys.exit(1)
 
     # Get all components for the namespace
     plugin_components = {}
-    comp_types_to_check = [component_type] if component_type else ["callables", "listeners", "runnables"]
+    default_types = ["callables", "listeners", "runnables"]
+    if messages:
+        default_types.append("messages")
+    comp_types_to_check = [component_type] if component_type else default_types
 
     for comp_type in comp_types_to_check:
         comps = list_components(comp_type, namespace=namespace)
@@ -75,7 +80,7 @@ def _display_plugin_overview(namespace: str, components: dict):
     tree = Tree(f"📦 Plugin: {namespace} ({total_count} components)")
 
     # Add component counts with icons
-    icons = {"callables": "📞", "listeners": "👂", "runnables": "🏃"}
+    icons = {"callables": "📞", "listeners": "👂", "runnables": "🏃", "messages": "📨"}
     for comp_type, comps in components.items():
         icon = icons.get(comp_type, "🔧")
         tree.add(f"{icon} {comp_type.title()}: {len(comps)}")
@@ -85,7 +90,7 @@ def _display_plugin_overview(namespace: str, components: dict):
 
 def _display_components_tree_detailed(components: dict, details: bool):
     """Display components in detailed tree format."""
-    icons = {"callables": "📞", "listeners": "👂", "runnables": "🏃"}
+    icons = {"callables": "📞", "listeners": "👂", "runnables": "🏃", "messages": "📨"}
 
     for comp_type, comps in components.items():
         icon = icons.get(comp_type, "🔧")
@@ -139,7 +144,7 @@ def _inspect_component(namespace: str, component_name: str):
     component = None
     comp_type_found = None
 
-    for comp_type in ["callables", "listeners", "runnables"]:
+    for comp_type in ["callables", "listeners", "runnables", "messages"]:
         try:
             component = get_component(comp_type, namespace=namespace, name=component_name)
             comp_type_found = comp_type

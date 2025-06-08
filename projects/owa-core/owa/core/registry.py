@@ -16,6 +16,7 @@ class RegistryType(StrEnum):
     CALLABLES = "callables"
     LISTENERS = "listeners"
     RUNNABLES = "runnables"
+    MESSAGES = "messages"
     UNKNOWN = "unknown"
 
 
@@ -145,3 +146,10 @@ class LazyImportRegistry(Registry[T]):
 CALLABLES: LazyImportRegistry[CallableCls] = LazyImportRegistry(registry_type=RegistryType.CALLABLES)
 LISTENERS: LazyImportRegistry[ListenerCls] = LazyImportRegistry(registry_type=RegistryType.LISTENERS)
 RUNNABLES: LazyImportRegistry[Runnable] = LazyImportRegistry(registry_type=RegistryType.RUNNABLES)
+
+# Global registry for message types (OEP-0005)
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .message import BaseMessage
+
+MESSAGES: LazyImportRegistry["BaseMessage"] = LazyImportRegistry(registry_type=RegistryType.MESSAGES)

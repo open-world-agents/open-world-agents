@@ -19,6 +19,11 @@ class PluginSpec(BaseModel):
     Validation Rules (OEP-0003):
     - namespace MUST consist of only letters, numbers, underscores, and hyphens
     - component names SHOULD consist of only letters, numbers, underscores, and dots
+
+    OEP-0005 Extensions:
+    - messages field for registering custom OWAMessage types
+    - message names MUST follow PascalCase convention
+    - message types MUST follow namespace/MessageType pattern
     """
 
     namespace: str
@@ -26,6 +31,7 @@ class PluginSpec(BaseModel):
     description: str
     author: Optional[str] = None
     components: Dict[str, Dict[str, str]]
+    messages: Optional[Dict[str, str]] = None
 
     model_config = {
         "extra": "forbid",  # Don't allow extra fields
@@ -67,6 +73,28 @@ class PluginSpec(BaseModel):
                     )
         return v
 
+    @field_validator("messages")
+    @classmethod
+    def validate_message_names(cls, v: Optional[Dict[str, str]]) -> Optional[Dict[str, str]]:
+        """
+        Validate message names according to OEP-0005 rules.
+
+        OEP-0005 Naming Convention:
+        - Message names MUST follow PascalCase convention
+        - Examples: "SensorData", "KeyboardEvent", "ProcessingResult"
+        """
+        if v is None:
+            return v
+
+        for name in v.keys():
+            # Check PascalCase: starts with uppercase letter, followed by alphanumeric
+            if not re.match(r"^[A-Z][a-zA-Z0-9]*$", name):
+                raise ValueError(
+                    f"Message name '{name}' is invalid. "
+                    "Message names MUST follow PascalCase convention (e.g., 'SensorData', 'KeyboardEvent')."
+                )
+        return v
+
     def validate_components(self) -> None:
         """
         Validate that component types are supported.
@@ -78,6 +106,23 @@ class PluginSpec(BaseModel):
         for component_type in self.components.keys():
             if component_type not in supported_types:
                 raise ValueError(f"Unsupported component type '{component_type}'. Supported types: {supported_types}")
+
+    def validate_message_types(self) -> None:
+        """
+        Validate that message types follow the namespace/MessageType pattern.
+
+        OEP-0005 Requirements:
+        - Message _type must follow namespace/MessageType pattern
+        - Namespace must match plugin namespace
+        - MessageType must be PascalCase
+
+        Note: This validation requires importing the actual message classes,
+        so it's performed during plugin registration, not during PluginSpec creation.
+        """
+        # This method is a placeholder for documentation purposes.
+        # Actual validation happens in the plugin discovery system
+        # when message classes are imported and registered.
+        pass
 
     def get_component_names(self, component_type: str) -> list[str]:
         """
@@ -109,6 +154,33 @@ class PluginSpec(BaseModel):
             return None
 
         return self.components[component_type].get(name)
+
+    def get_message_names(self) -> list[str]:
+        """
+        Get all message names for this plugin.
+
+        Returns:
+            List of message names with namespace prefix (namespace/MessageType)
+        """
+        if not self.messages:
+            return []
+
+        return [f"{self.namespace}/{name}" for name in self.messages.keys()]
+
+    def get_message_import_path(self, name: str) -> Optional[str]:
+        """
+        Get the import path for a specific message type.
+
+        Args:
+            name: Name of message type (without namespace)
+
+        Returns:
+            Import path or None if not found
+        """
+        if not self.messages:
+            return None
+
+        return self.messages.get(name)
 
     @classmethod
     def from_yaml(cls, yaml_path: Union[str, Path]) -> "PluginSpec":
