@@ -66,13 +66,15 @@ def validate_docs(
             console.print("[yellow]⚠️  No plugins found to validate[/yellow]")
             sys.exit(0)
 
-        # Calculate overall statistics (excluding skipped components)
-        total_components = sum(r.total for r in results.values())
-        documented_components = sum(r.documented for r in results.values())
-        good_quality_components = sum(r.good_quality for r in results.values())
-
-        overall_coverage = documented_components / total_components if total_components > 0 else 0
-        overall_quality = good_quality_components / total_components if total_components > 0 else 0
+        # Calculate overall statistics as minimum per-plugin results
+        if results:
+            min_coverage = min(r.coverage for r in results.values())
+            min_quality = min(r.quality_ratio for r in results.values())
+            min_coverage_plugin = min(results.items(), key=lambda x: x[1].coverage)[0]
+            min_quality_plugin = min(results.items(), key=lambda x: x[1].quality_ratio)[0]
+        else:
+            min_coverage = min_quality = 0
+            min_coverage_plugin = min_quality_plugin = "none"
 
         # Apply strict mode adjustments
         if strict:
@@ -82,9 +84,9 @@ def validate_docs(
             min_quality_pass = max(min_quality_pass, 0.8)
             min_quality_fail = max(min_quality_fail, 0.6)
 
-        # Check thresholds using the same logic as per-plugin validation
-        coverage_pass = overall_coverage >= min_coverage_pass
-        quality_pass = overall_quality >= min_quality_pass
+        # Check thresholds using minimum per-plugin results
+        coverage_pass = min_coverage >= min_coverage_pass
+        quality_pass = min_quality >= min_quality_pass
 
         # Check plugin status using configurable thresholds
         plugin_pass = True
@@ -97,12 +99,21 @@ def validate_docs(
         # Output results based on format
         all_pass = coverage_pass and quality_pass and plugin_pass
         if format == "json":
-            _output_json(results, overall_coverage, overall_quality, all_pass, min_coverage_pass, min_quality_pass)
+            _output_json(
+                results,
+                min_coverage,
+                min_quality,
+                all_pass,
+                min_coverage_pass,
+                min_quality_pass,
+                min_coverage_plugin,
+                min_quality_plugin,
+            )
         else:
             _output_text(
                 results,
-                overall_coverage,
-                overall_quality,
+                min_coverage,
+                min_quality,
                 coverage_pass,
                 quality_pass,
                 plugin_pass,
@@ -110,6 +121,8 @@ def validate_docs(
                 min_coverage_fail,
                 min_quality_pass,
                 min_quality_fail,
+                min_coverage_plugin,
+                min_quality_plugin,
             )
 
         # Determine exit code
@@ -123,11 +136,22 @@ def validate_docs(
         sys.exit(2)  # Command error
 
 
-def _output_json(results, overall_coverage, overall_quality, all_pass, min_coverage_pass, min_quality_pass):
+def _output_json(
+    results,
+    min_coverage,
+    min_quality,
+    all_pass,
+    min_coverage_pass,
+    min_quality_pass,
+    min_coverage_plugin,
+    min_quality_plugin,
+):
     """Output results in JSON format for tooling integration."""
     output = {
-        "overall_coverage": overall_coverage,
-        "overall_quality": overall_quality,
+        "min_plugin_coverage": min_coverage,
+        "min_plugin_quality": min_quality,
+        "worst_coverage_plugin": min_coverage_plugin,
+        "worst_quality_plugin": min_quality_plugin,
         "thresholds": {
             "min_coverage_pass": min_coverage_pass,
             "min_quality_pass": min_quality_pass,
@@ -160,8 +184,8 @@ def _output_json(results, overall_coverage, overall_quality, all_pass, min_cover
 
 def _output_text(
     results,
-    overall_coverage,
-    overall_quality,
+    min_coverage,
+    min_quality,
     coverage_pass,
     quality_pass,
     plugin_pass,
@@ -169,6 +193,8 @@ def _output_text(
     min_coverage_fail,
     min_quality_pass,
     min_quality_fail,
+    min_coverage_plugin,
+    min_quality_plugin,
 ):
     """Output results in human-readable text format."""
     # Display per-plugin results
@@ -194,14 +220,10 @@ def _output_text(
         if result.skipped > 0:
             console.print(f"  📝 {result.skipped} components skipped quality check", style="dim")
 
-    # Display overall summary
-    total_components = sum(r.total for r in results.values())
-    documented_components = sum(r.documented for r in results.values())
-    good_quality_components = sum(r.good_quality for r in results.values())
-
+    # Display overall summary (minimum per-plugin results)
     console.print(
-        f"\n📊 Overall: {documented_components}/{total_components} documented ({overall_coverage:.0%}), "
-        f"{good_quality_components}/{total_components} good quality ({overall_quality:.0%})"
+        f"\n📊 Overall: Minimum plugin coverage: {min_coverage:.0%} ({min_coverage_plugin}), "
+        f"Minimum plugin quality: {min_quality:.0%} ({min_quality_plugin})"
     )
 
     # Show status messages
@@ -210,12 +232,12 @@ def _output_text(
     else:
         if not coverage_pass:
             console.print(
-                f"❌ FAIL: Documentation coverage {overall_coverage:.0%} below threshold ({min_coverage_pass:.0%})",
+                f"❌ FAIL: Minimum plugin coverage {min_coverage:.0%} ({min_coverage_plugin}) below threshold ({min_coverage_pass:.0%})",
                 style="red",
             )
         if not quality_pass:
             console.print(
-                f"❌ FAIL: Good quality ratio {overall_quality:.0%} below threshold ({min_quality_pass:.0%})",
+                f"❌ FAIL: Minimum plugin quality {min_quality:.0%} ({min_quality_plugin}) below threshold ({min_quality_pass:.0%})",
                 style="red",
             )
         if not plugin_pass:
