@@ -216,7 +216,7 @@ class DocumentationValidator:
         lines = docstring.strip().split("\n")
         if not lines or not lines[0].strip():
             issues.append("Missing summary in docstring")
-        elif len(lines[0].strip()) < 10:
+        elif len(lines[0].strip()) < 50:
             issues.append("Summary too short (should be descriptive)")
 
         # Check for parameter documentation (if Args: section exists)
@@ -294,12 +294,12 @@ class DocumentationValidator:
 
     def _determine_quality_grade(self, docstring: str, issues: List[str]) -> str:
         """Determine quality grade based on docstring content and issues."""
-        # GOOD: Has examples OR type hints OR comprehensive description
+        # GOOD: Has examples AND type hints AND comprehensive description
         has_examples = "Example" in docstring or "Examples" in docstring
-        has_comprehensive_desc = len(docstring.strip()) > 100
+        has_comprehensive_desc = len(docstring.strip()) > 50
         has_type_hints = not any("missing type hint" in issue.lower() for issue in issues)
 
-        if has_examples or has_type_hints or has_comprehensive_desc:
+        if has_examples and has_type_hints and has_comprehensive_desc:
             return "good"
         else:
             return "acceptable"
