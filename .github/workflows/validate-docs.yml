@@ -33,15 +33,15 @@ jobs:
         run: uv pip install -e projects/owa-env-gst
 
       - name: Validate all plugin documentation
-        run: owl env validate-docs --strict
+        run: uv run owl env validate-docs --strict
 
       - name: Generate documentation statistics
-        run: owl env docs-stats
+        run: uv run owl env docs-stats
 
       - name: Validate individual plugins
         run: |
           echo "Validating individual plugins..."
-          owl env validate-docs example
-          owl env validate-docs std
-          owl env validate-docs desktop
-          owl env validate-docs gst
+          uv run owl env validate-docs example
+          uv run owl env validate-docs std
+          uv run owl env validate-docs desktop
+          uv run owl env validate-docs gst
