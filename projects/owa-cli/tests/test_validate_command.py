@@ -79,10 +79,10 @@ def test_validate_yaml_file_with_warnings(runner, invalid_yaml_file):
 
 def test_validate_entry_point_success(runner):
     """Test successful validation of an entry point."""
-    result = runner.invoke(env_app, ["validate", "owa.env.example:plugin_spec", "--no-check-imports"])
+    result = runner.invoke(env_app, ["validate", "owa.env.std:plugin_spec", "--no-check-imports"])
     assert result.exit_code == 0
     assert "✅ Plugin Specification Valid" in result.stdout
-    assert "example" in result.stdout
+    assert "std" in result.stdout
     assert "Entry point:" in result.stdout
 
 
@@ -134,8 +134,8 @@ def test_plugin_spec_from_yaml():
 
 def test_plugin_spec_from_entry_point():
     """Test PluginSpec.from_entry_point method directly."""
-    spec = PluginSpec.from_entry_point("owa.env.example:plugin_spec")
-    assert spec.namespace == "example"
+    spec = PluginSpec.from_entry_point("owa.env.std:plugin_spec")
+    assert spec.namespace == "std"
     assert spec.version == "0.1.0"
     assert "callables" in spec.components
 
