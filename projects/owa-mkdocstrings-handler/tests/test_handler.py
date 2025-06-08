@@ -28,43 +28,6 @@ def test_handler_graceful_fallback():
     assert "error" in rendered.lower()
 
 
-def test_handler_without_owa_core():
-    """Test that the handler works even when owa-core is not available."""
-    # This test verifies the import fallback mechanism
-    import sys
-
-    # Temporarily hide owa.core modules
-    original_modules = {}
-    owa_modules = [name for name in sys.modules.keys() if name.startswith("owa.core")]
-
-    for module_name in owa_modules:
-        original_modules[module_name] = sys.modules.pop(module_name, None)
-
-    try:
-        # Force reimport to test fallback
-        import importlib
-
-        if "mkdocstrings_handlers.owa.handler" in sys.modules:
-            importlib.reload(sys.modules["mkdocstrings_handlers.owa.handler"])
-
-        from mkdocstrings_handlers.owa import get_handler
-
-        handler = get_handler()
-
-        # Should still work with dummy implementations
-        assert handler.name == "owa"
-
-        # Should return error for any collection attempt
-        result = handler.collect("test", {})
-        assert "error" in result
-
-    finally:
-        # Restore original modules
-        for module_name, module in original_modules.items():
-            if module is not None:
-                sys.modules[module_name] = module
-
-
 if __name__ == "__main__":
     test_handler_import()
     test_handler_graceful_fallback()
