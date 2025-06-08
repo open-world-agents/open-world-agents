@@ -12,6 +12,7 @@ from typing import Any, Dict, List
 
 from ..plugin_discovery import get_plugin_discovery
 from ..registry import CALLABLES, LISTENERS, RUNNABLES
+from ..runnable import RunnableMixin
 
 
 @dataclass
@@ -235,7 +236,7 @@ class DocumentationValidator:
 
         return issues
 
-    def _validate_type_hints(self, func: Any) -> List[str]:
+    def _validate_type_hints(self, func: Any, validate_return: bool = True) -> List[str]:
         """Validate type hints for a function."""
         issues = []
 
@@ -249,8 +250,8 @@ class DocumentationValidator:
                 if param.annotation == inspect.Parameter.empty:
                     issues.append(f"Parameter '{param_name}' missing type hint")
 
-            # Check return type hint
-            if sig.return_annotation == inspect.Signature.empty:
+            # Check return type hint if validate_return is True
+            if validate_return and sig.return_annotation == inspect.Signature.empty:
                 issues.append("Missing return type hint")
 
         except (ValueError, TypeError):
@@ -266,8 +267,9 @@ class DocumentationValidator:
         # Check on_configure method if it exists
         if hasattr(cls, "on_configure"):
             on_configure = getattr(cls, "on_configure")
-            if on_configure != object.on_configure:  # Not the default object.on_configure
-                init_issues = self._validate_type_hints(on_configure)
+            if on_configure != RunnableMixin.on_configure:  # Not the default RunnableMixin.on_configure
+                # Don't check return type hint
+                init_issues = self._validate_type_hints(on_configure, validate_return=False)
                 issues.extend([f"on_configure {issue}" for issue in init_issues])
 
         return issues
