@@ -1,0 +1,47 @@
+name: Documentation Validation
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  validate-docs:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Install owa-env-example for testing
+        run: uv pip install -e projects/owa-env-example
+
+      - name: Install owa-env-desktop for testing
+        run: uv pip install -e projects/owa-env-desktop
+
+      - name: Install owa-env-gst for testing
+        run: uv pip install -e projects/owa-env-gst
+
+      - name: Validate all plugin documentation
+        run: owl env validate-docs --strict
+
+      - name: Generate documentation statistics
+        run: owl env docs-stats
+
+      - name: Validate individual plugins
+        run: |
+          echo "Validating individual plugins..."
+          owl env validate-docs example
+          owl env validate-docs std
+          owl env validate-docs desktop
+          owl env validate-docs gst

@@ -60,7 +60,7 @@ jobs:
       - name: Install dependencies
         run: pip install -e .
       - name: Validate Documentation
-        run: owl env validate-docs --strict --min-coverage 90
+        run: owl env validate-docs --strict
 ```
 
 ### Advanced Options
@@ -70,7 +70,7 @@ jobs:
 In strict mode, any missing documentation is treated as a failure:
 
 ```bash
-$ owl env validate-docs --strict --min-coverage 95
+$ owl env validate-docs --strict
 ❌ FAIL: Documentation coverage 88% below minimum 100% (strict mode)
 ```
 

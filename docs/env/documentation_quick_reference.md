@@ -16,7 +16,7 @@ owl env validate-docs example
 
 ### CI/CD Mode
 ```bash
-owl env validate-docs --strict --min-coverage 95
+owl env validate-docs --strict
 ```
 
 ## 📊 Commands Reference
@@ -117,7 +117,7 @@ def screen_capture(region: Optional[Tuple[int, int, int, int]] = None) -> Image:
 ### GitHub Actions
 ```yaml
 - name: Validate Documentation
-  run: owl env validate-docs --strict --min-coverage 90
+  run: owl env validate-docs --strict
 ```
 
 ### Pre-commit Hook
