@@ -56,7 +56,7 @@ def validate_docs(
             try:
                 results = {plugin_namespace: validator.validate_plugin(plugin_namespace)}
             except KeyError:
-                console.print(f"[red]❌ ERROR: Plugin '{plugin_namespace}' not found[/red]", file=sys.stderr)
+                console.print(f"[red]❌ ERROR: Plugin '{plugin_namespace}' not found[/red]")
                 sys.exit(2)
         else:
             # Default behavior: validate all plugins
@@ -129,7 +129,7 @@ def validate_docs(
             sys.exit(1)  # Documentation issues found
 
     except Exception as e:
-        console.print(f"[red]❌ ERROR: {e}[/red]", file=sys.stderr)
+        console.print(f"[red]❌ ERROR: {e}[/red]")
         sys.exit(2)  # Command error
 
 
