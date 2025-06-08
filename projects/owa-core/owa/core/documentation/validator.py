@@ -187,7 +187,7 @@ class DocumentationValidator:
             type_issues = self._validate_type_hints(component)
             issues.extend(type_issues)
         elif inspect.isclass(component):
-            # For classes, check __init__ and key methods
+            # For classes, check on_configure and key methods
             class_issues = self._validate_class_documentation(component)
             issues.extend(class_issues)
 
@@ -263,12 +263,12 @@ class DocumentationValidator:
         """Validate documentation for a class."""
         issues = []
 
-        # Check __init__ method if it exists
-        if hasattr(cls, "__init__"):
-            init_method = getattr(cls, "__init__")
-            if init_method != object.__init__:  # Not the default object.__init__
-                init_issues = self._validate_type_hints(init_method)
-                issues.extend([f"__init__ {issue}" for issue in init_issues])
+        # Check on_configure method if it exists
+        if hasattr(cls, "on_configure"):
+            on_configure = getattr(cls, "on_configure")
+            if on_configure != object.on_configure:  # Not the default object.on_configure
+                init_issues = self._validate_type_hints(on_configure)
+                issues.extend([f"on_configure {issue}" for issue in init_issues])
 
         return issues
 
