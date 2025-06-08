@@ -18,6 +18,7 @@ def list_plugins(
         None, "--type", "-t", help="Type of components to list (callables/listeners/runnables)"
     ),
     search: Optional[str] = typer.Option(None, "--search", "-s", help="Search components by name pattern"),
+    components: bool = typer.Option(False, "--components", "-c", help="Show individual components"),
     details: bool = typer.Option(False, "--details", "-d", help="Show detailed component information"),
     table_format: bool = typer.Option(False, "--table", help="Display results in table format"),
     sort_by: str = typer.Option("namespace", "--sort", help="Sort by: namespace, name, type"),
@@ -43,7 +44,7 @@ def list_plugins(
         _list_components_by_type(component_type, namespace, search, details, table_format, sort_by)
     else:
         # List all plugins
-        _list_all_plugins(namespace, search, details, table_format, sort_by)
+        _list_all_plugins(namespace, search, components, details, table_format, sort_by)
 
 
 def _list_components_by_type(component_type: str, namespace: Optional[str], search: Optional[str],
@@ -73,15 +74,15 @@ def _list_components_by_type(component_type: str, namespace: Optional[str], sear
         _display_components_tree(component_type, comp_list, details)
 
 
-def _list_all_plugins(namespace: Optional[str], search: Optional[str], details: bool,
-                     table_format: bool, sort_by: str):
+def _list_all_plugins(namespace: Optional[str], search: Optional[str], components: bool,
+                     details: bool, table_format: bool, sort_by: str):
     """List all plugins with their components."""
     # Collect all plugins
     plugins = {}
     for comp_type in ["callables", "listeners", "runnables"]:
-        components = list_components(comp_type, namespace=namespace)
-        if components:
-            for comp_name in components[comp_type]:
+        plugin_components = list_components(comp_type, namespace=namespace)
+        if plugin_components:
+            for comp_name in plugin_components[comp_type]:
                 # Apply search filter
                 if search:
                     pattern = re.compile(search, re.IGNORECASE)
@@ -98,10 +99,15 @@ def _list_all_plugins(namespace: Optional[str], search: Optional[str], details: 
         console.print(f"[yellow]No plugins found{search_msg}[/yellow]")
         return
 
-    if table_format:
-        _display_plugins_table(plugins, details)
+    if table_format and (components or details):
+        # Show individual components in table format
+        _display_all_components_table(plugins, details)
+    elif table_format:
+        # Show plugin overview in table format
+        _display_plugins_table(plugins, components, details)
     else:
-        _display_plugins_tree(plugins, details)
+        # Show in tree format
+        _display_plugins_tree(plugins, components, details)
 
 
 def _sort_components(components: list, sort_by: str) -> list:
@@ -163,7 +169,7 @@ def _display_components_table(component_type: str, components: list, details: bo
     console.print(table)
 
 
-def _display_plugins_tree(plugins: dict, details: bool):
+def _display_plugins_tree(plugins: dict, show_components: bool, show_details: bool):
     """Display plugins in tree format."""
     tree = Tree(f"📦 Discovered Plugins ({len(plugins)})")
 
@@ -184,22 +190,70 @@ def _display_plugins_tree(plugins: dict, details: bool):
         for i, comp_type in enumerate(comp_types):
             plugin_branch.add(comp_type)
 
-        # Show individual components if details requested
-        if details:
+        # Show individual components if requested OR if details requested
+        if show_components or show_details:
             for comp_type in ["callables", "listeners", "runnables"]:
                 if components[comp_type]:
-                    comp_info = get_component_info(comp_type)
                     type_branch = plugin_branch.add(f"🔧 {comp_type.title()} Details")
-                    for comp_name in sorted(components[comp_type]):
-                        info = comp_info.get(comp_name, {})
-                        status = "✅ loaded" if info.get("loaded", False) else "⏳ lazy"
-                        import_path = info.get("import_path", "unknown")
-                        type_branch.add(f"{comp_name} [{status}] ({import_path})")
+
+                    if show_details:
+                        # Show with detailed information
+                        comp_info = get_component_info(comp_type)
+                        for comp_name in sorted(components[comp_type]):
+                            info = comp_info.get(comp_name, {})
+                            status = "✅ loaded" if info.get("loaded", False) else "⏳ lazy"
+                            import_path = info.get("import_path", "unknown")
+                            type_branch.add(f"{comp_name} [{status}] ({import_path})")
+                    else:
+                        # Show just component names
+                        for comp_name in sorted(components[comp_type]):
+                            type_branch.add(comp_name)
 
     console.print(tree)
 
 
-def _display_plugins_table(plugins: dict, details: bool):
+def _display_all_components_table(plugins: dict, show_details: bool):
+    """Display all components in table format."""
+    table = Table(title="All Components")
+    table.add_column("Component", style="cyan")
+    table.add_column("Type", style="green")
+    table.add_column("Namespace", style="yellow")
+    table.add_column("Name", style="blue")
+
+    if show_details:
+        table.add_column("Status", style="magenta")
+        table.add_column("Import Path", style="dim")
+
+    # Collect all components
+    all_components = []
+    for ns in sorted(plugins.keys()):
+        components = plugins[ns]
+        for comp_type in ["callables", "listeners", "runnables"]:
+            if components[comp_type]:
+                comp_info = get_component_info(comp_type) if show_details else {}
+                for comp_name in sorted(components[comp_type]):
+                    parts = comp_name.split("/", 1)
+                    namespace = parts[0]
+                    name = parts[1] if len(parts) > 1 else ""
+
+                    row_data = [comp_name, comp_type, namespace, name]
+
+                    if show_details:
+                        info = comp_info.get(comp_name, {})
+                        status = "Loaded" if info.get("loaded", False) else "Lazy"
+                        import_path = info.get("import_path", "unknown")
+                        row_data.extend([status, import_path])
+
+                    all_components.append(row_data)
+
+    # Add rows to table
+    for row_data in all_components:
+        table.add_row(*row_data)
+
+    console.print(table)
+
+
+def _display_plugins_table(plugins: dict, show_components: bool, show_details: bool):
     """Display plugins in table format."""
     table = Table(title="Plugin Overview")
     table.add_column("Namespace", style="cyan")
@@ -208,7 +262,7 @@ def _display_plugins_table(plugins: dict, details: bool):
     table.add_column("Runnables", justify="right", style="blue")
     table.add_column("Total", justify="right", style="bold magenta")
 
-    if details:
+    if show_details:
         table.add_column("Loaded", justify="right", style="blue")
         table.add_column("Load %", justify="right", style="magenta")
 
@@ -227,7 +281,7 @@ def _display_plugins_table(plugins: dict, details: bool):
             str(total_count)
         ]
 
-        if details:
+        if show_details:
             # Calculate loaded components
             loaded_count = 0
             for comp_type in ["callables", "listeners", "runnables"]:
@@ -242,3 +296,7 @@ def _display_plugins_table(plugins: dict, details: bool):
         table.add_row(*row_data)
 
     console.print(table)
+
+    # If showing components but not in table format, show individual components
+    if show_components and not show_details:
+        console.print("\n[dim]💡 Use --details (-d) to see import paths and load status[/dim]")

@@ -14,7 +14,7 @@ console = Console()
 
 def show_plugin(
     namespace: str = typer.Argument(..., help="Namespace of the plugin to show"),
-    show_components: bool = typer.Option(False, "--components", "-c", help="Show detailed component information"),
+    components: bool = typer.Option(False, "--components", "-c", help="Show individual components"),
     component_type: Optional[str] = typer.Option(None, "--type", "-t", help="Filter by component type"),
     search: Optional[str] = typer.Option(None, "--search", "-s", help="Search components by name pattern"),
     details: bool = typer.Option(False, "--details", "-d", help="Show import paths and load status"),
@@ -31,7 +31,7 @@ def show_plugin(
         sys.exit(1)
 
     # Get all components for the namespace
-    components = {}
+    plugin_components = {}
     comp_types_to_check = [component_type] if component_type else ["callables", "listeners", "runnables"]
 
     for comp_type in comp_types_to_check:
@@ -44,9 +44,9 @@ def show_plugin(
                 comp_list = [name for name in comp_list if pattern.search(name)]
 
             if comp_list:
-                components[comp_type] = comp_list
+                plugin_components[comp_type] = comp_list
 
-    if not components:
+    if not plugin_components:
         search_msg = f" matching '{search}'" if search else ""
         type_msg = f" of type '{component_type}'" if component_type else ""
         console.print(f"[red]Error: No plugin found with namespace '{namespace}'{type_msg}{search_msg}[/red]")
@@ -57,14 +57,16 @@ def show_plugin(
         _inspect_component(namespace, inspect)
         return
 
-    # Display plugin overview
-    _display_plugin_overview(namespace, components)
+    # Always show plugin overview
+    _display_plugin_overview(namespace, plugin_components)
 
-    if show_components:
+    # Show individual components if requested OR if details flag is used
+    # (details flag implies user wants to see component details)
+    if components or details:
         if table_format:
-            _display_components_table_detailed(components, details)
+            _display_components_table_detailed(plugin_components, details)
         else:
-            _display_components_tree_detailed(components, details)
+            _display_components_tree_detailed(plugin_components, details)
 
 
 def _display_plugin_overview(namespace: str, components: dict):
