@@ -32,7 +32,4 @@ os.environ["GST_PLUGIN_PATH"] = os.path.join(os.path.dirname(os.path.abspath(__f
 from . import pipeline_builder
 from .gst_runner import GstPipelineRunner
 
-__all__ = ["pipeline_builder", "GstPipelineRunner", "plugin_spec"]
-
-# Import plugin_spec from separate module to avoid circular imports
-from .plugin_spec import plugin_spec
+__all__ = ["pipeline_builder", "GstPipelineRunner"]
