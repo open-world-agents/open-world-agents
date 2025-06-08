@@ -1,0 +1,117 @@
+{#- Template for documentation section -#}
+{% set parsed_doc = plugin.parsed_docstring or {} %}
+{% set raw_docstring = plugin.docstring %}
+
+{% if parsed_doc or raw_docstring %}
+    {% filter heading(
+        (config.heading_level or 1) + 1,
+        role="documentation",
+        id="documentation",
+        toc_label="Documentation"
+    ) %}
+        📚 Documentation
+    {% endfilter %}
+
+    <div class="documentation">
+        {#- Summary -#}
+        {% if parsed_doc.summary %}
+            {% filter heading(
+                (config.heading_level or 1) + 2,
+                role="summary",
+                id="summary",
+                toc_label="Summary"
+            ) %}
+                Summary
+            {% endfilter %}
+            <p class="summary">{{ parsed_doc.summary }}</p>
+        {% endif %}
+
+        {#- Description -#}
+        {% if parsed_doc.description %}
+            {% filter heading(
+                (config.heading_level or 1) + 2,
+                role="description",
+                id="description",
+                toc_label="Description"
+            ) %}
+                Description
+            {% endfilter %}
+            <div class="description">{{ parsed_doc.description.replace('\n', '<br>') | safe }}</div>
+        {% endif %}
+
+        {#- Arguments -#}
+        {% if parsed_doc.args %}
+            {% filter heading(
+                (config.heading_level or 1) + 2,
+                role="arguments",
+                id="arguments",
+                toc_label="Arguments"
+            ) %}
+                Arguments
+            {% endfilter %}
+            <div class="arguments">
+                {% for arg in parsed_doc.args %}
+                    <div class="argument">
+                        <strong>{{ arg.name }}</strong>: {{ arg.description }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {#- Returns -#}
+        {% if parsed_doc.returns %}
+            {% filter heading(
+                (config.heading_level or 1) + 2,
+                role="returns",
+                id="doc-returns",
+                toc_label="Returns"
+            ) %}
+                Returns
+            {% endfilter %}
+            <div class="returns">{{ parsed_doc.returns }}</div>
+        {% endif %}
+
+        {#- Raises -#}
+        {% if parsed_doc.raises %}
+            {% filter heading(
+                (config.heading_level or 1) + 2,
+                role="raises",
+                id="raises",
+                toc_label="Raises"
+            ) %}
+                Raises
+            {% endfilter %}
+            <div class="raises">
+                {% for exc in parsed_doc.raises %}
+                    <div class="exception">
+                        <strong>{{ exc.exception }}</strong>: {{ exc.description }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {#- Notes -#}
+        {% if parsed_doc.notes %}
+            {% filter heading(
+                (config.heading_level or 1) + 2,
+                role="notes",
+                id="notes",
+                toc_label="Notes"
+            ) %}
+                Notes
+            {% endfilter %}
+            <div class="notes">
+                {% for note in parsed_doc.notes %}
+                    <p>{{ note }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {#- Raw docstring fallback -#}
+        {% if not (parsed_doc.summary or parsed_doc.description or parsed_doc.args or parsed_doc.returns) and raw_docstring %}
+            <div class="raw-docstring">
+                <pre>{{ raw_docstring }}</pre>
+            </div>
+        {% endif %}
+    </div>
+{% endif %}

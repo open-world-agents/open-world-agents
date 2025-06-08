@@ -1,0 +1,27 @@
+{#- Template for Griffe metadata -#}
+{% set griffe_info = plugin.signature_info.griffe_info or {} %}
+{% if griffe_info %}
+    <div class="griffe-metadata">
+        <h4>Additional Information</h4>
+        
+        {% if griffe_info.decorators %}
+            <p><strong>Decorators:</strong> 
+                {% for decorator in griffe_info.decorators %}
+                    <code>{{ decorator }}</code>{% if not loop.last %}, {% endif %}
+                {% endfor %}
+            </p>
+        {% endif %}
+        
+        {% if griffe_info.raises %}
+            <p><strong>May Raise:</strong> 
+                {% for exception in griffe_info.raises %}
+                    <code>{{ exception }}</code>{% if not loop.last %}, {% endif %}
+                {% endfor %}
+            </p>
+        {% endif %}
+        
+        {% if griffe_info.yields %}
+            <p><strong>Yields:</strong> <code>{{ griffe_info.yields }}</code></p>
+        {% endif %}
+    </div>
+{% endif %}
