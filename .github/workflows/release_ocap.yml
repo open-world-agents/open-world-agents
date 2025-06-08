@@ -23,10 +23,11 @@ jobs:
 
       - name: Install the latest version of uv
         id: setup-uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v6
         with:
           version: "latest"
           enable-cache: true
+          activate-environment: true
       
       - name: Do something if the cache was restored
         if: steps.setup-uv.outputs.cache-hit == 'true'
