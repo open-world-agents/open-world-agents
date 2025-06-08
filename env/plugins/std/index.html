@@ -1197,27 +1197,26 @@
 <p>The Standard Environment plugin (<code>owa.env.std</code>) is a core component of the Open World Agents framework. It provides essential functionalities related to time management and clock operations, which are fundamental for various time-based tasks and event scheduling within the system.</p>
 <h2 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Time Functions</strong>: The plugin registers functions like <code>clock.time_ns</code> that return the current time in nanoseconds.</li>
-<li><strong>Tick Listener</strong>: It includes a <code>clock/tick</code> listener that can be configured to execute callbacks at specified intervals.</li>
+<li><strong>Time Functions</strong>: The plugin registers functions like <code>std/time_ns</code> that return the current time in nanoseconds.</li>
+<li><strong>Tick Listener</strong>: It includes a <code>std/tick</code> listener that can be configured to execute callbacks at specified intervals.</li>
 </ul>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
-<p>To activate the Standard Environment plugin, use the following command in your code:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.core.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">activate_module</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">activate_module</span><span class="p">(</span><span class="s2">&quot;owa.env.std&quot;</span><span class="p">)</span>
+<p>The Standard Environment plugin is automatically available when you install <code>owa-core</code>. No manual activation needed!</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Components automatically available after installation</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.core.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">CALLABLES</span><span class="p">,</span> <span class="n">LISTENERS</span>
 </code></pre></div>
-<p>Once activated, you can access the registered functions and listeners via the global <code>CALLABLES</code> and <code>LISTENERS</code> registries. For example:</p>
+<p>You can access the registered functions and listeners via the global registries using the unified <code>namespace/name</code> pattern:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.core.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">CALLABLES</span><span class="p">,</span> <span class="n">LISTENERS</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># Get the current time in nanoseconds</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">current_time_ns</span> <span class="o">=</span> <span class="n">CALLABLES</span><span class="p">[</span><span class="s2">&quot;clock.time_ns&quot;</span><span class="p">]()</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">current_time_ns</span> <span class="o">=</span> <span class="n">CALLABLES</span><span class="p">[</span><span class="s2">&quot;std/time_ns&quot;</span><span class="p">]()</span>
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Current time (ns): </span><span class="si">{</span><span class="n">current_time_ns</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
 <a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># Configure and start a tick listener</span>
 <a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">on_tick</span><span class="p">():</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Tick at </span><span class="si">{</span><span class="n">CALLABLES</span><span class="p">[</span><span class="s1">&#39;clock.time_ns&#39;</span><span class="p">]()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Tick at </span><span class="si">{</span><span class="n">CALLABLES</span><span class="p">[</span><span class="s1">&#39;std/time_ns&#39;</span><span class="p">]()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 <a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="n">tick_listener</span> <span class="o">=</span> <span class="n">LISTENERS</span><span class="p">[</span><span class="s2">&quot;clock/tick&quot;</span><span class="p">]()</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="n">tick_listener</span> <span class="o">=</span> <span class="n">LISTENERS</span><span class="p">[</span><span class="s2">&quot;std/tick&quot;</span><span class="p">]()</span>
 <a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="n">tick_listener</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">callback</span><span class="o">=</span><span class="n">on_tick</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># Tick every second</span>
 <a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="n">tick_listener</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
 <a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>
@@ -1232,39 +1231,38 @@
 <h2 id="components">Components<a class="headerlink" href="#components" title="Permanent link">&para;</a></h2>
 <h3 id="time-functions">Time Functions<a class="headerlink" href="#time-functions" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong><code>clock.time_ns</code></strong>: Returns the current time in nanoseconds. This function is registered in the <code>CALLABLES</code> registry.</li>
+<li><strong><code>std/time_ns</code></strong>: Returns the current time in nanoseconds. This function is registered in the <code>CALLABLES</code> registry.</li>
 </ul>
 <h3 id="tick-listener">Tick Listener<a class="headerlink" href="#tick-listener" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong><code>clock/tick</code></strong>: A listener that triggers a callback at specified intervals. This listener is registered in the <code>LISTENERS</code> registry and can be configured with an interval in seconds.</li>
+<li><strong><code>std/tick</code></strong>: A listener that triggers a callback at specified intervals. This listener is registered in the <code>LISTENERS</code> registry and can be configured with an interval in seconds.</li>
 </ul>
 <h2 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h2>
 <p>Here is a complete example demonstrating how to use the Standard Environment plugin:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.core.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">CALLABLES</span><span class="p">,</span> <span class="n">LISTENERS</span><span class="p">,</span> <span class="n">activate_module</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.core.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">CALLABLES</span><span class="p">,</span> <span class="n">LISTENERS</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="c1"># Activate the Standard Environment plugin</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">activate_module</span><span class="p">(</span><span class="s2">&quot;owa.env.std&quot;</span><span class="p">)</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="c1"># Print the current time in nanoseconds</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="nb">print</span><span class="p">(</span><span class="n">CALLABLES</span><span class="p">[</span><span class="s2">&quot;clock.time_ns&quot;</span><span class="p">]())</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="c1"># Define a callback function for the tick listener</span>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="k">def</span><span class="w"> </span><span class="nf">tick_callback</span><span class="p">():</span>
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Tick at </span><span class="si">{</span><span class="n">CALLABLES</span><span class="p">[</span><span class="s1">&#39;clock.time_ns&#39;</span><span class="p">]()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>
-<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="c1"># Configure and start the tick listener</span>
-<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="n">tick_listener</span> <span class="o">=</span> <span class="n">LISTENERS</span><span class="p">[</span><span class="s2">&quot;clock/tick&quot;</span><span class="p">]()</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">callback</span><span class="o">=</span><span class="n">tick_callback</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="n">tick_listener</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
-<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>
-<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="c1"># Let the listener run for 5 seconds</span>
-<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
-<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
-<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>
-<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a><span class="c1"># Stop the tick listener</span>
-<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a><span class="n">tick_listener</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
-<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a><span class="n">tick_listener</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="c1"># Components automatically available - no activation needed!</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="c1"># Print the current time in nanoseconds</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="nb">print</span><span class="p">(</span><span class="n">CALLABLES</span><span class="p">[</span><span class="s2">&quot;std/time_ns&quot;</span><span class="p">]())</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="c1"># Define a callback function for the tick listener</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="k">def</span><span class="w"> </span><span class="nf">tick_callback</span><span class="p">():</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Tick at </span><span class="si">{</span><span class="n">CALLABLES</span><span class="p">[</span><span class="s1">&#39;std/time_ns&#39;</span><span class="p">]()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="c1"># Configure and start the tick listener</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="n">tick_listener</span> <span class="o">=</span> <span class="n">LISTENERS</span><span class="p">[</span><span class="s2">&quot;std/tick&quot;</span><span class="p">]()</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">callback</span><span class="o">=</span><span class="n">tick_callback</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="n">tick_listener</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="c1"># Let the listener run for 5 seconds</span>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="c1"># Stop the tick listener</span>
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a><span class="n">tick_listener</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a><span class="n">tick_listener</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
 </code></pre></div>
-<p>This example demonstrates how to activate the plugin, retrieve the current time, and set up a tick listener that prints the current time every second.</p>
+<p>This example demonstrates how to use the automatically available components, retrieve the current time, and set up a tick listener that prints the current time every second.</p>
 <p>The Standard Environment plugin is a fundamental part of the Open World Agents framework, providing essential time-based functionalities that can be leveraged by other modules and applications.</p>
 
 
@@ -1286,7 +1284,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="March 13, 2025 04:30:39 UTC">March 13, 2025 04:30:39</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="June 7, 2025 19:59:06 UTC">June 7, 2025 19:59:06</span>
   </span>
 
     

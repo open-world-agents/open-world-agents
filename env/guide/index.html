@@ -291,6 +291,59 @@
 </a>
 </li>
 <li class="md-nav__item">
+<a class="md-nav__link" href="#cli-tools-for-plugin-management">
+<span class="md-ellipsis">
+      CLI Tools for Plugin Management
+    </span>
+</a>
+<nav aria-label="CLI Tools for Plugin Management" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#plugin-discovery-and-listing">
+<span class="md-ellipsis">
+      Plugin Discovery and Listing
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#plugin-information-and-inspection">
+<span class="md-ellipsis">
+      Plugin Information and Inspection
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#advanced-search-and-discovery">
+<span class="md-ellipsis">
+      Advanced Search and Discovery
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#ecosystem-analysis">
+<span class="md-ellipsis">
+      Ecosystem Analysis
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#plugin-development">
+<span class="md-ellipsis">
+      Plugin Development
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#example-cli-output">
+<span class="md-ellipsis">
+      Example CLI Output
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
 <a class="md-nav__link" href="#additional-resources">
 <span class="md-ellipsis">
       Additional Resources
@@ -556,6 +609,59 @@
 </a>
 </li>
 <li class="md-nav__item">
+<a class="md-nav__link" href="#cli-tools-for-plugin-management">
+<span class="md-ellipsis">
+      CLI Tools for Plugin Management
+    </span>
+</a>
+<nav aria-label="CLI Tools for Plugin Management" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#plugin-discovery-and-listing">
+<span class="md-ellipsis">
+      Plugin Discovery and Listing
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#plugin-information-and-inspection">
+<span class="md-ellipsis">
+      Plugin Information and Inspection
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#advanced-search-and-discovery">
+<span class="md-ellipsis">
+      Advanced Search and Discovery
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#ecosystem-analysis">
+<span class="md-ellipsis">
+      Ecosystem Analysis
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#plugin-development">
+<span class="md-ellipsis">
+      Plugin Development
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#example-cli-output">
+<span class="md-ellipsis">
+      Example CLI Output
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
 <a class="md-nav__link" href="#additional-resources">
 <span class="md-ellipsis">
       Additional Resources
@@ -579,7 +685,7 @@
 <ul>
 <li><em>These are like traditional function calls; you invoke them when you need to perform an action or retrieve some information from the environment.</em></li>
 <li>Implements <code>__call__</code> function</li>
-<li>Example: <code>CALLABLES["clock.time_ns"]()</code></li>
+<li>Example: <code>CALLABLES["std/time_ns"]()</code></li>
 </ul>
 </li>
 <li>
@@ -625,108 +731,209 @@
 <p><code>LISTENERS</code> - Dictionary of event listeners</p>
 </li>
 <li>
-<p><code>RUNNABLES</code> - Dictionary of background processes  </p>
+<p><code>RUNNABLES</code> - Dictionary of background processes</p>
 </li>
 </ul>
-<p>Modules are activated using:
-<div class="highlight"><pre><span></span><code><a href="#__codelineno-1-1" id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.core.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">activate_module</span>
-<a href="#__codelineno-1-2" id="__codelineno-1-2" name="__codelineno-1-2"></a><span class="n">activate_module</span><span class="p">(</span><span class="s2">"module.name"</span><span class="p">)</span>
+<p><strong>Zero-Configuration Plugin Discovery</strong>: Plugins are automatically discovered when installed via pip using Python's Entry Points system. No manual activation needed!</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-1-1" id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.core.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">CALLABLES</span><span class="p">,</span> <span class="n">LISTENERS</span><span class="p">,</span> <span class="n">RUNNABLES</span>
+<a href="#__codelineno-1-2" id="__codelineno-1-2" name="__codelineno-1-2"></a><span class="c1"># Components automatically available after plugin installation</span>
 </code></pre></div>
-<em>Activating a module registers its components into the global registries for use.</em></p>
+<p><em>All components use unified <code>namespace/name</code> naming pattern for consistency.</em></p>
 <h2 id="environment-usage-examples">Environment Usage Examples<a class="headerlink" href="#environment-usage-examples" title="Permanent link">¶</a></h2>
 <h3 id="standard-environment-owaenvstd">Standard Environment (<code>owa.env.std</code>)<a class="headerlink" href="#standard-environment-owaenvstd" title="Permanent link">¶</a></h3>
 <p><em>Here is an example of how to use the standard environment to interact with clock functionalities.</em></p>
 <p><div class="highlight"><pre><span></span><code><a href="#__codelineno-2-1" id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
-<a href="#__codelineno-2-2" id="__codelineno-2-2" name="__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.core.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">CALLABLES</span><span class="p">,</span> <span class="n">LISTENERS</span><span class="p">,</span> <span class="n">activate_module</span>
+<a href="#__codelineno-2-2" id="__codelineno-2-2" name="__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.core.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">CALLABLES</span><span class="p">,</span> <span class="n">LISTENERS</span>
 <a href="#__codelineno-2-3" id="__codelineno-2-3" name="__codelineno-2-3"></a>
-<a href="#__codelineno-2-4" id="__codelineno-2-4" name="__codelineno-2-4"></a><span class="c1"># Initial registry state (empty)</span>
-<a href="#__codelineno-2-5" id="__codelineno-2-5" name="__codelineno-2-5"></a><span class="nb">print</span><span class="p">(</span><span class="n">CALLABLES</span><span class="p">,</span> <span class="n">LISTENERS</span><span class="p">)</span>  <span class="c1"># {}, {}</span>
+<a href="#__codelineno-2-4" id="__codelineno-2-4" name="__codelineno-2-4"></a><span class="c1"># Components automatically available - no activation needed!</span>
+<a href="#__codelineno-2-5" id="__codelineno-2-5" name="__codelineno-2-5"></a><span class="c1"># Unified namespace/name pattern: std/time_ns, std/tick</span>
 <a href="#__codelineno-2-6" id="__codelineno-2-6" name="__codelineno-2-6"></a>
-<a href="#__codelineno-2-7" id="__codelineno-2-7" name="__codelineno-2-7"></a><span class="c1"># Activate the standard module to register clock functionalities</span>
-<a href="#__codelineno-2-8" id="__codelineno-2-8" name="__codelineno-2-8"></a><span class="n">activate_module</span><span class="p">(</span><span class="s2">"owa.env.std"</span><span class="p">)</span>
-<a href="#__codelineno-2-9" id="__codelineno-2-9" name="__codelineno-2-9"></a><span class="nb">print</span><span class="p">(</span><span class="n">CALLABLES</span><span class="p">,</span> <span class="n">LISTENERS</span><span class="p">)</span>
-<a href="#__codelineno-2-10" id="__codelineno-2-10" name="__codelineno-2-10"></a><span class="c1"># {'clock.time_ns': &lt;built-in function time_ns&gt;} {'clock/tick': &lt;class 'owa.env.std.clock.ClockTickListener'&gt;}</span>
-<a href="#__codelineno-2-11" id="__codelineno-2-11" name="__codelineno-2-11"></a>
-<a href="#__codelineno-2-12" id="__codelineno-2-12" name="__codelineno-2-12"></a><span class="c1"># Testing the clock/tick listener</span>
-<a href="#__codelineno-2-13" id="__codelineno-2-13" name="__codelineno-2-13"></a><span class="n">tick</span> <span class="o">=</span> <span class="n">LISTENERS</span><span class="p">[</span><span class="s2">"clock/tick"</span><span class="p">]()</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">callback</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="n">CALLABLES</span><span class="p">[</span><span class="s2">"clock.time_ns"</span><span class="p">]()),</span> <span class="n">interval</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-<a href="#__codelineno-2-14" id="__codelineno-2-14" name="__codelineno-2-14"></a><span class="n">tick</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
-<a href="#__codelineno-2-15" id="__codelineno-2-15" name="__codelineno-2-15"></a>
-<a href="#__codelineno-2-16" id="__codelineno-2-16" name="__codelineno-2-16"></a><span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>  <span class="c1"># The listener prints the current time in nanoseconds a few times</span>
-<a href="#__codelineno-2-17" id="__codelineno-2-17" name="__codelineno-2-17"></a>
-<a href="#__codelineno-2-18" id="__codelineno-2-18" name="__codelineno-2-18"></a><span class="n">tick</span><span class="o">.</span><span class="n">stop</span><span class="p">(),</span> <span class="n">tick</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+<a href="#__codelineno-2-7" id="__codelineno-2-7" name="__codelineno-2-7"></a><span class="c1"># Testing the std/tick listener</span>
+<a href="#__codelineno-2-8" id="__codelineno-2-8" name="__codelineno-2-8"></a><span class="n">tick</span> <span class="o">=</span> <span class="n">LISTENERS</span><span class="p">[</span><span class="s2">"std/tick"</span><span class="p">]()</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">callback</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="n">CALLABLES</span><span class="p">[</span><span class="s2">"std/time_ns"</span><span class="p">]()),</span> <span class="n">interval</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<a href="#__codelineno-2-9" id="__codelineno-2-9" name="__codelineno-2-9"></a><span class="n">tick</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+<a href="#__codelineno-2-10" id="__codelineno-2-10" name="__codelineno-2-10"></a>
+<a href="#__codelineno-2-11" id="__codelineno-2-11" name="__codelineno-2-11"></a><span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>  <span class="c1"># The listener prints the current time in nanoseconds a few times</span>
+<a href="#__codelineno-2-12" id="__codelineno-2-12" name="__codelineno-2-12"></a>
+<a href="#__codelineno-2-13" id="__codelineno-2-13" name="__codelineno-2-13"></a><span class="n">tick</span><span class="o">.</span><span class="n">stop</span><span class="p">(),</span> <span class="n">tick</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
 </code></pre></div>
-<em>In this example, we activate the standard module, which registers clock functions and listeners. We then set up a tick listener that prints the current time every second.</em></p>
+<em>Components are automatically discovered and available after installation. All components use the unified <code>namespace/name</code> pattern.</em></p>
 <p>Instead of manual <code>start-stop-join</code> procedure, you may utilize context manager: <code>.session</code>! Following example shows how to abbreviate <code>start-stop-join</code> steps.</p>
 <div class="highlight"><pre><span></span><code><a href="#__codelineno-3-1" id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="k">with</span> <span class="n">tick</span><span class="o">.</span><span class="n">session</span><span class="p">:</span>
 <a href="#__codelineno-3-2" id="__codelineno-3-2" name="__codelineno-3-2"></a>    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="desktop-environment-owaenvdesktop">Desktop Environment (<code>owa.env.desktop</code>)<a class="headerlink" href="#desktop-environment-owaenvdesktop" title="Permanent link">¶</a></h3>
 <p><em>The desktop environment module provides capabilities for UI interaction and input handling.</em></p>
-<p><div class="highlight"><pre><span></span><code><a href="#__codelineno-4-1" id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.core.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">CALLABLES</span><span class="p">,</span> <span class="n">LISTENERS</span><span class="p">,</span> <span class="n">activate_module</span>
+<p><div class="highlight"><pre><span></span><code><a href="#__codelineno-4-1" id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.core.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">CALLABLES</span><span class="p">,</span> <span class="n">LISTENERS</span>
 <a href="#__codelineno-4-2" id="__codelineno-4-2" name="__codelineno-4-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.env.desktop.msg</span><span class="w"> </span><span class="kn">import</span> <span class="n">KeyboardEvent</span>
 <a href="#__codelineno-4-3" id="__codelineno-4-3" name="__codelineno-4-3"></a>
-<a href="#__codelineno-4-4" id="__codelineno-4-4" name="__codelineno-4-4"></a><span class="c1"># Activate the desktop module to enable UI and input capabilities</span>
-<a href="#__codelineno-4-5" id="__codelineno-4-5" name="__codelineno-4-5"></a><span class="n">activate_module</span><span class="p">(</span><span class="s2">"owa.env.desktop"</span><span class="p">)</span>
-<a href="#__codelineno-4-6" id="__codelineno-4-6" name="__codelineno-4-6"></a>
-<a href="#__codelineno-4-7" id="__codelineno-4-7" name="__codelineno-4-7"></a><span class="c1"># Using screen capture and window management features</span>
-<a href="#__codelineno-4-8" id="__codelineno-4-8" name="__codelineno-4-8"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">CALLABLES</span><span class="p">[</span><span class="s1">'screen.capture'</span><span class="p">]()</span><span class="o">.</span><span class="n">shape</span><span class="si">=}</span><span class="s2">"</span><span class="p">)</span>  <span class="c1"># Example output: (1080, 1920, 3)</span>
-<a href="#__codelineno-4-9" id="__codelineno-4-9" name="__codelineno-4-9"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">CALLABLES</span><span class="p">[</span><span class="s1">'window.get_active_window'</span><span class="p">]()</span><span class="si">=}</span><span class="s2">"</span><span class="p">)</span>
-<a href="#__codelineno-4-10" id="__codelineno-4-10" name="__codelineno-4-10"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">CALLABLES</span><span class="p">[</span><span class="s1">'window.get_window_by_title'</span><span class="p">](</span><span class="s1">'open-world-agents'</span><span class="p">)</span><span class="si">=}</span><span class="s2">"</span><span class="p">)</span>
-<a href="#__codelineno-4-11" id="__codelineno-4-11" name="__codelineno-4-11"></a>
-<a href="#__codelineno-4-12" id="__codelineno-4-12" name="__codelineno-4-12"></a><span class="c1"># Simulating a mouse click (left button, double click)</span>
-<a href="#__codelineno-4-13" id="__codelineno-4-13" name="__codelineno-4-13"></a><span class="n">mouse_click</span> <span class="o">=</span> <span class="n">CALLABLES</span><span class="p">[</span><span class="s2">"mouse.click"</span><span class="p">]</span>
-<a href="#__codelineno-4-14" id="__codelineno-4-14" name="__codelineno-4-14"></a><span class="n">mouse_click</span><span class="p">(</span><span class="s2">"left"</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<a href="#__codelineno-4-4" id="__codelineno-4-4" name="__codelineno-4-4"></a><span class="c1"># Components automatically available - unified namespace/name pattern</span>
+<a href="#__codelineno-4-5" id="__codelineno-4-5" name="__codelineno-4-5"></a>
+<a href="#__codelineno-4-6" id="__codelineno-4-6" name="__codelineno-4-6"></a><span class="c1"># Using screen capture and window management features</span>
+<a href="#__codelineno-4-7" id="__codelineno-4-7" name="__codelineno-4-7"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">CALLABLES</span><span class="p">[</span><span class="s1">'desktop/screen.capture'</span><span class="p">]()</span><span class="o">.</span><span class="n">shape</span><span class="si">=}</span><span class="s2">"</span><span class="p">)</span>  <span class="c1"># Example output: (1080, 1920, 3)</span>
+<a href="#__codelineno-4-8" id="__codelineno-4-8" name="__codelineno-4-8"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">CALLABLES</span><span class="p">[</span><span class="s1">'desktop/window.get_active_window'</span><span class="p">]()</span><span class="si">=}</span><span class="s2">"</span><span class="p">)</span>
+<a href="#__codelineno-4-9" id="__codelineno-4-9" name="__codelineno-4-9"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">CALLABLES</span><span class="p">[</span><span class="s1">'desktop/window.get_window_by_title'</span><span class="p">](</span><span class="s1">'open-world-agents'</span><span class="p">)</span><span class="si">=}</span><span class="s2">"</span><span class="p">)</span>
+<a href="#__codelineno-4-10" id="__codelineno-4-10" name="__codelineno-4-10"></a>
+<a href="#__codelineno-4-11" id="__codelineno-4-11" name="__codelineno-4-11"></a><span class="c1"># Simulating a mouse click (left button, double click)</span>
+<a href="#__codelineno-4-12" id="__codelineno-4-12" name="__codelineno-4-12"></a><span class="n">mouse_click</span> <span class="o">=</span> <span class="n">CALLABLES</span><span class="p">[</span><span class="s2">"desktop/mouse.click"</span><span class="p">]</span>
+<a href="#__codelineno-4-13" id="__codelineno-4-13" name="__codelineno-4-13"></a><span class="n">mouse_click</span><span class="p">(</span><span class="s2">"left"</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<a href="#__codelineno-4-14" id="__codelineno-4-14" name="__codelineno-4-14"></a>
 <a href="#__codelineno-4-15" id="__codelineno-4-15" name="__codelineno-4-15"></a>
-<a href="#__codelineno-4-16" id="__codelineno-4-16" name="__codelineno-4-16"></a>
-<a href="#__codelineno-4-17" id="__codelineno-4-17" name="__codelineno-4-17"></a><span class="c1"># Configuring a keyboard listener</span>
-<a href="#__codelineno-4-18" id="__codelineno-4-18" name="__codelineno-4-18"></a><span class="k">def</span><span class="w"> </span><span class="nf">on_keyboard_event</span><span class="p">(</span><span class="n">keyboard_event</span><span class="p">:</span> <span class="n">KeyboardEvent</span><span class="p">):</span>
-<a href="#__codelineno-4-19" id="__codelineno-4-19" name="__codelineno-4-19"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Keyboard event: </span><span class="si">{</span><span class="n">keyboard_event</span><span class="o">.</span><span class="n">event_type</span><span class="si">=}</span><span class="s2">, </span><span class="si">{</span><span class="n">keyboard_event</span><span class="o">.</span><span class="n">vk</span><span class="si">=}</span><span class="s2">"</span><span class="p">)</span>
+<a href="#__codelineno-4-16" id="__codelineno-4-16" name="__codelineno-4-16"></a><span class="c1"># Configuring a keyboard listener</span>
+<a href="#__codelineno-4-17" id="__codelineno-4-17" name="__codelineno-4-17"></a><span class="k">def</span><span class="w"> </span><span class="nf">on_keyboard_event</span><span class="p">(</span><span class="n">keyboard_event</span><span class="p">:</span> <span class="n">KeyboardEvent</span><span class="p">):</span>
+<a href="#__codelineno-4-18" id="__codelineno-4-18" name="__codelineno-4-18"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Keyboard event: </span><span class="si">{</span><span class="n">keyboard_event</span><span class="o">.</span><span class="n">event_type</span><span class="si">=}</span><span class="s2">, </span><span class="si">{</span><span class="n">keyboard_event</span><span class="o">.</span><span class="n">vk</span><span class="si">=}</span><span class="s2">"</span><span class="p">)</span>
+<a href="#__codelineno-4-19" id="__codelineno-4-19" name="__codelineno-4-19"></a>
 <a href="#__codelineno-4-20" id="__codelineno-4-20" name="__codelineno-4-20"></a>
-<a href="#__codelineno-4-21" id="__codelineno-4-21" name="__codelineno-4-21"></a>
-<a href="#__codelineno-4-22" id="__codelineno-4-22" name="__codelineno-4-22"></a><span class="n">keyboard_listener</span> <span class="o">=</span> <span class="n">LISTENERS</span><span class="p">[</span><span class="s2">"keyboard"</span><span class="p">]()</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">callback</span><span class="o">=</span><span class="n">on_keyboard_event</span><span class="p">)</span>
-<a href="#__codelineno-4-23" id="__codelineno-4-23" name="__codelineno-4-23"></a><span class="k">with</span> <span class="n">keyboard_listener</span><span class="o">.</span><span class="n">session</span><span class="p">:</span>
-<a href="#__codelineno-4-24" id="__codelineno-4-24" name="__codelineno-4-24"></a>    <span class="nb">input</span><span class="p">(</span><span class="s2">"Type enter to exit.</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+<a href="#__codelineno-4-21" id="__codelineno-4-21" name="__codelineno-4-21"></a><span class="n">keyboard_listener</span> <span class="o">=</span> <span class="n">LISTENERS</span><span class="p">[</span><span class="s2">"desktop/keyboard"</span><span class="p">]()</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">callback</span><span class="o">=</span><span class="n">on_keyboard_event</span><span class="p">)</span>
+<a href="#__codelineno-4-22" id="__codelineno-4-22" name="__codelineno-4-22"></a><span class="k">with</span> <span class="n">keyboard_listener</span><span class="o">.</span><span class="n">session</span><span class="p">:</span>
+<a href="#__codelineno-4-23" id="__codelineno-4-23" name="__codelineno-4-23"></a>    <span class="nb">input</span><span class="p">(</span><span class="s2">"Type enter to exit.</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
 </code></pre></div>
-<em>This code demonstrates capturing the screen, retrieving window information, simulating mouse clicks, and listening to keyboard events.</em></p>
+<em>Components are automatically available with unified naming. This code demonstrates capturing the screen, retrieving window information, simulating mouse clicks, and listening to keyboard events.</em></p>
 <h3 id="custom-envplugin-example">Custom EnvPlugin Example<a class="headerlink" href="#custom-envplugin-example" title="Permanent link">¶</a></h3>
-<p>Also, you can register your own EnvPlugin which contains custom <strong>Callable</strong>, <strong>Listener</strong>, or <strong>Runnable</strong>. For more information, see <a href="../custom_plugins/">Custom EnvPlugin</a>.</p>
+<p>You can create your own plugins using Entry Points for automatic discovery. For more information, see <a href="../custom_plugins/">Custom EnvPlugin</a>.</p>
 <p><em>Creating custom plugins allows you to extend the OWA environment with your own functionalities.</em></p>
-<p><div class="highlight"><pre><span></span><code><a href="#__codelineno-5-1" id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
-<a href="#__codelineno-5-2" id="__codelineno-5-2" name="__codelineno-5-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">Listener</span>
-<a href="#__codelineno-5-3" id="__codelineno-5-3" name="__codelineno-5-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.core.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">CALLABLES</span><span class="p">,</span> <span class="n">LISTENERS</span>
+<p><div class="highlight"><pre><span></span><code><a href="#__codelineno-5-1" id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="c1"># In your plugin's pyproject.toml:</span>
+<a href="#__codelineno-5-2" id="__codelineno-5-2" name="__codelineno-5-2"></a><span class="c1"># [project.entry-points."owa.env.plugins"]</span>
+<a href="#__codelineno-5-3" id="__codelineno-5-3" name="__codelineno-5-3"></a><span class="c1"># myplugin = "owa.env.myplugin:plugin_spec"</span>
 <a href="#__codelineno-5-4" id="__codelineno-5-4" name="__codelineno-5-4"></a>
-<a href="#__codelineno-5-5" id="__codelineno-5-5" name="__codelineno-5-5"></a><span class="c1"># Register your custom callables</span>
-<a href="#__codelineno-5-6" id="__codelineno-5-6" name="__codelineno-5-6"></a><span class="nd">@CALLABLES</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">"my_module.add"</span><span class="p">)</span>
-<a href="#__codelineno-5-7" id="__codelineno-5-7" name="__codelineno-5-7"></a><span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
-<a href="#__codelineno-5-8" id="__codelineno-5-8" name="__codelineno-5-8"></a>    <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
-<a href="#__codelineno-5-9" id="__codelineno-5-9" name="__codelineno-5-9"></a>
-<a href="#__codelineno-5-10" id="__codelineno-5-10" name="__codelineno-5-10"></a><span class="c1"># Register a custom listener</span>
-<a href="#__codelineno-5-11" id="__codelineno-5-11" name="__codelineno-5-11"></a><span class="nd">@LISTENERS</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">"my_module/events"</span><span class="p">)</span>
-<a href="#__codelineno-5-12" id="__codelineno-5-12" name="__codelineno-5-12"></a><span class="k">class</span><span class="w"> </span><span class="nc">EventListener</span><span class="p">(</span><span class="n">Listener</span><span class="p">):</span>
-<a href="#__codelineno-5-13" id="__codelineno-5-13" name="__codelineno-5-13"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">on_configure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
-<a href="#__codelineno-5-14" id="__codelineno-5-14" name="__codelineno-5-14"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="n">args</span>
-<a href="#__codelineno-5-15" id="__codelineno-5-15" name="__codelineno-5-15"></a>
-<a href="#__codelineno-5-16" id="__codelineno-5-16" name="__codelineno-5-16"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">loop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">stop_event</span><span class="p">,</span> <span class="n">callback</span><span class="p">):</span>
-<a href="#__codelineno-5-17" id="__codelineno-5-17" name="__codelineno-5-17"></a>        <span class="k">while</span> <span class="ow">not</span> <span class="n">stop_event</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
-<a href="#__codelineno-5-18" id="__codelineno-5-18" name="__codelineno-5-18"></a>            <span class="n">callback</span><span class="p">(</span><span class="s2">"Event"</span><span class="p">)</span>
-<a href="#__codelineno-5-19" id="__codelineno-5-19" name="__codelineno-5-19"></a>            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-<a href="#__codelineno-5-20" id="__codelineno-5-20" name="__codelineno-5-20"></a>
-<a href="#__codelineno-5-21" id="__codelineno-5-21" name="__codelineno-5-21"></a><span class="c1"># Using the custom module</span>
-<a href="#__codelineno-5-22" id="__codelineno-5-22" name="__codelineno-5-22"></a><span class="n">result</span> <span class="o">=</span> <span class="n">CALLABLES</span><span class="p">[</span><span class="s2">"my_module.add"</span><span class="p">](</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>  <span class="c1"># Returns 8</span>
+<a href="#__codelineno-5-5" id="__codelineno-5-5" name="__codelineno-5-5"></a><span class="c1"># In your plugin specification:</span>
+<a href="#__codelineno-5-6" id="__codelineno-5-6" name="__codelineno-5-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.core.plugin_spec</span><span class="w"> </span><span class="kn">import</span> <span class="n">PluginSpec</span>
+<a href="#__codelineno-5-7" id="__codelineno-5-7" name="__codelineno-5-7"></a>
+<a href="#__codelineno-5-8" id="__codelineno-5-8" name="__codelineno-5-8"></a><span class="n">plugin_spec</span> <span class="o">=</span> <span class="n">PluginSpec</span><span class="p">(</span>
+<a href="#__codelineno-5-9" id="__codelineno-5-9" name="__codelineno-5-9"></a>    <span class="n">namespace</span><span class="o">=</span><span class="s2">"myplugin"</span><span class="p">,</span>
+<a href="#__codelineno-5-10" id="__codelineno-5-10" name="__codelineno-5-10"></a>    <span class="n">version</span><span class="o">=</span><span class="s2">"0.1.0"</span><span class="p">,</span>
+<a href="#__codelineno-5-11" id="__codelineno-5-11" name="__codelineno-5-11"></a>    <span class="n">description</span><span class="o">=</span><span class="s2">"My custom plugin"</span><span class="p">,</span>
+<a href="#__codelineno-5-12" id="__codelineno-5-12" name="__codelineno-5-12"></a>    <span class="n">components</span><span class="o">=</span><span class="p">{</span>
+<a href="#__codelineno-5-13" id="__codelineno-5-13" name="__codelineno-5-13"></a>        <span class="s2">"callables"</span><span class="p">:</span> <span class="p">{</span>
+<a href="#__codelineno-5-14" id="__codelineno-5-14" name="__codelineno-5-14"></a>            <span class="s2">"add"</span><span class="p">:</span> <span class="s2">"owa.env.myplugin:add_function"</span><span class="p">,</span>
+<a href="#__codelineno-5-15" id="__codelineno-5-15" name="__codelineno-5-15"></a>        <span class="p">},</span>
+<a href="#__codelineno-5-16" id="__codelineno-5-16" name="__codelineno-5-16"></a>        <span class="s2">"listeners"</span><span class="p">:</span> <span class="p">{</span>
+<a href="#__codelineno-5-17" id="__codelineno-5-17" name="__codelineno-5-17"></a>            <span class="s2">"events"</span><span class="p">:</span> <span class="s2">"owa.env.myplugin:EventListener"</span><span class="p">,</span>
+<a href="#__codelineno-5-18" id="__codelineno-5-18" name="__codelineno-5-18"></a>        <span class="p">}</span>
+<a href="#__codelineno-5-19" id="__codelineno-5-19" name="__codelineno-5-19"></a>    <span class="p">}</span>
+<a href="#__codelineno-5-20" id="__codelineno-5-20" name="__codelineno-5-20"></a><span class="p">)</span>
+<a href="#__codelineno-5-21" id="__codelineno-5-21" name="__codelineno-5-21"></a>
+<a href="#__codelineno-5-22" id="__codelineno-5-22" name="__codelineno-5-22"></a><span class="c1"># Using the custom plugin (automatically available after pip install)</span>
+<a href="#__codelineno-5-23" id="__codelineno-5-23" name="__codelineno-5-23"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.core.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">CALLABLES</span><span class="p">,</span> <span class="n">LISTENERS</span>
+<a href="#__codelineno-5-24" id="__codelineno-5-24" name="__codelineno-5-24"></a><span class="n">result</span> <span class="o">=</span> <span class="n">CALLABLES</span><span class="p">[</span><span class="s2">"myplugin/add"</span><span class="p">](</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>  <span class="c1"># Returns 8</span>
 </code></pre></div>
-<em>In this example, we define a custom module with an add function and a custom event listener.</em></p>
+<em>Plugins use Entry Points for automatic discovery and unified <code>namespace/name</code> pattern for all components.</em></p>
 <h2 id="architecture-summary">Architecture Summary<a class="headerlink" href="#architecture-summary" title="Permanent link">¶</a></h2>
 <p><em>The diagram below summarizes the architecture of the OWA environment and how components are registered and used.</em></p>
 <pre class="mermaid"><code>graph LR;
-    R[Registry] --&gt;|Registers| SM["Standard Module(owa.env.std)"]
-    R --&gt;|Registers| DM["Desktop Module(owa.env.desktop)"]
-    SM --&gt;|Provides| C1[clock.time_ns]
-    SM --&gt;|Provides| L1[clock/tick Listener]
-    DM --&gt;|Provides| C2[screen.capture]
-    DM --&gt;|Provides| C3[window.get_active_window]
-    DM --&gt;|Provides| L2[keyboard Listener]
-    User --&gt;|Activates| AM[activate_module]
-    AM --&gt; R</code></pre>
+    EP[Entry Points] --&gt;|Auto-discovers| SM["Standard Plugin(owa.env.std)"]
+    EP --&gt;|Auto-discovers| DM["Desktop Plugin(owa.env.desktop)"]
+    SM --&gt;|Provides| C1[std/time_ns]
+    SM --&gt;|Provides| L1[std/tick Listener]
+    DM --&gt;|Provides| C2[desktop/screen.capture]
+    DM --&gt;|Provides| C3[desktop/window.get_active_window]
+    DM --&gt;|Provides| L2[desktop/keyboard Listener]
+    User --&gt;|pip install| PI[Plugin Installation]
+    PI --&gt; EP
+    EP --&gt; R[Registry]</code></pre>
+<h2 id="cli-tools-for-plugin-management">CLI Tools for Plugin Management<a class="headerlink" href="#cli-tools-for-plugin-management" title="Permanent link">¶</a></h2>
+<p>The <code>owl env</code> command provides powerful tools for managing and exploring plugins with enhanced filtering, search, and analysis capabilities:</p>
+<h3 id="plugin-discovery-and-listing">Plugin Discovery and Listing<a class="headerlink" href="#plugin-discovery-and-listing" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-6-1" id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="c1"># List all discovered plugins</span>
+<a href="#__codelineno-6-2" id="__codelineno-6-2" name="__codelineno-6-2"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>list
+<a href="#__codelineno-6-3" id="__codelineno-6-3" name="__codelineno-6-3"></a>
+<a href="#__codelineno-6-4" id="__codelineno-6-4" name="__codelineno-6-4"></a><span class="c1"># Enhanced filtering and display options</span>
+<a href="#__codelineno-6-5" id="__codelineno-6-5" name="__codelineno-6-5"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>list<span class="w"> </span>--namespace<span class="w"> </span>example<span class="w">                </span><span class="c1"># Filter by namespace</span>
+<a href="#__codelineno-6-6" id="__codelineno-6-6" name="__codelineno-6-6"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>list<span class="w"> </span>--type<span class="w"> </span>callables<span class="w">                   </span><span class="c1"># Filter by component type</span>
+<a href="#__codelineno-6-7" id="__codelineno-6-7" name="__codelineno-6-7"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>list<span class="w"> </span>--search<span class="w"> </span>mouse<span class="w">                     </span><span class="c1"># Search by pattern</span>
+<a href="#__codelineno-6-8" id="__codelineno-6-8" name="__codelineno-6-8"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>list<span class="w"> </span>--details<span class="w">                          </span><span class="c1"># Show import paths and load status</span>
+<a href="#__codelineno-6-9" id="__codelineno-6-9" name="__codelineno-6-9"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>list<span class="w"> </span>--table<span class="w">                            </span><span class="c1"># Display in table format</span>
+<a href="#__codelineno-6-10" id="__codelineno-6-10" name="__codelineno-6-10"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>list<span class="w"> </span>--sort<span class="w"> </span>name<span class="w">                        </span><span class="c1"># Sort by name, namespace, or type</span>
+</code></pre></div>
+<h3 id="plugin-information-and-inspection">Plugin Information and Inspection<a class="headerlink" href="#plugin-information-and-inspection" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-7-1" id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="c1"># Show plugin summary</span>
+<a href="#__codelineno-7-2" id="__codelineno-7-2" name="__codelineno-7-2"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>show<span class="w"> </span>example
+<a href="#__codelineno-7-3" id="__codelineno-7-3" name="__codelineno-7-3"></a>
+<a href="#__codelineno-7-4" id="__codelineno-7-4" name="__codelineno-7-4"></a><span class="c1"># Enhanced plugin exploration</span>
+<a href="#__codelineno-7-5" id="__codelineno-7-5" name="__codelineno-7-5"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>show<span class="w"> </span>example<span class="w"> </span>--components<span class="w">               </span><span class="c1"># Show detailed component list</span>
+<a href="#__codelineno-7-6" id="__codelineno-7-6" name="__codelineno-7-6"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>show<span class="w"> </span>example<span class="w"> </span>--inspect<span class="w"> </span>mouse.click<span class="w">      </span><span class="c1"># Inspect specific component</span>
+<a href="#__codelineno-7-7" id="__codelineno-7-7" name="__codelineno-7-7"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>show<span class="w"> </span>example<span class="w"> </span>--type<span class="w"> </span>callables<span class="w">           </span><span class="c1"># Filter by component type</span>
+<a href="#__codelineno-7-8" id="__codelineno-7-8" name="__codelineno-7-8"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>show<span class="w"> </span>example<span class="w"> </span>--search<span class="w"> </span>window<span class="w">            </span><span class="c1"># Search within namespace</span>
+<a href="#__codelineno-7-9" id="__codelineno-7-9" name="__codelineno-7-9"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>show<span class="w"> </span>example<span class="w"> </span>--table<span class="w">                    </span><span class="c1"># Display in table format</span>
+</code></pre></div>
+<h3 id="advanced-search-and-discovery">Advanced Search and Discovery<a class="headerlink" href="#advanced-search-and-discovery" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-8-1" id="__codelineno-8-1" name="__codelineno-8-1"></a><span class="c1"># Search across all plugins</span>
+<a href="#__codelineno-8-2" id="__codelineno-8-2" name="__codelineno-8-2"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>search<span class="w"> </span><span class="s2">"mouse.*click"</span><span class="w">                   </span><span class="c1"># Regex pattern search</span>
+<a href="#__codelineno-8-3" id="__codelineno-8-3" name="__codelineno-8-3"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>search<span class="w"> </span>window<span class="w"> </span>--details<span class="w"> </span>--table<span class="w">         </span><span class="c1"># Detailed search results</span>
+<a href="#__codelineno-8-4" id="__codelineno-8-4" name="__codelineno-8-4"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>search<span class="w"> </span>keyboard<span class="w"> </span>--type<span class="w"> </span>callables<span class="w">        </span><span class="c1"># Search specific component type</span>
+<a href="#__codelineno-8-5" id="__codelineno-8-5" name="__codelineno-8-5"></a>
+<a href="#__codelineno-8-6" id="__codelineno-8-6" name="__codelineno-8-6"></a><span class="c1"># Quick access shortcuts</span>
+<a href="#__codelineno-8-7" id="__codelineno-8-7" name="__codelineno-8-7"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>ls<span class="w">                                       </span><span class="c1"># Quick plugin list</span>
+<a href="#__codelineno-8-8" id="__codelineno-8-8" name="__codelineno-8-8"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>ls<span class="w"> </span>desktop<span class="w">                              </span><span class="c1"># Quick namespace exploration</span>
+<a href="#__codelineno-8-9" id="__codelineno-8-9" name="__codelineno-8-9"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>find<span class="w"> </span>mouse<span class="w">                              </span><span class="c1"># Quick component search</span>
+<a href="#__codelineno-8-10" id="__codelineno-8-10" name="__codelineno-8-10"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>namespaces<span class="w">                              </span><span class="c1"># List all available namespaces</span>
+</code></pre></div>
+<h3 id="ecosystem-analysis">Ecosystem Analysis<a class="headerlink" href="#ecosystem-analysis" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-9-1" id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="c1"># Statistics and health monitoring</span>
+<a href="#__codelineno-9-2" id="__codelineno-9-2" name="__codelineno-9-2"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>stats<span class="w">                                    </span><span class="c1"># Show ecosystem statistics</span>
+<a href="#__codelineno-9-3" id="__codelineno-9-3" name="__codelineno-9-3"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>stats<span class="w"> </span>--by-namespace<span class="w">                    </span><span class="c1"># Group by namespace</span>
+<a href="#__codelineno-9-4" id="__codelineno-9-4" name="__codelineno-9-4"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>stats<span class="w"> </span>--by-type<span class="w">                         </span><span class="c1"># Group by component type</span>
+<a href="#__codelineno-9-5" id="__codelineno-9-5" name="__codelineno-9-5"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>health<span class="w">                                   </span><span class="c1"># Perform health check</span>
+</code></pre></div>
+<h3 id="plugin-development">Plugin Development<a class="headerlink" href="#plugin-development" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-10-1" id="__codelineno-10-1" name="__codelineno-10-1"></a><span class="c1"># Validate plugin specifications</span>
+<a href="#__codelineno-10-2" id="__codelineno-10-2" name="__codelineno-10-2"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>validate<span class="w"> </span>./plugin.yaml
+</code></pre></div>
+<h3 id="example-cli-output">Example CLI Output<a class="headerlink" href="#example-cli-output" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-11-1" id="__codelineno-11-1" name="__codelineno-11-1"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>list
+<a href="#__codelineno-11-2" id="__codelineno-11-2" name="__codelineno-11-2"></a>📦<span class="w"> </span>Discovered<span class="w"> </span>Plugins<span class="w"> </span><span class="o">(</span><span class="m">4</span><span class="o">)</span>
+<a href="#__codelineno-11-3" id="__codelineno-11-3" name="__codelineno-11-3"></a>├──<span class="w"> </span>desktop<span class="w"> </span><span class="o">(</span><span class="m">25</span><span class="w"> </span>components<span class="o">)</span>
+<a href="#__codelineno-11-4" id="__codelineno-11-4" name="__codelineno-11-4"></a>│<span class="w">   </span>├──<span class="w"> </span>📞<span class="w"> </span>Callables:<span class="w"> </span><span class="m">20</span>
+<a href="#__codelineno-11-5" id="__codelineno-11-5" name="__codelineno-11-5"></a>│<span class="w">   </span>└──<span class="w"> </span>👂<span class="w"> </span>Listeners:<span class="w"> </span><span class="m">5</span>
+<a href="#__codelineno-11-6" id="__codelineno-11-6" name="__codelineno-11-6"></a>├──<span class="w"> </span>example<span class="w"> </span><span class="o">(</span><span class="m">7</span><span class="w"> </span>components<span class="o">)</span>
+<a href="#__codelineno-11-7" id="__codelineno-11-7" name="__codelineno-11-7"></a>│<span class="w">   </span>├──<span class="w"> </span>📞<span class="w"> </span>Callables:<span class="w"> </span><span class="m">3</span>
+<a href="#__codelineno-11-8" id="__codelineno-11-8" name="__codelineno-11-8"></a>│<span class="w">   </span>├──<span class="w"> </span>👂<span class="w"> </span>Listeners:<span class="w"> </span><span class="m">2</span>
+<a href="#__codelineno-11-9" id="__codelineno-11-9" name="__codelineno-11-9"></a>│<span class="w">   </span>└──<span class="w"> </span>🏃<span class="w"> </span>Runnables:<span class="w"> </span><span class="m">2</span>
+<a href="#__codelineno-11-10" id="__codelineno-11-10" name="__codelineno-11-10"></a>├──<span class="w"> </span>gst<span class="w"> </span><span class="o">(</span><span class="m">4</span><span class="w"> </span>components<span class="o">)</span>
+<a href="#__codelineno-11-11" id="__codelineno-11-11" name="__codelineno-11-11"></a>│<span class="w">   </span>├──<span class="w"> </span>👂<span class="w"> </span>Listeners:<span class="w"> </span><span class="m">2</span>
+<a href="#__codelineno-11-12" id="__codelineno-11-12" name="__codelineno-11-12"></a>│<span class="w">   </span>└──<span class="w"> </span>🏃<span class="w"> </span>Runnables:<span class="w"> </span><span class="m">2</span>
+<a href="#__codelineno-11-13" id="__codelineno-11-13" name="__codelineno-11-13"></a>└──<span class="w"> </span>std<span class="w"> </span><span class="o">(</span><span class="m">2</span><span class="w"> </span>components<span class="o">)</span>
+<a href="#__codelineno-11-14" id="__codelineno-11-14" name="__codelineno-11-14"></a><span class="w">    </span>├──<span class="w"> </span>📞<span class="w"> </span>Callables:<span class="w"> </span><span class="m">1</span>
+<a href="#__codelineno-11-15" id="__codelineno-11-15" name="__codelineno-11-15"></a><span class="w">    </span>└──<span class="w"> </span>👂<span class="w"> </span>Listeners:<span class="w"> </span><span class="m">1</span>
+<a href="#__codelineno-11-16" id="__codelineno-11-16" name="__codelineno-11-16"></a>
+<a href="#__codelineno-11-17" id="__codelineno-11-17" name="__codelineno-11-17"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>show<span class="w"> </span>example<span class="w"> </span>--components
+<a href="#__codelineno-11-18" id="__codelineno-11-18" name="__codelineno-11-18"></a>📦<span class="w"> </span>Plugin:<span class="w"> </span>example<span class="w"> </span><span class="o">(</span><span class="m">7</span><span class="w"> </span>components<span class="o">)</span>
+<a href="#__codelineno-11-19" id="__codelineno-11-19" name="__codelineno-11-19"></a>├──<span class="w"> </span>📞<span class="w"> </span>Callables:<span class="w"> </span><span class="m">3</span>
+<a href="#__codelineno-11-20" id="__codelineno-11-20" name="__codelineno-11-20"></a>├──<span class="w"> </span>👂<span class="w"> </span>Listeners:<span class="w"> </span><span class="m">2</span>
+<a href="#__codelineno-11-21" id="__codelineno-11-21" name="__codelineno-11-21"></a>└──<span class="w"> </span>🏃<span class="w"> </span>Runnables:<span class="w"> </span><span class="m">2</span>
+<a href="#__codelineno-11-22" id="__codelineno-11-22" name="__codelineno-11-22"></a>📞<span class="w"> </span>Callables<span class="w"> </span><span class="o">(</span><span class="m">3</span><span class="o">)</span>
+<a href="#__codelineno-11-23" id="__codelineno-11-23" name="__codelineno-11-23"></a>├──<span class="w"> </span>example/add
+<a href="#__codelineno-11-24" id="__codelineno-11-24" name="__codelineno-11-24"></a>├──<span class="w"> </span>example/callable
+<a href="#__codelineno-11-25" id="__codelineno-11-25" name="__codelineno-11-25"></a>└──<span class="w"> </span>example/print
+<a href="#__codelineno-11-26" id="__codelineno-11-26" name="__codelineno-11-26"></a>👂<span class="w"> </span>Listeners<span class="w"> </span><span class="o">(</span><span class="m">2</span><span class="o">)</span>
+<a href="#__codelineno-11-27" id="__codelineno-11-27" name="__codelineno-11-27"></a>├──<span class="w"> </span>example/listener
+<a href="#__codelineno-11-28" id="__codelineno-11-28" name="__codelineno-11-28"></a>└──<span class="w"> </span>example/timer
+<a href="#__codelineno-11-29" id="__codelineno-11-29" name="__codelineno-11-29"></a>🏃<span class="w"> </span>Runnables<span class="w"> </span><span class="o">(</span><span class="m">2</span><span class="o">)</span>
+<a href="#__codelineno-11-30" id="__codelineno-11-30" name="__codelineno-11-30"></a>├──<span class="w"> </span>example/counter
+<a href="#__codelineno-11-31" id="__codelineno-11-31" name="__codelineno-11-31"></a>└──<span class="w"> </span>example/runnable
+<a href="#__codelineno-11-32" id="__codelineno-11-32" name="__codelineno-11-32"></a>
+<a href="#__codelineno-11-33" id="__codelineno-11-33" name="__codelineno-11-33"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>search<span class="w"> </span><span class="s2">"mouse"</span><span class="w"> </span>--table
+<a href="#__codelineno-11-34" id="__codelineno-11-34" name="__codelineno-11-34"></a><span class="w">               </span>Search<span class="w"> </span>Results<span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="s1">'mouse'</span><span class="w"> </span><span class="o">(</span><span class="m">9</span><span class="w"> </span>matches<span class="o">)</span>
+<a href="#__codelineno-11-35" id="__codelineno-11-35" name="__codelineno-11-35"></a>┏━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┓
+<a href="#__codelineno-11-36" id="__codelineno-11-36" name="__codelineno-11-36"></a>┃<span class="w"> </span>Component<span class="w">               </span>┃<span class="w"> </span>Type<span class="w">      </span>┃<span class="w"> </span>Namespace<span class="w"> </span>┃<span class="w"> </span>Name<span class="w">            </span>┃
+<a href="#__codelineno-11-37" id="__codelineno-11-37" name="__codelineno-11-37"></a>┡━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━┩
+<a href="#__codelineno-11-38" id="__codelineno-11-38" name="__codelineno-11-38"></a>│<span class="w"> </span>desktop/mouse<span class="w">           </span>│<span class="w"> </span>listeners<span class="w"> </span>│<span class="w"> </span>desktop<span class="w">   </span>│<span class="w"> </span>mouse<span class="w">           </span>│
+<a href="#__codelineno-11-39" id="__codelineno-11-39" name="__codelineno-11-39"></a>│<span class="w"> </span>desktop/mouse.click<span class="w">     </span>│<span class="w"> </span>callables<span class="w"> </span>│<span class="w"> </span>desktop<span class="w">   </span>│<span class="w"> </span>mouse.click<span class="w">     </span>│
+<a href="#__codelineno-11-40" id="__codelineno-11-40" name="__codelineno-11-40"></a>│<span class="w"> </span>desktop/mouse.move<span class="w">      </span>│<span class="w"> </span>callables<span class="w"> </span>│<span class="w"> </span>desktop<span class="w">   </span>│<span class="w"> </span>mouse.move<span class="w">      </span>│
+<a href="#__codelineno-11-41" id="__codelineno-11-41" name="__codelineno-11-41"></a>│<span class="w"> </span>desktop/mouse.press<span class="w">     </span>│<span class="w"> </span>callables<span class="w"> </span>│<span class="w"> </span>desktop<span class="w">   </span>│<span class="w"> </span>mouse.press<span class="w">     </span>│
+<a href="#__codelineno-11-42" id="__codelineno-11-42" name="__codelineno-11-42"></a>│<span class="w"> </span>desktop/mouse.scroll<span class="w">    </span>│<span class="w"> </span>callables<span class="w"> </span>│<span class="w"> </span>desktop<span class="w">   </span>│<span class="w"> </span>mouse.scroll<span class="w">    </span>│
+<a href="#__codelineno-11-43" id="__codelineno-11-43" name="__codelineno-11-43"></a>└─────────────────────────┴───────────┴───────────┴─────────────────┘
+<a href="#__codelineno-11-44" id="__codelineno-11-44" name="__codelineno-11-44"></a>
+<a href="#__codelineno-11-45" id="__codelineno-11-45" name="__codelineno-11-45"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>namespaces
+<a href="#__codelineno-11-46" id="__codelineno-11-46" name="__codelineno-11-46"></a><span class="w">             </span>Available<span class="w"> </span>Namespaces
+<a href="#__codelineno-11-47" id="__codelineno-11-47" name="__codelineno-11-47"></a>┏━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┓
+<a href="#__codelineno-11-48" id="__codelineno-11-48" name="__codelineno-11-48"></a>┃<span class="w"> </span>Namespace<span class="w"> </span>┃<span class="w"> </span>Components<span class="w"> </span>┃<span class="w"> </span>Quick<span class="w"> </span>Access<span class="w">       </span>┃
+<a href="#__codelineno-11-49" id="__codelineno-11-49" name="__codelineno-11-49"></a>┡━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━┩
+<a href="#__codelineno-11-50" id="__codelineno-11-50" name="__codelineno-11-50"></a>│<span class="w"> </span>desktop<span class="w">   </span>│<span class="w">        </span><span class="m">25</span><span class="w"> </span>│<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>ls<span class="w"> </span>desktop<span class="w"> </span>│
+<a href="#__codelineno-11-51" id="__codelineno-11-51" name="__codelineno-11-51"></a>│<span class="w"> </span>example<span class="w">   </span>│<span class="w">         </span><span class="m">7</span><span class="w"> </span>│<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>ls<span class="w"> </span>example<span class="w"> </span>│
+<a href="#__codelineno-11-52" id="__codelineno-11-52" name="__codelineno-11-52"></a>│<span class="w"> </span>gst<span class="w">       </span>│<span class="w">         </span><span class="m">4</span><span class="w"> </span>│<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>ls<span class="w"> </span>gst<span class="w">     </span>│
+<a href="#__codelineno-11-53" id="__codelineno-11-53" name="__codelineno-11-53"></a>│<span class="w"> </span>std<span class="w">       </span>│<span class="w">         </span><span class="m">2</span><span class="w"> </span>│<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>ls<span class="w"> </span>std<span class="w">     </span>│
+<a href="#__codelineno-11-54" id="__codelineno-11-54" name="__codelineno-11-54"></a>└───────────┴────────────┴────────────────────┘
+</code></pre></div>
 <h2 id="additional-resources">Additional Resources<a class="headerlink" href="#additional-resources" title="Permanent link">¶</a></h2>
 <ul>
 <li>For standard module details: <a href="../plugins/std/">owa-env-std</a></li>
@@ -739,7 +946,7 @@
 <span class="md-icon" title="Last update">
 <svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"></path></svg>
 </span>
-<span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="May 6, 2025 08:39:22 UTC">May 6, 2025 08:39:22</span>
+<span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="June 8, 2025 06:10:23 UTC">June 8, 2025 06:10:23</span>
 </span>
 </aside>
 </article>

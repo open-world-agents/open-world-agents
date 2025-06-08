@@ -500,6 +500,19 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Custom EnvPlugins
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -511,6 +524,52 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quick Start
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cli-tools-for-plugin-development" class="md-nav__link">
+    <span class="md-ellipsis">
+      CLI Tools for Plugin Development
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-benefits-of-entry-points-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Benefits of Entry Points System
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1014,6 +1073,41 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quick Start
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cli-tools-for-plugin-development" class="md-nav__link">
+    <span class="md-ellipsis">
+      CLI Tools for Plugin Development
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-benefits-of-entry-points-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Benefits of Entry Points System
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1032,38 +1126,133 @@
 
 
 <h1 id="how-to-write-your-own-envplugin">How to write your own EnvPlugin<a class="headerlink" href="#how-to-write-your-own-envplugin" title="Permanent link">&para;</a></h1>
-<p>You may write &amp; contribute your own EnvPlugin.</p>
+<p>You can write &amp; contribute your own EnvPlugin using the Entry Points-based system for automatic discovery.</p>
+<h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
 <ol>
-<li>Copy &amp; Paste <a href="https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-env-example">owa-env-example</a> directory. This directory contains following:
+<li>
+<p><strong>Copy the example template</strong>: Copy &amp; Paste <a href="https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-env-example">owa-env-example</a> directory. This directory contains:
     <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>owa-env-example
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>├──<span class="w"> </span>owa/env/example
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│<span class="w">   </span>├──<span class="w"> </span>example_callable.py
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>│<span class="w">   </span>├──<span class="w"> </span>example_listener.py
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│<span class="w">   </span>├──<span class="w"> </span>example_runnable.py
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│<span class="w">   </span>└──<span class="w"> </span>__init__.py
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>├──<span class="w"> </span>pyproject.toml
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│<span class="w">   </span>├──<span class="w"> </span>__init__.py<span class="w">           </span><span class="c1"># Plugin specification</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>│<span class="w">   </span>├──<span class="w"> </span>example_callable.py
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│<span class="w">   </span>├──<span class="w"> </span>example_listener.py
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│<span class="w">   </span>└──<span class="w"> </span>example_runnable.py
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>├──<span class="w"> </span>pyproject.toml<span class="w">            </span><span class="c1"># Entry point declaration</span>
 <a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>├──<span class="w"> </span>README.md
 <a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>├──<span class="w"> </span>tests
 <a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>│<span class="w">   </span>└──<span class="w"> </span>test_print.py
 <a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>└──<span class="w"> </span>uv.lock
-</code></pre></div></li>
-<li>Rename <code>owa-env-example</code> to your own EnvPlugin's name.</li>
-<li>Write your own code in the specific source folder.<ul>
-<li><strong>Important</strong>: To maintain the <a href="https://packaging.python.org/en/latest/guides/packaging-namespace-packages/">namespace package</a> structure, all source files must only be written inside the <code>owa/env/example</code> folder.</li>
-<li><strong>What NOT to do</strong>: Don't place source files in paths between <code>owa</code> and <code>owa/env/example</code> (e.g., <code>owa/some_file.py</code> or <code>owa/env/some_file.py</code>).</li>
+</code></pre></div></p>
+</li>
+<li>
+<p><strong>Rename and customize</strong>: Rename <code>owa-env-example</code> to your plugin name (e.g., <code>owa-env-myplugin</code>).</p>
+</li>
+<li>
+<p><strong>Update Entry Point Declaration</strong>: In <code>pyproject.toml</code>, update the entry point:
+    <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">[project.entry-points.</span><span class="s2">&quot;owa.env.plugins&quot;</span><span class="k">]</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">myplugin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;owa.env.myplugin:plugin_spec&quot;</span>
+</code></pre></div></p>
+</li>
+<li>
+<p><strong>Create Plugin Specification</strong>: In your <code>__init__.py</code>, define the plugin specification:
+    <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.core.plugin_spec</span><span class="w"> </span><span class="kn">import</span> <span class="n">PluginSpec</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">plugin_spec</span> <span class="o">=</span> <span class="n">PluginSpec</span><span class="p">(</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;myplugin&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">version</span><span class="o">=</span><span class="s2">&quot;0.1.0&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;My custom plugin&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="n">author</span><span class="o">=</span><span class="s2">&quot;Your Name&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="n">components</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>        <span class="s2">&quot;callables&quot;</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>            <span class="s2">&quot;hello&quot;</span><span class="p">:</span> <span class="s2">&quot;owa.env.myplugin:say_hello&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>            <span class="s2">&quot;add&quot;</span><span class="p">:</span> <span class="s2">&quot;owa.env.myplugin:add_numbers&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>        <span class="p">},</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>        <span class="s2">&quot;listeners&quot;</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>            <span class="s2">&quot;events&quot;</span><span class="p">:</span> <span class="s2">&quot;owa.env.myplugin:EventListener&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>        <span class="p">},</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>        <span class="s2">&quot;runnables&quot;</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>            <span class="s2">&quot;processor&quot;</span><span class="p">:</span> <span class="s2">&quot;owa.env.myplugin:DataProcessor&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>        <span class="p">}</span>
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>    <span class="p">}</span>
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="p">)</span>
+</code></pre></div></p>
+</li>
+<li>
+<p><strong>Implement Components</strong>: Write your component implementations using the unified <code>namespace/name</code> pattern.</p>
+</li>
+<li>
+<p><strong>Package Structure</strong>: Maintain the <a href="https://packaging.python.org/en/latest/guides/packaging-namespace-packages/">namespace package</a> structure:</p>
+<ul>
+<li><strong>Important</strong>: All source files must be inside the <code>owa/env/myplugin</code> folder.</li>
+<li><strong>What NOT to do</strong>: Don't place source files between <code>owa</code> and <code>owa/env/myplugin</code>.</li>
 <li><strong>Correct structure</strong>:
-    <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>owa
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>└── env
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    └── example
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>        ├── your_code.py
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>        ├── your_module.py
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>        └── __init__.py
+    <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>owa
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>└── env
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    └── myplugin
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>        ├── __init__.py      # Plugin specification
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>        ├── your_code.py
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>        ├── your_module.py
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>        └── components.py
 </code></pre></div></li>
 </ul>
 </li>
-<li>Make sure your repository contains all dependencies. We recommend you to use <code>uv</code> as package manager.</li>
-<li>Make a PR, following <a href="../../contributing/">Contributing Guide</a></li>
+<li>
+<p><strong>Install and Test</strong>: Install your plugin with <code>pip install -e .</code> and test that components are automatically available.</p>
+</li>
+<li>
+<p><strong>Validate Plugin</strong>: Use the CLI to validate your plugin specification:
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Validate plugin specification (if using YAML format)</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>owl<span class="w"> </span>env<span class="w"> </span>validate<span class="w"> </span>./plugin.yaml
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># List your plugin to verify it&#39;s discovered</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>owl<span class="w"> </span>env<span class="w"> </span>list<span class="w"> </span>--namespace<span class="w"> </span>myplugin
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="c1"># Show detailed component information</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>owl<span class="w"> </span>env<span class="w"> </span>show<span class="w"> </span>myplugin<span class="w"> </span>--components
+</code></pre></div></p>
+</li>
+<li>
+<p><strong>Contribute</strong>: Make a PR following the <a href="../../contributing/">Contributing Guide</a>.</p>
+</li>
 </ol>
+<h2 id="cli-tools-for-plugin-development">CLI Tools for Plugin Development<a class="headerlink" href="#cli-tools-for-plugin-development" title="Permanent link">&para;</a></h2>
+<p>The <code>owl env</code> command provides comprehensive tools for plugin development and testing:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Discover and list your plugin</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>list<span class="w"> </span>--namespace<span class="w"> </span>myplugin
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># Show detailed component information with import paths</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>show<span class="w"> </span>myplugin<span class="w"> </span>--components<span class="w"> </span>--details
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="c1"># Inspect specific components</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>show<span class="w"> </span>myplugin<span class="w"> </span>--inspect<span class="w"> </span>my_function
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="c1"># Search for components in your plugin</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>search<span class="w"> </span><span class="s2">&quot;my.*function&quot;</span><span class="w"> </span>--namespace<span class="w"> </span>myplugin
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="c1"># List specific component types with details</span>
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>list<span class="w"> </span>--type<span class="w"> </span>callables<span class="w"> </span>--details<span class="w"> </span>--table
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>
+<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="c1"># Check ecosystem health and your plugin&#39;s integration</span>
+<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>health
+<a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>stats<span class="w"> </span>--by-namespace
+<a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>
+<a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a><span class="c1"># Quick exploration shortcuts</span>
+<a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>ls<span class="w"> </span>myplugin<span class="w">                              </span><span class="c1"># Quick plugin overview</span>
+<a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>find<span class="w"> </span>my_function<span class="w">                         </span><span class="c1"># Quick component search</span>
+<a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>namespaces<span class="w">                               </span><span class="c1"># See all available namespaces</span>
+<a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a>
+<a id="__codelineno-5-25" name="__codelineno-5-25" href="#__codelineno-5-25"></a><span class="c1"># Validate plugin specifications (for YAML-based specs)</span>
+<a id="__codelineno-5-26" name="__codelineno-5-26" href="#__codelineno-5-26"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>validate<span class="w"> </span>./plugin.yaml
+</code></pre></div>
+<h2 id="key-benefits-of-entry-points-system">Key Benefits of Entry Points System<a class="headerlink" href="#key-benefits-of-entry-points-system" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Zero Configuration</strong>: Users just <code>pip install</code> your plugin - no manual activation needed</li>
+<li><strong>Automatic Discovery</strong>: Components are immediately available after installation</li>
+<li><strong>Unified Naming</strong>: All components use <code>namespace/name</code> pattern for consistency</li>
+<li><strong>Python Standards</strong>: Follows official Python packaging guidelines</li>
+<li><strong>Lazy Loading</strong>: Components are imported only when accessed for better performance</li>
+<li><strong>CLI Support</strong>: Rich command-line tools for plugin management and validation</li>
+</ul>
 
 
 
@@ -1084,7 +1273,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="March 13, 2025 09:40:12 UTC">March 13, 2025 09:40:12</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="June 8, 2025 06:10:23 UTC">June 8, 2025 06:10:23</span>
   </span>
 
     
