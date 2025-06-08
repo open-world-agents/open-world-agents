@@ -3,6 +3,9 @@ Example runnable components for the example environment plugin.
 
 This module demonstrates how to create runnable components that can
 perform background tasks and processing.
+
+Components are discovered via entry points and loaded lazily.
+No decorators needed - registration happens via plugin_spec.
 """
 
 import time
@@ -10,10 +13,8 @@ from pathlib import Path
 from threading import Event
 
 from owa.core import Runnable
-from owa.core.registry import RUNNABLES
 
 
-@RUNNABLES.register("example/runnable")
 class ExampleRunnable(Runnable):
     """
     Example runnable that performs a simple background task.
@@ -62,7 +63,6 @@ class ExampleRunnable(Runnable):
                 stop_event.wait(self.interval)
 
 
-@RUNNABLES.register("example/counter")
 class ExampleCounterRunnable(Runnable):
     """
     Example counter runnable that counts up to a maximum value.

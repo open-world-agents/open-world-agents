@@ -3,12 +3,12 @@ Example callable components for the example environment plugin.
 
 This module demonstrates how to create callable components using both
 class-based and function-based approaches.
+
+Components are discovered via entry points and loaded lazily.
+No decorators needed - registration happens via plugin_spec.
 """
 
-from owa.core.registry import CALLABLES
 
-
-@CALLABLES.register("example/callable")
 class ExampleCallable:
     """Example callable class that can be called like a function."""
 
@@ -22,7 +22,6 @@ class ExampleCallable:
         return "Hello from ExampleCallable!"
 
 
-@CALLABLES.register("example/print")
 def example_print(message: str = "Hello, World!") -> str:
     """
     Example callable function that prints and returns a message.
@@ -37,7 +36,6 @@ def example_print(message: str = "Hello, World!") -> str:
     return message
 
 
-@CALLABLES.register("example/add")
 def example_add(a: int, b: int) -> int:
     """
     Example callable function that adds two numbers.

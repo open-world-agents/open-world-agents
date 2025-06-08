@@ -1,6 +1,6 @@
 # Introducing OWA's Env
 
-**Open World Agents (OWA)** introduces **Env**, a groundbreaking modular agent system designed for dynamic, real-time environments. Say goodbye to rigid frameworks with fixed interfaces—Env's flexible architecture lets you activate and customize components on the fly.
+**Open World Agents (OWA)** introduces **Env**, a groundbreaking modular agent system designed for dynamic, real-time environments. Say goodbye to rigid frameworks with fixed interfaces—Env's flexible architecture automatically discovers and loads components using Python's standard Entry Points system.
 
 ## Why Choose OWA's Env?
 
@@ -9,10 +9,10 @@ Traditional environmental interfaces like [gymnasium.Env](https://gymnasium.fara
 **Env** changes the game with an event-driven, asynchronous design that mirrors real-world interactions. Here's what sets it apart:
 
 - **Asynchronous Event Processing**: Leverage `Callables`, `Listeners`, and `Runnables` for real-time interaction. No more waiting for `env.step()`—the world doesn't stop, and neither should your agent. [Learn more...](guide.md)
-  
-- **Dynamic EnvPlugin Activation**: Seamlessly register and activate `EnvPlugins` at runtime to extend functionality, powered by registry pattern. [Learn more...](guide.md)
-  
-- **Extensible, Open-Source Design**: Built for the community, by the community. Easily add custom plugins and extend the Env's functionality to suit your needs. [Learn more...](custom_plugins.md)
+
+- **Zero-Configuration Plugin System**: Plugins are automatically discovered via Entry Points when installed with `pip install`. No manual activation needed—components are immediately available with unified `namespace/name` patterns. Includes powerful CLI tools for plugin management. [Learn more...](guide.md)
+
+- **Extensible, Open-Source Design**: Built for the community, by the community. Create plugins using Python packaging standards and share them easily. [Learn more...](custom_plugins.md)
 
 ## The Future is Real-Time
 

@@ -3,13 +3,11 @@ from typing import Optional
 
 from loguru import logger
 
-from owa.core.registry import RUNNABLES
 from owa.core.runner import SubprocessRunner
 
 from ..pipeline_builder import subprocess_recorder_pipeline
 
 
-@RUNNABLES.register("owa.env.gst/omnimodal/subprocess_recorder")
 class SubprocessRecorder(SubprocessRunner):
     """A ScreenRecorder Runnable that records video and/or audio using a GStreamer pipeline."""
 

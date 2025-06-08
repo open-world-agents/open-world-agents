@@ -1,7 +1,5 @@
 import platform
 
-from owa.core.registry import CALLABLES
-
 from ..msg import WindowInfo
 
 # --- Platform utils ---
@@ -174,11 +172,3 @@ def make_active(window_title_substring: str):
         window.activate()
     else:
         raise NotImplementedError(f"Activation not implemented for this OS: {os_name}")
-
-
-CALLABLES.register("window.get_active_window")(get_active_window)
-CALLABLES.register("window.get_window_by_title")(get_window_by_title)
-CALLABLES.register("window.get_pid_by_title")(get_pid_by_title)
-CALLABLES.register("window.when_active")(when_active)
-CALLABLES.register("window.is_active")(is_active)
-CALLABLES.register("window.make_active")(make_active)

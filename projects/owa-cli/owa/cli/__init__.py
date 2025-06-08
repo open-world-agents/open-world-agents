@@ -13,7 +13,7 @@ import shutil
 import typer
 from loguru import logger
 
-from . import mcap, video
+from . import env, mcap, video
 from .utils import check_for_update
 
 
@@ -28,6 +28,7 @@ def create_app() -> typer.Typer:
 
     # Add core commands
     app.add_typer(mcap.app, name="mcap", help="MCAP file management commands")
+    app.add_typer(env.app, name="env", help="Environment plugin management commands")
 
     # Add optional commands based on available dependencies
     _add_optional_commands(app)
@@ -57,8 +58,8 @@ def _add_optional_commands(app: typer.Typer) -> None:
 
 
 def _check_ffmpeg_available() -> bool:
-    """Check if FFmpeg and ffprobe are available."""
-    return shutil.which("ffmpeg") is not None and shutil.which("ffprobe") is not None
+    """Check if FFmpeg is available."""
+    return shutil.which("ffmpeg") is not None
 
 
 def _check_window_commands_available() -> bool:
