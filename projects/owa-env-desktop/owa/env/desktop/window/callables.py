@@ -10,7 +10,20 @@ _IS_WINDOWS = _PLATFORM == "Windows"
 # === Active Window Fetcher ===
 
 
-def get_active_window():
+def get_active_window() -> WindowInfo | None:
+    """
+    Get information about the currently active window.
+
+    Returns:
+        WindowInfo object containing title, position, and handle of the active window,
+        or None if no active window is found.
+
+    Examples:
+        >>> window = get_active_window()
+        >>> if window:
+        ...     print(f"Active window: {window.title}")
+        ...     print(f"Position: {window.rect}")
+    """
     if _IS_DARWIN:
         from Quartz import (
             CGWindowListCopyWindowInfo,
@@ -52,6 +65,22 @@ def get_active_window():
 
 
 def get_window_by_title(window_title_substring: str) -> WindowInfo:
+    """
+    Find a window by searching for a substring in its title.
+
+    Args:
+        window_title_substring: Substring to search for in window titles.
+
+    Returns:
+        WindowInfo object for the first matching window.
+
+    Raises:
+        ValueError: If no window with matching title is found.
+
+    Examples:
+        >>> window = get_window_by_title("notepad")
+        >>> print(f"Found window: {window.title}")
+    """
     if _IS_WINDOWS:
         import pygetwindow as gw
 
@@ -110,7 +139,19 @@ def get_window_by_title(window_title_substring: str) -> WindowInfo:
 
 
 def get_pid_by_title(window_title_substring: str) -> int:
-    """Get the PID of a window by its title."""
+    """
+    Get the process ID (PID) of a window by its title.
+
+    Args:
+        window_title_substring: Substring to search for in window titles.
+
+    Returns:
+        Process ID of the window.
+
+    Examples:
+        >>> pid = get_pid_by_title("notepad")
+        >>> print(f"Notepad PID: {pid}")
+    """
     window = get_window_by_title(window_title_substring)
     if _IS_WINDOWS:
         import win32process
@@ -127,7 +168,20 @@ def get_pid_by_title(window_title_substring: str) -> int:
 
 
 def when_active(window_title_substring: str):
-    """Decorator to run the function when the window with the title containing the substring is active."""
+    """
+    Decorator to run a function only when a specific window is active.
+
+    Args:
+        window_title_substring: Substring to search for in window titles.
+
+    Returns:
+        Decorator function that conditionally executes the wrapped function.
+
+    Examples:
+        >>> @when_active("notepad")
+        ... def do_something():
+        ...     print("Notepad is active!")
+    """
 
     def decorator(func):
         def wrapper(*args, **kwargs):
@@ -139,8 +193,20 @@ def when_active(window_title_substring: str):
     return decorator
 
 
-def is_active(window_title_substring: str):
-    """Returns whether the window with the title containing the substring is active."""
+def is_active(window_title_substring: str) -> bool:
+    """
+    Check if a window with the specified title substring is currently active.
+
+    Args:
+        window_title_substring: Substring to search for in window titles.
+
+    Returns:
+        True if the window is active, False otherwise.
+
+    Examples:
+        >>> if is_active("notepad"):
+        ...     print("Notepad is the active window")
+    """
     try:
         window = get_window_by_title(window_title_substring)
     except ValueError:
@@ -152,8 +218,20 @@ def is_active(window_title_substring: str):
 # === Registry ===
 
 
-def make_active(window_title_substring: str):
-    """Make the window with the title containing the substring active."""
+def make_active(window_title_substring: str) -> None:
+    """
+    Bring a window to the foreground and make it active.
+
+    Args:
+        window_title_substring: Substring to search for in window titles.
+
+    Raises:
+        ValueError: If no window with matching title is found.
+        NotImplementedError: If the operation is not supported on the current OS.
+
+    Examples:
+        >>> make_active("notepad")  # Brings notepad window to front
+    """
 
     os_name = platform.system()
     if os_name == "Windows":

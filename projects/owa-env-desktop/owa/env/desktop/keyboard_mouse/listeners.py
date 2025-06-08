@@ -12,6 +12,19 @@ from .callables import get_keyboard_state, get_mouse_state
 
 
 class KeyboardListenerWrapper(Listener):
+    """
+    Keyboard event listener that captures key press and release events.
+
+    This listener wraps pynput's KeyboardListener to provide keyboard event
+    monitoring with OWA's listener interface.
+
+    Examples:
+        >>> def on_key_event(event):
+        ...     print(f"Key {event.vk} was {event.event_type}")
+        >>> listener = KeyboardListenerWrapper().configure(callback=on_key_event)
+        >>> listener.start()
+    """
+
     def on_configure(self):
         self.listener = KeyboardListener(on_press=self.on_press, on_release=self.on_release)
 
@@ -31,6 +44,19 @@ class KeyboardListenerWrapper(Listener):
 
 
 class MouseListenerWrapper(Listener):
+    """
+    Mouse event listener that captures mouse movement, clicks, and scroll events.
+
+    This listener wraps pynput's MouseListener to provide mouse event
+    monitoring with OWA's listener interface.
+
+    Examples:
+        >>> def on_mouse_event(event):
+        ...     print(f"Mouse {event.event_type} at ({event.x}, {event.y})")
+        >>> listener = MouseListenerWrapper().configure(callback=on_mouse_event)
+        >>> listener.start()
+    """
+
     def on_configure(self):
         self.listener = MouseListener(on_move=self.on_move, on_click=self.on_click, on_scroll=self.on_scroll)
 
@@ -52,7 +78,17 @@ class MouseListenerWrapper(Listener):
 
 class KeyboardStateListener(Listener):
     """
-    Calls callback every second with the keyboard state.
+    Periodically reports the current keyboard state.
+
+    This listener calls the callback function every second with the current
+    keyboard state, including which keys are currently pressed.
+
+    Examples:
+        >>> def on_keyboard_state(state):
+        ...     if state.buttons:
+        ...         print(f"Keys pressed: {state.buttons}")
+        >>> listener = KeyboardStateListener().configure(callback=on_keyboard_state)
+        >>> listener.start()
     """
 
     def loop(self, stop_event):
@@ -64,7 +100,16 @@ class KeyboardStateListener(Listener):
 
 class MouseStateListener(Listener):
     """
-    Calls callback every second with the mouse state.
+    Periodically reports the current mouse state.
+
+    This listener calls the callback function every second with the current
+    mouse state, including position and pressed buttons.
+
+    Examples:
+        >>> def on_mouse_state(state):
+        ...     print(f"Mouse at ({state.x}, {state.y}), buttons: {state.buttons}")
+        >>> listener = MouseStateListener().configure(callback=on_mouse_state)
+        >>> listener.start()
     """
 
     def loop(self, stop_event):
