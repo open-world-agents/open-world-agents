@@ -27,8 +27,17 @@ except ImportError:
             pass
 
 
-from ..plugin_discovery import get_plugin_discovery
-from ..registry import CALLABLES, LISTENERS, RUNNABLES
+try:
+    from owa.core.plugin_discovery import get_plugin_discovery
+    from owa.core.registry import CALLABLES, LISTENERS, RUNNABLES
+except ImportError:
+    # owa-core not available, create dummy implementations
+    def get_plugin_discovery():
+        return None
+    
+    CALLABLES = {}
+    LISTENERS = {}
+    RUNNABLES = {}
 
 
 class OWAHandler(BaseHandler):
