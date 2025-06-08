@@ -85,17 +85,32 @@ You can write & contribute your own EnvPlugin using the Entry Points-based syste
 
 ## CLI Tools for Plugin Development
 
-The `owl env` command provides helpful tools for plugin development:
+The `owl env` command provides comprehensive tools for plugin development and testing:
 
 ```bash
 # Discover and list your plugin
 $ owl env list --namespace myplugin
 
-# Show detailed component information
-$ owl env show myplugin --components
+# Show detailed component information with import paths
+$ owl env show myplugin --components --details
 
-# List specific component types
-$ owl env list --component-type callables
+# Inspect specific components
+$ owl env show myplugin --inspect my_function
+
+# Search for components in your plugin
+$ owl env search "my.*function" --namespace myplugin
+
+# List specific component types with details
+$ owl env list --type callables --details --table
+
+# Check ecosystem health and your plugin's integration
+$ owl env health
+$ owl env stats --by-namespace
+
+# Quick exploration shortcuts
+$ owl env ls myplugin                              # Quick plugin overview
+$ owl env find my_function                         # Quick component search
+$ owl env namespaces                               # See all available namespaces
 
 # Validate plugin specifications (for YAML-based specs)
 $ owl env validate ./plugin.yaml

@@ -174,7 +174,7 @@ graph LR;
 
 ## CLI Tools for Plugin Management
 
-The `owl env` command provides powerful tools for managing and exploring plugins:
+The `owl env` command provides powerful tools for managing and exploring plugins with enhanced filtering, search, and analysis capabilities:
 
 ### Plugin Discovery and Listing
 
@@ -182,23 +182,52 @@ The `owl env` command provides powerful tools for managing and exploring plugins
 # List all discovered plugins
 $ owl env list
 
-# List plugins in specific namespace
-$ owl env list --namespace example
-
-# List specific component types
-$ owl env list --component-type callables
-$ owl env list --component-type listeners
-$ owl env list --component-type runnables
+# Enhanced filtering and display options
+$ owl env list --namespace example                # Filter by namespace
+$ owl env list --type callables                   # Filter by component type
+$ owl env list --search mouse                     # Search by pattern
+$ owl env list --details                          # Show import paths and load status
+$ owl env list --table                            # Display in table format
+$ owl env list --sort name                        # Sort by name, namespace, or type
 ```
 
-### Plugin Information
+### Plugin Information and Inspection
 
 ```bash
 # Show plugin summary
 $ owl env show example
 
-# Show detailed component information
-$ owl env show example --components
+# Enhanced plugin exploration
+$ owl env show example --components               # Show detailed component list
+$ owl env show example --inspect mouse.click      # Inspect specific component
+$ owl env show example --type callables           # Filter by component type
+$ owl env show example --search window            # Search within namespace
+$ owl env show example --table                    # Display in table format
+```
+
+### Advanced Search and Discovery
+
+```bash
+# Search across all plugins
+$ owl env search "mouse.*click"                   # Regex pattern search
+$ owl env search window --details --table         # Detailed search results
+$ owl env search keyboard --type callables        # Search specific component type
+
+# Quick access shortcuts
+$ owl env ls                                       # Quick plugin list
+$ owl env ls desktop                              # Quick namespace exploration
+$ owl env find mouse                              # Quick component search
+$ owl env namespaces                              # List all available namespaces
+```
+
+### Ecosystem Analysis
+
+```bash
+# Statistics and health monitoring
+$ owl env stats                                    # Show ecosystem statistics
+$ owl env stats --by-namespace                    # Group by namespace
+$ owl env stats --by-type                         # Group by component type
+$ owl env health                                   # Perform health check
 ```
 
 ### Plugin Development
@@ -212,27 +241,59 @@ $ owl env validate ./plugin.yaml
 
 ```bash
 $ owl env list
-📦 Discovered Plugins
-├── ├── desktop
-│   ├── ├── Callables: 20
-│   └── ├── Listeners: 5
-├── ├── example
-│   ├── ├── Callables: 3
-│   ├── ├── Listeners: 2
-│   └── └── Runnables: 2
-└── ├── std
-    ├── ├── Callables: 1
-    └── ├── Listeners: 1
+📦 Discovered Plugins (4)
+├── desktop (25 components)
+│   ├── 📞 Callables: 20
+│   └── 👂 Listeners: 5
+├── example (7 components)
+│   ├── 📞 Callables: 3
+│   ├── 👂 Listeners: 2
+│   └── 🏃 Runnables: 2
+├── gst (4 components)
+│   ├── 👂 Listeners: 2
+│   └── 🏃 Runnables: 2
+└── std (2 components)
+    ├── 📞 Callables: 1
+    └── 👂 Listeners: 1
 
 $ owl env show example --components
-📦 Plugin: example
-├── ├── Callables: 3
-├── ├── Listeners: 2
-└── └── Runnables: 2
-🔧 Callables
-├── ├── example/callable
-├── ├── example/print
-└── ├── example/add
+📦 Plugin: example (7 components)
+├── 📞 Callables: 3
+├── 👂 Listeners: 2
+└── 🏃 Runnables: 2
+📞 Callables (3)
+├── example/add
+├── example/callable
+└── example/print
+👂 Listeners (2)
+├── example/listener
+└── example/timer
+🏃 Runnables (2)
+├── example/counter
+└── example/runnable
+
+$ owl env search "mouse" --table
+               Search Results for 'mouse' (9 matches)
+┏━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┓
+┃ Component               ┃ Type      ┃ Namespace ┃ Name            ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━┩
+│ desktop/mouse           │ listeners │ desktop   │ mouse           │
+│ desktop/mouse.click     │ callables │ desktop   │ mouse.click     │
+│ desktop/mouse.move      │ callables │ desktop   │ mouse.move      │
+│ desktop/mouse.press     │ callables │ desktop   │ mouse.press     │
+│ desktop/mouse.scroll    │ callables │ desktop   │ mouse.scroll    │
+└─────────────────────────┴───────────┴───────────┴─────────────────┘
+
+$ owl env namespaces
+             Available Namespaces
+┏━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┓
+┃ Namespace ┃ Components ┃ Quick Access       ┃
+┡━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━┩
+│ desktop   │        25 │ owl env ls desktop │
+│ example   │         7 │ owl env ls example │
+│ gst       │         4 │ owl env ls gst     │
+│ std       │         2 │ owl env ls std     │
+└───────────┴────────────┴────────────────────┘
 ```
 
 ## Additional Resources

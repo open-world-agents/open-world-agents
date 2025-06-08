@@ -85,6 +85,28 @@ Run the test script to verify the OEP-0003 implementation:
 python test_oep_0003.py
 ```
 
+## CLI Tools for Plugin Exploration
+
+After installation, explore the plugin using the `owl env` CLI:
+
+```bash
+# List all plugins (including this example)
+$ owl env list
+
+# Show detailed information about the example plugin
+$ owl env show example --components
+
+# Search for specific components
+$ owl env search "add" --namespace example
+
+# Inspect a specific component
+$ owl env show example --inspect add
+
+# Quick exploration
+$ owl env ls example                              # Quick overview
+$ owl env find example                            # Search for example components
+```
+
 ## Migration from Old System
 
 The old `activate_module()` system has been completely replaced. Key changes:

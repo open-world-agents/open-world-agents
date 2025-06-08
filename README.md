@@ -154,17 +154,26 @@ with screen.session:
 
 ### Plugin Management with CLI
 
-Explore and manage plugins using the `owl env` command:
+Explore and manage plugins using the enhanced `owl env` command:
 
 ```bash
-# List all discovered plugins
-$ owl env list
+# List all discovered plugins with enhanced display
+$ owl env list --details --table
 
-# Show detailed plugin information
-$ owl env show example --components
+# Show detailed plugin information with component inspection
+$ owl env show example --components --inspect add
 
-# List specific component types
-$ owl env list --component-type callables
+# Search for components across all plugins
+$ owl env search "mouse.*click" --table
+
+# Quick exploration shortcuts
+$ owl env ls desktop                              # Quick namespace exploration
+$ owl env find keyboard                           # Quick component search
+$ owl env namespaces                              # List all available namespaces
+
+# Ecosystem analysis and health monitoring
+$ owl env stats                                   # Show ecosystem statistics
+$ owl env health                                  # Perform health check
 ```
 
 Powered by the powerful Gstreamer and Windows API, our implementation is **6x** faster than comparatives.
