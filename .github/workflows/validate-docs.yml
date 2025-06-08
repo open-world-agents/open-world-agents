@@ -35,11 +35,11 @@ jobs:
       - name: Install owa-env-gst for testing
         run: uv pip install -e projects/owa-env-gst
 
-      - name: Validate all plugin documentation
-        run: uv run owl env validate-docs --strict
-
       - name: Generate documentation statistics
         run: uv run owl env docs-stats
+      
+      - name: Validate all plugin documentation
+        run: uv run owl env validate-docs --strict
 
       - name: Validate individual plugins
         run: |
