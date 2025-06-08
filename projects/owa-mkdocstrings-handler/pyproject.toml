@@ -8,6 +8,7 @@ requires-python = ">=3.11"
 dependencies = [
     "mkdocstrings>=0.24.0",
     "owa-core>=0.3.9",
+    "griffe>=1.0.0",
 ]
 
 [tool.uv.sources]
