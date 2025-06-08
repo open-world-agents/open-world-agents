@@ -9,6 +9,9 @@ on:
 jobs:
   validate-docs:
     runs-on: windows-latest
+
+    env:
+      PYTHONIOENCODING: utf-8 # https://github.com/Textualize/rich/issues/212
     
     steps:
       - name: Check out repository
