@@ -20,18 +20,28 @@ console = Console()
 
 def validate_docs(
     plugin_namespace: Optional[str] = typer.Argument(None, help="Specific plugin namespace to validate (optional)"),
-    strict: bool = typer.Option(False, "--strict", help="Enable strict mode for CI/CD"),
-    min_coverage: float = typer.Option(0.9, "--min-coverage", help="Minimum documentation coverage threshold"),
+    strict: bool = typer.Option(False, "--strict", help="Enable strict mode (90%/70% coverage + 80%/60% quality)"),
+    min_coverage_pass: float = typer.Option(0.8, "--min-coverage-pass", help="Minimum coverage for PASS status"),
+    min_coverage_fail: float = typer.Option(0.6, "--min-coverage-fail", help="Minimum coverage to avoid FAIL status"),
+    min_quality_pass: float = typer.Option(
+        0.6, "--min-quality-pass", help="Minimum good quality ratio for PASS status"
+    ),
+    min_quality_fail: float = typer.Option(
+        0.0, "--min-quality-fail", help="Minimum good quality ratio to avoid FAIL status"
+    ),
     format: str = typer.Option("text", "--format", help="Output format: text or json"),
-    all_plugins: bool = typer.Option(False, "--all", help="Validate all plugins (explicit flag)"),
-    check_quality: bool = typer.Option(False, "--check-quality", help="Perform detailed quality checks"),
-    min_examples: int = typer.Option(0, "--min-examples", help="Minimum number of examples required"),
 ) -> None:
     """
     Validate plugin documentation with proper exit codes for CI/CD integration.
 
     This command serves as a test utility that can be integrated into CI/CD pipelines,
     ensuring consistent documentation quality across all plugins.
+
+    Features:
+    - Per-component quality grading (GOOD/ACCEPTABLE/POOR)
+    - Per-plugin quality thresholds (PASS/WARN/FAIL)
+    - Skip quality check support (@skip-quality-check in docstrings)
+    - Flexible threshold configuration
 
     Exit codes:
     - 0: All validations passed
@@ -49,37 +59,61 @@ def validate_docs(
                 console.print(f"[red]❌ ERROR: Plugin '{plugin_namespace}' not found[/red]", file=sys.stderr)
                 sys.exit(2)
         else:
+            # Default behavior: validate all plugins
             results = validator.validate_all_plugins()
 
         if not results:
             console.print("[yellow]⚠️  No plugins found to validate[/yellow]")
             sys.exit(0)
 
-        # Calculate overall statistics
+        # Calculate overall statistics (excluding skipped components)
         total_components = sum(r.total for r in results.values())
         documented_components = sum(r.documented for r in results.values())
+        good_quality_components = sum(r.good_quality for r in results.values())
+
         overall_coverage = documented_components / total_components if total_components > 0 else 0
+        overall_quality = good_quality_components / total_components if total_components > 0 else 0
 
         # Apply strict mode adjustments
         if strict:
-            # In strict mode, any missing documentation is a failure
-            min_coverage = max(min_coverage, 1.0)
+            # In strict mode, require high standards
+            min_coverage_pass = max(min_coverage_pass, 0.9)
+            min_coverage_fail = max(min_coverage_fail, 0.7)
+            min_quality_pass = max(min_quality_pass, 0.8)
+            min_quality_fail = max(min_quality_fail, 0.6)
 
-        # Check coverage threshold
-        coverage_pass = overall_coverage >= min_coverage
+        # Check thresholds using the same logic as per-plugin validation
+        coverage_pass = overall_coverage >= min_coverage_pass
+        quality_pass = overall_quality >= min_quality_pass
 
-        # Apply quality checks if requested
-        if check_quality:
-            _apply_quality_checks(results, min_examples)
+        # Check plugin status using configurable thresholds
+        plugin_pass = True
+        for result in results.values():
+            plugin_status = result.get_status(min_coverage_pass, min_coverage_fail, min_quality_pass, min_quality_fail)
+            if plugin_status == "fail":
+                plugin_pass = False
+                break
 
         # Output results based on format
+        all_pass = coverage_pass and quality_pass and plugin_pass
         if format == "json":
-            _output_json(results, overall_coverage, coverage_pass, min_coverage)
+            _output_json(results, overall_coverage, overall_quality, all_pass, min_coverage_pass, min_quality_pass)
         else:
-            _output_text(results, overall_coverage, coverage_pass, min_coverage, check_quality)
+            _output_text(
+                results,
+                overall_coverage,
+                overall_quality,
+                coverage_pass,
+                quality_pass,
+                plugin_pass,
+                min_coverage_pass,
+                min_coverage_fail,
+                min_quality_pass,
+                min_quality_fail,
+            )
 
         # Determine exit code
-        if coverage_pass and not _has_critical_issues(results):
+        if all_pass:
             sys.exit(0)  # All validations passed
         else:
             sys.exit(1)  # Documentation issues found
@@ -89,19 +123,28 @@ def validate_docs(
         sys.exit(2)  # Command error
 
 
-def _output_json(results, overall_coverage, coverage_pass, min_coverage):
+def _output_json(results, overall_coverage, overall_quality, all_pass, min_coverage_pass, min_quality_pass):
     """Output results in JSON format for tooling integration."""
-    output = {"overall_coverage": overall_coverage, "plugins": {}, "exit_code": 0 if coverage_pass else 1}
+    output = {
+        "overall_coverage": overall_coverage,
+        "overall_quality": overall_quality,
+        "thresholds": {
+            "min_coverage_pass": min_coverage_pass,
+            "min_quality_pass": min_quality_pass,
+        },
+        "plugins": {},
+        "exit_code": 0 if all_pass else 1,
+    }
 
     for name, result in results.items():
-        coverage = result.coverage
-        status = "pass" if coverage == 1.0 else "warning" if coverage >= 0.75 else "fail"
-
         output["plugins"][name] = {
-            "coverage": coverage,
             "documented": result.documented,
             "total": result.total,
-            "status": status,
+            "coverage": result.coverage,
+            "good_quality": result.good_quality,
+            "quality_ratio": result.quality_ratio,
+            "skipped": result.skipped,
+            "status": result.status,
             "issues": [],
         }
 
@@ -115,16 +158,27 @@ def _output_json(results, overall_coverage, coverage_pass, min_coverage):
     print(json.dumps(output, indent=2))
 
 
-def _output_text(results, overall_coverage, coverage_pass, min_coverage, check_quality):
+def _output_text(
+    results,
+    overall_coverage,
+    overall_quality,
+    coverage_pass,
+    quality_pass,
+    plugin_pass,
+    min_coverage_pass,
+    min_coverage_fail,
+    min_quality_pass,
+    min_quality_fail,
+):
     """Output results in human-readable text format."""
     # Display per-plugin results
     for name, result in results.items():
-        coverage = result.coverage
-
-        if coverage == 1.0:
+        # Determine status icon based on configurable plugin status
+        plugin_status = result.get_status(min_coverage_pass, min_coverage_fail, min_quality_pass, min_quality_fail)
+        if plugin_status == "pass":
             status_icon = "✅"
             status_color = "green"
-        elif coverage >= 0.75:
+        elif plugin_status == "warning":
             status_icon = "⚠️"
             status_color = "yellow"
         else:
@@ -132,49 +186,46 @@ def _output_text(results, overall_coverage, coverage_pass, min_coverage, check_q
             status_color = "red"
 
         console.print(
-            f"{status_icon} {name} plugin: {result.documented}/{result.total} components documented ({coverage:.0%})",
+            f"{status_icon} {name} plugin: {result.documented}/{result.total} documented ({result.coverage:.0%}), "
+            f"{result.good_quality}/{result.total} good quality ({result.quality_ratio:.0%})",
             style=status_color,
         )
 
-        # Show detailed issues if quality check is enabled
-        if check_quality:
-            for comp_result in result.components:
-                if comp_result.issues:
-                    for issue in comp_result.issues:
-                        console.print(f"  ❌ {comp_result.component}: {issue}", style="red")
+        if result.skipped > 0:
+            console.print(f"  📝 {result.skipped} components skipped quality check", style="dim")
 
     # Display overall summary
+    total_components = sum(r.total for r in results.values())
+    documented_components = sum(r.documented for r in results.values())
+    good_quality_components = sum(r.good_quality for r in results.values())
+
     console.print(
-        f"\n📊 Overall: {sum(r.documented for r in results.values())}/{sum(r.total for r in results.values())} components documented ({overall_coverage:.0%})"
+        f"\n📊 Overall: {documented_components}/{total_components} documented ({overall_coverage:.0%}), "
+        f"{good_quality_components}/{total_components} good quality ({overall_quality:.0%})"
     )
 
-    if coverage_pass:
-        console.print("✅ PASS: Documentation coverage meets minimum threshold", style="green")
+    # Show status messages
+    if coverage_pass and quality_pass and plugin_pass:
+        console.print("✅ PASS: All quality thresholds met", style="green")
     else:
-        console.print(
-            f"❌ FAIL: Documentation coverage {overall_coverage:.0%} below minimum {min_coverage:.0%}", style="red"
-        )
+        if not coverage_pass:
+            console.print(
+                f"❌ FAIL: Documentation coverage {overall_coverage:.0%} below threshold ({min_coverage_pass:.0%})",
+                style="red",
+            )
+        if not quality_pass:
+            console.print(
+                f"❌ FAIL: Good quality ratio {overall_quality:.0%} below threshold ({min_quality_pass:.0%})",
+                style="red",
+            )
+        if not plugin_pass:
+            console.print(
+                f"❌ FAIL: Some plugins below quality thresholds (PASS: {min_coverage_pass:.0%}/{min_quality_pass:.0%}, FAIL: {min_coverage_fail:.0%}/{min_quality_fail:.0%})",
+                style="red",
+            )
 
 
-def _apply_quality_checks(results, min_examples):
-    """Apply additional quality checks to validation results."""
-    # This function can be enhanced to apply more sophisticated quality checks
-    # For now, it's a placeholder for future quality validation logic
-    for result in results.values():
-        for comp_result in result.components:
-            # Check for minimum examples requirement
-            if min_examples > 0:
-                # This would need to be implemented based on docstring parsing
-                pass
-
-
-def _has_critical_issues(results) -> bool:
-    """Check if there are any critical issues beyond coverage."""
-    for result in results.values():
-        for comp_result in result.components:
-            if comp_result.status == "fail":
-                return True
-    return False
+# Removed unused functions - _apply_quality_checks and _has_critical_issues
 
 
 # Additional helper command for development
@@ -226,13 +277,20 @@ def docs_stats(
             table.add_column("Coverage", justify="right")
             table.add_column("Documented", justify="right")
             table.add_column("Total", justify="right")
+            table.add_column("Quality", justify="right")
             table.add_column("Status", justify="center")
 
             for name, result in results.items():
-                coverage = result.coverage
-                status = "✅" if coverage == 1.0 else "⚠️" if coverage >= 0.75 else "❌"
+                status_icon = "✅" if result.status == "pass" else "⚠️" if result.status == "warning" else "❌"
 
-                table.add_row(name, f"{coverage:.1%}", str(result.documented), str(result.total), status)
+                table.add_row(
+                    name,
+                    f"{result.coverage:.1%}",
+                    str(result.documented),
+                    str(result.total),
+                    f"{result.quality_ratio:.1%}",
+                    status_icon,
+                )
 
         console.print(table)
 
