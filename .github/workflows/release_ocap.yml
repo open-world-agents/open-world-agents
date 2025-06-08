@@ -29,7 +29,6 @@ jobs:
         with:
           version: "latest"
           enable-cache: true
-          activate-environment: true
       
       - name: Do something if the cache was restored
         if: steps.setup-uv.outputs.cache-hit == 'true'

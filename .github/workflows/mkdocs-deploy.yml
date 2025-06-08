@@ -25,7 +25,6 @@ jobs:
         with:
           version: "latest"
           enable-cache: true
-          activate-environment: true
 
       - name: Install Dependencies
         run: uv sync --extra docs
