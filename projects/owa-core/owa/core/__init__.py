@@ -1,6 +1,7 @@
 from .auto_discovery import auto_discover_plugins
 from .callable import Callable
 from .component_access import get_component, get_component_info, list_components
+from .documentation import PluginDocumentationGenerator
 from .listener import Listener
 from .message import BaseMessage, OWAMessage
 from .plugin_discovery import discover_and_register_plugins, get_plugin_discovery
@@ -29,6 +30,8 @@ __all__ = [
     "get_component",
     "get_component_info",
     "list_components",
+    # Documentation system (OEP-0004)
+    "PluginDocumentationGenerator",
     # Global registries
     "CALLABLES",
     "LISTENERS",
