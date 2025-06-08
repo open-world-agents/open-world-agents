@@ -180,7 +180,7 @@ conda install open-world-agents::gstreamer-bundle && pip install ocap
 ocap my-session
 
 # Upload to HuggingFace, browse community datasets!
-# Visit: https://huggingface.co/datasets?other=owamcap
+# Visit: https://huggingface.co/datasets?other=OWA
 ```
 
 ### Access Community Datasets
