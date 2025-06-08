@@ -58,6 +58,35 @@ class OWAHandler(BaseHandler):
         super().__init__(**kwargs)
         self.plugin_discovery = get_plugin_discovery()
 
+        # Store global options from kwargs (passed by mkdocstrings)
+        self.global_options = kwargs.get("options", {})
+
+    def get_options(self, local_options: dict) -> dict:
+        """
+        Build options for the handler by merging global and local options.
+
+        This method is required for mkdocstrings v1 compatibility.
+
+        Args:
+            local_options: Local options from the specific documentation block
+
+        Returns:
+            Merged options dictionary
+        """
+        # Start with default options for OWA handler
+        default_options = {
+            "show_source": True,
+            "show_signature": True,
+            "show_examples": True,
+            "show_griffe_info": True,
+            "truncate_source": 2000,
+        }
+
+        # Merge: defaults -> global -> local (local takes highest precedence)
+        options = {**default_options, **self.global_options, **local_options}
+
+        return options
+
     def collect(self, identifier: str, options: dict) -> dict:
         """
         Collect documentation data for an EnvPlugin component.
@@ -905,16 +934,19 @@ class OWAHandler(BaseHandler):
         """
 
         # Render signature information
-        html += self._render_signature_section(data.get("signature_info", {}))
+        if options.get("show_signature", True):
+            html += self._render_signature_section(data.get("signature_info", {}), options)
 
         # Render documentation
         html += self._render_documentation_section(data.get("parsed_docstring", {}), data.get("docstring"))
 
         # Render usage examples
-        html += self._render_usage_examples_section(data.get("usage_examples", []))
+        if options.get("show_examples", True):
+            html += self._render_usage_examples_section(data.get("usage_examples", []))
 
         # Render source code
-        html += self._render_source_section(data.get("source"))
+        if options.get("show_source", True):
+            html += self._render_source_section(data.get("source"), options)
 
         html += "</div>"
         return html
@@ -952,8 +984,10 @@ class OWAHandler(BaseHandler):
         html += "</div>"
         return html
 
-    def _render_signature_section(self, sig_info: Dict[str, Any]) -> str:
+    def _render_signature_section(self, sig_info: Dict[str, Any], options: Dict[str, Any] = None) -> str:
         """Render detailed signature information using Griffe data when available."""
+        if options is None:
+            options = {}
         if not sig_info or not sig_info.get("signature_str"):
             return "<h2>📝 Signature</h2><p>No signature information available.</p>"
 
@@ -980,7 +1014,7 @@ class OWAHandler(BaseHandler):
             html += f"<h3>Returns</h3><p><strong>Type:</strong> <code>{return_type}</code></p>"
 
         # Add Griffe-specific information if available
-        if griffe_info:
+        if griffe_info and options.get("show_griffe_info", True):
             html += self._render_griffe_metadata(griffe_info)
 
         html += "</div>"
@@ -1116,14 +1150,18 @@ class OWAHandler(BaseHandler):
         html += "</div>"
         return html
 
-    def _render_source_section(self, source: Optional[str]) -> str:
+    def _render_source_section(self, source: Optional[str], options: Dict[str, Any] = None) -> str:
         """Render source code section."""
         if not source:
             return ""
 
-        # Truncate very long source code
-        if len(source) > 2000:
-            source = source[:2000] + "\n\n# ... (source truncated)"
+        if options is None:
+            options = {}
+
+        # Truncate very long source code based on options
+        truncate_limit = options.get("truncate_source", 2000)
+        if len(source) > truncate_limit:
+            source = source[:truncate_limit] + "\n\n# ... (source truncated)"
 
         html = f"""
         <h2>🔍 Source Code</h2>
