@@ -16,10 +16,6 @@ dependencies = [
 [project.entry-points."owa.env.plugins"]
 std = "owa.env.std:plugin_spec"
 
-# Entry point for mkdocstrings handler (OEP-0004)
-[project.entry-points."mkdocstrings.handlers"]
-envplugin = "owa.core.documentation.mkdocstrings_handler:get_handler"
-
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
