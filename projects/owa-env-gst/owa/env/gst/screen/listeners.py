@@ -1,6 +1,7 @@
 # ruff: noqa: E402
 # To suppress the warning for E402, waiting for https://github.com/astral-sh/ruff/issues/3711
 import inspect
+from typing import Callable
 
 import gi
 
@@ -102,7 +103,7 @@ def build_screen_callback(callback):
 
 class ScreenListener(GstPipelineRunner):
     """
-    GStreamer-based screen capture listener.
+    High-performance GStreamer-based screen capture listener for real-time frame processing.
 
     Captures screen content and delivers frames to a callback function.
     Can capture specific windows, monitors, or the entire screen.
@@ -148,7 +149,7 @@ class ScreenListener(GstPipelineRunner):
     def on_configure(
         self,
         *,
-        callback,
+        callback: Callable,
         show_cursor: bool = True,
         fps: float = 60,
         window_name: str | None = None,

@@ -1,4 +1,5 @@
 import platform
+from typing import Callable
 
 from ..msg import WindowInfo
 
@@ -167,7 +168,7 @@ def get_pid_by_title(window_title_substring: str) -> int:
 # === Active-window decorator and helper ===
 
 
-def when_active(window_title_substring: str):
+def when_active(window_title_substring: str) -> Callable:
     """
     Decorator to run a function only when a specific window is active.
 

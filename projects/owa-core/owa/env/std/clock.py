@@ -3,7 +3,7 @@ import time
 from owa.core import Listener
 
 
-def time_ns():
+def time_ns() -> int:
     """
     Return the current time in nanoseconds since the Unix epoch.
 
@@ -59,7 +59,7 @@ class ClockTickListener(Listener):
         >>> listener.start()
     """
 
-    def on_configure(self, *, interval=1):
+    def on_configure(self, *, interval: float = 1):
         """
         Configure the tick interval for the listener.
 
