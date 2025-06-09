@@ -35,8 +35,13 @@ plugins:
   - search
   - mkdocstrings:
       handlers:
-        python:
-          paths: [projects]
+        owa:
+          # Current owa handler assumes packages to be installed, so path setting is not required (and not compatible with owa.core.plugin_discovery implementation)
+          # paths:
+          #   - projects/owa-core
+          #   - projects/owa-env-desktop
+          #   - projects/owa-env-gst
+          #   - projects/owa-env-example
           options:
             members_order: source
             separate_signature: true

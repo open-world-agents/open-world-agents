@@ -28,6 +28,9 @@ jobs:
 
       - name: Install Dependencies
         run: uv sync --extra docs
+      
+      - name: Install EnvPlugins
+        run: uv pip install -e projects/owa-env-example
 
       - name: Configure Git
         run: |

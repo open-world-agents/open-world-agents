@@ -752,7 +752,7 @@ python = [
 
 [[package]]
 name = "mkdocstrings-owa"
-version = "1.16.12"
+version = "1.16.12.post1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "griffe" },
@@ -760,9 +760,9 @@ dependencies = [
     { name = "mkdocstrings" },
     { name = "owa-core" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a1/31/141135692a4e680cf70130099eea0fa3aa4ab2120af9faa7cd554bd26efb/mkdocstrings_owa-1.16.12.tar.gz", hash = "sha256:f071291e6bec72592521707979e6c1f537b6c3bfcef69142d5a402389c1ac92b", size = 210663, upload-time = "2025-06-09T15:25:52.286Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/8d/2e/632091c03ff1c6fc757012df6d3095c040433031519af0cacb550de26758/mkdocstrings_owa-1.16.12.post1.tar.gz", hash = "sha256:574def49ddaf13de26b082263e04512d8125c748e9cd22ef731a50c71d130189", size = 210877, upload-time = "2025-06-09T15:54:18.629Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/56/18/cd4ec6ca8160fc6938ce18bad338b0528273bee50238353cf495da04e9ad/mkdocstrings_owa-1.16.12-py3-none-any.whl", hash = "sha256:89ec1c48a5d9826bf33587c63ea974851f8a23e35cbb87b5a647a4fde02187eb", size = 131036, upload-time = "2025-06-09T15:25:50.074Z" },
+    { url = "https://files.pythonhosted.org/packages/72/c5/a1d0fd4f46762d37b61712b1b837425b14d9b796a7273971265435239f36/mkdocstrings_owa-1.16.12.post1-py3-none-any.whl", hash = "sha256:f0ffb0d89d2ae6ab29c73ed02917046af22323b990e2b116db939723ed1c688f", size = 131119, upload-time = "2025-06-09T15:54:16.197Z" },
 ]
 
 [[package]]
