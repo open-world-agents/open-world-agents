@@ -752,58 +752,17 @@ python = [
 
 [[package]]
 name = "mkdocstrings-owa"
-source = { editable = "projects/mkdocstrings-owa" }
+version = "1.16.12"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "griffe" },
     { name = "mkdocs-autorefs" },
     { name = "mkdocstrings" },
     { name = "owa-core" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "griffe", specifier = ">=1.6.2" },
-    { name = "mkdocs-autorefs", specifier = ">=1.4" },
-    { name = "mkdocstrings", specifier = ">=0.28.3" },
-    { name = "owa-core" },
-    { name = "typing-extensions", marker = "python_full_version < '3.11'", specifier = ">=4.0" },
-]
-
-[package.metadata.requires-dev]
-ci = [
-    { name = "beautifulsoup4", specifier = ">=4.12.3" },
-    { name = "black", specifier = ">=25.1" },
-    { name = "duty", specifier = ">=1.6" },
-    { name = "inline-snapshot", specifier = ">=0.18" },
-    { name = "mypy", specifier = ">=1.10" },
-    { name = "pytest", specifier = ">=8.2" },
-    { name = "pytest-cov", specifier = ">=5.0" },
-    { name = "pytest-randomly", specifier = ">=3.15" },
-    { name = "pytest-xdist", specifier = ">=3.6" },
-    { name = "ruff", specifier = ">=0.4" },
-    { name = "types-markdown", specifier = ">=3.6" },
-    { name = "types-pyyaml", specifier = ">=6.0" },
-]
-docs = [
-    { name = "markdown-callouts", specifier = ">=0.4" },
-    { name = "markdown-exec", specifier = ">=1.8" },
-    { name = "mkdocs", specifier = ">=1.6" },
-    { name = "mkdocs-coverage", specifier = ">=1.0" },
-    { name = "mkdocs-git-revision-date-localized-plugin", specifier = ">=1.2" },
-    { name = "mkdocs-llmstxt", specifier = ">=0.2" },
-    { name = "mkdocs-material", specifier = ">=9.5" },
-    { name = "mkdocs-minify-plugin", specifier = ">=0.8" },
-    { name = "mkdocs-redirects", specifier = ">=1.2" },
-    { name = "mkdocs-section-index", specifier = ">=0.3" },
-    { name = "mkdocstrings", specifier = ">=0.29" },
-    { name = "pydantic", specifier = ">=2.10" },
-    { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=2.0" },
-]
-maintain = [
-    { name = "build", specifier = ">=1.2" },
-    { name = "git-changelog", specifier = ">=2.5" },
-    { name = "twine", specifier = ">=5.1" },
-    { name = "yore", specifier = ">=0.3.3" },
+sdist = { url = "https://files.pythonhosted.org/packages/a1/31/141135692a4e680cf70130099eea0fa3aa4ab2120af9faa7cd554bd26efb/mkdocstrings_owa-1.16.12.tar.gz", hash = "sha256:f071291e6bec72592521707979e6c1f537b6c3bfcef69142d5a402389c1ac92b", size = 210663, upload-time = "2025-06-09T15:25:52.286Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/56/18/cd4ec6ca8160fc6938ce18bad338b0528273bee50238353cf495da04e9ad/mkdocstrings_owa-1.16.12-py3-none-any.whl", hash = "sha256:89ec1c48a5d9826bf33587c63ea974851f8a23e35cbb87b5a647a4fde02187eb", size = 131036, upload-time = "2025-06-09T15:25:50.074Z" },
 ]
 
 [[package]]
@@ -997,7 +956,7 @@ requires-dist = [
     { name = "mkdocs-mermaid2-plugin", marker = "extra == 'docs'", specifier = ">=1.1.1" },
     { name = "mkdocs-redirects", marker = "extra == 'docs'", specifier = ">=1.2.2" },
     { name = "mkdocstrings", extras = ["python"], marker = "extra == 'docs'", specifier = ">=0.24.0" },
-    { name = "mkdocstrings-owa", marker = "extra == 'docs'", editable = "projects/mkdocstrings-owa" },
+    { name = "mkdocstrings-owa", marker = "extra == 'docs'", specifier = ">=1.16.12" },
     { name = "ocap", editable = "projects/ocap" },
     { name = "owa-cli", editable = "projects/owa-cli" },
     { name = "owa-core", editable = "projects/owa-core" },
