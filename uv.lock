@@ -1067,12 +1067,14 @@ name = "owa-mkdocstrings-handler"
 version = "0.3.9.post1"
 source = { editable = "projects/owa-mkdocstrings-handler" }
 dependencies = [
+    { name = "griffe" },
     { name = "mkdocstrings" },
     { name = "owa-core" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "griffe", specifier = ">=1.0.0" },
     { name = "mkdocstrings", specifier = ">=0.24.0" },
     { name = "owa-core", editable = "projects/owa-core" },
 ]

@@ -38,12 +38,17 @@ plugins:
         python:
           paths: [projects]
           options:
-            docstring_style: google
-            show_source: true
-        owa:
-          options:
-            show_plugin_metadata: true
-            include_source_links: true
+            members_order: source
+            separate_signature: true
+            docstring_options:
+              ignore_init_summary: true
+            merge_init_into_class: true
+            show_signature_annotations: true
+            signature_crossrefs: true
+          import:
+            - url: https://docs.python.org/3/objects.inv
+              domains: [py, std]
+            - url: https://typing-extensions.readthedocs.io/en/latest/objects.inv
   - git-revision-date-localized:
       type: datetime
   - mermaid2
