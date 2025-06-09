@@ -21,7 +21,7 @@ docs = [
     "mkdocs-git-revision-date-localized-plugin>=1.2.1",
     "mkdocs-mermaid2-plugin>=1.1.1",
     "mkdocs-redirects>=1.2.2",
-    "owa-mkdocstrings-handler",
+    "mkdocstrings-owa",
 ]
 
 [dependency-groups]
@@ -40,7 +40,7 @@ owa-cli = { path = "projects/owa-cli", editable = true }
 owa-core = { path = "projects/owa-core", editable = true }
 owa-env-desktop = { path = "projects/owa-env-desktop", editable = true }
 owa-env-gst = { path = "projects/owa-env-gst", editable = true }
-owa-mkdocstrings-handler = { path = "projects/owa-mkdocstrings-handler", editable = true }
+mkdocstrings-owa = { path = "projects/mkdocstrings-owa", editable = true }
 
 [build-system]
 requires = ["hatchling"]

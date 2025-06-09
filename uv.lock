@@ -751,6 +751,62 @@ python = [
 ]
 
 [[package]]
+name = "mkdocstrings-owa"
+source = { editable = "projects/mkdocstrings-owa" }
+dependencies = [
+    { name = "griffe" },
+    { name = "mkdocs-autorefs" },
+    { name = "mkdocstrings" },
+    { name = "owa-core" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "griffe", specifier = ">=1.6.2" },
+    { name = "mkdocs-autorefs", specifier = ">=1.4" },
+    { name = "mkdocstrings", specifier = ">=0.28.3" },
+    { name = "owa-core" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'", specifier = ">=4.0" },
+]
+
+[package.metadata.requires-dev]
+ci = [
+    { name = "beautifulsoup4", specifier = ">=4.12.3" },
+    { name = "black", specifier = ">=25.1" },
+    { name = "duty", specifier = ">=1.6" },
+    { name = "inline-snapshot", specifier = ">=0.18" },
+    { name = "mypy", specifier = ">=1.10" },
+    { name = "pytest", specifier = ">=8.2" },
+    { name = "pytest-cov", specifier = ">=5.0" },
+    { name = "pytest-randomly", specifier = ">=3.15" },
+    { name = "pytest-xdist", specifier = ">=3.6" },
+    { name = "ruff", specifier = ">=0.4" },
+    { name = "types-markdown", specifier = ">=3.6" },
+    { name = "types-pyyaml", specifier = ">=6.0" },
+]
+docs = [
+    { name = "markdown-callouts", specifier = ">=0.4" },
+    { name = "markdown-exec", specifier = ">=1.8" },
+    { name = "mkdocs", specifier = ">=1.6" },
+    { name = "mkdocs-coverage", specifier = ">=1.0" },
+    { name = "mkdocs-git-revision-date-localized-plugin", specifier = ">=1.2" },
+    { name = "mkdocs-llmstxt", specifier = ">=0.2" },
+    { name = "mkdocs-material", specifier = ">=9.5" },
+    { name = "mkdocs-minify-plugin", specifier = ">=0.8" },
+    { name = "mkdocs-redirects", specifier = ">=1.2" },
+    { name = "mkdocs-section-index", specifier = ">=0.3" },
+    { name = "mkdocstrings", specifier = ">=0.29" },
+    { name = "pydantic", specifier = ">=2.10" },
+    { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=2.0" },
+]
+maintain = [
+    { name = "build", specifier = ">=1.2" },
+    { name = "git-changelog", specifier = ">=2.5" },
+    { name = "twine", specifier = ">=5.1" },
+    { name = "yore", specifier = ">=0.3.3" },
+]
+
+[[package]]
 name = "mkdocstrings-python"
 version = "1.16.11"
 source = { registry = "https://pypi.org/simple" }
@@ -920,7 +976,7 @@ docs = [
     { name = "mkdocs-mermaid2-plugin" },
     { name = "mkdocs-redirects" },
     { name = "mkdocstrings", extra = ["python"] },
-    { name = "owa-mkdocstrings-handler" },
+    { name = "mkdocstrings-owa" },
 ]
 
 [package.dev-dependencies]
@@ -941,12 +997,12 @@ requires-dist = [
     { name = "mkdocs-mermaid2-plugin", marker = "extra == 'docs'", specifier = ">=1.1.1" },
     { name = "mkdocs-redirects", marker = "extra == 'docs'", specifier = ">=1.2.2" },
     { name = "mkdocstrings", extras = ["python"], marker = "extra == 'docs'", specifier = ">=0.24.0" },
+    { name = "mkdocstrings-owa", marker = "extra == 'docs'", editable = "projects/mkdocstrings-owa" },
     { name = "ocap", editable = "projects/ocap" },
     { name = "owa-cli", editable = "projects/owa-cli" },
     { name = "owa-core", editable = "projects/owa-core" },
     { name = "owa-env-desktop", editable = "projects/owa-env-desktop" },
     { name = "owa-env-gst", editable = "projects/owa-env-gst" },
-    { name = "owa-mkdocstrings-handler", marker = "extra == 'docs'", editable = "projects/owa-mkdocstrings-handler" },
 ]
 provides-extras = ["docs"]
 
@@ -1060,23 +1116,6 @@ requires-dist = [
     { name = "pillow", specifier = ">=11.1.0" },
     { name = "pygobject-stubs", specifier = ">=2.12.0" },
     { name = "tqdm", specifier = ">=4.67.1" },
-]
-
-[[package]]
-name = "owa-mkdocstrings-handler"
-version = "0.3.9.post1"
-source = { editable = "projects/owa-mkdocstrings-handler" }
-dependencies = [
-    { name = "griffe" },
-    { name = "mkdocstrings" },
-    { name = "owa-core" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "griffe", specifier = ">=1.0.0" },
-    { name = "mkdocstrings", specifier = ">=0.24.0" },
-    { name = "owa-core", editable = "projects/owa-core" },
 ]
 
 [[package]]
