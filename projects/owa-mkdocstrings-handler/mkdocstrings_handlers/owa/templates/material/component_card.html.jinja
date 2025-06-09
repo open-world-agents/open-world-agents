@@ -1,0 +1,42 @@
+{#- Template for component card in plugin overview -#}
+{% if comp.error %}
+    <div class="component-card error">
+        <h4>❌ {{ comp.full_name }}</h4>
+        <p class="error">Error: {{ comp.error }}</p>
+        <p><strong>Import Path:</strong> <code>{{ comp.import_path }}</code></p>
+    </div>
+{% else %}
+    {% set summary = "" %}
+    {% if comp.parsed_docstring and comp.parsed_docstring.summary %}
+        {% set summary = comp.parsed_docstring.summary %}
+    {% elif comp.docstring %}
+        {% set summary = comp.docstring.split('\n')[0] %}
+    {% endif %}
+
+    {% set signature = comp.signature or "" %}
+    {% if signature and signature | length > 80 %}
+        {% set signature = signature[:77] + "..." %}
+    {% endif %}
+
+    <div class="component-card">
+        <h4>🎯 <code>{{ comp.full_name }}</code></h4>
+        
+        {% if summary %}
+            <p class="summary">{{ summary }}</p>
+        {% endif %}
+        
+        {% if signature %}
+            <p><strong>Signature:</strong> <code>{{ signature }}</code></p>
+        {% endif %}
+        
+        <p><strong>Import:</strong> <code>{{ comp.import_path }}</code></p>
+        
+        {% if comp.usage_examples %}
+            {% set example = comp.usage_examples[0] %}
+            {% if example | length > 60 %}
+                {% set example = example[:57] + "..." %}
+            {% endif %}
+            <p><strong>Usage:</strong> <code>{{ example }}</code></p>
+        {% endif %}
+    </div>
+{% endif %}

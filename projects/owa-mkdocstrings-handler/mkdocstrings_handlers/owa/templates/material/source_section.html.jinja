@@ -1,0 +1,24 @@
+{#- Template for source code section -#}
+{% if plugin.source %}
+    {% filter heading(
+        (config.heading_level or 1) + 1,
+        role="source",
+        id="source-code",
+        toc_label="Source Code"
+    ) %}
+        🔍 Source Code
+    {% endfilter %}
+
+    {% set source = plugin.source %}
+    {% set truncate_limit = config.truncate_source or 2000 %}
+    {% if source | length > truncate_limit %}
+        {% set source = source[:truncate_limit] + "\n\n# ... (source truncated)" %}
+    {% endif %}
+
+    <div class="source-code">
+        <details>
+            <summary>Click to view source</summary>
+            <pre><code>{{ source }}</code></pre>
+        </details>
+    </div>
+{% endif %}

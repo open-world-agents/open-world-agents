@@ -1,0 +1,98 @@
+{#- Template for OWA Plugin documentation -#}
+{% if plugin.error %}
+    <div class="error">Error: {{ plugin.error }}</div>
+{% elif plugin.type == "plugin" %}
+    {#- Plugin overview template -#}
+    {% set total_components = plugin.components.values() | map('length') | sum %}
+
+    <div class="owa-plugin">
+        {% filter heading(
+            config.heading_level or 1,
+            role="plugin",
+            id="plugin-" + plugin.namespace,
+            toc_label="Plugin: " + plugin.namespace
+        ) %}
+            🔌 Plugin: {{ plugin.namespace }}
+        {% endfilter %}
+
+        <div class="plugin-metadata">
+            <p><strong>📦 Version:</strong> <code>{{ plugin.version }}</code></p>
+            <p><strong>📝 Description:</strong> {{ plugin.description }}</p>
+            {% if plugin.author %}
+                <p><strong>👤 Author:</strong> {{ plugin.author }}</p>
+            {% endif %}
+            <p><strong>📊 Total Components:</strong> {{ total_components }}</p>
+        </div>
+
+        {% filter heading(
+            (config.heading_level or 1) + 1,
+            role="section",
+            id="components-overview",
+            toc_label="Components Overview"
+        ) %}
+            📋 Components Overview
+        {% endfilter %}
+
+        {% for comp_type, components in plugin.components.items() %}
+            {% if components %}
+                <div class="component-section">
+                    {% filter heading(
+                        (config.heading_level or 1) + 2,
+                        role="component-type",
+                        id="components-" + comp_type,
+                        toc_label=comp_type.title()
+                    ) %}
+                        🔧 {{ comp_type.title() }} ({{ components | length }})
+                    {% endfilter %}
+                    
+                    <div class="components-grid">
+                        {% for comp in components %}
+                            {% include "component_card.html.jinja" %}
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+{% else %}
+    {#- Individual component template -#}
+    <div class="owa-component">
+        {% filter heading(
+            config.heading_level or 1,
+            role="component",
+            id="component-" + plugin.full_name.replace('/', '-'),
+            toc_label=plugin.full_name
+        ) %}
+            🎯 {{ plugin.full_name }}
+        {% endfilter %}
+
+        <div class="component-metadata">
+            <p><strong>🏷️ Type:</strong> <span class="component-type">{{ plugin.component_type }}</span></p>
+            <p><strong>📦 Namespace:</strong> <code>{{ plugin.namespace }}</code></p>
+            <p><strong>📂 Import Path:</strong> <code>{{ plugin.import_path }}</code></p>
+            
+            {% if plugin.component_class %}
+                {% include "component_class_info.html.jinja" %}
+            {% endif %}
+        </div>
+
+        {#- Signature section -#}
+        {% if config.show_signature != false and plugin.signature_info %}
+            {% include "signature_section.html.jinja" %}
+        {% endif %}
+
+        {#- Documentation section -#}
+        {% include "documentation_section.html.jinja" %}
+
+        {#- Usage examples section -#}
+        {% if config.show_examples != false and plugin.usage_examples %}
+            {% include "usage_examples_section.html.jinja" %}
+        {% endif %}
+
+        {#- Source code section -#}
+        {% if config.show_source != false and plugin.source %}
+            {% include "source_section.html.jinja" %}
+        {% endif %}
+    </div>
+{% endif %}
