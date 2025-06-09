@@ -100,7 +100,6 @@ nav:
     - Documentation Validation: env/documentation_validation.md
     - Documentation Quick Reference: env/documentation_quick_reference.md
     - Lists of EnvPlugins:
-      - env/plugins/example.md
       - Standard Environment: env/plugins/std.md
       - Desktop Environment: env/plugins/desktop.md
       - Gstreamer Environment: env/plugins/gst.md
