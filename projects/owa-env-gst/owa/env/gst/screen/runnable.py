@@ -15,9 +15,8 @@ class ScreenCapture(ScreenListener):
 
     Example:
     ```python
-    from owa.core.registry import RUNNABLES, activate_module
+    from owa.core.registry import RUNNABLES
 
-    activate_module("owa.env.gst")
     screen_capture = RUNNABLES["screen_capture"]().configure(fps=60)
 
     with screen_capture.session:
