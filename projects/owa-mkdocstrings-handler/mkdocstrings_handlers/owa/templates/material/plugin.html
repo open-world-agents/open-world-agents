@@ -1,0 +1,79 @@
+<!-- OWA Plugin Template for Material Theme -->
+<div class="owa-plugin">
+  <h2>{{ data.namespace }} Plugin</h2>
+  
+  {% if data.description %}
+  <p class="plugin-description">{{ data.description }}</p>
+  {% endif %}
+  
+  <div class="plugin-metadata">
+    {% if data.version and data.version != 'unknown' %}
+    <span class="plugin-version"><strong>Version:</strong> {{ data.version }}</span>
+    {% endif %}
+    
+    {% if data.author %}
+    <span class="plugin-author"><strong>Author:</strong> {{ data.author }}</span>
+    {% endif %}
+    
+    <span class="plugin-components"><strong>Total Components:</strong> {{ data.total_components }}</span>
+  </div>
+  
+  {% if data.components %}
+  <h3>Components</h3>
+  <div class="components-list">
+    {% for component_type, component_list in data.components.items() %}
+    <div class="component-type">
+      <h4>{{ component_type.title() }} ({{ component_list|length }})</h4>
+      <ul>
+        {% for component in component_list %}
+        <li><code>{{ data.namespace }}/{{ component }}</code></li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<style>
+.owa-plugin {
+  margin: 1em 0;
+  padding: 1em;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+}
+
+.plugin-metadata {
+  margin: 1em 0;
+  padding: 0.5em;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+}
+
+.plugin-metadata span {
+  display: block;
+  margin: 0.25em 0;
+}
+
+.components-list {
+  margin-top: 1em;
+}
+
+.component-type {
+  margin: 1em 0;
+}
+
+.component-type h4 {
+  margin: 0.5em 0;
+  color: #1976d2;
+}
+
+.component-type ul {
+  margin: 0.5em 0;
+  padding-left: 1.5em;
+}
+
+.component-type li {
+  margin: 0.25em 0;
+}
+</style>

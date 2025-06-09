@@ -1,0 +1,30 @@
+<!-- OWA Plugin Template for MkDocs Theme (Fallback) -->
+<div class="owa-plugin">
+  <h2>{{ data.namespace }} Plugin</h2>
+  
+  {% if data.description %}
+  <p>{{ data.description }}</p>
+  {% endif %}
+  
+  <table>
+    {% if data.version and data.version != 'unknown' %}
+    <tr><td><strong>Version:</strong></td><td>{{ data.version }}</td></tr>
+    {% endif %}
+    {% if data.author %}
+    <tr><td><strong>Author:</strong></td><td>{{ data.author }}</td></tr>
+    {% endif %}
+    <tr><td><strong>Total Components:</strong></td><td>{{ data.total_components }}</td></tr>
+  </table>
+  
+  {% if data.components %}
+  <h3>Components</h3>
+  {% for component_type, component_list in data.components.items() %}
+  <h4>{{ component_type.title() }} ({{ component_list|length }})</h4>
+  <ul>
+    {% for component in component_list %}
+    <li><code>{{ data.namespace }}/{{ component }}</code></li>
+    {% endfor %}
+  </ul>
+  {% endfor %}
+  {% endif %}
+</div>
