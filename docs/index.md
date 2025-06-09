@@ -29,8 +29,8 @@ Build reactive desktop agents with our asynchronous environment system.
 
 **Built-in Plugins:**  
 
-- **[Desktop Environment](env/plugins/desktop_env.md)** - Mouse, keyboard, and window event handling
-- **[GStreamer Environment](env/plugins/gstreamer_env.md)** - High-performance screen capture (**6x faster** than alternatives)
+- **[Desktop Environment](env/plugins/desktop.md)** - Mouse, keyboard, and window event handling
+- **[GStreamer Environment](env/plugins/gst.md)** - High-performance screen capture (**6x faster** than alternatives)
 - **[Standard Environment](env/plugins/std.md)** - Basic utilities and timing functions
 
 ### 📊 Data Infrastructure
