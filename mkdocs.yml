@@ -97,8 +97,8 @@ nav:
     - Lists of EnvPlugins:
       - env/plugins/example.md
       - Standard Environment: env/plugins/std.md
-      - Desktop Environment: env/plugins/desktop_env.md
-      - Gstreamer Environment: env/plugins/gstreamer_env.md
+      - Desktop Environment: env/plugins/desktop.md
+      - Gstreamer Environment: env/plugins/gst.md
   - Data in OWA:
     - data/index.md
     # - data/data_format.md

@@ -302,6 +302,6 @@ $ owl env namespaces
 ## Additional Resources
 
 - For standard module details: [owa-env-std](plugins/std.md)
-- For desktop features: [owa-env-desktop](plugins/desktop_env.md)
-- For multimedia support: [owa-env-gst](plugins/gstreamer_env.md)
+- For desktop features: [owa-env-desktop](plugins/desktop.md)
+- For multimedia support: [owa-env-gst](plugins/gst.md)
 - For custom EnvPlugin development: [custom_plugins.md](custom_plugins.md)
