@@ -234,7 +234,10 @@ $ owl env health                                   # Perform health check
 
 ```bash
 # Validate plugin specifications
-$ owl env validate ./plugin.yaml
+$ owl env validate owa.env.myplugin:plugin_spec    # Python entry point
+$ owl env validate ./plugin.yaml                   # YAML file
+$ owl env validate ./plugin.yaml --verbose         # Detailed validation
+$ owl env validate ./plugin.yaml --no-check-imports # Skip import validation
 ```
 
 ### Example CLI Output

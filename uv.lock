@@ -920,6 +920,7 @@ docs = [
     { name = "mkdocs-mermaid2-plugin" },
     { name = "mkdocs-redirects" },
     { name = "mkdocstrings", extra = ["python"] },
+    { name = "owa-mkdocstrings-handler" },
 ]
 
 [package.dev-dependencies]
@@ -945,6 +946,7 @@ requires-dist = [
     { name = "owa-core", editable = "projects/owa-core" },
     { name = "owa-env-desktop", editable = "projects/owa-env-desktop" },
     { name = "owa-env-gst", editable = "projects/owa-env-gst" },
+    { name = "owa-mkdocstrings-handler", marker = "extra == 'docs'", editable = "projects/owa-mkdocstrings-handler" },
 ]
 provides-extras = ["docs"]
 
@@ -969,6 +971,7 @@ dependencies = [
     { name = "packaging" },
     { name = "plotext" },
     { name = "pydantic" },
+    { name = "pyyaml" },
     { name = "requests" },
     { name = "rich" },
     { name = "tqdm" },
@@ -984,6 +987,7 @@ requires-dist = [
     { name = "packaging", specifier = ">=25.0" },
     { name = "plotext", specifier = ">=5.3.2" },
     { name = "pydantic", specifier = ">=2.10.6" },
+    { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "requests", specifier = ">=2.32.3" },
     { name = "rich", specifier = ">=13.7.0" },
     { name = "tqdm", specifier = ">=4.67.1" },
@@ -1056,6 +1060,21 @@ requires-dist = [
     { name = "pillow", specifier = ">=11.1.0" },
     { name = "pygobject-stubs", specifier = ">=2.12.0" },
     { name = "tqdm", specifier = ">=4.67.1" },
+]
+
+[[package]]
+name = "owa-mkdocstrings-handler"
+version = "0.3.9.post1"
+source = { editable = "projects/owa-mkdocstrings-handler" }
+dependencies = [
+    { name = "mkdocstrings" },
+    { name = "owa-core" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "mkdocstrings", specifier = ">=0.24.0" },
+    { name = "owa-core", editable = "projects/owa-core" },
 ]
 
 [[package]]

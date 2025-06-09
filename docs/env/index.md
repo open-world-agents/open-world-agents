@@ -28,4 +28,17 @@ We prioritize minimizing latency within the framework, aiming for agent reaction
 
 Don't let outdated frameworks hold you back. Embrace the future with OWA's Env and build agents that are ready for the real world.
 
-[Learn more about OWA's Env Design.](guide.md)
+### Documentation
+
+- **[Comprehensive Guide](guide.md)** - Complete overview of OWA's Env system
+- **[Custom Plugins](custom_plugins.md)** - How to create your own plugins
+- **[Plugin Specification Guide](plugin_specification_guide.md)** - Detailed guide for writing PluginSpec in Python and YAML
+- **[YAML Plugin Guide](yaml_plugin_guide.md)** - Focused guide for YAML-based plugin specifications
+- **[Documentation Validation](documentation_validation.md)** - Tools for validating plugin documentation
+
+### Available Plugins
+
+- **[Standard Environment](plugins/std.md)** - Core utilities and timing functions
+- **[Desktop Environment](plugins/desktop_env.md)** - Mouse, keyboard, and window control
+- **[GStreamer Environment](plugins/gstreamer_env.md)** - High-performance multimedia processing
+- **[Example Plugin](plugins/example.md)** - Reference implementation and examples

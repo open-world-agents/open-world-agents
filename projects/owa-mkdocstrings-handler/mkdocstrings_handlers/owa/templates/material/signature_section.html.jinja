@@ -1,0 +1,55 @@
+{#- Template for signature section -#}
+{% if plugin.signature_info and plugin.signature_info.signature_str %}
+    {% filter heading(
+        (config.heading_level or 1) + 1,
+        role="signature",
+        id="signature",
+        toc_label="Signature"
+    ) %}
+        📝 Signature
+    {% endfilter %}
+
+    <div class="signature-section">
+        <pre class="signature"><code>{{ plugin.signature_info.signature_str }}</code></pre>
+
+        {#- Parameters section -#}
+        {% set parameters = plugin.signature_info.griffe_parameters or plugin.signature_info.parameters or [] %}
+        {% if parameters %}
+            {% filter heading(
+                (config.heading_level or 1) + 2,
+                role="parameters",
+                id="parameters",
+                toc_label="Parameters"
+            ) %}
+                Parameters
+            {% endfilter %}
+            
+            <div class="parameters">
+                {% for param in parameters %}
+                    {% include "parameter.html.jinja" %}
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {#- Returns section -#}
+        {% set griffe_info = plugin.signature_info.griffe_info or {} %}
+        {% set return_type = griffe_info.returns or plugin.signature_info.return_annotation %}
+        {% if return_type %}
+            {% filter heading(
+                (config.heading_level or 1) + 2,
+                role="returns",
+                id="returns",
+                toc_label="Returns"
+            ) %}
+                Returns
+            {% endfilter %}
+            
+            <p><strong>Type:</strong> <code>{{ return_type }}</code></p>
+        {% endif %}
+
+        {#- Griffe metadata -#}
+        {% if griffe_info and config.show_griffe_info != false %}
+            {% include "griffe_metadata.html.jinja" %}
+        {% endif %}
+    </div>
+{% endif %}

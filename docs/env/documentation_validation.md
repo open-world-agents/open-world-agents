@@ -60,7 +60,7 @@ jobs:
       - name: Install dependencies
         run: pip install -e .
       - name: Validate Documentation
-        run: owl env validate-docs --strict --min-coverage 90
+        run: owl env validate-docs --strict
 ```
 
 ### Advanced Options
@@ -70,7 +70,7 @@ jobs:
 In strict mode, any missing documentation is treated as a failure:
 
 ```bash
-$ owl env validate-docs --strict --min-coverage 95
+$ owl env validate-docs --strict
 ❌ FAIL: Documentation coverage 88% below minimum 100% (strict mode)
 ```
 
@@ -133,7 +133,7 @@ OEP-0004 provides a custom mkdocstrings handler that understands OWA's plugin st
 # Example Plugin Documentation
 
 ::: example
-    handler: envplugin
+    handler: owa
 ```
 
 This generates a complete plugin overview with all components.
@@ -144,7 +144,7 @@ This generates a complete plugin overview with all components.
 # Mouse Click Function
 
 ::: example/mouse.click
-    handler: envplugin
+    handler: owa
     options:
       show_signature: true
       show_examples: true
@@ -154,19 +154,19 @@ This generates detailed documentation for a specific component.
 
 ### Configuration
 
-The envplugin handler is available through the `mkdocstrings_handlers` package structure. Add it to your `mkdocs.yml`:
+The owa handler is available through the `mkdocstrings_handlers` package structure. Add it to your `mkdocs.yml`:
 
 ```yaml
 plugins:
   - mkdocstrings:
       handlers:
-        envplugin:
+        owa:
           options:
             show_plugin_metadata: true
             include_source_links: true
 ```
 
-**Note**: The handler is located in `mkdocstrings_handlers/envplugin.py` following the mkdocstrings custom handler convention. It automatically detects and imports OWA core modules when available.
+**Note**: The handler is located in `mkdocstrings_handlers/owa.py` following the mkdocstrings custom handler convention. It automatically detects and imports OWA core modules when available.
 
 ## Documentation Statistics
 

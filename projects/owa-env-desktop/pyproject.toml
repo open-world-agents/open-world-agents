@@ -26,6 +26,6 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["owa"]
 
-# Entry point for OEP-0003 plugin discovery
+# Entry point for plugin discovery
 [project.entry-points."owa.env.plugins"]
 desktop = "owa.env.desktop:plugin_spec"

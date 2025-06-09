@@ -20,7 +20,7 @@ console = Console()
 
 def validate_docs(
     plugin_namespace: Optional[str] = typer.Argument(None, help="Specific plugin namespace to validate (optional)"),
-    strict: bool = typer.Option(False, "--strict", help="Enable strict mode (90%/70% coverage + 80%/60% quality)"),
+    strict: bool = typer.Option(False, "--strict", help="Enable strict mode (100% coverage + 100% quality)"),
     min_coverage_pass: float = typer.Option(0.8, "--min-coverage-pass", help="Minimum coverage for PASS status"),
     min_coverage_fail: float = typer.Option(0.6, "--min-coverage-fail", help="Minimum coverage to avoid FAIL status"),
     min_quality_pass: float = typer.Option(
@@ -56,7 +56,7 @@ def validate_docs(
             try:
                 results = {plugin_namespace: validator.validate_plugin(plugin_namespace)}
             except KeyError:
-                console.print(f"[red]❌ ERROR: Plugin '{plugin_namespace}' not found[/red]", file=sys.stderr)
+                console.print(f"[red]❌ ERROR: Plugin '{plugin_namespace}' not found[/red]")
                 sys.exit(2)
         else:
             # Default behavior: validate all plugins
@@ -79,10 +79,7 @@ def validate_docs(
         # Apply strict mode adjustments
         if strict:
             # In strict mode, require high standards
-            min_coverage_pass = max(min_coverage_pass, 0.9)
-            min_coverage_fail = max(min_coverage_fail, 0.7)
-            min_quality_pass = max(min_quality_pass, 0.8)
-            min_quality_fail = max(min_quality_fail, 0.6)
+            min_coverage_pass = min_coverage_fail = min_quality_pass = min_quality_fail = 1.0
 
         # Check thresholds using minimum per-plugin results
         coverage_pass = min_coverage >= min_coverage_pass
@@ -132,7 +129,7 @@ def validate_docs(
             sys.exit(1)  # Documentation issues found
 
     except Exception as e:
-        console.print(f"[red]❌ ERROR: {e}[/red]", file=sys.stderr)
+        console.print(f"[red]❌ ERROR: {e}[/red]")
         sys.exit(2)  # Command error
 
 

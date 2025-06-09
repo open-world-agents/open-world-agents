@@ -16,7 +16,7 @@ owl env validate-docs example
 
 ### CI/CD Mode
 ```bash
-owl env validate-docs --strict --min-coverage 95
+owl env validate-docs --strict
 ```
 
 ## 📊 Commands Reference
@@ -44,13 +44,13 @@ owl env validate-docs --strict --min-coverage 95
 ### Plugin Overview
 ```markdown
 ::: example
-    handler: envplugin
+    handler: owa
 ```
 
 ### Individual Component
 ```markdown
 ::: example/mouse.click
-    handler: envplugin
+    handler: owa
     options:
       show_signature: true
       show_examples: true
@@ -62,7 +62,7 @@ owl env validate-docs --strict --min-coverage 95
 plugins:
   - mkdocstrings:
       handlers:
-        envplugin:
+        owa:
           options:
             show_plugin_metadata: true
             include_source_links: true
@@ -117,7 +117,7 @@ def screen_capture(region: Optional[Tuple[int, int, int, int]] = None) -> Image:
 ### GitHub Actions
 ```yaml
 - name: Validate Documentation
-  run: owl env validate-docs --strict --min-coverage 90
+  run: owl env validate-docs --strict
 ```
 
 ### Pre-commit Hook

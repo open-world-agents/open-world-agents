@@ -12,6 +12,7 @@ from typing import Any, Dict, List
 
 from ..plugin_discovery import get_plugin_discovery
 from ..registry import CALLABLES, LISTENERS, RUNNABLES
+from ..runnable import RunnableMixin
 
 
 @dataclass
@@ -187,7 +188,7 @@ class DocumentationValidator:
             type_issues = self._validate_type_hints(component)
             issues.extend(type_issues)
         elif inspect.isclass(component):
-            # For classes, check __init__ and key methods
+            # For classes, check on_configure and key methods
             class_issues = self._validate_class_documentation(component)
             issues.extend(class_issues)
 
@@ -215,7 +216,7 @@ class DocumentationValidator:
         lines = docstring.strip().split("\n")
         if not lines or not lines[0].strip():
             issues.append("Missing summary in docstring")
-        elif len(lines[0].strip()) < 10:
+        elif len(lines[0].strip()) < 50:
             issues.append("Summary too short (should be descriptive)")
 
         # Check for parameter documentation (if Args: section exists)
@@ -235,7 +236,7 @@ class DocumentationValidator:
 
         return issues
 
-    def _validate_type_hints(self, func: Any) -> List[str]:
+    def _validate_type_hints(self, func: Any, validate_return: bool = True) -> List[str]:
         """Validate type hints for a function."""
         issues = []
 
@@ -249,8 +250,8 @@ class DocumentationValidator:
                 if param.annotation == inspect.Parameter.empty:
                     issues.append(f"Parameter '{param_name}' missing type hint")
 
-            # Check return type hint
-            if sig.return_annotation == inspect.Signature.empty:
+            # Check return type hint if validate_return is True
+            if validate_return and sig.return_annotation == inspect.Signature.empty:
                 issues.append("Missing return type hint")
 
         except (ValueError, TypeError):
@@ -263,12 +264,13 @@ class DocumentationValidator:
         """Validate documentation for a class."""
         issues = []
 
-        # Check __init__ method if it exists
-        if hasattr(cls, "__init__"):
-            init_method = getattr(cls, "__init__")
-            if init_method != object.__init__:  # Not the default object.__init__
-                init_issues = self._validate_type_hints(init_method)
-                issues.extend([f"__init__ {issue}" for issue in init_issues])
+        # Check on_configure method if it exists
+        if hasattr(cls, "on_configure"):
+            on_configure = getattr(cls, "on_configure")
+            if on_configure != RunnableMixin.on_configure:  # Not the default RunnableMixin.on_configure
+                # Don't check return type hint
+                init_issues = self._validate_type_hints(on_configure, validate_return=False)
+                issues.extend([f"on_configure {issue}" for issue in init_issues])
 
         return issues
 
@@ -292,12 +294,12 @@ class DocumentationValidator:
 
     def _determine_quality_grade(self, docstring: str, issues: List[str]) -> str:
         """Determine quality grade based on docstring content and issues."""
-        # GOOD: Has examples OR type hints OR comprehensive description
+        # GOOD: Has examples AND type hints AND comprehensive description
         has_examples = "Example" in docstring or "Examples" in docstring
-        has_comprehensive_desc = len(docstring.strip()) > 100
+        has_comprehensive_desc = len(docstring.strip()) > 50
         has_type_hints = not any("missing type hint" in issue.lower() for issue in issues)
 
-        if has_examples or has_type_hints or has_comprehensive_desc:
+        if has_examples and has_type_hints and has_comprehensive_desc:
             return "good"
         else:
             return "acceptable"

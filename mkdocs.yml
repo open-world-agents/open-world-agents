@@ -40,7 +40,7 @@ plugins:
           options:
             docstring_style: google
             show_source: true
-        envplugin:
+        owa:
           options:
             show_plugin_metadata: true
             include_source_links: true
