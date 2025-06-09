@@ -49,12 +49,15 @@ jobs:
       
       # install virtual-uv
       - name: Install virtual-uv
+        shell: bash -el {0}
         run: pip install virtual-uv
 
       - name: Install Dependencies
+        shell: bash -el {0}
         run: vuv install --extra docs
-      
+
       - name: Install EnvPlugins
+        shell: bash -el {0}
         run: vuv pip install -e projects/owa-env-example
 
       - name: Configure Git
@@ -63,8 +66,10 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Build MkDocs
+        shell: bash -el {0}
         run: vuv run mkdocs build
 
       - name: Deploy to GitHub Pages
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        shell: bash -el {0}
         run: vuv run mkdocs gh-deploy
