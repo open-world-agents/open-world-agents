@@ -84,3 +84,8 @@ tick_listener.join()
 This example demonstrates how to use the automatically available components, retrieve the current time, and set up a tick listener that prints the current time every second.
 
 The Standard Environment plugin is a fundamental part of the Open World Agents framework, providing essential time-based functionalities that can be leveraged by other modules and applications.
+
+## Auto-generated documentation
+
+::: std
+    handler: owa

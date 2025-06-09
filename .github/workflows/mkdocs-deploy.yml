@@ -25,9 +25,40 @@ jobs:
         with:
           version: "latest"
           enable-cache: true
+      
+      - name: Cache conda
+        uses: actions/cache@v3
+        env:
+          # Increase this value to reset cache if etc/example-environment.yml has not changed
+          CACHE_NUMBER: 0
+        with:
+          path: ~/conda_pkgs_dir
+          key:
+            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
+            hashFiles('projects/owa-env-gst/environment.yml') }}
+
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          activate-environment: owa
+          miniforge-version: latest
+          mamba-version: "*"
+          channels: conda-forge
+          conda-remove-defaults: "true"
+          environment-file: projects/owa-env-gst/environment.yml
+          use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
+      
+      # install virtual-uv
+      - name: Install virtual-uv
+        shell: bash -el {0}
+        run: pip install virtual-uv
 
       - name: Install Dependencies
-        run: uv sync --extra docs
+        shell: bash -el {0}
+        run: vuv install --extra docs
+
+      - name: Install EnvPlugins
+        shell: bash -el {0}
+        run: vuv pip install -e projects/owa-env-example
 
       - name: Configure Git
         run: |
@@ -35,8 +66,10 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Build MkDocs
-        run: uv run mkdocs build
+        shell: bash -el {0}
+        run: vuv run mkdocs build
 
       - name: Deploy to GitHub Pages
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: uv run mkdocs gh-deploy
+        shell: bash -el {0}
+        run: vuv run mkdocs gh-deploy

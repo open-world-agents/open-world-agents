@@ -39,6 +39,5 @@ Don't let outdated frameworks hold you back. Embrace the future with OWA's Env a
 ### Available Plugins
 
 - **[Standard Environment](plugins/std.md)** - Core utilities and timing functions
-- **[Desktop Environment](plugins/desktop_env.md)** - Mouse, keyboard, and window control
-- **[GStreamer Environment](plugins/gstreamer_env.md)** - High-performance multimedia processing
-- **[Example Plugin](plugins/example.md)** - Reference implementation and examples
+- **[Desktop Environment](plugins/desktop.md)** - Mouse, keyboard, and window control
+- **[GStreamer Environment](plugins/gst.md)** - High-performance multimedia processing

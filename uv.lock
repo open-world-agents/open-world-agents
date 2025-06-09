@@ -751,6 +751,21 @@ python = [
 ]
 
 [[package]]
+name = "mkdocstrings-owa"
+version = "1.16.12.post1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "griffe" },
+    { name = "mkdocs-autorefs" },
+    { name = "mkdocstrings" },
+    { name = "owa-core" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/8d/2e/632091c03ff1c6fc757012df6d3095c040433031519af0cacb550de26758/mkdocstrings_owa-1.16.12.post1.tar.gz", hash = "sha256:574def49ddaf13de26b082263e04512d8125c748e9cd22ef731a50c71d130189", size = 210877, upload-time = "2025-06-09T15:54:18.629Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/72/c5/a1d0fd4f46762d37b61712b1b837425b14d9b796a7273971265435239f36/mkdocstrings_owa-1.16.12.post1-py3-none-any.whl", hash = "sha256:f0ffb0d89d2ae6ab29c73ed02917046af22323b990e2b116db939723ed1c688f", size = 131119, upload-time = "2025-06-09T15:54:16.197Z" },
+]
+
+[[package]]
 name = "mkdocstrings-python"
 version = "1.16.11"
 source = { registry = "https://pypi.org/simple" }
@@ -920,7 +935,7 @@ docs = [
     { name = "mkdocs-mermaid2-plugin" },
     { name = "mkdocs-redirects" },
     { name = "mkdocstrings", extra = ["python"] },
-    { name = "owa-mkdocstrings-handler" },
+    { name = "mkdocstrings-owa" },
 ]
 
 [package.dev-dependencies]
@@ -941,12 +956,12 @@ requires-dist = [
     { name = "mkdocs-mermaid2-plugin", marker = "extra == 'docs'", specifier = ">=1.1.1" },
     { name = "mkdocs-redirects", marker = "extra == 'docs'", specifier = ">=1.2.2" },
     { name = "mkdocstrings", extras = ["python"], marker = "extra == 'docs'", specifier = ">=0.24.0" },
+    { name = "mkdocstrings-owa", marker = "extra == 'docs'", specifier = ">=1.16.12" },
     { name = "ocap", editable = "projects/ocap" },
     { name = "owa-cli", editable = "projects/owa-cli" },
     { name = "owa-core", editable = "projects/owa-core" },
     { name = "owa-env-desktop", editable = "projects/owa-env-desktop" },
     { name = "owa-env-gst", editable = "projects/owa-env-gst" },
-    { name = "owa-mkdocstrings-handler", marker = "extra == 'docs'", editable = "projects/owa-mkdocstrings-handler" },
 ]
 provides-extras = ["docs"]
 
@@ -1060,21 +1075,6 @@ requires-dist = [
     { name = "pillow", specifier = ">=11.1.0" },
     { name = "pygobject-stubs", specifier = ">=2.12.0" },
     { name = "tqdm", specifier = ">=4.67.1" },
-]
-
-[[package]]
-name = "owa-mkdocstrings-handler"
-version = "0.3.9.post1"
-source = { editable = "projects/owa-mkdocstrings-handler" }
-dependencies = [
-    { name = "mkdocstrings" },
-    { name = "owa-core" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "mkdocstrings", specifier = ">=0.24.0" },
-    { name = "owa-core", editable = "projects/owa-core" },
 ]
 
 [[package]]

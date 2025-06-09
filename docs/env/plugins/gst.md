@@ -61,3 +61,9 @@ To see detailed implementation, skim over [owa_env_gst](https://github.com/open-
     - When capturing `Windows Terminal` and `Discord`, the following case was reported. I also guess this phenomena is because of usage of `WGC`.
         - When there's no change in window, FPS drops to 1-5 frame.
         - When there's change(e.g. mouse movement) in window, FPS straightly recovers to 60+.
+
+
+## Auto-generated documentation
+
+::: gst
+    handler: owa
