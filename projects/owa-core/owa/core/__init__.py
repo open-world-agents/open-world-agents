@@ -3,9 +3,9 @@ from .callable import Callable
 from .component_access import get_component, get_component_info, list_components
 from .listener import Listener
 from .message import BaseMessage, OWAMessage
-from .plugin_discovery import discover_and_register_plugins, get_plugin_discovery, discover_message_definitions, get_message_registry
+from .plugin_discovery import discover_and_register_plugins, get_plugin_discovery
 from .plugin_spec import PluginSpec
-from .registry import CALLABLES, LISTENERS, RUNNABLES, MESSAGES, LazyImportRegistry, Registry
+from .registry import CALLABLES, LISTENERS, RUNNABLES, LazyImportRegistry, Registry
 from .runnable import Runnable
 
 # Automatically discover and register plugins on import

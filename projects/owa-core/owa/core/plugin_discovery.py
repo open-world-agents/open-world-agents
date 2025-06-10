@@ -8,7 +8,7 @@ from typing import Dict, Optional, Union
 from loguru import logger
 
 from .plugin_spec import PluginSpec
-from .registry import CALLABLES, LISTENERS, RUNNABLES, MESSAGES
+from .registry import CALLABLES, LISTENERS, RUNNABLES
 
 # Import entry_points based on Python version
 if sys.version_info < (3, 10):
@@ -151,14 +151,6 @@ class PluginDiscovery:
                 registered_count += 1
                 logger.debug(f"Registered runnable: {full_name} -> {import_path}")
 
-        # Register messages (OEP-0005)
-        if plugin_spec.messages:
-            for name, import_path in plugin_spec.messages.items():
-                full_name = f"{plugin_spec.namespace}/{name}"
-                MESSAGES.register(full_name, obj_or_import_path=import_path)
-                registered_count += 1
-                logger.debug(f"Registered message: {full_name} -> {import_path}")
-
         logger.info(f"Registered {registered_count} components for plugin '{plugin_name}'")
         return registered_count
 
@@ -216,29 +208,3 @@ def discover_and_register_plugins() -> None:
 def get_plugin_discovery() -> PluginDiscovery:
     """Get the global plugin discovery instance."""
     return _plugin_discovery
-
-
-def discover_message_definitions() -> Dict[str, str]:
-    """
-    Discover all message definitions from installed plugins.
-
-    This function is used by mcap-owa-support to automatically register
-    message types from all installed plugins.
-
-    Returns:
-        Dictionary mapping message type names to import paths
-    """
-    message_definitions = {}
-
-    for plugin_name, plugin_spec in _plugin_discovery.discovered_plugins.items():
-        if plugin_spec.messages:
-            for name, import_path in plugin_spec.messages.items():
-                full_name = f"{plugin_spec.namespace}/{name}"
-                message_definitions[full_name] = import_path
-
-    return message_definitions
-
-
-def get_message_registry():
-    """Get the global message registry for external packages."""
-    return MESSAGES

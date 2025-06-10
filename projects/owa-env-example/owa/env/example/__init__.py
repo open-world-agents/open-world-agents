@@ -28,11 +28,4 @@ plugin_spec = PluginSpec(
             "counter": "owa.env.example.example_runnable:ExampleCounterRunnable",
         },
     },
-    messages={
-        "SensorData": "owa.env.example.example_messages:ExampleSensorData",
-        "Event": "owa.env.example.example_messages:ExampleEvent",
-        "ProcessingResult": "owa.env.example.example_messages:ExampleProcessingResult",
-        "Configuration": "owa.env.example.example_messages:ExampleConfiguration",
-        "LogEntry": "owa.env.example.example_messages:ExampleLogEntry",
-    },
 )

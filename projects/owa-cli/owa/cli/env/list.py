@@ -22,15 +22,13 @@ def list_plugins(
     details: bool = typer.Option(False, "--details", "-d", help="Show detailed component information"),
     table_format: bool = typer.Option(False, "--table", help="Display results in table format"),
     sort_by: str = typer.Option("namespace", "--sort", help="Sort by: namespace, name, type"),
-    include_messages: bool = typer.Option(False, "--include-messages", help="Include message types in listing"),
 ):
     """List discovered plugins and their components with enhanced filtering and display options."""
 
     # Validate component type
-    valid_types = ["callables", "listeners", "runnables", "messages"]
-    if component_type and component_type not in valid_types:
+    if component_type and component_type not in ["callables", "listeners", "runnables"]:
         console.print(
-            f"[red]Error: Invalid component type '{component_type}'. Must be one of: {', '.join(valid_types)}[/red]"
+            f"[red]Error: Invalid component type '{component_type}'. Must be one of: callables, listeners, runnables[/red]"
         )
         sys.exit(1)
 
@@ -46,7 +44,7 @@ def list_plugins(
         _list_components_by_type(component_type, namespace, search, details, table_format, sort_by)
     else:
         # List all plugins
-        _list_all_plugins(namespace, search, components, details, table_format, sort_by, include_messages)
+        _list_all_plugins(namespace, search, components, details, table_format, sort_by)
 
 
 def _list_components_by_type(component_type: str, namespace: Optional[str], search: Optional[str],
@@ -77,15 +75,11 @@ def _list_components_by_type(component_type: str, namespace: Optional[str], sear
 
 
 def _list_all_plugins(namespace: Optional[str], search: Optional[str], components: bool,
-                     details: bool, table_format: bool, sort_by: str, include_messages: bool = False):
+                     details: bool, table_format: bool, sort_by: str):
     """List all plugins with their components."""
     # Collect all plugins
     plugins = {}
-    component_types = ["callables", "listeners", "runnables"]
-    if include_messages:
-        component_types.append("messages")
-
-    for comp_type in component_types:
+    for comp_type in ["callables", "listeners", "runnables"]:
         plugin_components = list_components(comp_type, namespace=namespace)
         if plugin_components:
             for comp_name in plugin_components[comp_type]:
@@ -97,10 +91,7 @@ def _list_all_plugins(namespace: Optional[str], search: Optional[str], component
 
                 ns = comp_name.split("/")[0]
                 if ns not in plugins:
-                    plugin_dict = {"callables": [], "listeners": [], "runnables": []}
-                    if include_messages:
-                        plugin_dict["messages"] = []
-                    plugins[ns] = plugin_dict
+                    plugins[ns] = {"callables": [], "listeners": [], "runnables": []}
                 plugins[ns][comp_type].append(comp_name)
 
     if not plugins:
@@ -195,22 +186,15 @@ def _display_plugins_tree(plugins: dict, show_components: bool, show_details: bo
             comp_types.append(f"👂 Listeners: {len(components['listeners'])}")
         if components["runnables"]:
             comp_types.append(f"🏃 Runnables: {len(components['runnables'])}")
-        if components.get("messages"):
-            comp_types.append(f"📨 Messages: {len(components['messages'])}")
 
         for i, comp_type in enumerate(comp_types):
             plugin_branch.add(comp_type)
 
         # Show individual components if requested OR if details requested
         if show_components or show_details:
-            component_types = ["callables", "listeners", "runnables"]
-            if components.get("messages"):
-                component_types.append("messages")
-
-            for comp_type in component_types:
-                if components.get(comp_type):
-                    icon = "📨" if comp_type == "messages" else "🔧"
-                    type_branch = plugin_branch.add(f"{icon} {comp_type.title()} Details")
+            for comp_type in ["callables", "listeners", "runnables"]:
+                if components[comp_type]:
+                    type_branch = plugin_branch.add(f"🔧 {comp_type.title()} Details")
 
                     if show_details:
                         # Show with detailed information
@@ -244,12 +228,8 @@ def _display_all_components_table(plugins: dict, show_details: bool):
     all_components = []
     for ns in sorted(plugins.keys()):
         components = plugins[ns]
-        component_types = ["callables", "listeners", "runnables"]
-        if components.get("messages"):
-            component_types.append("messages")
-
-        for comp_type in component_types:
-            if components.get(comp_type):
+        for comp_type in ["callables", "listeners", "runnables"]:
+            if components[comp_type]:
                 comp_info = get_component_info(comp_type) if show_details else {}
                 for comp_name in sorted(components[comp_type]):
                     parts = comp_name.split("/", 1)
@@ -280,12 +260,6 @@ def _display_plugins_table(plugins: dict, show_components: bool, show_details: b
     table.add_column("Callables", justify="right", style="green")
     table.add_column("Listeners", justify="right", style="yellow")
     table.add_column("Runnables", justify="right", style="blue")
-
-    # Check if any plugin has messages
-    has_messages = any(plugins[ns].get("messages") for ns in plugins)
-    if has_messages:
-        table.add_column("Messages", justify="right", style="magenta")
-
     table.add_column("Total", justify="right", style="bold magenta")
 
     if show_details:
@@ -297,30 +271,21 @@ def _display_plugins_table(plugins: dict, show_components: bool, show_details: b
         callables_count = len(components["callables"])
         listeners_count = len(components["listeners"])
         runnables_count = len(components["runnables"])
-        messages_count = len(components.get("messages", []))
-        total_count = callables_count + listeners_count + runnables_count + messages_count
+        total_count = callables_count + listeners_count + runnables_count
 
         row_data = [
             ns,
             str(callables_count) if callables_count > 0 else "-",
             str(listeners_count) if listeners_count > 0 else "-",
             str(runnables_count) if runnables_count > 0 else "-",
+            str(total_count)
         ]
-
-        if has_messages:
-            row_data.append(str(messages_count) if messages_count > 0 else "-")
-
-        row_data.append(str(total_count))
 
         if show_details:
             # Calculate loaded components
             loaded_count = 0
-            component_types = ["callables", "listeners", "runnables"]
-            if components.get("messages"):
-                component_types.append("messages")
-
-            for comp_type in component_types:
-                if components.get(comp_type):
+            for comp_type in ["callables", "listeners", "runnables"]:
+                if components[comp_type]:
                     comp_info = get_component_info(comp_type)
                     loaded_count += sum(1 for comp_name in components[comp_type]
                                       if comp_info.get(comp_name, {}).get("loaded", False))
