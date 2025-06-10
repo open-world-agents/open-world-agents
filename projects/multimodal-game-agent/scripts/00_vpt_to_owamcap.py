@@ -10,13 +10,14 @@ from owa.env.desktop.msg import (
     MouseState,
     WindowInfo,
 )
+from owa.env.gst.msg import ScreenEmitted
 from owa.env.desktop.constants import VK
 from rich import print
 from tqdm import tqdm
 import json
 
 VPT_FOLDER_PATH = Path("~/data/Video-Pre-Training/data/").expanduser()
-VPT_TARGET_LIST_FILE = "./target_files_5_min.txt"
+VPT_TARGET_LIST_FILE = "./target_files.txt"
 VPT_INTERVAL_TICK_NS = 50_000_000  # 50 ms interval per tick
 VPT_MOUSE_PIN_NS = 1_000_000  # 1 ms for mouse pin movement
 VPT_X_RESOLUTION = 1280
@@ -70,11 +71,19 @@ def generate_vpt_file_list():
     from tqdm import tqdm
     import json
 
+    all_mp4_stems = set(
+        [
+            f.stem
+            for f in VPT_FOLDER_PATH.iterdir()
+            if f.suffix == ".mp4" and f.is_file()
+        ]
+    )
+
     # Get all files with their full path and creation time
     all_files = [
         (f, f.stat().st_ctime)
         for f in VPT_FOLDER_PATH.iterdir()
-        if f.suffix == ".jsonl" and f.is_file()
+        if f.suffix == ".jsonl" and f.is_file() and f.stem in all_mp4_stems
     ]
 
     # Sort by creation time (oldest first)
@@ -83,40 +92,39 @@ def generate_vpt_file_list():
     print(f"{len(all_files)} files found in {VPT_FOLDER_PATH}.")
 
     # Get the oldest 10,000 file paths
-    oldest_10000 = [f[0] for f in all_files[:10000]]
-    oldest_20000 = [f[0] for f in all_files[:20000]]
+    # oldest_10000_files = [f[0] for f in all_files[:10000]]
 
-    target_files_5_min = []
+    target_files = []
 
-    for file_name_jsonl in tqdm(oldest_10000):
-        file_name_mp4 = file_name_jsonl.with_suffix(".mp4")
+    for file_name_jsonl, _ in tqdm(all_files):
         try:
             with open(file_name_jsonl, "r") as f:  # jsonl file
                 lines = f.readlines()  # Read non-empty lines
                 if len(lines) == VPT_EXPECTED_TICKS:
-                    target_files_5_min.append(file_name_jsonl)
+                    target_files.append(file_name_jsonl)
         except Exception as e:
             print(f"Error reading {file_name_jsonl}. Skipping. Error: {e}")
 
-            # Open the video file
-            # container = av.open(file_name_mp4)
+        # file_name_mp4 = file_name_jsonl.with_suffix(".mp4")
+        # Open the video file
+        # container = av.open(file_name_mp4)
 
-            # frames = []
-            # for frame in container.decode(video=0):
-            #     # Convert AV frame to PIL Image (RGB)
-            #     img = frame.to_image()
-            #     frames.append(img)
+        # frames = []
+        # for frame in container.decode(video=0):
+        #     # Convert AV frame to PIL Image (RGB)
+        #     img = frame.to_image()
+        #     frames.append(img)
 
-            # # Now `frames` contains all PIL.Image.Image objects
-            # print(f"Extracted {len(frames)} frames.")
-            # print(f"First frame: {frames[0]}")
+        # # Now `frames` contains all PIL.Image.Image objects
+        # print(f"Extracted {len(frames)} frames.")
+        # print(f"First frame: {frames[0]}")
 
-            # assert len(lines) + 1 == len(frames)
+        # assert len(lines) + 1 == len(frames)
 
-    print(f"{len(target_files_5_min)}")
+    print(f"{len(target_files)}")
 
     with open(VPT_TARGET_LIST_FILE, "w") as f:
-        for file in target_files_5_min:
+        for file in target_files:
             f.write(f"{file}\n")
 
 
@@ -135,6 +143,7 @@ def main():
         # Convert the file to OWAMcap format
 
         mcap_file_path = vpt_file_path.with_suffix(".mcap")
+        mp4_file_path = vpt_file_path.with_suffix(".mp4")
 
         # Writing messages to an OWAMcap file
 
@@ -170,10 +179,21 @@ def main():
 
             keyboard_state = set()
 
+            ## SCREEN EVENT
+            topic = "screen"
+            event = ScreenEmitted(path=str(mp4_file_path), pts=unix_epoch_ns)
+            writer.write_message(topic, event, log_time=unix_epoch_ns)
+
             for i, tick in enumerate(ticks):
                 # milli_timestamp = tick["milli"] # we don't use this value of VPT since it seems inaccurate
                 log_time = unix_epoch_ns + ((i + 1) * VPT_INTERVAL_TICK_NS)
 
+                ## SCREEN EVENT
+                topic = "screen"
+                event = ScreenEmitted(path=str(mp4_file_path), pts=log_time)
+                writer.write_message(topic, event, log_time=log_time)
+
+                ## KEYBOARD EVENT
                 current_tick_keys = tick["keyboard"]["keys"]
 
                 # NOTE: we suppose the keys are pressed/released in the fastest observable timing of tick.
@@ -203,6 +223,7 @@ def main():
                         )
                         writer.write_message(topic, event, log_time=log_time)
 
+                ## MOUSE EVENT
                 dx = tick["mouse"]["dx"]
                 dy = tick["mouse"]["dy"]
 
@@ -240,5 +261,6 @@ def read_mcap(file_path="expert.mcap", num_messages=100):
 
 
 if __name__ == "__main__":
-    main()
+    generate_vpt_file_list()
+    # main()
     # read_mcap()
