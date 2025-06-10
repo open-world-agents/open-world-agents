@@ -1874,8 +1874,7 @@ supporting configurable intervals and automatic callback execution.</p>
   <summary>Note</summary>
   <p>This method runs in a separate thread and maintains precise timing
 by accounting for callback execution time.</p>
-</details>        <p>@skip-quality-check: internal-api</p>
-
+</details>
 
             <details class="quote">
               <summary>Source code in <code>projects/owa-core/owa/env/std/clock.py</code></summary>
@@ -1896,9 +1895,7 @@ by accounting for callback execution time.</p>
 <span class="normal"><a href="#__codelineno-0-90">90</a></span>
 <span class="normal"><a href="#__codelineno-0-91">91</a></span>
 <span class="normal"><a href="#__codelineno-0-92">92</a></span>
-<span class="normal"><a href="#__codelineno-0-93">93</a></span>
-<span class="normal"><a href="#__codelineno-0-94">94</a></span>
-<span class="normal"><a href="#__codelineno-0-95">95</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-76" name="__codelineno-0-76"></a><span class="k">def</span><span class="w"> </span><span class="nf">loop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">stop_event</span><span class="p">,</span> <span class="n">callback</span><span class="p">):</span>
+<span class="normal"><a href="#__codelineno-0-93">93</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-76" name="__codelineno-0-76"></a><span class="k">def</span><span class="w"> </span><span class="nf">loop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">stop_event</span><span class="p">,</span> <span class="n">callback</span><span class="p">):</span>
 <a id="__codelineno-0-77" name="__codelineno-0-77"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <a id="__codelineno-0-78" name="__codelineno-0-78"></a><span class="sd">    Main loop that executes callbacks at configured intervals.</span>
 <a id="__codelineno-0-79" name="__codelineno-0-79"></a>
@@ -1909,15 +1906,13 @@ by accounting for callback execution time.</p>
 <a id="__codelineno-0-84" name="__codelineno-0-84"></a><span class="sd">    Note:</span>
 <a id="__codelineno-0-85" name="__codelineno-0-85"></a><span class="sd">        This method runs in a separate thread and maintains precise timing</span>
 <a id="__codelineno-0-86" name="__codelineno-0-86"></a><span class="sd">        by accounting for callback execution time.</span>
-<a id="__codelineno-0-87" name="__codelineno-0-87"></a>
-<a id="__codelineno-0-88" name="__codelineno-0-88"></a><span class="sd">    @skip-quality-check: internal-api</span>
-<a id="__codelineno-0-89" name="__codelineno-0-89"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-90" name="__codelineno-0-90"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_last_called</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-<a id="__codelineno-0-91" name="__codelineno-0-91"></a>    <span class="k">while</span> <span class="ow">not</span> <span class="n">stop_event</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
-<a id="__codelineno-0-92" name="__codelineno-0-92"></a>        <span class="n">callback</span><span class="p">()</span>
-<a id="__codelineno-0-93" name="__codelineno-0-93"></a>        <span class="n">to_sleep</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">interval</span> <span class="o">-</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_called</span><span class="p">)</span>
-<a id="__codelineno-0-94" name="__codelineno-0-94"></a>        <span class="k">if</span> <span class="n">to_sleep</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-<a id="__codelineno-0-95" name="__codelineno-0-95"></a>            <span class="n">stop_event</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">to_sleep</span> <span class="o">/</span> <span class="n">S_TO_NS</span><span class="p">)</span>
+<a id="__codelineno-0-87" name="__codelineno-0-87"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-88" name="__codelineno-0-88"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_last_called</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<a id="__codelineno-0-89" name="__codelineno-0-89"></a>    <span class="k">while</span> <span class="ow">not</span> <span class="n">stop_event</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
+<a id="__codelineno-0-90" name="__codelineno-0-90"></a>        <span class="n">callback</span><span class="p">()</span>
+<a id="__codelineno-0-91" name="__codelineno-0-91"></a>        <span class="n">to_sleep</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">interval</span> <span class="o">-</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_called</span><span class="p">)</span>
+<a id="__codelineno-0-92" name="__codelineno-0-92"></a>        <span class="k">if</span> <span class="n">to_sleep</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-0-93" name="__codelineno-0-93"></a>            <span class="n">stop_event</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">to_sleep</span> <span class="o">/</span> <span class="n">S_TO_NS</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
