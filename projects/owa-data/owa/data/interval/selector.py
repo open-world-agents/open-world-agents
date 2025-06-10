@@ -107,12 +107,12 @@ class StartStopKeyPress(IntervalExtractor):
         """
         timestamps: list[int] = []
         with OWAMcapReader(file_path) as reader:
-            for topic, timestamp, msg in reader.iter_decoded_messages(topics=["keyboard"]):
+            for mcap_msg in reader.iter_messages(topics=["keyboard"]):
                 # Record on key release of start_stop_key
-                if msg.event_type == "release" and msg.vk == self.start_stop_key:
-                    timestamps.append(timestamp)
+                if mcap_msg.decoded.event_type == "release" and mcap_msg.decoded.vk == self.start_stop_key:
+                    timestamps.append(mcap_msg.timestamp)
                 # Pause functionality not implemented
-                elif msg.vk == self.pause_key:
+                elif mcap_msg.decoded.vk == self.pause_key:
                     raise NotImplementedError("Pause key is not implemented")
 
         # Pair consecutive timestamps: (timestamps[0], timestamps[1]), (timestamps[2], timestamps[3]), ...
@@ -147,20 +147,20 @@ class InactivityFilter(IntervalExtractor):
         last_activity_time = None
 
         with OWAMcapReader(file_path) as reader:
-            for topic, timestamp, msg in reader.iter_decoded_messages(topics=["keyboard", "mouse"]):
+            for mcap_msg in reader.iter_messages(topics=["keyboard", "mouse"]):
                 # If this is the first event, mark the start of the first interval
                 if current_interval_start is None:
-                    current_interval_start = timestamp
-                    last_activity_time = timestamp
+                    current_interval_start = mcap_msg.timestamp
+                    last_activity_time = mcap_msg.timestamp
                     continue
 
                 # If gap > threshold, close previous interval and begin a new one
-                if timestamp - last_activity_time > int(self.inactivity_threshold * TimeUnits.SECOND):
+                if mcap_msg.timestamp - last_activity_time > int(self.inactivity_threshold * TimeUnits.SECOND):
                     if current_interval_start < last_activity_time:
                         activity_intervals.add((current_interval_start, last_activity_time))
-                    current_interval_start = timestamp
+                    current_interval_start = mcap_msg.timestamp
 
-                last_activity_time = timestamp
+                last_activity_time = mcap_msg.timestamp
 
         # After the loop, if there's an open interval, close it
         if current_interval_start is not None and last_activity_time is not None:

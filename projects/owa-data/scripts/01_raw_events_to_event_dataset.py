@@ -101,9 +101,12 @@ def process_raw_events_file(
     last_kept_ts: Dict[str, int] = {topic: 0 for topic in rate_settings.keys()}
 
     try:
-        with OWAMcapReader(Path(file_path)) as reader:
+        with OWAMcapReader(Path(file_path), deserialize_to_objects=True) as reader:
             for interval in valid_intervals:
-                for topic, timestamp_ns, msg in reader.iter_messages(start_time=interval.start, end_time=interval.end):
+                for mcap_msg in reader.iter_messages(start_time=interval.start, end_time=interval.end):
+                    topic, timestamp_ns, msg = mcap_msg.topic, mcap_msg.timestamp, mcap_msg.message
+                    message_type = mcap_msg.message_type
+
                     if topic in rate_settings:
                         # Convert rate (Hz) to minimum nanoseconds between messages
                         min_interval_ns = int((1.0 / rate_settings[topic]) * 1e9)
@@ -111,7 +114,6 @@ def process_raw_events_file(
                             continue
                         last_kept_ts[topic] = timestamp_ns
 
-                    # msg is raw bytes; we keep as-is
                     events.append(
                         {
                             "file_path": file_path,
