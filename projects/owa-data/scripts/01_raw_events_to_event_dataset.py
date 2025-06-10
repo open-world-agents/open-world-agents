@@ -101,7 +101,7 @@ def process_raw_events_file(
     last_kept_ts: Dict[str, int] = {topic: 0 for topic in rate_settings.keys()}
 
     try:
-        with OWAMcapReader(Path(file_path), deserialize_to_objects=True) as reader:
+        with OWAMcapReader(Path(file_path)) as reader:
             for interval in valid_intervals:
                 for mcap_msg in reader.iter_messages(start_time=interval.start, end_time=interval.end):
                     topic, timestamp_ns, msg = mcap_msg.topic, mcap_msg.timestamp, mcap_msg.message
@@ -119,6 +119,7 @@ def process_raw_events_file(
                             "file_path": file_path,
                             "topic": topic,
                             "timestamp_ns": timestamp_ns,
+                            "message_type": message_type,
                             "msg": msg,
                         }
                     )
@@ -182,6 +183,7 @@ def create_event_dataset(
             "file_path": Value("string"),
             "topic": Value("string"),
             "timestamp_ns": Value("int64"),
+            "message_type": Value("string"),
             "msg": Value("binary"),
         }
     )
