@@ -94,7 +94,7 @@ def test_automatic_verification_on_creation():
     # Invalid message should create with verification failure warnings
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
-        msg = InvalidModuleMessage(data="test")
+        msg = InvalidModuleMessage(data="test")  # noqa: F841
         assert len(w) == 1
         assert "Message type verification failed" in str(w[0].message)
         assert "nonexistent.module" in str(w[0].message)
