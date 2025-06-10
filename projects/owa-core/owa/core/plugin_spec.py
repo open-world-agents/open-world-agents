@@ -2,8 +2,10 @@
 # Defines the PluginSpec class for entry points-based plugin discovery
 
 import re
-from typing import Dict, Optional
+from pathlib import Path
+from typing import Dict, Optional, Union
 
+import yaml
 from pydantic import BaseModel, field_validator
 
 
@@ -107,3 +109,88 @@ class PluginSpec(BaseModel):
             return None
 
         return self.components[component_type].get(name)
+
+    @classmethod
+    def from_yaml(cls, yaml_path: Union[str, Path]) -> "PluginSpec":
+        """
+        Load a PluginSpec from a YAML file.
+
+        Args:
+            yaml_path: Path to the YAML file
+
+        Returns:
+            PluginSpec instance
+
+        Raises:
+            FileNotFoundError: If the YAML file doesn't exist
+            yaml.YAMLError: If the YAML is invalid
+            ValueError: If the plugin specification is invalid
+        """
+        yaml_file = Path(yaml_path)
+        if not yaml_file.exists():
+            raise FileNotFoundError(f"YAML file not found: {yaml_path}")
+
+        try:
+            with open(yaml_file, "r", encoding="utf-8") as f:
+                data = yaml.safe_load(f)
+        except yaml.YAMLError as e:
+            raise yaml.YAMLError(f"Invalid YAML in {yaml_path}: {e}")
+
+        if not isinstance(data, dict):
+            raise ValueError(f"YAML file must contain a dictionary, got {type(data)}")
+
+        return cls(**data)
+
+    def to_yaml(self, yaml_path: Union[str, Path]) -> None:
+        """
+        Save the PluginSpec to a YAML file.
+
+        Args:
+            yaml_path: Path where to save the YAML file
+        """
+        yaml_file = Path(yaml_path)
+        yaml_file.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(yaml_file, "w", encoding="utf-8") as f:
+            yaml.dump(self.model_dump(), f, default_flow_style=False, sort_keys=False)
+
+    @classmethod
+    def from_entry_point(cls, entry_point_spec: str) -> "PluginSpec":
+        """
+        Load a PluginSpec from an entry point specification.
+
+        Args:
+            entry_point_spec: Entry point specification in format "module.path:object_name"
+
+        Returns:
+            PluginSpec instance
+
+        Raises:
+            ValueError: If the entry point specification is invalid
+            ImportError: If the module cannot be imported
+            AttributeError: If the object doesn't exist in the module
+            TypeError: If the object is not a PluginSpec instance
+        """
+        import importlib
+
+        if ":" not in entry_point_spec:
+            raise ValueError(
+                f"Invalid entry point format: '{entry_point_spec}'. Must be in format 'module.path:object_name'"
+            )
+
+        module_path, object_name = entry_point_spec.split(":", 1)
+
+        try:
+            module = importlib.import_module(module_path)
+        except ImportError as e:
+            raise ImportError(f"Cannot import module '{module_path}': {e}")
+
+        try:
+            plugin_spec_obj = getattr(module, object_name)
+        except AttributeError:
+            raise AttributeError(f"Object '{object_name}' not found in module '{module_path}'")
+
+        if not isinstance(plugin_spec_obj, cls):
+            raise TypeError(f"Object '{entry_point_spec}' must be a PluginSpec instance, got {type(plugin_spec_obj)}")
+
+        return plugin_spec_obj

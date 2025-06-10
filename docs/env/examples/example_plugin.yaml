@@ -1,0 +1,46 @@
+# Example Plugin Specification in YAML Format
+# This file demonstrates how to define a plugin specification using YAML
+
+namespace: example_yaml
+version: "1.0.0"
+description: "Example plugin demonstrating YAML-based plugin specification"
+author: "OWA Development Team"
+
+components:
+  # Callable functions that users can invoke directly
+  callables:
+    # Simple functions
+    hello: "owa.env.example_yaml:say_hello"
+    add: "owa.env.example_yaml.math:add_numbers"
+    multiply: "owa.env.example_yaml.math:multiply_numbers"
+    
+    # Grouped functions using dot notation
+    file.read: "owa.env.example_yaml.files:read_file"
+    file.write: "owa.env.example_yaml.files:write_file"
+    file.exists: "owa.env.example_yaml.files:file_exists"
+    
+    # System utilities
+    system.info: "owa.env.example_yaml.system:get_system_info"
+    process.list: "owa.env.example_yaml.system:list_processes"
+    
+  # Event-driven components that respond to system events
+  listeners:
+    # Input monitoring
+    keyboard: "owa.env.example_yaml.input:KeyboardListener"
+    mouse: "owa.env.example_yaml.input:MouseListener"
+    
+    # File system monitoring
+    file.watcher: "owa.env.example_yaml.monitoring:FileWatcher"
+    
+    # Custom event listeners
+    timer: "owa.env.example_yaml.events:TimerListener"
+    
+  # Background processes that can be started and stopped
+  runnables:
+    # Data processing
+    log.processor: "owa.env.example_yaml.processing:LogProcessor"
+    data.collector: "owa.env.example_yaml.processing:DataCollector"
+    
+    # Background services
+    health.monitor: "owa.env.example_yaml.services:HealthMonitor"
+    cleanup.service: "owa.env.example_yaml.services:CleanupService"

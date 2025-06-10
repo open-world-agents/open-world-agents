@@ -79,3 +79,8 @@ CALLABLES["desktop/keyboard.press_repeat"](key, press_time: float, initial_delay
 ```
 
 This function handles the complexity of simulating hardware auto-repeat, with configurable initial delay before repeating starts and the interval between repeated keypresses.
+
+## Auto-generated documentation
+
+::: desktop
+    handler: owa

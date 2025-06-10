@@ -1,4 +1,4 @@
-name: Pytest on Windows (common)
+name: EnvPlugin Documentation Validation
 
 on:
   push:
@@ -7,15 +7,13 @@ on:
     branches: [main, dev]
 
 jobs:
-  test:
+  validate-docs:
     runs-on: windows-latest
 
     env:
       UV_PROJECT_ENVIRONMENT: "C:\\Users\\runneradmin\\miniconda3\\envs\\owa"
       VIRTUAL_ENV: "C:\\Users\\runneradmin\\miniconda3\\envs\\owa"
       PYTHONIOENCODING: utf-8 # https://github.com/Textualize/rich/issues/212
-      # below line is legacy line, but I'm keeping it here for reference to know where the packages are installed
-      # GST_PLUGIN_PATH: "D:\\a\\open-world-agents\\open-world-agents\\projects\\owa-env-gst\\gst-plugins"
     
     steps:
       - name: Check out repository
@@ -55,14 +53,28 @@ jobs:
           pkgs-dirs: D:\conda_pkgs_dir
           activate-environment: owa
 
-      - name: Install dependencies (will pick up UV_PROJECT_ENVIRONMENT automatically)
+      - name: Install dependencies
         run: uv sync --inexact --dev # turn on --inexact to prevent removing gst packages
 
-      - name: Run pytest (will also pick it up)
-        run: pytest
-      
-      - name: Install owa-env-example
+      - name: Install owa-env-example for testing
         run: uv pip install -e projects/owa-env-example
 
-      - name: Run pytest for owa-env-example
-        run: pytest projects/owa-env-example/tests
+      - name: Install owa-env-desktop for testing
+        run: uv pip install -e projects/owa-env-desktop
+
+      - name: Install owa-env-gst for testing
+        run: uv pip install -e projects/owa-env-gst
+
+      - name: Generate documentation statistics
+        run: uv run owl env docs-stats
+      
+      - name: Validate all plugin documentation
+        run: uv run owl env validate-docs --strict
+
+      - name: Validate individual plugins
+        run: |
+          echo "Validating individual plugins..."
+          uv run owl env validate-docs example
+          uv run owl env validate-docs std
+          uv run owl env validate-docs desktop
+          uv run owl env validate-docs gst

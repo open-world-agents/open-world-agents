@@ -13,6 +13,7 @@ dependencies = [
     "packaging>=25.0",
     "plotext>=5.3.2",
     "pydantic>=2.10.6",
+    "pyyaml>=6.0.2",
     "requests>=2.32.3",
     "rich>=13.7.0",
     "tqdm>=4.67.1",

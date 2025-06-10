@@ -106,23 +106,3 @@ $ owl env show example --inspect add
 $ owl env ls example                              # Quick overview
 $ owl env find example                            # Search for example components
 ```
-
-## Migration from Old System
-
-The old `activate_module()` system has been completely replaced. Key changes:
-
-- ❌ **Removed**: `@CALLABLES.register()` decorators
-- ❌ **Removed**: `activate()` function
-- ❌ **Removed**: Manual `activate_module()` calls
-- ✅ **Added**: Entry points in `pyproject.toml`
-- ✅ **Added**: `PluginSpec` declaration
-- ✅ **Added**: Automatic discovery on import
-
-## Benefits of OEP-0003
-
-- **Zero Configuration**: No manual activation needed
-- **Standard Python**: Uses official entry points mechanism
-- **Lazy Loading**: Components imported only when accessed
-- **Better Performance**: Faster startup, lower memory usage
-- **Enhanced API**: Multiple ways to access components
-- **Unified Naming**: All components use `namespace/name` pattern
