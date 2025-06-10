@@ -12,21 +12,21 @@ from owa.env.gst.msg import ScreenEmitted
 
 def main(mcap_path: Annotated[Path, typer.Argument(help="Path to the input .mcap file")]):
     with OWAMcapReader(mcap_path) as reader:
-        for topic, timestamp, msg in reader.iter_decoded_messages(topics=["screen"]):
-            start_time = timestamp
+        for mcap_msg in reader.iter_messages(topics=["screen"]):
+            start_time = mcap_msg.timestamp
             break
         else:
             typer.echo("No screen messages found in the .mcap file.")
             raise typer.Exit()
         x, y = 0, 0
-        for i, (topic, timestamp, msg) in enumerate(
-            reader.iter_decoded_messages(start_time=start_time + TimeUnits.SECOND * (3 * 60 + 11)), start=1
+        for i, mcap_msg in enumerate(
+            reader.iter_messages(start_time=start_time + TimeUnits.SECOND * (3 * 60 + 11)), start=1
         ):
-            if topic == "mouse":
-                x, y = msg["x"], msg["y"]
-            elif topic == "screen":
-                msg.path = (mcap_path.parent / msg.path).as_posix()
-                msg = ScreenEmitted(**msg)
+            if mcap_msg.topic == "mouse":
+                x, y = mcap_msg.decoded["x"], mcap_msg.decoded["y"]
+            elif mcap_msg.topic == "screen":
+                mcap_msg.decoded.path = (mcap_path.parent / mcap_msg.decoded.path).as_posix()
+                msg = ScreenEmitted(**mcap_msg.decoded)
                 image = msg.to_pil_image()
                 # convert image to frame
                 frame = np.array(image)

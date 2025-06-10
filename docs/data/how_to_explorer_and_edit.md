@@ -83,8 +83,8 @@ def main():
         print(reader.start_time, reader.end_time)
         
         # Iterate through all messages
-        for topic, timestamp, msg in reader.iter_decoded_messages():
-            print(f"Topic: {topic}, Timestamp: {timestamp}, Message: {msg}")
+        for mcap_msg in reader.iter_messages():
+            print(f"Topic: {mcap_msg.topic}, Timestamp: {mcap_msg.timestamp}, Message: {mcap_msg.decoded}")
 
 if __name__ == "__main__":
     main()
@@ -137,8 +137,8 @@ def main():
 
         # Reading messages from an OWAMcap file
         with OWAMcapReader(file_path) as reader:
-            for topic, timestamp, msg in reader.iter_decoded_messages():
-                print(f"Topic: {topic}, Timestamp: {timestamp}, Message: {msg}")
+            for mcap_msg in reader.iter_messages():
+                print(f"Topic: {mcap_msg.topic}, Timestamp: {mcap_msg.timestamp}, Message: {mcap_msg.decoded}")
 
 
 if __name__ == "__main__":
