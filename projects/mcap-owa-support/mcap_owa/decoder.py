@@ -22,7 +22,14 @@ class DecoderFactory(McapDecoderFactory):
         # Decoder that attempts to load and use the actual message class
         def object_decoder(message_data: bytes) -> Any:
             if schema.id not in self._decoders:
-                module, class_name = schema.name.rsplit(".", 1)  # e.g. "owa.env.desktop.msg.KeyboardState"
+                try:
+                    module, class_name = schema.name.rsplit(".", 1)  # e.g. "owa.env.desktop.msg.KeyboardState"
+                except ValueError:
+                    # Fall back to dictionary decoding on invalid schema name
+                    warnings.warn(f"Invalid schema name {schema.name}. Falling back to dictionary decoding.")
+                    self._decoders[schema.id] = lambda data: EasyDict(orjson.loads(data))
+                    return self._decoders[schema.id](message_data)
+
                 try:
                     mod = importlib.import_module(module)
                     cls = getattr(mod, class_name)

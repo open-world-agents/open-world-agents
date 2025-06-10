@@ -50,14 +50,13 @@ def test_mcap_message_object(temp_mcap_file):
         # Test all properties
         assert msg.topic == topic
         assert msg.timestamp == 1000
-        assert msg.log_time == 1000  # alias
-        assert isinstance(msg.data, bytes)
-        assert msg.schema_name == "owa.env.desktop.msg.KeyboardEvent"
+        assert isinstance(msg.message, bytes)
+        assert msg.message_type == "owa.env.desktop.msg.KeyboardEvent"
 
         # Test lazy decoded property
         decoded = msg.decoded
-        assert decoded["event_type"] == "press"
-        assert decoded["vk"] == 65
+        assert decoded.event_type == "press"
+        assert decoded.vk == 65
 
         # Test that decoded is cached (same object)
         assert msg.decoded is decoded
@@ -79,9 +78,9 @@ def test_schema_based_filtering(temp_mcap_file):
     with OWAMcapReader(file_path) as reader:
         # Filter by schema name
         keyboard_messages = [
-            msg for msg in reader.iter_messages() if msg.schema_name == "owa.env.desktop.msg.KeyboardEvent"
+            msg for msg in reader.iter_messages() if msg.message_type == "owa.env.desktop.msg.KeyboardEvent"
         ]
 
         assert len(keyboard_messages) == 2
-        assert keyboard_messages[0].decoded["event_type"] == "press"
-        assert keyboard_messages[1].decoded["event_type"] == "release"
+        assert keyboard_messages[0].decoded.event_type == "press"
+        assert keyboard_messages[1].decoded.event_type == "release"
