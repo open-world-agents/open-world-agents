@@ -214,10 +214,10 @@ ocap my-session
 from owa.data import load_dataset
 
 # Browse available OWAMcap datasets
-datasets = load_dataset.list_available(format="owamcap")
+datasets = load_dataset.list_available(format="OWA")
 
 # Load a specific dataset
-data = load_dataset("username/desktop-workflow-v1")
+data = load_dataset("open-world-agents/example_dataset")
 ```
 
 ### Data Format Preview

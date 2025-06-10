@@ -1,15 +1,13 @@
 import datasets
 from huggingface_hub import list_datasets
 
-OWA_TAG = "OWA"
-
 
 class LoadDataset:
     @staticmethod
-    def list_available(format: str = "owamcap"):
+    def list_available(format: str = "OWA"):
         # List datasets on HuggingFace with the OWA tag
         # Optionally filter by format (not strictly enforced, but can be used for future extension)
-        results = list_datasets(filter=OWA_TAG)
+        results = list_datasets(filter=format)
         # Return repo_ids only
         return [ds.id for ds in results]
 
