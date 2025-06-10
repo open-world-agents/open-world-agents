@@ -35,26 +35,24 @@ def cat(
         topics = set(topics) - (set(exclude.split(",")) if exclude else set())
         topics = list(topics)
 
-        for i, (topic, timestamp, msg) in enumerate(
-            reader.iter_decoded_messages(topics=topics, start_time=start_time, end_time=end_time)
-        ):
+        for i, mcap_msg in enumerate(reader.iter_messages(topics=topics, start_time=start_time, end_time=end_time)):
             if n is not None and i >= n:
                 break
 
             if pretty:
-                formatted_time = format_timestamp(timestamp)
-                pretty_msg = json.dumps(msg, indent=2, ensure_ascii=False)
+                formatted_time = format_timestamp(mcap_msg.timestamp)
+                pretty_msg = json.dumps(mcap_msg.decoded, indent=2, ensure_ascii=False)
 
                 typer.echo(
                     typer.style(f"[{formatted_time}]", fg=typer.colors.BLUE)
-                    + typer.style(f" [{topic}]", fg=typer.colors.GREEN)
+                    + typer.style(f" [{mcap_msg.topic}]", fg=typer.colors.GREEN)
                     + "\n"
                     + typer.style(pretty_msg, fg=typer.colors.CYAN)
                     + "\n"
                     + "-" * 80
                 )
             else:
-                typer.echo(f"Topic: {topic}, Timestamp: {timestamp}, Message: {msg}")
+                typer.echo(f"Topic: {mcap_msg.topic}, Timestamp: {mcap_msg.timestamp}, Message: {mcap_msg.decoded}")
 
 
 if __name__ == "__main__":

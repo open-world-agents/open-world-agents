@@ -31,8 +31,8 @@ def main():
                 writer.write_message(topic, event, publish_time=publish_time)
 
         with OWAMcapReader(file_path) as reader:
-            for topic, timestamp, msg in reader.iter_decoded_messages():
-                print(f"Topic: {topic}, Timestamp: {timestamp}, Message: {msg}")
+            for mcap_msg in reader.iter_messages():
+                print(f"Topic: {mcap_msg.topic}, Timestamp: {mcap_msg.timestamp}, Message: {mcap_msg.decoded}")
 
 
 if __name__ == "__main__":

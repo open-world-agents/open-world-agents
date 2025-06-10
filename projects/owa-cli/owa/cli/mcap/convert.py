@@ -32,18 +32,16 @@ def convert(
     subtitles = []
 
     with OWAMcapReader(mcap_path) as reader:
-        for topic, timestamp, msg in reader.iter_decoded_messages(topics=["screen"]):
-            start_time = timestamp
+        for mcap_msg in reader.iter_messages(topics=["screen"]):
+            start_time = mcap_msg.timestamp
             break
         else:
             typer.echo("No screen messages found in the .mcap file.")
             raise typer.Exit()
-        for i, (topic, timestamp, msg) in enumerate(
-            reader.iter_decoded_messages(topics=topics, start_time=start_time), start=1
-        ):
-            start = format_timestamp(timestamp - start_time)
-            end = format_timestamp(timestamp - start_time + 1_000_000_000)
-            subtitles.append(f"{i}\n{start} --> {end}\n{msg}\n")
+        for i, mcap_msg in enumerate(reader.iter_messages(topics=topics, start_time=start_time), start=1):
+            start = format_timestamp(mcap_msg.timestamp - start_time)
+            end = format_timestamp(mcap_msg.timestamp - start_time + 1_000_000_000)
+            subtitles.append(f"{i}\n{start} --> {end}\n{mcap_msg.decoded}\n")
 
     output_srt.write_text("\n".join(subtitles), encoding="utf-8")
     print(f"Subtitle file saved as {output_srt}")

@@ -137,11 +137,11 @@ class McapService:
             try:
                 logger.info(f"Reading MCAP file: {mcap_path}")
                 with OWAMcapReader(mcap_path) as reader:
-                    for topic, timestamp, message in reader.iter_decoded_messages(
+                    for mcap_msg in reader.iter_messages(
                         topics=topics_of_interest, start_time=start_time, end_time=end_time
                     ):
-                        message["timestamp"] = timestamp
-                        topics_data[topic].append(message)
+                        mcap_msg.decoded["timestamp"] = mcap_msg.timestamp
+                        topics_data[mcap_msg.topic].append(mcap_msg.decoded)
 
                 total_messages = sum(len(msgs) for msgs in topics_data.values())
                 logger.info(f"Fetched {total_messages} messages for time range {start_time} to {end_time}")

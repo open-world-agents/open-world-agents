@@ -24,10 +24,64 @@ def test_write_and_read_messages(temp_mcap_file):
             writer.write_message(topic, event, log_time=publish_time)
 
     with OWAMcapReader(file_path) as reader:
-        messages = list(reader.iter_decoded_messages())
+        messages = list(reader.iter_messages())
         assert len(messages) == 10
-        for i, (_topic, timestamp, msg) in enumerate(messages):
-            assert _topic == topic
-            assert msg.event_type == "press"
-            assert msg.vk == 1
-            assert timestamp == i
+        for i, msg in enumerate(messages):
+            assert msg.topic == topic
+            assert msg.decoded.event_type == "press"
+            assert msg.decoded.vk == 1
+            assert msg.timestamp == i
+
+
+def test_mcap_message_object(temp_mcap_file):
+    """Test the new McapMessage object interface."""
+    file_path = temp_mcap_file
+    topic = "/keyboard"
+    event = KeyboardEvent(event_type="press", vk=65)
+
+    with OWAMcapWriter(file_path) as writer:
+        writer.write_message(topic, event, log_time=1000)
+
+    with OWAMcapReader(file_path) as reader:
+        messages = list(reader.iter_messages())
+        assert len(messages) == 1
+
+        msg = messages[0]
+        # Test all properties
+        assert msg.topic == topic
+        assert msg.timestamp == 1000
+        assert msg.log_time == 1000  # alias
+        assert isinstance(msg.data, bytes)
+        assert msg.schema_name == "owa.env.desktop.msg.KeyboardEvent"
+
+        # Test lazy decoded property
+        decoded = msg.decoded
+        assert decoded["event_type"] == "press"
+        assert decoded["vk"] == 65
+
+        # Test that decoded is cached (same object)
+        assert msg.decoded is decoded
+
+
+def test_schema_based_filtering(temp_mcap_file):
+    """Test filtering messages by schema name."""
+    file_path = temp_mcap_file
+
+    with OWAMcapWriter(file_path) as writer:
+        # Write different message types
+        keyboard_event = KeyboardEvent(event_type="press", vk=65)
+        writer.write_message("/keyboard", keyboard_event, log_time=1000)
+
+        # Write another keyboard event
+        keyboard_event2 = KeyboardEvent(event_type="release", vk=65)
+        writer.write_message("/keyboard", keyboard_event2, log_time=2000)
+
+    with OWAMcapReader(file_path) as reader:
+        # Filter by schema name
+        keyboard_messages = [
+            msg for msg in reader.iter_messages() if msg.schema_name == "owa.env.desktop.msg.KeyboardEvent"
+        ]
+
+        assert len(keyboard_messages) == 2
+        assert keyboard_messages[0].decoded["event_type"] == "press"
+        assert keyboard_messages[1].decoded["event_type"] == "release"
