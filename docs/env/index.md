@@ -1,6 +1,6 @@
 # Introducing OWA's Env
 
-**Open World Agents (OWA)** introduces **Env**, a groundbreaking modular agent system designed for dynamic, real-time environments. Say goodbye to rigid frameworks with fixed interfaces—Env's flexible architecture lets you activate and customize components on the fly.
+**Open World Agents (OWA)** introduces **Env**, a groundbreaking modular agent system designed for dynamic, real-time environments. Say goodbye to rigid frameworks with fixed interfaces—Env's flexible architecture automatically discovers and loads components using Python's standard Entry Points system.
 
 ## Why Choose OWA's Env?
 
@@ -9,10 +9,10 @@ Traditional environmental interfaces like [gymnasium.Env](https://gymnasium.fara
 **Env** changes the game with an event-driven, asynchronous design that mirrors real-world interactions. Here's what sets it apart:
 
 - **Asynchronous Event Processing**: Leverage `Callables`, `Listeners`, and `Runnables` for real-time interaction. No more waiting for `env.step()`—the world doesn't stop, and neither should your agent. [Learn more...](guide.md)
-  
-- **Dynamic EnvPlugin Activation**: Seamlessly register and activate `EnvPlugins` at runtime to extend functionality, powered by registry pattern. [Learn more...](guide.md)
-  
-- **Extensible, Open-Source Design**: Built for the community, by the community. Easily add custom plugins and extend the Env's functionality to suit your needs. [Learn more...](custom_plugins.md)
+
+- **Zero-Configuration Plugin System**: Plugins are automatically discovered via Entry Points when installed with `pip install`. No manual activation needed—components are immediately available with unified `namespace/name` patterns. Includes powerful CLI tools for plugin management. [Learn more...](guide.md)
+
+- **Extensible, Open-Source Design**: Built for the community, by the community. Create plugins using Python packaging standards and share them easily. [Learn more...](custom_plugins.md)
 
 ## The Future is Real-Time
 
@@ -28,4 +28,16 @@ We prioritize minimizing latency within the framework, aiming for agent reaction
 
 Don't let outdated frameworks hold you back. Embrace the future with OWA's Env and build agents that are ready for the real world.
 
-[Learn more about OWA's Env Design.](guide.md)
+### Documentation
+
+- **[Comprehensive Guide](guide.md)** - Complete overview of OWA's Env system
+- **[Custom Plugins](custom_plugins.md)** - How to create your own plugins
+- **[Plugin Specification Guide](plugin_specification_guide.md)** - Detailed guide for writing PluginSpec in Python and YAML
+- **[YAML Plugin Guide](yaml_plugin_guide.md)** - Focused guide for YAML-based plugin specifications
+- **[Documentation Validation](documentation_validation.md)** - Tools for validating plugin documentation
+
+### Available Plugins
+
+- **[Standard Environment](plugins/std.md)** - Core utilities and timing functions
+- **[Desktop Environment](plugins/desktop.md)** - Mouse, keyboard, and window control
+- **[GStreamer Environment](plugins/gst.md)** - High-performance multimedia processing

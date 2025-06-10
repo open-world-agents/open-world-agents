@@ -1,8 +1,5 @@
-from owa.core.registry import CALLABLES, LISTENERS, activate_module
+from owa.core.registry import CALLABLES, LISTENERS
 from owa.env.desktop.msg import KeyboardEvent
-
-# Activate the desktop module to enable UI and input capabilities
-activate_module("owa.env.desktop")
 
 # Using screen capture and window management features
 print(f"{CALLABLES['screen.capture']().shape=}")  # Example output: (1080, 1920, 3)

@@ -35,11 +35,25 @@ plugins:
   - search
   - mkdocstrings:
       handlers:
-        python:
-          paths: [projects]
+        owa:
+          # Current owa handler assumes packages to be installed, so path setting is not required (and not compatible with owa.core.plugin_discovery implementation)
+          # paths:
+          #   - projects/owa-core
+          #   - projects/owa-env-desktop
+          #   - projects/owa-env-gst
+          #   - projects/owa-env-example
           options:
-            docstring_style: google
-            show_source: true
+            members_order: source
+            separate_signature: true
+            docstring_options:
+              ignore_init_summary: true
+            merge_init_into_class: true
+            show_signature_annotations: true
+            signature_crossrefs: true
+          import:
+            - url: https://docs.python.org/3/objects.inv
+              domains: [py, std]
+            - url: https://typing-extensions.readthedocs.io/en/latest/objects.inv
   - git-revision-date-localized:
       type: datetime
   - mermaid2
@@ -83,10 +97,12 @@ nav:
     - env/index.md
     - env/guide.md
     - Custom EnvPlugins: env/custom_plugins.md
+    - Documentation Validation: env/documentation_validation.md
+    - Documentation Quick Reference: env/documentation_quick_reference.md
     - Lists of EnvPlugins:
       - Standard Environment: env/plugins/std.md
-      - Desktop Environment: env/plugins/desktop_env.md
-      - Gstreamer Environment: env/plugins/gstreamer_env.md
+      - Desktop Environment: env/plugins/desktop.md
+      - Gstreamer Environment: env/plugins/gst.md
   - Data in OWA:
     - data/index.md
     # - data/data_format.md

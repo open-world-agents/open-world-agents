@@ -40,7 +40,7 @@ except ImportError:
 
 # Attempt OWA-based import
 try:
-    from owa.core.registry import LISTENERS, RUNNABLES, activate_module
+    from owa.core.registry import LISTENERS, RUNNABLES
 
     OWA_AVAILABLE = True
 except ImportError:
@@ -188,7 +188,6 @@ def capture_owa_runnable():
     if not OWA_AVAILABLE:
         raise RuntimeError("OWA environment not available.")
 
-    activate_module("owa.env.gst")
     screen_capture = RUNNABLES["screen_capture"]()
     screen_capture.configure(**owa_args)
     screen_capture.start()
@@ -220,7 +219,6 @@ def capture_owa_listener():
     if not OWA_AVAILABLE:
         raise RuntimeError("OWA environment not available.")
 
-    activate_module("owa.env.gst")
     count = 0
 
     def callback(x, proc):

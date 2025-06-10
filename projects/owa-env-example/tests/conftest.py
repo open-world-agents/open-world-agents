@@ -2,10 +2,14 @@
 
 import pytest
 
-from owa.core.registry import activate_module
+from owa.core.registry import CALLABLES, LISTENERS, RUNNABLES
 
 
-@pytest.fixture(scope="session", autouse=True)
-def activate_example_plugin():
-    """Automatically activate the example plugin for all tests."""
-    activate_module("owa.env.example")
+@pytest.fixture(scope="session")
+def example_registries():
+    """Provide access to the global registries for testing."""
+    return {
+        "callables": CALLABLES,
+        "listeners": LISTENERS,
+        "runnables": RUNNABLES,
+    }

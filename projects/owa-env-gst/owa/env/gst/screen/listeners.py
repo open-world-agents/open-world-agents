@@ -1,6 +1,7 @@
 # ruff: noqa: E402
 # To suppress the warning for E402, waiting for https://github.com/astral-sh/ruff/issues/3711
 import inspect
+from typing import Callable
 
 import gi
 
@@ -9,8 +10,6 @@ gi.require_version("Gst", "1.0")
 
 from gi.repository import Gst
 from loguru import logger
-
-from owa.core.registry import LISTENERS
 
 from ..gst_runner import GstPipelineRunner
 from ..msg import ScreenEmitted
@@ -102,22 +101,18 @@ def build_screen_callback(callback):
     return screen_callback
 
 
-@LISTENERS.register("screen")
 class ScreenListener(GstPipelineRunner):
     """
-    GStreamer-based screen capture listener.
+    High-performance GStreamer-based screen capture listener for real-time frame processing.
 
     Captures screen content and delivers frames to a callback function.
     Can capture specific windows, monitors, or the entire screen.
 
     Example:
     ```python
-    from owa.core.registry import LISTENERS, activate_module
+    from owa.core.registry import LISTENERS
     import cv2
     import numpy as np
-
-    # Activate the GStreamer module
-    activate_module("owa.env.gst")
 
     # Define a callback to process frames
     def process_frame(frame):
@@ -151,7 +146,7 @@ class ScreenListener(GstPipelineRunner):
     def on_configure(
         self,
         *,
-        callback,
+        callback: Callable,
         show_cursor: bool = True,
         fps: float = 60,
         window_name: str | None = None,

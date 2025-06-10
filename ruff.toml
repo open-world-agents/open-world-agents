@@ -1,6 +1,5 @@
 exclude = [
-    "projects/owa-env-gst/owa/env/gst/gst-plugins/python/py_utctimestampsrc.py",
-    "poc",
+    "oeps",
 ]
 
 line-length = 119
@@ -9,5 +8,4 @@ line-length = 119
 known-first-party = [
     "mcap_owa",
     "owa",
-    "owa_game_agent",
 ]
