@@ -3,7 +3,7 @@ import io
 import re
 import warnings
 from pathlib import Path
-from typing import Any, Callable, Iterable, Iterator, Optional, Tuple, TypeAlias, Union
+from typing import Any, Callable, Iterable, Iterator, Optional, TypeAlias, Union
 
 import requests
 from mcap.exceptions import DecoderNotFoundError
