@@ -519,6 +519,30 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Get Started Today">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Documentation
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#available-plugins" class="md-nav__link">
+    <span class="md-ellipsis">
+      Available Plugins
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -582,6 +606,52 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="documentation_validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Documentation Validation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="documentation_quick_reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Documentation Quick Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
     
@@ -593,10 +663,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_6" >
         
           
-          <label class="md-nav__link" for="__nav_2_4" id="__nav_2_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2_6" id="__nav_2_6_label" tabindex="0">
             
   
   
@@ -609,8 +679,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_2_4">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_6">
             <span class="md-nav__icon md-icon"></span>
             Lists of EnvPlugins
           </label>
@@ -646,7 +716,7 @@
   
   
     <li class="md-nav__item">
-      <a href="plugins/desktop_env/" class="md-nav__link">
+      <a href="plugins/desktop/" class="md-nav__link">
         
   
   
@@ -669,7 +739,7 @@
   
   
     <li class="md-nav__item">
-      <a href="plugins/gstreamer_env/" class="md-nav__link">
+      <a href="plugins/gst/" class="md-nav__link">
         
   
   
@@ -1104,6 +1174,30 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Get Started Today">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Documentation
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#available-plugins" class="md-nav__link">
+    <span class="md-ellipsis">
+      Available Plugins
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1154,7 +1248,20 @@
 <p>We prioritize minimizing latency within the framework, aiming for agent reaction times that match or surpass human capabilities. Throughout our codebase, we ensure latency doesn't exceed <strong>30ms</strong>. Check out how we achieve this in our <a href="https://github.com/open-world-agents/open-world-agents/blob/main/projects/owa-env-gst/owa/env/gst/screen/listeners.py#L88">Screen Listeners</a>, and <a href="https://github.com/open-world-agents/open-world-agents/blob/main/projects/owa-env-gst/tests/test_screen_listener.py#L31">Test Screen Listener</a>.</p>
 <h2 id="get-started-today">Get Started Today<a class="headerlink" href="#get-started-today" title="Permanent link">&para;</a></h2>
 <p>Don't let outdated frameworks hold you back. Embrace the future with OWA's Env and build agents that are ready for the real world.</p>
-<p><a href="guide/">Learn more about OWA's Env Design.</a></p>
+<h3 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong><a href="guide/">Comprehensive Guide</a></strong> - Complete overview of OWA's Env system</li>
+<li><strong><a href="custom_plugins/">Custom Plugins</a></strong> - How to create your own plugins</li>
+<li><strong><a href="plugin_specification_guide/">Plugin Specification Guide</a></strong> - Detailed guide for writing PluginSpec in Python and YAML</li>
+<li><strong><a href="yaml_plugin_guide/">YAML Plugin Guide</a></strong> - Focused guide for YAML-based plugin specifications</li>
+<li><strong><a href="documentation_validation/">Documentation Validation</a></strong> - Tools for validating plugin documentation</li>
+</ul>
+<h3 id="available-plugins">Available Plugins<a class="headerlink" href="#available-plugins" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong><a href="plugins/std/">Standard Environment</a></strong> - Core utilities and timing functions</li>
+<li><strong><a href="plugins/desktop/">Desktop Environment</a></strong> - Mouse, keyboard, and window control</li>
+<li><strong><a href="plugins/gst/">GStreamer Environment</a></strong> - High-performance multimedia processing</li>
+</ul>
 
 
 
@@ -1175,7 +1282,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="June 7, 2025 20:10:33 UTC">June 7, 2025 20:10:33</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="June 9, 2025 16:37:57 UTC">June 9, 2025 16:37:57</span>
   </span>
 
     
