@@ -13,7 +13,7 @@ from tqdm import tqdm
 VPT_FOLDER_PATH = Path(
     "~/data/Video-Pre-Training/data/"
 ).expanduser()  # NOTE: Change this to your VPT data folder path. We expect paired mp4 and jsonl files for VPT dataset.
-VPT_TARGET_LIST_FILE = "./target_files.txt"
+VPT_TARGET_LIST_FILE = "./vpt_target_files.txt"
 VPT_INTERVAL_TICK_NS = 50_000_000  # 50 ms interval per tick
 VPT_EXPECTED_TICKS = 6000  # 5 minutes of 50ms ticks
 VPT_MOUSE_PIN_NS = 1_000_000  # We assume 1 ms for mouse pin movement
