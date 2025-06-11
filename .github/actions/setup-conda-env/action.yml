@@ -19,7 +19,7 @@ inputs:
   enable-env-cache:
     description: 'Whether to enable conda environment caching'
     required: false
-    default: 'true'
+    default: 'false'
 outputs:
   cache-hit:
     description: 'Whether conda environment cache was hit'
