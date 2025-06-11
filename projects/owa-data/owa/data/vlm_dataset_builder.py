@@ -95,19 +95,37 @@ class VLMDatasetBuilder(Dataset):
             "metadata": item["metadata"],
         }
 
-    def _load_images(self, image_refs: List[Dict[str, Any]]) -> List[Any]:
+    def _load_images(self, image_refs) -> List[Any]:
         """
         Load images from MKV files using image references.
 
         Args:
-            image_refs: List of image reference dicts with path, pts, etc.
+            image_refs: Either list of dicts or dict with lists (HuggingFace Sequence format)
 
         Returns:
             List of loaded images in the specified format
         """
         images = []
 
-        for img_ref in image_refs:
+        # Handle HuggingFace Sequence format (dict with lists)
+        if isinstance(image_refs, dict) and "path" in image_refs:
+            # Convert from HF Sequence format to list of dicts
+            num_refs = len(image_refs["path"])
+            img_ref_list = []
+            for i in range(num_refs):
+                img_ref = {
+                    "path": image_refs["path"][i],
+                    "pts": image_refs["pts"][i],
+                    "utc_ns": image_refs["utc_ns"][i],
+                    "timestamp_ns": image_refs["timestamp_ns"][i],
+                    "bin_idx": image_refs["bin_idx"][i],
+                }
+                img_ref_list.append(img_ref)
+        else:
+            # Already in list format
+            img_ref_list = image_refs
+
+        for img_ref in img_ref_list:
             # Create cache key
             cache_key = f"{img_ref['path']}:{img_ref['pts']}"
 
