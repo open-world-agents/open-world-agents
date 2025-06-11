@@ -10,7 +10,7 @@ dependencies = [
 
 # Entry point declaration for plugin discovery
 [project.entry-points."owa.env.plugins"]
-example = "owa.env.example:plugin_spec"
+example = "owa.env.plugins.example:plugin_spec"
 
 [tool.uv.sources]
 owa-core = { path = "../owa-core", editable = true }

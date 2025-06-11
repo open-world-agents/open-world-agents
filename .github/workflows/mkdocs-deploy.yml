@@ -2,11 +2,9 @@ name: Deploy MkDocs Site
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
-    branches:
-      - main
+    branches: [main]
 
 permissions:
   contents: write
@@ -14,50 +12,27 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@v6
+      - name: Setup Virtual Environment
+        uses: ./.github/actions/setup-venv
         with:
-          version: "latest"
-          enable-cache: true
-      
-      - name: Cache conda
-        uses: actions/cache@v3
-        env:
-          # Increase this value to reset cache if etc/example-environment.yml has not changed
-          CACHE_NUMBER: 0
-        with:
-          path: ~/conda_pkgs_dir
-          key:
-            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
-            hashFiles('projects/owa-env-gst/environment.yml') }}
+          python-version: '3.11'
 
-      - uses: conda-incubator/setup-miniconda@v3
-        with:
-          activate-environment: owa
-          miniforge-version: latest
-          mamba-version: "*"
-          channels: conda-forge
-          conda-remove-defaults: "true"
-          environment-file: projects/owa-env-gst/environment.yml
-          use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
-      
-      # install virtual-uv
-      - name: Install virtual-uv
-        shell: bash -el {0}
-        run: pip install virtual-uv
+      - name: Setup uv Environment
+        uses: ./.github/actions/setup-uv-env
 
       - name: Install Dependencies
-        shell: bash -el {0}
         run: vuv install --extra docs
 
       - name: Install EnvPlugins
-        shell: bash -el {0}
         run: vuv pip install -e projects/owa-env-example
 
       - name: Configure Git
@@ -66,10 +41,8 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Build MkDocs
-        shell: bash -el {0}
         run: vuv run mkdocs build
 
       - name: Deploy to GitHub Pages
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        shell: bash -el {0}
         run: vuv run mkdocs gh-deploy

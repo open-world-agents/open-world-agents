@@ -84,8 +84,6 @@ class ClockTickListener(Listener):
         Note:
             This method runs in a separate thread and maintains precise timing
             by accounting for callback execution time.
-
-        @skip-quality-check: internal-api
         """
         self._last_called = time.time()
         while not stop_event.is_set():

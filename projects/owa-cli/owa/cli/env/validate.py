@@ -148,7 +148,7 @@ def validate_plugin(
         ...,
         help="Plugin specification to validate. Can be:\n"
         "• Path to YAML file (e.g., './plugin.yaml')\n"
-        "• Entry point specification (e.g., 'owa.env.desktop:plugin_spec')",
+        "• Entry point specification (e.g., 'owa.env.plugins.desktop:plugin_spec')",
     ),
     check_imports: bool = typer.Option(
         True, "--check-imports/--no-check-imports", help="Validate that component import paths are accessible"
@@ -161,7 +161,7 @@ def validate_plugin(
     This command can validate plugin specifications in two ways:
 
     1. From YAML files: owl env validate ./plugin.yaml
-    2. From entry points: owl env validate owa.env.desktop:plugin_spec
+    2. From entry points: owl env validate owa.env.plugins.desktop:plugin_spec
 
     The command automatically detects the input type and validates accordingly.
     """

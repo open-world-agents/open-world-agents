@@ -1,4 +1,4 @@
-name: EnvPlugin Documentation Validation
+name: Validate EnvPlugin Documentation
 
 on:
   push:
@@ -8,73 +8,40 @@ on:
 
 jobs:
   validate-docs:
-    runs-on: windows-latest
-
-    env:
-      UV_PROJECT_ENVIRONMENT: "C:\\Users\\runneradmin\\miniconda3\\envs\\owa"
-      VIRTUAL_ENV: "C:\\Users\\runneradmin\\miniconda3\\envs\\owa"
-      PYTHONIOENCODING: utf-8 # https://github.com/Textualize/rich/issues/212
-    
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
     steps:
-      - name: Check out repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
-
-      - name: Install the latest version of uv
-        id: setup-uv
-        uses: astral-sh/setup-uv@v6
         with:
-          version: "latest"
-          enable-cache: true
-      
-      - name: Do something if the cache was restored
-        if: steps.setup-uv.outputs.cache-hit == 'true'
-        run: echo "Cache was restored"
-      
-      - name: Cache conda
-        uses: actions/cache@v4
-        env:
-          # Increase this value to reset cache if etc/example-environment.yml has not changed
-          CACHE_NUMBER: 1
+          fetch-depth: 0
+
+      - name: Setup Virtual Environment
+        uses: ./.github/actions/setup-venv
         with:
-          # Use faster GNU tar
-          enableCrossOsArchive: true
-          path: D:\conda_pkgs_dir
-          key:
-            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
-            hashFiles('projects/owa-env-gst/environment.yml') }}
+          python-version: '3.11'
 
-      - uses: conda-incubator/setup-miniconda@v3
-        with:
-          miniforge-version: latest
-          mamba-version: "*"
-          channels: conda-forge
-          conda-remove-defaults: "true"
-          environment-file: projects/owa-env-gst/environment.yml
-          pkgs-dirs: D:\conda_pkgs_dir
-          activate-environment: owa
+      - name: Setup uv Environment
+        uses: ./.github/actions/setup-uv-env
 
-      - name: Install dependencies
-        run: uv sync --inexact --dev # turn on --inexact to prevent removing gst packages
+      - name: Install Dependencies
+        run: vuv install --extra docs
 
-      - name: Install owa-env-example for testing
-        run: uv pip install -e projects/owa-env-example
-
-      - name: Install owa-env-desktop for testing
-        run: uv pip install -e projects/owa-env-desktop
-
-      - name: Install owa-env-gst for testing
-        run: uv pip install -e projects/owa-env-gst
+      - name: Install EnvPlugins
+        run: vuv pip install -e projects/owa-env-example
 
       - name: Generate documentation statistics
-        run: uv run owl env docs-stats
-      
+        run: owl env docs-stats
+
       - name: Validate all plugin documentation
-        run: uv run owl env validate-docs --strict
+        run: owl env validate-docs --strict
 
       - name: Validate individual plugins
         run: |
           echo "Validating individual plugins..."
-          uv run owl env validate-docs example
-          uv run owl env validate-docs std
-          uv run owl env validate-docs desktop
-          uv run owl env validate-docs gst
+          owl env validate-docs example
+          owl env validate-docs std
+          owl env validate-docs desktop
+          owl env validate-docs gst
