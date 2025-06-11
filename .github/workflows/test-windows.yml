@@ -65,6 +65,7 @@ jobs:
         id: cache-env
 
       - name: Update environment
+        shell: pwsh
         run: mamba env update -n owa -f projects/owa-env-gst/environment.yml
         if: steps.cache-env.outputs.cache-hit != 'true'
 
