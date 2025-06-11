@@ -48,12 +48,13 @@ jobs:
       - uses: conda-incubator/setup-miniconda@v3
         with:
           miniforge-version: latest
-          mamba-version: "*"
           channels: conda-forge
           conda-remove-defaults: "true"
           environment-file: projects/owa-env-gst/environment.yml
           pkgs-dirs: D:\conda_pkgs_dir
           activate-environment: owa
+          use-only-tar-bz2: true
+          use-mamba: false
 
       - name: Install dependencies (will pick up UV_PROJECT_ENVIRONMENT automatically)
         run: uv sync --inexact --dev # turn on --inexact to prevent removing gst packages
