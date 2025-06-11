@@ -2,6 +2,8 @@
 
 This document explains how to convert [Video PreTraining (VPT)](https://github.com/openai/Video-Pre-Training) data format to the Open World Agents MCAP format (OWAMcap).
 
+The full example script can be found [here](https://github.com/open-world-agents/open-world-agents/blob/main/projects/owa-data/scripts/00_vpt_to_owamcap.py).
+
 ## Overview
 
 The VPT dataset consists of paired MP4 video files and JSONL files containing keyboard and mouse actions. The conversion process transforms these into OWAMcap format, which is used for storing multimodal interaction data in Open World Agents.
@@ -58,6 +60,7 @@ VPT_TARGET_LIST_FILE = "./vpt_target_files.txt"
 ## Example Command
 
 ```bash
+cd projects/owa-data
 python scripts/00_vpt_to_owamcap.py
 ```
 
