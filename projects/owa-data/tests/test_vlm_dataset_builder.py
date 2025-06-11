@@ -1,11 +1,11 @@
 """
 Tests for VLMDatasetBuilder class.
 
-This module contains tests for the VLM dataset building functionality,
-including event processing and format conversion for VLM training.
+This module contains tests for the new VLMDatasetBuilder which provides
+PyTorch Dataset interface for MLLM datasets with lazy image loading.
 """
 
-import pytest
+from datasets import Dataset, Features, Sequence, Value
 
 from owa.data.vlm_dataset_builder import VLMDatasetBuilder
 
@@ -15,203 +15,231 @@ class TestVLMDatasetBuilder:
 
     def setup_method(self):
         """Set up test fixtures."""
-        self.builder = VLMDatasetBuilder(drop_file_path=True)
+        # Create sample MLLM dataset
+        self.sample_data = [
+            {
+                "instruction": "Complete the computer task",
+                "encoded_events": [
+                    "<EVENT_START>{'topic': 'keyboard', 'timestamp_ns': 1000000000}<EVENT_END>",
+                    "<EVENT_START>{'topic': 'mouse', 'timestamp_ns': 2000000000}<EVENT_END>",
+                ],
+                "image_refs": [
+                    {
+                        "path": "test1.mkv",
+                        "pts": 1000000000,
+                        "utc_ns": 3000000000,
+                        "timestamp_ns": 1000000000,
+                        "bin_idx": 0,
+                    },
+                    {
+                        "path": "test2.mkv",
+                        "pts": 2000000000,
+                        "utc_ns": 4000000000,
+                        "timestamp_ns": 2000000000,
+                        "bin_idx": 1,
+                    },
+                ],
+                "metadata": {
+                    "file_path": "/test/session.mcap",
+                    "sequence_idx": 0,
+                    "start_bin_idx": 0,
+                    "end_bin_idx": 1,
+                    "start_timestamp_ns": 1000000000,
+                    "end_timestamp_ns": 2000000000,
+                    "num_bins": 2,
+                    "num_images": 2,
+                    "num_actions": 2,
+                },
+            }
+        ]
 
-        # Sample events
-        self.keyboard_event = {
-            "file_path": "/test/keyboard.mcap",
-            "topic": "keyboard",
-            "timestamp_ns": 1000000000,
-            "message_type": "owa.env.desktop.msg.KeyboardEvent",
-            "msg": b'{"event_type":"press","vk":65}',
-        }
+        # Create HuggingFace dataset
+        features = Features(
+            {
+                "instruction": Value("string"),
+                "encoded_events": Sequence(Value("string")),
+                "image_refs": Sequence(
+                    {
+                        "path": Value("string"),
+                        "pts": Value("int64"),
+                        "utc_ns": Value("int64"),
+                        "timestamp_ns": Value("int64"),
+                        "bin_idx": Value("int32"),
+                    }
+                ),
+                "metadata": {
+                    "file_path": Value("string"),
+                    "sequence_idx": Value("int32"),
+                    "start_bin_idx": Value("int32"),
+                    "end_bin_idx": Value("int32"),
+                    "start_timestamp_ns": Value("int64"),
+                    "end_timestamp_ns": Value("int64"),
+                    "num_bins": Value("int32"),
+                    "num_images": Value("int32"),
+                    "num_actions": Value("int32"),
+                },
+            }
+        )
 
-        self.mouse_event = {
-            "file_path": "/test/mouse.mcap",
-            "topic": "mouse",
-            "timestamp_ns": 2000000000,
-            "message_type": "owa.env.desktop.msg.MouseEvent",
-            "msg": b'{"event_type":"click","x":100,"y":200,"button":"left","pressed":true}',
-        }
-
-        self.screen_event = {
-            "file_path": "/test/screen.mcap",
-            "topic": "screen",
-            "timestamp_ns": 3000000000,
-            "message_type": "owa.env.gst.msg.ScreenEmitted",
-            "msg": b'{"path":"test.mkv","pts":1000000000,"utc_ns":3000000000}',
-        }
+        self.mllm_dataset = Dataset.from_list(self.sample_data, features=features)
 
     def test_initialization(self):
         """Test VLMDatasetBuilder initialization."""
-        builder = VLMDatasetBuilder(drop_file_path=False)
-        assert builder.encoder.drop_file_path == False
+        # Test with PIL format (default)
+        builder = VLMDatasetBuilder(self.mllm_dataset)
+        assert builder.image_format == "pil"
+        assert builder.cache_images == False
+        assert builder.max_cache_size == 1000
 
-        builder_default = VLMDatasetBuilder()
-        assert builder_default.encoder.drop_file_path == True
+        # Test with caching enabled
+        builder_cached = VLMDatasetBuilder(
+            self.mllm_dataset, image_format="tensor", cache_images=True, max_cache_size=500
+        )
+        assert builder_cached.image_format == "tensor"
+        assert builder_cached.cache_images == True
+        assert builder_cached.max_cache_size == 500
 
-    def test_process_empty_sequence(self):
-        """Test processing empty event sequence."""
-        instruction = "Type 'Hello World'"
-        result = self.builder.process_event_sequence([], instruction)
+    def test_dataset_length(self):
+        """Test dataset length."""
+        builder = VLMDatasetBuilder(self.mllm_dataset)
+        assert len(builder) == 1
 
-        assert result["encoded_events"] == []
-        assert result["images"] == []
-        assert result["instruction"] == instruction
+    def test_getitem_structure(self):
+        """Test __getitem__ returns correct structure."""
+        builder = VLMDatasetBuilder(self.mllm_dataset)
 
-    def test_process_keyboard_sequence(self):
-        """Test processing keyboard event sequence."""
-        events = [self.keyboard_event]
-        instruction = "Type the letter A"
+        # Mock the image loading to avoid file system dependencies
+        def mock_load_images(_image_refs):
+            return []  # Return empty list for testing
 
-        result = self.builder.process_event_sequence(events, instruction)
+        builder._load_images = mock_load_images
 
-        assert len(result["encoded_events"]) == 1
-        assert result["images"] == []  # No images for keyboard events
-        assert result["instruction"] == instruction
+        item = builder[0]
 
-    def test_process_mouse_sequence(self):
-        """Test processing mouse event sequence."""
-        events = [self.mouse_event]
-        instruction = "Click the button"
+        # Check structure
+        assert "instruction" in item
+        assert "encoded_events" in item
+        assert "images" in item
+        assert "metadata" in item
 
-        result = self.builder.process_event_sequence(events, instruction)
+        # Check content
+        assert item["instruction"] == "Complete the computer task"
+        assert len(item["encoded_events"]) == 2
+        assert isinstance(item["images"], list)
+        assert item["metadata"]["sequence_idx"] == 0
 
-        assert len(result["encoded_events"]) == 1
-        assert result["images"] == []  # No images for mouse events
-        assert result["instruction"] == instruction
+    def test_image_loading_failure_handling(self):
+        """Test handling of image loading failures."""
+        builder = VLMDatasetBuilder(self.mllm_dataset)
 
-    def test_process_mixed_sequence(self):
-        """Test processing mixed event sequence."""
-        events = [self.keyboard_event, self.mouse_event]
-        instruction = "Type A then click the button"
+        # Test with non-existent image references
+        image_refs = [{"path": "nonexistent.mkv", "pts": 1000000000}]
+        images = builder._load_images(image_refs)
 
-        result = self.builder.process_event_sequence(events, instruction)
+        # Should return empty list when images can't be loaded
+        assert isinstance(images, list)
+        # Length may be 0 if all images fail to load
 
-        assert len(result["encoded_events"]) == 2
-        assert result["images"] == []
-        assert result["instruction"] == instruction
+    def test_cache_functionality(self):
+        """Test image caching functionality."""
+        builder = VLMDatasetBuilder(self.mllm_dataset, cache_images=True, max_cache_size=2)
 
-    def test_process_with_custom_instruction(self):
-        """Test processing with custom instruction."""
-        events = [self.keyboard_event]
-        custom_instruction = "Custom task instruction"
+        # Test cache stats
+        stats = builder.get_cache_stats()
+        assert stats["cache_enabled"] == True
+        assert stats["cache_size"] == 0
+        assert stats["max_cache_size"] == 2
 
-        result = self.builder.process_event_sequence(events, instruction=custom_instruction)
+        # Test cache disabled
+        builder_no_cache = VLMDatasetBuilder(self.mllm_dataset, cache_images=False)
+        stats_no_cache = builder_no_cache.get_cache_stats()
+        assert stats_no_cache["cache_enabled"] == False
 
-        assert result["instruction"] == custom_instruction
+    def test_image_format_validation(self):
+        """Test image format validation."""
+        # Valid formats should work
+        valid_formats = ["pil", "tensor", "numpy"]
+        for fmt in valid_formats:
+            builder = VLMDatasetBuilder(self.mllm_dataset, image_format=fmt)
+            assert builder.image_format == fmt
 
-    def test_process_screen_sequence_basic(self):
-        """Test processing screen event sequence (basic test without actual image loading)."""
-        events = [self.screen_event]
-        instruction = "Look at the screen and perform the task"
-
-        # This will process the screen event but won't load actual images
-        # since we don't have the actual video file
-        result = self.builder.process_event_sequence(events, instruction)
-
-        assert len(result["encoded_events"]) == 1
-        # Images list may be empty if lazy_load fails (which is expected in tests)
-        assert isinstance(result["images"], list)
-        assert result["instruction"] == instruction
-
-    def test_process_batch(self):
-        """Test batch processing of event sequences."""
-        sequences = [[self.keyboard_event], [self.mouse_event]]
-
-        instructions = ["Instruction 1", "Instruction 2"]
-
-        results = self.builder.process_batch(sequences, instructions)
-
-        assert len(results) == 2
-        assert results[0]["instruction"] == "Instruction 1"
-        assert results[1]["instruction"] == "Instruction 2"
-        assert "action_sequence" not in results[0]
-        assert "action_sequence" not in results[1]
-
-    def test_process_batch_validation(self):
-        """Test batch processing validation."""
-        sequences = [[self.keyboard_event], [self.mouse_event]]
-        instructions = ["Instruction 1"]  # Only one instruction for two sequences
-
-        # Should raise error when lengths don't match
-        with pytest.raises(ValueError, match="Number of sequences .* must match number of instructions"):
-            self.builder.process_batch(sequences, instructions)
-
-    def test_create_huggingface_dataset(self):
-        """Test HuggingFace dataset creation."""
-        sequences = [[self.keyboard_event], [self.mouse_event]]
-        instructions = ["Type A", "Click button"]
-
-        hf_dataset = self.builder.create_huggingface_dataset(sequences, instructions)
-
-        assert len(hf_dataset) == 2
-
-        # Check required fields for VLA training
-        for sample in hf_dataset:
-            assert "encoded_events" in sample
-            assert "images" in sample
-            assert "instruction" in sample
-            assert "action_sequence" not in sample  # No longer included
-
-            assert isinstance(sample["encoded_events"], list)
-            assert isinstance(sample["images"], list)
-            assert isinstance(sample["instruction"], str)
-
-    def test_error_handling_invalid_event(self):
-        """Test error handling for invalid events."""
-        invalid_event = {
-            "topic": "invalid",
-            "timestamp_ns": 1000000000,
-            "message_type": "invalid.type",
-            "msg": b"invalid json",
-        }
-
-        # Should not crash, but may produce warnings
-        instruction = "Handle invalid event"
-        result = self.builder.process_event_sequence([invalid_event], instruction)
-
-        # Should still return valid structure
-        assert "encoded_events" in result
-        assert "images" in result
-        assert "instruction" in result
-        assert result["instruction"] == instruction
+        # Invalid format should still be accepted (will fail at runtime)
+        builder = VLMDatasetBuilder(self.mllm_dataset, image_format="invalid")
+        assert builder.image_format == "invalid"
 
 
 class TestVLMDatasetBuilderIntegration:
     """Integration tests for VLMDatasetBuilder."""
 
-    def test_end_to_end_workflow(self):
-        """Test complete workflow from events to VLM format."""
-        builder = VLMDatasetBuilder(drop_file_path=True)
+    def test_pytorch_dataset_interface(self):
+        """Test that VLMDatasetBuilder properly implements PyTorch Dataset interface."""
+        from owa.data.vlm_dataset_builder import Dataset, VLMDatasetBuilder
 
-        # Sample workflow
-        event_sequences = [
-            [
-                {
-                    "file_path": "/test/session.mcap",
-                    "topic": "keyboard",
-                    "timestamp_ns": 1000000000,
-                    "message_type": "owa.env.desktop.msg.KeyboardEvent",
-                    "msg": b'{"event_type":"press","vk":65}',
-                }
-            ]
+        # Create sample MLLM dataset
+        sample_data = [
+            {
+                "instruction": "Test instruction",
+                "encoded_events": ["event1", "event2"],
+                "image_refs": [],
+                "metadata": {"sequence_idx": 0},
+            }
         ]
 
-        # Process to VLA format
-        instructions = ["Type the letter A"]
-        vlm_data = builder.create_huggingface_dataset(event_sequences, instructions)
+        features = Features(
+            {
+                "instruction": Value("string"),
+                "encoded_events": Sequence(Value("string")),
+                "image_refs": Sequence(
+                    {
+                        "path": Value("string"),
+                        "pts": Value("int64"),
+                        "utc_ns": Value("int64"),
+                        "timestamp_ns": Value("int64"),
+                        "bin_idx": Value("int32"),
+                    }
+                ),
+                "metadata": {"sequence_idx": Value("int32")},
+            }
+        )
 
-        # Verify output format
-        assert len(vlm_data) == 1
-        sample = vlm_data[0]
+        mllm_dataset = Dataset.from_list(sample_data, features=features)
+        builder = VLMDatasetBuilder(mllm_dataset)
 
-        # Should have all required fields for VLA training
-        assert len(sample["encoded_events"]) > 0
-        assert isinstance(sample["images"], list)
-        assert len(sample["instruction"]) > 0
-        assert "action_sequence" not in sample  # No longer included
+        # Test Dataset interface
+        assert len(builder) == 1
+        assert isinstance(builder, Dataset)
 
-        # Encoded events should not contain file_path (due to drop_file_path=True)
-        encoded_text = sample["encoded_events"][0]
-        assert "file_path" not in encoded_text or "<DROPPED>" in encoded_text
+        # Mock image loading for testing
+        builder._load_images = lambda _refs: []
+
+        item = builder[0]
+        assert isinstance(item, dict)
+        assert "instruction" in item
+        assert "encoded_events" in item
+        assert "images" in item
+        assert "metadata" in item
+
+    def test_integration_with_empty_dataset(self):
+        """Test behavior with empty dataset."""
+        empty_data = []
+        features = Features(
+            {
+                "instruction": Value("string"),
+                "encoded_events": Sequence(Value("string")),
+                "image_refs": Sequence(
+                    {
+                        "path": Value("string"),
+                        "pts": Value("int64"),
+                        "utc_ns": Value("int64"),
+                        "timestamp_ns": Value("int64"),
+                        "bin_idx": Value("int32"),
+                    }
+                ),
+                "metadata": {"sequence_idx": Value("int32")},
+            }
+        )
+
+        empty_dataset = Dataset.from_list(empty_data, features=features)
+        builder = VLMDatasetBuilder(empty_dataset)
+
+        assert len(builder) == 0

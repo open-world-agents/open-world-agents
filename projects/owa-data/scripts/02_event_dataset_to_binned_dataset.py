@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 """
-02_event_dataset_to_trajectory_dataset.py
+02_event_dataset_to_binned_dataset.py
 
-Convert event-per-row dataset (output of 01_raw_events_to_event_dataset.py) into a trajectory dataset format.
+Convert event-per-row dataset (output of 01_raw_events_to_event_dataset.py) into a binned dataset format.
 
 Usage (CLI):
-    python 02_event_dataset_to_trajectory_dataset.py \
+    python 02_event_dataset_to_binned_dataset.py \
         --input_dir /path/to/input_event_dataset \
-        --output_dir /path/to/output_trajectory_dataset \
+        --output_dir /path/to/output_binned_dataset \
         [--fps 10] \
         [--keep_topic screen --keep_topic keyboard --keep_topic mouse]
 
-- Aggregates events into ticks at the specified FPS.
+- Bins events into fixed-rate time intervals at the specified FPS.
 - Keeps only specified topics (drops all others if not specified).
-- Each output row contains: file_path, tick_idx, timestamp_ns, state, action.
+- Each output row contains: file_path, bin_idx, timestamp_ns, state, actions.
 """
 
 import json
@@ -28,19 +28,19 @@ from tqdm import tqdm
 app = typer.Typer(add_completion=False)
 
 
-def aggregate_events_to_trajectory_ticks(
+def aggregate_events_to_bins(
     events: List[Dict[str, Any]],
     fps: float,
     keep_topics: List[str],
 ) -> List[Dict[str, Any]]:
     """
-    Aggregate events into trajectory ticks at the specified FPS.
+    Aggregate events into time bins at the specified FPS.
     Args:
         events: List of event dicts (from input event dataset).
-        fps: Global FPS for ticks.
+        fps: Global FPS for bins.
         keep_topics: List of topics to keep.
     Returns:
-        List of dicts, each representing a trajectory tick with state and action.
+        List of dicts, each representing a time bin with state and actions.
     """
     if not events:
         return []
@@ -58,26 +58,26 @@ def aggregate_events_to_trajectory_ticks(
     # Find min/max timestamp
     min_ts = events[0]["timestamp_ns"]
     max_ts = events[-1]["timestamp_ns"]
-    tick_interval_ns = int(1e9 / fps)
+    bin_interval_ns = int(1e9 / fps)
 
-    # Calculate total number of ticks for progress tracking
-    total_ticks = int((max_ts - min_ts) / tick_interval_ns) + 1
+    # Calculate total number of bins for progress tracking
+    total_bins = int((max_ts - min_ts) / bin_interval_ns) + 1
 
-    ticks = []
-    tick_idx = 0
-    tick_start = min_ts
-    tick_end = tick_start + tick_interval_ns
+    bins = []
+    bin_idx = 0
+    bin_start = min_ts
+    bin_end = bin_start + bin_interval_ns
     event_idx = 0
     last_screen = None
 
-    # Add progress bar for tick generation (only for large datasets)
-    tick_pbar = tqdm(total=total_ticks, desc="Generating ticks", leave=False, disable=total_ticks < 100)
+    # Add progress bar for bin generation (only for large datasets)
+    bin_pbar = tqdm(total=total_bins, desc="Generating bins", leave=False, disable=total_bins < 100)
 
-    while tick_start <= max_ts:
-        # Aggregate actions in this tick
+    while bin_start <= max_ts:
+        # Aggregate actions in this bin
         actions = []
-        # Find all events in [tick_start, tick_end)
-        while event_idx < len(events) and events[event_idx]["timestamp_ns"] < tick_end:
+        # Find all events in [bin_start, bin_end)
+        while event_idx < len(events) and events[event_idx]["timestamp_ns"] < bin_end:
             ev = events[event_idx]
             if ev["topic"].startswith("screen"):
                 last_screen = ev  # Use latest screen as state
@@ -85,24 +85,24 @@ def aggregate_events_to_trajectory_ticks(
                 actions.append(ev)
             event_idx += 1
 
-        # Compose tick
-        tick = {
+        # Compose bin
+        bin_data = {
             "file_path": events[0]["file_path"],
-            "tick_idx": tick_idx,
-            "timestamp_ns": tick_start,
+            "bin_idx": bin_idx,
+            "timestamp_ns": bin_start,
             "state": last_screen["msg"] if last_screen else None,
-            "action": [a["msg"] for a in actions],
+            "actions": [a["msg"] for a in actions],
         }
-        ticks.append(tick)
-        tick_idx += 1
-        tick_start = tick_end
-        tick_end += tick_interval_ns
+        bins.append(bin_data)
+        bin_idx += 1
+        bin_start = bin_end
+        bin_end += bin_interval_ns
 
         # Update progress
-        tick_pbar.update(1)
+        bin_pbar.update(1)
 
-    tick_pbar.close()
-    return ticks
+    bin_pbar.close()
+    return bins
 
 
 @app.command()
@@ -123,15 +123,15 @@ def main(
         "-o",
         file_okay=False,
         dir_okay=True,
-        help="Output trajectory dataset directory",
+        help="Output binned dataset directory",
     ),
-    fps: float = typer.Option(10.0, "--fps", help="Global FPS for ticks (default: 10)"),
+    fps: float = typer.Option(10.0, "--fps", help="Global FPS for bins (default: 10)"),
     keep_topic: Optional[List[str]] = typer.Option(
         None, "--keep_topic", help="Topic to keep (repeatable). If not specified, all topics are dropped."
     ),
 ):
     """
-    Convert event-per-row dataset to trajectory dataset format with state/action per tick.
+    Convert event-per-row dataset to binned dataset format with state/actions per bin.
     """
     start_time = time.time()
     typer.echo(f"Loading event dataset from {input_dir} ...")
@@ -141,6 +141,10 @@ def main(
         splits = list(ds_dict.keys())
     else:
         splits = [None]
+
+    # Store all processed datasets
+    processed_datasets = {}
+
     for split in splits:
         if split:
             ds = ds_dict[split]
@@ -149,7 +153,7 @@ def main(
         # Group by file_path more efficiently
         typer.echo(f"Analyzing {len(ds)} events to group by file...")
         file_paths = sorted(set(ds["file_path"]))  # Sort for consistent ordering
-        all_trajectory_ticks = []
+        all_binned_data = []
 
         typer.echo(f"Found {len(file_paths)} unique files to process")
 
@@ -196,42 +200,65 @@ def main(
                 for i in tqdm(range(len(file_ds)), desc="Extracting events", leave=False):
                     events.append({k: file_ds[k][i] for k in file_ds.column_names})
 
-            trajectory_ticks = aggregate_events_to_trajectory_ticks(events, fps, keep_topic or [])
-            all_trajectory_ticks.extend(trajectory_ticks)
+            binned_data = aggregate_events_to_bins(events, fps, keep_topic or [])
+            all_binned_data.extend(binned_data)
 
-            # Update file progress with tick count
-            file_pbar.set_postfix(
-                {"current_file": Path(fp).name, "events": len(events), "ticks": len(trajectory_ticks)}
-            )
+            # Update file progress with bin count
+            file_pbar.set_postfix({"current_file": Path(fp).name, "events": len(events), "bins": len(binned_data)})
 
         file_pbar.close()
         # Define features
         features = Features(
             {
                 "file_path": Value("string"),
-                "tick_idx": Value("int32"),
+                "bin_idx": Value("int32"),
                 "timestamp_ns": Value("int64"),
                 "state": Value("binary"),
-                "action": Value("binary"),
+                "actions": Value("binary"),
             }
         )
-        # Convert state/action to binary (if not None)
-        typer.echo(f"Converting {len(all_trajectory_ticks)} trajectory ticks to binary format...")
-        for t in tqdm(all_trajectory_ticks, desc="Converting to binary", disable=len(all_trajectory_ticks) < 1000):
+        # Convert state/actions to binary (if not None)
+        typer.echo(f"Converting {len(all_binned_data)} binned entries to binary format...")
+        for t in tqdm(all_binned_data, desc="Converting to binary", disable=len(all_binned_data) < 1000):
             if t["state"] is not None and not isinstance(t["state"], bytes):
                 t["state"] = json.dumps([*map(bytes.decode, t["state"])]).encode("utf-8")
-            if t["action"] is not None and not isinstance(t["action"], bytes):
-                t["action"] = json.dumps([*map(bytes.decode, t["action"])]).encode("utf-8")
-        trajectory_dataset = Dataset.from_list(all_trajectory_ticks, features=features)
-        # Save
-        out_path = output_dir / (split if split else "data")
-        out_path.mkdir(parents=True, exist_ok=True)
-        trajectory_dataset.save_to_disk(str(out_path))
+            if t["actions"] is not None and not isinstance(t["actions"], bytes):
+                t["actions"] = json.dumps([*map(bytes.decode, t["actions"])]).encode("utf-8")
+        binned_dataset = Dataset.from_list(all_binned_data, features=features)
 
-        # Calculate and display timing information
-        elapsed_time = time.time() - start_time
-        typer.echo(f"Saved {len(trajectory_dataset)} trajectory ticks to {out_path}")
-        typer.echo(f"Processing completed in {elapsed_time:.2f} seconds ({elapsed_time / 60:.1f} minutes)")
+        # Store the dataset for this split
+        split_name = split if split else "train"  # Default to "train" if no split
+        processed_datasets[split_name] = binned_dataset
+
+        typer.echo(f"Processed {len(binned_dataset)} binned entries for {split_name} split")
+
+    # Save all datasets as DatasetDict or single Dataset
+    if len(processed_datasets) > 1:
+        # Multiple splits - create DatasetDict
+        from datasets import DatasetDict
+
+        final_dataset = DatasetDict(processed_datasets)
+    else:
+        # Single split - save as Dataset
+        final_dataset = list(processed_datasets.values())[0]
+
+    # Save to output directory
+    output_dir.mkdir(parents=True, exist_ok=True)
+    final_dataset.save_to_disk(str(output_dir))
+
+    # Calculate and display timing information
+    elapsed_time = time.time() - start_time
+    if len(processed_datasets) > 1:
+        total_entries = sum(len(ds) for ds in processed_datasets.values())
+        typer.echo(f"Saved DatasetDict with {total_entries} total binned entries to {output_dir}")
+        for split_name, ds in processed_datasets.items():
+            typer.echo(f"  {split_name}: {len(ds)} entries")
+    else:
+        split_name = list(processed_datasets.keys())[0]
+        ds = list(processed_datasets.values())[0]
+        typer.echo(f"Saved {len(ds)} binned entries ({split_name}) to {output_dir}")
+
+    typer.echo(f"Processing completed in {elapsed_time:.2f} seconds ({elapsed_time / 60:.1f} minutes)")
 
 
 if __name__ == "__main__":
