@@ -26,7 +26,7 @@ jobs:
           os: windows
           cache-number: '0'
 
-      - name: Setup UV Environment
+      - name: Setup uv Environment
         uses: ./.github/actions/setup-uv-env
         with:
           show-uv-cache-info: 'true'

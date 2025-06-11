@@ -24,7 +24,7 @@ jobs:
           os: linux
           cache-number: '0'
 
-      - name: Setup UV Environment
+      - name: Setup uv Environment
         uses: ./.github/actions/setup-uv-env
 
       - name: Install Dependencies
