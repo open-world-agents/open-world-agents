@@ -23,6 +23,7 @@ jobs:
         with:
           os: linux
           cache-number: '0'
+          cache-suffix: 'validate-docs'
 
       - name: Setup uv Environment
         uses: ./.github/actions/setup-uv-env
