@@ -261,6 +261,5 @@ def read_mcap(file_path="expert.mcap", num_messages=100):
 
 
 if __name__ == "__main__":
-    generate_vpt_file_list()
-    # main()
+    main()
     # read_mcap()
