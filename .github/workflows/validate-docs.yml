@@ -7,7 +7,7 @@ on:
     branches: [main, dev]
 
 jobs:
-  deploy:
+  validate-docs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
