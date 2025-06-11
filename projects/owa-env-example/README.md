@@ -54,17 +54,24 @@ This plugin follows the OEP-0003 standard:
 1. **Entry Point Declaration** in `pyproject.toml`:
    ```toml
    [project.entry-points."owa.env.plugins"]
-   example = "owa.env.example:plugin_spec"
+   example = "owa.env.plugins.example:plugin_spec"
    ```
 
-2. **Plugin Specification** in `__init__.py`:
+2. **Plugin Specification** in `owa/env/plugins/example.py`:
    ```python
-   from owa.core import PluginSpec
+   """
+   Plugin specification for the Example environment plugin.
+
+   This module is kept separate to avoid circular imports during plugin discovery.
+   """
+
+   from owa.core.plugin_spec import PluginSpec
 
    plugin_spec = PluginSpec(
        namespace="example",
        version="0.1.0",
-       description="Example plugin",
+       description="Example plugin demonstrating the plugin system",
+       author="OWA Development Team",
        components={
            "callables": {
                "add": "owa.env.example.example_callable:example_add",

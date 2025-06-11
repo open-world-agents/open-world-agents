@@ -21,11 +21,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Conda Environment
-        uses: ./.github/actions/setup-conda-env
+      - name: Setup Virtual Environment
+        uses: ./.github/actions/setup-venv
         with:
-          os: linux
-          cache-number: '0'
+          python-version: '3.11'
 
       - name: Setup uv Environment
         uses: ./.github/actions/setup-uv-env

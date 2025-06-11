@@ -9,33 +9,103 @@ A PluginSpec defines the structure and components of your plugin, enabling autom
 1. **Python Format** - Direct PluginSpec object (recommended for most cases)
 2. **YAML Format** - External YAML file (useful for configuration-driven development)
 
+> **🚨 CRITICAL: Module Structure is COMPLETELY FLEXIBLE**
+>
+> **The `owa.env.*` structure shown in examples is just a RECOMMENDATION, NOT a requirement!**
+>
+> - ✅ You can use ANY module structure that makes sense for your project
+> - ✅ Examples: `my_company.tools`, `custom_plugins`, `automation.workflows`, etc.
+> - ✅ The ONLY requirement is that your entry point correctly points to your plugin specification
+> - ❌ You are NOT required to follow the `owa.env.*` pattern
+
 ## Python Format (Recommended)
 
 ### Basic Structure
 
-Create a `PluginSpec` object in your plugin's `__init__.py` file:
+**⚠️ IMPORTANT: The `owa.env.*` structure shown below is just a RECOMMENDATION, not a requirement!**
+
+Your plugin can be organized in ANY module structure you prefer. The only requirement is that your entry point correctly points to your plugin specification. Examples of valid structures:
+- `my_company.tools:plugin_spec`
+- `custom_plugins.ai_tools:plugin_spec`
+- `anything.you.want:plugin_spec`
+
+**Recommended structure** (but not required): Create a `PluginSpec` object in a separate `owa/env/plugins/<namespace>.py` file:
 
 ```python
+# File: owa/env/plugins/myplugin.py
+"""
+Plugin specification for the MyPlugin environment plugin.
+
+This module is kept separate to avoid circular imports during plugin discovery.
+"""
+
 from owa.core.plugin_spec import PluginSpec
 
 plugin_spec = PluginSpec(
     namespace="myplugin",
-    version="1.0.0", 
+    version="1.0.0",
     description="My custom plugin for OWA",
     author="Your Name",  # Optional
     components={
         "callables": {
-            "function_name": "module.path:function_name",
+            "function_name": "owa.env.myplugin:function_name",
         },
         "listeners": {
-            "listener_name": "module.path:ListenerClass",
+            "listener_name": "owa.env.myplugin:ListenerClass",
         },
         "runnables": {
-            "runnable_name": "module.path:RunnableClass",
+            "runnable_name": "owa.env.myplugin:RunnableClass",
         }
     }
 )
 ```
+
+**Important**: Do not create `__init__.py` files in the `plugins/` directory as this would interfere with namespace packaging.
+
+### Alternative Module Structures (All Valid!)
+
+The `owa.env.*` structure is just a convention used by official OWA plugins. **Your plugin can use ANY module structure:**
+
+```python
+# Your own company structure
+# File: my_company/ai_tools/plugin_spec.py
+from owa.core.plugin_spec import PluginSpec
+
+plugin_spec = PluginSpec(
+    namespace="ai_tools",
+    components={"callables": {"analyze": "my_company.ai_tools.analyzer:analyze_data"}}
+)
+
+# Entry point: my_company.ai_tools.plugin_spec:plugin_spec
+```
+
+```python
+# Flat structure
+# File: custom_plugins.py
+from owa.core.plugin_spec import PluginSpec
+
+plugin_spec = PluginSpec(
+    namespace="custom",
+    components={"callables": {"process": "custom_plugins:process_data"}}
+)
+
+# Entry point: custom_plugins:plugin_spec
+```
+
+```python
+# Domain-specific structure
+# File: automation/workflows/owa_plugin.py
+from owa.core.plugin_spec import PluginSpec
+
+plugin_spec = PluginSpec(
+    namespace="workflows",
+    components={"runnables": {"executor": "automation.workflows.engine:WorkflowExecutor"}}
+)
+
+# Entry point: automation.workflows.owa_plugin:plugin_spec
+```
+
+**The only requirement is that your entry point in `pyproject.toml` correctly points to your plugin specification, regardless of where it's located.**
 
 ### Required Fields
 
@@ -122,11 +192,15 @@ plugin_spec = PluginSpec(
 
 ### Entry Point Declaration
 
-In your `pyproject.toml`, declare the entry point:
+In your `pyproject.toml`, declare the entry point pointing to wherever your plugin specification is located:
 
 ```toml
 [project.entry-points."owa.env.plugins"]
-mycompany_tools = "owa.env.mycompany_tools:plugin_spec"
+# Examples - use ANY structure you prefer:
+mycompany_tools = "owa.env.plugins.mycompany_tools:plugin_spec"  # Recommended OWA structure
+ai_tools = "my_company.ai_tools.plugin_spec:plugin_spec"         # Your own structure
+custom = "custom_plugins:plugin_spec"                            # Flat structure
+workflows = "automation.workflows.owa_plugin:plugin_spec"       # Domain structure
 ```
 
 ## YAML Format

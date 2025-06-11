@@ -15,7 +15,7 @@ dependencies = [
 
 # Entry point declaration for built-in std plugin
 [project.entry-points."owa.env.plugins"]
-std = "owa.env.std:plugin_spec"
+std = "owa.env.plugins.std:plugin_spec"
 
 [build-system]
 requires = ["hatchling"]
