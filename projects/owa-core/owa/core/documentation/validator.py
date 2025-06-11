@@ -8,10 +8,17 @@ providing comprehensive documentation quality checks for plugin components.
 import inspect
 import re
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List
+
+if TYPE_CHECKING:
+    import griffe
+
+try:
+    import griffe
+except ImportError:
+    griffe = None
 
 from ..plugin_discovery import get_plugin_discovery
-from ..registry import CALLABLES, LISTENERS, RUNNABLES
 from ..runnable import RunnableMixin
 
 
@@ -120,12 +127,12 @@ class DocumentationValidator:
 
         # Validate each component type
         for component_type, components in plugin_spec.components.items():
-            for component_name in components.keys():
+            for component_name, import_path in components.items():
                 full_name = f"{plugin_spec.namespace}/{component_name}"
 
                 try:
                     # Load the component to inspect it
-                    component = self._load_component(component_type, full_name)
+                    component = self._load_component(component_type, full_name, import_path)
                     result = self.validate_component(component, full_name)
 
                     if result.quality_grade == "skipped":
@@ -161,7 +168,7 @@ class DocumentationValidator:
         Validate documentation for a single component.
 
         Args:
-            component: The component object to validate
+            component: The component object to validate (griffe object or runtime object)
             full_name: Full name of the component (namespace/name)
 
         Returns:
@@ -169,8 +176,8 @@ class DocumentationValidator:
         """
         issues = []
 
-        # Check docstring presence
-        docstring = inspect.getdoc(component)
+        # Check docstring presence - handle both griffe objects and runtime objects
+        docstring = self._get_docstring(component)
         if not docstring:
             return ValidationResult(component=full_name, quality_grade="poor", issues=["Missing docstring"])
 
@@ -184,10 +191,10 @@ class DocumentationValidator:
         issues.extend(quality_issues)
 
         # Check type hints for functions/methods
-        if inspect.isfunction(component) or inspect.ismethod(component):
+        if self._is_function_or_method(component):
             type_issues = self._validate_type_hints(component)
             issues.extend(type_issues)
-        elif inspect.isclass(component):
+        elif self._is_class(component):
             # For classes, check on_configure and key methods
             class_issues = self._validate_class_documentation(component)
             issues.extend(class_issues)
@@ -197,16 +204,89 @@ class DocumentationValidator:
 
         return ValidationResult(component=full_name, quality_grade=quality_grade, issues=issues)
 
-    def _load_component(self, component_type: str, full_name: str) -> Any:
-        """Load a component from the appropriate registry."""
-        if component_type == "callables":
-            return CALLABLES[full_name]
-        elif component_type == "listeners":
-            return LISTENERS[full_name]
-        elif component_type == "runnables":
-            return RUNNABLES[full_name]
+    def _load_component(self, component_type: str, full_name: str, import_path: str) -> Any:
+        """
+        Load a component using griffe for static analysis to avoid OS-specific import issues.
+
+        Args:
+            component_type: Type of component (callables, listeners, runnables)
+            full_name: Full name of the component (namespace/name)
+            import_path: Import path in format "module.path:object_name"
+
+        Returns:
+            Griffe object if griffe is available, otherwise falls back to registry loading
+        """
+        if griffe is None:
+            # Fallback to original registry-based loading if griffe is not available
+            from ..registry import CALLABLES, LISTENERS, RUNNABLES
+
+            if component_type == "callables":
+                return CALLABLES[full_name]
+            elif component_type == "listeners":
+                return LISTENERS[full_name]
+            elif component_type == "runnables":
+                return RUNNABLES[full_name]
+            else:
+                raise ValueError(f"Unknown component type: {component_type}")
+
+        # Use griffe for static analysis
+        try:
+            # Parse import path
+            if ":" not in import_path:
+                raise ValueError(f"Invalid import path format: {import_path}")
+
+            module_path, object_name = import_path.split(":", 1)
+
+            # Load the module using griffe
+            module = griffe.load(module_path, allow_inspection=False)
+
+            # Navigate to the specific object
+            if "." in object_name:
+                # Handle nested objects like "ClassName.method_name"
+                parts = object_name.split(".")
+                obj = module
+                for part in parts:
+                    obj = obj[part]
+                return obj
+            else:
+                # Direct object access
+                return module[object_name]
+
+        except Exception as e:
+            raise ValueError(f"Failed to load component {full_name} from {import_path}: {e}")
+
+    def _get_docstring(self, component: Any) -> str:
+        """Get docstring from component, handling both griffe objects and runtime objects."""
+        if griffe and hasattr(component, "docstring") and component.docstring:
+            # Griffe object
+            return component.docstring.value if hasattr(component.docstring, "value") else str(component.docstring)
         else:
-            raise ValueError(f"Unknown component type: {component_type}")
+            # Runtime object or fallback
+            return inspect.getdoc(component) or ""
+
+    def _is_function_or_method(self, component: Any) -> bool:
+        """Check if component is a function or method, handling both griffe and runtime objects."""
+        if griffe and hasattr(component, "kind"):
+            # Griffe object
+            return (
+                component.kind.value in ("function", "method")
+                if hasattr(component.kind, "value")
+                else str(component.kind) in ("function", "method")
+            )
+        else:
+            # Runtime object
+            return inspect.isfunction(component) or inspect.ismethod(component)
+
+    def _is_class(self, component: Any) -> bool:
+        """Check if component is a class, handling both griffe and runtime objects."""
+        if griffe and hasattr(component, "kind"):
+            # Griffe object
+            return (
+                component.kind.value == "class" if hasattr(component.kind, "value") else str(component.kind) == "class"
+            )
+        else:
+            # Runtime object
+            return inspect.isclass(component)
 
     def _validate_docstring_quality(self, docstring: str) -> List[str]:
         """Validate the quality of a docstring."""
@@ -237,40 +317,66 @@ class DocumentationValidator:
         return issues
 
     def _validate_type_hints(self, func: Any, validate_return: bool = True) -> List[str]:
-        """Validate type hints for a function."""
+        """Validate type hints for a function, handling both griffe and runtime objects."""
         issues = []
 
         try:
-            sig = inspect.signature(func)
+            if griffe and hasattr(func, "parameters"):
+                # Griffe object - use griffe's parameter information
+                for param in func.parameters:
+                    if param.name in ("self", "cls"):
+                        continue
+                    if not param.annotation:
+                        issues.append(f"Parameter '{param.name}' missing type hint")
 
-            # Check parameters have type hints
-            for param_name, param in sig.parameters.items():
-                if param_name in ("self", "cls"):
-                    continue
-                if param.annotation == inspect.Parameter.empty:
-                    issues.append(f"Parameter '{param_name}' missing type hint")
+                # Check return type hint if validate_return is True
+                if validate_return and not func.annotation:
+                    issues.append("Missing return type hint")
+            else:
+                # Runtime object - use inspect
+                sig = inspect.signature(func)
 
-            # Check return type hint if validate_return is True
-            if validate_return and sig.return_annotation == inspect.Signature.empty:
-                issues.append("Missing return type hint")
+                # Check parameters have type hints
+                for param_name, param in sig.parameters.items():
+                    if param_name in ("self", "cls"):
+                        continue
+                    if param.annotation == inspect.Parameter.empty:
+                        issues.append(f"Parameter '{param_name}' missing type hint")
 
-        except (ValueError, TypeError):
+                # Check return type hint if validate_return is True
+                if validate_return and sig.return_annotation == inspect.Signature.empty:
+                    issues.append("Missing return type hint")
+
+        except (ValueError, TypeError, AttributeError):
             # Can't inspect signature
             issues.append("Unable to inspect function signature")
 
         return issues
 
-    def _validate_class_documentation(self, cls: type) -> List[str]:
-        """Validate documentation for a class."""
+    def _validate_class_documentation(self, cls: Any) -> List[str]:
+        """Validate documentation for a class, handling both griffe and runtime objects."""
         issues = []
 
         # Check on_configure method if it exists
-        if hasattr(cls, "on_configure"):
-            on_configure = getattr(cls, "on_configure")
-            if on_configure != RunnableMixin.on_configure:  # Not the default RunnableMixin.on_configure
-                # Don't check return type hint
-                init_issues = self._validate_type_hints(on_configure, validate_return=False)
-                issues.extend([f"on_configure {issue}" for issue in init_issues])
+        try:
+            if griffe and hasattr(cls, "members"):
+                # Griffe object - check if on_configure exists in members
+                if "on_configure" in cls.members:
+                    on_configure = cls.members["on_configure"]
+                    # Don't check return type hint for on_configure
+                    init_issues = self._validate_type_hints(on_configure, validate_return=False)
+                    issues.extend([f"on_configure {issue}" for issue in init_issues])
+            else:
+                # Runtime object
+                if hasattr(cls, "on_configure"):
+                    on_configure = getattr(cls, "on_configure")
+                    if on_configure != RunnableMixin.on_configure:  # Not the default RunnableMixin.on_configure
+                        # Don't check return type hint
+                        init_issues = self._validate_type_hints(on_configure, validate_return=False)
+                        issues.extend([f"on_configure {issue}" for issue in init_issues])
+        except (AttributeError, KeyError):
+            # Method doesn't exist or can't be accessed
+            pass
 
         return issues
 
