@@ -15,8 +15,6 @@ jobs:
 
     env:
       PYTHONIOENCODING: utf-8 # https://github.com/Textualize/rich/issues/212
-      # below line is legacy line, but I'm keeping it here for reference to know where the packages are installed
-      # GST_PLUGIN_PATH: "D:\\a\\open-world-agents\\open-world-agents\\projects\\owa-env-gst\\gst-plugins"
 
     steps:
       - name: Check out repository
