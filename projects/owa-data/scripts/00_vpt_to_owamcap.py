@@ -108,12 +108,12 @@ def main():
         vpt_target_list = [Path(line.strip()) for line in f.readlines()]
         print(f"We will convert {len(vpt_target_list)=} VPT files.")
 
-    for vpt_file_path in tqdm(vpt_target_list):
-        print(f"Converting {vpt_file_path=} to OWAMcap format.")
+    for jsonl_file_path in tqdm(vpt_target_list):
+        print(f"Converting {jsonl_file_path=} to OWAMcap format.")
         # Convert the file to OWAMcap format
 
-        mcap_file_path = vpt_file_path.with_suffix(".mcap")
-        mp4_file_path = vpt_file_path.with_suffix(".mp4")
+        mcap_file_path = jsonl_file_path.with_suffix(".mcap")
+        mp4_file_path = jsonl_file_path.with_suffix(".mp4")
 
         # Writing messages to an OWAMcap file
 
@@ -124,14 +124,15 @@ def main():
         )  # x, y coordinates of the center of the screen (1280x720)
 
         try:
-            with open(vpt_file_path, "r") as f:  # jsonl file
+            with open(jsonl_file_path, "r") as f:  # jsonl file
                 lines = [line.strip() for line in f.readlines()]  # Read non-empty lines
                 assert len(lines) == VPT_EXPECTED_TICKS, (
-                    f"File {vpt_file_path} does not have {VPT_EXPECTED_TICKS=} lines. It has {len(lines)} lines."
+                    f"File {jsonl_file_path} does not have {VPT_EXPECTED_TICKS=} lines. It has {len(lines)} lines."
                 )
                 ticks = [json.loads(line) for line in lines]
         except Exception as e:
-            print(f"Error reading {vpt_file_path}. Skipping. Error: {e}")
+            print(f"Error reading {jsonl_file_path}. Skipping. Error: {e}")
+            continue
 
         with OWAMcapWriter(mcap_file_path) as writer:
             topic = "window"
@@ -197,7 +198,7 @@ def main():
                 dx = round(int(dx))
                 dy = round(int(dy))
 
-                if dx != 0 and dy != 0:
+                if dx != 0 or dy != 0:
                     # NOTE: we suppose the mouse is pinned to the center. it takes VPT_MOUSE_PIN_NS for the program to pin the mouse to the center
                     topic = "mouse"
                     event = MouseEvent(event_type="move", x=center_x + dx, y=center_y + dy)
