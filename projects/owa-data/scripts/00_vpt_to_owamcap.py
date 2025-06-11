@@ -50,8 +50,8 @@ VPT_KEYBOARD_VK_MAPPING = {
     "key.keyboard.s": VK.KEY_S,
     "key.keyboard.w": VK.KEY_W,
     "key.keyboard.space": VK.SPACE,
-    "key.keyboard.a": VK.LEFT,
-    "key.keyboard.d": VK.RIGHT,
+    "key.keyboard.a": VK.KEY_A,
+    "key.keyboard.d": VK.KEY_D,
     "key.keyboard.left.shift": VK.LSHIFT,
     "key.keyboard.left.control": VK.LCONTROL,
 }
