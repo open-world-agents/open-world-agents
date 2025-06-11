@@ -5,6 +5,8 @@ This module contains tests for the VLM dataset building functionality,
 including event processing and format conversion for VLM training.
 """
 
+import pytest
+
 from owa.data.vlm_dataset_builder import VLMDatasetBuilder
 
 
@@ -50,49 +52,45 @@ class TestVLMDatasetBuilder:
 
     def test_process_empty_sequence(self):
         """Test processing empty event sequence."""
-        result = self.builder.process_event_sequence([])
+        instruction = "Type 'Hello World'"
+        result = self.builder.process_event_sequence([], instruction)
 
         assert result["encoded_events"] == []
         assert result["images"] == []
-        assert result["instruction"] == "Perform the demonstrated actions."
-        assert "action_sequence" not in result
+        assert result["instruction"] == instruction
 
     def test_process_keyboard_sequence(self):
         """Test processing keyboard event sequence."""
         events = [self.keyboard_event]
+        instruction = "Type the letter A"
 
-        result = self.builder.process_event_sequence(events)
+        result = self.builder.process_event_sequence(events, instruction)
 
         assert len(result["encoded_events"]) == 1
         assert result["images"] == []  # No images for keyboard events
-        # VLA instruction should be a high-level goal
-        assert "type" in result["instruction"].lower() or "press" in result["instruction"].lower()
-        assert "action_sequence" not in result
+        assert result["instruction"] == instruction
 
     def test_process_mouse_sequence(self):
         """Test processing mouse event sequence."""
         events = [self.mouse_event]
+        instruction = "Click the button"
 
-        result = self.builder.process_event_sequence(events)
+        result = self.builder.process_event_sequence(events, instruction)
 
         assert len(result["encoded_events"]) == 1
         assert result["images"] == []  # No images for mouse events
-        # VLA instruction should be a high-level goal
-        assert "click" in result["instruction"].lower()
-        assert "action_sequence" not in result
+        assert result["instruction"] == instruction
 
     def test_process_mixed_sequence(self):
         """Test processing mixed event sequence."""
         events = [self.keyboard_event, self.mouse_event]
+        instruction = "Type A then click the button"
 
-        result = self.builder.process_event_sequence(events)
+        result = self.builder.process_event_sequence(events, instruction)
 
         assert len(result["encoded_events"]) == 2
         assert result["images"] == []
-        # VLA instruction should combine both actions
-        instruction = result["instruction"].lower()
-        assert ("type" in instruction and "click" in instruction) or "then" in instruction
-        assert "action_sequence" not in result
+        assert result["instruction"] == instruction
 
     def test_process_with_custom_instruction(self):
         """Test processing with custom instruction."""
@@ -106,17 +104,16 @@ class TestVLMDatasetBuilder:
     def test_process_screen_sequence_basic(self):
         """Test processing screen event sequence (basic test without actual image loading)."""
         events = [self.screen_event]
+        instruction = "Look at the screen and perform the task"
 
         # This will process the screen event but won't load actual images
         # since we don't have the actual video file
-        result = self.builder.process_event_sequence(events)
+        result = self.builder.process_event_sequence(events, instruction)
 
         assert len(result["encoded_events"]) == 1
         # Images list may be empty if lazy_load fails (which is expected in tests)
         assert isinstance(result["images"], list)
-        # VLA instruction should be a goal
-        assert "perform" in result["instruction"].lower() or "demonstrate" in result["instruction"].lower()
-        assert "action_sequence" not in result
+        assert result["instruction"] == instruction
 
     def test_process_batch(self):
         """Test batch processing of event sequences."""
@@ -132,44 +129,21 @@ class TestVLMDatasetBuilder:
         assert "action_sequence" not in results[0]
         assert "action_sequence" not in results[1]
 
-    def test_process_batch_partial_instructions(self):
-        """Test batch processing with partial instructions."""
-        sequences = [[self.keyboard_event], [self.mouse_event], [self.keyboard_event]]
+    def test_process_batch_validation(self):
+        """Test batch processing validation."""
+        sequences = [[self.keyboard_event], [self.mouse_event]]
+        instructions = ["Instruction 1"]  # Only one instruction for two sequences
 
-        instructions = ["Instruction 1"]  # Only one instruction for three sequences
-
-        results = self.builder.process_batch(sequences, instructions)
-
-        assert len(results) == 3
-        assert results[0]["instruction"] == "Instruction 1"
-        # Other instructions should be auto-generated
-        assert results[1]["instruction"] != "Instruction 1"
-        assert results[2]["instruction"] != "Instruction 1"
-
-    def test_generate_default_instruction(self):
-        """Test default instruction generation."""
-        # Test keyboard events - should generate VLA goals
-        keyboard_instruction = self.builder._generate_default_instruction([self.keyboard_event])
-        assert "type" in keyboard_instruction.lower() or "press" in keyboard_instruction.lower()
-
-        # Test mouse events - should generate VLA goals
-        mouse_instruction = self.builder._generate_default_instruction([self.mouse_event])
-        assert "click" in mouse_instruction.lower()
-
-        # Test mixed events - should generate combined VLA goals
-        mixed_instruction = self.builder._generate_default_instruction([self.keyboard_event, self.mouse_event])
-        instruction_lower = mixed_instruction.lower()
-        assert ("type" in instruction_lower and "click" in instruction_lower) or "then" in instruction_lower
-
-        # Test empty events
-        empty_instruction = self.builder._generate_default_instruction([])
-        assert empty_instruction == "Perform the demonstrated actions."
+        # Should raise error when lengths don't match
+        with pytest.raises(ValueError, match="Number of sequences .* must match number of instructions"):
+            self.builder.process_batch(sequences, instructions)
 
     def test_create_huggingface_dataset(self):
         """Test HuggingFace dataset creation."""
         sequences = [[self.keyboard_event], [self.mouse_event]]
+        instructions = ["Type A", "Click button"]
 
-        hf_dataset = self.builder.create_huggingface_dataset(sequences)
+        hf_dataset = self.builder.create_huggingface_dataset(sequences, instructions)
 
         assert len(hf_dataset) == 2
 
@@ -194,13 +168,14 @@ class TestVLMDatasetBuilder:
         }
 
         # Should not crash, but may produce warnings
-        result = self.builder.process_event_sequence([invalid_event])
+        instruction = "Handle invalid event"
+        result = self.builder.process_event_sequence([invalid_event], instruction)
 
         # Should still return valid structure
         assert "encoded_events" in result
         assert "images" in result
         assert "instruction" in result
-        assert "action_sequence" not in result
+        assert result["instruction"] == instruction
 
 
 class TestVLMDatasetBuilderIntegration:
@@ -223,8 +198,9 @@ class TestVLMDatasetBuilderIntegration:
             ]
         ]
 
-        # Process to VLM format
-        vlm_data = builder.create_huggingface_dataset(event_sequences)
+        # Process to VLA format
+        instructions = ["Type the letter A"]
+        vlm_data = builder.create_huggingface_dataset(event_sequences, instructions)
 
         # Verify output format
         assert len(vlm_data) == 1

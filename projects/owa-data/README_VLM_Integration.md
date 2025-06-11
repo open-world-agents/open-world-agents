@@ -1,51 +1,30 @@
 # OWA Data Integration with VLA Training
 
-This document describes the implementation of OWA data integration with Vision-Language-Action (VLA) model training, specifically for nanoVLM.
+This document describes the **CLEAN and SIMPLE** implementation of OWA data integration with Vision-Language-Action (VLA) model training.
 
 **VLA Training Objective**: Train models to generate action sequences from high-level instructions and visual observations.
+
+**Design Principle**: Simple formatter with required instructions - no "smart" generation or backwards logic.
 
 ## Overview
 
 We have implemented a complete pipeline to convert OWA event data into formats suitable for training Vision-Language-Action models. This includes:
 
-1. **Enhanced EventEncoder** with token optimization
-2. **VLMDatasetBuilder** for data format conversion
-3. **OWADataset** integration with nanoVLM
-4. **Comprehensive testing** and examples
+1. **VLMDatasetBuilder** for data format conversion
+2. **OWADataset** integration with nanoVLM
+3. **Comprehensive testing** and examples
 
 ## Key Features
 
-### ✅ EventEncoder Enhancements
-
-**New `drop_file_path` Parameter:**
-- **Default**: `drop_file_path=True` (saves ~30% tokens)
-- **Purpose**: Reduces token usage for VLM training
-- **Behavior**: Replaces file_path with `<DROPPED>` during decoding
-
-```python
-# Token-efficient encoding (default)
-encoder = EventEncoder()  # drop_file_path=True
-text, images = encoder.encode(event)
-# file_path is dropped, saving tokens
-
-# Preserve file_path for exact round-trip
-encoder = EventEncoder(drop_file_path=False)
-text, images = encoder.encode(event)
-# file_path is preserved
-```
-
-**Token Savings Example:**
-- With file_path: 256 characters
-- Without file_path: 177 characters  
-- **Savings: 30.9%** (79 characters)
-
 ### ✅ VLMDatasetBuilder
 
-**Purpose**: Convert OWA event sequences to VLM training format
+**Purpose**: Simple formatter to convert OWA event sequences to VLA training format
+
+**Design Principle**: Instructions are REQUIRED - no auto-generation or backwards logic
 
 **Key Methods:**
-- `process_event_sequence()`: Process single event sequence
-- `process_batch()`: Process multiple sequences
+- `process_event_sequence(events, instruction)`: Process single sequence (instruction required)
+- `process_batch(sequences, instructions)`: Process multiple sequences with validation
 - `create_huggingface_dataset()`: Create HF-compatible dataset
 
 **Output Format:**
@@ -98,7 +77,7 @@ dataloader = DataLoader(owa_dataset, batch_size=batch_size, collate_fn=vqa_colla
 - ✅ `owa/data/__init__.py` - Export new classes
 - ✅ `tests/test_event_encoder.py` - Updated tests (20 tests)
 - ✅ `tests/test_vlm_dataset_builder.py` - Comprehensive tests (16 tests)
-- ✅ `example_vla_training.py` - Corrected VLA training example
+- ✅ `example_simple_vla.py` - Clean VLA training example
 - ✅ `goal.md` - Updated with EventEncoder naming
 
 **nanoVLM project:**
@@ -113,10 +92,9 @@ dataloader = DataLoader(owa_dataset, batch_size=batch_size, collate_fn=vqa_colla
 - Error handling
 - Batch processing
 
-**VLMDatasetBuilder Tests**: 13 tests passing
-- Event sequence processing
-- Batch processing
-- Default instruction/action generation
+**VLMDatasetBuilder Tests**: 12 tests passing
+- Event sequence processing with required instructions
+- Batch processing with validation
 - HuggingFace dataset creation
 - Error handling
 - End-to-end workflow

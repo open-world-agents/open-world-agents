@@ -6,8 +6,7 @@ suitable for Vision-Language-Action model training, specifically for use
 with nanoVLM and similar frameworks.
 """
 
-import json
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from PIL import Image
 
@@ -18,12 +17,14 @@ from .event_encoder import EventEncoder
 
 class VLMDatasetBuilder:
     """
-    Builder for converting OWA event data to VLA training format.
+    Simple builder for converting OWA event data to VLA training format.
 
-    This class processes raw event datasets and creates structured data
-    suitable for training Vision-Language-Action models where:
-    - Input: Screen observation + high-level instruction
-    - Output: Encoded action events (keyboard/mouse/etc.)
+    This class is a minimal formatter that:
+    1. Encodes raw events using EventEncoder
+    2. Extracts images from screen events
+    3. Formats data for VLA training
+
+    It does NOT generate instructions - instructions must be provided.
     """
 
     def __init__(self, drop_file_path: bool = True):
@@ -38,18 +39,14 @@ class VLMDatasetBuilder:
     def process_event_sequence(
         self,
         raw_events: List[Dict[str, Any]],
-        instruction: Optional[str] = None,
+        instruction: str,
     ) -> Dict[str, Any]:
         """
         Process a sequence of raw events into VLA training format.
 
-        For VLA training:
-        - Input (User): Screen images + high-level instruction ("Please type 'A'")
-        - Output (Assistant): Encoded action events (keyboard/mouse events)
-
         Args:
             raw_events: List of raw event dictionaries from Event Dataset
-            instruction: Optional high-level instruction (what to do)
+            instruction: High-level instruction (REQUIRED - what the user wants to do)
 
         Returns:
             Dict containing:
@@ -61,7 +58,7 @@ class VLMDatasetBuilder:
             return {
                 "encoded_events": [],
                 "images": [],
-                "instruction": instruction or "Perform the demonstrated actions.",
+                "instruction": instruction,
             }
 
         # Encode all events
@@ -98,102 +95,46 @@ class VLMDatasetBuilder:
                 print(f"Warning: Could not encode event: {e}")
                 continue
 
-        # Generate default instruction if not provided
-        if instruction is None:
-            instruction = self._generate_default_instruction(raw_events)
-
         return {"encoded_events": encoded_events, "images": all_images, "instruction": instruction}
 
     def process_batch(
         self,
         event_sequences: List[List[Dict[str, Any]]],
-        instructions: Optional[List[str]] = None,
+        instructions: List[str],
     ) -> List[Dict[str, Any]]:
         """
         Process multiple event sequences in batch.
 
         Args:
             event_sequences: List of event sequence lists
-            instructions: Optional list of instructions for each sequence
+            instructions: List of instructions for each sequence (REQUIRED)
 
         Returns:
             List of processed sequences in VLA format
         """
-        results = []
+        if len(event_sequences) != len(instructions):
+            raise ValueError(
+                f"Number of sequences ({len(event_sequences)}) must match number of instructions ({len(instructions)})"
+            )
 
-        for i, events in enumerate(event_sequences):
-            instruction = instructions[i] if instructions and i < len(instructions) else None
+        results = []
+        for events, instruction in zip(event_sequences, instructions):
             processed = self.process_event_sequence(events, instruction)
             results.append(processed)
 
         return results
 
-    def _generate_default_instruction(self, raw_events: List[Dict[str, Any]]) -> str:
-        """Generate a default VLA instruction based on event types."""
-        if not raw_events:
-            return "Perform the demonstrated actions."
-
-        # Analyze events to generate high-level instruction
-        actions = []
-
-        for event in raw_events:
-            topic = event.get("topic", "")
-            msg_bytes = event.get("msg", b"")
-
-            try:
-                msg_data = json.loads(msg_bytes.decode("utf-8"))
-
-                if topic == "keyboard":
-                    event_type = msg_data.get("event_type", "")
-                    vk = msg_data.get("vk", "")
-                    if event_type == "press":
-                        # Convert virtual key codes to readable instructions
-                        if vk == 65:  # 'A' key
-                            actions.append("type 'A'")
-                        elif vk == 13:  # Enter key
-                            actions.append("press Enter")
-                        elif vk == 32:  # Space key
-                            actions.append("press Space")
-                        else:
-                            actions.append(f"press key {vk}")
-
-                elif topic == "mouse":
-                    event_type = msg_data.get("event_type", "")
-                    x = msg_data.get("x", "")
-                    y = msg_data.get("y", "")
-                    if event_type == "click":
-                        button = msg_data.get("button", "left")
-                        actions.append(f"{button} click at ({x}, {y})")
-                    elif event_type == "move":
-                        actions.append(f"move mouse to ({x}, {y})")
-                    elif event_type == "scroll":
-                        actions.append("scroll")
-
-            except (json.JSONDecodeError, UnicodeDecodeError):
-                continue
-
-        if not actions:
-            return "Perform the demonstrated actions."
-
-        # Create high-level instruction from actions
-        if len(actions) == 1:
-            return f"Please {actions[0]}."
-        elif len(actions) <= 3:
-            return f"Please {', then '.join(actions)}."
-        else:
-            return f"Please {actions[0]}, then {actions[1]}, and continue the sequence."
-
     def create_huggingface_dataset(
         self,
         event_sequences: List[List[Dict[str, Any]]],
-        instructions: Optional[List[str]] = None,
+        instructions: List[str],
     ) -> List[Dict[str, Any]]:
         """
         Create a dataset in HuggingFace format ready for VLA training.
 
         Args:
             event_sequences: List of event sequence lists
-            instructions: Optional list of instructions
+            instructions: List of instructions for each sequence (REQUIRED)
 
         Returns:
             List of samples in HuggingFace dataset format
