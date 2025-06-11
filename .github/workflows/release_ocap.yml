@@ -90,6 +90,9 @@ jobs:
 
       - name: Generate Release Files
         run: python scripts/release/ocap/release.py
+      
+      - name: Test whether ocap works well
+        run: ocap --help
 
       - name: Upload Release Files
         uses: actions/upload-artifact@v4
