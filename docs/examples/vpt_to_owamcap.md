@@ -3,6 +3,7 @@
 This document explains how to convert [Video PreTraining (VPT)](https://github.com/openai/Video-Pre-Training) data format to the Open World Agents MCAP format (OWAMcap).
 
 The full example script can be found [here](https://github.com/open-world-agents/open-world-agents/blob/main/projects/owa-data/scripts/00_vpt_to_owamcap.py).
+The converted dataset is uploaded [in the OWA huggingface repo](https://huggingface.co/datasets/open-world-agents/vpt-owamcap).
 
 ## Overview
 
