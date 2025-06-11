@@ -47,9 +47,9 @@ We need to convert this dataset into a format compatible with MLLM (Multimodal L
 
 **Implementation Requirements:**
 
-### EventSerializer (temporary name)
+### EventEncoder
 
-The EventSerializer must handle two main responsibilities:
+The EventEncoder must handle two main responsibilities:
 
 1. **Text Serialization**: Convert raw events to natural language format for LLM tokenization
    - Example input: `{'file_path': '...', 'topic': 'keyboard', 'timestamp_ns': 1745362786814673800, 'message_type': 'owa.env.desktop.msg.KeyboardEvent', 'msg': b'{"event_type":"press","vk":37}'}`
@@ -59,7 +59,7 @@ The EventSerializer must handle two main responsibilities:
    - Example input: `{'file_path': '...', 'topic': 'screen', 'timestamp_ns': 1743128886688495300, 'message_type': 'owa.env.gst.msg.ScreenEmitted', 'msg': b'{"path":"expert-jy-3.mkv","pts":70350000000,"utc_ns":1743128886688495300}'}`
    - Must extract and include corresponding images for MLLM image processing
 
-**Core Function**: The EventSerializer processes a SINGLE EVENT and converts it to a serialized format.
+**Core Function**: The EventEncoder processes a SINGLE EVENT and converts it to an encoded format.
 
 #### Serialization Format Options
 
@@ -87,7 +87,7 @@ Where:
 
 #### Multimodal Output Format
 
-For screen events with images, the EventSerializer should return:
+For screen events with images, the EventEncoder should return:
 ```python
 Tuple[
     str,  # Serialized text with <IMAGE> placeholders where needed
@@ -95,9 +95,18 @@ Tuple[
 ]
 ```
 
-#### Deserialization
+#### Decoding
 
-The EventSerializer must also implement deserialization functionality to convert serialized events back to their original format.
+The EventEncoder must also implement decoding functionality to convert encoded events back to their original format.
+
+## Implementation Status
+
+**Current Implementation**: `EventEncoder` class in `owa/data/event_encoder.py`
+- ✅ Phase 1: Raw format encoding/decoding
+- ✅ Multimodal support for ScreenEmitted events
+- ✅ Type-safe handling of KeyboardEvent, MouseEvent, ScreenEmitted
+- ✅ Integration with existing HuggingFace dataset format
+- 🔄 Phase 2: Token-efficient format (planned)
 
 ### Serialize whole "Event Dataset" and generate MLLM-training-dataset.
 
