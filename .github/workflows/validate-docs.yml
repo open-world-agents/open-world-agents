@@ -26,7 +26,7 @@ jobs:
         uses: actions/cache@v3
         env:
           # Increase this value to reset cache if etc/example-environment.yml has not changed
-          CACHE_NUMBER: 1
+          CACHE_NUMBER: 2
         with:
           path: ~/conda_pkgs_dir
           key:
@@ -38,7 +38,7 @@ jobs:
           activate-environment: owa
           miniforge-version: latest
           mamba-version: "*"
-          channels: conda-forge
+          channels: conda-forge, open-world-agents
           conda-remove-defaults: "true"
           environment-file: projects/owa-env-gst/environment.yml
           use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
