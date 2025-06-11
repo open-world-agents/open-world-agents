@@ -195,8 +195,8 @@ def main():
                 dy = tick["mouse"]["dy"]
 
                 # NOTE: we suppose the mouse coordinates are integer values
-                dx = round(int(dx))
-                dy = round(int(dy))
+                dx = int(round(dx))
+                dy = int(round(dy))
 
                 if dx != 0 or dy != 0:
                     # NOTE: we suppose the mouse is pinned to the center. it takes VPT_MOUSE_PIN_NS for the program to pin the mouse to the center
