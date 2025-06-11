@@ -26,6 +26,7 @@ class EventEncoder:
     for token efficiency.
 
     Examples:
+        >>> # Default: drop file_path to reduce token usage
         >>> encoder = EventEncoder()
         >>>
         >>> # Encode a keyboard event
@@ -38,15 +39,23 @@ class EventEncoder:
         ... }
         >>> text, images = encoder.encode(raw_event)
         >>> print(text)
-        <EVENT_START>{'file_path': '/path/to/file.mcap', 'topic': 'keyboard', ...}<EVENT_END>
+        <EVENT_START>{'topic': 'keyboard', 'timestamp_ns': 1745362786814673800, ...}<EVENT_END>
         >>>
-        >>> # Decode back to original format
-        >>> decoded_event = encoder.decode(text, images)
+        >>> # Keep file_path if needed
+        >>> encoder_with_path = EventEncoder(drop_file_path=False)
+        >>> text, images = encoder_with_path.encode(raw_event)
+        >>> # Now file_path is preserved in the encoded text
     """
 
-    def __init__(self):
-        """Initialize the EventEncoder."""
-        pass
+    def __init__(self, drop_file_path: bool = True):
+        """
+        Initialize the EventEncoder.
+
+        Args:
+            drop_file_path: Whether to drop the file_path field from encoded events.
+                          Defaults to True to reduce token usage for training.
+        """
+        self.drop_file_path = drop_file_path
 
     def encode(self, raw_event: Dict[str, Any]) -> Tuple[str, List[Union[ScreenEmitted, Dict]]]:
         """
@@ -72,7 +81,9 @@ class EventEncoder:
         if not isinstance(raw_event, dict):
             raise ValueError("raw_event must be a dictionary")
 
-        required_keys = {"file_path", "topic", "timestamp_ns", "message_type", "msg"}
+        required_keys = {"topic", "timestamp_ns", "message_type", "msg"}
+        if not self.drop_file_path:
+            required_keys.add("file_path")
         if not required_keys.issubset(raw_event.keys()):
             missing = required_keys - raw_event.keys()
             raise ValueError(f"raw_event missing required keys: {missing}")
@@ -80,6 +91,10 @@ class EventEncoder:
         # Handle screen events with image data
         images = []
         event_copy = raw_event.copy()
+
+        # Drop file_path if requested
+        if self.drop_file_path and "file_path" in event_copy:
+            del event_copy["file_path"]
 
         if raw_event["topic"] == "screen" and raw_event["message_type"] == "owa.env.gst.msg.ScreenEmitted":
             # Parse the message to create ScreenEmitted object
@@ -156,6 +171,10 @@ class EventEncoder:
             elif isinstance(image_data, dict):
                 # Fallback: assume it's a message dict
                 event_dict["msg"] = json.dumps(image_data).encode("utf-8")
+
+        # Add back file_path if it was dropped during encoding
+        if self.drop_file_path and "file_path" not in event_dict:
+            event_dict["file_path"] = "<DROPPED>"
 
         return event_dict
 

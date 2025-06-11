@@ -16,7 +16,8 @@ class TestEventEncoder:
 
     def setup_method(self):
         """Set up test fixtures."""
-        self.encoder = EventEncoder()
+        self.encoder = EventEncoder()  # Default: drop_file_path=True
+        self.encoder_keep_path = EventEncoder(drop_file_path=False)
 
         # Sample keyboard event
         self.keyboard_event = {
@@ -46,7 +47,7 @@ class TestEventEncoder:
         }
 
     def test_encode_keyboard_event(self):
-        """Test encoding of keyboard events."""
+        """Test encoding of keyboard events with default drop_file_path=True."""
         text, images = self.encoder.encode(self.keyboard_event)
 
         # Check text format
@@ -54,6 +55,23 @@ class TestEventEncoder:
         assert text.endswith("<EVENT_END>")
         assert "keyboard" in text
         assert "KeyboardEvent" in text
+        # file_path should be dropped by default
+        assert "file_path" not in text
+
+        # Keyboard events should have no images
+        assert images == []
+
+    def test_encode_keyboard_event_keep_file_path(self):
+        """Test encoding of keyboard events with drop_file_path=False."""
+        text, images = self.encoder_keep_path.encode(self.keyboard_event)
+
+        # Check text format
+        assert text.startswith("<EVENT_START>")
+        assert text.endswith("<EVENT_END>")
+        assert "keyboard" in text
+        assert "KeyboardEvent" in text
+        # file_path should be kept
+        assert "file_path" in text
 
         # Keyboard events should have no images
         assert images == []
@@ -92,37 +110,50 @@ class TestEventEncoder:
         assert images[0]["screen_event"].pts == 70350000000
 
     def test_decode_keyboard_event(self):
-        """Test decoding of keyboard events."""
-        # First encode
-        text, images = self.encoder.encode(self.keyboard_event)
+        """Test decoding of keyboard events with file_path preservation."""
+        # Use encoder that keeps file_path for exact round-trip
+        text, images = self.encoder_keep_path.encode(self.keyboard_event)
 
         # Then decode
-        decoded = self.encoder.decode(text, images)
+        decoded = self.encoder_keep_path.decode(text, images)
 
-        # Should match original
+        # Should match original exactly
         assert decoded == self.keyboard_event
 
     def test_decode_mouse_event(self):
-        """Test decoding of mouse events."""
-        # First encode
-        text, images = self.encoder.encode(self.mouse_event)
+        """Test decoding of mouse events with file_path preservation."""
+        # Use encoder that keeps file_path for exact round-trip
+        text, images = self.encoder_keep_path.encode(self.mouse_event)
 
         # Then decode
-        decoded = self.encoder.decode(text, images)
+        decoded = self.encoder_keep_path.decode(text, images)
 
-        # Should match original
+        # Should match original exactly
         assert decoded == self.mouse_event
 
     def test_decode_screen_event(self):
-        """Test decoding of screen events."""
-        # First encode
-        text, images = self.encoder.encode(self.screen_event)
+        """Test decoding of screen events with file_path preservation."""
+        # Use encoder that keeps file_path for exact round-trip
+        text, images = self.encoder_keep_path.encode(self.screen_event)
 
         # Then decode
+        decoded = self.encoder_keep_path.decode(text, images)
+
+        # Should match original exactly
+        assert decoded == self.screen_event
+
+    def test_decode_with_dropped_file_path(self):
+        """Test decoding with default drop_file_path=True behavior."""
+        # Encode with default encoder (drops file_path)
+        text, images = self.encoder.encode(self.keyboard_event)
+
+        # Decode
         decoded = self.encoder.decode(text, images)
 
-        # Should match original
-        assert decoded == self.screen_event
+        # Should have file_path set to "<DROPPED>"
+        expected = self.keyboard_event.copy()
+        expected["file_path"] = "<DROPPED>"
+        assert decoded == expected
 
     def test_encode_batch(self):
         """Test batch encoding of multiple events."""
@@ -144,16 +175,16 @@ class TestEventEncoder:
         assert isinstance(all_images[2][0], dict)  # screen image data format
 
     def test_decode_batch(self):
-        """Test batch decoding of multiple events."""
+        """Test batch decoding of multiple events with file_path preservation."""
         events = [self.keyboard_event, self.mouse_event, self.screen_event]
 
-        # First encode
-        texts, all_images = self.encoder.encode_batch(events)
+        # Use encoder that keeps file_path for exact round-trip
+        texts, all_images = self.encoder_keep_path.encode_batch(events)
 
         # Then decode
-        decoded_events = self.encoder.decode_batch(texts, all_images)
+        decoded_events = self.encoder_keep_path.decode_batch(texts, all_images)
 
-        # Should match originals
+        # Should match originals exactly
         assert decoded_events == events
 
     def test_invalid_raw_event_type(self):
@@ -249,10 +280,13 @@ class TestEventEncoderIntegration:
             },
         ]
 
+        # Use encoder that keeps file_path for exact round-trip
+        encoder_keep_path = EventEncoder(drop_file_path=False)
+
         for event in events:
             # Encode then decode
-            text, images = self.encoder.encode(event)
-            decoded = self.encoder.decode(text, images)
+            text, images = encoder_keep_path.encode(event)
+            decoded = encoder_keep_path.decode(text, images)
 
             # Should be identical
             assert decoded == event
