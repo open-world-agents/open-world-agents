@@ -1,4 +1,4 @@
-# VPT to OWAMcap Conversion Guide
+# Data Conversion Guide : VPT to OWAMcap
 
 This document explains how to convert [Video PreTraining (VPT)](https://github.com/openai/Video-Pre-Training) data format to the Open World Agents MCAP format (OWAMcap).
 
