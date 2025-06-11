@@ -18,58 +18,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Get Date
-        id: get-date
-        run: echo "today=$(/bin/date -u '+%Y%m%d')" >> $GITHUB_OUTPUT
-
-      - name: Cache conda packages
-        uses: actions/cache@v4
-        env:
-          # Increase this value to reset cache if environment.yml has not changed
-          CACHE_NUMBER: 0
+      - name: Setup Conda Environment
+        uses: ./.github/actions/setup-conda-env
         with:
-          path: ~/conda_pkgs_dir
-          key:
-            ${{ runner.os }}-conda-pkgs-${{ env.CACHE_NUMBER }}-${{
-            hashFiles('projects/owa-env-gst/environment.yml') }}
+          os: linux
+          cache-number: '0'
 
-      - name: Setup Miniforge
-        uses: conda-incubator/setup-miniconda@v3
-        with:
-          miniforge-version: latest
-          mamba-version: "*"
-          channels: conda-forge
-          conda-remove-defaults: "true"
-          pkgs-dirs: ~/conda_pkgs_dir
-          activate-environment: owa
-          use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
-
-      - name: Cache conda environment
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.CONDA }}/envs
-          key:
-            conda-env-${{ runner.os }}--${{ runner.arch }}--${{
-            steps.get-date.outputs.today }}-${{
-            hashFiles('projects/owa-env-gst/environment.yml') }}-${{ env.CACHE_NUMBER }}
-        env:
-          # Increase this value to reset cache if environment.yml has not changed
-          CACHE_NUMBER: 0
-        id: cache-env
-
-      - name: Update environment
-        run: mamba env update -n owa -f projects/owa-env-gst/environment.yml
-        if: steps.cache-env.outputs.cache-hit != 'true'
-
-      - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@v6
-        with:
-          version: "latest"
-          enable-cache: true
-
-        # install virtual-uv
-      - name: Install virtual-uv
-        run: pip install virtual-uv
+      - name: Setup UV Environment
+        uses: ./.github/actions/setup-uv-env
 
       - name: Install Dependencies
         run: vuv install --extra docs
