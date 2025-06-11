@@ -2,67 +2,47 @@ name: ocap Release
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   release_ocap:
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash -el {0}
 
     env:
-      UV_PROJECT_ENVIRONMENT: "C:\\Users\\runneradmin\\miniconda3\\envs\\owa"
-      VIRTUAL_ENV: "C:\\Users\\runneradmin\\miniconda3\\envs\\owa"
       PYTHONIOENCODING: utf-8 # https://github.com/Textualize/rich/issues/212
-      # below line is legacy line, but I'm keeping it here for reference to know where the packages are installed
-      # GST_PLUGIN_PATH: "D:\\a\\open-world-agents\\open-world-agents\\projects\\owa-env-gst\\gst-plugins"
-    
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Install the latest version of uv
-        id: setup-uv
-        uses: astral-sh/setup-uv@v6
+      - name: Setup Conda Environment
+        uses: ./.github/actions/setup-conda-env
         with:
-          version: "latest"
-          enable-cache: true
-      
-      - name: Do something if the cache was restored
-        if: steps.setup-uv.outputs.cache-hit == 'true'
-        run: echo "Cache was restored"
-      
-      - name: Cache conda
-        uses: actions/cache@v4
-        env:
-          # Increase this value to reset cache if etc/example-environment.yml has not changed
-          CACHE_NUMBER: 1
-        with:
-          # Use faster GNU tar
-          enableCrossOsArchive: true
-          path: D:\conda_pkgs_dir
-          key:
-            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
-            hashFiles('projects/owa-env-gst/environment.yml') }}
+          os: windows
+          cache-number: '0'
 
-      - uses: conda-incubator/setup-miniconda@v3
+      - name: Setup uv Environment
+        uses: ./.github/actions/setup-uv-env
         with:
-          miniforge-version: latest
-          mamba-version: "*"
-          channels: conda-forge
-          conda-remove-defaults: "true"
-          environment-file: projects/owa-env-gst/environment.yml
-          pkgs-dirs: D:\conda_pkgs_dir
-          activate-environment: owa
-      
+          show-uv-cache-info: 'true'
+
+      - name: Install dependencies
+        run: vuv install --dev
+
       # install `conda-pack`
       - name: Install conda-pack
-        run: uv pip install conda-pack
+        run: vuv pip install conda-pack
 
       - name: Generate Release Files
         run: python scripts/release/ocap/release.py
+      
+      - name: Test whether ocap works well
+        run: ocap --help
 
       - name: Upload Release Files
         uses: actions/upload-artifact@v4
