@@ -27,6 +27,7 @@ jobs:
         with:
           version: "latest"
           enable-cache: true
+          cache-dependency-glob: "**/pyproject.toml"
       
       - name: Do something if the cache was restored
         if: steps.setup-uv.outputs.cache-hit == 'true'
