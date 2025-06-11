@@ -29,6 +29,7 @@ except Exception as e:  # noqa: F841
 # set GST_PLUGIN_PATH to the 'gst-plugins' directory in the current working directory
 os.environ["GST_PLUGIN_PATH"] = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gst-plugins")
 
+
 from . import pipeline_builder
 from .gst_runner import GstPipelineRunner
 

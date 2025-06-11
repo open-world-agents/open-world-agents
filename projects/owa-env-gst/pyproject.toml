@@ -26,4 +26,4 @@ packages = ["owa"]
 
 # Entry point for plugin discovery
 [project.entry-points."owa.env.plugins"]
-gst = "owa.env.gst.plugin_spec:plugin_spec"
+gst = "owa.env.plugins.gst:plugin_spec"
