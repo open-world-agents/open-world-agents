@@ -10,8 +10,6 @@ Usage:
 """
 
 import sys
-from pathlib import Path
-from typing import Any, Dict, List
 
 # Add nanoVLM to path
 sys.path.append("/mnt/home/claude/GitHub/open-world-agents/projects/nanoVLM")
@@ -347,7 +345,6 @@ if __name__ == "__main__":
     print("\n=== Testing DataLoader Iteration ===")
     try:
         import numpy as np
-        import torch
         from PIL import Image
 
         # Custom collator for VLMDatasetBuilder that can handle variable-length sequences

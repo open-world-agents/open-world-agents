@@ -13,7 +13,6 @@ The encoder supports:
 import json
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from owa.env.desktop.msg import KeyboardEvent, MouseEvent
 from owa.env.gst.msg import ScreenEmitted
 
 

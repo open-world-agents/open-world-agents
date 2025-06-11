@@ -88,7 +88,7 @@ class TestVLMDatasetBuilder:
         # Test with PIL format (default)
         builder = VLMDatasetBuilder(self.mllm_dataset)
         assert builder.image_format == "pil"
-        assert builder.cache_images == False
+        assert not builder.cache_images
         assert builder.max_cache_size == 1000
 
         # Test with caching enabled
@@ -96,7 +96,7 @@ class TestVLMDatasetBuilder:
             self.mllm_dataset, image_format="tensor", cache_images=True, max_cache_size=500
         )
         assert builder_cached.image_format == "tensor"
-        assert builder_cached.cache_images == True
+        assert builder_cached.cache_images
         assert builder_cached.max_cache_size == 500
 
     def test_dataset_length(self):
@@ -146,14 +146,14 @@ class TestVLMDatasetBuilder:
 
         # Test cache stats
         stats = builder.get_cache_stats()
-        assert stats["cache_enabled"] == True
+        assert stats["cache_enabled"]
         assert stats["cache_size"] == 0
         assert stats["max_cache_size"] == 2
 
         # Test cache disabled
         builder_no_cache = VLMDatasetBuilder(self.mllm_dataset, cache_images=False)
         stats_no_cache = builder_no_cache.get_cache_stats()
-        assert stats_no_cache["cache_enabled"] == False
+        assert not stats_no_cache["cache_enabled"]
 
     def test_image_format_validation(self):
         """Test image format validation."""

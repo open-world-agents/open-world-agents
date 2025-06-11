@@ -15,11 +15,8 @@ The new pipeline provides:
 - Direct integration with nanoVLM
 """
 
-from pathlib import Path
-from datasets import load_from_disk
 
 # Import the new VLMDatasetBuilder
-from owa.data.vlm_dataset_builder import VLMDatasetBuilder
 
 
 def demonstrate_pipeline_stages():

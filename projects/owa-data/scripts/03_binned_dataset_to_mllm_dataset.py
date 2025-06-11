@@ -341,7 +341,7 @@ def main(
         # Show sample statistics
         if len(all_mllm_sequences) > 0:
             sample = all_mllm_sequences[0]
-            typer.echo(f"\nSample sequence statistics:")
+            typer.echo("\nSample sequence statistics:")
             typer.echo(f"  Instruction: {sample['instruction']}")
             typer.echo(f"  Encoded events: {len(sample['encoded_events'])}")
             typer.echo(f"  Image references: {len(sample['image_refs'])}")
