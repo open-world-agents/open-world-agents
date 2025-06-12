@@ -15,7 +15,7 @@ from .perception_spec import PERCEPTION_SPEC_DICT
 from .utils import EventProcessor
 
 CHAT_INSTRUCTION = """
-You are playing Super Hexagon, a fast-paced game that requires precise control and timing.
+You are playing Minecraft.
 Given past event trajectory, predict the future sequence of event.
 """
 
@@ -40,7 +40,9 @@ def perception_to_conversation(
 
     if spec is None:
         spec = PERCEPTION_SPEC_DICT
-        warnings.warn("PerceptionSpecDict is not provided. Using default PERCEPTION_SPEC_DICT.")
+        warnings.warn(
+            "PerceptionSpecDict is not provided. Using default PERCEPTION_SPEC_DICT."
+        )
 
     if event_processor is None:
         event_processor = EventProcessor()
@@ -62,7 +64,9 @@ def perception_to_conversation(
         now_string = f"\nNow: {event_processor._tokenize_timestamp(now)}"
 
         event_label = sorted(
-            perception_history["outputs/keyboard"] + perception_history["outputs/mouse"], key=lambda x: x.timestamp
+            perception_history["outputs/keyboard"]
+            + perception_history["outputs/mouse"],
+            key=lambda x: x.timestamp,
         )
         tokenized_label = "".join(event_processor.tokenize(event_label))
 
@@ -70,7 +74,10 @@ def perception_to_conversation(
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": CHAT_INSTRUCTION + tokenized_history + now_string},
+                    {
+                        "type": "text",
+                        "text": CHAT_INSTRUCTION + tokenized_history + now_string,
+                    },
                 ],
             }
         ]
@@ -83,7 +90,9 @@ def perception_to_conversation(
                     ],
                 }
             )
-        conversation = SmolVLMInput(images=perception_history["inputs/screen"], messages=messages)
+        conversation = SmolVLMInput(
+            images=perception_history["inputs/screen"], messages=messages
+        )
     else:
         conversation = None
     return perception_history, conversation
@@ -100,7 +109,12 @@ def lazy_load_images(conversation, *, mcap_path: str | None = None):
     return conversation
 
 
-def apply_processor(examples: SmolVLMInput | list[SmolVLMInput], *, processor: SmolVLMProcessor, is_training: bool):
+def apply_processor(
+    examples: SmolVLMInput | list[SmolVLMInput],
+    *,
+    processor: SmolVLMProcessor,
+    is_training: bool,
+):
     if not isinstance(examples, list):
         examples = [examples]
 
@@ -109,10 +123,17 @@ def apply_processor(examples: SmolVLMInput | list[SmolVLMInput], *, processor: S
     for example in examples:
         if is_training:
             # strip is to remove appended "\n"
-            text = processor.apply_chat_template(example.messages, tokenize=False).strip()
+            text = processor.apply_chat_template(
+                example.messages, tokenize=False
+            ).strip()
         else:
             # NOTE: single space " " must be appended to match the training time tokenization.
-            text = processor.apply_chat_template(example.messages, tokenize=False, add_generation_prompt=True) + " "
+            text = (
+                processor.apply_chat_template(
+                    example.messages, tokenize=False, add_generation_prompt=True
+                )
+                + " "
+            )
         texts.append(text)
         images.append(example.images)
 
@@ -147,7 +168,9 @@ def apply_processor(examples: SmolVLMInput | list[SmolVLMInput], *, processor: S
                             end_idx = k + 1  # include <end_of_utterance> token
 
                             # Unmask the assistant's response (keep these tokens in the loss computation)
-                            labels[i, start_idx:end_idx] = batch["input_ids"][i, start_idx:end_idx]
+                            labels[i, start_idx:end_idx] = batch["input_ids"][
+                                i, start_idx:end_idx
+                            ]
                             break
                     break
 

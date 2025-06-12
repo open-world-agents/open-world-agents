@@ -35,7 +35,9 @@ class KeyPressIntervalExtractor(IntervalExtractor):
         timestamps = []
 
         with OWAMcapReader(file_path) as reader:
-            for topic, timestamp, msg in reader.iter_decoded_messages(topics=["keyboard"]):
+            for topic, timestamp, msg in reader.iter_decoded_messages(
+                topics=["keyboard"]
+            ):
                 if msg.event_type == "release" and msg.vk == self.start_stop_key:
                     timestamps.append(timestamp)
                 elif msg.vk == self.pause_key:
@@ -70,7 +72,9 @@ class InactivityBasedIntervalExtractor(IntervalExtractor):
         last_activity_time = None
 
         with OWAMcapReader(file_path) as reader:
-            for topic, timestamp, msg in reader.iter_decoded_messages(topics=["keyboard", "mouse"]):
+            for topic, timestamp, msg in reader.iter_decoded_messages(
+                topics=["keyboard", "mouse"]
+            ):
                 # If this is the first activity or we're starting a new interval after inactivity
                 if current_interval_start is None:
                     current_interval_start = timestamp
@@ -78,10 +82,17 @@ class InactivityBasedIntervalExtractor(IntervalExtractor):
                     continue
 
                 # If we have a gap in activity exceeding our threshold
-                if timestamp - last_activity_time > int(self.inactivity_threshold * TimeUnits.SECOND):
+                if timestamp - last_activity_time > int(
+                    self.inactivity_threshold * TimeUnits.SECOND
+                ):
                     # Close the previous interval
-                    if current_interval_start is not None and current_interval_start < last_activity_time:
-                        activity_intervals.add((current_interval_start, last_activity_time))
+                    if (
+                        current_interval_start is not None
+                        and current_interval_start < last_activity_time
+                    ):
+                        activity_intervals.add(
+                            (current_interval_start, last_activity_time)
+                        )
                     # Start a new interval
                     current_interval_start = timestamp
 
@@ -93,3 +104,17 @@ class InactivityBasedIntervalExtractor(IntervalExtractor):
             activity_intervals.add((current_interval_start, last_activity_time))
 
         return activity_intervals
+
+
+class WholeIntervalExtractor(IntervalExtractor):
+    """Extract intervals without any specific logic, just return the whole file duration."""
+
+    def extract_intervals(self, file_path: Path) -> Intervals:
+        """Return a single interval covering the entire file duration."""
+        with OWAMcapReader(file_path) as reader:
+            start_time = reader.start_time
+            end_time = reader.end_time
+
+        return Intervals(
+            [(start_time, end_time)]
+        )  # Return the whole file as a single interval

@@ -4,12 +4,13 @@ from typing import Generator
 import numpy as np
 from datasets import Dataset, DatasetDict, DatasetInfo
 from tqdm import tqdm
+import traceback
 
 from mcap_owa.highlevel import OWAMcapReader
 from owa.agent.core import OWAMcapPerceptionReader
 from owa.agent.core.perception import Perception
 from owa.agent.dataset import Intervals
-from owa.agent.dataset.interval_selector import KeyPressIntervalExtractor
+from owa.agent.dataset.interval_selector import WholeIntervalExtractor
 from owa.agent.systems.goat import PERCEPTION_SPEC_DICT, EventProcessor
 from owa.agent.systems.goat.processors import perception_to_conversation
 from owa.core.time import TimeUnits
@@ -44,7 +45,9 @@ def check_mcap_sanity(file_path: Path) -> bool:
                 break  # Just to check if we can read the file
             return True
         # pair video must exists
-        assert file_path.with_suffix(".mkv").exists(), f"File {file_path} does not exist"
+        assert file_path.with_suffix(".mkv").exists(), (
+            f"File {file_path} does not exist"
+        )
     except Exception as e:
         print(f"Error reading mcap file {file_path}: {e}")
         return False
@@ -52,28 +55,34 @@ def check_mcap_sanity(file_path: Path) -> bool:
 
 # TODO: parallelize mcap file processing
 def _generate_train_dataset(mcap_files: list[Path]) -> Generator[dict, None, None]:
-    interval_extractor = KeyPressIntervalExtractor()
+    interval_extractor = WholeIntervalExtractor()
     for file_path in tqdm(mcap_files, desc="Generating train dataset", unit="file"):
         try:
             valid_intervals = interval_extractor.extract_intervals(file_path)
             # Filter only intervals longer than 30 seconds (SUPER HEXAGON)
-            valid_intervals = interval_extractor.filter_by_duration(valid_intervals, 60 * TimeUnits.SECOND)
+            # valid_intervals = interval_extractor.filter_by_duration(
+            #     valid_intervals, 60 * TimeUnits.SECOND
+            # )
         except Exception as e:
             print(f"Error processing file {file_path}: {e}")
+            traceback.print_exc()
             continue
         for now in iter_timestamps(valid_intervals):
             yield {"file_path": file_path.as_posix(), "timestamp": now}
 
 
 def _generate_test_dataset(mcap_files: list[Path]) -> Generator[dict, None, None]:
-    interval_extractor = KeyPressIntervalExtractor()
-    for file_path in tqdm(mcap_files, desc="Generating train dataset", unit="file"):
+    interval_extractor = WholeIntervalExtractor()
+    for file_path in tqdm(mcap_files, desc="Generating test dataset", unit="file"):
         try:
             valid_intervals = interval_extractor.extract_intervals(file_path)
             # Filter only intervals longer than 30 seconds (SUPER HEXAGON)
-            valid_intervals = interval_extractor.filter_by_duration(valid_intervals, 30 * TimeUnits.SECOND)
+            # valid_intervals = interval_extractor.filter_by_duration(
+            #     valid_intervals, 30 * TimeUnits.SECOND
+            # )
         except Exception as e:
             print(f"Error processing file {file_path}: {e}")
+            traceback.print_exc()
             continue
         for now in iter_timestamps(valid_intervals):
             yield {"file_path": file_path.as_posix(), "timestamp": now}
@@ -89,7 +98,9 @@ def create_dataset(train_files: list[Path], test_files: list[Path]) -> DatasetDi
     train_dataset = Dataset.from_generator(
         _generate_train_dataset, gen_kwargs={"mcap_files": train_files}, split="train"
     )
-    test_dataset = Dataset.from_generator(_generate_test_dataset, gen_kwargs={"mcap_files": test_files}, split="test")
+    test_dataset = Dataset.from_generator(
+        _generate_test_dataset, gen_kwargs={"mcap_files": test_files}, split="test"
+    )
 
     info_to_update = DatasetInfo(
         description="",
@@ -125,7 +136,14 @@ def generate_conversation(dataset: DatasetDict) -> DatasetDict:
         examples["conversation"] = conversations
         return examples
 
-    dataset = dataset.map(add_conversation, num_proc=112, batched=True, batch_size=64, desc="Generating conversations")
+    dataset = dataset.map(
+        add_conversation,
+        num_proc=112,
+        batched=True,
+        batch_size=64,
+        desc="Generating conversations",
+        load_from_cache_file=False,
+    )
     # dataset.set_transform(add_conversation)
     return dataset
 
@@ -137,5 +155,11 @@ def generate_sampling_weight(dataset: DatasetDict) -> DatasetDict:
         examples["sampling_weight"] = [1.0] * len(examples["file_path"])
         return examples
 
-    dataset = dataset.map(add_sampling_weight, num_proc=112, batched=True, desc="Generating sampling weights")
+    dataset = dataset.map(
+        add_sampling_weight,
+        num_proc=112,
+        batched=True,
+        desc="Generating sampling weights",
+        load_from_cache_file=False,
+    )
     return dataset

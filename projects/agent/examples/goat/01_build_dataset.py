@@ -6,7 +6,11 @@ import typer
 from accelerate.utils import set_seed
 from datasets import DatasetDict
 
-from dataset.build_dataset import create_dataset, generate_conversation, generate_sampling_weight
+from dataset.build_dataset import (
+    create_dataset,
+    generate_conversation,
+    generate_sampling_weight,
+)
 
 set_seed(23)
 app = typer.Typer()
@@ -14,9 +18,16 @@ app = typer.Typer()
 
 @app.command()
 def main(
-    train_path: Annotated[Path, typer.Option(help="Path to the train dataset directory", exists=True)],
-    output_path: Annotated[Path, typer.Option(help="Path to save the dataset, with jsonl ext.", exists=False)],
-    test_path: Annotated[Optional[Path], typer.Option(help="Path to the test dataset directory")] = None,
+    train_path: Annotated[
+        Path, typer.Option(help="Path to the train dataset directory", exists=True)
+    ],
+    output_path: Annotated[
+        Path,
+        typer.Option(help="Path to save the dataset, with jsonl ext.", exists=False),
+    ],
+    test_path: Annotated[
+        Optional[Path], typer.Option(help="Path to the test dataset directory")
+    ] = None,
 ):
     train_files = list(Path(train_path).rglob("*.mcap"))
 
