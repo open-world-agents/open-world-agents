@@ -2,6 +2,7 @@ import json
 import os
 import typing
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
 from owa.env.desktop.constants import VK
@@ -66,7 +67,13 @@ def vpt_generate_target_list_file(
     """
     from tqdm import tqdm
 
-    all_mp4_stems = set([f.stem for f in VPT_FOLDER_PATH.iterdir() if f.suffix == ".mp4" and f.is_file()])
+    all_mp4_stems = set(
+        [
+            f.stem
+            for f in VPT_FOLDER_PATH.iterdir()
+            if f.suffix == ".mp4" and f.is_file()
+        ]
+    )
 
     # Get all files with their full path and creation time
     all_jsonl_files = [
@@ -98,7 +105,115 @@ def vpt_generate_target_list_file(
             f.write(f"{file}\n")
 
 
-def main():
+def process_single_file(jsonl_file_path):
+    """Process a single VPT file and convert it to OWAMcap format."""
+    # Convert the file to OWAMcap format
+    mcap_file_path = jsonl_file_path.with_suffix(".mcap")
+    mp4_file_path = jsonl_file_path.with_suffix(".mp4")
+
+    # Writing messages to an OWAMcap file
+    unix_epoch_ns = 0  # Unix epoch time in nanoseconds (Jan 1, 1970)
+    center_x, center_y = (
+        VPT_X_RESOLUTION // 2,
+        VPT_Y_RESOLUTION // 2,
+    )  # x, y coordinates of the center of the screen (1280x720)
+
+    try:
+        with open(jsonl_file_path, "r") as f:  # jsonl file
+            lines = [line.strip() for line in f.readlines()]  # Read non-empty lines
+            assert len(lines) == VPT_EXPECTED_TICKS, (
+                f"File {jsonl_file_path} does not have {VPT_EXPECTED_TICKS=} lines. It has {len(lines)} lines."
+            )
+            ticks = [json.loads(line) for line in lines]
+    except Exception as e:
+        print(f"Error reading {jsonl_file_path}. Skipping. Error: {e}")
+        return
+
+    with OWAMcapWriter(mcap_file_path) as writer:
+        topic = "window"
+        event = WindowInfo(
+            title=f"VPT-{mcap_file_path}",
+            rect=[0, 0, VPT_X_RESOLUTION, VPT_Y_RESOLUTION],
+            hWnd=-1,
+        )
+        writer.write_message(topic, event, log_time=unix_epoch_ns)
+
+        # NOTE: we assume mouse starts from the center of the screen
+        topic = "mouse"
+        event = MouseEvent(event_type="move", x=center_x, y=center_y)
+        writer.write_message(topic, event, log_time=unix_epoch_ns)
+
+        keyboard_state = set()
+
+        ## SCREEN EVENT
+        topic = "screen"
+        event = ScreenEmitted(path=str(mp4_file_path), pts=unix_epoch_ns)
+        writer.write_message(topic, event, log_time=unix_epoch_ns)
+
+        for i, tick in enumerate(ticks):
+            # milli_timestamp = tick["milli"] # we don't use this value of VPT since it seems inaccurate
+            log_time = unix_epoch_ns + ((i + 1) * VPT_INTERVAL_TICK_NS)
+
+            ## SCREEN EVENT
+            topic = "screen"
+            event = ScreenEmitted(path=str(mp4_file_path), pts=log_time)
+            writer.write_message(topic, event, log_time=log_time)
+
+            ## KEYBOARD EVENT
+            current_tick_keys = tick["keyboard"]["keys"]
+
+            # NOTE: we suppose the keys are pressed/released in the fastest observable timing of tick.
+
+            # press keys that are in the current tick, and not already pressed
+            for key in current_tick_keys:
+                if key not in VPT_KEYBOARD_VK_MAPPING:
+                    continue  # skip keys that are not in the mapping
+                else:
+                    if key in keyboard_state:
+                        continue  # already pressed
+                    else:
+                        keyboard_state.add(key)
+                        topic = "keyboard"
+                        event = KeyboardEvent(
+                            event_type="press", vk=VPT_KEYBOARD_VK_MAPPING[key]
+                        )
+                        writer.write_message(topic, event, log_time=log_time)
+
+            # release keys that are not in the current tick
+            for state_key in list(keyboard_state):
+                if state_key not in current_tick_keys:
+                    keyboard_state.remove(state_key)
+                    topic = "keyboard"
+                    event = KeyboardEvent(
+                        event_type="release", vk=VPT_KEYBOARD_VK_MAPPING[state_key]
+                    )
+                    writer.write_message(topic, event, log_time=log_time)
+
+            ## MOUSE EVENT
+            dx = tick["mouse"]["dx"]
+            dy = tick["mouse"]["dy"]
+
+            # NOTE: we suppose the mouse coordinates are integer values
+            dx = int(round(dx))
+            dy = int(round(dy))
+
+            if dx != 0 or dy != 0:
+                # NOTE: we suppose the mouse is pinned to the center. it takes VPT_MOUSE_PIN_NS for the program to pin the mouse to the center
+                topic = "mouse"
+                event = MouseEvent(event_type="move", x=center_x + dx, y=center_y + dy)
+                writer.write_message(topic, event, log_time=log_time - VPT_MOUSE_PIN_NS)
+
+                topic = "mouse"
+                event = MouseEvent(event_type="move", x=center_x, y=center_y)
+                writer.write_message(topic, event, log_time=log_time)
+
+
+def main(max_workers: int = None):
+    if max_workers is None:
+        max_workers = 1
+
+    print(f"Using {max_workers} worker threads.")
+
     if not Path(VPT_TARGET_LIST_FILE).exists():
         print(f"{VPT_TARGET_LIST_FILE=} does not exist. Generating it.")
         vpt_generate_target_list_file()
@@ -108,108 +223,25 @@ def main():
         vpt_target_list = [Path(line.strip()) for line in f.readlines()]
         print(f"We will convert {len(vpt_target_list)=} VPT files.")
 
-    for jsonl_file_path in tqdm(vpt_target_list):
-        print(f"Converting {jsonl_file_path=} to OWAMcap format.")
-        # Convert the file to OWAMcap format
+    # Use ThreadPoolExecutor for multithreading
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        # Submit all tasks
+        future_to_file = {
+            executor.submit(process_single_file, jsonl_file_path): jsonl_file_path
+            for jsonl_file_path in vpt_target_list
+        }
 
-        mcap_file_path = jsonl_file_path.with_suffix(".mcap")
-        mp4_file_path = jsonl_file_path.with_suffix(".mp4")
-
-        # Writing messages to an OWAMcap file
-
-        unix_epoch_ns = 0  # Unix epoch time in nanoseconds (Jan 1, 1970)
-        center_x, center_y = (
-            VPT_X_RESOLUTION // 2,
-            VPT_Y_RESOLUTION // 2,
-        )  # x, y coordinates of the center of the screen (1280x720)
-
-        try:
-            with open(jsonl_file_path, "r") as f:  # jsonl file
-                lines = [line.strip() for line in f.readlines()]  # Read non-empty lines
-                assert len(lines) == VPT_EXPECTED_TICKS, (
-                    f"File {jsonl_file_path} does not have {VPT_EXPECTED_TICKS=} lines. It has {len(lines)} lines."
-                )
-                ticks = [json.loads(line) for line in lines]
-        except Exception as e:
-            print(f"Error reading {jsonl_file_path}. Skipping. Error: {e}")
-            continue
-
-        with OWAMcapWriter(mcap_file_path) as writer:
-            topic = "window"
-            event = WindowInfo(
-                title=f"VPT-{mcap_file_path}",
-                rect=[0, 0, VPT_X_RESOLUTION, VPT_Y_RESOLUTION],
-                hWnd=-1,
-            )
-            writer.write_message(topic, event, log_time=unix_epoch_ns)
-
-            # NOTE: we assume mouse starts from the center of the screen
-            topic = "mouse"
-            event = MouseEvent(event_type="move", x=center_x, y=center_y)
-            writer.write_message(topic, event, log_time=unix_epoch_ns)
-
-            keyboard_state = set()
-
-            ## SCREEN EVENT
-            topic = "screen"
-            event = ScreenEmitted(path=str(mp4_file_path), pts=unix_epoch_ns)
-            writer.write_message(topic, event, log_time=unix_epoch_ns)
-
-            for i, tick in enumerate(ticks):
-                # milli_timestamp = tick["milli"] # we don't use this value of VPT since it seems inaccurate
-                log_time = unix_epoch_ns + ((i + 1) * VPT_INTERVAL_TICK_NS)
-
-                ## SCREEN EVENT
-                topic = "screen"
-                event = ScreenEmitted(path=str(mp4_file_path), pts=log_time)
-                writer.write_message(topic, event, log_time=log_time)
-
-                ## KEYBOARD EVENT
-                current_tick_keys = tick["keyboard"]["keys"]
-
-                # NOTE: we suppose the keys are pressed/released in the fastest observable timing of tick.
-
-                # press keys that are in the current tick, and not already pressed
-                for key in current_tick_keys:
-                    if key not in VPT_KEYBOARD_VK_MAPPING:
-                        continue  # skip keys that are not in the mapping
-                    else:
-                        if key in keyboard_state:
-                            continue  # already pressed
-                        else:
-                            keyboard_state.add(key)
-                            topic = "keyboard"
-                            event = KeyboardEvent(event_type="press", vk=VPT_KEYBOARD_VK_MAPPING[key])
-                            writer.write_message(topic, event, log_time=log_time)
-
-                # release keys that are not in the current tick
-                for state_key in list(keyboard_state):
-                    if state_key not in current_tick_keys:
-                        keyboard_state.remove(state_key)
-                        topic = "keyboard"
-                        event = KeyboardEvent(event_type="release", vk=VPT_KEYBOARD_VK_MAPPING[state_key])
-                        writer.write_message(topic, event, log_time=log_time)
-
-                ## MOUSE EVENT
-                dx = tick["mouse"]["dx"]
-                dy = tick["mouse"]["dy"]
-
-                # NOTE: we suppose the mouse coordinates are integer values
-                dx = int(round(dx))
-                dy = int(round(dy))
-
-                if dx != 0 or dy != 0:
-                    # NOTE: we suppose the mouse is pinned to the center. it takes VPT_MOUSE_PIN_NS for the program to pin the mouse to the center
-                    topic = "mouse"
-                    event = MouseEvent(event_type="move", x=center_x + dx, y=center_y + dy)
-                    writer.write_message(topic, event, log_time=log_time - VPT_MOUSE_PIN_NS)
-
-                    topic = "mouse"
-                    event = MouseEvent(event_type="move", x=center_x, y=center_y)
-                    writer.write_message(topic, event, log_time=log_time)
-
-        # Reading messages from an OWAMcap file
-        # read_mcap(mcap_file_path)
+        # Process completed tasks with progress bar
+        with tqdm(total=len(vpt_target_list), desc="Converting files") as pbar:
+            for future in as_completed(future_to_file):
+                jsonl_file_path = future_to_file[future]
+                try:
+                    future.result()  # Get the result (or raise exception if there was one)
+                    print(f"Successfully converted {jsonl_file_path}")
+                except Exception as exc:
+                    print(f"File {jsonl_file_path} generated an exception: {exc}")
+                finally:
+                    pbar.update(1)
 
 
 def read_mcap(file_path="expert.mcap", num_messages=100):
@@ -217,7 +249,9 @@ def read_mcap(file_path="expert.mcap", num_messages=100):
     cnt = 0
     with OWAMcapReader(file_path) as reader:
         for mcap_msg in reader.iter_messages():
-            print(f"Topic: {mcap_msg.topic}, Timestamp: {mcap_msg.timestamp}, Message: {mcap_msg.decoded}")
+            print(
+                f"Topic: {mcap_msg.topic}, Timestamp: {mcap_msg.timestamp}, Message: {mcap_msg.decoded}"
+            )
             cnt += 1
             if cnt > num_messages:
                 break
