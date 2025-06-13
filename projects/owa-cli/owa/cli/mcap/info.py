@@ -13,6 +13,7 @@ MCAP_CLI_DOWNLOAD_URLS = {
     "darwin-arm64": "https://github.com/foxglove/mcap/releases/download/releases%2Fmcap-cli%2Fv0.0.53/mcap-macos-arm64",
     "windows-amd64": "https://github.com/foxglove/mcap/releases/download/releases%2Fmcap-cli%2Fv0.0.53/mcap-windows-amd64.exe",
 }
+# TOOD: automatic upgrade feature
 
 
 def detect_system():
