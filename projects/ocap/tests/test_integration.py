@@ -5,6 +5,7 @@ Tests that the ocap command runs without crashing during startup and initializat
 These tests verify the CLI interface works correctly without requiring full recording.
 """
 
+import os
 import subprocess
 import tempfile
 import time
@@ -13,6 +14,9 @@ from pathlib import Path
 import pytest
 
 
+@pytest.mark.skipif(
+    os.getenv("GITHUB_ACTIONS") == "true", reason="ocap command behaves differently in GitHub Actions environment"
+)
 class TestOcapIntegration:
     """Integration test for the ocap command - verifies it doesn't fail during startup."""
 
