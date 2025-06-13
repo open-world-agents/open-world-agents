@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 jobs:
-  deploy:
+  mkdocs-deploy:
     runs-on: ubuntu-latest
     defaults:
       run:
