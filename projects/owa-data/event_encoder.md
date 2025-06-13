@@ -6,10 +6,10 @@ The OWA data pipeline provides multiple event encoding strategies for converting
 
 ## Available Encoders
 
-### 1. **EventEncoder** (Original String-Based)
-- **Format**: String serialization with `<EVENT_START>` and `<EVENT_END>` tokens
+### 1. **JSONEventEncoder** (JSON String-Based)
+- **Format**: JSON string serialization with `<EVENT_START>` and `<EVENT_END>` tokens
 - **Use Case**: General-purpose MLLM training with text-based models
-- **Vocabulary**: No fixed vocabulary (string-based)
+- **Vocabulary**: No fixed vocabulary (JSON string-based)
 - **Example**: `<EVENT_START>{'topic': 'keyboard', 'timestamp_ns': 123, ...}<EVENT_END>`
 
 ### 2. **FlatEventEncoder** (Flat Token-Based)
@@ -59,11 +59,11 @@ class BaseEventEncoder(ABC):
 
 ```
 owa/data/encoders/
-├── __init__.py                    # Exports all encoders
-├── base_encoder.py                # Abstract base class
-├── event_encoder.py               # Original string-based encoder
-├── flat_event_encoder.py          # Flat token encoder
-└── hierarchical_event_encoder.py  # Hierarchical token encoder
+├── __init__.py                      # Exports all encoders
+├── base_encoder.py                  # Abstract base class
+├── json_event_encoder.py            # JSON string-based encoder
+├── flat_event_encoder.py            # Flat token encoder
+└── hierarchical_event_encoder.py   # Hierarchical token encoder
 ```
 
 ## Usage Examples
@@ -71,13 +71,13 @@ owa/data/encoders/
 ### Basic Usage
 
 ```python
-from owa.data import EventEncoder, FlatEventEncoder, HierarchicalEventEncoder
+from owa.data import JSONEventEncoder, FlatEventEncoder, HierarchicalEventEncoder
 
-# Original string-based encoder
-string_encoder = EventEncoder()
-text, images = string_encoder.encode(raw_event)
+# JSON string-based encoder
+json_encoder = JSONEventEncoder()
+text, images = json_encoder.encode(raw_event)
 
-# Flat token encoder  
+# Flat token encoder
 flat_encoder = FlatEventEncoder()
 flat_tokens, images = flat_encoder.encode(raw_event)
 
@@ -107,7 +107,7 @@ if hasattr(encoder, 'get_token_ids'):
 
 ## Detailed Encoder Specifications
 
-### EventEncoder (String-Based)
+### JSONEventEncoder (JSON String-Based)
 
 **Characteristics:**
 - **Output Format**: Single string per event
@@ -201,14 +201,14 @@ Level 3: Parameters
 
 | Encoder | Vocabulary Size | Reduction | Memory Usage |
 |---------|----------------|-----------|--------------|
-| EventEncoder | N/A (strings) | - | High |
+| JSONEventEncoder | N/A (strings) | - | High |
 | FlatEventEncoder | ~13,058 tokens | - | Very High |
 | HierarchicalEventEncoder | 292 tokens | 96.6% ↓ | Low |
 
 ### Token Efficiency
 
-| Event Type | EventEncoder | FlatEventEncoder | HierarchicalEventEncoder |
-|------------|-------------|------------------|-------------------------|
+| Event Type | JSONEventEncoder | FlatEventEncoder | HierarchicalEventEncoder |
+|------------|-----------------|------------------|-------------------------|
 | Keyboard | 176 chars | 2 tokens | 5 tokens |
 | Mouse Move | 177 chars | 4 tokens | 10 tokens |
 | Mouse Click | 209 chars | 5 tokens | 12 tokens |
@@ -310,7 +310,7 @@ decoded_events = encoder.decode_batch(all_tokens, all_images)
 
 ### Model Architecture Considerations
 
-**For EventEncoder (String-based):**
+**For JSONEventEncoder (JSON string-based):**
 - Use text tokenizers (e.g., BPE, SentencePiece)
 - Standard transformer architectures
 - Higher memory requirements
@@ -369,37 +369,37 @@ def compute_hierarchical_loss(predictions, targets, token_weights=None):
 
 | Use Case | Recommended Encoder | Reason |
 |----------|-------------------|---------|
-| **General MLLM Training** | EventEncoder | Compatible with text-based models |
+| **General MLLM Training** | JSONEventEncoder | Compatible with text-based models |
 | **Large-Scale VLA Training** | HierarchicalEventEncoder | Efficient vocabulary, compositional learning |
 | **Direct Action Prediction** | FlatEventEncoder | Direct token-to-action mapping |
 | **Resource-Constrained Training** | HierarchicalEventEncoder | Minimal memory footprint |
-| **Rapid Prototyping** | EventEncoder | Simple string-based format |
+| **Rapid Prototyping** | JSONEventEncoder | Simple JSON string-based format |
 | **Production VLA Systems** | HierarchicalEventEncoder | Optimal efficiency and performance |
 
 ### Performance Guidelines
 
 **Memory Usage:**
-- EventEncoder: ~200 chars/event × batch_size
+- JSONEventEncoder: ~200 chars/event × batch_size
 - FlatEventEncoder: ~13K vocab embeddings + 2-5 tokens/event
 - HierarchicalEventEncoder: ~292 vocab embeddings + 3-12 tokens/event
 
 **Training Speed:**
-- EventEncoder: Slower (string processing)
+- JSONEventEncoder: Slower (string processing)
 - FlatEventEncoder: Fast (direct token lookup)
 - HierarchicalEventEncoder: Fastest (small vocabulary)
 
 **Model Convergence:**
-- EventEncoder: Standard text model convergence
+- JSONEventEncoder: Standard text model convergence
 - FlatEventEncoder: May require larger models due to vocabulary size
 - HierarchicalEventEncoder: Faster convergence due to compositional structure
 
 ## Migration Guide
 
-### From EventEncoder to Token-Based Encoders
+### From JSONEventEncoder to Token-Based Encoders
 
 ```python
 # Old approach
-old_encoder = EventEncoder()
+old_encoder = JSONEventEncoder()
 text, images = old_encoder.encode(raw_event)
 
 # New approach - Hierarchical

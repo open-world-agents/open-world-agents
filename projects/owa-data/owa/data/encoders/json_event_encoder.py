@@ -1,11 +1,11 @@
 """
-Original EventEncoder for converting raw events to MLLM-compatible format.
+JSONEventEncoder for converting raw events to MLLM-compatible JSON format.
 
-This module implements the original EventEncoder class that converts raw event data
-from the Event Dataset into string format suitable for training Vision-Language-Action (VLA) models.
+This module implements the JSONEventEncoder class that converts raw event data
+from the Event Dataset into JSON string format suitable for training Vision-Language-Action (VLA) models.
 
 The encoder supports:
-- Text serialization of events for LLM tokenization
+- JSON serialization of events for LLM tokenization
 - Multimodal handling of screen events with image data
 - Bidirectional encoding/decoding operations
 """
@@ -14,20 +14,21 @@ import json
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from owa.env.gst.msg import ScreenEmitted
+
 from .base_encoder import BaseEventEncoder
 
 
-class EventEncoder(BaseEventEncoder):
+class JSONEventEncoder(BaseEventEncoder):
     """
-    Original encoder for converting raw events to MLLM training format.
+    JSON-based encoder for converting raw events to MLLM training format.
 
-    This class implements Phase 1 of the serialization strategy using the "simplest"
-    raw format with <EVENT_START> and <EVENT_END> tokens. Future phases will optimize
-    for token efficiency.
+    This class implements JSON serialization strategy using <EVENT_START> and <EVENT_END>
+    tokens with JSON-formatted event data. Designed for text-based language models that
+    work well with structured JSON input.
 
     Examples:
         >>> # Default: drop file_path to reduce token usage
-        >>> encoder = EventEncoder()
+        >>> encoder = JSONEventEncoder()
         >>>
         >>> # Encode a keyboard event
         >>> raw_event = {
@@ -42,14 +43,14 @@ class EventEncoder(BaseEventEncoder):
         <EVENT_START>{'topic': 'keyboard', 'timestamp_ns': 1745362786814673800, ...}<EVENT_END>
         >>>
         >>> # Keep file_path if needed
-        >>> encoder_with_path = EventEncoder(drop_file_path=False)
+        >>> encoder_with_path = JSONEventEncoder(drop_file_path=False)
         >>> text, images = encoder_with_path.encode(raw_event)
         >>> # Now file_path is preserved in the encoded text
     """
 
     def __init__(self, drop_file_path: bool = True):
         """
-        Initialize the EventEncoder.
+        Initialize the JSONEventEncoder.
 
         Args:
             drop_file_path: Whether to drop the file_path field from encoded events.
@@ -239,8 +240,8 @@ class EventEncoder(BaseEventEncoder):
     def get_encoder_info(self) -> Dict[str, Any]:
         """Get information about this encoder."""
         return {
-            "encoder_type": "EventEncoder",
-            "format": "string",
+            "encoder_type": "JSONEventEncoder",
+            "format": "json_string",
             "vocab_size": None,
             "drop_file_path": self.drop_file_path,
         }

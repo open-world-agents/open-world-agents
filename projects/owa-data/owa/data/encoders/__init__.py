@@ -5,7 +5,7 @@ This module provides various event encoding strategies for converting raw OWA ev
 into formats suitable for different types of VLA (Vision-Language-Action) model training.
 
 Available Encoders:
-- EventEncoder: Original string-based encoder with <EVENT_START>/<EVENT_END> tokens
+- JSONEventEncoder: JSON string-based encoder with <EVENT_START>/<EVENT_END> tokens
 - FlatEventEncoder: Flat token-based encoder inspired by example.py
 - HierarchicalEventEncoder: Hierarchical compositional token encoder
 
@@ -14,13 +14,13 @@ implementing different tokenization strategies optimized for specific use cases.
 """
 
 from .base_encoder import BaseEventEncoder
-from .event_encoder import EventEncoder
 from .flat_event_encoder import FlatEventEncoder, FlatEventEncoderConfig
 from .hierarchical_event_encoder import HierarchicalEventEncoder, HierarchicalEventEncoderConfig
+from .json_event_encoder import JSONEventEncoder
 
 __all__ = [
     "BaseEventEncoder",
-    "EventEncoder", 
+    "JSONEventEncoder",
     "FlatEventEncoder",
     "FlatEventEncoderConfig",
     "HierarchicalEventEncoder",

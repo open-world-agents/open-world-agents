@@ -1,18 +1,18 @@
 # Import encoders from the encoders module
 from .encoders import (
     BaseEventEncoder,
-    EventEncoder,
     FlatEventEncoder,
     FlatEventEncoderConfig,
     HierarchicalEventEncoder,
     HierarchicalEventEncoderConfig,
+    JSONEventEncoder,
 )
 from .load_dataset import load_dataset
 from .vlm_dataset_builder import VLMDatasetBuilder
 
 __all__ = [
     "BaseEventEncoder",
-    "EventEncoder",
+    "JSONEventEncoder",
     "FlatEventEncoder",
     "FlatEventEncoderConfig",
     "HierarchicalEventEncoder",

@@ -17,7 +17,7 @@ import re
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from owa.core.time import TimeUnits
-from owa.env.desktop.msg import KeyboardEvent, MouseButton, MouseEvent
+from owa.env.desktop.msg import KeyboardEvent, MouseEvent
 from owa.env.gst.msg import ScreenEmitted
 
 from .base_encoder import BaseEventEncoder

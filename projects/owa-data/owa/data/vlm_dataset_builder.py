@@ -6,7 +6,6 @@ the OWA data pipeline. It handles lazy loading of images from MKV files and
 integrates with nanoVLM training frameworks.
 """
 
-import json
 from typing import Any, Dict, List, Optional
 
 import numpy as np

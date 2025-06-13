@@ -14,7 +14,7 @@ Usage (CLI):
 
 - Groups bins into sequences of specified length for MLLM training.
 - Extracts image references from screen events for lazy loading.
-- Encodes actions using EventEncoder for text representation.
+- Encodes actions using JSONEventEncoder for text representation.
 - Each output row contains: instruction, encoded_events, image_refs, metadata.
 """
 
@@ -27,7 +27,7 @@ import typer
 from datasets import Dataset, Features, Sequence, Value, load_from_disk
 from tqdm import tqdm
 
-from owa.data.event_encoder import EventEncoder
+from owa.data import JSONEventEncoder
 
 app = typer.Typer(add_completion=False)
 
@@ -65,13 +65,13 @@ def extract_image_references(state_msg: Union[bytes, str]) -> Optional[Dict[str,
     return None
 
 
-def encode_actions(actions_msg: Union[bytes, str], encoder: EventEncoder) -> List[str]:
+def encode_actions(actions_msg: Union[bytes, str], encoder: JSONEventEncoder) -> List[str]:
     """
-    Encode actions using EventEncoder.
+    Encode actions using JSONEventEncoder.
 
     Args:
         actions_msg: Message containing list of full action events (bytes or string)
-        encoder: EventEncoder instance
+        encoder: JSONEventEncoder instance
 
     Returns:
         List of encoded action strings
@@ -104,7 +104,7 @@ def encode_actions(actions_msg: Union[bytes, str], encoder: EventEncoder) -> Lis
             if not required_fields.issubset(action_event.keys()):
                 continue
 
-            # EventEncoder now handles both bytes and string msg formats
+            # JSONEventEncoder now handles both bytes and string msg formats
             try:
                 encoded_text, _ = encoder.encode(action_event)
                 encoded_actions.append(encoded_text)
@@ -123,7 +123,7 @@ def create_sequences(
     sequence_length: int,
     overlap_ratio: float,
     instruction: str,
-    encoder: EventEncoder,
+    encoder: JSONEventEncoder,
 ) -> List[Dict[str, Any]]:
     """
     Create sequences from binned data for MLLM training.
@@ -133,7 +133,7 @@ def create_sequences(
         sequence_length: Number of bins per sequence
         overlap_ratio: Overlap ratio between sequences (0.0 to 1.0)
         instruction: Instruction text for all sequences
-        encoder: EventEncoder instance
+        encoder: JSONEventEncoder instance
 
     Returns:
         List of MLLM training sequences
@@ -230,8 +230,8 @@ def main(
         typer.echo("[Error] --overlap_ratio must be between 0.0 and 1.0 (exclusive)", err=True)
         raise typer.Exit(code=1)
 
-    # Initialize EventEncoder
-    encoder = EventEncoder(drop_file_path=True)
+    # Initialize JSONEventEncoder
+    encoder = JSONEventEncoder(drop_file_path=True)
 
     typer.echo(f"Loading binned dataset from {input_dir} ...")
     ds_dict = load_from_disk(str(input_dir))
