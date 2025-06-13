@@ -14,6 +14,13 @@ from pathlib import Path
 import pytest
 
 
+def _get_subprocess_env():
+    """Get environment variables for subprocess calls with proper encoding."""
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "utf-8"
+    return env
+
+
 # @pytest.mark.skipif(
 #     os.getenv("GITHUB_ACTIONS") == "true", reason="ocap command behaves differently in GitHub Actions environment"
 # )
@@ -29,7 +36,8 @@ class TestOcapIntegration:
                 capture_output=True,
                 text=True,
                 timeout=30,  # 30 second timeout
-                encoding="utf-8",  # To be happy in CI/CD environment
+                encoding="utf-8",
+                env=_get_subprocess_env(),  # Ensure proper encoding in subprocess
             )
 
             # The command should succeed (exit code 0)
@@ -59,7 +67,8 @@ class TestOcapIntegration:
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     text=True,
-                    encoding="utf-8",  # To be happy in CI/CD environment
+                    encoding="utf-8",
+                    env=_get_subprocess_env(),  # Ensure proper encoding in subprocess
                 )
 
                 # Give it a moment to initialize, then terminate
@@ -123,7 +132,8 @@ class TestOcapIntegration:
                 capture_output=True,
                 text=True,
                 timeout=10,
-                encoding="utf-8",  # To be happy in CI/CD environment
+                encoding="utf-8",
+                env=_get_subprocess_env(),  # Ensure proper encoding in subprocess
             )
 
             # Should fail with non-zero exit code
@@ -148,7 +158,8 @@ class TestOcapIntegration:
                 capture_output=True,
                 text=True,
                 timeout=30,
-                encoding="utf-8",  # To be happy in CI/CD environment
+                encoding="utf-8",
+                env=_get_subprocess_env(),  # Ensure proper encoding in subprocess
             )
 
             if result.returncode == 0:
@@ -170,7 +181,8 @@ class TestOcapIntegration:
                 capture_output=True,
                 text=True,
                 timeout=30,
-                encoding="utf-8",  # To be happy in CI/CD environment
+                encoding="utf-8",
+                env=_get_subprocess_env(),  # Ensure proper encoding in subprocess
             )
 
             assert result.returncode == 0, f"Fallback command failed: {result.stderr}"
