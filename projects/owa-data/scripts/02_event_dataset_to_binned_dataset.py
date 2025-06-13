@@ -91,7 +91,7 @@ def aggregate_events_to_bins(
             "bin_idx": bin_idx,
             "timestamp_ns": bin_start,
             "state": last_screen["msg"] if last_screen else None,
-            "actions": [a["msg"] for a in actions],
+            "actions": actions,  # Store full event objects for proper EventEncoder usage
         }
         bins.append(bin_data)
         bin_idx += 1
@@ -223,7 +223,8 @@ def main(
             if t["state"] is not None and not isinstance(t["state"], bytes):
                 t["state"] = json.dumps([*map(bytes.decode, t["state"])]).encode("utf-8")
             if t["actions"] is not None and not isinstance(t["actions"], bytes):
-                t["actions"] = json.dumps([*map(bytes.decode, t["actions"])]).encode("utf-8")
+                # Convert full event objects to JSON bytes
+                t["actions"] = json.dumps(t["actions"]).encode("utf-8")
         binned_dataset = Dataset.from_list(all_binned_data, features=features)
 
         # Store the dataset for this split

@@ -70,11 +70,16 @@ def encode_actions(actions_msg: bytes, encoder: EventEncoder) -> List[str]:
     Encode actions using EventEncoder.
 
     Args:
-        actions_msg: Binary message containing list of action events
+        actions_msg: Binary message containing list of full action events (not just msg content)
         encoder: EventEncoder instance
 
     Returns:
         List of encoded action strings
+
+    Note:
+        This function expects full event objects with all required fields (topic, timestamp_ns,
+        message_type, msg) rather than just the message content. This ensures proper encoding
+        with real event metadata instead of fake/generic placeholders.
     """
     if actions_msg is None:
         return []
@@ -90,31 +95,23 @@ def encode_actions(actions_msg: bytes, encoder: EventEncoder) -> List[str]:
             return []
 
         encoded_actions = []
-        for action_msg in actions_data:
-            # Reconstruct event format for EventEncoder
-            # Note: We need to reconstruct the full event format
-            # This is a simplified version - in practice you might need more metadata
-
-            # Convert action_msg to bytes if it's not already
-            if isinstance(action_msg, str):
-                msg_bytes = action_msg.encode("utf-8")
-            elif isinstance(action_msg, dict):
-                msg_bytes = json.dumps(action_msg).encode("utf-8")
-            elif isinstance(action_msg, bytes):
-                msg_bytes = action_msg
-            else:
-                # Skip unsupported types
+        for action_event in actions_data:
+            # action_event should already be a full event dict with all required fields
+            if not isinstance(action_event, dict):
                 continue
 
-            fake_event = {
-                "topic": "action",  # Generic topic for actions
-                "timestamp_ns": 0,  # Will be overridden by sequence timestamp
-                "message_type": "generic.action",
-                "msg": msg_bytes,
-            }
+            # Verify required fields are present
+            required_fields = {"topic", "timestamp_ns", "message_type", "msg"}
+            if not required_fields.issubset(action_event.keys()):
+                continue
+
+            # Convert msg to bytes if it's not already
+            if isinstance(action_event["msg"], str):
+                action_event = action_event.copy()
+                action_event["msg"] = action_event["msg"].encode("utf-8")
 
             try:
-                encoded_text, _ = encoder.encode(fake_event)
+                encoded_text, _ = encoder.encode(action_event)
                 encoded_actions.append(encoded_text)
             except Exception:
                 # Skip invalid actions

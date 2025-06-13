@@ -6,25 +6,15 @@ the OWA data pipeline. It handles lazy loading of images from MKV files and
 integrates with nanoVLM training frameworks.
 """
 
+import json
 from typing import Any, Dict, List, Optional
 
-try:
-    import torch
-    from torch.utils.data import Dataset
-
-    TORCH_AVAILABLE = True
-except ImportError:
-    TORCH_AVAILABLE = False
-
-    # Fallback Dataset class for when torch is not available
-    class Dataset:
-        pass
-
-
 import numpy as np
+import torch
 from PIL import Image
+from torch.utils.data import Dataset
 
-from owa.env.gst.mkv_reader import GstMKVReader
+from owa.env.gst.msg import ScreenEmitted
 
 
 class VLMDatasetBuilder(Dataset):
@@ -134,7 +124,7 @@ class VLMDatasetBuilder(Dataset):
                 images.append(self._image_cache[cache_key])
                 continue
 
-            # Load image from MKV file
+            # Load image using ScreenEmitted
             try:
                 image = self._load_single_image(img_ref)
                 if image is not None:
@@ -150,7 +140,7 @@ class VLMDatasetBuilder(Dataset):
 
     def _load_single_image(self, img_ref: Dict[str, Any]) -> Optional[Any]:
         """
-        Load a single image from MKV file using image reference.
+        Load a single image using ScreenEmitted.lazy_load().
 
         Args:
             img_ref: Image reference dict with path, pts, etc.
@@ -158,64 +148,33 @@ class VLMDatasetBuilder(Dataset):
         Returns:
             Loaded image in the specified format or None if failed
         """
-        mkv_path = img_ref["path"]
-        pts_ns = img_ref["pts"]
-
-        # Convert pts from nanoseconds to seconds
-        pts_seconds = pts_ns / 1e9
-
         try:
-            # Use GstMKVReader to load the frame
-            with GstMKVReader(mkv_path) as reader:
-                # Seek to the specific timestamp
-                reader.seek(pts_seconds, pts_seconds + 0.1)  # Small window
+            # Create ScreenEmitted instance from image reference
+            screen_emitted = ScreenEmitted(
+                path=img_ref["path"],
+                pts=img_ref["pts"],
+                utc_ns=img_ref.get("utc_ns")
+            )
 
-                # Get the frame
-                for frame_data in reader:
-                    frame_pts_ns = frame_data.get("pts", 0)
-                    # Check if this is the frame we want (within tolerance)
-                    if abs(frame_pts_ns - pts_ns) < 1e6:  # 1ms tolerance
-                        frame_array = frame_data["frame"]
-
-                        # Convert to the requested format
-                        if self.image_format == "pil":
-                            return self._array_to_pil(frame_array)
-                        elif self.image_format == "tensor":
-                            return self._array_to_tensor(frame_array)
-                        elif self.image_format == "numpy":
-                            return frame_array
-                        else:
-                            raise ValueError(f"Unsupported image format: {self.image_format}")
+            # Load the frame using ScreenEmitted's lazy_load method
+            if self.image_format == "pil":
+                return screen_emitted.to_pil_image()
+            elif self.image_format == "numpy":
+                return screen_emitted.to_rgb_array()
+            elif self.image_format == "tensor":
+                # Convert PIL to tensor
+                pil_image = screen_emitted.to_pil_image()
+                return self._pil_to_tensor(pil_image)
+            else:
+                raise ValueError(f"Unsupported image format: {self.image_format}")
 
         except Exception as e:
-            print(f"Error loading image from {mkv_path} at {pts_ns}: {e}")
+            print(f"Error loading image from {img_ref['path']} at {img_ref['pts']}: {e}")
             return None
 
-        return None
-
-    def _array_to_pil(self, frame_array) -> Image.Image:
-        """Convert numpy array to PIL Image."""
-        # Assuming BGRA format from GstMKVReader
-        if len(frame_array.shape) == 3 and frame_array.shape[2] == 4:
-            # Convert BGRA to RGB
-            rgb_array = frame_array[:, :, [2, 1, 0]]  # BGR to RGB
-            return Image.fromarray(rgb_array, mode="RGB")
-        elif len(frame_array.shape) == 3 and frame_array.shape[2] == 3:
-            # Already RGB
-            return Image.fromarray(frame_array, mode="RGB")
-        else:
-            raise ValueError(f"Unsupported frame array shape: {frame_array.shape}")
-
-    def _array_to_tensor(self, frame_array):
-        """Convert numpy array to PyTorch tensor."""
-        if not TORCH_AVAILABLE:
-            raise RuntimeError("PyTorch is not available. Cannot convert to tensor format.")
-
-        # Convert to PIL first, then to tensor for consistency
-        pil_image = self._array_to_pil(frame_array)
-
-        # Convert PIL to tensor (C, H, W) format manually
-        # This avoids dependency on torchvision
+    def _pil_to_tensor(self, pil_image: Image.Image) -> torch.Tensor:
+        """Convert PIL Image to PyTorch tensor."""
+        # Convert PIL to tensor (C, H, W) format
         img_array = np.array(pil_image)
         # Convert from (H, W, C) to (C, H, W)
         img_array = img_array.transpose(2, 0, 1)
