@@ -12,8 +12,8 @@ sudo apt-get install -y python3.11 python3.11-venv python3.11-dev
 echo "Creating virtual environment..."
 python3.11 -m venv .venv
 source .venv/bin/activate
-echo "VIRTUAL_ENV=$PWD/.venv" >> $HOME/.profile
-echo "export PATH=\"$PWD/.venv/bin:\$PATH\"" >> $HOME/.profile
+echo "VIRTUAL_ENV=$PWD/.venv" >> /etc/profile
+echo "export PATH=\"$PWD/.venv/bin:\$PATH\"" >> /etc/profile
 echo "Virtual environment activated: $VIRTUAL_ENV"
 which python
 
