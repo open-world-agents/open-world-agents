@@ -106,12 +106,14 @@ class FlatEventEncoderConfig:
     def all_tokens(self) -> List[str]:
         """All unique tokens in the vocabulary."""
         return (
-            self.timestamp_tokens
+            ["<EVENT_START>", "<EVENT_END>"]
+            + self.timestamp_tokens
             + self.keyboard_tokens
             + self.mouse_move_tokens
             + self.mouse_click_tokens
             + self.mouse_scroll_tokens
             + self.screen_tokens
+            + ["<UNKNOWN>"]
         )
 
     def get_vocab_size(self) -> int:
@@ -208,7 +210,7 @@ class FlatEventEncoder(BaseEventEncoder):
         ... }
         >>> tokens, images = encoder.encode(raw_event)
         >>> print(tokens)
-        ['<TIMESTAMP_123>', '<KEYBOARD_65_press>']
+        '<EVENT_START><TIMESTAMP_123> <KEYBOARD_65_press><EVENT_END>'
     """
 
     def __init__(self, config: Optional[FlatEventEncoderConfig] = None):
@@ -237,7 +239,7 @@ class FlatEventEncoder(BaseEventEncoder):
         """Encode keyboard event: <KEYBOARD_vk_action>"""
         return self.config.keyboard_token_format.format(vk=event.vk, pressed=event.event_type)
 
-    def encode(self, raw_event: Dict[str, Any]) -> Tuple[List[str], List[Union[ScreenEmitted, Dict]]]:
+    def encode(self, raw_event: Dict[str, Any]) -> Tuple[str, List[Union[ScreenEmitted, Dict]]]:
         """
         Encode a single raw event to flat token format.
 
@@ -251,7 +253,7 @@ class FlatEventEncoder(BaseEventEncoder):
 
         Returns:
             Tuple containing:
-                - List[str]: Flat token sequence
+                - str: Flat token sequence joined with spaces
                 - List[Union[ScreenEmitted, Dict]]: Image data for screen events (empty for others)
 
         Raises:
@@ -299,11 +301,13 @@ class FlatEventEncoder(BaseEventEncoder):
         else:
             tokens.append("<UNKNOWN>")
 
-        return tokens, images
+        # Wrap with EVENT_START and EVENT_END tokens for consistent parsing
+        tokens_str = " ".join(tokens)
+        return f"<EVENT_START>{tokens_str}<EVENT_END>", images
 
     def decode(
         self,
-        tokens: List[str],
+        encoded_data: str,
         images: Optional[List[Union[ScreenEmitted, Dict]]] = None,
         screen_size: Optional[Tuple[int, int]] = None,
     ) -> Dict[str, Any]:
@@ -311,7 +315,7 @@ class FlatEventEncoder(BaseEventEncoder):
         Decode flat tokens back to original raw event format.
 
         Args:
-            tokens: Flat token sequence
+            encoded_data: Flat token sequence as space-separated string
             images: Optional list of image data for screen events
             screen_size: Optional screen size for mouse coordinate decoding
 
@@ -321,6 +325,14 @@ class FlatEventEncoder(BaseEventEncoder):
         Raises:
             ValueError: If token sequence format is invalid
         """
+        # Check for EVENT_START and EVENT_END tokens
+        if not encoded_data.startswith("<EVENT_START>") or not encoded_data.endswith("<EVENT_END>"):
+            raise ValueError("Invalid encoded format: missing <EVENT_START> or <EVENT_END> tokens")
+
+        # Extract the token sequence between EVENT_START and EVENT_END
+        token_content = encoded_data[len("<EVENT_START>") : -len("<EVENT_END>")].strip()
+        tokens = token_content.split() if token_content else []
+
         if not tokens or len(tokens) < 1:
             raise ValueError("Token sequence too short")
 
@@ -507,7 +519,7 @@ class FlatEventEncoder(BaseEventEncoder):
 
     def encode_batch(
         self, raw_events: List[Dict[str, Any]]
-    ) -> Tuple[List[List[str]], List[List[Union[ScreenEmitted, Dict]]]]:
+    ) -> Tuple[List[str], List[List[Union[ScreenEmitted, Dict]]]]:
         """
         Encode a batch of raw events.
 
@@ -516,7 +528,7 @@ class FlatEventEncoder(BaseEventEncoder):
 
         Returns:
             Tuple containing:
-                - List[List[str]]: Flat token sequences for each event
+                - List[str]: Flat token sequences for each event as strings
                 - List[List[Union[ScreenEmitted, Dict]]]: Image data for each event
         """
         all_tokens = []
@@ -531,7 +543,7 @@ class FlatEventEncoder(BaseEventEncoder):
 
     def decode_batch(
         self,
-        all_tokens: List[List[str]],
+        encoded_batch: List[str],
         all_images: Optional[List[List[Union[ScreenEmitted, Dict]]]] = None,
         screen_size: Optional[Tuple[int, int]] = None,
     ) -> List[Dict[str, Any]]:
@@ -539,7 +551,7 @@ class FlatEventEncoder(BaseEventEncoder):
         Decode a batch of flat token sequences.
 
         Args:
-            all_tokens: List of flat token sequences
+            encoded_batch: List of flat token sequences as strings
             all_images: Optional list of image data lists for each event
             screen_size: Optional screen size for mouse coordinate decoding
 
@@ -547,14 +559,14 @@ class FlatEventEncoder(BaseEventEncoder):
             List[Dict]: Reconstructed raw events
         """
         if all_images is None:
-            all_images = [[] for _ in all_tokens]
+            all_images = [[] for _ in encoded_batch]
 
-        if len(all_tokens) != len(all_images):
+        if len(encoded_batch) != len(all_images):
             raise ValueError("Length mismatch between tokens and images")
 
         events = []
-        for tokens, images in zip(all_tokens, all_images):
-            event = self.decode(tokens, images, screen_size)
+        for encoded_data, images in zip(encoded_batch, all_images):
+            event = self.decode(encoded_data, images, screen_size)
             events.append(event)
 
         return events

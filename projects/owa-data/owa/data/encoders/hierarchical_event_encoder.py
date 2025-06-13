@@ -29,12 +29,14 @@ class HierarchicalVocabulary:
     def __init__(self):
         # Base event type tokens
         self.base_tokens = {
-            "<TIMESTAMP>": 0,
-            "<KEYBOARD>": 1,
-            "<MOUSE>": 2,
-            "<SCREEN>": 3,
-            "<PAD>": 4,
-            "<UNK>": 5,
+            "<EVENT_START>": 0,
+            "<EVENT_END>": 1,
+            "<TIMESTAMP>": 2,
+            "<KEYBOARD>": 3,
+            "<MOUSE>": 4,
+            "<SCREEN>": 5,
+            "<PAD>": 6,
+            "<UNK>": 7,
         }
 
         # Parameter tokens (shared across event types)
@@ -249,7 +251,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         ... }
         >>> tokens, images = encoder.encode(raw_event)
         >>> print(tokens)
-        ['<TIMESTAMP>', '<123>', '<KEYBOARD>', '<65>', '<press>']
+        '<EVENT_START><TIMESTAMP> <123> <KEYBOARD> <65> <press><EVENT_END>'
     """
 
     def __init__(self, config: Optional[HierarchicalEventEncoderConfig] = None):
@@ -368,7 +370,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
 
         raise ValueError(f"Unknown mouse action: {action_token}")
 
-    def encode(self, raw_event: Dict[str, Any]) -> Tuple[List[str], List[Union[ScreenEmitted, Dict]]]:
+    def encode(self, raw_event: Dict[str, Any]) -> Tuple[str, List[Union[ScreenEmitted, Dict]]]:
         """
         Encode a single raw event to hierarchical token format.
 
@@ -382,7 +384,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
 
         Returns:
             Tuple containing:
-                - List[str]: Hierarchical token sequence
+                - str: Hierarchical token sequence joined with spaces
                 - List[Union[ScreenEmitted, Dict]]: Image data for screen events (empty for others)
 
         Raises:
@@ -430,11 +432,13 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         else:
             tokens.append("<UNK>")
 
-        return tokens, images
+        # Wrap with EVENT_START and EVENT_END tokens for consistent parsing
+        tokens_str = " ".join(tokens)
+        return f"<EVENT_START>{tokens_str}<EVENT_END>", images
 
     def decode(
         self,
-        tokens: List[str],
+        encoded_data: str,
         images: Optional[List[Union[ScreenEmitted, Dict]]] = None,
         screen_size: Optional[Tuple[int, int]] = None,
     ) -> Dict[str, Any]:
@@ -442,7 +446,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         Decode hierarchical tokens back to original raw event format.
 
         Args:
-            tokens: Hierarchical token sequence
+            encoded_data: Hierarchical token sequence as space-separated string
             images: Optional list of image data for screen events
             screen_size: Optional screen size for mouse coordinate decoding
 
@@ -452,6 +456,14 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         Raises:
             ValueError: If token sequence format is invalid
         """
+        # Check for EVENT_START and EVENT_END tokens
+        if not encoded_data.startswith("<EVENT_START>") or not encoded_data.endswith("<EVENT_END>"):
+            raise ValueError("Invalid encoded format: missing <EVENT_START> or <EVENT_END> tokens")
+
+        # Extract the token sequence between EVENT_START and EVENT_END
+        token_content = encoded_data[len("<EVENT_START>") : -len("<EVENT_END>")].strip()
+        tokens = token_content.split() if token_content else []
+
         if not tokens or len(tokens) < 2:
             raise ValueError("Token sequence too short")
 
@@ -549,7 +561,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
 
     def encode_batch(
         self, raw_events: List[Dict[str, Any]]
-    ) -> Tuple[List[List[str]], List[List[Union[ScreenEmitted, Dict]]]]:
+    ) -> Tuple[List[str], List[List[Union[ScreenEmitted, Dict]]]]:
         """
         Encode a batch of raw events.
 
@@ -558,7 +570,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
 
         Returns:
             Tuple containing:
-                - List[List[str]]: Hierarchical token sequences for each event
+                - List[str]: Hierarchical token sequences for each event as strings
                 - List[List[Union[ScreenEmitted, Dict]]]: Image data for each event
         """
         all_tokens = []
@@ -573,7 +585,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
 
     def decode_batch(
         self,
-        all_tokens: List[List[str]],
+        encoded_batch: List[str],
         all_images: Optional[List[List[Union[ScreenEmitted, Dict]]]] = None,
         screen_size: Optional[Tuple[int, int]] = None,
     ) -> List[Dict[str, Any]]:
@@ -581,7 +593,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         Decode a batch of hierarchical token sequences.
 
         Args:
-            all_tokens: List of hierarchical token sequences
+            encoded_batch: List of hierarchical token sequences as strings
             all_images: Optional list of image data lists for each event
             screen_size: Optional screen size for mouse coordinate decoding
 
@@ -589,14 +601,14 @@ class HierarchicalEventEncoder(BaseEventEncoder):
             List[Dict]: Reconstructed raw events
         """
         if all_images is None:
-            all_images = [[] for _ in all_tokens]
+            all_images = [[] for _ in encoded_batch]
 
-        if len(all_tokens) != len(all_images):
+        if len(encoded_batch) != len(all_images):
             raise ValueError("Length mismatch between tokens and images")
 
         events = []
-        for tokens, images in zip(all_tokens, all_images):
-            event = self.decode(tokens, images, screen_size)
+        for encoded_data, images in zip(encoded_batch, all_images):
+            event = self.decode(encoded_data, images, screen_size)
             events.append(event)
 
         return events

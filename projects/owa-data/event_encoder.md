@@ -13,16 +13,16 @@ The OWA data pipeline provides multiple event encoding strategies for converting
 - **Example**: `<EVENT_START>{'topic': 'keyboard', 'timestamp_ns': 123, ...}<EVENT_END>`
 
 ### 2. **FlatEventEncoder** (Flat Token-Based)
-- **Format**: Flat tokens like `<TIMESTAMP_123>`, `<KEYBOARD_65_press>`
+- **Format**: Flat tokens like `<TIMESTAMP_123>`, `<KEYBOARD_65_press>` wrapped with `<EVENT_START>` and `<EVENT_END>`
 - **Use Case**: Models that work well with large vocabularies and direct token prediction
 - **Vocabulary**: ~12,000+ tokens (combinatorial)
-- **Example**: `['<TIMESTAMP_123>', '<KEYBOARD_65_press>']`
+- **Example**: `<EVENT_START><TIMESTAMP_123> <KEYBOARD_65_press><EVENT_END>`
 
 ### 3. **HierarchicalEventEncoder** (Compositional Token-Based)
-- **Format**: Hierarchical tokens like `<TIMESTAMP><123>`, `<KEYBOARD><65><press>`
+- **Format**: Hierarchical tokens like `<TIMESTAMP><123>`, `<KEYBOARD><65><press>` wrapped with `<EVENT_START>` and `<EVENT_END>`
 - **Use Case**: Efficient VLA training with compositional understanding
 - **Vocabulary**: ~292 tokens (96.6% reduction vs flat)
-- **Example**: `['<TIMESTAMP>', '<123>', '<KEYBOARD>', '<65>', '<press>']`
+- **Example**: `<EVENT_START><TIMESTAMP> <123> <KEYBOARD> <65> <press><EVENT_END>`
 
 ## Architecture
 
@@ -79,7 +79,7 @@ text, images = json_encoder.encode(raw_event)
 
 # Flat token encoder
 flat_encoder = FlatEventEncoder()
-flat_tokens, images = flat_encoder.encode(raw_event)
+flat_tokens, images = flat_encoder.encode(raw_event)  # flat_tokens is now a string with EVENT_START/EVENT_END
 
 # Hierarchical token encoder
 hierarchical_encoder = HierarchicalEventEncoder()
