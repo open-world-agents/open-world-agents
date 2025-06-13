@@ -17,11 +17,18 @@ Raw MCAP Data → Event Dataset → Binned Dataset → MLLM Dataset → Training
 
 **Usage**:
 ```bash
+# Default behavior (keeps screen, keyboard, mouse topics)
 python scripts/01_raw_events_to_event_dataset.py \
   --train_dir /mnt/raid11/datasets/owa/mcaps/super-hexagon \
   --test_dir /mnt/raid11/datasets/owa/mcaps/super-hexagon-30s \
   --output-dir /mnt/raid11/datasets/owa/data/super-hexagon-event \
   --rate mouse=60 --rate screen=20
+
+# Custom topic filtering (replaces defaults)
+python scripts/01_raw_events_to_event_dataset.py \
+  --train_dir /mnt/raid11/datasets/owa/mcaps/super-hexagon \
+  --output-dir /mnt/raid11/datasets/owa/data/super-hexagon-event \
+  --keep_topic screen --keep_topic keyboard  # Only screen and keyboard
 ```
 
 **Output Schema**:
@@ -37,6 +44,7 @@ python scripts/01_raw_events_to_event_dataset.py \
 
 **Key Features**:
 - Rate-limiting per topic (e.g., mouse=60Hz, screen=20Hz)
+- Topic filtering (defaults to screen, keyboard, mouse events)
 - Automatic train/test splitting
 - Preserves raw event data for downstream processing
 
@@ -51,8 +59,7 @@ python scripts/01_raw_events_to_event_dataset.py \
 python scripts/02_event_dataset_to_binned_dataset.py \
   --input_dir /mnt/raid11/datasets/owa/data/super-hexagon-event \
   --output_dir /mnt/raid11/datasets/owa/data/super-hexagon-bin \
-  --fps 10 \
-  --keep_topic screen --keep_topic keyboard --keep_topic mouse
+  --fps 10
 ```
 
 **Output Schema**:
@@ -178,7 +185,7 @@ dataloader = DataLoader(owa_dataset, batch_size=32, collate_fn=vqa_collator)
 ## Usage
 
 ```bash
-# Stage 1: Extract events
+# Stage 1: Extract events (uses default topics: screen, keyboard, mouse)
 python scripts/01_raw_events_to_event_dataset.py \
     --train_dir /data/mcap_files \
     --output-dir /data/event_dataset

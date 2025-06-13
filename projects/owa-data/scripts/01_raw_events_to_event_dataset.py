@@ -12,11 +12,13 @@ Usage (CLI):
         [--test_dir /path/to/test_folder] \
         [--test_percent 0.2] \
         [--rate mouse=60 screen=20] \
+        [--keep_topic screen --keep_topic keyboard --keep_topic mouse] \
         [--num_workers 8] \
         [--output_dir /path/to/save_dataset]
 
     - If --test_dir is omitted, test set is formed by randomly sampling `test_percent` fraction of files in train_dir.
     - --rate topic=Hz can be repeated to apply drop-only downsampling per topic. Defaults to mouse=60, screen=20 if omitted.
+    - --keep_topic can be repeated to specify which topics to keep. Defaults to screen, keyboard, mouse if omitted.
     - Output is saved (optional) as an event dataset with "train" and "test" keys.
 """
 
@@ -76,14 +78,16 @@ def parse_rate_argument(rate_args: List[str]) -> Dict[str, float]:
 def process_raw_events_file(
     file_path: str,
     rate_settings: Dict[str, float],
+    keep_topics: Optional[List[str]] = None,
 ) -> List[Dict]:
     """
     Process a single MCAP file to extract raw events, applying rate-limiting
-    (drop-only) per topic.
+    (drop-only) per topic and optional topic filtering.
 
     Args:
         file_path: Path to the MCAP file (string).
         rate_settings: Mapping from topic name to desired rate in Hz.
+        keep_topics: Optional list of topics to keep. If None, all topics are kept.
 
     Returns:
         List of event dictionaries with keys: file_path, topic, timestamp, msg.
@@ -107,6 +111,10 @@ def process_raw_events_file(
                     topic, timestamp_ns, msg = mcap_msg.topic, mcap_msg.timestamp, mcap_msg.message
                     message_type = mcap_msg.message_type
 
+                    # Filter by topic if keep_topics is specified
+                    if keep_topics is not None and topic not in keep_topics:
+                        continue
+
                     if topic in rate_settings:
                         # Convert rate (Hz) to minimum nanoseconds between messages
                         min_interval_ns = int((1.0 / rate_settings[topic]) * 1e9)
@@ -129,7 +137,12 @@ def process_raw_events_file(
     return events
 
 
-def generate_event_examples(file_paths: List[str], rate_settings: Dict[str, float], num_workers: int = 4):
+def generate_event_examples(
+    file_paths: List[str],
+    rate_settings: Dict[str, float],
+    keep_topics: Optional[List[str]] = None,
+    num_workers: int = 4,
+):
     """
     Generator function that yields event examples by processing each raw events file
     in parallel using multiple processes.
@@ -137,6 +150,7 @@ def generate_event_examples(file_paths: List[str], rate_settings: Dict[str, floa
     Args:
         file_paths: List of MCAP file paths (strings).
         rate_settings: Mapping from topic to desired rate (Hz).
+        keep_topics: Optional list of topics to keep. If None, all topics are kept.
         num_workers: Number of parallel worker processes.
 
     Yields:
@@ -144,7 +158,9 @@ def generate_event_examples(file_paths: List[str], rate_settings: Dict[str, floa
     """
     total_files = len(file_paths)
     with ProcessPoolExecutor(max_workers=num_workers) as executor:
-        future_to_path = {executor.submit(process_raw_events_file, fp, rate_settings): fp for fp in file_paths}
+        future_to_path = {
+            executor.submit(process_raw_events_file, fp, rate_settings, keep_topics): fp for fp in file_paths
+        }
         with tqdm(total=total_files, desc="Processing files", unit="file") as pbar:
             for future in as_completed(future_to_path):
                 fp = future_to_path[future]
@@ -161,6 +177,7 @@ def generate_event_examples(file_paths: List[str], rate_settings: Dict[str, floa
 def create_event_dataset(
     file_paths: List[Path],
     rate_settings: Dict[str, float],
+    keep_topics: Optional[List[str]] = None,
     num_workers: int = 4,
     split: str = "train",
 ) -> HFDataset:
@@ -171,6 +188,7 @@ def create_event_dataset(
     Args:
         file_paths: List of pathlib.Path objects pointing to MCAP files.
         rate_settings: Mapping from topic to rate (Hz) to apply drop-only downsampling.
+        keep_topics: Optional list of topics to keep. If None, all topics are kept.
         num_workers: Number of worker processes for parallel file processing.
 
     Returns:
@@ -193,6 +211,7 @@ def create_event_dataset(
         gen_kwargs={
             "file_paths": file_path_strs,
             "rate_settings": rate_settings,
+            "keep_topics": keep_topics,
             "num_workers": num_workers,
         },
         features=features,
@@ -245,6 +264,11 @@ def main(
     output_dir: Optional[Path] = typer.Option(
         None, "--output-dir", "-o", help="Directory to save the resulting event dataset via save_to_disk."
     ),
+    keep_topic: Optional[List[str]] = typer.Option(
+        None,
+        "--keep_topic",
+        help="Topic to keep (repeatable). Replaces defaults. Default: screen, keyboard, mouse. Use --keep_topic multiple times to specify different topics.",
+    ),
 ):
     """
     Generate a Hugging Face event dataset with 'train' and 'test' splits from raw MCAP files in specified directories.
@@ -263,13 +287,22 @@ def main(
         rate_settings = default_rates
         typer.echo(f"No --rate given. Using default rates: {rate_settings}")
 
-    # 3. Gather all MCAP files in train_dir
+    # 3. Set topic filtering or use defaults
+    default_topics = ["screen", "keyboard", "mouse"]
+    if keep_topic:
+        topics_to_keep = keep_topic
+        typer.echo(f"Using specified topics: {topics_to_keep}")
+    else:
+        topics_to_keep = default_topics
+        typer.echo(f"No --keep_topic given. Using default topics: {topics_to_keep}")
+
+    # 4. Gather all MCAP files in train_dir
     train_files = sorted(train_dir.glob("*.mcap"))
     if not train_files:
         typer.echo(f"[Error] No MCAP files found in train_dir: {train_dir}", err=True)
         raise typer.Exit(code=1)
 
-    # 4. Determine test_files
+    # 5. Determine test_files
     if test_dir:
         test_files = sorted(test_dir.glob("*.mcap"))
         if not test_files:
@@ -295,28 +328,28 @@ def main(
     typer.echo(f"Train files: {len(train_files)}, Test files: {len(test_files)}")
     typer.echo(f"Processing with {num_workers} workers...")
 
-    # 5. Prompt for confirmation if output_dir not provided
+    # 6. Prompt for confirmation if output_dir not provided
     if not output_dir:
         confirm = typer.confirm("No --output-dir given. Continue without saving to disk?", default=False)
         if not confirm:
             typer.echo("Aborting because no output directory was provided.", err=True)
             raise typer.Exit(code=1)
 
-    # 6. Create event datasets for train and test
-    train_dataset = create_event_dataset(train_files, rate_settings, num_workers, split="train")
-    test_dataset = create_event_dataset(test_files, rate_settings, num_workers, split="test")
+    # 7. Create event datasets for train and test
+    train_dataset = create_event_dataset(train_files, rate_settings, topics_to_keep, num_workers, split="train")
+    test_dataset = create_event_dataset(test_files, rate_settings, topics_to_keep, num_workers, split="test")
 
-    # 7. Combine into DatasetDict
+    # 8. Combine into DatasetDict
     dataset_dict = DatasetDict({"train": train_dataset, "test": test_dataset})
     typer.echo(f"DatasetDict created. Train examples: {len(train_dataset)}, Test examples: {len(test_dataset)}")
 
-    # 8. Save to disk if requested
+    # 9. Save to disk if requested
     if output_dir:
         output_dir.mkdir(parents=True, exist_ok=True)
         dataset_dict.save_to_disk(str(output_dir))
         typer.echo(f"DatasetDict saved to {output_dir}")
 
-    # 9. Show few examples from each split in a more readable format
+    # 10. Show few examples from each split in a more readable format
     def pretty_print_example(example: Dict):
         typer.echo("----------------------------------------")
         typer.echo(f"file_path: {example['file_path']}")

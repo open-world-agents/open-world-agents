@@ -210,7 +210,7 @@ class FlatEventEncoder(BaseEventEncoder):
         ... }
         >>> tokens, images = encoder.encode(raw_event)
         >>> print(tokens)
-        '<EVENT_START><TIMESTAMP_123> <KEYBOARD_65_press><EVENT_END>'
+        '<EVENT_START><TIMESTAMP_123><KEYBOARD_65_press><EVENT_END>'
     """
 
     def __init__(self, config: Optional[FlatEventEncoderConfig] = None):
@@ -253,7 +253,7 @@ class FlatEventEncoder(BaseEventEncoder):
 
         Returns:
             Tuple containing:
-                - str: Flat token sequence joined with spaces
+                - str: Flat token sequence concatenated without spaces
                 - List[Union[ScreenEmitted, Dict]]: Image data for screen events (empty for others)
 
         Raises:
@@ -302,7 +302,7 @@ class FlatEventEncoder(BaseEventEncoder):
             tokens.append("<UNKNOWN>")
 
         # Wrap with EVENT_START and EVENT_END tokens for consistent parsing
-        tokens_str = " ".join(tokens)
+        tokens_str = "".join(tokens)
         return f"<EVENT_START>{tokens_str}<EVENT_END>", images
 
     def decode(
@@ -315,7 +315,7 @@ class FlatEventEncoder(BaseEventEncoder):
         Decode flat tokens back to original raw event format.
 
         Args:
-            encoded_data: Flat token sequence as space-separated string
+            encoded_data: Flat token sequence as concatenated string
             images: Optional list of image data for screen events
             screen_size: Optional screen size for mouse coordinate decoding
 
@@ -331,7 +331,8 @@ class FlatEventEncoder(BaseEventEncoder):
 
         # Extract the token sequence between EVENT_START and EVENT_END
         token_content = encoded_data[len("<EVENT_START>") : -len("<EVENT_END>")].strip()
-        tokens = token_content.split() if token_content else []
+        # Parse tokens without spaces using regex to find all <...> patterns
+        tokens = re.findall(r"<[^>]*>", token_content) if token_content else []
 
         if not tokens or len(tokens) < 1:
             raise ValueError("Token sequence too short")

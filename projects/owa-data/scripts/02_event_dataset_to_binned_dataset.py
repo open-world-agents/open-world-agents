@@ -8,18 +8,16 @@ Usage (CLI):
     python 02_event_dataset_to_binned_dataset.py \
         --input_dir /path/to/input_event_dataset \
         --output_dir /path/to/output_binned_dataset \
-        [--fps 10] \
-        [--keep_topic screen --keep_topic keyboard --keep_topic mouse]
+        [--fps 10]
 
 - Bins events into fixed-rate time intervals at the specified FPS.
-- Keeps only specified topics (drops all others if not specified).
 - Each output row contains: file_path, bin_idx, timestamp_ns, state, actions.
 """
 
 import json
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import typer
 from datasets import Dataset, Features, Value, load_from_disk
@@ -31,23 +29,17 @@ app = typer.Typer(add_completion=False)
 def aggregate_events_to_bins(
     events: List[Dict[str, Any]],
     fps: float,
-    keep_topics: List[str],
 ) -> List[Dict[str, Any]]:
     """
     Aggregate events into time bins at the specified FPS.
     Args:
         events: List of event dicts (from input event dataset).
         fps: Global FPS for bins.
-        keep_topics: List of topics to keep.
     Returns:
         List of dicts, each representing a time bin with state and actions.
     """
     if not events:
         return []
-
-    # Filter events by topic
-    if keep_topics:
-        events = [e for e in events if e["topic"] in keep_topics]
 
     if not events:
         return []
@@ -126,9 +118,6 @@ def main(
         help="Output binned dataset directory",
     ),
     fps: float = typer.Option(10.0, "--fps", help="Global FPS for bins (default: 10)"),
-    keep_topic: Optional[List[str]] = typer.Option(
-        None, "--keep_topic", help="Topic to keep (repeatable). If not specified, all topics are dropped."
-    ),
 ):
     """
     Convert event-per-row dataset to binned dataset format with state/actions per bin.
@@ -200,7 +189,7 @@ def main(
                 for i in tqdm(range(len(file_ds)), desc="Extracting events", leave=False):
                     events.append({k: file_ds[k][i] for k in file_ds.column_names})
 
-            binned_data = aggregate_events_to_bins(events, fps, keep_topic or [])
+            binned_data = aggregate_events_to_bins(events, fps)
             all_binned_data.extend(binned_data)
 
             # Update file progress with bin count
