@@ -221,9 +221,10 @@ def main(
         typer.echo(f"Converting {len(all_binned_data)} binned entries to binary format...")
         for t in tqdm(all_binned_data, desc="Converting to binary", disable=len(all_binned_data) < 1000):
             if t["state"] is not None and not isinstance(t["state"], bytes):
-                t["state"] = json.dumps([*map(bytes.decode, t["state"])]).encode("utf-8")
+                # State is now a string, so we can directly encode it
+                t["state"] = t["state"].encode("utf-8")
             if t["actions"] is not None and not isinstance(t["actions"], bytes):
-                # Convert full event objects to JSON bytes
+                # Actions are now event objects with string msg fields, can directly serialize
                 t["actions"] = json.dumps(t["actions"]).encode("utf-8")
         binned_dataset = Dataset.from_list(all_binned_data, features=features)
 

@@ -20,8 +20,8 @@ Raw MCAP Data → Event Dataset → Binned Dataset → MLLM Dataset → Training
 python scripts/01_raw_events_to_event_dataset.py \
   --train_dir /mnt/raid11/datasets/owa/mcaps/super-hexagon \
   --test_dir /mnt/raid11/datasets/owa/mcaps/super-hexagon-30s \
-  --output_dir /mnt/raid11/datasets/owa/data/super-hexagon-event \
-  --rate mouse=60 screen=20
+  --output-dir /mnt/raid11/datasets/owa/data/super-hexagon-event \
+  --rate mouse=60 --rate screen=20
 ```
 
 **Output Schema**:
@@ -31,7 +31,7 @@ python scripts/01_raw_events_to_event_dataset.py \
     "topic": Value("string"),          # Event topic (keyboard, mouse, screen)
     "timestamp_ns": Value("int64"),    # Timestamp in nanoseconds
     "message_type": Value("string"),   # Full message type identifier
-    "msg": Value("binary"),            # Serialized message content
+    "msg": Value("string"),            # Serialized message content (JSON string)
 }
 ```
 
@@ -181,7 +181,7 @@ dataloader = DataLoader(owa_dataset, batch_size=32, collate_fn=vqa_collator)
 # Stage 1: Extract events
 python scripts/01_raw_events_to_event_dataset.py \
     --train_dir /data/mcap_files \
-    --output_dir /data/event_dataset
+    --output-dir /data/event_dataset
 
 # Stage 2: Create bins
 python scripts/02_event_dataset_to_binned_dataset.py \

@@ -87,7 +87,7 @@ def process_raw_events_file(
 
     Returns:
         List of event dictionaries with keys: file_path, topic, timestamp, msg.
-        Messages are returned as raw bytes for encoding preservation.
+        Messages are returned as decoded strings for JSON compatibility.
     """
     events: List[Dict] = []
     interval_extractor = All()  # Select all intervals
@@ -120,7 +120,7 @@ def process_raw_events_file(
                             "topic": topic,
                             "timestamp_ns": timestamp_ns,
                             "message_type": message_type,
-                            "msg": msg,
+                            "msg": msg.decode("utf-8"),  # Decode bytes to string
                         }
                     )
     except Exception as e:
@@ -184,7 +184,7 @@ def create_event_dataset(
             "topic": Value("string"),
             "timestamp_ns": Value("int64"),
             "message_type": Value("string"),
-            "msg": Value("binary"),
+            "msg": Value("string"),  # Changed from binary to string
         }
     )
 
@@ -322,11 +322,10 @@ def main(
         typer.echo(f"file_path: {example['file_path']}")
         typer.echo(f"topic:     {example['topic']}")
         typer.echo(f"timestamp_ns: {example['timestamp_ns']}")
-        # Attempt to decode and pretty-print the msg field
+        # Attempt to parse and pretty-print the msg field (now string)
         raw_msg = example["msg"]
         try:
-            decoded = raw_msg.decode("utf-8")
-            parsed_json = json.loads(decoded)
+            parsed_json = json.loads(raw_msg)
             pretty_msg = json.dumps(parsed_json, ensure_ascii=False, indent=2)
         except Exception:
             # Fallback to repr if not valid JSON

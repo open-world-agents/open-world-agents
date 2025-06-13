@@ -66,7 +66,7 @@ class EventEncoder:
                 - topic: Event topic (e.g., 'keyboard', 'screen')
                 - timestamp_ns: Timestamp in nanoseconds
                 - message_type: Full message type identifier
-                - msg: Serialized message content (bytes)
+                - msg: Serialized message content (bytes or string)
 
         Returns:
             Tuple containing:
@@ -98,7 +98,11 @@ class EventEncoder:
         if raw_event["topic"] == "screen" and raw_event["message_type"] == "owa.env.gst.msg.ScreenEmitted":
             # Parse the message to create ScreenEmitted object
             try:
-                msg_data = json.loads(raw_event["msg"].decode("utf-8"))
+                # Handle both bytes and string msg formats
+                if isinstance(raw_event["msg"], bytes):
+                    msg_data = json.loads(raw_event["msg"].decode("utf-8"))
+                else:
+                    msg_data = json.loads(raw_event["msg"])
                 screen_event = ScreenEmitted(**msg_data)
 
                 # Store both the ScreenEmitted object and the original message data
@@ -106,7 +110,11 @@ class EventEncoder:
                 images.append({"screen_event": screen_event, "original_msg": raw_event["msg"]})
 
                 # Replace message content with <IMAGE> placeholder in serialized text
-                event_copy["msg"] = b"<IMAGE>"
+                # Use same format as original (bytes or string)
+                if isinstance(raw_event["msg"], bytes):
+                    event_copy["msg"] = b"<IMAGE>"
+                else:
+                    event_copy["msg"] = "<IMAGE>"
             except (json.JSONDecodeError, TypeError) as e:
                 raise ValueError(f"Failed to parse screen event message: {e}")
 
@@ -153,7 +161,7 @@ class EventEncoder:
         if (
             event_dict.get("topic") == "screen"
             and event_dict.get("message_type") == "owa.env.gst.msg.ScreenEmitted"
-            and event_dict.get("msg") == b"<IMAGE>"
+            and event_dict.get("msg") in (b"<IMAGE>", "<IMAGE>")  # Handle both bytes and string
         ):
             if not images:
                 raise ValueError("Screen event requires image data but none provided")
@@ -164,12 +172,12 @@ class EventEncoder:
                 # Use the preserved original message for exact round-trip consistency
                 event_dict["msg"] = image_data["original_msg"]
             elif isinstance(image_data, ScreenEmitted):
-                # Fallback: convert ScreenEmitted back to JSON bytes
+                # Fallback: convert ScreenEmitted back to JSON (string format for new pipeline)
                 msg_dict = image_data.model_dump(exclude={"frame_arr"})
-                event_dict["msg"] = json.dumps(msg_dict).encode("utf-8")
+                event_dict["msg"] = json.dumps(msg_dict)
             elif isinstance(image_data, dict):
-                # Fallback: assume it's a message dict
-                event_dict["msg"] = json.dumps(image_data).encode("utf-8")
+                # Fallback: assume it's a message dict (string format for new pipeline)
+                event_dict["msg"] = json.dumps(image_data)
 
         # Add back file_path if it was dropped during encoding
         if self.drop_file_path and "file_path" not in event_dict:

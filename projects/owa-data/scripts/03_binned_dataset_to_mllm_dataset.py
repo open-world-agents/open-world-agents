@@ -21,7 +21,7 @@ Usage (CLI):
 import json
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import typer
 from datasets import Dataset, Features, Sequence, Value, load_from_disk
@@ -32,12 +32,12 @@ from owa.data.event_encoder import EventEncoder
 app = typer.Typer(add_completion=False)
 
 
-def extract_image_references(state_msg: bytes) -> Optional[Dict[str, Any]]:
+def extract_image_references(state_msg: Union[bytes, str]) -> Optional[Dict[str, Any]]:
     """
     Extract image reference from screen event state message.
 
     Args:
-        state_msg: Binary message from screen event
+        state_msg: Message from screen event (bytes or string)
 
     Returns:
         Dict with image reference info or None if not a screen event
@@ -65,12 +65,12 @@ def extract_image_references(state_msg: bytes) -> Optional[Dict[str, Any]]:
     return None
 
 
-def encode_actions(actions_msg: bytes, encoder: EventEncoder) -> List[str]:
+def encode_actions(actions_msg: Union[bytes, str], encoder: EventEncoder) -> List[str]:
     """
     Encode actions using EventEncoder.
 
     Args:
-        actions_msg: Binary message containing list of full action events (not just msg content)
+        actions_msg: Message containing list of full action events (bytes or string)
         encoder: EventEncoder instance
 
     Returns:
@@ -78,8 +78,7 @@ def encode_actions(actions_msg: bytes, encoder: EventEncoder) -> List[str]:
 
     Note:
         This function expects full event objects with all required fields (topic, timestamp_ns,
-        message_type, msg) rather than just the message content. This ensures proper encoding
-        with real event metadata instead of fake/generic placeholders.
+        message_type, msg) rather than just the message content.
     """
     if actions_msg is None:
         return []
@@ -105,11 +104,7 @@ def encode_actions(actions_msg: bytes, encoder: EventEncoder) -> List[str]:
             if not required_fields.issubset(action_event.keys()):
                 continue
 
-            # Convert msg to bytes if it's not already
-            if isinstance(action_event["msg"], str):
-                action_event = action_event.copy()
-                action_event["msg"] = action_event["msg"].encode("utf-8")
-
+            # EventEncoder now handles both bytes and string msg formats
             try:
                 encoded_text, _ = encoder.encode(action_event)
                 encoded_actions.append(encoded_text)
