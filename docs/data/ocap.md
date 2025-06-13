@@ -40,6 +40,8 @@ Based on OBS Studio recommended specs + NVIDIA GPU requirements:
 
 > ⚠️ **NVIDIA GPU Required**: Currently only supports NVIDIA GPUs for hardware acceleration. AMD/Intel GPU support possible through GStreamer framework - **contributions welcome**!
 
+> 🖥️ **OS Support**: Currently only supports Windows. However, support for other operating systems (Linux, macOS) can be relatively easily extended due to the presence of GStreamer. Simply using different GStreamer pipelines can enable capture on other platforms - **contributions welcome**!
+
 ## Installation & Usage
 
 ### Option 1: Download Release
