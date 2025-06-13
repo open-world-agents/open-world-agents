@@ -14,9 +14,9 @@ from pathlib import Path
 import pytest
 
 
-@pytest.mark.skipif(
-    os.getenv("GITHUB_ACTIONS") == "true", reason="ocap command behaves differently in GitHub Actions environment"
-)
+# @pytest.mark.skipif(
+#     os.getenv("GITHUB_ACTIONS") == "true", reason="ocap command behaves differently in GitHub Actions environment"
+# )
 class TestOcapIntegration:
     """Integration test for the ocap command - verifies it doesn't fail during startup."""
 
@@ -29,6 +29,7 @@ class TestOcapIntegration:
                 capture_output=True,
                 text=True,
                 timeout=30,  # 30 second timeout
+                encoding="utf-8",  # To be happy in CI/CD environment
             )
 
             # The command should succeed (exit code 0)
@@ -58,6 +59,7 @@ class TestOcapIntegration:
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     text=True,
+                    encoding="utf-8",  # To be happy in CI/CD environment
                 )
 
                 # Give it a moment to initialize, then terminate
@@ -121,6 +123,7 @@ class TestOcapIntegration:
                 capture_output=True,
                 text=True,
                 timeout=10,
+                encoding="utf-8",  # To be happy in CI/CD environment
             )
 
             # Should fail with non-zero exit code
@@ -145,6 +148,7 @@ class TestOcapIntegration:
                 capture_output=True,
                 text=True,
                 timeout=30,
+                encoding="utf-8",  # To be happy in CI/CD environment
             )
 
             if result.returncode == 0:
@@ -166,6 +170,7 @@ class TestOcapIntegration:
                 capture_output=True,
                 text=True,
                 timeout=30,
+                encoding="utf-8",  # To be happy in CI/CD environment
             )
 
             assert result.returncode == 0, f"Fallback command failed: {result.stderr}"
