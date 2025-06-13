@@ -21,9 +21,6 @@ def _get_subprocess_env():
     return env
 
 
-# @pytest.mark.skipif(
-#     os.getenv("GITHUB_ACTIONS") == "true", reason="ocap command behaves differently in GitHub Actions environment"
-# )
 class TestOcapIntegration:
     """Integration test for the ocap command - verifies it doesn't fail during startup."""
 
@@ -49,8 +46,6 @@ class TestOcapIntegration:
 
         except subprocess.TimeoutExpired:
             pytest.fail("Command timed out - this suggests a hanging process")
-        except FileNotFoundError:
-            pytest.skip("ocap command not available in test environment")
 
     def test_ocap_command_validation_does_not_fail(self):
         """Test that ocap command validates arguments without crashing."""
@@ -96,8 +91,6 @@ class TestOcapIntegration:
                 if process:
                     process.kill()
                 pytest.fail("Command initialization took too long")
-            except FileNotFoundError:
-                pytest.skip("ocap command not available in test environment")
             finally:
                 # Ensure process is cleaned up
                 if process and process.poll() is None:
@@ -146,49 +139,3 @@ class TestOcapIntegration:
 
         except subprocess.TimeoutExpired:
             pytest.fail("Command with invalid args timed out")
-        except FileNotFoundError:
-            pytest.skip("ocap command not available in test environment")
-
-    def test_ocap_fallback_to_owa_cli_if_needed(self):
-        """Test fallback to owa.cli if standalone ocap is not available."""
-        # First try the standalone ocap command
-        try:
-            result = subprocess.run(
-                ["ocap", "--help"],
-                capture_output=True,
-                text=True,
-                timeout=30,
-                encoding="utf-8",
-                env=_get_subprocess_env(),  # Ensure proper encoding in subprocess
-            )
-
-            if result.returncode == 0:
-                # Standalone ocap works - this is the preferred method
-                assert "Record screen, keyboard, mouse" in result.stdout
-                return
-
-        except FileNotFoundError:
-            pass  # Try fallback method
-        except subprocess.TimeoutExpired:
-            pytest.fail("ocap command timed out")
-
-        # Fallback to owa.cli method if standalone doesn't work
-        try:
-            import sys
-
-            result = subprocess.run(
-                [sys.executable, "-m", "owa.cli", "mcap", "record", "--help"],
-                capture_output=True,
-                text=True,
-                timeout=30,
-                encoding="utf-8",
-                env=_get_subprocess_env(),  # Ensure proper encoding in subprocess
-            )
-
-            assert result.returncode == 0, f"Fallback command failed: {result.stderr}"
-            assert "Record screen, keyboard, mouse" in result.stdout
-
-        except FileNotFoundError:
-            pytest.skip("Neither ocap command nor owa.cli module available")
-        except subprocess.TimeoutExpired:
-            pytest.fail("Fallback owa.cli command timed out")
