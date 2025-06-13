@@ -1,8 +1,8 @@
 """
-EventEncoder for converting raw events to MLLM-compatible format.
+Original EventEncoder for converting raw events to MLLM-compatible format.
 
-This module implements the EventEncoder class that converts raw event data
-from the Event Dataset into formats suitable for training Vision-Language-Action (VLA) models.
+This module implements the original EventEncoder class that converts raw event data
+from the Event Dataset into string format suitable for training Vision-Language-Action (VLA) models.
 
 The encoder supports:
 - Text serialization of events for LLM tokenization
@@ -14,11 +14,12 @@ import json
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from owa.env.gst.msg import ScreenEmitted
+from .base_encoder import BaseEventEncoder
 
 
-class EventEncoder:
+class EventEncoder(BaseEventEncoder):
     """
-    Encoder for converting raw events to MLLM training format.
+    Original encoder for converting raw events to MLLM training format.
 
     This class implements Phase 1 of the serialization strategy using the "simplest"
     raw format with <EVENT_START> and <EVENT_END> tokens. Future phases will optimize
@@ -234,3 +235,12 @@ class EventEncoder:
             events.append(event)
 
         return events
+
+    def get_encoder_info(self) -> Dict[str, Any]:
+        """Get information about this encoder."""
+        return {
+            "encoder_type": "EventEncoder",
+            "format": "string",
+            "vocab_size": None,
+            "drop_file_path": self.drop_file_path,
+        }

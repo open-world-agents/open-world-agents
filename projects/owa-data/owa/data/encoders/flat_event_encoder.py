@@ -1,0 +1,583 @@
+"""
+FlatEventEncoder for converting raw events to flat token format.
+
+This module implements the FlatEventEncoder class based on the example.py pattern,
+using flat tokens like <TIMESTAMP_123>, <KEYBOARD_65_press>, <MOUSE_move_0_15_32>.
+
+This approach provides a direct token-based representation where each unique
+combination gets its own token, suitable for models that work well with
+large vocabularies and direct token prediction.
+"""
+
+import json
+import re
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+from owa.core.time import TimeUnits
+from owa.env.desktop.msg import KeyboardEvent, MouseButton, MouseEvent
+from owa.env.gst.msg import ScreenEmitted
+
+from .base_encoder import BaseEventEncoder
+
+
+class FlatEventEncoderConfig:
+    """Configuration for FlatEventEncoder."""
+
+    def __init__(
+        self,
+        timestamp_min_ns: int = -2 * TimeUnits.SECOND,
+        timestamp_max_ns: int = 2 * TimeUnits.SECOND,
+        timestamp_interval_ns: int = 20 * TimeUnits.MSECOND,  # 50fps
+        keyboard_vk_count: int = 256,
+        mouse_move_bins: List[int] = None,
+        screen_size: Tuple[int, int] = (1920, 1080),
+        drop_file_path: bool = True,
+    ):
+        self.timestamp_min_ns = timestamp_min_ns
+        self.timestamp_max_ns = timestamp_max_ns
+        self.timestamp_interval_ns = timestamp_interval_ns
+        self.keyboard_vk_count = keyboard_vk_count
+        self.mouse_move_bins = mouse_move_bins or [16, 16, 16]  # 3-level residual quantization
+        self.screen_size = screen_size
+        self.drop_file_path = drop_file_path
+
+        # Token formats (flat style)
+        self.timestamp_token_format = "<TIMESTAMP_{idx}>"
+        self.keyboard_token_format = "<KEYBOARD_{vk}_{pressed}>"
+        self.mouse_move_token_format = "<MOUSE_move_{level}_{idx_x}_{idx_y}>"
+        self.mouse_click_token_format = "<MOUSE_click_{button}_{pressed}>"
+        self.mouse_scroll_token_format = "<MOUSE_scroll_{dx}_{dy}>"
+        self.screen_token = "<SCREEN>"
+
+    @property
+    def timestamp_count(self) -> int:
+        """Number of timestamp bins."""
+        return ((self.timestamp_max_ns - self.timestamp_min_ns) // self.timestamp_interval_ns) + 1
+
+    @property
+    def timestamp_tokens(self) -> List[str]:
+        """All unique timestamp tokens."""
+        return [self.timestamp_token_format.format(idx=idx) for idx in range(self.timestamp_count)]
+
+    @property
+    def keyboard_tokens(self) -> List[str]:
+        """All unique keyboard event tokens."""
+        tokens = []
+        for vk in range(self.keyboard_vk_count):
+            tokens.append(self.keyboard_token_format.format(vk=vk, pressed="press"))
+            tokens.append(self.keyboard_token_format.format(vk=vk, pressed="release"))
+        return tokens
+
+    @property
+    def mouse_move_tokens(self) -> List[str]:
+        """All unique mouse move tokens for all quantization levels."""
+        tokens = []
+        for level, bins in enumerate(self.mouse_move_bins):
+            for idx_x in range(bins):
+                for idx_y in range(bins):
+                    tokens.append(self.mouse_move_token_format.format(level=level, idx_x=idx_x, idx_y=idx_y))
+        return tokens
+
+    @property
+    def mouse_click_tokens(self) -> List[str]:
+        """All unique mouse click tokens."""
+        tokens = []
+        buttons = ["left", "right", "middle", "unknown"]
+        for button in buttons:
+            for pressed in ["press", "release"]:
+                tokens.append(self.mouse_click_token_format.format(button=button, pressed=pressed))
+        return tokens
+
+    @property
+    def mouse_scroll_tokens(self) -> List[str]:
+        """All mouse scroll tokens."""
+        tokens = []
+        for dx in [-3, -2, -1, 0, 1, 2, 3]:
+            for dy in [-3, -2, -1, 0, 1, 2, 3]:
+                tokens.append(self.mouse_scroll_token_format.format(dx=dx, dy=dy))
+        return tokens
+
+    @property
+    def screen_tokens(self) -> List[str]:
+        """All unique screen marker tokens."""
+        return [self.screen_token]
+
+    @property
+    def all_tokens(self) -> List[str]:
+        """All unique tokens in the vocabulary."""
+        return (
+            self.timestamp_tokens
+            + self.keyboard_tokens
+            + self.mouse_move_tokens
+            + self.mouse_click_tokens
+            + self.mouse_scroll_tokens
+            + self.screen_tokens
+        )
+
+    def get_vocab_size(self) -> int:
+        """Get total vocabulary size."""
+        return len(self.all_tokens)
+
+
+class FlatMouseProcessor:
+    """Processes mouse events with flat token encoding."""
+
+    def __init__(self, config: FlatEventEncoderConfig):
+        self.config = config
+
+    def _limit(self, x: float, low: float = 0.0, high: float = 1.0) -> float:
+        """Limit x to the range [low, high]."""
+        return max(low, min(x, high))
+
+    def encode_move(self, event: MouseEvent, screen_size: Optional[Tuple[int, int]] = None) -> List[str]:
+        """
+        Encode mouse movement with residual quantization.
+        Returns: [<MOUSE_move_0_x_y>, <MOUSE_move_1_x_y>, <MOUSE_move_2_x_y>]
+        """
+        if screen_size is None:
+            screen_size = self.config.screen_size
+
+        x, y = event.x, event.y
+        fx = self._limit(x / screen_size[0])
+        fy = self._limit(y / screen_size[1])
+
+        tokens = []
+
+        # Jointly quantize the pair (x, y) repeatedly at each level
+        vx, vy = fx, fy
+        for level, nbins in enumerate(self.config.mouse_move_bins):
+            # Using floor for better accuracy
+            idx_x = int(vx * nbins)
+            idx_y = int(vy * nbins)
+            tokens.append(self.config.mouse_move_token_format.format(level=level, idx_x=idx_x, idx_y=idx_y))
+
+            # Calculate residuals for next level
+            vx = vx * nbins - idx_x
+            vy = vy * nbins - idx_y
+
+        return tokens
+
+    def encode_click(self, event: MouseEvent) -> str:
+        """Encode mouse click: <MOUSE_click_button_action>"""
+        button = event.button or "unknown"
+        action = "press" if bool(event.pressed) else "release"
+        return self.config.mouse_click_token_format.format(button=button, pressed=action)
+
+    def encode_scroll(self, event: MouseEvent) -> str:
+        """Encode mouse scroll: <MOUSE_scroll_dx_dy>"""
+        dx = event.dx if event.dx is not None else 0
+        dy = event.dy if event.dy is not None else 0
+        # Clamp to supported range
+        dx = max(-3, min(3, dx))
+        dy = max(-3, min(3, dy))
+        return self.config.mouse_scroll_token_format.format(dx=dx, dy=dy)
+
+    def encode_mouse_event(self, event: MouseEvent, screen_size: Optional[Tuple[int, int]] = None) -> List[str]:
+        """Encode any mouse event."""
+        # Always include position
+        tokens = self.encode_move(event, screen_size)
+
+        # Add specific action
+        if event.event_type == "move":
+            return tokens
+        elif event.event_type == "click":
+            return tokens + [self.encode_click(event)]
+        elif event.event_type == "scroll":
+            return tokens + [self.encode_scroll(event)]
+        else:
+            return tokens + ["<MOUSE_unknown>"]
+
+
+class FlatEventEncoder(BaseEventEncoder):
+    """
+    Flat event encoder using traditional flat token format.
+
+    This encoder converts raw events to flat token sequences where each unique
+    combination gets its own token (e.g., <KEYBOARD_65_press>, <MOUSE_move_0_15_32>).
+
+    Examples:
+        >>> config = FlatEventEncoderConfig()
+        >>> encoder = FlatEventEncoder(config)
+        >>>
+        >>> # Encode a keyboard event
+        >>> raw_event = {
+        ...     'topic': 'keyboard',
+        ...     'timestamp_ns': 1745362786814673800,
+        ...     'message_type': 'owa.env.desktop.msg.KeyboardEvent',
+        ...     'msg': '{"event_type":"press","vk":65}'
+        ... }
+        >>> tokens, images = encoder.encode(raw_event)
+        >>> print(tokens)
+        ['<TIMESTAMP_123>', '<KEYBOARD_65_press>']
+    """
+
+    def __init__(self, config: Optional[FlatEventEncoderConfig] = None):
+        """Initialize the flat event encoder."""
+        self.config = config or FlatEventEncoderConfig()
+        self.mouse_processor = FlatMouseProcessor(self.config)
+
+        # Create token to ID mapping
+        all_tokens = self.config.all_tokens
+        self.token_to_id = {token: i for i, token in enumerate(all_tokens)}
+        self.id_to_token = {i: token for token, i in self.token_to_id.items()}
+
+    def _encode_timestamp(self, timestamp_ns: int) -> str:
+        """Encode timestamp to flat token: <TIMESTAMP_index>"""
+        # Normalize timestamp to config range
+        mod = timestamp_ns % (self.config.timestamp_max_ns - self.config.timestamp_min_ns)
+        idx = mod // self.config.timestamp_interval_ns
+
+        # Ensure index is within bounds
+        max_idx = self.config.timestamp_count - 1
+        idx = min(max_idx, max(0, idx))
+
+        return self.config.timestamp_token_format.format(idx=idx)
+
+    def _encode_keyboard(self, event: KeyboardEvent) -> str:
+        """Encode keyboard event: <KEYBOARD_vk_action>"""
+        return self.config.keyboard_token_format.format(vk=event.vk, pressed=event.event_type)
+
+    def encode(self, raw_event: Dict[str, Any]) -> Tuple[List[str], List[Union[ScreenEmitted, Dict]]]:
+        """
+        Encode a single raw event to flat token format.
+
+        Args:
+            raw_event: Raw event dictionary with keys:
+                - topic: Event topic (e.g., 'keyboard', 'screen')
+                - timestamp_ns: Timestamp in nanoseconds
+                - message_type: Full message type identifier
+                - msg: Serialized message content (bytes or string)
+                - file_path: Source MCAP file path (optional)
+
+        Returns:
+            Tuple containing:
+                - List[str]: Flat token sequence
+                - List[Union[ScreenEmitted, Dict]]: Image data for screen events (empty for others)
+
+        Raises:
+            ValueError: If the raw_event format is invalid
+            json.JSONDecodeError: If message content cannot be parsed
+        """
+        if not isinstance(raw_event, dict):
+            raise ValueError("raw_event must be a dictionary")
+
+        required_keys = {"topic", "timestamp_ns", "message_type", "msg"}
+        if not self.config.drop_file_path:
+            required_keys.add("file_path")
+        if not required_keys.issubset(raw_event.keys()):
+            missing = required_keys - raw_event.keys()
+            raise ValueError(f"raw_event missing required keys: {missing}")
+
+        # Start with timestamp
+        tokens = [self._encode_timestamp(raw_event["timestamp_ns"])]
+        images = []
+
+        # Parse message content
+        try:
+            if isinstance(raw_event["msg"], bytes):
+                msg_data = json.loads(raw_event["msg"].decode("utf-8"))
+            else:
+                msg_data = json.loads(raw_event["msg"])
+        except (json.JSONDecodeError, TypeError) as e:
+            raise ValueError(f"Failed to parse message content: {e}")
+
+        # Encode based on event type
+        if raw_event["topic"] == "keyboard" and raw_event["message_type"] == "owa.env.desktop.msg.KeyboardEvent":
+            keyboard_event = KeyboardEvent(**msg_data)
+            tokens.append(self._encode_keyboard(keyboard_event))
+
+        elif raw_event["topic"] == "mouse" and raw_event["message_type"] == "owa.env.desktop.msg.MouseEvent":
+            mouse_event = MouseEvent(**msg_data)
+            tokens.extend(self.mouse_processor.encode_mouse_event(mouse_event))
+
+        elif raw_event["topic"] == "screen" and raw_event["message_type"] == "owa.env.gst.msg.ScreenEmitted":
+            screen_event = ScreenEmitted(**msg_data)
+            tokens.append(self.config.screen_token)
+            # Store image data
+            images.append({"screen_event": screen_event, "original_msg": raw_event["msg"]})
+
+        else:
+            tokens.append("<UNKNOWN>")
+
+        return tokens, images
+
+    def decode(
+        self,
+        tokens: List[str],
+        images: Optional[List[Union[ScreenEmitted, Dict]]] = None,
+        screen_size: Optional[Tuple[int, int]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Decode flat tokens back to original raw event format.
+
+        Args:
+            tokens: Flat token sequence
+            images: Optional list of image data for screen events
+            screen_size: Optional screen size for mouse coordinate decoding
+
+        Returns:
+            Dict: Reconstructed raw event in original format
+
+        Raises:
+            ValueError: If token sequence format is invalid
+        """
+        if not tokens or len(tokens) < 1:
+            raise ValueError("Token sequence too short")
+
+        # Decode timestamp (first token)
+        timestamp_token = tokens[0]
+        timestamp_match = re.match(r"<TIMESTAMP_(\d+)>", timestamp_token)
+        if not timestamp_match:
+            raise ValueError(f"Invalid timestamp token: {timestamp_token}")
+
+        idx = int(timestamp_match.group(1))
+        timestamp_ns = self.config.timestamp_min_ns + idx * self.config.timestamp_interval_ns
+
+        # Determine event type and decode accordingly
+        if len(tokens) < 2:
+            # Only timestamp, create unknown event
+            return {
+                "topic": "unknown",
+                "timestamp_ns": timestamp_ns,
+                "message_type": "unknown",
+                "msg": "{}",
+            }
+
+        event_token = tokens[1]
+
+        if event_token.startswith("<KEYBOARD_"):
+            # Decode keyboard event
+            keyboard_match = re.match(r"<KEYBOARD_(\d+)_(\w+)>", event_token)
+            if not keyboard_match:
+                raise ValueError(f"Invalid keyboard token: {event_token}")
+
+            vk = int(keyboard_match.group(1))
+            event_type = keyboard_match.group(2)
+
+            msg_data = {"event_type": event_type, "vk": vk}
+
+            return {
+                "topic": "keyboard",
+                "timestamp_ns": timestamp_ns,
+                "message_type": "owa.env.desktop.msg.KeyboardEvent",
+                "msg": json.dumps(msg_data),
+            }
+
+        elif event_token.startswith("<MOUSE_move_"):
+            # Decode mouse event (complex due to multi-level encoding)
+            return self._decode_mouse_event(tokens[1:], timestamp_ns, screen_size)
+
+        elif event_token == "<SCREEN>":
+            # Decode screen event
+            if not images:
+                raise ValueError("Screen event requires image data but none provided")
+
+            image_data = images[0]
+            if isinstance(image_data, dict) and "original_msg" in image_data:
+                # Use preserved original message for exact round-trip consistency
+                msg = image_data["original_msg"]
+            elif isinstance(image_data, ScreenEmitted):
+                # Fallback: convert ScreenEmitted back to JSON
+                msg_dict = image_data.model_dump(exclude={"frame_arr"})
+                msg = json.dumps(msg_dict)
+            elif isinstance(image_data, dict):
+                # Fallback: assume it's a message dict
+                msg = json.dumps(image_data)
+            else:
+                msg = "{}"
+
+            return {
+                "topic": "screen",
+                "timestamp_ns": timestamp_ns,
+                "message_type": "owa.env.gst.msg.ScreenEmitted",
+                "msg": msg,
+            }
+
+        else:
+            # Unknown event type
+            return {
+                "topic": "unknown",
+                "timestamp_ns": timestamp_ns,
+                "message_type": "unknown",
+                "msg": "{}",
+            }
+
+    def _decode_mouse_event(
+        self, mouse_tokens: List[str], timestamp_ns: int, screen_size: Optional[Tuple[int, int]] = None
+    ) -> Dict[str, Any]:
+        """Decode mouse tokens back to MouseEvent."""
+        if screen_size is None:
+            screen_size = self.config.screen_size
+
+        # Extract move tokens (first N tokens for N levels)
+        move_tokens = []
+        other_tokens = []
+
+        for token in mouse_tokens:
+            if token.startswith("<MOUSE_move_"):
+                move_tokens.append(token)
+            else:
+                other_tokens.append(token)
+
+        if len(move_tokens) != len(self.config.mouse_move_bins):
+            raise ValueError(f"Expected {len(self.config.mouse_move_bins)} move tokens, got {len(move_tokens)}")
+
+        # Decode coordinates using residual quantization
+        indices = []
+        for token in move_tokens:
+            move_match = re.match(r"<MOUSE_move_(\d+)_(\d+)_(\d+)>", token)
+            if not move_match:
+                raise ValueError(f"Invalid mouse move token: {token}")
+
+            level = int(move_match.group(1))
+            idx_x = int(move_match.group(2))
+            idx_y = int(move_match.group(3))
+            indices.append((level, idx_x, idx_y))
+
+        # Sort by level to ensure correct order
+        indices.sort(key=lambda x: x[0])
+
+        # Reconstruct coordinates
+        fx = fy = 0.0
+        for i in reversed(range(len(indices))):
+            level, idx_x, idx_y = indices[i]
+            nbins = self.config.mouse_move_bins[i]
+
+            fx = (fx + idx_x) / nbins
+            fy = (fy + idx_y) / nbins
+
+        # Convert to pixel coordinates
+        pix_x = int(round(fx * (screen_size[0] - 1)))
+        pix_y = int(round(fy * (screen_size[1] - 1)))
+
+        # Determine event type and decode additional parameters
+        if not other_tokens:
+            # Pure movement
+            msg_data = {
+                "event_type": "move",
+                "x": pix_x,
+                "y": pix_y,
+            }
+        elif other_tokens[0].startswith("<MOUSE_click_"):
+            # Click event
+            click_match = re.match(r"<MOUSE_click_(\w+)_(\w+)>", other_tokens[0])
+            if not click_match:
+                raise ValueError(f"Invalid mouse click token: {other_tokens[0]}")
+
+            button = click_match.group(1)
+            pressed = click_match.group(2) == "press"
+
+            msg_data = {
+                "event_type": "click",
+                "x": pix_x,
+                "y": pix_y,
+                "button": button,
+                "pressed": pressed,
+            }
+        elif other_tokens[0].startswith("<MOUSE_scroll_"):
+            # Scroll event
+            scroll_match = re.match(r"<MOUSE_scroll_(-?\d+)_(-?\d+)>", other_tokens[0])
+            if not scroll_match:
+                raise ValueError(f"Invalid mouse scroll token: {other_tokens[0]}")
+
+            dx = int(scroll_match.group(1))
+            dy = int(scroll_match.group(2))
+
+            msg_data = {
+                "event_type": "scroll",
+                "x": pix_x,
+                "y": pix_y,
+                "dx": dx,
+                "dy": dy,
+            }
+        else:
+            # Unknown mouse event
+            msg_data = {
+                "event_type": "unknown",
+                "x": pix_x,
+                "y": pix_y,
+            }
+
+        return {
+            "topic": "mouse",
+            "timestamp_ns": timestamp_ns,
+            "message_type": "owa.env.desktop.msg.MouseEvent",
+            "msg": json.dumps(msg_data),
+        }
+
+    def encode_batch(
+        self, raw_events: List[Dict[str, Any]]
+    ) -> Tuple[List[List[str]], List[List[Union[ScreenEmitted, Dict]]]]:
+        """
+        Encode a batch of raw events.
+
+        Args:
+            raw_events: List of raw event dictionaries
+
+        Returns:
+            Tuple containing:
+                - List[List[str]]: Flat token sequences for each event
+                - List[List[Union[ScreenEmitted, Dict]]]: Image data for each event
+        """
+        all_tokens = []
+        all_images = []
+
+        for event in raw_events:
+            tokens, images = self.encode(event)
+            all_tokens.append(tokens)
+            all_images.append(images)
+
+        return all_tokens, all_images
+
+    def decode_batch(
+        self,
+        all_tokens: List[List[str]],
+        all_images: Optional[List[List[Union[ScreenEmitted, Dict]]]] = None,
+        screen_size: Optional[Tuple[int, int]] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        Decode a batch of flat token sequences.
+
+        Args:
+            all_tokens: List of flat token sequences
+            all_images: Optional list of image data lists for each event
+            screen_size: Optional screen size for mouse coordinate decoding
+
+        Returns:
+            List[Dict]: Reconstructed raw events
+        """
+        if all_images is None:
+            all_images = [[] for _ in all_tokens]
+
+        if len(all_tokens) != len(all_images):
+            raise ValueError("Length mismatch between tokens and images")
+
+        events = []
+        for tokens, images in zip(all_tokens, all_images):
+            event = self.decode(tokens, images, screen_size)
+            events.append(event)
+
+        return events
+
+    def get_vocab_size(self) -> int:
+        """Get the total vocabulary size."""
+        return self.config.get_vocab_size()
+
+    def get_token_ids(self, tokens: List[str]) -> List[int]:
+        """Convert token strings to token IDs."""
+        return [self.token_to_id.get(token, self.token_to_id.get("<UNKNOWN>", 0)) for token in tokens]
+
+    def get_tokens_from_ids(self, token_ids: List[int]) -> List[str]:
+        """Convert token IDs to token strings."""
+        return [self.id_to_token.get(token_id, "<UNKNOWN>") for token_id in token_ids]
+
+    def get_encoder_info(self) -> Dict[str, Any]:
+        """Get information about this encoder."""
+        return {
+            "encoder_type": "FlatEventEncoder",
+            "format": "flat_tokens",
+            "vocab_size": self.get_vocab_size(),
+            "drop_file_path": self.config.drop_file_path,
+            "mouse_move_bins": self.config.mouse_move_bins,
+            "screen_size": self.config.screen_size,
+        }
