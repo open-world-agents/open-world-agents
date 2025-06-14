@@ -1,7 +1,7 @@
 import platform
 from typing import Callable
 
-from ..msg import WindowInfo
+from owa.msgs.desktop.window import WindowInfo
 
 # --- Platform utils ---
 _PLATFORM = platform.system()

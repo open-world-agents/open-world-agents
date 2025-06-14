@@ -2,7 +2,8 @@
 Comprehensive integration tests for OEP-0006 implementation.
 
 This test suite validates the complete OEP-0006 implementation across
-all phases and components.
+all phases and components. This file has been moved to projects/owa-core/tests/
+as it primarily tests the core message registry functionality.
 """
 
 import tempfile

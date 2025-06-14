@@ -88,6 +88,7 @@ dependencies = [
     { name = "av" },
     { name = "griffe" },
     { name = "loguru" },
+    { name = "owa-msgs" },
     { name = "pydantic" },
 ]
 
@@ -97,7 +98,25 @@ requires-dist = [
     { name = "griffe", specifier = ">=1.7.3" },
     { name = "importlib-metadata", marker = "python_full_version < '3.10'", specifier = ">=4.0.0" },
     { name = "loguru", specifier = ">=0.7.3" },
+    { name = "owa-msgs", editable = "../owa-msgs" },
     { name = "pydantic", specifier = ">=2.10.6" },
+]
+
+[[package]]
+name = "owa-msgs"
+version = "0.1.0"
+source = { editable = "../owa-msgs" }
+dependencies = [
+    { name = "annotated-types" },
+    { name = "owa-core" },
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "annotated-types" },
+    { name = "owa-core" },
+    { name = "pydantic", specifier = ">=2.0.0" },
 ]
 
 [[package]]

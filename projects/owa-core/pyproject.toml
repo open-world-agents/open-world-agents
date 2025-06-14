@@ -11,6 +11,7 @@ dependencies = [
     "pydantic>=2.10.6",
     "importlib-metadata>=4.0.0; python_version < '3.10'",
     "griffe>=1.7.3",
+    "owa-msgs",
 ]
 
 # Entry point declaration for built-in std plugin
@@ -23,3 +24,6 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["owa"]
+
+[tool.uv.sources]
+owa-msgs = { path = "../owa-msgs", editable = true }

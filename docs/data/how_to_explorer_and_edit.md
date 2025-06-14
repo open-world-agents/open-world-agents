@@ -111,7 +111,7 @@ import tempfile
 
 from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
 from owa.core.message import OWAMessage
-from owa.env.desktop.msg import KeyboardEvent
+from owa.msgs.desktop.keyboard import KeyboardEvent
 
 
 class String(OWAMessage):
