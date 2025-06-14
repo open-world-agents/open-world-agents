@@ -1,5 +1,7 @@
-from owa.core.registry import CALLABLES, LISTENERS
-from owa.env.desktop.msg import KeyboardEvent
+from owa.core import CALLABLES, LISTENERS, MESSAGES
+
+# Access message types through the global registry
+KeyboardEvent = MESSAGES["desktop/KeyboardEvent"]
 
 # Using screen capture and window management features
 print(f"{CALLABLES['screen.capture']().shape=}")  # Example output: (1080, 1920, 3)

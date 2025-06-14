@@ -162,14 +162,19 @@ result = CALLABLES["myplugin/add"](5, 3)  # Returns 8
 graph LR;
     EP[Entry Points] -->|Auto-discovers| SM["Standard Plugin(owa.env.std)"]
     EP -->|Auto-discovers| DM["Desktop Plugin(owa.env.desktop)"]
+    EP -->|Auto-discovers| MP["Message Package(owa-msgs)"]
     SM -->|Provides| C1[std/time_ns]
     SM -->|Provides| L1[std/tick Listener]
     DM -->|Provides| C2[desktop/screen.capture]
     DM -->|Provides| C3[desktop/window.get_active_window]
     DM -->|Provides| L2[desktop/keyboard Listener]
+    MP -->|Provides| M1[desktop/KeyboardEvent]
+    MP -->|Provides| M2[desktop/MouseEvent]
+    MP -->|Provides| M3[desktop/ScreenEmitted]
     User -->|pip install| PI[Plugin Installation]
     PI --> EP
-    EP --> R[Registry]
+    EP --> R[Component Registry]
+    EP --> MR[Message Registry]
 ```
 
 ## CLI Tools for Plugin Management
@@ -297,6 +302,80 @@ $ owl env namespaces
 │ gst       │         4 │ owl env ls gst     │
 │ std       │         2 │ owl env ls std     │
 └───────────┴────────────┴────────────────────┘
+```
+
+## Message Registry
+
+OWA provides a centralized message registry system that automatically discovers and manages message definitions through Python entry points. This system separates message schemas from runtime components, providing better organization and extensibility.
+
+### Accessing Messages
+
+```python
+from owa.core import MESSAGES
+
+# Access message classes by type name
+KeyboardEvent = MESSAGES['desktop/KeyboardEvent']
+MouseEvent = MESSAGES['desktop/MouseEvent']
+ScreenEmitted = MESSAGES['desktop/ScreenEmitted']
+
+# Check if a message type exists
+if 'desktop/KeyboardEvent' in MESSAGES:
+    print("KeyboardEvent is available")
+
+# List all available message types
+for message_type in MESSAGES.keys():
+    print(f"Available: {message_type}")
+
+# Create message instances
+event = KeyboardEvent(event_type="press", vk=65, timestamp=1234567890)
+```
+
+### Message Naming Convention
+
+Messages follow a domain-based naming pattern:
+- **Format**: `domain/MessageType`
+- **Domain**: Logical grouping (e.g., `desktop`, `sensors`, `system`)
+- **MessageType**: PascalCase message name
+- **Examples**: `desktop/KeyboardEvent`, `desktop/WindowInfo`, `sensors/TemperatureReading`
+
+### Core Message Types
+
+The `owa-msgs` package provides standard message definitions:
+
+| Message Type | Description |
+|--------------|-------------|
+| `desktop/KeyboardEvent` | Keyboard press/release events |
+| `desktop/KeyboardState` | Current keyboard state |
+| `desktop/MouseEvent` | Mouse movement, clicks, scrolls |
+| `desktop/MouseState` | Current mouse position and buttons |
+| `desktop/ScreenEmitted` | Screen capture frames with timestamps |
+| `desktop/WindowInfo` | Active window information |
+
+### CLI Tools for Message Management
+
+```bash
+# List all available message types
+$ owl messages list
+
+# Show detailed message schema
+$ owl messages show desktop/KeyboardEvent
+
+# Search for specific message types
+$ owl messages search keyboard
+
+# Validate message definitions
+$ owl messages validate
+```
+
+### Custom Message Registration
+
+Third-party packages can register custom message types through entry points:
+
+```toml
+# pyproject.toml
+[project.entry-points."owa.msgs"]
+"sensors/TemperatureReading" = "custom_sensors.messages:TemperatureReading"
+"sensors/HumidityReading" = "custom_sensors.messages:HumidityReading"
 ```
 
 ## Additional Resources
