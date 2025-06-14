@@ -6,6 +6,7 @@ following the domain-based message naming convention for better organization.
 """
 
 from fractions import Fraction
+from pathlib import Path
 from typing import Optional, Tuple
 
 import numpy as np
@@ -36,7 +37,7 @@ class ScreenEmitted(OWAMessage):
     model_config = {"arbitrary_types_allowed": True}
 
     # Time since epoch as nanoseconds.
-    utc_ns: int | None = None
+    utc_ns: Optional[int] = None
     # The frame as a numpy array (optional, can be lazy-loaded)
     frame_arr: SkipJsonSchema[Optional[np.ndarray]] = Field(None, exclude=True)
     # Original shape of the frame before rescale, e.g. (width, height)
@@ -45,9 +46,9 @@ class ScreenEmitted(OWAMessage):
     shape: Optional[Tuple[int, int]] = None
 
     # Path to the stream, e.g. output.mkv (optional)
-    path: str | None = None
+    path: Optional[str] = None
     # Time since stream start as nanoseconds.
-    pts: int | None = None
+    pts: Optional[int] = None
 
     @model_validator(mode="after")
     def validate_screen_emitted(self) -> "ScreenEmitted":
@@ -66,7 +67,7 @@ class ScreenEmitted(OWAMessage):
             h, w = self.frame_arr.shape[:2]
             self.shape = (w, h)
 
-        # Validate pts if provided
+        # Validate pts if provided (business logic validation)
         if self.pts is not None and self.pts < 0:
             raise ValueError("pts must be non-negative")
 
@@ -93,6 +94,8 @@ class ScreenEmitted(OWAMessage):
 
         Raises:
             ValueError: If required parameters are missing or frame not found
+            ImportError: If required libraries are not available
+            FileNotFoundError: If video file doesn't exist
         """
         if self.frame_arr is not None:
             return self.frame_arr
@@ -100,29 +103,38 @@ class ScreenEmitted(OWAMessage):
         if self.path is None or self.pts is None:
             raise ValueError("Cannot lazy load: both 'path' and 'pts' must be provided")
 
+        # Validate file exists
+        video_path = Path(self.path)
+        if not video_path.exists():
+            raise FileNotFoundError(f"Video file not found: {self.path}")
+
         try:
             import cv2
 
             from owa.core.io.video import VideoReader
             from owa.core.time import TimeUnits
         except ImportError as e:
-            raise ImportError(f"Required libraries not available for video loading: {e}")
+            raise ImportError(f"Required libraries not available for video loading: {e}") from e
 
         # Convert PTS from nanoseconds to seconds for VideoReader
         pts_seconds = Fraction(self.pts, TimeUnits.SECOND)
 
-        with VideoReader(self.path, force_close=force_close) as reader:
-            frame = reader.read_frame(pts=pts_seconds)
+        try:
+            with VideoReader(self.path, force_close=force_close) as reader:
+                frame = reader.read_frame(pts=pts_seconds)
 
-            # Convert to RGB first, then to BGRA for consumers
-            rgb_array = frame.to_ndarray(format="rgb24")
-            self.frame_arr = cv2.cvtColor(rgb_array, cv2.COLOR_RGB2BGRA)
+                # Convert to RGB first, then to BGRA for consumers
+                rgb_array = frame.to_ndarray(format="rgb24")
+                self.frame_arr = cv2.cvtColor(rgb_array, cv2.COLOR_RGB2BGRA)
 
-            # Set shape based on the loaded frame (width, height)
-            h, w = self.frame_arr.shape[:2]
-            shape_tuple = (w, h)
-            self.shape = shape_tuple
-            self.original_shape = shape_tuple
+                # Set shape based on the loaded frame (width, height)
+                h, w = self.frame_arr.shape[:2]
+                shape_tuple = (w, h)
+                self.shape = shape_tuple
+                self.original_shape = shape_tuple
+
+        except Exception as e:
+            raise ValueError(f"Failed to load frame at {float(pts_seconds):.3f}s from {self.path}: {e}") from e
 
         return self.frame_arr
 
@@ -132,11 +144,14 @@ class ScreenEmitted(OWAMessage):
 
         Returns:
             np.ndarray: The frame as an RGB array with shape (height, width, 3)
+
+        Raises:
+            ImportError: If opencv-python is not available
         """
         try:
             import cv2
-        except ImportError:
-            raise ImportError("opencv-python is required for color conversion")
+        except ImportError as e:
+            raise ImportError("opencv-python is required for color conversion") from e
 
         # Ensure frame is loaded
         bgra_array = self.lazy_load()
@@ -151,11 +166,14 @@ class ScreenEmitted(OWAMessage):
 
         Returns:
             PIL.Image.Image: The frame as a PIL Image in RGB mode
+
+        Raises:
+            ImportError: If Pillow is not available
         """
         try:
             from PIL import Image
-        except ImportError:
-            raise ImportError("Pillow is required for PIL Image conversion")
+        except ImportError as e:
+            raise ImportError("Pillow is required for PIL Image conversion") from e
 
         rgb_array = self.to_rgb_array()
         return Image.fromarray(rgb_array, mode="RGB")
@@ -191,8 +209,15 @@ class ScreenEmitted(OWAMessage):
             if value is not None:
                 attr_strs.append(f"{attr}={value!r}")
 
-        # Add loading status
+        # Add loading status and memory info
         if self.is_loaded():
-            attr_strs.append("loaded=True")
+            memory_mb = self.get_memory_usage() / (1024 * 1024)
+            attr_strs.append(f"loaded=True, memory={memory_mb:.1f}MB")
+        else:
+            attr_strs.append("loaded=False")
 
         return f"{self.__class__.__name__}({', '.join(attr_strs)})"
+
+    def __repr__(self) -> str:
+        """Return a detailed string representation for debugging."""
+        return self.__str__()
