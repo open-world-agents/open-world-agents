@@ -144,7 +144,7 @@ def validate_messages(
     console.print(validation_table)
     
     # Summary
-    console.print(f"\n[bold]Validation Summary:[/bold]")
+    console.print("\n[bold]Validation Summary:[/bold]")
     console.print(f"Total messages: {results['total_messages']}")
     console.print(f"Valid messages: {results['valid_messages']}")
     console.print(f"Invalid messages: {results['invalid_messages']}")

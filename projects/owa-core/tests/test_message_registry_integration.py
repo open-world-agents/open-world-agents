@@ -5,7 +5,6 @@ These tests verify that the message registry can discover and load
 messages from the owa-msgs package via entry points.
 """
 
-import pytest
 
 from owa.core import MESSAGES
 from owa.core.message import BaseMessage

@@ -2,8 +2,9 @@
 Tests for desktop message definitions.
 """
 
-import pytest
 import io
+
+import pytest
 from pydantic import ValidationError
 
 from owa.msgs.desktop.keyboard import KeyboardEvent, KeyboardState
@@ -41,11 +42,11 @@ class TestKeyboardMessages:
     def test_keyboard_event_serialization(self):
         """Test KeyboardEvent serialization."""
         event = KeyboardEvent(event_type="press", vk=65, timestamp=1234567890)
-        
+
         buffer = io.BytesIO()
         event.serialize(buffer)
-        
-        serialized = buffer.getvalue().decode('utf-8')
+
+        serialized = buffer.getvalue().decode("utf-8")
         assert '"event_type":"press"' in serialized
         assert '"vk":65' in serialized
         assert '"timestamp":1234567890' in serialized
@@ -53,8 +54,8 @@ class TestKeyboardMessages:
     def test_keyboard_event_deserialization(self):
         """Test KeyboardEvent deserialization."""
         json_data = '{"event_type":"press","vk":65,"timestamp":1234567890}'
-        buffer = io.BytesIO(json_data.encode('utf-8'))
-        
+        buffer = io.BytesIO(json_data.encode("utf-8"))
+
         event = KeyboardEvent.deserialize(buffer)
         assert event.event_type == "press"
         assert event.vk == 65
@@ -63,29 +64,29 @@ class TestKeyboardMessages:
     def test_keyboard_state_creation(self):
         """Test creating KeyboardState instances."""
         # Empty state
-        state = KeyboardState(pressed_keys=set())
-        assert state.pressed_keys == set()
+        state = KeyboardState(buttons=set())
+        assert state.buttons == set()
         assert state.timestamp is None
         assert state._type == "desktop/KeyboardState"
 
         # State with pressed keys
-        state = KeyboardState(pressed_keys={65, 66, 67}, timestamp=1234567890)
-        assert state.pressed_keys == {65, 66, 67}
+        state = KeyboardState(buttons={65, 66, 67}, timestamp=1234567890)
+        assert state.buttons == {65, 66, 67}
         assert state.timestamp == 1234567890
 
     def test_keyboard_state_validation(self):
         """Test KeyboardState validation."""
         # Valid range (0-255)
-        state = KeyboardState(pressed_keys={0, 255})
-        assert 0 in state.pressed_keys
-        assert 255 in state.pressed_keys
+        state = KeyboardState(buttons={0, 255})
+        assert 0 in state.buttons
+        assert 255 in state.buttons
 
         # Invalid range - should be caught by UInt8 annotation
         with pytest.raises(ValidationError):
-            KeyboardState(pressed_keys={-1})
+            KeyboardState(buttons={-1})
 
         with pytest.raises(ValidationError):
-            KeyboardState(pressed_keys={256})
+            KeyboardState(buttons={256})
 
 
 class TestMouseMessages:
@@ -102,14 +103,7 @@ class TestMouseMessages:
         assert event._type == "desktop/MouseEvent"
 
         # Click event
-        event = MouseEvent(
-            event_type="click", 
-            x=100, 
-            y=200, 
-            button="left", 
-            pressed=True,
-            timestamp=1234567890
-        )
+        event = MouseEvent(event_type="click", x=100, y=200, button="left", pressed=True, timestamp=1234567890)
         assert event.event_type == "click"
         assert event.button == "left"
         assert event.pressed is True
@@ -137,18 +131,12 @@ class TestMouseMessages:
 
     def test_mouse_event_serialization(self):
         """Test MouseEvent serialization."""
-        event = MouseEvent(
-            event_type="click", 
-            x=100, 
-            y=200, 
-            button="left", 
-            pressed=True
-        )
-        
+        event = MouseEvent(event_type="click", x=100, y=200, button="left", pressed=True)
+
         buffer = io.BytesIO()
         event.serialize(buffer)
-        
-        serialized = buffer.getvalue().decode('utf-8')
+
+        serialized = buffer.getvalue().decode("utf-8")
         assert '"event_type":"click"' in serialized
         assert '"x":100' in serialized
         assert '"y":200' in serialized
@@ -158,31 +146,26 @@ class TestMouseMessages:
     def test_mouse_state_creation(self):
         """Test creating MouseState instances."""
         # Empty state
-        state = MouseState(x=100, y=200, pressed_buttons=set())
+        state = MouseState(x=100, y=200, buttons=set())
         assert state.x == 100
         assert state.y == 200
-        assert state.pressed_buttons == set()
+        assert state.buttons == set()
         assert state._type == "desktop/MouseState"
 
         # State with pressed buttons
-        state = MouseState(
-            x=100, 
-            y=200, 
-            pressed_buttons={"left", "right"}, 
-            timestamp=1234567890
-        )
-        assert state.pressed_buttons == {"left", "right"}
+        state = MouseState(x=100, y=200, buttons={"left", "right"}, timestamp=1234567890)
+        assert state.buttons == {"left", "right"}
         assert state.timestamp == 1234567890
 
     def test_mouse_state_validation(self):
         """Test MouseState validation."""
         # Valid buttons
-        state = MouseState(x=100, y=200, pressed_buttons={"left", "middle", "right"})
-        assert "left" in state.pressed_buttons
+        state = MouseState(x=100, y=200, buttons={"left", "middle", "right"})
+        assert "left" in state.buttons
 
         # Invalid button in set
         with pytest.raises(ValidationError):
-            MouseState(x=100, y=200, pressed_buttons={"invalid"})
+            MouseState(x=100, y=200, buttons={"invalid"})
 
 
 class TestMessageSchemas:

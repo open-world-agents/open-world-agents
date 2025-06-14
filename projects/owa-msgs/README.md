@@ -36,21 +36,47 @@ from owa.msgs.desktop.keyboard import KeyboardEvent
 from owa.msgs.desktop.mouse import MouseEvent
 ```
 
-### Available Message Types
+### Discovering Available Message Types
 
-- `desktop/KeyboardEvent` - Keyboard press/release events
-- `desktop/KeyboardState` - Current keyboard state
-- `desktop/MouseEvent` - Mouse movement, click, and scroll events  
-- `desktop/MouseState` - Current mouse state
+To see all available message types, use the CLI command:
+
+```bash
+owl messages list
+```
+
+Or programmatically:
+
+```python
+from owa.core import MESSAGES
+
+# List all available message types
+for message_type in sorted(MESSAGES.keys()):
+    print(f"- {message_type}")
+
+# Get detailed information about a specific message
+print(f"Total messages: {len(MESSAGES)}")
+```
+
+### Getting Message Details
+
+For detailed information about any message type:
+
+```bash
+# Show comprehensive details about a message
+owl messages show desktop/KeyboardEvent
+
+# Show with usage examples
+owl messages show desktop/KeyboardEvent --example
+
+# Validate all messages
+owl messages validate
+```
 
 ## Message Domains
 
-### Desktop Domain
+Messages are organized by domain for better structure:
 
-Messages related to desktop interaction:
-
-- **Keyboard**: Key press/release events and state
-- **Mouse**: Mouse movement, clicks, scrolls, and state
+- **Desktop Domain** (`desktop/*`): Desktop interaction messages including keyboard, mouse, window, and screen capture events
 
 ## Extending with Custom Messages
 
@@ -58,7 +84,7 @@ To add custom message types, create a package with entry point registration:
 
 ```toml
 # pyproject.toml
-[project.entry-points."owa.messages"]
+[project.entry-points."owa.msgs"]
 "custom/MyMessage" = "my_package.messages:MyMessage"
 ```
 
