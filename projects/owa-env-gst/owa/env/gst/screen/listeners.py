@@ -11,8 +11,9 @@ gi.require_version("Gst", "1.0")
 from gi.repository import Gst
 from loguru import logger
 
+from owa.msgs.desktop.screen import ScreenEmitted
+
 from ..gst_runner import GstPipelineRunner
-from ..msg import ScreenEmitted
 from ..pipeline_builder import screen_capture_pipeline
 from ..utils import sample_to_ndarray
 

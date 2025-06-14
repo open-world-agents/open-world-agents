@@ -10,7 +10,7 @@ while iterating through MCAP messages.
 import tempfile
 
 from owa.core.message import OWAMessage
-from owa.env.desktop.msg import KeyboardEvent
+from owa.msgs.desktop.keyboard import KeyboardEvent
 
 from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
 

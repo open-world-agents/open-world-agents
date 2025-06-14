@@ -95,7 +95,7 @@ with tick.session:
 
 ```python
 from owa.core.registry import CALLABLES, LISTENERS
-from owa.env.desktop.msg import KeyboardEvent
+from owa.msgs.desktop.keyboard import KeyboardEvent
 
 # Components automatically available - unified namespace/name pattern
 

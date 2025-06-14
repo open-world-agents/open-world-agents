@@ -1,7 +1,7 @@
 import time
 
-from owa.env.gst.msg import ScreenEmitted
 from owa.env.gst.omnimodal import AppsinkRecorder
+from owa.msgs.desktop.screen import ScreenEmitted
 
 
 def main():
