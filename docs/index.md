@@ -10,11 +10,12 @@ Open World Agents (OWA) is a monorepo containing the complete toolkit for multim
 
 ## Architecture Overview
 
-OWA consists of three core components:
+OWA consists of four core components:
 
-🌍 **[Environment (Env)](env/index.md)** - Asynchronous, event-driven interface for real-time agent interactions  
-📊 **[Data](data/index.md)** - High-performance recording, storage, and analysis of multimodal desktop data  
-🤖 **[Examples](examples/)** - Complete implementations and training pipelines for multimodal agents  
+🌍 **[Environment (Env)](env/index.md)** - Asynchronous, event-driven interface for real-time agent interactions
+📊 **[Data](data/index.md)** - High-performance recording, storage, and analysis of multimodal desktop data
+📝 **[Messages](env/guide.md#message-registry)** - Centralized message definitions with automatic discovery and registry system
+🤖 **[Examples](examples/)** - Complete implementations and training pipelines for multimodal agents
 
 ## Quick Navigation
 
@@ -39,7 +40,7 @@ Capture, store, and analyze multimodal desktop interaction data.
 | Component | Description |
 |-----------|-------------|
 | **[Data Overview](data/index.md)** | Complete data pipeline for desktop agents |
-| **[OWAMcap Format](data/data_format.md)** | Self-contained multimodal data format powered by [mcap](https://mcap.dev/) |
+| **[OWAMcap Format](data/data_format.md)** | Specialized format capturing complete desktop interactions (screen + events) with nanosecond precision |
 | **[Desktop Recorder (ocap)](data/ocap.md)** | High-performance desktop recording tool |
 | **[Data Viewer](data/viewer.md)** | Visualize and analyze recorded sessions |
 | **[Data Explorer](data/how_to_explorer_and_edit.md)** | Tools for data exploration and editing |

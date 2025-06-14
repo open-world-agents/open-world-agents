@@ -43,12 +43,12 @@ end:       2025-03-21T17:06:37.5587958+09:00 (1742544397.558795800)
 compression:
         zstd: [1/1 chunks] [48.19 KiB/9.42 KiB (80.44%)] [1.37 KiB/sec]
 channels:
-        (1) window            7 msgs (1.02 Hz)    : owa.env.desktop.msg.WindowInfo [jsonschema]
-        (2) keyboard/state    7 msgs (1.02 Hz)    : owa.env.desktop.msg.KeyboardState [jsonschema]
-        (3) mouse/state       7 msgs (1.02 Hz)    : owa.env.desktop.msg.MouseState [jsonschema]
-        (4) mouse           115 msgs (16.77 Hz)   : owa.env.desktop.msg.MouseEvent [jsonschema]
-        (5) screen          362 msgs (52.80 Hz)   : owa.env.gst.msg.ScreenEmitted [jsonschema]
-        (6) keyboard         20 msgs (2.92 Hz)    : owa.env.desktop.msg.KeyboardEvent [jsonschema]
+        (1) window            7 msgs (1.02 Hz)    : desktop/WindowInfo [jsonschema]
+        (2) keyboard/state    7 msgs (1.02 Hz)    : desktop/KeyboardState [jsonschema]
+        (3) mouse/state       7 msgs (1.02 Hz)    : desktop/MouseState [jsonschema]
+        (4) mouse           115 msgs (16.77 Hz)   : desktop/MouseEvent [jsonschema]
+        (5) screen          362 msgs (52.80 Hz)   : desktop/ScreenEmitted [jsonschema]
+        (6) keyboard         20 msgs (2.92 Hz)    : desktop/KeyboardEvent [jsonschema]
 channels: 6
 attachments: 0
 metadata: 0
@@ -111,8 +111,10 @@ import tempfile
 
 from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
 from owa.core.message import OWAMessage
-from owa.msgs.desktop.keyboard import KeyboardEvent
+from owa.core import MESSAGES
 
+# Access message types through the global registry
+KeyboardEvent = MESSAGES['desktop/KeyboardEvent']
 
 class String(OWAMessage):
     _type = "std_msgs/String"

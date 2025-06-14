@@ -17,7 +17,7 @@
 Open World Agents is a comprehensive framework for building AI agents that interact with desktop applications through vision, keyboard, and mouse control. Complete toolkit from data capture to model training and evaluation:
 
 - **OWA Core & Environment**: Asynchronous, event-driven interface for real-time agents with dynamic plugin activation
-- **Data Capture & Format**: High-performance desktop recording with `OWAMcap` format powered by [mcap](https://mcap.dev/)
+- **Data Capture & Format**: High-performance desktop recording with `OWAMcap` format - a specialized file format that captures screen recordings, keyboard/mouse events, and window information with nanosecond precision, powered by [mcap](https://mcap.dev/)
 - **Environment Plugins**: Pre-built plugins for desktop automation, screen capture, and more
 - **CLI Tools**: Command-line utilities for recording, analyzing, and managing agent data
 
@@ -40,6 +40,7 @@ open-world-agents/
 ├── projects/
 │   ├── mcap-owa-support/     # OWAMcap format support
 │   ├── owa-core/             # Core framework and registry system
+│   ├── owa-msgs/             # Core message definitions with automatic discovery
 │   ├── owa-cli/              # Command-line tools (ocap, owl)
 │   ├── owa-env-desktop/      # Desktop environment plugin
 │   ├── owa-env-example/      # Example environment implementations
@@ -65,6 +66,7 @@ All OWA packages use namespace packaging and are installed in the `owa` namespac
 | Name | Release in PyPI | Conda | Description |
 |------|-----------------|-------|-------------|
 | [`owa.core`](projects/owa-core) | [![owa-core](https://img.shields.io/pypi/v/owa-core?label=owa-core)](https://pypi.org/project/owa-core/) | [![owa-core](https://img.shields.io/conda/vn/conda-forge/owa-core?label=conda)](https://anaconda.org/conda-forge/owa-core) | Framework foundation with registry system |
+| [`owa.msgs`](projects/owa-msgs) | [![owa-msgs](https://img.shields.io/pypi/v/owa-msgs?label=owa-msgs)](https://pypi.org/project/owa-msgs/) | [![owa-msgs](https://img.shields.io/conda/vn/conda-forge/owa-msgs?label=conda)](https://anaconda.org/conda-forge/owa-msgs) | Core message definitions with automatic discovery |
 | [`owa.cli`](projects/owa-cli) | [![owa-cli](https://img.shields.io/pypi/v/owa-cli?label=owa-cli)](https://pypi.org/project/owa-cli/) | [![owa-cli](https://img.shields.io/conda/vn/conda-forge/owa-cli?label=conda)](https://anaconda.org/conda-forge/owa-cli) | Command-line tools (`owl`) for data analysis |
 | [`mcap-owa-support`](projects/mcap-owa-support) | [![mcap-owa-support](https://img.shields.io/pypi/v/mcap-owa-support?label=mcap-owa-support)](https://pypi.org/project/mcap-owa-support/) | [![mcap-owa-support](https://img.shields.io/conda/vn/conda-forge/mcap-owa-support?label=conda)](https://anaconda.org/conda-forge/mcap-owa-support) | OWAMcap format support and utilities |
 | [`ocap`](projects/ocap) 🎥 | [![ocap](https://img.shields.io/pypi/v/ocap?label=ocap)](https://pypi.org/project/ocap/) | [![ocap](https://img.shields.io/conda/vn/conda-forge/ocap?label=conda)](https://anaconda.org/conda-forge/ocap) | Desktop recorder for multimodal data capture |
@@ -113,13 +115,17 @@ All OWA packages use namespace packaging and are installed in the `owa` namespac
 
 ```python
 import time
-from owa.core.registry import CALLABLES, LISTENERS
+from owa.core import CALLABLES, LISTENERS, MESSAGES
 
-# Components automatically available - no activation needed!
+# Components and messages automatically available - no activation needed!
 
 def callback():
     time_ns = CALLABLES["std/time_ns"]()
     print(f"Current time: {time_ns}")
+
+# Access message types through the global registry
+KeyboardEvent = MESSAGES['desktop/KeyboardEvent']
+print(f"Available message: {KeyboardEvent}")
 
 # Create a listener for std/tick event (every 1 second)
 tick = LISTENERS["std/tick"]().configure(callback=callback, interval=1)
@@ -134,13 +140,17 @@ tick.stop(), tick.join()
 
 ```python
 import time
-from owa.core.registry import CALLABLES, LISTENERS
+from owa.core import CALLABLES, LISTENERS, MESSAGES
 
-# Components automatically available - no activation needed!
+# Components and messages automatically available - no activation needed!
 
 def on_screen_update(frame, metrics):
     print(f"📸 New frame: {frame.frame_arr.shape}")
     print(f"⚡ Latency: {metrics.latency*1000:.1f}ms")
+
+    # Access screen message type from registry
+    ScreenEmitted = MESSAGES['desktop/ScreenEmitted']
+    print(f"Frame message type: {ScreenEmitted}")
 
 # Start real-time screen capture
 screen = LISTENERS["gst/screen"]().configure(
@@ -174,6 +184,24 @@ $ owl env namespaces                              # List all available namespace
 # Ecosystem analysis and health monitoring
 $ owl env stats                                   # Show ecosystem statistics
 $ owl env health                                  # Perform health check
+```
+
+### Message Management with CLI
+
+Explore and manage message types using the new `owl messages` command:
+
+```bash
+# List all available message types
+$ owl messages list
+
+# Show detailed message schema
+$ owl messages show desktop/KeyboardEvent
+
+# Search for specific message types
+$ owl messages search keyboard
+
+# Validate message definitions
+$ owl messages validate
 ```
 
 Powered by the powerful Gstreamer and Windows API, our implementation is **6x** faster than comparatives.
@@ -233,12 +261,12 @@ end:       2025-05-23T20:04:10.5390976+09:00 (1747998250.539097600)
 compression:
         zstd: [1/1 chunks] [113.42 KiB/17.52 KiB (84.55%)] [1.99 KiB/sec]
 channels:
-        (1) keyboard/state    9 msgs (1.02 Hz)    : owa.env.desktop.msg.KeyboardState [jsonschema]
-        (2) mouse/state       9 msgs (1.02 Hz)    : owa.env.desktop.msg.MouseState [jsonschema]
-        (3) window            9 msgs (1.02 Hz)    : owa.env.desktop.msg.WindowInfo [jsonschema]
-        (4) screen          523 msgs (59.35 Hz)   : owa.env.gst.msg.ScreenEmitted [jsonschema]
-        (5) mouse           510 msgs (57.87 Hz)   : owa.env.desktop.msg.MouseEvent [jsonschema]
-        (6) keyboard          2 msgs (0.23 Hz)    : owa.env.desktop.msg.KeyboardEvent [jsonschema]
+        (1) keyboard/state    9 msgs (1.02 Hz)    : desktop/KeyboardState [jsonschema]
+        (2) mouse/state       9 msgs (1.02 Hz)    : desktop/MouseState [jsonschema]
+        (3) window            9 msgs (1.02 Hz)    : desktop/WindowInfo [jsonschema]
+        (4) screen          523 msgs (59.35 Hz)   : desktop/ScreenEmitted [jsonschema]
+        (5) mouse           510 msgs (57.87 Hz)   : desktop/MouseEvent [jsonschema]
+        (6) keyboard          2 msgs (0.23 Hz)    : desktop/KeyboardEvent [jsonschema]
 channels: 6
 attachments: 0
 metadata: 0
@@ -278,7 +306,7 @@ For development or contributing to the project, you can install packages in edit
 - **🧩 Zero-Configuration Plugin System**: Automatic plugin discovery via Entry Points
 - **📊 High-Performance Data**: 6x faster screen capture with GStreamer integration
 - **🤗 HuggingFace Ecosystem**: Access growing collection of community OWAMcap datasets
-- **🗂️ OWAMcap Format**: Self-contained, flexible multimodal data containers
+- **🗂️ OWAMcap Format**: Specialized file format capturing complete desktop interactions (screen + keyboard + mouse + windows) with perfect synchronization
 - **🛠️ Extensible**: Community-driven plugin ecosystem
 
 ## Documentation
