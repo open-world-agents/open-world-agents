@@ -140,41 +140,54 @@ class OWAMessage(BaseModel, BaseMessage):
         if not type_str:
             raise ValueError(f"Class {cls.__name__} must define a non-empty _type attribute")
 
-        # Check if _type contains at least one dot (module.ClassName format)
-        if "." not in type_str:
-            raise ValueError(f"Invalid _type format '{type_str}'. Expected format: 'module.path.ClassName'")
+        # Support both old module-based format (module.path.ClassName) and new domain-based format (domain/MessageType)
+        # OEP-0006 introduces domain-based naming for better organization
+        if "/" in type_str:
+            # New domain-based format (OEP-0006): domain/MessageType
+            # For domain-based messages, we skip module verification since they're registered via entry points
+            # The message registry system handles discovery and validation
+            return True
+        elif "." in type_str:
+            # Old module-based format: module.path.ClassName
+            # Split into module path and class name (same logic as decoder)
+            try:
+                module_path, class_name = type_str.rsplit(".", 1)
+            except ValueError:
+                raise ValueError(
+                    f"Invalid _type format '{type_str}'. Expected format: 'module.path.ClassName' or 'domain/MessageType'"
+                )
 
-        # Split into module path and class name (same logic as decoder)
-        try:
-            module_path, class_name = type_str.rsplit(".", 1)
-        except ValueError:
-            raise ValueError(f"Invalid _type format '{type_str}'. Expected format: 'module.path.ClassName'")
+            # Check if module can be imported
+            try:
+                spec = importlib.util.find_spec(module_path)
+                if spec is None:
+                    raise ImportError(f"Module '{module_path}' specified in _type '{type_str}' cannot be found")
+            except (ImportError, ModuleNotFoundError, ValueError) as e:
+                raise ImportError(f"Module '{module_path}' specified in _type '{type_str}' cannot be found: {e}")
 
-        # Check if module can be imported
-        try:
-            spec = importlib.util.find_spec(module_path)
-            if spec is None:
-                raise ImportError(f"Module '{module_path}' specified in _type '{type_str}' cannot be found")
-        except (ImportError, ModuleNotFoundError, ValueError) as e:
-            raise ImportError(f"Module '{module_path}' specified in _type '{type_str}' cannot be found: {e}")
+            # Try to import the module and get the class
+            try:
+                module = importlib.import_module(module_path)
+            except ImportError as e:
+                raise ImportError(f"Failed to import module '{module_path}' specified in _type '{type_str}': {e}")
 
-        # Try to import the module and get the class
-        try:
-            module = importlib.import_module(module_path)
-        except ImportError as e:
-            raise ImportError(f"Failed to import module '{module_path}' specified in _type '{type_str}': {e}")
+            # Check if class exists in the module
+            if not hasattr(module, class_name):
+                raise AttributeError(
+                    f"Class '{class_name}' not found in module '{module_path}' (from _type '{type_str}')"
+                )
 
-        # Check if class exists in the module
-        if not hasattr(module, class_name):
-            raise AttributeError(f"Class '{class_name}' not found in module '{module_path}' (from _type '{type_str}')")
-
-        # Get the class and verify it's the same as the current class
-        target_class = getattr(module, class_name)
-        if target_class is not cls:
-            warnings.warn(
-                f"Class mismatch: _type '{type_str}' points to {target_class} but verification was called on {cls}. "
-                f"This may indicate an inconsistent _type definition.",
-                UserWarning,
+            # Get the class and verify it's the same as the current class
+            target_class = getattr(module, class_name)
+            if target_class is not cls:
+                warnings.warn(
+                    f"Class mismatch: _type '{type_str}' points to {target_class} but verification was called on {cls}. "
+                    f"This may indicate an inconsistent _type definition.",
+                    UserWarning,
+                )
+        else:
+            raise ValueError(
+                f"Invalid _type format '{type_str}'. Expected format: 'module.path.ClassName' or 'domain/MessageType'"
             )
 
         return True
