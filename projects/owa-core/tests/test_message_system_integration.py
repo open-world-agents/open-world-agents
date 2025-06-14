@@ -77,7 +77,7 @@ class TestMessageSystemIntegration:
     def test_mcap_integration_availability(self):
         """Test that MCAP integration is available (detailed tests in mcap-owa-support)."""
         try:
-            from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter  # noqa: F401
+            from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter  # noqa: F401  # noqa: F401
             # If import succeeds, MCAP integration is available
             # Detailed MCAP tests are in the mcap-owa-support package
         except ImportError:
