@@ -9,6 +9,12 @@ from mcap.decoder import DecoderFactory as McapDecoderFactory
 from mcap.records import Schema
 from mcap.well_known import MessageEncoding, SchemaEncoding
 
+try:
+    from owa.core import MESSAGES
+except ImportError:
+    # Fallback if owa.core is not available
+    MESSAGES = None
+
 
 class DecoderFactory(McapDecoderFactory):
     def __init__(self):
@@ -22,34 +28,44 @@ class DecoderFactory(McapDecoderFactory):
         # Decoder that attempts to load and use the actual message class
         def object_decoder(message_data: bytes) -> Any:
             if schema.id not in self._decoders:
-                try:
-                    module, class_name = schema.name.rsplit(".", 1)  # e.g. "owa.env.desktop.msg.KeyboardState"
-                except ValueError:
-                    # Fall back to dictionary decoding on invalid schema name
-                    warnings.warn(f"Invalid schema name {schema.name}. Falling back to dictionary decoding.")
-                    self._decoders[schema.id] = lambda data: EasyDict(orjson.loads(data))
-                    return self._decoders[schema.id](message_data)
+                cls = None
 
-                try:
-                    mod = importlib.import_module(module)
-                    cls = getattr(mod, class_name)
+                # Try new domain-based format first (OEP-0006)
+                if MESSAGES and "/" in schema.name:
+                    try:
+                        cls = MESSAGES[schema.name]
+                    except KeyError:
+                        pass  # Fall through to old format or dictionary decoding
 
+                # Try old module-based format for backward compatibility
+                if cls is None and "." in schema.name:
+                    try:
+                        module, class_name = schema.name.rsplit(".", 1)  # e.g. "owa.env.desktop.msg.KeyboardState"
+                        mod = importlib.import_module(module)
+                        cls = getattr(mod, class_name)
+                    except (ValueError, ImportError, AttributeError):
+                        pass  # Fall through to dictionary decoding
+
+                if cls is not None:
+                    # Successfully found message class
                     def decoder(message_data: bytes) -> Any:
                         buffer = io.BytesIO(message_data)
                         return cls.deserialize(buffer)
 
                     self._decoders[schema.id] = decoder
-                except ImportError:
-                    # Fall back to dictionary decoding on import error
-                    warnings.warn(
-                        f"Failed to import module {module} for schema {schema.name}. Falling back to dictionary decoding."
-                    )
+                else:
+                    # Fall back to dictionary decoding
+                    if "/" in schema.name:
+                        warnings.warn(
+                            f"Domain-based message '{schema.name}' not found in registry. "
+                            f"Falling back to dictionary decoding."
+                        )
+                    else:
+                        warnings.warn(
+                            f"Failed to import module for schema '{schema.name}'. Falling back to dictionary decoding."
+                        )
                     self._decoders[schema.id] = lambda data: EasyDict(orjson.loads(data))
                     return self._decoders[schema.id](message_data)
-                except AttributeError as e:
-                    raise RuntimeError(f"Error accessing class {class_name} in module {module}: {e}")
-                except Exception as e:
-                    raise RuntimeError(f"Error deserializing message: {e}")
 
             return self._decoders[schema.id](message_data)
 
