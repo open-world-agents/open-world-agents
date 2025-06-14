@@ -2,7 +2,7 @@
 Legacy message definitions for backward compatibility.
 
 DEPRECATED: These message definitions have been moved to the owa-msgs package
-as part of OEP-0006. Please use the new imports:
+for better organization and centralized management. Please use the new imports:
 
     from owa.msgs.desktop.keyboard import KeyboardEvent, KeyboardState
     from owa.msgs.desktop.mouse import MouseEvent, MouseState
@@ -26,12 +26,14 @@ try:
     from owa.msgs.desktop.keyboard import KeyboardState as _NewKeyboardState
     from owa.msgs.desktop.mouse import MouseEvent as _NewMouseEvent
     from owa.msgs.desktop.mouse import MouseState as _NewMouseState
+    from owa.msgs.desktop.window import WindowInfo as _NewWindowInfo
 except ImportError:
     # Fallback if owa-msgs is not installed
     _NewKeyboardEvent = None
     _NewKeyboardState = None
     _NewMouseEvent = None
     _NewMouseState = None
+    _NewWindowInfo = None
 
 from owa.core.message import OWAMessage
 
@@ -127,7 +129,19 @@ class _LegacyMouseState(OWAMessage):
     buttons: set[MouseButton]
 
 
-class WindowInfo(OWAMessage):
+class WindowInfo:
+    """Legacy WindowInfo - redirects to new implementation."""
+
+    def __new__(cls, *args, **kwargs):
+        _deprecation_warning("owa.env.desktop.msg.WindowInfo", "from owa.msgs.desktop.window import WindowInfo")
+        if _NewWindowInfo is not None:
+            return _NewWindowInfo(*args, **kwargs)
+        else:
+            return _LegacyWindowInfo(*args, **kwargs)
+
+
+# Fallback implementation for when owa-msgs is not available
+class _LegacyWindowInfo(OWAMessage):
     _type = "owa.env.desktop.msg.WindowInfo"
 
     title: str

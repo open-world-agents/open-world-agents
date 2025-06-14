@@ -30,7 +30,7 @@ class DecoderFactory(McapDecoderFactory):
             if schema.id not in self._decoders:
                 cls = None
 
-                # Try new domain-based format first (OEP-0006)
+                # Try new domain-based format first
                 if MESSAGES and "/" in schema.name:
                     try:
                         cls = MESSAGES[schema.name]

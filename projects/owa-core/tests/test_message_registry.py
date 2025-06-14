@@ -1,12 +1,12 @@
 """
-Tests for the message registry system (OEP-0006).
+Tests for the message registry system.
 """
 
 from unittest.mock import Mock, patch
 
 import pytest
 
-from owa.core.message import BaseMessage, OWAMessage
+from owa.core.message import OWAMessage
 from owa.core.messages import MESSAGES, MessageRegistry
 
 
@@ -30,7 +30,7 @@ class TestMessageRegistry:
         """Helper to create entry points mock."""
 
         def mock_entry_points(group=None):
-            return entry_points_list if group == "owa.messages" else []
+            return entry_points_list if group == "owa.msgs" else []
 
         return mock_entry_points
 

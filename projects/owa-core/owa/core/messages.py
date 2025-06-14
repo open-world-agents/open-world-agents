@@ -1,7 +1,7 @@
 """
 Message registry system for automatic message discovery via entry points.
 
-This module implements the message registry system described in OEP-0006,
+This module implements the message registry system for centralized message management,
 providing automatic discovery of message types through Python entry points.
 """
 
@@ -21,7 +21,7 @@ class MessageRegistry:
     Registry for automatic message discovery via entry points.
 
     This registry discovers and manages message types registered through
-    the 'owa.messages' entry point group. It provides dict-like access
+    the 'owa.msgs' entry point group. It provides dict-like access
     to message classes by their type names.
 
     Example:
@@ -40,10 +40,10 @@ class MessageRegistry:
             return
 
         try:
-            eps = entry_points(group="owa.messages")
+            eps = entry_points(group="owa.msgs")
         except TypeError:
             # Python < 3.10 compatibility
-            eps = entry_points().get("owa.messages", [])
+            eps = entry_points().get("owa.msgs", [])
 
         for entry_point in eps:
             try:

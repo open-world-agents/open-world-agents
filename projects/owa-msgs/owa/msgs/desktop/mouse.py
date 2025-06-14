@@ -2,7 +2,7 @@
 Desktop mouse message definitions.
 
 This module contains message types for mouse events and state,
-following the OEP-0006 specification for standardized message naming.
+following the domain-based message naming convention for better organization.
 """
 
 from typing import Literal, TypeAlias
@@ -16,10 +16,10 @@ MouseButton: TypeAlias = Literal["unknown", "left", "middle", "right", "x1", "x2
 class MouseEvent(OWAMessage):
     """
     Represents a mouse event (movement, click, or scroll).
-    
+
     This message captures mouse interactions with detailed event information,
     suitable for recording user interactions and replaying them.
-    
+
     Attributes:
         event_type: Type of event - "move", "click", or "scroll"
         x: X coordinate on screen
@@ -30,8 +30,9 @@ class MouseEvent(OWAMessage):
         dy: Vertical scroll delta (for scroll events)
         timestamp: Optional timestamp in nanoseconds since epoch
     """
+
     _type = "desktop/MouseEvent"
-    
+
     event_type: Literal["move", "click", "scroll"]
     x: int
     y: int
@@ -45,19 +46,20 @@ class MouseEvent(OWAMessage):
 class MouseState(OWAMessage):
     """
     Represents the current state of the mouse.
-    
+
     This message captures the complete mouse state at a point in time,
     useful for state synchronization and debugging.
-    
+
     Attributes:
         x: Current X coordinate on screen
         y: Current Y coordinate on screen
-        pressed_buttons: Set of currently pressed mouse buttons
+        buttons: Set of currently pressed mouse buttons
         timestamp: Optional timestamp in nanoseconds since epoch
     """
+
     _type = "desktop/MouseState"
-    
+
     x: int
     y: int
-    pressed_buttons: set[MouseButton]
+    buttons: set[MouseButton]
     timestamp: int | None = None

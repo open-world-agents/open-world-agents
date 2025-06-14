@@ -2,7 +2,7 @@
 Message management commands for OWA CLI.
 
 This module provides commands for browsing, validating, and managing
-OWA message types through the message registry system (OEP-0006).
+OWA message types through the message registry system.
 """
 
 import typer
