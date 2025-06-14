@@ -54,7 +54,14 @@ git rebase release/v1.0.0
 git push origin main
 ```
 
-### 5. Publish Packages
+### 5. Push Tag
+
+```bash
+# Push the version tag to remote
+git push origin v1.0.0
+```
+
+### 6. Publish Packages
 
 ```bash
 # Set PyPI token
@@ -64,7 +71,7 @@ export PYPI_TOKEN=your_token_here
 python scripts/release/main.py publish
 ```
 
-### 6. Clean Up
+### 7. Clean Up
 
 ```bash
 # Delete release branch
