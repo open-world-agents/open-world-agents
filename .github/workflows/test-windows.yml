@@ -7,7 +7,7 @@ on:
     branches: [main, dev]
 
 jobs:
-  test:
+  test-windows:
     runs-on: windows-latest
     defaults:
       run:
@@ -37,7 +37,7 @@ jobs:
       - name: Install dependencies
         run: vuv install --dev
 
-      - name: Run pytest (will also pick it up)
+      - name: Run pytest
         run: pytest
 
       - name: Install owa-env-example

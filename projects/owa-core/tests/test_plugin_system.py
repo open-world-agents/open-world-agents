@@ -5,11 +5,32 @@ This module tests the core plugin functionality including:
 - LazyImportRegistry
 - Component access API
 - Plugin specification system
+
+These tests focus only on owa-core functionality and use mocks
+for any external dependencies.
 """
+
+from unittest.mock import patch
+
+import pytest
 
 from owa.core.component_access import get_component, get_registry, list_components
 from owa.core.plugin_spec import PluginSpec
 from owa.core.registry import CALLABLES, LISTENERS, RUNNABLES, LazyImportRegistry, RegistryType
+
+
+@pytest.fixture
+def isolated_registries():
+    """Create isolated registries for testing without affecting global state."""
+    callables_registry = LazyImportRegistry(RegistryType.CALLABLES)
+    listeners_registry = LazyImportRegistry(RegistryType.LISTENERS)
+    runnables_registry = LazyImportRegistry(RegistryType.RUNNABLES)
+
+    return {
+        "callables": callables_registry,
+        "listeners": listeners_registry,
+        "runnables": runnables_registry,
+    }
 
 
 def test_plugin_spec_creation():
@@ -64,10 +85,9 @@ def test_plugin_spec_validation():
         assert "invalid_type" in str(e)
 
 
-def test_component_access_api():
-    """Test the enhanced component access API."""
-    # Create a test registry and register some components
-    test_registry = LazyImportRegistry(RegistryType.CALLABLES)
+def test_component_access_api(isolated_registries):
+    """Test the enhanced component access API using isolated registries."""
+    test_registry = isolated_registries["callables"]
 
     # Register test components
     def test_add(a, b):
@@ -80,16 +100,8 @@ def test_component_access_api():
     test_registry.register("example/multiply", obj_or_import_path=test_multiply, is_instance=True)
     test_registry.register("other/subtract", obj_or_import_path="operator:sub")
 
-    # Replace global registry temporarily for testing
-    original_callables = CALLABLES._registry.copy()
-    original_import_paths = CALLABLES._import_paths.copy()
-
-    try:
-        CALLABLES._registry.clear()
-        CALLABLES._import_paths.clear()
-        CALLABLES._registry.update(test_registry._registry)
-        CALLABLES._import_paths.update(test_registry._import_paths)
-
+    # Mock the global registries to use our isolated ones
+    with patch("owa.core.component_access.CALLABLES", test_registry):
         # Test get_component with specific component
         add_func = get_component("callables", namespace="example", name="add")
         assert add_func(5, 3) == 8
@@ -114,13 +126,6 @@ def test_component_access_api():
         assert "example/add" in example_names
         assert "example/multiply" in example_names
         assert "other/subtract" not in example_names
-
-    finally:
-        # Restore original registry state
-        CALLABLES._registry.clear()
-        CALLABLES._import_paths.clear()
-        CALLABLES._registry.update(original_callables)
-        CALLABLES._import_paths.update(original_import_paths)
 
 
 def test_get_registry():

@@ -5,6 +5,8 @@ This module tests the built-in std plugin components including:
 - std/time_ns callable
 - std/tick listener
 - Plugin registration and discovery
+
+These tests focus only on owa-core's built-in std plugin functionality.
 """
 
 import threading
@@ -17,7 +19,7 @@ from owa.core.registry import CALLABLES, LISTENERS
 
 def test_std_plugin_registration():
     """Test that the std plugin components are properly registered."""
-    # Test that std plugin components are registered
+    # Test that std plugin components are registered in global registries
     assert "std/time_ns" in CALLABLES
     assert "std/tick" in LISTENERS
 
