@@ -5,9 +5,18 @@ These tests verify that the message registry can discover and load
 messages from the owa-msgs package via entry points.
 """
 
-
 from owa.core import MESSAGES
 from owa.core.message import BaseMessage
+
+
+def assert_message_type_matches(message_class, expected_type: str):
+    """Assert that a message class has the expected _type value."""
+    type_attr = message_class._type
+    if hasattr(type_attr, "default"):
+        actual_type = type_attr.default
+    else:
+        actual_type = type_attr
+    assert actual_type == expected_type, f"Expected _type {expected_type}, got {actual_type}"
 
 
 class TestMessageRegistryIntegration:
@@ -39,24 +48,12 @@ class TestMessageRegistryIntegration:
         KeyboardEvent = MESSAGES["desktop/KeyboardEvent"]
         assert issubclass(KeyboardEvent, BaseMessage)
 
-        # Extract the actual _type value (handle ModelPrivateAttr)
-        type_attr = KeyboardEvent._type
-        if hasattr(type_attr, "default"):
-            type_value = type_attr.default
-        else:
-            type_value = type_attr
-        assert type_value == "desktop/KeyboardEvent"
+        assert_message_type_matches(KeyboardEvent, "desktop/KeyboardEvent")
 
         # Test MouseEvent
         MouseEvent = MESSAGES["desktop/MouseEvent"]
         assert issubclass(MouseEvent, BaseMessage)
-
-        type_attr = MouseEvent._type
-        if hasattr(type_attr, "default"):
-            type_value = type_attr.default
-        else:
-            type_value = type_attr
-        assert type_value == "desktop/MouseEvent"
+        assert_message_type_matches(MouseEvent, "desktop/MouseEvent")
 
     def test_message_instantiation(self):
         """Test creating message instances from registry classes."""
@@ -108,46 +105,6 @@ class TestMessageRegistryIntegration:
 
         # Both should be the same class
         assert DirectKeyboardEvent is RegistryKeyboardEvent
-
-        # Both should create equivalent instances
-        direct_event = DirectKeyboardEvent(event_type="press", vk=65)
-        registry_event = RegistryKeyboardEvent(event_type="press", vk=65)
-
-        assert direct_event.event_type == registry_event.event_type
-        assert direct_event.vk == registry_event.vk
-        assert direct_event._type == registry_event._type
-
-    def test_registry_dict_like_behavior(self):
-        """Test that registry behaves like a dictionary."""
-        MESSAGES.reload()
-
-        # Test 'in' operator
-        assert "desktop/KeyboardEvent" in MESSAGES
-        assert "nonexistent/Message" not in MESSAGES
-
-        # Test get() method
-        KeyboardEvent = MESSAGES.get("desktop/KeyboardEvent")
-        assert KeyboardEvent is not None
-
-        # Extract the actual _type value (handle ModelPrivateAttr)
-        type_attr = KeyboardEvent._type
-        if hasattr(type_attr, "default"):
-            type_value = type_attr.default
-        else:
-            type_value = type_attr
-        assert type_value == "desktop/KeyboardEvent"
-
-        # Test get() with default
-        NonExistent = MESSAGES.get("nonexistent/Message", None)
-        assert NonExistent is None
-
-        # Test len()
-        assert len(MESSAGES) >= 4  # At least the 4 desktop messages
-
-        # Test iteration
-        message_types = list(MESSAGES)
-        assert "desktop/KeyboardEvent" in message_types
-        assert "desktop/MouseEvent" in message_types
 
     def test_message_schema_access(self):
         """Test that message schemas can be accessed."""

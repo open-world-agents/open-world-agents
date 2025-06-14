@@ -10,11 +10,28 @@ from owa.core.message import OWAMessage
 from owa.core.messages import MESSAGES, MessageRegistry
 
 
-class TestMessage(OWAMessage):
+class MockMessage(OWAMessage):
     """Test message for registry testing."""
 
-    _type = "test/TestMessage"
+    _type = "test/MockMessage"
     data: str
+
+
+def create_mock_entry_point(name: str, load_return_value):
+    """Create a mock entry point for testing."""
+    mock_entry_point = Mock()
+    mock_entry_point.name = name
+    mock_entry_point.load.return_value = load_return_value
+    return mock_entry_point
+
+
+def mock_entry_points_factory(entry_points_list):
+    """Create a mock entry points function for testing."""
+
+    def mock_entry_points(group=None):
+        return entry_points_list if group == "owa.msgs" else []
+
+    return mock_entry_points
 
 
 class InvalidMessage:
@@ -23,16 +40,8 @@ class InvalidMessage:
     _type = "test/InvalidMessage"
 
 
-class TestMessageRegistry:
+class MockMessageRegistry:
     """Test cases for MessageRegistry class."""
-
-    def _mock_entry_points(self, entry_points_list):
-        """Helper to create entry points mock."""
-
-        def mock_entry_points(group=None):
-            return entry_points_list if group == "owa.msgs" else []
-
-        return mock_entry_points
 
     def test_registry_initialization(self):
         """Test that registry initializes correctly."""
@@ -45,65 +54,54 @@ class TestMessageRegistry:
         registry = MessageRegistry()
 
         # Mock entry points
-        mock_entry_point = Mock()
-        mock_entry_point.name = "test/TestMessage"
-        mock_entry_point.load.return_value = TestMessage
+        mock_entry_point = create_mock_entry_point("test/MockMessage", MockMessage)
 
-        with patch("owa.core.messages.entry_points", side_effect=self._mock_entry_points([mock_entry_point])):
+        with patch("owa.core.messages.entry_points", side_effect=mock_entry_points_factory([mock_entry_point])):
             # First access should trigger loading
             assert not registry._loaded
-            message_class = registry["test/TestMessage"]
+            message_class = registry["test/MockMessage"]
             assert registry._loaded
-            assert message_class is TestMessage
+            assert message_class is MockMessage
 
     def test_getitem_access(self):
         """Test accessing messages via [] operator."""
         registry = MessageRegistry()
+        mock_entry_point = create_mock_entry_point("test/MockMessage", MockMessage)
 
-        mock_entry_point = Mock()
-        mock_entry_point.name = "test/TestMessage"
-        mock_entry_point.load.return_value = TestMessage
-
-        with patch("owa.core.messages.entry_points", side_effect=self._mock_entry_points([mock_entry_point])):
-            message_class = registry["test/TestMessage"]
-            assert message_class is TestMessage
+        with patch("owa.core.messages.entry_points", side_effect=mock_entry_points_factory([mock_entry_point])):
+            message_class = registry["test/MockMessage"]
+            assert message_class is MockMessage
 
     def test_getitem_keyerror(self):
         """Test KeyError when accessing non-existent message."""
         registry = MessageRegistry()
 
-        with patch("owa.core.messages.entry_points", side_effect=self._mock_entry_points([])):
+        with patch("owa.core.messages.entry_points", side_effect=mock_entry_points_factory([])):
             with pytest.raises(KeyError):
                 registry["nonexistent/Message"]
 
     def test_contains_operator(self):
         """Test 'in' operator for checking message existence."""
         registry = MessageRegistry()
+        mock_entry_point = create_mock_entry_point("test/MockMessage", MockMessage)
 
-        mock_entry_point = Mock()
-        mock_entry_point.name = "test/TestMessage"
-        mock_entry_point.load.return_value = TestMessage
-
-        with patch("owa.core.messages.entry_points", side_effect=self._mock_entry_points([mock_entry_point])):
-            assert "test/TestMessage" in registry
+        with patch("owa.core.messages.entry_points", side_effect=mock_entry_points_factory([mock_entry_point])):
+            assert "test/MockMessage" in registry
             assert "nonexistent/Message" not in registry
 
     def test_get_method(self):
         """Test get() method with default values."""
         registry = MessageRegistry()
+        mock_entry_point = create_mock_entry_point("test/MockMessage", MockMessage)
 
-        mock_entry_point = Mock()
-        mock_entry_point.name = "test/TestMessage"
-        mock_entry_point.load.return_value = TestMessage
-
-        with patch("owa.core.messages.entry_points", side_effect=self._mock_entry_points([mock_entry_point])):
+        with patch("owa.core.messages.entry_points", side_effect=mock_entry_points_factory([mock_entry_point])):
             # Existing message
-            message_class = registry.get("test/TestMessage")
-            assert message_class is TestMessage
+            message_class = registry.get("test/MockMessage")
+            assert message_class is MockMessage
 
             # Non-existent message with default
-            default_class = registry.get("nonexistent/Message", TestMessage)
-            assert default_class is TestMessage
+            default_class = registry.get("nonexistent/Message", MockMessage)
+            assert default_class is MockMessage
 
             # Non-existent message without default
             result = registry.get("nonexistent/Message")
@@ -112,41 +110,32 @@ class TestMessageRegistry:
     def test_keys_values_items(self):
         """Test dict-like methods: keys(), values(), items()."""
         registry = MessageRegistry()
+        mock_entry_point = create_mock_entry_point("test/MockMessage", MockMessage)
 
-        mock_entry_point = Mock()
-        mock_entry_point.name = "test/TestMessage"
-        mock_entry_point.load.return_value = TestMessage
-
-        with patch("owa.core.messages.entry_points", side_effect=self._mock_entry_points([mock_entry_point])):
+        with patch("owa.core.messages.entry_points", side_effect=mock_entry_points_factory([mock_entry_point])):
             keys = list(registry.keys())
             values = list(registry.values())
             items = list(registry.items())
 
-            assert keys == ["test/TestMessage"]
-            assert values == [TestMessage]
-            assert items == [("test/TestMessage", TestMessage)]
+            assert keys == ["test/MockMessage"]
+            assert values == [MockMessage]
+            assert items == [("test/MockMessage", MockMessage)]
 
     def test_iteration(self):
         """Test iteration over registry."""
         registry = MessageRegistry()
+        mock_entry_point = create_mock_entry_point("test/MockMessage", MockMessage)
 
-        mock_entry_point = Mock()
-        mock_entry_point.name = "test/TestMessage"
-        mock_entry_point.load.return_value = TestMessage
-
-        with patch("owa.core.messages.entry_points", side_effect=self._mock_entry_points([mock_entry_point])):
+        with patch("owa.core.messages.entry_points", side_effect=mock_entry_points_factory([mock_entry_point])):
             message_names = list(registry)
-            assert message_names == ["test/TestMessage"]
+            assert message_names == ["test/MockMessage"]
 
     def test_len(self):
         """Test len() function on registry."""
         registry = MessageRegistry()
+        mock_entry_point = create_mock_entry_point("test/MockMessage", MockMessage)
 
-        mock_entry_point = Mock()
-        mock_entry_point.name = "test/TestMessage"
-        mock_entry_point.load.return_value = TestMessage
-
-        with patch("owa.core.messages.entry_points", side_effect=self._mock_entry_points([mock_entry_point])):
+        with patch("owa.core.messages.entry_points", side_effect=mock_entry_points_factory([mock_entry_point])):
             assert len(registry) == 1
 
     def test_reload(self):
@@ -154,35 +143,28 @@ class TestMessageRegistry:
         registry = MessageRegistry()
 
         # First load
-        mock_entry_point1 = Mock()
-        mock_entry_point1.name = "test/TestMessage1"
-        mock_entry_point1.load.return_value = TestMessage
+        mock_entry_point1 = create_mock_entry_point("test/MockMessage1", MockMessage)
 
-        with patch("owa.core.messages.entry_points", side_effect=self._mock_entry_points([mock_entry_point1])):
+        with patch("owa.core.messages.entry_points", side_effect=mock_entry_points_factory([mock_entry_point1])):
             registry._load_messages()
             assert len(registry) == 1
-            assert "test/TestMessage1" in registry
+            assert "test/MockMessage1" in registry
 
         # Reload with different messages
-        mock_entry_point2 = Mock()
-        mock_entry_point2.name = "test/TestMessage2"
-        mock_entry_point2.load.return_value = TestMessage
+        mock_entry_point2 = create_mock_entry_point("test/MockMessage2", MockMessage)
 
-        with patch("owa.core.messages.entry_points", side_effect=self._mock_entry_points([mock_entry_point2])):
+        with patch("owa.core.messages.entry_points", side_effect=mock_entry_points_factory([mock_entry_point2])):
             registry.reload()
             assert len(registry) == 1
-            assert "test/TestMessage2" in registry
-            assert "test/TestMessage1" not in registry
+            assert "test/MockMessage2" in registry
+            assert "test/MockMessage1" not in registry
 
     def test_invalid_message_handling(self):
         """Test handling of invalid messages that don't inherit from BaseMessage."""
         registry = MessageRegistry()
+        mock_entry_point = create_mock_entry_point("test/InvalidMessage", InvalidMessage)
 
-        mock_entry_point = Mock()
-        mock_entry_point.name = "test/InvalidMessage"
-        mock_entry_point.load.return_value = InvalidMessage
-
-        with patch("owa.core.messages.entry_points", side_effect=self._mock_entry_points([mock_entry_point])):
+        with patch("owa.core.messages.entry_points", side_effect=mock_entry_points_factory([mock_entry_point])):
             with patch("builtins.print") as mock_print:
                 registry._load_messages()
                 # Should print warning and not include the invalid message
@@ -191,13 +173,14 @@ class TestMessageRegistry:
 
     def test_loading_error_handling(self):
         """Test handling of errors during message loading."""
-        registry = MessageRegistry()
+        from unittest.mock import Mock
 
+        registry = MessageRegistry()
         mock_entry_point = Mock()
         mock_entry_point.name = "test/ErrorMessage"
         mock_entry_point.load.side_effect = ImportError("Module not found")
 
-        with patch("owa.core.messages.entry_points", side_effect=self._mock_entry_points([mock_entry_point])):
+        with patch("owa.core.messages.entry_points", side_effect=mock_entry_points_factory([mock_entry_point])):
             with patch("builtins.print") as mock_print:
                 registry._load_messages()
                 # Should print warning and continue

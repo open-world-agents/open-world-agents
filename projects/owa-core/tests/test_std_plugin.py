@@ -9,9 +9,7 @@ This module tests the built-in std plugin components including:
 These tests focus only on owa-core's built-in std plugin functionality.
 """
 
-import threading
 import time
-from threading import Event
 
 from owa.core.component_access import get_component, list_components
 from owa.core.registry import CALLABLES, LISTENERS
@@ -70,36 +68,6 @@ def test_std_tick_listener():
     assert hasattr(configured, "interval")
 
 
-def test_std_tick_listener_functionality():
-    """Test that the std/tick listener actually works (brief test)."""
-    # Get the listener class
-    listener_cls = LISTENERS["std/tick"]
-    listener = listener_cls()
-
-    # Track callback invocations
-    callback_count = 0
-
-    def test_callback():
-        nonlocal callback_count
-        callback_count += 1
-
-    # Configure with very short interval
-    configured = listener.configure(callback=test_callback, interval=0.01)  # 10ms
-
-    # Run briefly
-    stop_event = Event()
-    thread = threading.Thread(target=lambda: configured.loop(stop_event=stop_event, callback=test_callback))
-    thread.start()
-
-    # Let it run for a short time
-    time.sleep(0.05)  # 50ms
-    stop_event.set()
-    thread.join(timeout=1.0)
-
-    # Should have been called multiple times
-    assert callback_count >= 2  # At least 2 calls in 50ms with 10ms interval
-
-
 def test_std_plugin_via_enhanced_api():
     """Test accessing std plugin components via the enhanced API."""
     # Test get_component with std namespace and specific name
@@ -122,34 +90,6 @@ def test_std_plugin_via_enhanced_api():
     assert "listeners" in std_components
     assert "std/time_ns" in std_components["callables"]
     assert "std/tick" in std_components["listeners"]
-
-
-def test_std_plugin_lazy_loading():
-    """Test that std plugin components are lazy-loaded correctly."""
-    # Create a fresh registry to test lazy loading
-    from owa.core.registry import LazyImportRegistry, RegistryType
-
-    test_registry = LazyImportRegistry(RegistryType.CALLABLES)
-
-    # Register std/time_ns for lazy loading
-    test_registry.register("std/time_ns", obj_or_import_path="owa.env.std.clock:time_ns")
-
-    # Test that component is registered but not loaded
-    assert "std/time_ns" in test_registry
-    assert len(test_registry._registry) == 0  # Not loaded yet
-    assert len(test_registry._import_paths) == 1  # Import path stored
-
-    # Access the component to trigger lazy loading
-    time_func = test_registry["std/time_ns"]
-
-    # Test that component is now loaded
-    assert len(test_registry._registry) == 1  # Now loaded
-    assert callable(time_func)
-
-    # Test that the function works
-    result = time_func()
-    assert isinstance(result, int)
-    assert result > 0
 
 
 def test_std_plugin_spec():

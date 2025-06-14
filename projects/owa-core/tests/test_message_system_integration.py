@@ -1,25 +1,26 @@
 """
-Comprehensive integration tests for OEP-0006 implementation.
+Comprehensive integration tests for the message system.
 
-This test suite validates the complete OEP-0006 implementation across
-all phases and components. This file has been moved to projects/owa-core/tests/
-as it primarily tests the core message registry functionality.
+This test suite validates the complete message system implementation including:
+- Message registry functionality
+- Message package integration
+- CLI tooling integration
+- Backward compatibility
+- Cross-package interoperability
 """
 
-import tempfile
 import warnings
-from pathlib import Path
 
 import pytest
 
 from owa.core import MESSAGES
 
 
-class TestOEP0006Integration:
-    """Integration tests for complete OEP-0006 implementation."""
+class TestMessageSystemIntegration:
+    """Integration tests for the complete message system."""
 
-    def test_phase_1_message_registry(self):
-        """Test Phase 1: Core registry implementation."""
+    def test_message_registry_core(self):
+        """Test core message registry functionality."""
         # Test registry is available and working
         assert MESSAGES is not None
         assert len(MESSAGES) >= 6  # At least 6 desktop messages
@@ -35,8 +36,8 @@ class TestOEP0006Integration:
         assert KeyboardEvent is not None
         assert hasattr(KeyboardEvent, "_type")
 
-    def test_phase_2_owa_msgs_package(self):
-        """Test Phase 2: owa-msgs package implementation."""
+    def test_owa_msgs_package_integration(self):
+        """Test owa-msgs package integration with registry."""
         # Test direct imports work
         from owa.msgs.desktop.keyboard import KeyboardEvent
         from owa.msgs.desktop.mouse import MouseEvent
@@ -73,69 +74,17 @@ class TestOEP0006Integration:
         assert MESSAGES["desktop/WindowInfo"] is WindowInfo
         assert MESSAGES["desktop/ScreenEmitted"] is ScreenEmitted
 
-    def test_phase_3_mcap_integration(self):
-        """Test Phase 3: mcap-owa-support integration."""
+    def test_mcap_integration_availability(self):
+        """Test that MCAP integration is available (detailed tests in mcap-owa-support)."""
         try:
-            from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
+            from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter  # noqa: F401
+            # If import succeeds, MCAP integration is available
+            # Detailed MCAP tests are in the mcap-owa-support package
         except ImportError:
             pytest.skip("mcap-owa-support not available")
 
-        # Skip MCAP tests due to schema ID collision issues in test environment
-        # Manual testing confirms the integration works correctly
-        pytest.skip("MCAP integration tests skipped due to test environment schema conflicts")
-
-        # Create temporary MCAP file
-        with tempfile.NamedTemporaryFile(suffix=".mcap", delete=False) as tmp_file:
-            mcap_path = tmp_file.name
-
-        try:
-            # Write messages using registry
-            KeyboardEvent = MESSAGES["desktop/KeyboardEvent"]
-            MouseEvent = MESSAGES["desktop/MouseEvent"]
-
-            with OWAMcapWriter(mcap_path) as writer:
-                kb_event = KeyboardEvent(event_type="press", vk=65, timestamp=1234567890)
-                mouse_event = MouseEvent(
-                    event_type="click", x=100, y=200, button="left", pressed=True, timestamp=1234567890
-                )
-
-                writer.write_message("keyboard", kb_event)
-                writer.write_message("mouse", mouse_event)
-
-            # Read messages back
-            with OWAMcapReader(mcap_path) as reader:
-                messages = list(reader.iter_messages())
-                assert len(messages) == 2
-
-                # Verify messages are properly decoded as objects, not dictionaries
-                keyboard_found = False
-                mouse_found = False
-
-                for msg in messages:
-                    try:
-                        decoded = msg.decoded
-                        assert hasattr(decoded, "event_type")
-
-                        if msg.topic == "keyboard":
-                            assert hasattr(decoded, "vk")
-                            assert decoded.vk == 65
-                            keyboard_found = True
-                        elif msg.topic == "mouse":
-                            assert hasattr(decoded, "x")
-                            assert decoded.x == 100
-                            mouse_found = True
-                    except Exception as e:
-                        pytest.fail(f"Failed to decode message on topic {msg.topic}: {e}")
-
-                assert keyboard_found, "Keyboard message not found or not properly decoded"
-                assert mouse_found, "Mouse message not found or not properly decoded"
-
-        finally:
-            # Clean up
-            Path(mcap_path).unlink(missing_ok=True)
-
-    def test_phase_4_cli_commands(self):
-        """Test Phase 4: CLI and tooling."""
+    def test_cli_integration(self):
+        """Test CLI tooling integration."""
         # Test that CLI modules can be imported
         from owa.cli.messages.list import list_messages
         from owa.cli.messages.show import show_message
@@ -147,8 +96,8 @@ class TestOEP0006Integration:
         assert callable(show_message)
         assert callable(validate_messages)
 
-    def test_phase_5_backward_compatibility(self):
-        """Test Phase 5: Migration and compatibility."""
+    def test_backward_compatibility(self):
+        """Test backward compatibility with legacy message imports."""
         # Test legacy imports work with deprecation warnings
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
@@ -250,17 +199,8 @@ class TestOEP0006Integration:
         message_types = list(MESSAGES)
         assert "desktop/KeyboardEvent" in message_types
 
-    def test_complete_workflow(self):
-        """Test complete workflow from message creation to MCAP storage."""
-        try:
-            from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
-        except ImportError:
-            pytest.skip("mcap-owa-support not available")
-
-        # Skip MCAP tests due to schema ID collision issues in test environment
-        # Manual testing confirms the integration works correctly
-        pytest.skip("MCAP integration tests skipped due to test environment schema conflicts")
-
+    def test_complete_message_workflow(self):
+        """Test complete workflow from message discovery to instantiation."""
         # 1. Discover messages via registry
         available_messages = list(MESSAGES.keys())
         assert "desktop/KeyboardEvent" in available_messages
@@ -272,49 +212,15 @@ class TestOEP0006Integration:
         kb_event = KeyboardEvent(event_type="press", vk=65, timestamp=1234567890)
         mouse_event = MouseEvent(event_type="click", x=100, y=200, button="left", pressed=True, timestamp=1234567890)
 
-        # 3. Store in MCAP
-        with tempfile.NamedTemporaryFile(suffix=".mcap", delete=False) as tmp_file:
-            mcap_path = tmp_file.name
-
-        try:
-            with OWAMcapWriter(mcap_path) as writer:
-                writer.write_message("keyboard", kb_event)
-                writer.write_message("mouse", mouse_event)
-
-            # 4. Read back and verify
-            with OWAMcapReader(mcap_path) as reader:
-                messages = list(reader.iter_messages())
-                assert len(messages) == 2
-
-                # Verify proper deserialization
-                keyboard_found = False
-                mouse_found = False
-
-                for msg in messages:
-                    try:
-                        decoded = msg.decoded
-                        assert hasattr(decoded, "event_type")
-                        assert hasattr(decoded, "timestamp")
-
-                        if msg.topic == "keyboard":
-                            assert hasattr(decoded, "vk")
-                            keyboard_found = True
-                        elif msg.topic == "mouse":
-                            assert hasattr(decoded, "x")
-                            mouse_found = True
-                    except Exception as e:
-                        pytest.fail(f"Failed to decode message on topic {msg.topic}: {e}")
-
-                assert keyboard_found and mouse_found, "Not all messages were properly decoded"
-
-        finally:
-            Path(mcap_path).unlink(missing_ok=True)
+        # Verify message creation works
+        assert kb_event.event_type == "press"
+        assert mouse_event.x == 100
 
 
 if __name__ == "__main__":
     # Run a quick validation
-    test = TestOEP0006Integration()
-    test.test_phase_1_message_registry()
-    test.test_phase_2_owa_msgs_package()
-    test.test_phase_5_backward_compatibility()
-    print("✅ OEP-0006 implementation validation passed!")
+    test = TestMessageSystemIntegration()
+    test.test_message_registry_core()
+    test.test_owa_msgs_package_integration()
+    test.test_backward_compatibility()
+    print("✅ Message system integration validation passed!")
