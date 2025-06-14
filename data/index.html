@@ -736,6 +736,19 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Open-sourcing Dataset for Multimodal Desktop Agent
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -747,6 +760,52 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-owamcap" class="md-nav__link">
+    <span class="md-ellipsis">
+      What is OWAMcap?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-owamcap-matters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Why OWAMcap Matters
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#our-complete-solution" class="md-nav__link">
+    <span class="md-ellipsis">
+      Our Complete Solution
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1060,6 +1119,41 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-owamcap" class="md-nav__link">
+    <span class="md-ellipsis">
+      What is OWAMcap?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-owamcap-matters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Why OWAMcap Matters
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#our-complete-solution" class="md-nav__link">
+    <span class="md-ellipsis">
+      Our Complete Solution
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1078,12 +1172,40 @@
 
 
 <h1 id="open-sourcing-dataset-for-multimodal-desktop-agent">Open-sourcing Dataset for Multimodal Desktop Agent<a class="headerlink" href="#open-sourcing-dataset-for-multimodal-desktop-agent" title="Permanent link">&para;</a></h1>
+<h2 id="what-is-owamcap">What is OWAMcap?<a class="headerlink" href="#what-is-owamcap" title="Permanent link">&para;</a></h2>
+<p><strong>OWAMcap</strong> (Open World Agents MCAP) is a specialized file format for storing multimodal desktop interaction data. Think of it as a "video file" but for AI training data - it captures not just what you see on screen, but also every keyboard press, mouse movement, window change, and other desktop events, all perfectly synchronized with timestamps.</p>
+<p><strong>Key Features:</strong>
+- 📹 <strong>Screen recordings</strong> with precise frame timestamps
+- ⌨️ <strong>Keyboard events</strong> (every key press and release)
+- 🖱️ <strong>Mouse interactions</strong> (movements, clicks, scrolls)
+- 🪟 <strong>Window information</strong> (active windows, titles, positions)
+- 🔗 <strong>Perfect synchronization</strong> - all events aligned to nanosecond precision
+- 📦 <strong>Self-contained</strong> - everything needed for training in one file format</p>
+<p><strong>What makes it special?</strong> Unlike traditional screen recordings that only capture video, OWAMcap captures the complete "digital DNA" of human-computer interaction, making it perfect for training AI agents that need to understand and replicate human desktop behavior.</p>
+<p><strong>Example:</strong> When you click a button in an application, OWAMcap records:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Timestamp: 1234567890.123456789
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>Screen: [1920x1080 frame showing the button]
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>Mouse: click(x=450, y=300, button=&quot;left&quot;)
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>Window: title=&quot;My Application&quot;, position=(100, 50, 800, 600)
+</code></pre></div>
+This rich context allows AI models to understand not just what happened visually, but the precise interaction that caused it.</p>
+<h2 id="why-owamcap-matters">Why OWAMcap Matters<a class="headerlink" href="#why-owamcap-matters" title="Permanent link">&para;</a></h2>
 <p>As of now (March 22, 2025), there are few datasets available for building multimodal desktop agents.</p>
 <p>Even more scarce are datasets that (1) contain high-frequency screen data, (2) have keyboard/mouse information timestamp-aligned with other modalities like screen recordings, and (3) include human demonstrations.</p>
-<p>To address this gap, open-world-agents provides the following three solutions:</p>
+<p><strong>The Problem:</strong> Most existing approaches either:
+- Record only video (missing interaction context)
+- Capture events separately (synchronization nightmares)
+- Use proprietary formats (can't combine datasets)
+- Lack precision (poor timestamps, low frequency)</p>
+<p><strong>The Solution:</strong> OWAMcap provides a unified, open standard that captures everything needed for desktop AI training in a single, efficient format.</p>
+<h2 id="our-complete-solution">Our Complete Solution<a class="headerlink" href="#our-complete-solution" title="Permanent link">&para;</a></h2>
+<p>To address this gap, open-world-agents provides the following four solutions:</p>
 <ol>
 <li>
 <p><strong>File Format - <code>OWAMcap</code></strong>: A high-performance, self-contained, flexible container file format for multimodal desktop log data, powered by the open-source container file format <a href="https://mcap.dev/">mcap</a>. <a href="data_format/">Learn more...</a></p>
+</li>
+<li>
+<p><strong>Message Definitions - <code>owa-msgs</code></strong>: A dedicated package providing core message definitions with automatic discovery through Python entry points. All message types are automatically available through the global <code>MESSAGES</code> registry from <code>owa.core</code>. <a href="../env/guide/#message-registry">Learn more...</a></p>
 </li>
 <li>
 <p><strong>Desktop Recorder - <code>ocap your-filename.mcap</code></strong>: A powerful, efficient, and easy-to-use desktop recorder that captures keyboard/mouse and high-frequency screen data.</p>
@@ -1125,7 +1247,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="June 9, 2025 15:36:24 UTC">June 9, 2025 15:36:24</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="June 14, 2025 15:27:16 UTC">June 14, 2025 15:27:16</span>
   </span>
 
     

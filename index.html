@@ -1297,10 +1297,11 @@
 <p><strong>A comprehensive framework for building AI agents that interact with desktop applications through vision, keyboard, and mouse control.</strong></p>
 <p>Open World Agents (OWA) is a monorepo containing the complete toolkit for multimodal desktop agent development. From high-performance data capture to model training and real-time evaluation, everything is designed for flexibility and performance.</p>
 <h2 id="architecture-overview">Architecture Overview<a class="headerlink" href="#architecture-overview" title="Permanent link">&para;</a></h2>
-<p>OWA consists of three core components:</p>
-<p>🌍 <strong><a href="env/">Environment (Env)</a></strong> - Asynchronous, event-driven interface for real-time agent interactions<br />
-📊 <strong><a href="data/">Data</a></strong> - High-performance recording, storage, and analysis of multimodal desktop data<br />
-🤖 <strong><a href="examples/">Examples</a></strong> - Complete implementations and training pipelines for multimodal agents  </p>
+<p>OWA consists of four core components:</p>
+<p>🌍 <strong><a href="env/">Environment (Env)</a></strong> - Asynchronous, event-driven interface for real-time agent interactions
+📊 <strong><a href="data/">Data</a></strong> - High-performance recording, storage, and analysis of multimodal desktop data
+📝 <strong><a href="env/guide/#message-registry">Messages</a></strong> - Centralized message definitions with automatic discovery and registry system
+🤖 <strong><a href="examples/">Examples</a></strong> - Complete implementations and training pipelines for multimodal agents</p>
 <h2 id="quick-navigation">Quick Navigation<a class="headerlink" href="#quick-navigation" title="Permanent link">&para;</a></h2>
 <h3 id="environment-framework">🌍 Environment Framework<a class="headerlink" href="#environment-framework" title="Permanent link">&para;</a></h3>
 <p>Build reactive desktop agents with our asynchronous environment system.</p>
@@ -1348,7 +1349,7 @@
 </tr>
 <tr>
 <td><strong><a href="data/data_format/">OWAMcap Format</a></strong></td>
-<td>Self-contained multimodal data format powered by <a href="https://mcap.dev/">mcap</a></td>
+<td>Specialized format capturing complete desktop interactions (screen + events) with nanosecond precision</td>
 </tr>
 <tr>
 <td><strong><a href="data/ocap/">Desktop Recorder (ocap)</a></strong></td>
@@ -1462,7 +1463,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="June 9, 2025 15:36:24 UTC">June 9, 2025 15:36:24</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="June 14, 2025 15:27:16 UTC">June 14, 2025 15:27:16</span>
   </span>
 
     

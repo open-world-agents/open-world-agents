@@ -344,6 +344,52 @@
 </nav>
 </li>
 <li class="md-nav__item">
+<a class="md-nav__link" href="#message-registry">
+<span class="md-ellipsis">
+      Message Registry
+    </span>
+</a>
+<nav aria-label="Message Registry" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#accessing-messages">
+<span class="md-ellipsis">
+      Accessing Messages
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#message-naming-convention">
+<span class="md-ellipsis">
+      Message Naming Convention
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#core-message-types">
+<span class="md-ellipsis">
+      Core Message Types
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#cli-tools-for-message-management">
+<span class="md-ellipsis">
+      CLI Tools for Message Management
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#custom-message-registration">
+<span class="md-ellipsis">
+      Custom Message Registration
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
 <a class="md-nav__link" href="#additional-resources">
 <span class="md-ellipsis">
       Additional Resources
@@ -678,6 +724,52 @@
 </nav>
 </li>
 <li class="md-nav__item">
+<a class="md-nav__link" href="#message-registry">
+<span class="md-ellipsis">
+      Message Registry
+    </span>
+</a>
+<nav aria-label="Message Registry" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#accessing-messages">
+<span class="md-ellipsis">
+      Accessing Messages
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#message-naming-convention">
+<span class="md-ellipsis">
+      Message Naming Convention
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#core-message-types">
+<span class="md-ellipsis">
+      Core Message Types
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#cli-tools-for-message-management">
+<span class="md-ellipsis">
+      CLI Tools for Message Management
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#custom-message-registration">
+<span class="md-ellipsis">
+      Custom Message Registration
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
 <a class="md-nav__link" href="#additional-resources">
 <span class="md-ellipsis">
       Additional Resources
@@ -780,7 +872,7 @@
 <h3 id="desktop-environment-owaenvdesktop">Desktop Environment (<code>owa.env.desktop</code>)<a class="headerlink" href="#desktop-environment-owaenvdesktop" title="Permanent link">¶</a></h3>
 <p><em>The desktop environment module provides capabilities for UI interaction and input handling.</em></p>
 <p><div class="highlight"><pre><span></span><code><a href="#__codelineno-4-1" id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.core.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">CALLABLES</span><span class="p">,</span> <span class="n">LISTENERS</span>
-<a href="#__codelineno-4-2" id="__codelineno-4-2" name="__codelineno-4-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.env.desktop.msg</span><span class="w"> </span><span class="kn">import</span> <span class="n">KeyboardEvent</span>
+<a href="#__codelineno-4-2" id="__codelineno-4-2" name="__codelineno-4-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.msgs.desktop.keyboard</span><span class="w"> </span><span class="kn">import</span> <span class="n">KeyboardEvent</span>
 <a href="#__codelineno-4-3" id="__codelineno-4-3" name="__codelineno-4-3"></a>
 <a href="#__codelineno-4-4" id="__codelineno-4-4" name="__codelineno-4-4"></a><span class="c1"># Components automatically available - unified namespace/name pattern</span>
 <a href="#__codelineno-4-5" id="__codelineno-4-5" name="__codelineno-4-5"></a>
@@ -838,14 +930,19 @@
 <pre class="mermaid"><code>graph LR;
     EP[Entry Points] --&gt;|Auto-discovers| SM["Standard Plugin(owa.env.std)"]
     EP --&gt;|Auto-discovers| DM["Desktop Plugin(owa.env.desktop)"]
+    EP --&gt;|Auto-discovers| MP["Message Package(owa-msgs)"]
     SM --&gt;|Provides| C1[std/time_ns]
     SM --&gt;|Provides| L1[std/tick Listener]
     DM --&gt;|Provides| C2[desktop/screen.capture]
     DM --&gt;|Provides| C3[desktop/window.get_active_window]
     DM --&gt;|Provides| L2[desktop/keyboard Listener]
+    MP --&gt;|Provides| M1[desktop/KeyboardEvent]
+    MP --&gt;|Provides| M2[desktop/MouseEvent]
+    MP --&gt;|Provides| M3[desktop/ScreenEmitted]
     User --&gt;|pip install| PI[Plugin Installation]
     PI --&gt; EP
-    EP --&gt; R[Registry]</code></pre>
+    EP --&gt; R[Component Registry]
+    EP --&gt; MR[Message Registry]</code></pre>
 <h2 id="cli-tools-for-plugin-management">CLI Tools for Plugin Management<a class="headerlink" href="#cli-tools-for-plugin-management" title="Permanent link">¶</a></h2>
 <p>The <code>owl env</code> command provides powerful tools for managing and exploring plugins with enhanced filtering, search, and analysis capabilities:</p>
 <h3 id="plugin-discovery-and-listing">Plugin Discovery and Listing<a class="headerlink" href="#plugin-discovery-and-listing" title="Permanent link">¶</a></h3>
@@ -953,6 +1050,89 @@
 <a href="#__codelineno-11-53" id="__codelineno-11-53" name="__codelineno-11-53"></a>│<span class="w"> </span>std<span class="w">       </span>│<span class="w">         </span><span class="m">2</span><span class="w"> </span>│<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>ls<span class="w"> </span>std<span class="w">     </span>│
 <a href="#__codelineno-11-54" id="__codelineno-11-54" name="__codelineno-11-54"></a>└───────────┴────────────┴────────────────────┘
 </code></pre></div>
+<h2 id="message-registry">Message Registry<a class="headerlink" href="#message-registry" title="Permanent link">¶</a></h2>
+<p>OWA provides a centralized message registry system that automatically discovers and manages message definitions through Python entry points. This system separates message schemas from runtime components, providing better organization and extensibility.</p>
+<h3 id="accessing-messages">Accessing Messages<a class="headerlink" href="#accessing-messages" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-12-1" id="__codelineno-12-1" name="__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">MESSAGES</span>
+<a href="#__codelineno-12-2" id="__codelineno-12-2" name="__codelineno-12-2"></a>
+<a href="#__codelineno-12-3" id="__codelineno-12-3" name="__codelineno-12-3"></a><span class="c1"># Access message classes by type name</span>
+<a href="#__codelineno-12-4" id="__codelineno-12-4" name="__codelineno-12-4"></a><span class="n">KeyboardEvent</span> <span class="o">=</span> <span class="n">MESSAGES</span><span class="p">[</span><span class="s1">'desktop/KeyboardEvent'</span><span class="p">]</span>
+<a href="#__codelineno-12-5" id="__codelineno-12-5" name="__codelineno-12-5"></a><span class="n">MouseEvent</span> <span class="o">=</span> <span class="n">MESSAGES</span><span class="p">[</span><span class="s1">'desktop/MouseEvent'</span><span class="p">]</span>
+<a href="#__codelineno-12-6" id="__codelineno-12-6" name="__codelineno-12-6"></a><span class="n">ScreenEmitted</span> <span class="o">=</span> <span class="n">MESSAGES</span><span class="p">[</span><span class="s1">'desktop/ScreenEmitted'</span><span class="p">]</span>
+<a href="#__codelineno-12-7" id="__codelineno-12-7" name="__codelineno-12-7"></a>
+<a href="#__codelineno-12-8" id="__codelineno-12-8" name="__codelineno-12-8"></a><span class="c1"># Check if a message type exists</span>
+<a href="#__codelineno-12-9" id="__codelineno-12-9" name="__codelineno-12-9"></a><span class="k">if</span> <span class="s1">'desktop/KeyboardEvent'</span> <span class="ow">in</span> <span class="n">MESSAGES</span><span class="p">:</span>
+<a href="#__codelineno-12-10" id="__codelineno-12-10" name="__codelineno-12-10"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">"KeyboardEvent is available"</span><span class="p">)</span>
+<a href="#__codelineno-12-11" id="__codelineno-12-11" name="__codelineno-12-11"></a>
+<a href="#__codelineno-12-12" id="__codelineno-12-12" name="__codelineno-12-12"></a><span class="c1"># List all available message types</span>
+<a href="#__codelineno-12-13" id="__codelineno-12-13" name="__codelineno-12-13"></a><span class="k">for</span> <span class="n">message_type</span> <span class="ow">in</span> <span class="n">MESSAGES</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+<a href="#__codelineno-12-14" id="__codelineno-12-14" name="__codelineno-12-14"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Available: </span><span class="si">{</span><span class="n">message_type</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<a href="#__codelineno-12-15" id="__codelineno-12-15" name="__codelineno-12-15"></a>
+<a href="#__codelineno-12-16" id="__codelineno-12-16" name="__codelineno-12-16"></a><span class="c1"># Create message instances</span>
+<a href="#__codelineno-12-17" id="__codelineno-12-17" name="__codelineno-12-17"></a><span class="n">event</span> <span class="o">=</span> <span class="n">KeyboardEvent</span><span class="p">(</span><span class="n">event_type</span><span class="o">=</span><span class="s2">"press"</span><span class="p">,</span> <span class="n">vk</span><span class="o">=</span><span class="mi">65</span><span class="p">,</span> <span class="n">timestamp</span><span class="o">=</span><span class="mi">1234567890</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="message-naming-convention">Message Naming Convention<a class="headerlink" href="#message-naming-convention" title="Permanent link">¶</a></h3>
+<p>Messages follow a domain-based naming pattern:
+- <strong>Format</strong>: <code>domain/MessageType</code>
+- <strong>Domain</strong>: Logical grouping (e.g., <code>desktop</code>, <code>sensors</code>, <code>system</code>)
+- <strong>MessageType</strong>: PascalCase message name
+- <strong>Examples</strong>: <code>desktop/KeyboardEvent</code>, <code>desktop/WindowInfo</code>, <code>sensors/TemperatureReading</code></p>
+<h3 id="core-message-types">Core Message Types<a class="headerlink" href="#core-message-types" title="Permanent link">¶</a></h3>
+<p>The <code>owa-msgs</code> package provides standard message definitions:</p>
+<table>
+<thead>
+<tr>
+<th>Message Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>desktop/KeyboardEvent</code></td>
+<td>Keyboard press/release events</td>
+</tr>
+<tr>
+<td><code>desktop/KeyboardState</code></td>
+<td>Current keyboard state</td>
+</tr>
+<tr>
+<td><code>desktop/MouseEvent</code></td>
+<td>Mouse movement, clicks, scrolls</td>
+</tr>
+<tr>
+<td><code>desktop/MouseState</code></td>
+<td>Current mouse position and buttons</td>
+</tr>
+<tr>
+<td><code>desktop/ScreenEmitted</code></td>
+<td>Screen capture frames with timestamps</td>
+</tr>
+<tr>
+<td><code>desktop/WindowInfo</code></td>
+<td>Active window information</td>
+</tr>
+</tbody>
+</table>
+<h3 id="cli-tools-for-message-management">CLI Tools for Message Management<a class="headerlink" href="#cli-tools-for-message-management" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-13-1" id="__codelineno-13-1" name="__codelineno-13-1"></a><span class="c1"># List all available message types</span>
+<a href="#__codelineno-13-2" id="__codelineno-13-2" name="__codelineno-13-2"></a>$<span class="w"> </span>owl<span class="w"> </span>messages<span class="w"> </span>list
+<a href="#__codelineno-13-3" id="__codelineno-13-3" name="__codelineno-13-3"></a>
+<a href="#__codelineno-13-4" id="__codelineno-13-4" name="__codelineno-13-4"></a><span class="c1"># Show detailed message schema</span>
+<a href="#__codelineno-13-5" id="__codelineno-13-5" name="__codelineno-13-5"></a>$<span class="w"> </span>owl<span class="w"> </span>messages<span class="w"> </span>show<span class="w"> </span>desktop/KeyboardEvent
+<a href="#__codelineno-13-6" id="__codelineno-13-6" name="__codelineno-13-6"></a>
+<a href="#__codelineno-13-7" id="__codelineno-13-7" name="__codelineno-13-7"></a><span class="c1"># Search for specific message types</span>
+<a href="#__codelineno-13-8" id="__codelineno-13-8" name="__codelineno-13-8"></a>$<span class="w"> </span>owl<span class="w"> </span>messages<span class="w"> </span>search<span class="w"> </span>keyboard
+<a href="#__codelineno-13-9" id="__codelineno-13-9" name="__codelineno-13-9"></a>
+<a href="#__codelineno-13-10" id="__codelineno-13-10" name="__codelineno-13-10"></a><span class="c1"># Validate message definitions</span>
+<a href="#__codelineno-13-11" id="__codelineno-13-11" name="__codelineno-13-11"></a>$<span class="w"> </span>owl<span class="w"> </span>messages<span class="w"> </span>validate
+</code></pre></div>
+<h3 id="custom-message-registration">Custom Message Registration<a class="headerlink" href="#custom-message-registration" title="Permanent link">¶</a></h3>
+<p>Third-party packages can register custom message types through entry points:</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-14-1" id="__codelineno-14-1" name="__codelineno-14-1"></a><span class="c1"># pyproject.toml</span>
+<a href="#__codelineno-14-2" id="__codelineno-14-2" name="__codelineno-14-2"></a><span class="k">[project.entry-points.</span><span class="s2">"owa.msgs"</span><span class="k">]</span>
+<a href="#__codelineno-14-3" id="__codelineno-14-3" name="__codelineno-14-3"></a><span class="s2">"sensors/TemperatureReading"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"custom_sensors.messages:TemperatureReading"</span>
+<a href="#__codelineno-14-4" id="__codelineno-14-4" name="__codelineno-14-4"></a><span class="s2">"sensors/HumidityReading"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"custom_sensors.messages:HumidityReading"</span>
+</code></pre></div>
 <h2 id="additional-resources">Additional Resources<a class="headerlink" href="#additional-resources" title="Permanent link">¶</a></h2>
 <ul>
 <li>For standard module details: <a href="../plugins/std/">owa-env-std</a></li>
@@ -965,7 +1145,7 @@
 <span class="md-icon" title="Last update">
 <svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"></path></svg>
 </span>
-<span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="June 9, 2025 15:36:24 UTC">June 9, 2025 15:36:24</span>
+<span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="June 14, 2025 15:27:16 UTC">June 14, 2025 15:27:16</span>
 </span>
 </aside>
 </article>
