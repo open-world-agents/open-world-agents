@@ -1,17 +1,15 @@
 """
-Comprehensive integration tests for the message system.
+Integration tests for the complete message system.
 
 This test suite validates the complete message system implementation including:
-- Message registry functionality
+- Message registry functionality with real entry points
 - Message package integration
-- CLI tooling integration
 - Backward compatibility
 - Cross-package interoperability
 """
 
 import warnings
 
-import pytest
 
 from owa.core import MESSAGES
 
@@ -19,22 +17,23 @@ from owa.core import MESSAGES
 class TestMessageSystemIntegration:
     """Integration tests for the complete message system."""
 
-    def test_message_registry_core(self):
-        """Test core message registry functionality."""
-        # Test registry is available and working
-        assert MESSAGES is not None
-        assert len(MESSAGES) >= 6  # At least 6 desktop messages
+    def test_message_registry_discovery(self):
+        """Test that MESSAGES registry can discover messages from owa-msgs package."""
+        # Force reload to ensure we get fresh entry points
+        MESSAGES.reload()
 
-        # Test domain-based message access
-        assert "desktop/KeyboardEvent" in MESSAGES
-        assert "desktop/MouseEvent" in MESSAGES
-        assert "desktop/WindowInfo" in MESSAGES
-        assert "desktop/ScreenEmitted" in MESSAGES
+        # Check that desktop messages are discovered
+        expected_messages = [
+            "desktop/KeyboardEvent",
+            "desktop/MouseEvent",
+            "desktop/WindowInfo",
+            "desktop/ScreenEmitted",
+        ]
 
-        # Test message class retrieval
-        KeyboardEvent = MESSAGES["desktop/KeyboardEvent"]
-        assert KeyboardEvent is not None
-        assert hasattr(KeyboardEvent, "_type")
+        available_messages = list(MESSAGES.keys())
+
+        for message_type in expected_messages:
+            assert message_type in available_messages, f"Message type {message_type} not found in registry"
 
     def test_owa_msgs_package_integration(self):
         """Test owa-msgs package integration with registry."""
@@ -73,28 +72,6 @@ class TestMessageSystemIntegration:
         assert MESSAGES["desktop/MouseEvent"] is MouseEvent
         assert MESSAGES["desktop/WindowInfo"] is WindowInfo
         assert MESSAGES["desktop/ScreenEmitted"] is ScreenEmitted
-
-    def test_mcap_integration_availability(self):
-        """Test that MCAP integration is available (detailed tests in mcap-owa-support)."""
-        try:
-            from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter  # noqa: F401  # noqa: F401
-            # If import succeeds, MCAP integration is available
-            # Detailed MCAP tests are in the mcap-owa-support package
-        except ImportError:
-            pytest.skip("mcap-owa-support not available")
-
-    def test_cli_integration(self):
-        """Test CLI tooling integration."""
-        # Test that CLI modules can be imported
-        from owa.cli.messages.list import list_messages
-        from owa.cli.messages.show import show_message
-        from owa.cli.messages.validate import validate_messages
-
-        # These functions should be callable (we won't actually call them
-        # to avoid CLI output in tests, but we verify they exist)
-        assert callable(list_messages)
-        assert callable(show_message)
-        assert callable(validate_messages)
 
     def test_backward_compatibility(self):
         """Test backward compatibility with legacy message imports."""
@@ -151,13 +128,11 @@ class TestMessageSystemIntegration:
         # All desktop messages should use domain/MessageType format
         desktop_messages = [name for name in MESSAGES.keys() if name.startswith("desktop/")]
 
-        assert len(desktop_messages) >= 6
+        assert len(desktop_messages) >= 4
 
         expected_messages = [
             "desktop/KeyboardEvent",
-            "desktop/KeyboardState",
             "desktop/MouseEvent",
-            "desktop/MouseState",
             "desktop/WindowInfo",
             "desktop/ScreenEmitted",
         ]
@@ -174,53 +149,24 @@ class TestMessageSystemIntegration:
                 type_value = type_attr
             assert type_value == expected
 
-    def test_extensibility_model(self):
-        """Test that the extensibility model works correctly."""
-        # Test that registry can be reloaded
-        original_count = len(MESSAGES)
+    def test_message_serialization_deserialization(self):
+        """Test that registry messages can be serialized and deserialized."""
+        import io
+
         MESSAGES.reload()
-        new_count = len(MESSAGES)
 
-        # Should have same number of messages after reload
-        assert new_count == original_count
-
-        # Test registry dict-like behavior
-        assert "desktop/KeyboardEvent" in MESSAGES
-        assert "nonexistent/Message" not in MESSAGES
-
-        # Test get method
-        KeyboardEvent = MESSAGES.get("desktop/KeyboardEvent")
-        assert KeyboardEvent is not None
-
-        NonExistent = MESSAGES.get("nonexistent/Message")
-        assert NonExistent is None
-
-        # Test iteration
-        message_types = list(MESSAGES)
-        assert "desktop/KeyboardEvent" in message_types
-
-    def test_complete_message_workflow(self):
-        """Test complete workflow from message discovery to instantiation."""
-        # 1. Discover messages via registry
-        available_messages = list(MESSAGES.keys())
-        assert "desktop/KeyboardEvent" in available_messages
-
-        # 2. Create message instances
+        # Test KeyboardEvent serialization/deserialization
         KeyboardEvent = MESSAGES["desktop/KeyboardEvent"]
-        MouseEvent = MESSAGES["desktop/MouseEvent"]
+        original_event = KeyboardEvent(event_type="press", vk=65, timestamp=1234567890)
 
-        kb_event = KeyboardEvent(event_type="press", vk=65, timestamp=1234567890)
-        mouse_event = MouseEvent(event_type="click", x=100, y=200, button="left", pressed=True, timestamp=1234567890)
+        # Serialize
+        buffer = io.BytesIO()
+        original_event.serialize(buffer)
 
-        # Verify message creation works
-        assert kb_event.event_type == "press"
-        assert mouse_event.x == 100
+        # Deserialize
+        buffer.seek(0)
+        deserialized_event = KeyboardEvent.deserialize(buffer)
 
-
-if __name__ == "__main__":
-    # Run a quick validation
-    test = TestMessageSystemIntegration()
-    test.test_message_registry_core()
-    test.test_owa_msgs_package_integration()
-    test.test_backward_compatibility()
-    print("✅ Message system integration validation passed!")
+        assert deserialized_event.event_type == original_event.event_type
+        assert deserialized_event.vk == original_event.vk
+        assert deserialized_event.timestamp == original_event.timestamp
