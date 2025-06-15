@@ -37,7 +37,7 @@ Documentation = "https://open-world-agents.github.io/open-world-agents/"
 "desktop/MouseEvent" = "owa.msgs.desktop.mouse:MouseEvent"
 "desktop/MouseState" = "owa.msgs.desktop.mouse:MouseState"
 "desktop/WindowInfo" = "owa.msgs.desktop.window:WindowInfo"
-"desktop/ScreenEmitted" = "owa.msgs.desktop.screen:ScreenEmitted"
+"desktop/ScreenCaptured" = "owa.msgs.desktop.screen:ScreenCaptured"
 
 [tool.hatch.build.targets.wheel]
 packages = ["owa"]

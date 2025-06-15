@@ -7,7 +7,7 @@ from typing_extensions import Annotated
 
 from mcap_owa.highlevel import OWAMcapReader
 from owa.core.time import TimeUnits
-from owa.msgs.desktop.screen import ScreenEmitted
+from owa.msgs.desktop.screen import ScreenCaptured
 
 
 def main(mcap_path: Annotated[Path, typer.Argument(help="Path to the input .mcap file")]):
@@ -26,7 +26,7 @@ def main(mcap_path: Annotated[Path, typer.Argument(help="Path to the input .mcap
                 x, y = mcap_msg.decoded["x"], mcap_msg.decoded["y"]
             elif mcap_msg.topic == "screen":
                 mcap_msg.decoded.path = (mcap_path.parent / mcap_msg.decoded.path).as_posix()
-                msg = ScreenEmitted(**mcap_msg.decoded)
+                msg = ScreenCaptured(**mcap_msg.decoded)
                 image = msg.to_pil_image()
                 # convert image to frame
                 frame = np.array(image)

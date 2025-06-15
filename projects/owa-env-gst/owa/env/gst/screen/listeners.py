@@ -11,7 +11,7 @@ gi.require_version("Gst", "1.0")
 from gi.repository import Gst
 from loguru import logger
 
-from owa.msgs.desktop.screen import ScreenEmitted
+from owa.msgs.desktop.screen import ScreenCaptured
 
 from ..gst_runner import GstPipelineRunner
 from ..pipeline_builder import screen_capture_pipeline
@@ -92,7 +92,7 @@ def build_screen_callback(callback):
         timestamp_ns = metadata["frame_time_ns"]
         metric_manager.append(timestamp_ns, latency)
 
-        message = ScreenEmitted(utc_ns=timestamp_ns, frame_arr=frame_arr)
+        message = ScreenCaptured(utc_ns=timestamp_ns, frame_arr=frame_arr)
         params = inspect.signature(callback).parameters
         if len(params) == 1:
             callback(message)

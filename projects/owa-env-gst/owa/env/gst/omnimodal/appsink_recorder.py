@@ -13,7 +13,7 @@ from typing import Any, Callable
 from gi.repository import Gst
 from loguru import logger
 
-from owa.msgs.desktop.screen import ScreenEmitted
+from owa.msgs.desktop.screen import ScreenCaptured
 
 from ..gst_runner import GstPipelineRunner
 from ..pipeline_builder import appsink_recorder_pipeline
@@ -119,7 +119,7 @@ class AppsinkRecorder(GstPipelineRunner):
                 notified_shape = (original_shape, shape)
 
             callback(
-                ScreenEmitted(
+                ScreenCaptured(
                     path=filesink_location,
                     pts=buf.pts,
                     utc_ns=frame_time_ns,
