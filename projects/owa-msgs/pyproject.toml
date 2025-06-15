@@ -21,10 +21,13 @@ classifiers = [
 ]
 requires-python = ">=3.11"
 dependencies = [
-    "owa-core",
-    "pydantic>=2.0.0",
+    "owa-core>=0.4.0",
+    "pydantic>=2.10.6",
     "annotated-types",
 ]
+
+[tool.uv.sources]
+owa-core = { path = "../owa-core", editable = true }
 
 [project.urls]
 Homepage = "https://github.com/open-world-agents/open-world-agents"

@@ -3,9 +3,10 @@ name = "owa-env-example"
 version = "0.1.0"
 description = "Example environment plugin for Open World Agents"
 readme = "README.md"
+license = { text = "MIT" }
 requires-python = ">=3.11"
 dependencies = [
-    "owa-core"
+    "owa-core>=0.4.0"
 ]
 
 # Entry point declaration for plugin discovery
