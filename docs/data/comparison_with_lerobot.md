@@ -41,7 +41,7 @@ While MCAP vs Parquet represents the container comparison, OWAMcap vs LeRobotDat
 
 ````python
 # OWAMcap: Desktop-specific message types
-class ScreenEmitted(OWAMessage):
+class ScreenCaptured(OWAMessage):
     path: str           # Video file reference
     pts: int           # Precise frame timestamp
     utc_ns: int        # System timestamp

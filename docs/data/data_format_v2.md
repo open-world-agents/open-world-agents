@@ -80,8 +80,8 @@ OWAMcap's most innovative feature is its approach to video data:
 - **Result**: Minimal file sizes with frame-accurate synchronization
 
 ```python
-class ScreenEmitted(OWAMessage):
-    _type = "desktop/ScreenEmitted"
+class ScreenCaptured(OWAMessage):
+    _type = "desktop/ScreenCaptured"
 
     # Timestamps and frame references
     utc_ns: int | None = None
@@ -132,7 +132,7 @@ channels:
     (1) window          5257 msgs (1.00 Hz) : desktop/WindowInfo
     (2) keyboard/state  5256 msgs (1.00 Hz) : desktop/KeyboardState
     (3) mouse/state     5256 msgs (1.00 Hz) : desktop/MouseState
-    (4) screen        303524 msgs (57.72 Hz): desktop/ScreenEmitted
+    (4) screen        303524 msgs (57.72 Hz): desktop/ScreenCaptured
     (5) mouse         429580 msgs (81.69 Hz): desktop/MouseEvent
     (6) keyboard        2156 msgs (2.92 Hz) : desktop/KeyboardEvent
 ```

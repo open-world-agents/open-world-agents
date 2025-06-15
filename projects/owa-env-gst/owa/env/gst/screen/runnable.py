@@ -2,7 +2,7 @@ import threading
 from collections import deque
 from typing import Any
 
-from owa.msgs.desktop.screen import ScreenEmitted
+from owa.msgs.desktop.screen import ScreenCaptured
 
 from .listeners import ScreenListener
 
@@ -51,12 +51,12 @@ class ScreenCapture(ScreenListener):
         super().on_configure(callback=on_frame, *args, **kwargs)
         return self
 
-    def grab(self) -> ScreenEmitted:
+    def grab(self) -> ScreenCaptured:
         """
         Get the most recent frame (blocks until frame is available).
 
         Returns:
-            ScreenEmitted: Latest captured frame with timestamp.
+            ScreenCaptured: Latest captured frame with timestamp.
 
         Raises:
             TimeoutError: If no frame is received within 1 second.

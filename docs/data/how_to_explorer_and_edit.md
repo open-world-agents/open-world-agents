@@ -47,7 +47,7 @@ channels:
         (2) keyboard/state    7 msgs (1.02 Hz)    : desktop/KeyboardState [jsonschema]
         (3) mouse/state       7 msgs (1.02 Hz)    : desktop/MouseState [jsonschema]
         (4) mouse           115 msgs (16.77 Hz)   : desktop/MouseEvent [jsonschema]
-        (5) screen          362 msgs (52.80 Hz)   : desktop/ScreenEmitted [jsonschema]
+        (5) screen          362 msgs (52.80 Hz)   : desktop/ScreenCaptured [jsonschema]
         (6) keyboard         20 msgs (2.92 Hz)    : desktop/KeyboardEvent [jsonschema]
 channels: 6
 attachments: 0
