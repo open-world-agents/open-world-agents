@@ -53,6 +53,14 @@ class ScreenEmitted:
         else:
             return _LegacyScreenEmitted(*args, **kwargs)
 
+    @classmethod
+    def deserialize(cls, buffer):
+        """Deserialize method for legacy compatibility."""
+        if _NewScreenEmitted is not None:
+            return _NewScreenEmitted.deserialize(buffer)
+        else:
+            return _LegacyScreenEmitted.deserialize(buffer)
+
 
 # Fallback implementation for when owa-msgs is not available
 class _LegacyScreenEmitted(OWAMessage):
