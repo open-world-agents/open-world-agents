@@ -8,8 +8,10 @@ import tempfile
 
 from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
 from owa.core.message import OWAMessage
-from owa.env.desktop.msg import KeyboardEvent
+from owa.core import MESSAGES
 
+# Access message types through the global registry
+KeyboardEvent = MESSAGES['desktop/KeyboardEvent']
 
 class String(OWAMessage):
     _type = "std_msgs/String"

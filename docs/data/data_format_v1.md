@@ -41,8 +41,8 @@ channels:
         (2) keyboard/state    7 msgs (1.02 Hz)    : owa.env.desktop.msg.KeyboardState [jsonschema]
         (3) mouse/state       7 msgs (1.02 Hz)    : owa.env.desktop.msg.MouseState [jsonschema]
         (4) mouse           115 msgs (16.77 Hz)   : owa.env.desktop.msg.MouseEvent [jsonschema]
-        (5) screen          362 msgs (52.80 Hz)   : owa.env.gst.msg.ScreenEmitted [jsonschema]
-        (6) keyboard         20 msgs (2.92 Hz)    : owa.env.desktop.msg.KeyboardEvent [jsonschema]
+        (5) screen          362 msgs (52.80 Hz)   : desktop/ScreenEmitted [jsonschema]
+        (6) keyboard         20 msgs (2.92 Hz)    : desktop/KeyboardEvent [jsonschema]
 channels: 6
 attachments: 0
 metadata: 0
@@ -74,7 +74,7 @@ For example, looking at channel #5 (screen), we can see:
 - The topic name is "screen"
 - It contains 362 messages
 - Recording frequency is 52.80 Hz (slightly lower than the intended 60 Hz, likely due to the short recording time)
-- Messages are of type `owa.env.gst.msg.ScreenEmitted`
+- Messages are of type `desktop/ScreenEmitted`
 
 #### Detailed Message Inspection with `owl mcap cat`
 

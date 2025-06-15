@@ -13,7 +13,7 @@ import shutil
 import typer
 from loguru import logger
 
-from . import env, mcap, video
+from . import env, mcap, messages, video
 from .utils import check_for_update
 
 
@@ -29,6 +29,7 @@ def create_app() -> typer.Typer:
     # Add core commands
     app.add_typer(mcap.app, name="mcap", help="MCAP file management commands")
     app.add_typer(env.app, name="env", help="Environment plugin management commands")
+    app.add_typer(messages.app, name="messages", help="Message registry management commands")
 
     # Add optional commands based on available dependencies
     _add_optional_commands(app)

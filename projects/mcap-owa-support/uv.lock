@@ -322,12 +322,13 @@ wheels = [
 
 [[package]]
 name = "owa-core"
-version = "0.3.9.post1"
+version = "0.4.0"
 source = { editable = "../owa-core" }
 dependencies = [
     { name = "av" },
     { name = "griffe" },
     { name = "loguru" },
+    { name = "owa-msgs" },
     { name = "pydantic" },
 ]
 
@@ -337,7 +338,25 @@ requires-dist = [
     { name = "griffe", specifier = ">=1.7.3" },
     { name = "importlib-metadata", marker = "python_full_version < '3.10'", specifier = ">=4.0.0" },
     { name = "loguru", specifier = ">=0.7.3" },
+    { name = "owa-msgs", editable = "../owa-msgs" },
     { name = "pydantic", specifier = ">=2.10.6" },
+]
+
+[[package]]
+name = "owa-msgs"
+version = "0.4.0"
+source = { editable = "../owa-msgs" }
+dependencies = [
+    { name = "annotated-types" },
+    { name = "owa-core" },
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "annotated-types" },
+    { name = "owa-core" },
+    { name = "pydantic", specifier = ">=2.0.0" },
 ]
 
 [[package]]
@@ -360,7 +379,7 @@ wheels = [
 
 [[package]]
 name = "pydantic"
-version = "2.11.5"
+version = "2.11.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "annotated-types" },
@@ -368,9 +387,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "typing-inspection" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f0/86/8ce9040065e8f924d642c58e4a344e33163a07f6b57f836d0d734e0ad3fb/pydantic-2.11.5.tar.gz", hash = "sha256:7f853db3d0ce78ce8bbb148c401c2cdd6431b3473c0cdff2755c7690952a7b7a", size = 787102, upload-time = "2025-05-22T21:18:08.761Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/00/dd/4325abf92c39ba8623b5af936ddb36ffcfe0beae70405d456ab1fb2f5b8c/pydantic-2.11.7.tar.gz", hash = "sha256:d989c3c6cb79469287b1569f7447a17848c998458d49ebe294e975b9baf0f0db", size = 788350, upload-time = "2025-06-14T08:33:17.137Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b5/69/831ed22b38ff9b4b64b66569f0e5b7b97cf3638346eb95a2147fdb49ad5f/pydantic-2.11.5-py3-none-any.whl", hash = "sha256:f9c26ba06f9747749ca1e5c94d6a85cb84254577553c8785576fd38fa64dc0f7", size = 444229, upload-time = "2025-05-22T21:18:06.329Z" },
+    { url = "https://files.pythonhosted.org/packages/6a/c0/ec2b1c8712ca690e5d61979dee872603e92b8a32f94cc1b72d53beab008a/pydantic-2.11.7-py3-none-any.whl", hash = "sha256:dde5df002701f6de26248661f6835bbe296a47bf73990135c7d07ce741b9623b", size = 444782, upload-time = "2025-06-14T08:33:14.905Z" },
 ]
 
 [[package]]

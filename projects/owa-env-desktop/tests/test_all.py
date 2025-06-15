@@ -2,8 +2,7 @@ import time
 
 import pytest
 
-from owa.core.registry import CALLABLES, LISTENERS
-from owa.env.desktop.msg import WindowInfo
+from owa.core import CALLABLES, LISTENERS, MESSAGES
 
 
 def test_screen_capture():
@@ -34,7 +33,9 @@ def test_get_window_by_title():
     else:
         # Here we assume window_instance should be a dict or similar object.
         # Adjust type check or property tests as necessary.
-        assert isinstance(window_instance, WindowInfo), "Expected window instance to be a WindowInfo"
+        assert isinstance(window_instance, MESSAGES["desktop/WindowInfo"]), (
+            "Expected window instance to be a WindowInfo"
+        )
 
 
 def test_mouse_click():

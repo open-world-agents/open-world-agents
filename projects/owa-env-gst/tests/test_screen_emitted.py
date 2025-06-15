@@ -8,7 +8,7 @@ from PIL import Image
 
 from owa.core.io.video import VideoWriter, force_close_video_container
 from owa.core.time import TimeUnits
-from owa.env.gst.msg import ScreenEmitted
+from owa.msgs.desktop.screen import ScreenEmitted
 
 
 @pytest.fixture

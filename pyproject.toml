@@ -1,6 +1,6 @@
 [project]
 name = "owa"
-version = "0.3.9.post1"
+version = "0.4.0"
 description = "Everything you need to build state-of-the-art foundation multimodal desktop agent, end-to-end."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -11,6 +11,7 @@ dependencies = [
     "owa-core",
     "owa-env-desktop",
     "owa-env-gst",
+    "owa-msgs",
 ]
 
 [project.optional-dependencies]
@@ -40,6 +41,7 @@ owa-cli = { path = "projects/owa-cli", editable = true }
 owa-core = { path = "projects/owa-core", editable = true }
 owa-env-desktop = { path = "projects/owa-env-desktop", editable = true }
 owa-env-gst = { path = "projects/owa-env-gst", editable = true }
+owa-msgs = { path = "projects/owa-msgs", editable = true }
 
 [build-system]
 requires = ["hatchling"]

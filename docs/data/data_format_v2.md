@@ -81,13 +81,13 @@ OWAMcap's most innovative feature is its approach to video data:
 
 ```python
 class ScreenEmitted(OWAMessage):
-    _type = "owa.env.gst.msg.ScreenEmitted"
-    
+    _type = "desktop/ScreenEmitted"
+
     # Timestamps and frame references
     utc_ns: int | None = None
     path: str | None = None  # e.g., "example.mkv"
     pts: int | None = None   # Precise frame timestamp
-    
+
     # Optional in-memory frame data
     frame_arr: Optional[np.ndarray] = Field(None, exclude=True)
     shape: Optional[Tuple[int, int]] = None
@@ -129,12 +129,12 @@ messages:  751029
 duration:  1h27m38.9810357s
 compression: zstd (86.96% reduction)
 channels:
-    (1) window          5257 msgs (1.00 Hz) : WindowInfo
-    (2) keyboard/state  5256 msgs (1.00 Hz) : KeyboardState  
-    (3) mouse/state     5256 msgs (1.00 Hz) : MouseState
-    (4) screen        303524 msgs (57.72 Hz): ScreenEmitted
-    (5) mouse         429580 msgs (81.69 Hz): MouseEvent
-    (6) keyboard        2156 msgs (2.92 Hz) : KeyboardEvent
+    (1) window          5257 msgs (1.00 Hz) : desktop/WindowInfo
+    (2) keyboard/state  5256 msgs (1.00 Hz) : desktop/KeyboardState
+    (3) mouse/state     5256 msgs (1.00 Hz) : desktop/MouseState
+    (4) screen        303524 msgs (57.72 Hz): desktop/ScreenEmitted
+    (5) mouse         429580 msgs (81.69 Hz): desktop/MouseEvent
+    (6) keyboard        2156 msgs (2.92 Hz) : desktop/KeyboardEvent
 ```
 
 **Key insight**: Only 21 MiB for 1.5 hours of multimodal data, thanks to external video storage.

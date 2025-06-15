@@ -1,0 +1,52 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "owa-msgs"
+version = "0.4.0"
+description = "Core message definitions for Open World Agents"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+    { name = "Open World Agents Team" },
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+requires-python = ">=3.11"
+dependencies = [
+    "owa-core",
+    "pydantic>=2.0.0",
+    "annotated-types",
+]
+
+[project.urls]
+Homepage = "https://github.com/open-world-agents/open-world-agents"
+Repository = "https://github.com/open-world-agents/open-world-agents"
+Documentation = "https://open-world-agents.github.io/open-world-agents/"
+
+[project.entry-points."owa.msgs"]
+"desktop/KeyboardEvent" = "owa.msgs.desktop.keyboard:KeyboardEvent"
+"desktop/KeyboardState" = "owa.msgs.desktop.keyboard:KeyboardState"
+"desktop/MouseEvent" = "owa.msgs.desktop.mouse:MouseEvent"
+"desktop/MouseState" = "owa.msgs.desktop.mouse:MouseState"
+"desktop/WindowInfo" = "owa.msgs.desktop.window:WindowInfo"
+"desktop/ScreenEmitted" = "owa.msgs.desktop.screen:ScreenEmitted"
+
+[tool.hatch.build.targets.wheel]
+packages = ["owa"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "owa/",
+    "README.md",
+]
+
+[tool.ruff]
+extend = "../../ruff.toml"

@@ -19,6 +19,7 @@ import typer
 app = typer.Typer(help="OWA Release Manager - A tool for managing OWA package releases")
 
 # Common project paths used across commands
+# TODO: automatic discovery by parsing root pyproject.toml
 PROJECTS = [
     ".",
     "projects/mcap-owa-support",
@@ -27,6 +28,7 @@ PROJECTS = [
     "projects/owa-core",
     "projects/owa-env-desktop",
     "projects/owa-env-gst",
+    "projects/owa-msgs",
 ]
 
 

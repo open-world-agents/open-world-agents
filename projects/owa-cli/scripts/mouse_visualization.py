@@ -7,7 +7,7 @@ from typing_extensions import Annotated
 
 from mcap_owa.highlevel import OWAMcapReader
 from owa.core.time import TimeUnits
-from owa.env.gst.msg import ScreenEmitted
+from owa.msgs.desktop.screen import ScreenEmitted
 
 
 def main(mcap_path: Annotated[Path, typer.Argument(help="Path to the input .mcap file")]):

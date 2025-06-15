@@ -1,3 +1,20 @@
+"""
+Legacy message definitions for backward compatibility.
+
+DEPRECATED: These message definitions have been moved to the owa-msgs package
+for better organization and centralized management. Please use the new imports:
+
+    from owa.msgs.desktop.screen import ScreenEmitted
+
+Or access via the message registry:
+
+    from owa.core import MESSAGES
+    ScreenEmitted = MESSAGES['desktop/ScreenEmitted']
+
+This module provides compatibility imports and will be removed in a future version.
+"""
+
+import warnings
 from fractions import Fraction
 from typing import Optional, Tuple
 
@@ -11,8 +28,34 @@ from owa.core.io.video import VideoReader
 from owa.core.message import OWAMessage
 from owa.core.time import TimeUnits
 
+# Import new message classes for compatibility
+try:
+    from owa.msgs.desktop.screen import ScreenEmitted as _NewScreenEmitted
+except ImportError:
+    # Fallback if owa-msgs is not installed
+    _NewScreenEmitted = None
 
-class ScreenEmitted(OWAMessage):
+
+def _deprecation_warning(old_name: str, new_import: str) -> None:
+    """Issue deprecation warning for legacy message usage."""
+    warnings.warn(
+        f"Using {old_name} from owa.env.gst.msg is deprecated. Use: {new_import}", DeprecationWarning, stacklevel=3
+    )
+
+
+class ScreenEmitted:
+    """Legacy ScreenEmitted - redirects to new implementation."""
+
+    def __new__(cls, *args, **kwargs):
+        _deprecation_warning("owa.env.gst.msg.ScreenEmitted", "from owa.msgs.desktop.screen import ScreenEmitted")
+        if _NewScreenEmitted is not None:
+            return _NewScreenEmitted(*args, **kwargs)
+        else:
+            return _LegacyScreenEmitted(*args, **kwargs)
+
+
+# Fallback implementation for when owa-msgs is not available
+class _LegacyScreenEmitted(OWAMessage):
     _type = "owa.env.gst.msg.ScreenEmitted"
 
     model_config = {"arbitrary_types_allowed": True}
