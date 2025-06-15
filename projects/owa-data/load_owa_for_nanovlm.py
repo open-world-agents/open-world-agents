@@ -5,6 +5,8 @@ Load OWA MLLM Dataset for nanoVLM Training
 This script demonstrates how to load the OWA MLLM dataset created by the 4-stage pipeline
 and integrate it with nanoVLM's training framework.
 
+The dataset format is: instruction + state_image -> target_actions (1:1 bin-to-sample conversion)
+
 Usage:
     python load_owa_for_nanovlm.py
 """
@@ -118,28 +120,28 @@ def inspect_sample(vlm_dataset: VLMDatasetBuilder, sample_idx: int = 0):
 
     # Mock image loading for inspection
     original_load_images = vlm_dataset._load_images
-    vlm_dataset._load_images = lambda refs: [
-        f"MockImage_{i}" for i in range(len(refs["path"]) if isinstance(refs, dict) else len(refs))
-    ]
+    vlm_dataset._load_images = lambda ref: f"MockImage_{ref.get('path', 'unknown')}"
 
     try:
         sample = vlm_dataset[sample_idx]
 
         print(f"Sample keys: {list(sample.keys())}")
         print(f"Instruction: {sample['instruction']}")
-        print(f"Encoded events count: {len(sample['encoded_events'])}")
-        print(f"Images count: {len(sample['images'])}")
+        print(f"Target actions count: {len(sample['target_actions'])}")
+        print(f"State image: {sample['state_image']}")
         print(f"Metadata: {sample['metadata']}")
 
-        print("\nFirst few encoded events:")
-        for i, event in enumerate(sample["encoded_events"][:3]):
-            print(f"  {i + 1}: {event[:100]}...")
+        print("\nFirst few target actions:")
+        for i, action in enumerate(sample["target_actions"][:3]):
+            print(f"  {i + 1}: {action[:100]}...")
 
-        print("\nImage references (first 3):")
+        print("\nState image reference:")
         raw_sample = vlm_dataset.dataset[sample_idx]
-        if isinstance(raw_sample["image_refs"], dict):
-            for i in range(min(3, len(raw_sample["image_refs"]["path"]))):
-                print(f"  {i + 1}: {raw_sample['image_refs']['path'][i]} @ {raw_sample['image_refs']['pts'][i]}ns")
+        img_ref = raw_sample["state_image_ref"]
+        print(f"  Path: {img_ref['path']}")
+        print(f"  PTS: {img_ref['pts']}ns")
+        print(f"  Timestamp: {img_ref['timestamp_ns']}ns")
+        print(f"  Bin index: {img_ref['bin_idx']}")
 
     finally:
         # Restore original image loading
@@ -272,17 +274,12 @@ def demo_full_nanovlm_integration(train_dataset: VLMDatasetBuilder):
         print("Creating subset of dataset for testing...")
 
         # Mock the image loading to return actual PIL Images instead of strings
-        def mock_load_images(image_refs):
-            """Mock image loading that returns actual PIL Images"""
-            images = []
-            if isinstance(image_refs, dict) and "path" in image_refs:
-                num_refs = len(image_refs["path"])
-                for i in range(min(num_refs, 3)):  # Limit to 3 images for testing
-                    # Create a fake PIL image
-                    fake_array = np.random.randint(0, 255, (224, 224, 3), dtype=np.uint8)
-                    fake_image = Image.fromarray(fake_array, mode="RGB")
-                    images.append(fake_image)
-            return images
+        def mock_load_images(image_ref):
+            """Mock image loading that returns a single PIL Image"""
+            # Create a fake PIL image for the single state image
+            fake_array = np.random.randint(0, 255, (224, 224, 3), dtype=np.uint8)
+            fake_image = Image.fromarray(fake_array, mode="RGB")
+            return fake_image
 
         # Temporarily replace the image loading function
         original_load_images = train_dataset._load_images
@@ -347,35 +344,28 @@ if __name__ == "__main__":
         import numpy as np
         from PIL import Image
 
-        # Custom collator for VLMDatasetBuilder that can handle variable-length sequences
+        # Custom collator for VLMDatasetBuilder that handles single images per sample
         def vlm_collator(batch):
-            """Custom collator that handles variable-length sequences in VLMDatasetBuilder"""
+            """Custom collator that handles single images per sample in VLMDatasetBuilder"""
             # Extract all fields
             instructions = [item["instruction"] for item in batch]
-            encoded_events = [item["encoded_events"] for item in batch]
-            images = [item["images"] for item in batch]
+            target_actions = [item["target_actions"] for item in batch]
+            state_images = [item["state_image"] for item in batch]
             metadata = [item["metadata"] for item in batch]
-
-            # For images, we'll just return them as nested lists since they're variable length
-            # In practice, you'd want to pad or truncate to fixed size
 
             return {
                 "instruction": instructions,
-                "encoded_events": encoded_events,  # Keep as list of lists
-                "images": images,  # Keep as list of lists
+                "target_actions": target_actions,  # Keep as list of lists (variable length actions)
+                "state_image": state_images,  # Single image per sample
                 "metadata": metadata,
             }
 
-        # Mock image loading for testing - return FIXED number of PIL Images per sample
-        def mock_load_images_for_test(refs):
-            # Always return exactly 2 images per sample to make sequences uniform
-            images = []
-            for i in range(2):  # Fixed number of images
-                # Create a fake PIL image
-                fake_array = np.random.randint(0, 255, (224, 224, 3), dtype=np.uint8)
-                fake_image = Image.fromarray(fake_array, mode="RGB")
-                images.append(fake_image)
-            return images
+        # Mock image loading for testing - return single PIL Image per sample
+        def mock_load_images_for_test(image_ref):
+            # Return exactly 1 image per sample (matching new format)
+            fake_array = np.random.randint(0, 255, (224, 224, 3), dtype=np.uint8)
+            fake_image = Image.fromarray(fake_array, mode="RGB")
+            return fake_image
 
         # Temporarily replace image loading
         original_load_images = train_dataset._load_images
@@ -397,12 +387,10 @@ if __name__ == "__main__":
         for i, batch in enumerate(test_dataloader):
             print(f"Batch {i + 1}:")
             print(f"  Instructions: {len(batch['instruction'])} samples")
-            print(f"  Encoded events: {len(batch['encoded_events'])} samples")
-            print(f"    First sample events: {len(batch['encoded_events'][0])} events")
-            print(f"  Images: {len(batch['images'])} samples")
-            print(f"    First sample images: {len(batch['images'][0])} images")
-            if len(batch["images"][0]) > 0:
-                print(f"    First image type: {type(batch['images'][0][0])}")
+            print(f"  Target actions: {len(batch['target_actions'])} samples")
+            print(f"    First sample actions: {len(batch['target_actions'][0])} actions")
+            print(f"  State images: {len(batch['state_image'])} samples")
+            print(f"    First image type: {type(batch['state_image'][0])}")
             print(f"  Metadata: {len(batch['metadata'])} samples")
 
             batch_count += 1

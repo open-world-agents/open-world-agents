@@ -8,14 +8,14 @@ Usage (CLI):
     python 03_binned_dataset_to_mllm_dataset.py \
         --input_dir /path/to/input_binned_dataset \
         --output_dir /path/to/output_mllm_dataset \
-        [--sequence_length 32] \
         [--instruction "Complete the computer task"] \
-        [--overlap_ratio 0.5]
+        [--show-example/--no-show-example] \
+        [--filter-empty-actions/--no-filter-empty-actions]
 
-- Groups bins into sequences of specified length for MLLM training.
-- Extracts image references from screen events for lazy loading.
+- Converts each bin into one training sample (1:1 conversion).
+- Extracts image reference from screen event for lazy loading.
 - Encodes actions using EventEncoder for text representation.
-- Each output row contains: instruction, encoded_events, image_refs, metadata.
+- Each output row contains: instruction, state_image_ref, target_actions, metadata.
 """
 
 import json
@@ -32,7 +32,7 @@ from owa.data import BaseEventEncoder, HierarchicalEventEncoder, JSONEventEncode
 app = typer.Typer(add_completion=False)
 
 
-def extract_image_references(state_msg: Union[bytes, str]) -> Optional[Dict[str, Any]]:
+def extract_image_reference(state_msg: Union[bytes, str]) -> Optional[Dict[str, Any]]:
     """
     Extract image reference from screen event state message.
 
@@ -118,78 +118,55 @@ def encode_actions(actions_msg: Union[bytes, str], encoder: BaseEventEncoder) ->
         return []
 
 
-def create_sequences(
-    binned_data: List[Dict[str, Any]],
-    sequence_length: int,
-    overlap_ratio: float,
+def convert_bin_to_sample(
+    bin_data: Dict[str, Any],
     instruction: str,
     encoder: BaseEventEncoder,
-) -> List[Dict[str, Any]]:
+    filter_empty_actions: bool = True,
+) -> Optional[Dict[str, Any]]:
     """
-    Create sequences from binned data for MLLM training.
+    Convert a single bin into one MLLM training sample.
 
     Args:
-        binned_data: List of binned data entries
-        sequence_length: Number of bins per sequence
-        overlap_ratio: Overlap ratio between sequences (0.0 to 1.0)
-        instruction: Instruction text for all sequences
+        bin_data: Single binned data entry
+        instruction: Instruction text for the sample
         encoder: BaseEventEncoder instance
+        filter_empty_actions: If True, skip samples with no actions
 
     Returns:
-        List of MLLM training sequences
+        MLLM training sample or None if no valid state/actions or filtered out
     """
-    if len(binned_data) < sequence_length:
-        # If not enough data, create one sequence with available data
-        sequences = [binned_data]
-    else:
-        # Create overlapping sequences
-        step_size = max(1, int(sequence_length * (1 - overlap_ratio)))
-        sequences = []
+    # Extract image reference from state
+    image_ref = extract_image_reference(bin_data["state"])
+    if not image_ref:
+        # Skip bins without valid screen state
+        return None
 
-        for start_idx in range(0, len(binned_data) - sequence_length + 1, step_size):
-            end_idx = start_idx + sequence_length
-            sequences.append(binned_data[start_idx:end_idx])
+    # Add bin metadata to image reference
+    image_ref["timestamp_ns"] = bin_data["timestamp_ns"]
+    image_ref["bin_idx"] = bin_data["bin_idx"]
 
-    mllm_sequences = []
+    # Encode actions
+    target_actions = encode_actions(bin_data["actions"], encoder)
 
-    for seq_idx, sequence in enumerate(sequences):
-        # Extract image references and encoded events
-        image_refs = []
-        encoded_events = []
+    # Filter out samples with no actions if requested
+    if filter_empty_actions and len(target_actions) == 0:
+        return None
 
-        for bin_data in sequence:
-            # Extract image reference from state
-            img_ref = extract_image_references(bin_data["state"])
-            if img_ref:
-                img_ref["timestamp_ns"] = bin_data["timestamp_ns"]
-                img_ref["bin_idx"] = bin_data["bin_idx"]
-                image_refs.append(img_ref)
+    # Create MLLM sample
+    mllm_sample = {
+        "instruction": instruction,
+        "state_image_ref": image_ref,
+        "target_actions": target_actions,
+        "metadata": {
+            "file_path": bin_data["file_path"],
+            "bin_idx": bin_data["bin_idx"],
+            "timestamp_ns": bin_data["timestamp_ns"],
+            "num_actions": len(target_actions),
+        },
+    }
 
-            # Encode actions
-            actions = encode_actions(bin_data["actions"], encoder)
-            encoded_events.extend(actions)
-
-        # Create MLLM sequence
-        mllm_sequence = {
-            "instruction": instruction,
-            "encoded_events": encoded_events,
-            "image_refs": image_refs,
-            "metadata": {
-                "file_path": sequence[0]["file_path"],
-                "sequence_idx": seq_idx,
-                "start_bin_idx": sequence[0]["bin_idx"],
-                "end_bin_idx": sequence[-1]["bin_idx"],
-                "start_timestamp_ns": sequence[0]["timestamp_ns"],
-                "end_timestamp_ns": sequence[-1]["timestamp_ns"],
-                "num_bins": len(sequence),
-                "num_images": len(image_refs),
-                "num_actions": len(encoded_events),
-            },
-        }
-
-        mllm_sequences.append(mllm_sequence)
-
-    return mllm_sequences
+    return mllm_sample
 
 
 @app.command()
@@ -212,23 +189,22 @@ def main(
         dir_okay=True,
         help="Output MLLM dataset directory",
     ),
-    sequence_length: int = typer.Option(32, "--sequence_length", help="Number of bins per sequence (default: 32)"),
     instruction: str = typer.Option(
-        "Complete the computer task", "--instruction", help="Instruction text for all sequences"
+        "Complete the computer task", "--instruction", help="Instruction text for all samples"
     ),
-    overlap_ratio: float = typer.Option(
-        0.5, "--overlap_ratio", help="Overlap ratio between sequences (0.0 to 1.0, default: 0.5)"
+    show_example: bool = typer.Option(
+        False, "--show-example/--no-show-example", help="Show full content of an example sample (default: False)"
+    ),
+    filter_empty_actions: bool = typer.Option(
+        True,
+        "--filter-empty-actions/--no-filter-empty-actions",
+        help="Filter out samples with no actions (default: True)",
     ),
 ):
     """
-    Convert binned dataset to MLLM dataset format with sequences ready for VLA training.
+    Convert binned dataset to MLLM dataset format with 1:1 bin-to-sample conversion for VLA training.
     """
     start_time = time.time()
-
-    # Validate overlap_ratio
-    if not 0.0 <= overlap_ratio < 1.0:
-        typer.echo("[Error] --overlap_ratio must be between 0.0 and 1.0 (exclusive)", err=True)
-        raise typer.Exit(code=1)
 
     # Initialize HierarchicalEventEncoder
     encoder = HierarchicalEventEncoder()
@@ -255,89 +231,103 @@ def main(
 
         typer.echo(f"Processing {split_name} split with {len(ds)} binned entries...")
 
-        # Group by file_path
-        file_paths = sorted(set(ds["file_path"]))
-        all_mllm_sequences = []
-
-        typer.echo(f"Found {len(file_paths)} unique files to process")
-
         # Convert dataset to pandas for much faster processing
         typer.echo("Converting dataset to pandas for faster processing...")
         df = ds.to_pandas()
 
-        # Group by file_path efficiently
-        typer.echo("Grouping data by file_path...")
-        file_data = {}
-        for fp in file_paths:
-            file_df = df[df["file_path"] == fp].copy()
-            file_df = file_df.sort_values("bin_idx")
-            file_data[fp] = file_df.to_dict("records")
+        all_mllm_samples = []
+        valid_samples = 0
+        skipped_no_state = 0
+        skipped_no_actions = 0
 
-        # Process each file
-        file_pbar = tqdm(file_paths, desc=f"Processing {split_name} files")
-        for fp in file_pbar:
-            file_pbar.set_postfix({"current_file": Path(fp).name})
+        # Process each bin directly (1:1 conversion)
+        bin_pbar = tqdm(df.to_dict("records"), desc=f"Converting {split_name} bins to samples")
+        for bin_data in bin_pbar:
+            # Convert bin to sample
+            sample = convert_bin_to_sample(bin_data, instruction, encoder, filter_empty_actions)
 
-            # Get binned data for this file (already sorted by bin_idx)
-            binned_data = file_data[fp]
-
-            # Create sequences for this file
-            file_sequences = create_sequences(binned_data, sequence_length, overlap_ratio, instruction, encoder)
-            all_mllm_sequences.extend(file_sequences)
+            if sample:
+                all_mllm_samples.append(sample)
+                valid_samples += 1
+            else:
+                # Check why it was skipped
+                if extract_image_reference(bin_data["state"]) is None:
+                    skipped_no_state += 1
+                else:
+                    # Must be due to empty actions (if filtering is enabled)
+                    skipped_no_actions += 1
 
             # Update progress
-            file_pbar.set_postfix(
-                {"current_file": Path(fp).name, "bins": len(binned_data), "sequences": len(file_sequences)}
+            bin_pbar.set_postfix(
+                {
+                    "valid": valid_samples,
+                    "no_state": skipped_no_state,
+                    "no_actions": skipped_no_actions,
+                    "file": Path(bin_data["file_path"]).name,
+                }
             )
 
-        file_pbar.close()
+        bin_pbar.close()
+
+        total_skipped = skipped_no_state + skipped_no_actions
+        typer.echo(f"Converted {valid_samples} bins to samples")
+        if total_skipped > 0:
+            typer.echo(
+                f"Skipped {total_skipped} bins: {skipped_no_state} without state, {skipped_no_actions} without actions"
+            )
 
         # Define features for MLLM dataset
         features = Features(
             {
                 "instruction": Value("string"),
-                "encoded_events": Sequence(Value("string")),
-                "image_refs": Sequence(
-                    {
-                        "path": Value("string"),
-                        "pts": Value("int64"),
-                        "utc_ns": Value("int64"),
-                        "timestamp_ns": Value("int64"),
-                        "bin_idx": Value("int32"),
-                    }
-                ),
+                "state_image_ref": {
+                    "path": Value("string"),
+                    "pts": Value("int64"),
+                    "utc_ns": Value("int64"),
+                    "timestamp_ns": Value("int64"),
+                    "bin_idx": Value("int32"),
+                },
+                "target_actions": Sequence(Value("string")),
                 "metadata": {
                     "file_path": Value("string"),
-                    "sequence_idx": Value("int32"),
-                    "start_bin_idx": Value("int32"),
-                    "end_bin_idx": Value("int32"),
-                    "start_timestamp_ns": Value("int64"),
-                    "end_timestamp_ns": Value("int64"),
-                    "num_bins": Value("int32"),
-                    "num_images": Value("int32"),
+                    "bin_idx": Value("int32"),
+                    "timestamp_ns": Value("int64"),
                     "num_actions": Value("int32"),
                 },
             }
         )
 
         # Create MLLM dataset
-        typer.echo(f"Creating MLLM dataset with {len(all_mllm_sequences)} sequences...")
-        mllm_dataset = Dataset.from_list(all_mllm_sequences, features=features)
+        typer.echo(f"Creating MLLM dataset with {len(all_mllm_samples)} samples...")
+        mllm_dataset = Dataset.from_list(all_mllm_samples, features=features)
 
         # Store the dataset for this split
         split_name = split if split else "train"  # Default to "train" if no split
         processed_datasets[split_name] = mllm_dataset
 
-        typer.echo(f"Processed {len(mllm_dataset)} MLLM sequences for {split_name} split")
+        typer.echo(f"Processed {len(mllm_dataset)} MLLM samples for {split_name} split")
 
-        # Show sample statistics
-        if len(all_mllm_sequences) > 0:
-            sample = all_mllm_sequences[0]
-            typer.echo("\nSample sequence statistics:")
-            typer.echo(f"  Instruction: {sample['instruction']}")
-            typer.echo(f"  Encoded events: {len(sample['encoded_events'])}")
-            typer.echo(f"  Image references: {len(sample['image_refs'])}")
-            typer.echo(f"  Metadata: {sample['metadata']}")
+        # Show full example content (if enabled)
+        if show_example and len(all_mllm_samples) > 0:
+            sample = all_mllm_samples[0]
+            typer.echo("\n" + "=" * 80)
+            typer.echo("EXAMPLE SAMPLE CONTENT:")
+            typer.echo("=" * 80)
+            typer.echo("\nInstruction:")
+            typer.echo(f"  {sample['instruction']}")
+
+            typer.echo("\nState Image Reference:")
+            typer.echo(f"  {sample['state_image_ref']}")
+
+            typer.echo(f"\nTarget Actions ({len(sample['target_actions'])} total):")
+            for i, action in enumerate(sample["target_actions"]):
+                typer.echo(f"  [{i:3d}] {action}")
+
+            typer.echo("\nMetadata:")
+            for key, value in sample["metadata"].items():
+                typer.echo(f"  {key}: {value}")
+
+            typer.echo("=" * 80)
 
     # Save all datasets as DatasetDict or single Dataset
     if len(processed_datasets) > 1:
@@ -356,14 +346,14 @@ def main(
     # Calculate and display timing information
     elapsed_time = time.time() - start_time
     if len(processed_datasets) > 1:
-        total_sequences = sum(len(ds) for ds in processed_datasets.values())
-        typer.echo(f"Saved DatasetDict with {total_sequences} total MLLM sequences to {output_dir}")
+        total_samples = sum(len(ds) for ds in processed_datasets.values())
+        typer.echo(f"Saved DatasetDict with {total_samples} total MLLM samples to {output_dir}")
         for split_name, ds in processed_datasets.items():
-            typer.echo(f"  {split_name}: {len(ds)} sequences")
+            typer.echo(f"  {split_name}: {len(ds)} samples")
     else:
         split_name = list(processed_datasets.keys())[0]
         ds = list(processed_datasets.values())[0]
-        typer.echo(f"Saved {len(ds)} MLLM sequences ({split_name}) to {output_dir}")
+        typer.echo(f"Saved {len(ds)} MLLM samples ({split_name}) to {output_dir}")
 
     typer.echo(f"Processing completed in {elapsed_time:.2f} seconds ({elapsed_time / 60:.1f} minutes)")
 

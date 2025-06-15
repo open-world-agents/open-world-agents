@@ -17,17 +17,11 @@ Raw MCAP Data → Event Dataset → Binned Dataset → MLLM Dataset → Training
 
 **Usage**:
 ```bash
-# Default behavior (keeps screen, keyboard, mouse topics)
-python scripts/01_raw_events_to_event_dataset.py \
-  --train_dir /mnt/raid11/datasets/owa/mcaps/super-hexagon \
-  --test_dir /mnt/raid11/datasets/owa/mcaps/super-hexagon-30s \
-  --output-dir /mnt/raid11/datasets/owa/data/super-hexagon-event \
-  --rate mouse=60 --rate screen=20
-
-# Custom topic filtering (replaces defaults)
+# Filter only screen and keyboard
 python scripts/01_raw_events_to_event_dataset.py \
   --train_dir /mnt/raid11/datasets/owa/mcaps/super-hexagon \
   --output-dir /mnt/raid11/datasets/owa/data/super-hexagon-event \
+  --rate mouse=60 --rate screen=20 \
   --keep_topic screen --keep_topic keyboard  # Only screen and keyboard
 ```
 
@@ -82,49 +76,44 @@ python scripts/02_event_dataset_to_binned_dataset.py \
 
 **Script**: `scripts/03_binned_dataset_to_mllm_dataset.py`
 
-**Purpose**: Create training sequences with image references and encoded events
+**Purpose**: Convert each bin into one training sample (1:1 conversion)
 
 **Usage**:
 ```bash
 python scripts/03_binned_dataset_to_mllm_dataset.py \
   --input_dir /mnt/raid11/datasets/owa/data/super-hexagon-bin \
   --output_dir /mnt/raid11/datasets/owa/data/super-hexagon-mllm \
-  --sequence_length 32 \
   --instruction "Complete the computer task" \
-  --overlap_ratio 0.5
+  --filter-empty-actions  # Filter out samples with no actions (default: enabled)
 ```
 
 **Output Schema**:
 ```python
 {
     "instruction": Value("string"),           # Task instruction
-    "encoded_events": Sequence(Value("string")),  # EventEncoder outputs
-    "image_refs": Sequence({                 # Image references for lazy loading
+    "state_image_ref": {                     # Single state image reference
         "path": Value("string"),             # MKV file path
         "pts": Value("int64"),               # Presentation timestamp
         "utc_ns": Value("int64"),            # UTC timestamp
-        "timestamp_ns": Value("int64"),      # Sequence timestamp
+        "timestamp_ns": Value("int64"),      # Event timestamp
         "bin_idx": Value("int32"),           # Bin index
-    }),
-    "metadata": {                            # Sequence metadata
-        "file_path": Value("string"),
-        "sequence_idx": Value("int32"),
-        "start_bin_idx": Value("int32"),
-        "end_bin_idx": Value("int32"),
-        "start_timestamp_ns": Value("int64"),
-        "end_timestamp_ns": Value("int64"),
-        "num_bins": Value("int32"),
-        "num_images": Value("int32"),
-        "num_actions": Value("int32"),
+    },
+    "target_actions": Sequence(Value("string")),  # EventEncoder outputs for actions
+    "metadata": {                            # Sample metadata
+        "file_path": Value("string"),        # Source file
+        "bin_idx": Value("int32"),           # Bin index
+        "timestamp_ns": Value("int64"),      # Timestamp
+        "num_actions": Value("int32"),       # Number of actions
     }
 }
 ```
 
 **Key Features**:
-- Configurable sequence length and overlap
-- Image references for memory-efficient lazy loading
+- Simple 1:1 bin-to-sample conversion (each bin = one training sample)
+- Single state image per sample for clear state-action pairing
 - EventEncoder integration for action text serialization
-- Rich metadata for analysis and debugging
+- Configurable filtering of samples with no actions (no-ops)
+- Efficient format for VLA training: instruction + state_image → target_actions
 
 ## Stage 4: MLLM Dataset → Training Ready
 
@@ -157,17 +146,17 @@ dataloader = DataLoader(vlm_dataset, batch_size=4)
 ```python
 {
     "instruction": str,                    # Task instruction
-    "encoded_events": List[str],           # EventEncoder outputs
-    "images": List[PIL.Image],             # Lazy-loaded images from MKV files
-    "metadata": Dict                       # Sequence metadata
+    "target_actions": List[str],           # EventEncoder outputs for actions
+    "state_image": PIL.Image,              # Lazy-loaded state image from MKV file
+    "metadata": Dict                       # Sample metadata
 }
 ```
 
 **Key Features**:
-- Lazy image loading from MKV files using image references
+- Lazy image loading from MKV files using single image reference per sample
 - Multiple image formats (PIL, tensor, numpy)
 - Optional LRU caching for performance
-- Proper PyTorch Dataset interface
+- Proper PyTorch Dataset interface for VLA training
 
 ## EventEncoder
 
@@ -199,8 +188,7 @@ python scripts/02_event_dataset_to_binned_dataset.py \
 # Stage 3: Create MLLM dataset
 python scripts/03_binned_dataset_to_mllm_dataset.py \
     --input_dir /data/binned_dataset \
-    --output_dir /data/mllm_dataset \
-    --sequence_length 32
+    --output_dir /data/mllm_dataset
 
 # Stage 4: Use in training
 python load_owa_for_nanovlm.py
