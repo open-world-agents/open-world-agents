@@ -16,7 +16,7 @@ from pydantic.json_schema import SkipJsonSchema
 from owa.core.message import OWAMessage
 
 
-class ScreenEmitted(OWAMessage):
+class ScreenCaptured(OWAMessage):
     """
     Represents a captured screen frame with optional video reference.
 
@@ -32,7 +32,7 @@ class ScreenEmitted(OWAMessage):
         pts: Presentation timestamp in nanoseconds from stream start
     """
 
-    _type = "desktop/ScreenEmitted"
+    _type = "desktop/ScreenCaptured"
 
     model_config = {"arbitrary_types_allowed": True}
 
@@ -51,12 +51,12 @@ class ScreenEmitted(OWAMessage):
     pts: Optional[int] = None
 
     @model_validator(mode="after")
-    def validate_screen_emitted(self) -> "ScreenEmitted":
+    def validate_screen_emitted(self) -> "ScreenCaptured":
         """Validate that either frame_arr or (path and pts) are provided."""
         # At least one of frame_arr or (path and pts) must be provided
         if self.frame_arr is None:
             if self.path is None or self.pts is None:
-                raise ValueError("ScreenEmitted requires either 'frame_arr' or both 'path' and 'pts' to be provided.")
+                raise ValueError("ScreenCaptured requires either 'frame_arr' or both 'path' and 'pts' to be provided.")
 
         # Validate frame_arr if provided
         if self.frame_arr is not None:
@@ -199,7 +199,7 @@ class ScreenEmitted(OWAMessage):
         return self.frame_arr.nbytes
 
     def __str__(self) -> str:
-        """Return a concise string representation of the ScreenEmitted instance."""
+        """Return a concise string representation of the ScreenCaptured instance."""
         # Core attributes to display
         attrs = ["utc_ns", "shape", "original_shape", "path", "pts"]
         attr_strs = []

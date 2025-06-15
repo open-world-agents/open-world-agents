@@ -317,7 +317,7 @@ channels:
   (2) keyboard/state   7 msgs (1.02 Hz): KeyboardState
   (3) mouse/state      7 msgs (1.02 Hz): MouseState
   (4) mouse          115 msgs (16.77 Hz): MouseEvent
-  (5) screen         362 msgs (52.80 Hz): ScreenEmitted
+  (5) screen         362 msgs (52.80 Hz): ScreenCaptured
   (6) keyboard        20 msgs (2.92 Hz): KeyboardEvent</code></pre>
                         </div>
                         <div class="mt-4 p-4 bg-blue-50 rounded-lg">
@@ -491,7 +491,7 @@ Topic: keyboard, Message: {'event_type': 'release', 'vk': 162}</code></pre>
                 type: 'doughnut',
                 data: {
                     labels: [
-                        processLabel('ScreenEmitted (Frames)'), 
+                        processLabel('ScreenCaptured (Frames)'), 
                         processLabel('MouseEvent'), 
                         processLabel('KeyboardEvent'), 
                         processLabel('WindowInfo'), 

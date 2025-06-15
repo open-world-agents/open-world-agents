@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "owa-msgs"
-version = "0.4.0"
+version = "0.4.1"
 description = "Core message definitions for Open World Agents"
 readme = "README.md"
 license = { text = "MIT" }
@@ -21,10 +21,13 @@ classifiers = [
 ]
 requires-python = ">=3.11"
 dependencies = [
-    "owa-core",
-    "pydantic>=2.0.0",
+    "owa-core>=0.4.0",
+    "pydantic>=2.10.6",
     "annotated-types",
 ]
+
+[tool.uv.sources]
+owa-core = { path = "../owa-core", editable = true }
 
 [project.urls]
 Homepage = "https://github.com/open-world-agents/open-world-agents"
@@ -37,7 +40,7 @@ Documentation = "https://open-world-agents.github.io/open-world-agents/"
 "desktop/MouseEvent" = "owa.msgs.desktop.mouse:MouseEvent"
 "desktop/MouseState" = "owa.msgs.desktop.mouse:MouseState"
 "desktop/WindowInfo" = "owa.msgs.desktop.window:WindowInfo"
-"desktop/ScreenEmitted" = "owa.msgs.desktop.screen:ScreenEmitted"
+"desktop/ScreenCaptured" = "owa.msgs.desktop.screen:ScreenCaptured"
 
 [tool.hatch.build.targets.wheel]
 packages = ["owa"]

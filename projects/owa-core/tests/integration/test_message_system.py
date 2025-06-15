@@ -10,7 +10,6 @@ This test suite validates the complete message system implementation including:
 
 import warnings
 
-
 from owa.core import MESSAGES
 
 
@@ -27,7 +26,7 @@ class TestMessageSystemIntegration:
             "desktop/KeyboardEvent",
             "desktop/MouseEvent",
             "desktop/WindowInfo",
-            "desktop/ScreenEmitted",
+            "desktop/ScreenCaptured",
         ]
 
         available_messages = list(MESSAGES.keys())
@@ -40,7 +39,7 @@ class TestMessageSystemIntegration:
         # Test direct imports work
         from owa.msgs.desktop.keyboard import KeyboardEvent
         from owa.msgs.desktop.mouse import MouseEvent
-        from owa.msgs.desktop.screen import ScreenEmitted
+        from owa.msgs.desktop.screen import ScreenCaptured
         from owa.msgs.desktop.window import WindowInfo
 
         # Test message creation
@@ -58,11 +57,11 @@ class TestMessageSystemIntegration:
         assert window.width == 800
         assert window.height == 600
 
-        # Test ScreenEmitted
+        # Test ScreenCaptured
         import numpy as np
 
         frame = np.zeros((100, 200, 4), dtype=np.uint8)
-        screen = ScreenEmitted(utc_ns=1234567890, frame_arr=frame)
+        screen = ScreenCaptured(utc_ns=1234567890, frame_arr=frame)
         assert screen.utc_ns == 1234567890
         assert screen.is_loaded()
         assert screen.shape == (200, 100)  # width, height
@@ -71,7 +70,7 @@ class TestMessageSystemIntegration:
         assert MESSAGES["desktop/KeyboardEvent"] is KeyboardEvent
         assert MESSAGES["desktop/MouseEvent"] is MouseEvent
         assert MESSAGES["desktop/WindowInfo"] is WindowInfo
-        assert MESSAGES["desktop/ScreenEmitted"] is ScreenEmitted
+        assert MESSAGES["desktop/ScreenCaptured"] is ScreenCaptured
 
     def test_backward_compatibility(self):
         """Test backward compatibility with legacy message imports."""
@@ -134,7 +133,7 @@ class TestMessageSystemIntegration:
             "desktop/KeyboardEvent",
             "desktop/MouseEvent",
             "desktop/WindowInfo",
-            "desktop/ScreenEmitted",
+            "desktop/ScreenCaptured",
         ]
 
         for expected in expected_messages:

@@ -32,7 +32,7 @@ LEGACY_MESSAGE_MAPPING = {
     "owa.env.desktop.msg.MouseEvent": "desktop/MouseEvent",
     "owa.env.desktop.msg.MouseState": "desktop/MouseState",
     "owa.env.desktop.msg.WindowInfo": "desktop/WindowInfo",
-    "owa.env.gst.msg.ScreenEmitted": "desktop/ScreenEmitted",
+    "owa.env.gst.msg.ScreenCaptured": "desktop/ScreenCaptured",
     # Add more mappings as needed
 }
 

@@ -1,6 +1,6 @@
 [project]
 name = "owa"
-version = "0.4.0"
+version = "0.4.1"
 description = "Everything you need to build state-of-the-art foundation multimodal desktop agent, end-to-end."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -24,6 +24,9 @@ docs = [
     "mkdocs-redirects>=1.2.2",
     "mkdocstrings-owa>=1.16.12",
 ]
+viewer = [
+    "owa-mcap-viewer",
+]
 
 [dependency-groups]
 dev = [
@@ -42,6 +45,7 @@ owa-core = { path = "projects/owa-core", editable = true }
 owa-env-desktop = { path = "projects/owa-env-desktop", editable = true }
 owa-env-gst = { path = "projects/owa-env-gst", editable = true }
 owa-msgs = { path = "projects/owa-msgs", editable = true }
+owa-mcap-viewer = { path = "projects/owa-mcap-viewer", editable = true }
 
 [build-system]
 requires = ["hatchling"]

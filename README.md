@@ -149,8 +149,8 @@ def on_screen_update(frame, metrics):
     print(f"⚡ Latency: {metrics.latency*1000:.1f}ms")
 
     # Access screen message type from registry
-    ScreenEmitted = MESSAGES['desktop/ScreenEmitted']
-    print(f"Frame message type: {ScreenEmitted}")
+    ScreenCaptured = MESSAGES['desktop/ScreenCaptured']
+    print(f"Frame message type: {ScreenCaptured}")
 
 # Start real-time screen capture
 screen = LISTENERS["gst/screen"]().configure(
@@ -264,7 +264,7 @@ channels:
         (1) keyboard/state    9 msgs (1.02 Hz)    : desktop/KeyboardState [jsonschema]
         (2) mouse/state       9 msgs (1.02 Hz)    : desktop/MouseState [jsonschema]
         (3) window            9 msgs (1.02 Hz)    : desktop/WindowInfo [jsonschema]
-        (4) screen          523 msgs (59.35 Hz)   : desktop/ScreenEmitted [jsonschema]
+        (4) screen          523 msgs (59.35 Hz)   : desktop/ScreenCaptured [jsonschema]
         (5) mouse           510 msgs (57.87 Hz)   : desktop/MouseEvent [jsonschema]
         (6) keyboard          2 msgs (0.23 Hz)    : desktop/KeyboardEvent [jsonschema]
 channels: 6

@@ -170,7 +170,7 @@ graph LR;
     DM -->|Provides| L2[desktop/keyboard Listener]
     MP -->|Provides| M1[desktop/KeyboardEvent]
     MP -->|Provides| M2[desktop/MouseEvent]
-    MP -->|Provides| M3[desktop/ScreenEmitted]
+    MP -->|Provides| M3[desktop/ScreenCaptured]
     User -->|pip install| PI[Plugin Installation]
     PI --> EP
     EP --> R[Component Registry]
@@ -316,7 +316,7 @@ from owa.core import MESSAGES
 # Access message classes by type name
 KeyboardEvent = MESSAGES['desktop/KeyboardEvent']
 MouseEvent = MESSAGES['desktop/MouseEvent']
-ScreenEmitted = MESSAGES['desktop/ScreenEmitted']
+ScreenCaptured = MESSAGES['desktop/ScreenCaptured']
 
 # Check if a message type exists
 if 'desktop/KeyboardEvent' in MESSAGES:
@@ -348,7 +348,7 @@ The `owa-msgs` package provides standard message definitions:
 | `desktop/KeyboardState` | Current keyboard state |
 | `desktop/MouseEvent` | Mouse movement, clicks, scrolls |
 | `desktop/MouseState` | Current mouse position and buttons |
-| `desktop/ScreenEmitted` | Screen capture frames with timestamps |
+| `desktop/ScreenCaptured` | Screen capture frames with timestamps |
 | `desktop/WindowInfo` | Active window information |
 
 ### CLI Tools for Message Management

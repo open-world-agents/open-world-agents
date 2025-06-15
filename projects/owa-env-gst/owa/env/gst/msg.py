@@ -4,12 +4,12 @@ Legacy message definitions for backward compatibility.
 DEPRECATED: These message definitions have been moved to the owa-msgs package
 for better organization and centralized management. Please use the new imports:
 
-    from owa.msgs.desktop.screen import ScreenEmitted
+    from owa.msgs.desktop.screen import ScreenCaptured
 
 Or access via the message registry:
 
     from owa.core import MESSAGES
-    ScreenEmitted = MESSAGES['desktop/ScreenEmitted']
+    ScreenCaptured = MESSAGES['desktop/ScreenCaptured']
 
 This module provides compatibility imports and will be removed in a future version.
 """
@@ -30,7 +30,7 @@ from owa.core.time import TimeUnits
 
 # Import new message classes for compatibility
 try:
-    from owa.msgs.desktop.screen import ScreenEmitted as _NewScreenEmitted
+    from owa.msgs.desktop.screen import ScreenCaptured as _NewScreenEmitted
 except ImportError:
     # Fallback if owa-msgs is not installed
     _NewScreenEmitted = None
@@ -47,11 +47,19 @@ class ScreenEmitted:
     """Legacy ScreenEmitted - redirects to new implementation."""
 
     def __new__(cls, *args, **kwargs):
-        _deprecation_warning("owa.env.gst.msg.ScreenEmitted", "from owa.msgs.desktop.screen import ScreenEmitted")
+        _deprecation_warning("owa.env.gst.msg.ScreenEmitted", "from owa.msgs.desktop.screen import ScreenCaptured")
         if _NewScreenEmitted is not None:
             return _NewScreenEmitted(*args, **kwargs)
         else:
             return _LegacyScreenEmitted(*args, **kwargs)
+
+    @classmethod
+    def deserialize(cls, buffer):
+        """Deserialize method for legacy compatibility."""
+        if _NewScreenEmitted is not None:
+            return _NewScreenEmitted.deserialize(buffer)
+        else:
+            return _LegacyScreenEmitted.deserialize(buffer)
 
 
 # Fallback implementation for when owa-msgs is not available
