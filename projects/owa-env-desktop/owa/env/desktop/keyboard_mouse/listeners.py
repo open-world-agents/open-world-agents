@@ -5,8 +5,8 @@ from pynput.mouse import Button
 from pynput.mouse import Listener as MouseListener
 
 from owa.core.listener import Listener
+from owa.msgs.desktop import KeyboardEvent, MouseEvent
 
-from ..msg import KeyboardEvent, MouseEvent
 from ..utils import key_to_vk
 from .callables import get_keyboard_state, get_mouse_state
 

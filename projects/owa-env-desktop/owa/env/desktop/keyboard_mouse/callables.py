@@ -4,7 +4,8 @@ from pynput.keyboard import Controller as KeyboardController
 from pynput.mouse import Button
 from pynput.mouse import Controller as MouseController
 
-from ..msg import KeyboardState, MouseState
+from owa.msgs.desktop import KeyboardState, MouseState
+
 from ..utils import get_vk_state, vk_to_keycode
 
 mouse_controller = MouseController()
