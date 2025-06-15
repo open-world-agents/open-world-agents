@@ -10,7 +10,6 @@ This test suite validates the complete message system implementation including:
 
 import warnings
 
-
 from owa.core import MESSAGES
 
 
