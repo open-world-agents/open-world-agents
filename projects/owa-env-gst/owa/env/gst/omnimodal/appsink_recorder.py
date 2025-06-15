@@ -13,7 +13,7 @@ from typing import Any, Callable
 from gi.repository import Gst
 from loguru import logger
 
-from owa.msgs.desktop import ScreenEmitted
+from owa.msgs.desktop.screen import ScreenEmitted
 
 from ..gst_runner import GstPipelineRunner
 from ..pipeline_builder import appsink_recorder_pipeline

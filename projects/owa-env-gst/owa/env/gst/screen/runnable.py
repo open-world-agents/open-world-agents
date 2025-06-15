@@ -2,7 +2,7 @@ import threading
 from collections import deque
 from typing import Any
 
-from owa.msgs.desktop import ScreenEmitted
+from owa.msgs.desktop.screen import ScreenEmitted
 
 from .listeners import ScreenListener
 
