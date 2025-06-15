@@ -63,6 +63,14 @@ class KeyboardEvent:
             # Fallback implementation
             return _LegacyKeyboardEvent(*args, **kwargs)
 
+    @classmethod
+    def deserialize(cls, buffer):
+        """Deserialize method for legacy compatibility."""
+        if _NewKeyboardEvent is not None:
+            return _NewKeyboardEvent.deserialize(buffer)
+        else:
+            return _LegacyKeyboardEvent.deserialize(buffer)
+
 
 class KeyboardState:
     """Legacy KeyboardState - redirects to new implementation."""
@@ -76,6 +84,14 @@ class KeyboardState:
         else:
             return _LegacyKeyboardState(*args, **kwargs)
 
+    @classmethod
+    def deserialize(cls, buffer):
+        """Deserialize method for legacy compatibility."""
+        if _NewKeyboardState is not None:
+            return _NewKeyboardState.deserialize(buffer)
+        else:
+            return _LegacyKeyboardState.deserialize(buffer)
+
 
 class MouseEvent:
     """Legacy MouseEvent - redirects to new implementation."""
@@ -87,6 +103,14 @@ class MouseEvent:
         else:
             return _LegacyMouseEvent(*args, **kwargs)
 
+    @classmethod
+    def deserialize(cls, buffer):
+        """Deserialize method for legacy compatibility."""
+        if _NewMouseEvent is not None:
+            return _NewMouseEvent.deserialize(buffer)
+        else:
+            return _LegacyMouseEvent.deserialize(buffer)
+
 
 class MouseState:
     """Legacy MouseState - redirects to new implementation."""
@@ -97,6 +121,14 @@ class MouseState:
             return _NewMouseState(*args, **kwargs)
         else:
             return _LegacyMouseState(*args, **kwargs)
+
+    @classmethod
+    def deserialize(cls, buffer):
+        """Deserialize method for legacy compatibility."""
+        if _NewMouseState is not None:
+            return _NewMouseState.deserialize(buffer)
+        else:
+            return _LegacyMouseState.deserialize(buffer)
 
 
 # Fallback implementations for when owa-msgs is not available
@@ -138,6 +170,14 @@ class WindowInfo:
             return _NewWindowInfo(*args, **kwargs)
         else:
             return _LegacyWindowInfo(*args, **kwargs)
+
+    @classmethod
+    def deserialize(cls, buffer):
+        """Deserialize method for legacy compatibility."""
+        if _NewWindowInfo is not None:
+            return _NewWindowInfo.deserialize(buffer)
+        else:
+            return _LegacyWindowInfo.deserialize(buffer)
 
 
 # Fallback implementation for when owa-msgs is not available

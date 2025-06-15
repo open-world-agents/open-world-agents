@@ -41,7 +41,22 @@ def cat(
 
             if pretty:
                 formatted_time = format_timestamp(mcap_msg.timestamp)
-                pretty_msg = json.dumps(mcap_msg.decoded, indent=2, ensure_ascii=False)
+                try:
+                    # Try Pydantic model_dump_json first
+                    pretty_msg = mcap_msg.decoded.model_dump_json(indent=2, exclude_none=True)
+                except AttributeError:
+                    # Fall back to standard JSON serialization
+                    try:
+                        # Handle dict-like objects (EasyDict, etc.)
+                        if hasattr(mcap_msg.decoded, "__dict__"):
+                            pretty_msg = json.dumps(
+                                mcap_msg.decoded.__dict__, indent=2, ensure_ascii=False, default=str
+                            )
+                        else:
+                            pretty_msg = json.dumps(mcap_msg.decoded, indent=2, ensure_ascii=False, default=str)
+                    except (TypeError, ValueError):
+                        # Last resort: convert to string
+                        pretty_msg = str(mcap_msg.decoded)
 
                 typer.echo(
                     typer.style(f"[{formatted_time}]", fg=typer.colors.BLUE)
@@ -56,4 +71,4 @@ def cat(
 
 
 if __name__ == "__main__":
-    typer.run(print)
+    typer.run(cat)
