@@ -30,10 +30,10 @@ from owa.core.time import TimeUnits
 
 # Import new message classes for compatibility
 try:
-    from owa.msgs.desktop.screen import ScreenCaptured as _NewScreenCaptured
+    from owa.msgs.desktop.screen import ScreenCaptured as _NewScreenEmitted
 except ImportError:
     # Fallback if owa-msgs is not installed
-    _NewScreenCaptured = None
+    _NewScreenEmitted = None
 
 
 def _deprecation_warning(old_name: str, new_import: str) -> None:
@@ -43,20 +43,20 @@ def _deprecation_warning(old_name: str, new_import: str) -> None:
     )
 
 
-class ScreenCaptured:
-    """Legacy ScreenCaptured - redirects to new implementation."""
+class ScreenEmitted:
+    """Legacy ScreenEmitted - redirects to new implementation."""
 
     def __new__(cls, *args, **kwargs):
-        _deprecation_warning("owa.env.gst.msg.ScreenCaptured", "from owa.msgs.desktop.screen import ScreenCaptured")
-        if _NewScreenCaptured is not None:
-            return _NewScreenCaptured(*args, **kwargs)
+        _deprecation_warning("owa.env.gst.msg.ScreenEmitted", "from owa.msgs.desktop.screen import ScreenCaptured")
+        if _NewScreenEmitted is not None:
+            return _NewScreenEmitted(*args, **kwargs)
         else:
-            return _LegacyScreenCaptured(*args, **kwargs)
+            return _LegacyScreenEmitted(*args, **kwargs)
 
 
 # Fallback implementation for when owa-msgs is not available
-class _LegacyScreenCaptured(OWAMessage):
-    _type = "owa.env.gst.msg.ScreenCaptured"
+class _LegacyScreenEmitted(OWAMessage):
+    _type = "owa.env.gst.msg.ScreenEmitted"
 
     model_config = {"arbitrary_types_allowed": True}
 
@@ -75,12 +75,12 @@ class _LegacyScreenCaptured(OWAMessage):
     pts: int | None = None
 
     @model_validator(mode="after")
-    def validate_screen_emitted(self) -> "ScreenCaptured":
+    def validate_screen_emitted(self) -> "ScreenEmitted":
         """Validate that either frame_arr or (path and pts) are provided."""
         # At least one of frame_arr or (path and pts) must be provided
         if self.frame_arr is None:
             if self.path is None or self.pts is None:
-                raise ValueError("ScreenCaptured requires either 'frame_arr' or both 'path' and 'pts' to be provided.")
+                raise ValueError("ScreenEmitted requires either 'frame_arr' or both 'path' and 'pts' to be provided.")
 
         # Validate frame_arr if provided
         if self.frame_arr is not None:
@@ -188,7 +188,7 @@ class _LegacyScreenCaptured(OWAMessage):
         return self.frame_arr.nbytes
 
     def __str__(self) -> str:
-        """Return a concise string representation of the ScreenCaptured instance."""
+        """Return a concise string representation of the ScreenEmitted instance."""
         # Core attributes to display
         attrs = ["utc_ns", "shape", "original_shape", "path", "pts"]
         attr_strs = []
@@ -206,7 +206,7 @@ class _LegacyScreenCaptured(OWAMessage):
 
 
 def main():
-    """Demonstration of ScreenCaptured functionality."""
+    """Demonstration of ScreenEmitted functionality."""
 
     # Example 1: Create with video reference
     video_data = {
@@ -214,9 +214,9 @@ def main():
         "pts": int(10**9 * 0.99),  # 0.99 seconds in nanoseconds
         "utc_ns": 1741608540328534500,
     }
-    frame = ScreenCaptured(**video_data)
+    frame = ScreenEmitted(**video_data)
 
-    print("=== ScreenCaptured Demo ===")
+    print("=== ScreenEmitted Demo ===")
     print(f"Created frame: {frame}")
     print(f"Is loaded: {frame.is_loaded()}")
     print(f"Has video reference: {frame.has_video_reference()}")
@@ -235,7 +235,7 @@ def main():
     test_frame[:, :, 2] = 255  # Red channel
     test_frame[:, :, 3] = 255  # Alpha channel
 
-    frame_with_array = ScreenCaptured(utc_ns=1741608540328534500, frame_arr=test_frame)
+    frame_with_array = ScreenEmitted(utc_ns=1741608540328534500, frame_arr=test_frame)
 
     print(f"\nFrame with array: {frame_with_array}")
     print(f"Shape: {frame_with_array.shape}")
