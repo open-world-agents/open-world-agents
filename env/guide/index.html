@@ -938,7 +938,7 @@
     DM --&gt;|Provides| L2[desktop/keyboard Listener]
     MP --&gt;|Provides| M1[desktop/KeyboardEvent]
     MP --&gt;|Provides| M2[desktop/MouseEvent]
-    MP --&gt;|Provides| M3[desktop/ScreenEmitted]
+    MP --&gt;|Provides| M3[desktop/ScreenCaptured]
     User --&gt;|pip install| PI[Plugin Installation]
     PI --&gt; EP
     EP --&gt; R[Component Registry]
@@ -1058,7 +1058,7 @@
 <a href="#__codelineno-12-3" id="__codelineno-12-3" name="__codelineno-12-3"></a><span class="c1"># Access message classes by type name</span>
 <a href="#__codelineno-12-4" id="__codelineno-12-4" name="__codelineno-12-4"></a><span class="n">KeyboardEvent</span> <span class="o">=</span> <span class="n">MESSAGES</span><span class="p">[</span><span class="s1">'desktop/KeyboardEvent'</span><span class="p">]</span>
 <a href="#__codelineno-12-5" id="__codelineno-12-5" name="__codelineno-12-5"></a><span class="n">MouseEvent</span> <span class="o">=</span> <span class="n">MESSAGES</span><span class="p">[</span><span class="s1">'desktop/MouseEvent'</span><span class="p">]</span>
-<a href="#__codelineno-12-6" id="__codelineno-12-6" name="__codelineno-12-6"></a><span class="n">ScreenEmitted</span> <span class="o">=</span> <span class="n">MESSAGES</span><span class="p">[</span><span class="s1">'desktop/ScreenEmitted'</span><span class="p">]</span>
+<a href="#__codelineno-12-6" id="__codelineno-12-6" name="__codelineno-12-6"></a><span class="n">ScreenCaptured</span> <span class="o">=</span> <span class="n">MESSAGES</span><span class="p">[</span><span class="s1">'desktop/ScreenCaptured'</span><span class="p">]</span>
 <a href="#__codelineno-12-7" id="__codelineno-12-7" name="__codelineno-12-7"></a>
 <a href="#__codelineno-12-8" id="__codelineno-12-8" name="__codelineno-12-8"></a><span class="c1"># Check if a message type exists</span>
 <a href="#__codelineno-12-9" id="__codelineno-12-9" name="__codelineno-12-9"></a><span class="k">if</span> <span class="s1">'desktop/KeyboardEvent'</span> <span class="ow">in</span> <span class="n">MESSAGES</span><span class="p">:</span>
@@ -1104,7 +1104,7 @@
 <td>Current mouse position and buttons</td>
 </tr>
 <tr>
-<td><code>desktop/ScreenEmitted</code></td>
+<td><code>desktop/ScreenCaptured</code></td>
 <td>Screen capture frames with timestamps</td>
 </tr>
 <tr>
@@ -1145,7 +1145,7 @@
 <span class="md-icon" title="Last update">
 <svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"></path></svg>
 </span>
-<span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="June 14, 2025 15:27:16 UTC">June 14, 2025 15:27:16</span>
+<span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="June 15, 2025 06:16:21 UTC">June 15, 2025 06:16:21</span>
 </span>
 </aside>
 </article>
