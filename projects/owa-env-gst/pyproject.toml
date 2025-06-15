@@ -1,6 +1,6 @@
 [project]
 name = "owa-env-gst"
-version = "0.4.0"
+version = "0.4.1"
 description = "High-performance GStreamer-based screen capture plugin for Open World Agents"
 readme = "README.md"
 license = { text = "MIT" }
