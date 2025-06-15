@@ -14,10 +14,12 @@ dependencies = [
     "pynput>=1.8.0",
     "opencv-python>=4.11.0",
     "pywin32>=307 ; sys_platform == 'win32'",
+    "owa-msgs",
 ]
 
 [tool.uv.sources]
 owa-core = { path = "../owa-core", editable = true }
+owa-msgs = { path = "../owa-msgs", editable = true }
 
 [build-system]
 requires = ["hatchling"]
