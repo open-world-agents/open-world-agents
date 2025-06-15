@@ -255,8 +255,8 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "annotated-types" },
-    { name = "owa-core" },
-    { name = "pydantic", specifier = ">=2.0.0" },
+    { name = "owa-core", editable = "../owa-core" },
+    { name = "pydantic", specifier = ">=2.10.6" },
 ]
 
 [[package]]

@@ -201,7 +201,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "av", specifier = ">=14.3.0" },
+    { name = "av", specifier = ">=14.4.0" },
     { name = "opencv-python", specifier = ">=4.11.0" },
     { name = "owa-core", editable = "../owa-core" },
     { name = "owa-msgs", editable = "../owa-msgs" },
@@ -223,8 +223,8 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "annotated-types" },
-    { name = "owa-core" },
-    { name = "pydantic", specifier = ">=2.0.0" },
+    { name = "owa-core", editable = "../owa-core" },
+    { name = "pydantic", specifier = ">=2.10.6" },
 ]
 
 [[package]]
