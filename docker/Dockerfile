@@ -17,7 +17,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get update && apt-get install -y --no-install-recommends \
     wget ca-certificates
 
-# Install miniforge (copy script last to maximize cache hits)
+# Install miniforge
 COPY ./setup_miniforge.sh /tmp/setup_miniforge.sh
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     chmod +x /tmp/setup_miniforge.sh && \

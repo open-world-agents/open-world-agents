@@ -7,11 +7,12 @@ RUN --mount=type=cache,target=${HOME}/.cache/pip,sharing=locked,uid=${UID},gid=$
     --mount=type=cache,target=${HOME}/.cache/uv,sharing=locked,uid=${UID},gid=${GID} \
     . activate owa && vuv pip install torch numpy torchvision pillow datasets huggingface-hub transformers wandb
 
-# Clone and checkout open-world-agents to feature/data branch
-RUN git clone https://github.com/open-world-agents/open-world-agents.git /tmp/owa-repo && \
+# Clone and checkout open-world-agents to feature/data branch with optimizations
+RUN --mount=type=cache,target=/root/.cache/git,sharing=locked \
+    git clone --depth=1 --branch=feature/data --single-branch \
+    https://github.com/open-world-agents/open-world-agents.git /tmp/owa-repo && \
     cd /tmp/owa-repo && \
-    git checkout feature/data && \
-    git submodule update --init --recursive && \
+    git submodule update --init --recursive --depth=1 && \
     cp -r . /workspace/ && \
     rm -rf /tmp/owa-repo && \
     chown -R ${USERNAME}:${USERNAME} /workspace

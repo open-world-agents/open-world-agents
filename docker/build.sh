@@ -139,6 +139,7 @@ parse_tag() {
 # Build an image
 build_image() {
     local type="$1" dockerfile="$2" base="$3"
+    local start_time=$(date +%s)
 
     # Determine output name:tag
     local full_name
@@ -175,13 +176,29 @@ build_image() {
     cmd="$cmd -f $dockerfile -t $full_name ."
 
     log_info "🔨 $cmd"
-    eval $cmd
-    log_success "✅ Built $full_name"
+
+    # Execute build with error handling
+    if eval $cmd; then
+        local end_time=$(date +%s)
+        local duration=$((end_time - start_time))
+        log_success "✅ Built $full_name (${duration}s)"
+
+        # Get image size
+        local size=$(docker images --format "table {{.Size}}" "$full_name" | tail -n 1)
+        log_info "📏 Size: $size"
+    else
+        log_error "❌ Failed to build $full_name"
+        return 1
+    fi
 
     if [ "$PUSH" = true ]; then
         log_info "📤 Pushing..."
-        docker push "$full_name"
-        log_success "✅ Pushed $full_name"
+        if docker push "$full_name"; then
+            log_success "✅ Pushed $full_name"
+        else
+            log_error "❌ Failed to push $full_name"
+            return 1
+        fi
     fi
 
     # Store built image name for final output
