@@ -14,8 +14,9 @@ WORKDIR ${PROJECT_DIR}
 
 # Copy and run project setup script
 COPY --chown=${USERNAME}:${USERNAME} ./setup_project.sh /tmp/setup_project.sh
-RUN --mount=type=cache,target=/home/${USERNAME}/.cache,sharing=locked,uid=${USER_UID},gid=${USER_GID} \
-    --mount=type=cache,target=/root/.cache,sharing=locked \
+RUN --mount=type=cache,target=/home/${USERNAME}/.cache/pip,sharing=locked,uid=${USER_UID},gid=${USER_GID} \
+    --mount=type=cache,target=/home/${USERNAME}/.cache/uv,sharing=locked,uid=${USER_UID},gid=${USER_GID} \
+    --mount=type=cache,target=${CONDA_INSTALL_PATH}/pkgs,sharing=locked,uid=${USER_UID},gid=${USER_GID} \
     chmod +x /tmp/setup_project.sh && \
     /tmp/setup_project.sh ${PROJECT_DIR} && \
     rm /tmp/setup_project.sh

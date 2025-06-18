@@ -38,7 +38,3 @@ conda config --set channel_priority strict \
 python3 -m pip install --user pipx
 python3 -m pipx ensurepath
 python3 -m pipx install gpustat tqdm
-
-# Clean up caches to reduce image size (cache mounts handle build performance)
-conda clean -afy 2>/dev/null || true
-rm -rf ~/.cache/pip ~/.cache/pipx 2>/dev/null || true

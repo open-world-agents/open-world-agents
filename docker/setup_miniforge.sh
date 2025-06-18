@@ -31,7 +31,5 @@ rm miniforge.sh
 
 # Clean up conda installation artifacts to reduce image size
 "$CONDA_INSTALL_PATH/bin/conda" clean -afy
-rm -rf "$CONDA_INSTALL_PATH/pkgs/cache" \
-       "$CONDA_INSTALL_PATH/conda-meta/.conda_lock"
 
 echo "Miniforge installation completed at: $CONDA_INSTALL_PATH"
