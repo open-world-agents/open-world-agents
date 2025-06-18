@@ -77,6 +77,10 @@ EXAMPLES:
     $0 --build-arg PYTHON_VERSION=3.12   # Build with custom Python version
     $0 --user-uid 1001 --user-gid 1001   # Build with custom user/group IDs
 
+NOTE:
+    This script automatically enables Docker BuildKit (DOCKER_BUILDKIT=1) for
+    cache mount support. Requires Docker 18.09+ with BuildKit enabled.
+
 EOF
 }
 
@@ -205,6 +209,9 @@ build_image() {
         log_success "Pushed $full_image_name"
     fi
 }
+
+# Enable BuildKit for cache mounts
+export DOCKER_BUILDKIT=1
 
 # Change to docker directory
 cd "$(dirname "$0")"

@@ -24,7 +24,7 @@ apt-get update && apt-get install -y --no-install-recommends \
     sudo git curl wget vim tmux bash-completion htop tree \
     build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev \
     libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev \
-    zsh locales && rm -rf /var/lib/apt/lists/*
+    zsh locales
 
 # Generate locale and configure user permissions
 locale-gen en_US.UTF-8

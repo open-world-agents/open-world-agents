@@ -10,10 +10,6 @@ echo "Installation path: $CONDA_INSTALL_PATH"
 # Set up environment
 export DEBIAN_FRONTEND=noninteractive
 
-# Install basic system dependencies
-apt-get update && apt-get install -y --no-install-recommends \
-    wget ca-certificates && rm -rf /var/lib/apt/lists/*
-
 # Create installation directory
 mkdir -p "$(dirname "$CONDA_INSTALL_PATH")"
 
@@ -28,7 +24,14 @@ rm miniforge.sh
 
 # Initialize and configure conda
 "$CONDA_INSTALL_PATH/bin/conda" init --all
-"$CONDA_INSTALL_PATH/bin/conda" config --set auto_activate_base false --set channel_priority strict
+"$CONDA_INSTALL_PATH/bin/conda" config --set auto_activate_base false \
+    --set channel_priority strict \
+    --set always_yes true \
+    --set show_channel_urls true
+
+# Clean up conda installation artifacts to reduce image size
 "$CONDA_INSTALL_PATH/bin/conda" clean -afy
+rm -rf "$CONDA_INSTALL_PATH/pkgs/cache" \
+       "$CONDA_INSTALL_PATH/conda-meta/.conda_lock"
 
 echo "Miniforge installation completed at: $CONDA_INSTALL_PATH"

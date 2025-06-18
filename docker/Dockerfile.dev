@@ -11,20 +11,26 @@ ARG CONDA_INSTALL_PATH=/opt/conda
 
 # System setup (packages, user creation, permissions)
 COPY ./devcontainer_system.sh /tmp/devcontainer_system.sh
-RUN chmod +x /tmp/devcontainer_system.sh && \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    chmod +x /tmp/devcontainer_system.sh && \
     /tmp/devcontainer_system.sh ${USERNAME} ${USER_UID} ${USER_GID} ${DOCKER_GID} && \
     rm /tmp/devcontainer_system.sh
 
-# User environment setup (shell, tools, conda)
+# Switch to user and setup environment
 USER ${USERNAME}
 WORKDIR /home/${USERNAME}
+
+# User environment setup (shell, tools, conda) - copy script last for better caching
 COPY --chown=${USERNAME}:${USERNAME} ./devcontainer_user.sh /tmp/devcontainer_user.sh
-RUN chmod +x /tmp/devcontainer_user.sh && \
+RUN --mount=type=cache,target=/home/${USERNAME}/.cache,sharing=locked,uid=${USER_UID},gid=${USER_GID} \
+    chmod +x /tmp/devcontainer_user.sh && \
     /tmp/devcontainer_user.sh && \
     rm /tmp/devcontainer_user.sh
 
-# Finalize conda permissions
-RUN sudo chown -R ${USER_UID}:${USER_GID} ${CONDA_INSTALL_PATH}
+# Finalize conda permissions and cleanup
+RUN sudo chown -R ${USER_UID}:${USER_GID} ${CONDA_INSTALL_PATH} && \
+    sudo rm -rf ${CONDA_INSTALL_PATH}/pkgs/cache
 
 # Default configuration
 SHELL ["/bin/zsh", "-c"]

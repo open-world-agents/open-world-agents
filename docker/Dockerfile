@@ -6,16 +6,21 @@ ARG MINIFORGE_VERSION=latest
 ARG CONDA_INSTALL_PATH=/opt/conda
 
 # Environment setup
-ENV DEBIAN_FRONTEND=noninteractive
+ENV DEBIAN_FRONTEND=noninteractive \
+    PATH="${CONDA_INSTALL_PATH}/bin:${PATH}"
 
-# Install miniforge
+# Install system dependencies first (rarely changes)
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
+    wget ca-certificates
+
+# Install miniforge (copy script last to maximize cache hits)
 COPY ./setup_miniforge.sh /tmp/setup_miniforge.sh
-RUN chmod +x /tmp/setup_miniforge.sh && \
+RUN --mount=type=cache,target=/root/.cache,sharing=locked \
+    chmod +x /tmp/setup_miniforge.sh && \
     /tmp/setup_miniforge.sh ${MINIFORGE_VERSION} ${CONDA_INSTALL_PATH} && \
-    rm /tmp/setup_miniforge.sh
-
-# Add conda/mamba to PATH
-ENV PATH="${CONDA_INSTALL_PATH}/bin:${PATH}"
+    rm -f /tmp/setup_miniforge.sh
 
 # Default configuration
 SHELL ["/bin/bash", "-c"]

@@ -16,8 +16,8 @@ sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/too
 mkdir -p ~/.oh-my-zsh/custom/plugins
 
 # Install zsh plugins
-git clone https://github.com/zsh-users/zsh-autosuggestions ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions 2>/dev/null || true
-git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting 2>/dev/null || true
+git clone --depth=1 https://github.com/zsh-users/zsh-autosuggestions ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions 2>/dev/null || true
+git clone --depth=1 https://github.com/zsh-users/zsh-syntax-highlighting.git ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting 2>/dev/null || true
 
 # Configure .zshrc
 if [ -f ~/.zshrc ]; then
@@ -30,10 +30,15 @@ fi
 
 # Initialize conda for zsh
 conda init --all
-conda config --set channel_priority strict
-conda clean -afy
+conda config --set channel_priority strict \
+    --set always_yes true \
+    --set show_channel_urls true
 
 # Install pipx and useful tools
 python3 -m pip install --user pipx
 python3 -m pipx ensurepath
 python3 -m pipx install gpustat tqdm
+
+# Clean up caches to reduce image size (cache mounts handle build performance)
+conda clean -afy 2>/dev/null || true
+rm -rf ~/.cache/pip ~/.cache/pipx 2>/dev/null || true

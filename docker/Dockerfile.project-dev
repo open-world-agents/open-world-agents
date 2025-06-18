@@ -2,16 +2,21 @@
 ARG BASE_DEV_IMAGE=owa/base:dev
 FROM ${BASE_DEV_IMAGE}
 
-# Project setup
+# Project setup arguments
 ARG PROJECT_DIR=/workspace
+ARG USERNAME=vscode
+ARG USER_UID=1000
+ARG USER_GID=1000
+ARG CONDA_INSTALL_PATH=/opt/conda
+
+# Set working directory
 WORKDIR ${PROJECT_DIR}
 
-# Switch to user and setup project
-ARG USERNAME=vscode
+# Copy and run project setup script
 COPY --chown=${USERNAME}:${USERNAME} ./setup_project.sh /tmp/setup_project.sh
-
-ARG CONDA_INSTALL_PATH=/opt/conda
-RUN chmod +x /tmp/setup_project.sh && \
+RUN --mount=type=cache,target=/home/${USERNAME}/.cache,sharing=locked,uid=${USER_UID},gid=${USER_GID} \
+    --mount=type=cache,target=/root/.cache,sharing=locked \
+    chmod +x /tmp/setup_project.sh && \
     /tmp/setup_project.sh ${PROJECT_DIR} && \
     rm /tmp/setup_project.sh
 
