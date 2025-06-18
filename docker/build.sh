@@ -98,6 +98,11 @@ done
 # Expand "all"
 [[ " ${IMAGES_TO_BUILD[*]} " =~ " all " ]] && IMAGES_TO_BUILD=("base" "dev" "project" "train")
 
+# Warn if using custom tag with multiple images
+if [ -n "$CUSTOM_TAG" ] && [ ${#IMAGES_TO_BUILD[@]} -gt 1 ]; then
+    log_warning "Custom -t tag ignored when building multiple images. Use -t with single image only."
+fi
+
 # Setup
 REGISTRY_PREFIX="${REGISTRY:+$REGISTRY/}"
 CACHE_OPTS=""
@@ -137,7 +142,8 @@ build_image() {
 
     # Determine output name:tag
     local full_name
-    if [ -n "$CUSTOM_TAG" ]; then
+    # Only use custom tag for single image builds, not for "all"
+    if [ -n "$CUSTOM_TAG" ] && [ ${#IMAGES_TO_BUILD[@]} -eq 1 ]; then
         full_name=$(parse_tag "$CUSTOM_TAG" "$type")
     else
         full_name=$(get_defaults "$type")

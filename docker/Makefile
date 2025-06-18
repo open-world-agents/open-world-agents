@@ -44,7 +44,7 @@ train: ## Build training image
 	./build.sh $(if $(REGISTRY),--registry $(REGISTRY)) $(if $(TAG),-t $(TAG)) $(if $(FROM),--from $(FROM)) $(if $(filter true,$(PUSH)),--push) train
 
 all: ## Build all images
-	./build.sh $(if $(REGISTRY),--registry $(REGISTRY)) $(if $(TAG),-t $(TAG)) $(if $(FROM),--from $(FROM)) $(if $(filter true,$(PUSH)),--push) all
+	./build.sh $(if $(REGISTRY),--registry $(REGISTRY)) $(if $(FROM),--from $(FROM)) $(if $(filter true,$(PUSH)),--push) all
 
 clean: ## Remove all images
 	@echo "🧹 Cleaning up..."
