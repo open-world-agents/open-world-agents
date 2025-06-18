@@ -1,0 +1,31 @@
+# OWA Base Dev Image - Base + Development Tools
+ARG BASE_IMAGE=owa/base:latest
+FROM ${BASE_IMAGE}
+
+# User setup arguments
+ARG USERNAME=vscode
+ARG USER_UID=1000
+ARG USER_GID=1000
+ARG DOCKER_GID=998
+ARG CONDA_INSTALL_PATH=/opt/conda
+
+# System setup (packages, user creation, permissions)
+COPY ./devcontainer_system.sh /tmp/devcontainer_system.sh
+RUN chmod +x /tmp/devcontainer_system.sh && \
+    /tmp/devcontainer_system.sh ${USERNAME} ${USER_UID} ${USER_GID} ${DOCKER_GID} && \
+    rm /tmp/devcontainer_system.sh
+
+# User environment setup (shell, tools, conda)
+USER ${USERNAME}
+WORKDIR /home/${USERNAME}
+COPY --chown=${USERNAME}:${USERNAME} ./devcontainer_user.sh /tmp/devcontainer_user.sh
+RUN chmod +x /tmp/devcontainer_user.sh && \
+    /tmp/devcontainer_user.sh && \
+    rm /tmp/devcontainer_user.sh
+
+# Finalize conda permissions
+RUN sudo chown -R ${USER_UID}:${USER_GID} ${CONDA_INSTALL_PATH}
+
+# Default configuration
+SHELL ["/bin/zsh", "-c"]
+CMD ["/bin/zsh"]
