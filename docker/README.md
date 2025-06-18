@@ -4,11 +4,12 @@ This directory contains Docker configurations for Open World Agents development 
 
 ## Architecture
 
-The Docker setup follows a 3-tier architecture:
+The Docker setup follows a 4-tier architecture:
 
 1. **owa/base:latest** - Base image with CUDA and Miniforge
 2. **owa/base:dev** - Development image with user environment and tools
 3. **owa/runtime:dev** - Complete project environment with dependencies
+4. **owa/train:dev** - ML training environment with PyTorch and related packages
 
 ## Quick Start
 
@@ -17,6 +18,9 @@ The Docker setup follows a 3-tier architecture:
 ```bash
 # Build all images
 make build-all
+
+# Build training image only
+make build-train
 
 # Build with custom registry and tag
 make build-all REGISTRY=ghcr.io/myuser TAG=v1.0
@@ -40,6 +44,9 @@ make clean
 # Build specific images
 ./build.sh base dev
 
+# Build training image only
+./build.sh train
+
 # Build with custom options
 ./build.sh -r ghcr.io/myuser -t v1.0 -p all
 
@@ -52,6 +59,7 @@ make clean
 - `Dockerfile` - Base image with CUDA and Miniforge
 - `Dockerfile.dev` - Development image extending base
 - `Dockerfile.project-dev` - Project image with full environment
+- `Dockerfile.train-dev` - Training image with ML packages
 - `setup_miniforge.sh` - Miniforge installation script
 - `setup_devcontainer.sh` - Development tools setup script
 - `setup_project.sh` - Project dependencies setup script
@@ -89,6 +97,10 @@ make clean
 make build-dev                    # Build base and dev images
 docker run -it owa/base:dev
 
+# Training workflow
+make build-train                  # Build training image
+docker run -it owa/train:dev
+
 # Full project build
 make build-all REGISTRY=ghcr.io/owa TAG=latest
 
@@ -111,3 +123,4 @@ Approximate image sizes:
 - owa/base:latest: ~8GB (CUDA + Miniforge)
 - owa/base:dev: ~9GB (+ dev tools)
 - owa/runtime:dev: ~10GB (+ project dependencies)
+- owa/train:dev: ~12GB (+ ML packages)

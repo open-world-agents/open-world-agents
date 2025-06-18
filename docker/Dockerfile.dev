@@ -19,17 +19,18 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 
 # Switch to user and setup environment
 USER ${USERNAME}
-WORKDIR /home/${USERNAME}
+ENV USER=${USERNAME} UID=${USER_UID} GID=${USER_GID} HOME=/home/${USERNAME}
+WORKDIR ${HOME}
 
 # User environment setup (shell, tools, conda) - copy script last for better caching
-COPY --chown=${USERNAME}:${USERNAME} ./devcontainer_user.sh /tmp/devcontainer_user.sh
-RUN --mount=type=cache,target=/home/${USERNAME}/.cache,sharing=locked,uid=${USER_UID},gid=${USER_GID} \
+COPY --chown=${USER}:${USER} ./devcontainer_user.sh /tmp/devcontainer_user.sh
+RUN --mount=type=cache,target=${HOME}/.cache,sharing=locked,uid=${USER_UID},gid=${USER_GID} \
     chmod +x /tmp/devcontainer_user.sh && \
     /tmp/devcontainer_user.sh && \
     rm /tmp/devcontainer_user.sh
 
 # Finalize conda permissions and cleanup
-RUN sudo chown -R ${USER_UID}:${USER_GID} ${CONDA_INSTALL_PATH} && \
+RUN sudo chown -R ${UID}:${GID} ${CONDA_INSTALL_PATH} && \
     sudo rm -rf ${CONDA_INSTALL_PATH}/pkgs/cache
 
 # Default configuration

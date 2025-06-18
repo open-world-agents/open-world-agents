@@ -1,7 +1,7 @@
 # OWA Docker Makefile
 # Simple interface for building Docker images
 
-.PHONY: help build-base build-dev build-project build-all clean push
+.PHONY: help build-base build-dev build-project build-train build-all clean push
 
 # Default values
 REGISTRY ?=
@@ -18,6 +18,7 @@ DOCKER_GID ?= $(shell getent group docker | cut -d: -f3 2>/dev/null || echo 998)
 BASE_IMAGE = owa/base
 DEV_IMAGE = owa/base
 PROJECT_IMAGE = owa/runtime
+TRAIN_IMAGE = owa/train
 
 # Registry prefix
 ifdef REGISTRY
@@ -57,12 +58,17 @@ build-dev: ## Build base and dev images
 	./build.sh $(if $(REGISTRY),-r $(REGISTRY)) -t $(TAG) $(if $(filter true,$(PUSH)),-p) $(if $(filter false,$(CACHE)),--no-cache) --user-uid $(USER_UID) --user-gid $(USER_GID) --docker-gid $(DOCKER_GID) base dev
 
 build-project: ## Build all images including project
-	./build.sh $(if $(REGISTRY),-r $(REGISTRY)) -t $(TAG) $(if $(filter true,$(PUSH)),-p) $(if $(filter false,$(CACHE)),--no-cache) --user-uid $(USER_UID) --user-gid $(USER_GID) --docker-gid $(DOCKER_GID) all
+	./build.sh $(if $(REGISTRY),-r $(REGISTRY)) -t $(TAG) $(if $(filter true,$(PUSH)),-p) $(if $(filter false,$(CACHE)),--no-cache) --user-uid $(USER_UID) --user-gid $(USER_GID) --docker-gid $(DOCKER_GID) base dev project
 
-build-all: build-project ## Build all images (alias for build-project)
+build-train: ## Build training image
+	./build.sh $(if $(REGISTRY),-r $(REGISTRY)) -t $(TAG) $(if $(filter true,$(PUSH)),-p) $(if $(filter false,$(CACHE)),--no-cache) --user-uid $(USER_UID) --user-gid $(USER_GID) --docker-gid $(DOCKER_GID) train
+
+build-all: ## Build all images including training
+	./build.sh $(if $(REGISTRY),-r $(REGISTRY)) -t $(TAG) $(if $(filter true,$(PUSH)),-p) $(if $(filter false,$(CACHE)),--no-cache) --user-uid $(USER_UID) --user-gid $(USER_GID) --docker-gid $(DOCKER_GID) all
 
 clean: ## Remove all OWA Docker images
 	@echo "Removing OWA Docker images..."
+	-docker rmi $(REGISTRY_PREFIX)$(TRAIN_IMAGE):dev 2>/dev/null || true
 	-docker rmi $(REGISTRY_PREFIX)$(PROJECT_IMAGE):dev 2>/dev/null || true
 	-docker rmi $(REGISTRY_PREFIX)$(DEV_IMAGE):dev 2>/dev/null || true
 	-docker rmi $(REGISTRY_PREFIX)$(BASE_IMAGE):latest 2>/dev/null || true
@@ -76,7 +82,8 @@ push: ## Push all images to registry
 	docker push $(REGISTRY_PREFIX)$(BASE_IMAGE):latest
 	docker push $(REGISTRY_PREFIX)$(DEV_IMAGE):dev
 	docker push $(REGISTRY_PREFIX)$(PROJECT_IMAGE):dev
+	docker push $(REGISTRY_PREFIX)$(TRAIN_IMAGE):dev
 
 list: ## List built OWA images
 	@echo "OWA Docker Images:"
-	@docker images --filter "reference=$(REGISTRY_PREFIX)$(BASE_IMAGE)" --filter "reference=$(REGISTRY_PREFIX)$(DEV_IMAGE)" --filter "reference=$(REGISTRY_PREFIX)$(PROJECT_IMAGE)" --format "table {{.Repository}}:{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}"
+	@docker images --filter "reference=$(REGISTRY_PREFIX)$(BASE_IMAGE)" --filter "reference=$(REGISTRY_PREFIX)$(DEV_IMAGE)" --filter "reference=$(REGISTRY_PREFIX)$(PROJECT_IMAGE)" --filter "reference=$(REGISTRY_PREFIX)$(TRAIN_IMAGE)" --format "table {{.Repository}}:{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}"

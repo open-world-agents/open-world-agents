@@ -21,6 +21,7 @@ DOCKER_GID="${DOCKER_GID:-$(getent group docker | cut -d: -f3 2>/dev/null || ech
 BASE_IMAGE="owa/base"
 DEV_IMAGE="owa/base"
 PROJECT_IMAGE="owa/runtime"
+TRAIN_IMAGE="owa/train"
 
 # Colors for output
 RED='\033[0;31m'
@@ -56,6 +57,7 @@ IMAGES:
     base        Build owa/base:latest image only
     dev         Build owa/base:dev image only
     project     Build owa/runtime:dev image only
+    train       Build owa/train:dev image only
     all         Build all images (default)
 
 OPTIONS:
@@ -128,7 +130,7 @@ while [[ $# -gt 0 ]]; do
             show_help
             exit 0
             ;;
-        base|dev|project|all)
+        base|dev|project|train|all)
             IMAGES_TO_BUILD+=("$1")
             shift
             ;;
@@ -147,7 +149,7 @@ fi
 
 # Expand "all" to individual images
 if [[ " ${IMAGES_TO_BUILD[*]} " =~ " all " ]]; then
-    IMAGES_TO_BUILD=("base" "dev" "project")
+    IMAGES_TO_BUILD=("base" "dev" "project" "train")
 fi
 
 # Build registry prefix
@@ -247,6 +249,27 @@ for image in "${IMAGES_TO_BUILD[@]}"; do
             fi
             build_image "project" "Dockerfile.project-dev" "$PROJECT_IMAGE" "$dev_full_name" "dev"
             ;;
+        train)
+            # Check if runtime image exists or needs to be built
+            runtime_full_name="${REGISTRY_PREFIX}${PROJECT_IMAGE}:dev"
+            if ! docker image inspect "$runtime_full_name" >/dev/null 2>&1; then
+                log_warning "Runtime image $runtime_full_name not found, building dependency chain"
+
+                # Check dev image
+                dev_full_name="${REGISTRY_PREFIX}${DEV_IMAGE}:dev"
+                if ! docker image inspect "$dev_full_name" >/dev/null 2>&1; then
+                    # Check base image
+                    base_full_name="${REGISTRY_PREFIX}${BASE_IMAGE}:latest"
+                    if ! docker image inspect "$base_full_name" >/dev/null 2>&1; then
+                        build_image "base" "Dockerfile" "$BASE_IMAGE" "" "latest"
+                    fi
+                    build_image "dev" "Dockerfile.dev" "$DEV_IMAGE" "$base_full_name" "dev"
+                fi
+
+                build_image "project" "Dockerfile.project-dev" "$PROJECT_IMAGE" "$dev_full_name" "dev"
+            fi
+            build_image "train" "Dockerfile.train-dev" "$TRAIN_IMAGE" "$runtime_full_name" "dev"
+            ;;
     esac
 done
 
@@ -264,6 +287,9 @@ for image in "${IMAGES_TO_BUILD[@]}"; do
             ;;
         project)
             echo "  ${REGISTRY_PREFIX}${PROJECT_IMAGE}:dev"
+            ;;
+        train)
+            echo "  ${REGISTRY_PREFIX}${TRAIN_IMAGE}:dev"
             ;;
     esac
 done

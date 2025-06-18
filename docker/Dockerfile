@@ -8,6 +8,7 @@ ARG CONDA_INSTALL_PATH=/opt/conda
 # Environment setup
 ENV DEBIAN_FRONTEND=noninteractive \
     PATH="${CONDA_INSTALL_PATH}/bin:${PATH}"
+ENV USER=root UID=0 GID=0 HOME=/root
 
 # Install system dependencies first (rarely changes)
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
