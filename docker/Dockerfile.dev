@@ -1,4 +1,4 @@
-# OWA Base Dev Image - Base + Development Tools
+# Dev Image - Base + Development Tools
 ARG BASE_IMAGE=owa/base:latest
 FROM ${BASE_IMAGE}
 

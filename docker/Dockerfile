@@ -1,4 +1,4 @@
-# OWA Base Image - CUDA + Miniforge
+# Base Image - CUDA + Miniforge
 # if devel needed: 12.6.3-devel-ubuntu22.04 (e.g. compiling flash-attn)
 # if cudnn needed: 12.6.3-cudnn-devel-ubuntu22.04
 FROM nvidia/cuda:12.6.3-runtime-ubuntu22.04
