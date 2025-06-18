@@ -6,8 +6,7 @@ ARG MINIFORGE_VERSION=latest
 ARG CONDA_INSTALL_PATH=/opt/conda
 
 # Environment setup
-ENV DEBIAN_FRONTEND=noninteractive \
-    PATH="${CONDA_INSTALL_PATH}/bin:${PATH}"
+ENV DEBIAN_FRONTEND=noninteractive 
 ENV USER=root UID=0 GID=0 HOME=/root
 
 # Install system dependencies first (rarely changes)
@@ -22,6 +21,8 @@ RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     chmod +x /tmp/setup_miniforge.sh && \
     /tmp/setup_miniforge.sh ${MINIFORGE_VERSION} ${CONDA_INSTALL_PATH} && \
     rm -f /tmp/setup_miniforge.sh
+
+ENV VUV_ALLOW_BASE=true PATH="${CONDA_INSTALL_PATH}/bin:${PATH}"
 
 # Default configuration
 SHELL ["/bin/bash", "-c"]

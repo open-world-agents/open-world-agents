@@ -24,12 +24,14 @@ rm miniforge.sh
 
 # Initialize and configure conda
 "$CONDA_INSTALL_PATH/bin/conda" init --all
-"$CONDA_INSTALL_PATH/bin/conda" config --set auto_activate_base false \
-    --set channel_priority strict \
+"$CONDA_INSTALL_PATH/bin/conda" config --set channel_priority strict \
     --set always_yes true \
     --set show_channel_urls true
 
 # Clean up conda installation artifacts to reduce image size
 "$CONDA_INSTALL_PATH/bin/conda" clean -afy
+
+# Install uv, virtual-uv
+"$CONDA_INSTALL_PATH/bin/pip" install uv virtual-uv
 
 echo "Miniforge installation completed at: $CONDA_INSTALL_PATH"

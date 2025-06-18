@@ -6,13 +6,12 @@ set -e
 
 # Default values
 REGISTRY=""
-TAG="latest"
+CUSTOM_TAG=""
 PUSH=false
 CACHE=true
-PLATFORM="linux/amd64"
-BUILD_ARGS=""
+CUSTOM_BASE_IMAGE=""
 
-# User/Group defaults from environment
+# User/Group defaults
 USER_UID="${USER_UID:-$(id -u)}"
 USER_GID="${USER_GID:-$(id -g)}"
 DOCKER_GID="${DOCKER_GID:-$(getent group docker | cut -d: -f3 2>/dev/null || echo 998)}"
@@ -49,167 +48,138 @@ log_error() {
 
 show_help() {
     cat << EOF
-OWA Docker Build Script
+🐳 OWA Docker Build Script
 
 Usage: $0 [OPTIONS] [IMAGES...]
 
 IMAGES:
-    base        Build owa/base:latest image only
-    dev         Build owa/base:dev image only
-    project     Build owa/runtime:dev image only
-    train       Build owa/train:dev image only
+    base        Build owa/base:latest
+    dev         Build owa/base:dev
+    project     Build owa/runtime:dev
+    train       Build owa/train:dev
     all         Build all images (default)
 
 OPTIONS:
-    -r, --registry REGISTRY    Docker registry prefix (e.g., ghcr.io/user)
-    -t, --tag TAG             Tag for images (default: latest)
-    -p, --push                Push images to registry after build
-    --no-cache                Disable Docker build cache
-    --platform PLATFORM       Target platform (default: linux/amd64)
-    --build-arg KEY=VALUE     Pass build arguments to Docker
-    --user-uid UID            User UID for dev containers (default: current user)
-    --user-gid GID            User GID for dev containers (default: current group)
-    --docker-gid GID          Docker group GID (default: docker group or 998)
-    -h, --help                Show this help message
+    -t, --tag NAME:TAG         Output image name and tag (like docker build -t)
+    --from IMAGE               Base image to build from
+    --registry REGISTRY        Docker registry prefix
+    --push                     Push after build
+    --no-cache                 Disable cache
+    -h, --help                 Show help
 
 EXAMPLES:
-    $0                                    # Build all images with default settings
-    $0 base dev                          # Build only base and dev images
-    $0 -r ghcr.io/myuser -t v1.0 -p all  # Build all, tag as v1.0, and push
-    $0 --build-arg PYTHON_VERSION=3.12   # Build with custom Python version
-    $0 --user-uid 1001 --user-gid 1001   # Build with custom user/group IDs
-
-NOTE:
-    This script automatically enables Docker BuildKit (DOCKER_BUILDKIT=1) for
-    cache mount support. Requires Docker 18.09+ with BuildKit enabled.
+    $0 train                                        # Build owa/train:dev
+    $0 train --from owa/base:latest                 # Build from custom base
+    $0 train -t my-train:minimal                    # Build my-train:minimal
+    $0 train --from owa/base:latest -t my-train:v1  # Build my-train:v1 from base
+    $0 --registry ghcr.io/user --push all          # Build and push all
 
 EOF
 }
 
-# Parse command line arguments
+# Parse arguments
 IMAGES_TO_BUILD=()
 while [[ $# -gt 0 ]]; do
     case $1 in
-        -r|--registry)
-            REGISTRY="$2"
-            shift 2
-            ;;
-        -t|--tag)
-            TAG="$2"
-            shift 2
-            ;;
-        -p|--push)
-            PUSH=true
-            shift
-            ;;
-        --no-cache)
-            CACHE=false
-            shift
-            ;;
-        --platform)
-            PLATFORM="$2"
-            shift 2
-            ;;
-        --build-arg)
-            BUILD_ARGS="$BUILD_ARGS --build-arg $2"
-            shift 2
-            ;;
-        --user-uid)
-            USER_UID="$2"
-            shift 2
-            ;;
-        --user-gid)
-            USER_GID="$2"
-            shift 2
-            ;;
-        --docker-gid)
-            DOCKER_GID="$2"
-            shift 2
-            ;;
-        -h|--help)
-            show_help
-            exit 0
-            ;;
-        base|dev|project|train|all)
-            IMAGES_TO_BUILD+=("$1")
-            shift
-            ;;
-        *)
-            log_error "Unknown option: $1"
-            show_help
-            exit 1
-            ;;
+        -t|--tag) CUSTOM_TAG="$2"; shift 2 ;;
+        --from) CUSTOM_BASE_IMAGE="$2"; shift 2 ;;
+        --registry) REGISTRY="$2"; shift 2 ;;
+        --push) PUSH=true; shift ;;
+        --no-cache) CACHE=false; shift ;;
+        -h|--help) show_help; exit 0 ;;
+        base|dev|project|train|all) IMAGES_TO_BUILD+=("$1"); shift ;;
+        *) log_error "Unknown option: $1"; show_help; exit 1 ;;
     esac
 done
 
-# Default to building all images if none specified
-if [ ${#IMAGES_TO_BUILD[@]} -eq 0 ]; then
-    IMAGES_TO_BUILD=("all")
-fi
+# Default to all if no images specified
+[ ${#IMAGES_TO_BUILD[@]} -eq 0 ] && IMAGES_TO_BUILD=("all")
 
-# Expand "all" to individual images
-if [[ " ${IMAGES_TO_BUILD[*]} " =~ " all " ]]; then
-    IMAGES_TO_BUILD=("base" "dev" "project" "train")
-fi
+# Expand "all"
+[[ " ${IMAGES_TO_BUILD[*]} " =~ " all " ]] && IMAGES_TO_BUILD=("base" "dev" "project" "train")
 
-# Build registry prefix
-if [ -n "$REGISTRY" ]; then
-    REGISTRY_PREFIX="${REGISTRY}/"
-else
-    REGISTRY_PREFIX=""
-fi
+# Setup
+REGISTRY_PREFIX="${REGISTRY:+$REGISTRY/}"
+CACHE_OPTS=""
+[ "$CACHE" = false ] && CACHE_OPTS="--no-cache"
 
-# Build cache options
-if [ "$CACHE" = false ]; then
-    CACHE_OPTS="--no-cache"
-else
-    CACHE_OPTS=""
-fi
+# Get default output name and tag for image type
+get_defaults() {
+    local type="$1"
+    case $type in
+        base) echo "owa/base:latest" ;;
+        dev) echo "owa/base:dev" ;;
+        project) echo "owa/runtime:dev" ;;
+        train) echo "owa/train:dev" ;;
+    esac
+}
 
-# Function to build an image
+# Parse docker-style tag (name:tag format)
+parse_tag() {
+    local input="$1"
+    if [[ "$input" == *":"* ]]; then
+        echo "$input"  # Already has tag
+    else
+        # Get default tag for the image type being built
+        local type="$2"
+        local default_tag
+        case $type in
+            base) default_tag="latest" ;;
+            *) default_tag="dev" ;;
+        esac
+        echo "$input:$default_tag"
+    fi
+}
+
+# Build an image
 build_image() {
-    local image_type="$1"
-    local dockerfile="$2"
-    local image_name="$3"
-    local base_image="$4"
-    local image_tag="$5"
+    local type="$1" dockerfile="$2" base="$3"
 
-    # Use provided tag or default to TAG
-    local tag_to_use="${image_tag:-$TAG}"
-    local full_image_name="${REGISTRY_PREFIX}${image_name}:${tag_to_use}"
-
-    log_info "Building $image_type image: $full_image_name"
-
-    local build_cmd="docker build"
-    build_cmd="$build_cmd --platform $PLATFORM"
-    build_cmd="$build_cmd $CACHE_OPTS"
-    build_cmd="$build_cmd $BUILD_ARGS"
-
-    # Add user/group arguments for dev and project images
-    if [[ "$image_type" == "dev" || "$image_type" == "project" ]]; then
-        build_cmd="$build_cmd --build-arg USER_UID=$USER_UID"
-        build_cmd="$build_cmd --build-arg USER_GID=$USER_GID"
-        build_cmd="$build_cmd --build-arg DOCKER_GID=$DOCKER_GID"
+    # Determine output name:tag
+    local full_name
+    if [ -n "$CUSTOM_TAG" ]; then
+        full_name=$(parse_tag "$CUSTOM_TAG" "$type")
+    else
+        full_name=$(get_defaults "$type")
     fi
 
-    if [ -n "$base_image" ]; then
-        build_cmd="$build_cmd --build-arg BASE_IMAGE=$base_image"
+    # Add registry prefix
+    full_name="${REGISTRY_PREFIX}${full_name}"
+
+    log_info "🏗️  Building $type: $full_name"
+    [ -n "$base" ] && log_info "📦 From: $base"
+
+    # Build command
+    local cmd="docker build $CACHE_OPTS"
+
+    # Add user args for dev/project/train
+    if [[ "$type" != "base" ]]; then
+        cmd="$cmd --build-arg USER_UID=$USER_UID --build-arg USER_GID=$USER_GID --build-arg DOCKER_GID=$DOCKER_GID"
     fi
 
-    build_cmd="$build_cmd -f $dockerfile"
-    build_cmd="$build_cmd -t $full_image_name"
-    build_cmd="$build_cmd ."
+    # Add base image arg
+    if [ -n "$base" ]; then
+        case $type in
+            dev) cmd="$cmd --build-arg BASE_IMAGE=$base" ;;
+            project) cmd="$cmd --build-arg BASE_DEV_IMAGE=$base" ;;
+            train) cmd="$cmd --build-arg RUNTIME_DEV_IMAGE=$base" ;;
+        esac
+    fi
 
-    log_info "Running: $build_cmd"
-    eval $build_cmd
+    cmd="$cmd -f $dockerfile -t $full_name ."
 
-    log_success "Built $full_image_name"
+    log_info "🔨 $cmd"
+    eval $cmd
+    log_success "✅ Built $full_name"
 
     if [ "$PUSH" = true ]; then
-        log_info "Pushing $full_image_name"
-        docker push "$full_image_name"
-        log_success "Pushed $full_image_name"
+        log_info "📤 Pushing..."
+        docker push "$full_name"
+        log_success "✅ Pushed $full_name"
     fi
+
+    # Store built image name for final output
+    BUILT_IMAGES+=("$full_name")
 }
 
 # Enable BuildKit for cache mounts
@@ -218,78 +188,73 @@ export DOCKER_BUILDKIT=1
 # Change to docker directory
 cd "$(dirname "$0")"
 
-# Build images in dependency order
+# Track built images for final output
+BUILT_IMAGES=()
+
+# Get default base for image type
+get_base() {
+    case $1 in
+        dev) echo "${REGISTRY_PREFIX}owa/base:latest" ;;
+        project) echo "${REGISTRY_PREFIX}owa/base:dev" ;;
+        train) echo "${REGISTRY_PREFIX}owa/runtime:dev" ;;
+    esac
+}
+
+# Check if image exists
+exists() { docker image inspect "$1" >/dev/null 2>&1; }
+
+# Build dependencies if needed (only when using defaults)
+ensure_deps() {
+    case $1 in
+        dev)
+            local base="${REGISTRY_PREFIX}owa/base:latest"
+            exists "$base" || build_image "base" "Dockerfile" ""
+            ;;
+        project)
+            local dev="${REGISTRY_PREFIX}owa/base:dev"
+            if ! exists "$dev"; then
+                ensure_deps "dev"
+                build_image "dev" "Dockerfile.dev" "${REGISTRY_PREFIX}owa/base:latest"
+            fi
+            ;;
+        train)
+            local project="${REGISTRY_PREFIX}owa/runtime:dev"
+            if ! exists "$project"; then
+                ensure_deps "project"
+                build_image "project" "Dockerfile.project-dev" "${REGISTRY_PREFIX}owa/base:dev"
+            fi
+            ;;
+    esac
+}
+
+# Build images
 for image in "${IMAGES_TO_BUILD[@]}"; do
     case $image in
         base)
-            build_image "base" "Dockerfile" "$BASE_IMAGE" "" "latest"
+            build_image "base" "Dockerfile" ""
             ;;
         dev)
-            # Check if base image exists or needs to be built
-            base_full_name="${REGISTRY_PREFIX}${BASE_IMAGE}:latest"
-            if ! docker image inspect "$base_full_name" >/dev/null 2>&1; then
-                log_warning "Base image $base_full_name not found, building it first"
-                build_image "base" "Dockerfile" "$BASE_IMAGE" "" "latest"
-            fi
-            build_image "dev" "Dockerfile.dev" "$DEV_IMAGE" "$base_full_name" "dev"
+            base="${CUSTOM_BASE_IMAGE:-$(get_base dev)}"
+            [ -z "$CUSTOM_BASE_IMAGE" ] && ensure_deps "dev"
+            build_image "dev" "Dockerfile.dev" "$base"
             ;;
         project)
-            # Check if dev image exists or needs to be built
-            dev_full_name="${REGISTRY_PREFIX}${DEV_IMAGE}:dev"
-            if ! docker image inspect "$dev_full_name" >/dev/null 2>&1; then
-                log_warning "Dev image $dev_full_name not found, building dependency chain"
-
-                # Check base image
-                base_full_name="${REGISTRY_PREFIX}${BASE_IMAGE}:latest"
-                if ! docker image inspect "$base_full_name" >/dev/null 2>&1; then
-                    build_image "base" "Dockerfile" "$BASE_IMAGE" "" "latest"
-                fi
-
-                build_image "dev" "Dockerfile.dev" "$DEV_IMAGE" "$base_full_name" "dev"
-            fi
-            build_image "project" "Dockerfile.project-dev" "$PROJECT_IMAGE" "$dev_full_name" "dev"
+            base="${CUSTOM_BASE_IMAGE:-$(get_base project)}"
+            [ -z "$CUSTOM_BASE_IMAGE" ] && ensure_deps "project"
+            build_image "project" "Dockerfile.project-dev" "$base"
             ;;
         train)
-            # Check if runtime image exists or needs to be built
-            runtime_full_name="${REGISTRY_PREFIX}${PROJECT_IMAGE}:dev"
-            if ! docker image inspect "$runtime_full_name" >/dev/null 2>&1; then
-                log_warning "Runtime image $runtime_full_name not found, building dependency chain"
-
-                # Check dev image
-                dev_full_name="${REGISTRY_PREFIX}${DEV_IMAGE}:dev"
-                if ! docker image inspect "$dev_full_name" >/dev/null 2>&1; then
-                    # Check base image
-                    base_full_name="${REGISTRY_PREFIX}${BASE_IMAGE}:latest"
-                    if ! docker image inspect "$base_full_name" >/dev/null 2>&1; then
-                        build_image "base" "Dockerfile" "$BASE_IMAGE" "" "latest"
-                    fi
-                    build_image "dev" "Dockerfile.dev" "$DEV_IMAGE" "$base_full_name" "dev"
-                fi
-
-                build_image "project" "Dockerfile.project-dev" "$PROJECT_IMAGE" "$dev_full_name" "dev"
-            fi
-            build_image "train" "Dockerfile.train-dev" "$TRAIN_IMAGE" "$runtime_full_name" "dev"
+            base="${CUSTOM_BASE_IMAGE:-$(get_base train)}"
+            [ -z "$CUSTOM_BASE_IMAGE" ] && ensure_deps "train"
+            build_image "train" "Dockerfile.train-dev" "$base"
             ;;
     esac
 done
 
-log_success "Build completed successfully!"
+log_success "🎉 Build completed!"
 
 # Show built images
-log_info "Built images:"
-for image in "${IMAGES_TO_BUILD[@]}"; do
-    case $image in
-        base)
-            echo "  ${REGISTRY_PREFIX}${BASE_IMAGE}:latest"
-            ;;
-        dev)
-            echo "  ${REGISTRY_PREFIX}${DEV_IMAGE}:dev"
-            ;;
-        project)
-            echo "  ${REGISTRY_PREFIX}${PROJECT_IMAGE}:dev"
-            ;;
-        train)
-            echo "  ${REGISTRY_PREFIX}${TRAIN_IMAGE}:dev"
-            ;;
-    esac
+log_info "📋 Built images:"
+for image in "${BUILT_IMAGES[@]}"; do
+    echo "  $image"
 done

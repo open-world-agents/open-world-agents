@@ -1,126 +1,140 @@
-# OWA Docker Setup
+# 🐳 OWA Docker Images
 
-This directory contains Docker configurations for Open World Agents development environment.
+Simple Docker setup for Open World Agents development and training.
 
-## Architecture
+## 🏗️ What You Get
 
-The Docker setup follows a 4-tier architecture:
+Four images that build on each other:
 
-1. **owa/base:latest** - Base image with CUDA and Miniforge
-2. **owa/base:dev** - Development image with user environment and tools
-3. **owa/runtime:dev** - Complete project environment with dependencies
-4. **owa/train:dev** - ML training environment with PyTorch and related packages
-
-## Quick Start
-
-### Using Make (Recommended)
-
-```bash
-# Build all images
-make build-all
-
-# Build training image only
-make build-train
-
-# Build with custom registry and tag
-make build-all REGISTRY=ghcr.io/myuser TAG=v1.0
-
-# Build without cache
-make build-all CACHE=false
-
-# Build and push to registry
-make build-all REGISTRY=ghcr.io/myuser PUSH=true
-
-# Clean up images
-make clean
+```
+owa/base:latest     ← CUDA + Python foundation
+    ↓
+owa/base:dev        ← + Development tools
+    ↓
+owa/runtime:dev     ← + Project dependencies
+    ↓
+owa/train:dev       ← + ML packages (PyTorch, etc.)
 ```
 
-### Using Build Script
+## 🚀 Quick Start
 
+**Just want to train models?**
 ```bash
-# Build all images
-./build.sh
-
-# Build specific images
-./build.sh base dev
-
-# Build training image only
-./build.sh train
-
-# Build with custom options
-./build.sh -r ghcr.io/myuser -t v1.0 -p all
-
-# Show help
-./build.sh --help
-```
-
-## Files
-
-- `Dockerfile` - Base image with CUDA and Miniforge
-- `Dockerfile.dev` - Development image extending base
-- `Dockerfile.project-dev` - Project image with full environment
-- `Dockerfile.train-dev` - Training image with ML packages
-- `setup_miniforge.sh` - Miniforge installation script
-- `setup_devcontainer.sh` - Development tools setup script
-- `setup_project.sh` - Project dependencies setup script
-- `build.sh` - Comprehensive build script
-- `Makefile` - Simple build interface
-
-## Build Options
-
-### Build Script Options
-
-- `-r, --registry` - Docker registry prefix
-- `-t, --tag` - Image tag (default: latest)
-- `-p, --push` - Push images after build
-- `--no-cache` - Disable build cache
-- `--platform` - Target platform (default: linux/amd64)
-- `--build-arg` - Pass build arguments
-- `--user-uid` - User UID for dev containers (default: current user)
-- `--user-gid` - User GID for dev containers (default: current group)
-- `--docker-gid` - Docker group GID (default: docker group or 998)
-
-### Make Variables
-
-- `REGISTRY` - Docker registry prefix
-- `TAG` - Image tag (default: latest)
-- `PUSH` - Push after build (default: false)
-- `CACHE` - Enable Docker build cache (default: true)
-- `USER_UID` - User UID for dev containers (default: current user)
-- `USER_GID` - User GID for dev containers (default: current group)
-- `DOCKER_GID` - Docker group GID (default: docker group or 998)
-
-## Examples
-
-```bash
-# Development workflow
-make build-dev                    # Build base and dev images
-docker run -it owa/base:dev
-
-# Training workflow
-make build-train                  # Build training image
+make train
 docker run -it owa/train:dev
-
-# Full project build
-make build-all REGISTRY=ghcr.io/owa TAG=latest
-
-# Custom user/group IDs
-make build-dev USER_UID=1001 USER_GID=1001 DOCKER_GID=999
-
-# Custom Python version
-./build.sh --build-arg PYTHON_VERSION=3.12 base
-
-# Custom user IDs with build script
-./build.sh --user-uid 1001 --user-gid 1001 --docker-gid 999 dev
-
-# Multi-platform build
-./build.sh --platform linux/amd64,linux/arm64 base
 ```
 
-## Image Sizes
+**Want everything?**
+```bash
+make all
+```
 
-Approximate image sizes:
-- owa/base:latest: ~8GB (CUDA + Miniforge)
-- owa/base:dev: ~9GB (+ dev tools)
-- owa/runtime:dev: ~10GB (+ project dependencies)
-- owa/train:dev: ~12GB (+ ML packages)
+**Want to customize?**
+```bash
+# Build training image directly from base (smaller, faster)
+./build.sh train --from owa/base:latest
+
+# Custom output name and tag (Docker-style)
+./build.sh train -t my-train:minimal
+# → Builds: my-train:minimal
+
+# Use your own base with custom output
+./build.sh train --from my-custom:tag -t my-train:v1.0
+# → Builds: my-train:v1.0 (from my-custom:tag)
+```
+
+## 📋 Simple Commands
+
+### Make (Recommended)
+```bash
+make base      # Build foundation
+make dev       # Build dev environment
+make project   # Build project environment
+make train     # Build training environment
+make all       # Build everything
+
+make clean     # Remove all images
+make list      # Show built images
+```
+
+### Build Script (More Options)
+```bash
+./build.sh train                                        # Build owa/train:dev
+./build.sh train --from owa/base:latest                 # Build from custom base
+./build.sh train -t my-train:minimal                    # Build my-train:minimal
+./build.sh --registry ghcr.io/user --push all          # Build and push all
+```
+
+### Make with Custom Options
+```bash
+make train FROM=owa/base:latest TAG=my-train:minimal
+# → Builds: my-train:minimal (from owa/base:latest)
+
+make dev TAG=my-dev:custom
+# → Builds: my-dev:custom
+```
+
+## 🎯 Common Use Cases
+
+**I want to develop:**
+```bash
+make dev
+docker run -it owa/base:dev
+```
+
+**I want to run the project:**
+```bash
+make project
+docker run -it owa/runtime:dev
+```
+
+**I want to train models:**
+```bash
+make train
+docker run -it owa/train:dev
+# Working directory: /workspace/projects/nanovlm
+# Branch: feature/data
+# Packages: torch, transformers, wandb, etc.
+```
+
+**I want minimal training (no project deps):**
+```bash
+./build.sh train --from owa/base:latest -t owa/train:minimal
+# → Builds: owa/train:minimal (from owa/base:latest)
+```
+
+## 📦 What's Inside
+
+- **owa/base:latest** (~8GB) - CUDA 12.1 + Python 3.11 + Miniforge
+- **owa/base:dev** (~9GB) - + zsh, git, development tools
+- **owa/runtime:dev** (~10GB) - + project dependencies
+- **owa/train:dev** (~12GB) - + PyTorch, transformers, wandb, datasets
+
+## 🔧 Advanced Options
+
+```bash
+# Custom registry
+make all REGISTRY=ghcr.io/myuser
+
+# Custom tag
+make all TAG=v1.0
+
+# Build and push
+make all PUSH=true
+
+# No cache
+./build.sh --no-cache all
+
+# Complex custom build
+./build.sh train --from owa/base:latest -t ghcr.io/myuser/my-trainer:v2.0 --push
+# → Builds and pushes: ghcr.io/myuser/my-trainer:v2.0 (from owa/base:latest)
+```
+
+## 🆘 Need Help?
+
+```bash
+make help        # Show make targets
+./build.sh -h    # Show build script options
+```
+
+**Problems?** The build script automatically handles dependencies - just run what you need!

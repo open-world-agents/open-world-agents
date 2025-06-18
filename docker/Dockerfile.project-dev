@@ -17,7 +17,3 @@ RUN --mount=type=cache,target=${HOME}/.cache/pip,sharing=locked,uid=${UID},gid=$
     chmod +x /tmp/setup_project.sh && \
     /tmp/setup_project.sh ${PROJECT_DIR} && \
     rm /tmp/setup_project.sh
-
-# Default configuration
-SHELL ["/bin/zsh", "-c"]
-CMD ["/bin/zsh"]

@@ -34,7 +34,5 @@ conda config --set channel_priority strict \
     --set always_yes true \
     --set show_channel_urls true
 
-# Install pipx and useful tools
-python3 -m pip install --user pipx
-python3 -m pipx ensurepath
-python3 -m pipx install gpustat tqdm
+# Install useful tools
+pip3 install glances gpustat
