@@ -9,8 +9,10 @@ This module provides a comprehensive migration system that can:
 """
 
 import shutil
+from contextlib import contextmanager
 from pathlib import Path
 from typing import List, Optional
+from unittest.mock import patch
 
 import typer
 from rich.console import Console
@@ -88,6 +90,35 @@ class MigrationOrchestrator:
             return True
         except Exception:
             return False
+
+    @contextmanager
+    def _override_library_version(self, target_version: str):
+        """
+        Context manager to temporarily override the mcap-owa-support version
+        written to MCAP files during migration.
+
+        This ensures that migrated files have the correct target version
+        in their headers instead of the current library version.
+        """
+        import mcap_owa.writer
+
+        # Store original function
+        original_library_identifier = mcap_owa.writer._library_identifier
+
+        # Create patched function that returns target version
+        def patched_library_identifier():
+            import mcap
+
+            mcap_version = getattr(mcap, "__version__", "<=0.0.10")
+            return f"mcap-owa-support {target_version}; mcap {mcap_version}"
+
+        try:
+            # Apply patch
+            mcap_owa.writer._library_identifier = patched_library_identifier
+            yield
+        finally:
+            # Restore original function
+            mcap_owa.writer._library_identifier = original_library_identifier
 
     def get_migration_path(self, from_version: str, to_version: str) -> List[BaseMigrator]:
         """Get the sequence of migrators needed to go from one version to another."""
@@ -184,8 +215,9 @@ class MigrationOrchestrator:
                 console.print(f"[red]✗ Failed to create backup at {backup_path}[/red]")
                 return results
 
-            # Perform migration (migrator no longer handles backup)
-            result = migrator.migrate(file_path, backup_path, console, verbose)
+            # Perform migration with version override to ensure correct target version is written
+            with self._override_library_version(migrator.to_version):
+                result = migrator.migrate(file_path, backup_path, console, verbose)
             results.append(result)
 
             if not result.success:
