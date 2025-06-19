@@ -1,25 +1,33 @@
 #!/usr/bin/env python3
 """
-OWA Release Manager - A comprehensive CLI tool for managing OWA package releases.
-
-This tool provides functionality for:
-- Updating package versions across multiple projects
-- Publishing packages to PyPI
-- Upgrading dependency lock files
+OWA Release Manager - CLI tool for managing OWA package releases.
 """
 
 import os
-import re
 import subprocess
+import sys
 from pathlib import Path
-from typing import List
+from typing import List, Set
 
 import typer
 
+# Use tomllib for Python 3.11+, tomli for older versions
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    try:
+        import tomli as tomllib
+    except ImportError:
+        raise ImportError("tomli is required for Python < 3.11. Install with: pip install tomli")
+
+try:
+    from packaging.requirements import Requirement
+except ImportError:
+    raise ImportError("packaging is required. Install with: pip install packaging")
+
 app = typer.Typer(help="OWA Release Manager - A tool for managing OWA package releases")
 
-# Common project paths used across commands
-# TODO: automatic discovery by parsing root pyproject.toml
+# Project paths and first-party packages
 PROJECTS = [
     ".",
     "projects/mcap-owa-support",
@@ -31,143 +39,205 @@ PROJECTS = [
     "projects/owa-msgs",
 ]
 
+FIRST_PARTY_PACKAGES = {
+    "owa",
+    "mcap-owa-support",
+    "ocap",
+    "owa-cli",
+    "owa-core",
+    "owa-env-desktop",
+    "owa-env-gst",
+    "owa-msgs",
+}
+
 
 def get_package_dirs() -> List[Path]:
-    """List all subrepositories in the projects directory."""
+    """List all project directories."""
     return [Path(p) for p in PROJECTS]
 
 
+def get_package_name(package_dir: Path) -> str:
+    """Get package name from pyproject.toml."""
+    pyproject_file = package_dir / "pyproject.toml"
+    if not pyproject_file.exists():
+        return ""
+
+    try:
+        raw_toml = pyproject_file.read_text(encoding="utf-8")
+        data = tomllib.loads(raw_toml)
+        return data.get("project", {}).get("name", "")
+    except Exception as e:
+        print(f"! Warning: Failed to parse {pyproject_file}: {e}")
+        return ""
+
+
+def get_first_party_dependencies(package_dir: Path) -> Set[str]:
+    """Get first-party dependencies from pyproject.toml."""
+    pyproject_file = package_dir / "pyproject.toml"
+    if not pyproject_file.exists():
+        return set()
+
+    try:
+        raw_toml = pyproject_file.read_text(encoding="utf-8")
+        data = tomllib.loads(raw_toml)
+
+        dependencies = set()
+        raw_deps = data.get("project", {}).get("dependencies", [])
+
+        for dep_str in raw_deps:
+            try:
+                req = Requirement(dep_str)
+                if req.name in FIRST_PARTY_PACKAGES:
+                    dependencies.add(req.name)
+            except Exception as e:
+                print(f"! Warning: Failed to parse dependency '{dep_str}': {e}")
+
+        return dependencies
+    except Exception as e:
+        print(f"! Warning: Failed to parse {pyproject_file}: {e}")
+        return set()
+
+
 def run_git_command(command: List[str]) -> str:
-    """Run a git command and handle errors."""
+    """Run a git command."""
     print(f"Running: git {' '.join(command)}")
     result = subprocess.run(["git"] + command, capture_output=True, text=True)
     if result.returncode != 0:
-        print(f"Error executing git command: {result.stderr}")
         raise RuntimeError(f"Git command failed: {result.stderr}")
     return result.stdout.strip()
 
 
-def run_command(command: List[str], cwd=None) -> str:
-    """Run a shell command and return the output."""
+def run_command(command: List[str], cwd: Path = None) -> str:
+    """Run a shell command."""
     print(f"Running: {' '.join(command)}")
     result = subprocess.run(command, capture_output=True, text=True, cwd=cwd)
     if result.returncode != 0:
-        print(f"Error executing command: {result.stderr}")
         raise RuntimeError(f"Command failed: {result.stderr}")
     return result.stdout.strip()
 
 
-def update_version_in_pyproject(pyproject_file: Path, version: str) -> bool:
-    """Update version in pyproject.toml file."""
-    with open(pyproject_file, "r") as f:
-        content = f.read()
-
-    # Update the version
-    new_content = re.sub(r'version\s*=\s*"[^"]*"', f'version = "{version}"', content)
-
-    # Only write if content changed
-    if new_content != content:
-        with open(pyproject_file, "w") as f:
-            f.write(new_content)
-        return True
-    return False
-
-
-def update_uv_lock(package_dir: Path) -> bool:
-    """Run `uv lock --upgrade` in the given directory to update uv.lock."""
-    print(f"Running `uv lock --upgrade` in {package_dir}")
-    try:
-        run_command(["uv", "lock", "--upgrade"], cwd=package_dir)
-        print(f"✓ Updated uv.lock in {package_dir}")
-        return True
-    except RuntimeError as e:
-        print(f"! Warning: {e}")
-        return False
-
-
 @app.command()
-def new_version(
-    version: str = typer.Argument(..., help="Version to set for all packages (e.g., 1.0.0)"),
-    lock: bool = typer.Option(True, help="Update uv.lock files after changing versions"),
-    push: bool = typer.Option(False, help="Push changes to git remote after committing"),
+def version(
+    value: str = typer.Argument(..., help="Version to set for all packages (e.g., 1.0.0)"),
+    lock: bool = typer.Option(True, "--lock", help="Update uv.lock files after changing versions"),
+    tag: bool = typer.Option(True, "--tag/--no-tag", help="Create git tag and commit changes"),
+    push: bool = typer.Option(False, "--push", help="Push changes to git remote after committing"),
 ):
     """
-    Update package versions in pyproject.toml files and create a git tag.
+    Update package versions using vuv and hatch version management.
 
-    This command updates the version in all project pyproject.toml files,
-    optionally updates the lockfiles, commits the changes, and creates a git tag.
+    This command:
+    1. Detects first-party dependencies for each package
+    2. Updates dependencies using 'vuv add x==v --locked'
+    3. Updates package version using 'vuv version v' or 'hatch version v'
+    4. Optionally runs lock command if --lock is specified
+    5. Optionally commits and tags changes if --tag is specified
+    6. Optionally pushes changes if --push is specified
     """
-    print(f"Setting all package versions to: {version}")
+    if value.startswith("v"):
+        value = value[1:]
 
-    # Check if the version tag already exists
-    tag_name = f"v{version}"
-    existing_tags = run_git_command(["tag"]).splitlines()
-    if tag_name in existing_tags:
-        print(f"! Error: Tag '{tag_name}' already exists. Aborting version update.")
-        raise typer.Exit(code=1)
+    print(f"Setting all package versions to: {value}")
 
-    # Find all project directories
-    package_dirs = get_package_dirs()
-    modified_files = []
+    # Check if tag already exists when tagging is enabled
+    if tag:
+        tag_name = f"v{value}"
+        try:
+            existing_tags = run_git_command(["tag"]).splitlines()
+            if tag_name in existing_tags:
+                print(f"! Error: Tag '{tag_name}' already exists. Aborting version update.")
+                raise typer.Exit(code=1)
+        except RuntimeError:
+            pass  # No tags exist yet
 
     # Process each package
+    package_dirs = get_package_dirs()
+    packages_updated = 0
+
     for package_dir in package_dirs:
         print("=======================")
         print(f"Processing package in {package_dir}")
 
-        # For all projects, check and update pyproject.toml
-        pyproject_file = package_dir / "pyproject.toml"
-        if pyproject_file.exists():
-            print(f"Updating version in {pyproject_file}")
-            if update_version_in_pyproject(pyproject_file, version):
-                modified_files.append(pyproject_file)
-                print(f"✓ Updated pyproject.toml version to {version}")
-        else:
-            print(f"! Warning: pyproject.toml not found in {package_dir}")
+        package_name = get_package_name(package_dir)
+        if not package_name:
+            print(f"! Warning: Could not determine package name for {package_dir}")
+            continue
+
+        first_party_deps = get_first_party_dependencies(package_dir)
+        print(f"Package: {package_name}")
+        print(f"First-party dependencies: {first_party_deps}")
+
+        # Step 1: Detect first-party dependencies and update them
+        for dep in first_party_deps:
+            print(f"Updating dependency {dep} to version {value}")
+            try:
+                run_command(["vuv", "add", f"{dep}=={value}", "--locked"], cwd=package_dir)
+                print(f"✓ Updated {dep} dependency to {value}")
+            except RuntimeError as e:
+                print(f"! Warning: Failed to update {dep} dependency: {e}")
+
+        # Step 2: Update package version
+        print(f"Updating {package_name} version to {value}")
+        try:
+            run_command(["vuv", "version", value], cwd=package_dir)
+            print(f"✓ Updated {package_name} version to {value} using vuv")
+            packages_updated += 1
+        except RuntimeError:
+            try:
+                run_command(["hatch", "version", value], cwd=package_dir)
+                print(f"✓ Updated {package_name} version to {value} using hatch")
+                packages_updated += 1
+            except RuntimeError as e:
+                print(f"! Error: Failed to update {package_name} version: {e}")
 
         print("=======================")
 
-    # Update lock files if requested
-    modified_lock_files = []
+    # Step 3: Run lock command if requested
     if lock:
-        print("Updating uv.lock files...")
+        print("Running lock command...")
         for package_dir in package_dirs:
-            lock_file = package_dir / "uv.lock"
-            if update_uv_lock(package_dir) and lock_file.exists():
-                modified_lock_files.append(lock_file)
+            try:
+                run_command(["vuv", "lock"], cwd=package_dir)
+                print(f"✓ Successfully ran 'vuv lock' in {package_dir}")
+            except RuntimeError as e:
+                print(f"! Warning: Failed to run 'vuv lock' in {package_dir}: {e}")
 
-    # Commit changes if any
-    if modified_files or modified_lock_files:
+    # Step 4: Commit and tag changes if requested
+    if tag:
         print("Committing version changes...")
+        files_added = False
 
-        # Add modified pyproject.toml files
-        for file in modified_files:
-            run_git_command(["add", str(file)])
+        for package_dir in package_dirs:
+            pyproject_file = package_dir / "pyproject.toml"
+            uv_lock_file = package_dir / "uv.lock"
 
-        # Add modified lock files
-        for file in modified_lock_files:
-            run_git_command(["add", str(file)])
+            if pyproject_file.exists():
+                run_git_command(["add", str(pyproject_file)])
+                files_added = True
+            if uv_lock_file.exists():
+                run_git_command(["add", str(uv_lock_file)])
+                files_added = True
 
-        tag_name = f"v{version}"
-        run_git_command(["commit", "-m", f"{tag_name}"])
-        run_git_command(["tag", tag_name])
+        if files_added:
+            tag_name = f"v{value}"
+            run_git_command(["commit", "-m", f"{tag_name}"])
+            run_git_command(["tag", tag_name])
+            print(f"✓ Version updates committed and tagged as {tag_name}.")
 
-        print(f"✓ Version updates committed and tagged as {tag_name}.")
-
-        # Push changes if requested
-        if push:
-            print("Pushing changes to remote repository...")
-            run_git_command(["push", "origin", "main"])
-            run_git_command(["push", "origin", tag_name])
-            print("✓ Changes pushed to remote repository.")
+            # Step 5: Push changes if requested
+            if push:
+                print("Pushing changes to remote repository...")
+                run_git_command(["push", "origin", "main"])
+                run_git_command(["push", "origin", tag_name])
+                print("✓ Changes pushed to remote repository.")
+            else:
+                print("")
+                print("To push changes and tag to remote repository:")
+                print(f"  git push origin main && git push origin {tag_name}")
         else:
-            print("")
-            print("To push changes and tag to remote repository:")
-            print(f"  git push origin main && git push origin {tag_name}")
-    else:
-        print("No files were modified. Nothing to commit.")
+            print("No files were modified. Nothing to commit.")
 
-    print(f"All packages have been updated to version {version}!")
+    print(f"All packages have been updated to version {value}! ({packages_updated} packages processed)")
 
 
 @app.command()
@@ -190,11 +260,8 @@ def publish():
 
     print("Building and publishing packages to PyPI...")
 
-    # Find all project directories
-    package_dirs = get_package_dirs()
-
     # Process each package
-    for package_dir in package_dirs:
+    for package_dir in get_package_dirs():
         print("=======================")
         print(f"Processing package in {package_dir}")
 
@@ -219,56 +286,33 @@ def publish():
 
 
 @app.command()
-def upgrade_all(
-    commit: bool = typer.Option(False, help="Commit changes to git after updating uv.lock files"),
-    push: bool = typer.Option(False, help="Push changes to remote after committing (requires --commit)"),
+def lock(
+    args: List[str] = typer.Argument(None, help="Additional arguments to pass to 'vuv lock'"),
 ):
     """
-    Update all uv.lock files and optionally commit changes.
+    Run 'vuv lock ARGS' in all first-party repositories.
 
-    This command runs `uv lock --upgrade` for all projects to update dependency lock files.
+    This command runs 'vuv lock' with the provided arguments in all project directories.
+    Common usage: 'lock --upgrade' to upgrade all dependencies.
     """
-    print("Updating uv.lock files...")
+    if args is None:
+        args = []
 
-    # Find all project directories
-    package_dirs = get_package_dirs()
-    modified_dirs = []
+    print(f"Running 'vuv lock {' '.join(args)}' in all repositories...")
 
-    # Process each package
-    for package_dir in package_dirs:
+    for package_dir in get_package_dirs():
         print("=======================")
         print(f"Processing package in {package_dir}")
 
-        # Update uv.lock file
-        if update_uv_lock(package_dir):
-            modified_dirs.append(package_dir)
+        try:
+            run_command(["vuv", "lock"] + args, cwd=package_dir)
+            print(f"✓ Successfully ran 'vuv lock {' '.join(args)}' in {package_dir}")
+        except RuntimeError as e:
+            print(f"! Warning: Failed to run 'vuv lock {' '.join(args)}' in {package_dir}: {e}")
 
         print("=======================")
 
-    # Commit changes if requested
-    if commit and modified_dirs:
-        print("Committing uv.lock updates...")
-        for package_dir in modified_dirs:
-            uv_lock_file = package_dir / "uv.lock"
-            run_git_command(["add", str(uv_lock_file)])
-
-        run_git_command(["commit", "-m", "build: updated `uv.lock`"])
-        print("✓ uv.lock updates committed.")
-
-        if push:
-            print("Pushing changes to remote repository...")
-            run_git_command(["push", "origin", "main"])
-            print("✓ Changes pushed to remote repository.")
-        else:
-            print("")
-            print("To push changes to the remote repository:")
-            print("  git push origin main")
-    elif not commit:
-        print("Skipping git commit as per the CLI argument.")
-    else:
-        print("No uv.lock files were modified. Nothing to commit.")
-
-    print("All uv.lock files have been updated!")
+    print("Lock command completed for all repositories!")
 
 
 if __name__ == "__main__":
