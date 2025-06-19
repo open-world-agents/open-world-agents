@@ -43,26 +43,26 @@ class TestMigrationOrchestrator:
     def test_get_migration_path_sequential(self):
         """Test sequential migration path."""
         orchestrator = MigrationOrchestrator()
-        path = orchestrator.get_migration_path("0.3.0", "0.4.0")
+        path = orchestrator.get_migration_path("0.3.0", "0.4.1")
         assert len(path) == 2
         assert path[0].from_version == "0.3.0"
         assert path[0].to_version == "0.3.2"
         assert path[1].from_version == "0.3.2"
-        assert path[1].to_version == "0.4.0"
+        assert path[1].to_version == "0.4.1"
 
     def test_get_migration_path_from_v032(self):
-        """Test migration path from v0.3.2 to v0.4.0."""
+        """Test migration path from v0.3.2 to v0.4.1."""
         orchestrator = MigrationOrchestrator()
-        path = orchestrator.get_migration_path("0.3.2", "0.4.0")
+        path = orchestrator.get_migration_path("0.3.2", "0.4.1")
         assert len(path) == 1
         assert path[0].from_version == "0.3.2"
-        assert path[0].to_version == "0.4.0"
+        assert path[0].to_version == "0.4.1"
 
     def test_get_migration_path_invalid(self):
         """Test invalid migration path."""
         orchestrator = MigrationOrchestrator()
         with pytest.raises(ValueError, match="No migration path found"):
-            orchestrator.get_migration_path("unknown", "0.4.0")
+            orchestrator.get_migration_path("unknown", "0.4.1")
 
 
 class TestMigrators:
@@ -79,7 +79,7 @@ class TestMigrators:
         # Check for expected version transitions
         version_transitions = {(m.from_version, m.to_version) for m in migrators}
         assert ("0.3.0", "0.3.2") in version_transitions
-        assert ("0.3.2", "0.4.0") in version_transitions
+        assert ("0.3.2", "0.4.1") in version_transitions
 
     def test_migrators_have_required_properties(self):
         """Test that all discovered migrators have required properties."""
@@ -126,11 +126,11 @@ class TestMigrationIntegration:
         assert len(orchestrator.migrators) == 2
 
         # Test migration path calculation
-        path_0_3_0_to_0_4_0 = orchestrator.get_migration_path("0.3.0", "0.4.0")
-        assert len(path_0_3_0_to_0_4_0) == 2
+        path_0_3_0_to_0_4_1 = orchestrator.get_migration_path("0.3.0", "0.4.1")
+        assert len(path_0_3_0_to_0_4_1) == 2
 
-        path_0_3_2_to_0_4_0 = orchestrator.get_migration_path("0.3.2", "0.4.0")
-        assert len(path_0_3_2_to_0_4_0) == 1
+        path_0_3_2_to_0_4_1 = orchestrator.get_migration_path("0.3.2", "0.4.1")
+        assert len(path_0_3_2_to_0_4_1) == 1
 
     @patch("owa.cli.mcap.migrate.OWAMcapReader")
     def test_detect_version_with_mocked_reader(self, mock_reader_class):

@@ -7,7 +7,6 @@ This migrator handles the keyboard state field changes:
 
 import shutil
 from pathlib import Path
-from typing import Dict
 
 from rich.console import Console
 
