@@ -1,15 +1,18 @@
 import json
 import os
 import typing
-from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
+
+from rich import print
+from tqdm import tqdm
 
 from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
 from owa.env.desktop.constants import VK
-from owa.env.desktop.msg import KeyboardEvent, MouseEvent, WindowInfo
-from owa.env.gst.msg import ScreenEmitted
-from rich import print
-from tqdm import tqdm
+from owa.msgs.desktop.keyboard import KeyboardEvent
+from owa.msgs.desktop.mouse import MouseEvent
+from owa.msgs.desktop.screen import ScreenCaptured
+from owa.msgs.desktop.window import WindowInfo
 
 VPT_FOLDER_PATH = Path(
     "~/data/Video-Pre-Training/data/"
@@ -67,13 +70,7 @@ def vpt_generate_target_list_file(
     """
     from tqdm import tqdm
 
-    all_mp4_stems = set(
-        [
-            f.stem
-            for f in VPT_FOLDER_PATH.iterdir()
-            if f.suffix == ".mp4" and f.is_file()
-        ]
-    )
+    all_mp4_stems = set([f.stem for f in VPT_FOLDER_PATH.iterdir() if f.suffix == ".mp4" and f.is_file()])
 
     # Get all files with their full path and creation time
     all_jsonl_files = [
@@ -147,7 +144,7 @@ def process_single_file(jsonl_file_path):
 
         ## SCREEN EVENT
         topic = "screen"
-        event = ScreenEmitted(path=str(mp4_file_path), pts=unix_epoch_ns)
+        event = ScreenCaptured(path=str(mp4_file_path), pts=unix_epoch_ns)
         writer.write_message(topic, event, log_time=unix_epoch_ns)
 
         for i, tick in enumerate(ticks):
@@ -156,7 +153,7 @@ def process_single_file(jsonl_file_path):
 
             ## SCREEN EVENT
             topic = "screen"
-            event = ScreenEmitted(path=str(mp4_file_path), pts=log_time)
+            event = ScreenCaptured(path=str(mp4_file_path), pts=log_time)
             writer.write_message(topic, event, log_time=log_time)
 
             ## KEYBOARD EVENT
@@ -174,9 +171,7 @@ def process_single_file(jsonl_file_path):
                     else:
                         keyboard_state.add(key)
                         topic = "keyboard"
-                        event = KeyboardEvent(
-                            event_type="press", vk=VPT_KEYBOARD_VK_MAPPING[key]
-                        )
+                        event = KeyboardEvent(event_type="press", vk=VPT_KEYBOARD_VK_MAPPING[key])
                         writer.write_message(topic, event, log_time=log_time)
 
             # release keys that are not in the current tick
@@ -184,9 +179,7 @@ def process_single_file(jsonl_file_path):
                 if state_key not in current_tick_keys:
                     keyboard_state.remove(state_key)
                     topic = "keyboard"
-                    event = KeyboardEvent(
-                        event_type="release", vk=VPT_KEYBOARD_VK_MAPPING[state_key]
-                    )
+                    event = KeyboardEvent(event_type="release", vk=VPT_KEYBOARD_VK_MAPPING[state_key])
                     writer.write_message(topic, event, log_time=log_time)
 
             ## MOUSE EVENT
@@ -249,9 +242,7 @@ def read_mcap(file_path="expert.mcap", num_messages=100):
     cnt = 0
     with OWAMcapReader(file_path) as reader:
         for mcap_msg in reader.iter_messages():
-            print(
-                f"Topic: {mcap_msg.topic}, Timestamp: {mcap_msg.timestamp}, Message: {mcap_msg.decoded}"
-            )
+            print(f"Topic: {mcap_msg.topic}, Timestamp: {mcap_msg.timestamp}, Message: {mcap_msg.decoded}")
             cnt += 1
             if cnt > num_messages:
                 break

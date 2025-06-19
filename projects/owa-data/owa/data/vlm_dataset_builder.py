@@ -13,7 +13,7 @@ import torch
 from PIL import Image
 from torch.utils.data import Dataset
 
-from owa.env.gst.msg import ScreenEmitted
+from owa.msgs.desktop.screen import ScreenCaptured
 
 
 class VLMDatasetBuilder(Dataset):
@@ -123,7 +123,7 @@ class VLMDatasetBuilder(Dataset):
                 images.append(self._image_cache[cache_key])
                 continue
 
-            # Load image using ScreenEmitted
+            # Load image using ScreenCaptured
             try:
                 image = self._load_single_image(img_ref)
                 if image is not None:
@@ -139,7 +139,7 @@ class VLMDatasetBuilder(Dataset):
 
     def _load_single_image(self, img_ref: Dict[str, Any]) -> Optional[Any]:
         """
-        Load a single image using ScreenEmitted.lazy_load().
+        Load a single image using ScreenCaptured.lazy_load().
 
         Args:
             img_ref: Image reference dict with path, pts, etc.
@@ -148,14 +148,10 @@ class VLMDatasetBuilder(Dataset):
             Loaded image in the specified format or None if failed
         """
         try:
-            # Create ScreenEmitted instance from image reference
-            screen_emitted = ScreenEmitted(
-                path=img_ref["path"],
-                pts=img_ref["pts"],
-                utc_ns=img_ref.get("utc_ns")
-            )
+            # Create ScreenCaptured instance from image reference
+            screen_emitted = ScreenCaptured(path=img_ref["path"], pts=img_ref["pts"], utc_ns=img_ref.get("utc_ns"))
 
-            # Load the frame using ScreenEmitted's lazy_load method
+            # Load the frame using ScreenCaptured's lazy_load method
             if self.image_format == "pil":
                 return screen_emitted.to_pil_image()
             elif self.image_format == "numpy":

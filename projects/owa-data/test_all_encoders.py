@@ -26,7 +26,7 @@ def create_test_events() -> List[Dict[str, Any]]:
             "file_path": "/path/to/file.mcap",
             "topic": "keyboard",
             "timestamp_ns": 1745362786814673800,
-            "message_type": "owa.env.desktop.msg.KeyboardEvent",
+            "message_type": "desktop/KeyboardEvent",
             "msg": '{"event_type":"press","vk":65}',  # A key press
         },
         # Mouse move event
@@ -34,7 +34,7 @@ def create_test_events() -> List[Dict[str, Any]]:
             "file_path": "/path/to/file.mcap",
             "topic": "mouse",
             "timestamp_ns": 1745362786814673900,
-            "message_type": "owa.env.desktop.msg.MouseEvent",
+            "message_type": "desktop/MouseEvent",
             "msg": '{"event_type":"move","x":960,"y":540}',  # Center of screen
         },
         # Mouse click event
@@ -42,7 +42,7 @@ def create_test_events() -> List[Dict[str, Any]]:
             "file_path": "/path/to/file.mcap",
             "topic": "mouse",
             "timestamp_ns": 1745362786814674000,
-            "message_type": "owa.env.desktop.msg.MouseEvent",
+            "message_type": "desktop/MouseEvent",
             "msg": '{"event_type":"click","x":960,"y":540,"button":"left","pressed":true}',
         },
         # Mouse scroll event
@@ -50,7 +50,7 @@ def create_test_events() -> List[Dict[str, Any]]:
             "file_path": "/path/to/file.mcap",
             "topic": "mouse",
             "timestamp_ns": 1745362786814674100,
-            "message_type": "owa.env.desktop.msg.MouseEvent",
+            "message_type": "desktop/MouseEvent",
             "msg": '{"event_type":"scroll","x":960,"y":540,"dx":0,"dy":-1}',
         },
         # Screen event
@@ -58,7 +58,7 @@ def create_test_events() -> List[Dict[str, Any]]:
             "file_path": "/path/to/file.mcap",
             "topic": "screen",
             "timestamp_ns": 1745362786814674200,
-            "message_type": "owa.env.gst.msg.ScreenEmitted",
+            "message_type": "desktop/ScreenCaptured",
             "msg": '{"path":"output.mkv","pts":123456789}',
         },
     ]

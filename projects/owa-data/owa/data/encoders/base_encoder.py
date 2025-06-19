@@ -8,7 +8,7 @@ ensuring consistency across different encoding strategies.
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from owa.env.gst.msg import ScreenEmitted
+from owa.msgs.desktop.screen import ScreenCaptured
 
 
 class BaseEventEncoder(ABC):
@@ -21,7 +21,7 @@ class BaseEventEncoder(ABC):
     """
 
     @abstractmethod
-    def encode(self, raw_event: Dict[str, Any]) -> Tuple[str, List[Union[ScreenEmitted, Dict]]]:
+    def encode(self, raw_event: Dict[str, Any]) -> Tuple[str, List[Union[ScreenCaptured, Dict]]]:
         """
         Encode a single raw event to the encoder's format.
 
@@ -36,7 +36,7 @@ class BaseEventEncoder(ABC):
         Returns:
             Tuple containing:
                 - str: Encoded representation as string
-                - List[Union[ScreenEmitted, Dict]]: Image data for screen events
+                - List[Union[ScreenCaptured, Dict]]: Image data for screen events
 
         Raises:
             ValueError: If the raw_event format is invalid
@@ -44,7 +44,7 @@ class BaseEventEncoder(ABC):
         pass
 
     @abstractmethod
-    def decode(self, encoded_data: str, images: Optional[List[Union[ScreenEmitted, Dict]]] = None) -> Dict[str, Any]:
+    def decode(self, encoded_data: str, images: Optional[List[Union[ScreenCaptured, Dict]]] = None) -> Dict[str, Any]:
         """
         Decode encoded data back to original raw event format.
 
@@ -63,7 +63,7 @@ class BaseEventEncoder(ABC):
     @abstractmethod
     def encode_batch(
         self, raw_events: List[Dict[str, Any]]
-    ) -> Tuple[List[str], List[List[Union[ScreenEmitted, Dict]]]]:
+    ) -> Tuple[List[str], List[List[Union[ScreenCaptured, Dict]]]]:
         """
         Encode a batch of raw events.
 
@@ -73,13 +73,13 @@ class BaseEventEncoder(ABC):
         Returns:
             Tuple containing:
                 - List[str]: Batch of encoded representations as strings
-                - List[List[Union[ScreenEmitted, Dict]]]: Image data for each event
+                - List[List[Union[ScreenCaptured, Dict]]]: Image data for each event
         """
         pass
 
     @abstractmethod
     def decode_batch(
-        self, encoded_batch: List[str], all_images: Optional[List[List[Union[ScreenEmitted, Dict]]]] = None
+        self, encoded_batch: List[str], all_images: Optional[List[List[Union[ScreenCaptured, Dict]]]] = None
     ) -> List[Dict[str, Any]]:
         """
         Decode a batch of encoded data.

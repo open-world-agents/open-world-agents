@@ -17,8 +17,9 @@ import re
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from owa.core.time import TimeUnits
-from owa.env.desktop.msg import KeyboardEvent, MouseEvent
-from owa.env.gst.msg import ScreenEmitted
+from owa.msgs.desktop.keyboard import KeyboardEvent
+from owa.msgs.desktop.mouse import MouseEvent
+from owa.msgs.desktop.screen import ScreenCaptured
 
 from .base_encoder import BaseEventEncoder
 
@@ -246,7 +247,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         >>> raw_event = {
         ...     'topic': 'keyboard',
         ...     'timestamp_ns': 1745362786814673800,
-        ...     'message_type': 'owa.env.desktop.msg.KeyboardEvent',
+        ...     'message_type': 'desktop/KeyboardEvent',
         ...     'msg': '{"event_type":"press","vk":65}'
         ... }
         >>> tokens, images = encoder.encode(raw_event)
@@ -370,7 +371,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
 
         raise ValueError(f"Unknown mouse action: {action_token}")
 
-    def encode(self, raw_event: Dict[str, Any]) -> Tuple[str, List[Union[ScreenEmitted, Dict]]]:
+    def encode(self, raw_event: Dict[str, Any]) -> Tuple[str, List[Union[ScreenCaptured, Dict]]]:
         """
         Encode a single raw event to hierarchical token format.
 
@@ -385,7 +386,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         Returns:
             Tuple containing:
                 - str: Hierarchical token sequence concatenated without spaces
-                - List[Union[ScreenEmitted, Dict]]: Image data for screen events (empty for others)
+                - List[Union[ScreenCaptured, Dict]]: Image data for screen events (empty for others)
 
         Raises:
             ValueError: If the raw_event format is invalid
@@ -415,16 +416,16 @@ class HierarchicalEventEncoder(BaseEventEncoder):
             raise ValueError(f"Failed to parse message content: {e}")
 
         # Encode based on event type
-        if raw_event["topic"] == "keyboard" and raw_event["message_type"] == "owa.env.desktop.msg.KeyboardEvent":
+        if raw_event["topic"] == "keyboard" and raw_event["message_type"] == "desktop/KeyboardEvent":
             keyboard_event = KeyboardEvent(**msg_data)
             tokens.extend(self._encode_keyboard(keyboard_event))
 
-        elif raw_event["topic"] == "mouse" and raw_event["message_type"] == "owa.env.desktop.msg.MouseEvent":
+        elif raw_event["topic"] == "mouse" and raw_event["message_type"] == "desktop/MouseEvent":
             mouse_event = MouseEvent(**msg_data)
             tokens.extend(self.mouse_processor.encode_mouse_event(mouse_event))
 
-        elif raw_event["topic"] == "screen" and raw_event["message_type"] == "owa.env.gst.msg.ScreenEmitted":
-            screen_event = ScreenEmitted(**msg_data)
+        elif raw_event["topic"] == "screen" and raw_event["message_type"] == "desktop/ScreenCaptured":
+            screen_event = ScreenCaptured(**msg_data)
             tokens.append("<SCREEN>")
             # Store image data
             images.append({"screen_event": screen_event, "original_msg": raw_event["msg"]})
@@ -439,7 +440,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
     def decode(
         self,
         encoded_data: str,
-        images: Optional[List[Union[ScreenEmitted, Dict]]] = None,
+        images: Optional[List[Union[ScreenCaptured, Dict]]] = None,
         screen_size: Optional[Tuple[int, int]] = None,
     ) -> Dict[str, Any]:
         """
@@ -494,7 +495,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
             return {
                 "topic": "keyboard",
                 "timestamp_ns": timestamp_ns,
-                "message_type": "owa.env.desktop.msg.KeyboardEvent",
+                "message_type": "desktop/KeyboardEvent",
                 "msg": json.dumps(msg_data),
             }
 
@@ -521,7 +522,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
             return {
                 "topic": "mouse",
                 "timestamp_ns": timestamp_ns,
-                "message_type": "owa.env.desktop.msg.MouseEvent",
+                "message_type": "desktop/MouseEvent",
                 "msg": json.dumps(msg_data),
             }
 
@@ -534,8 +535,8 @@ class HierarchicalEventEncoder(BaseEventEncoder):
             if isinstance(image_data, dict) and "original_msg" in image_data:
                 # Use preserved original message for exact round-trip consistency
                 msg = image_data["original_msg"]
-            elif isinstance(image_data, ScreenEmitted):
-                # Fallback: convert ScreenEmitted back to JSON
+            elif isinstance(image_data, ScreenCaptured):
+                # Fallback: convert ScreenCaptured back to JSON
                 msg_dict = image_data.model_dump(exclude={"frame_arr"})
                 msg = json.dumps(msg_dict)
             elif isinstance(image_data, dict):
@@ -547,7 +548,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
             return {
                 "topic": "screen",
                 "timestamp_ns": timestamp_ns,
-                "message_type": "owa.env.gst.msg.ScreenEmitted",
+                "message_type": "desktop/ScreenCaptured",
                 "msg": msg,
             }
 
@@ -562,7 +563,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
 
     def encode_batch(
         self, raw_events: List[Dict[str, Any]]
-    ) -> Tuple[List[str], List[List[Union[ScreenEmitted, Dict]]]]:
+    ) -> Tuple[List[str], List[List[Union[ScreenCaptured, Dict]]]]:
         """
         Encode a batch of raw events.
 
@@ -572,7 +573,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         Returns:
             Tuple containing:
                 - List[str]: Hierarchical token sequences for each event as strings
-                - List[List[Union[ScreenEmitted, Dict]]]: Image data for each event
+                - List[List[Union[ScreenCaptured, Dict]]]: Image data for each event
         """
         all_tokens = []
         all_images = []
@@ -587,7 +588,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
     def decode_batch(
         self,
         encoded_batch: List[str],
-        all_images: Optional[List[List[Union[ScreenEmitted, Dict]]]] = None,
+        all_images: Optional[List[List[Union[ScreenCaptured, Dict]]]] = None,
         screen_size: Optional[Tuple[int, int]] = None,
     ) -> List[Dict[str, Any]]:
         """

@@ -35,7 +35,7 @@ from owa.data import BaseEventEncoder
 
 class BaseEventEncoder(ABC):
     @abstractmethod
-    def encode(self, raw_event: Dict[str, Any]) -> Tuple[Any, List[Union[ScreenEmitted, Dict]]]:
+    def encode(self, raw_event: Dict[str, Any]) -> Tuple[Any, List[Union[ScreenCaptured, Dict]]]:
         """Encode a single raw event."""
         pass
     
@@ -117,7 +117,7 @@ if hasattr(encoder, 'get_token_ids'):
 
 **Example Output:**
 ```
-<EVENT_START>{'topic': 'keyboard', 'timestamp_ns': 1745362786814673800, 'message_type': 'owa.env.desktop.msg.KeyboardEvent', 'msg': '{"event_type":"press","vk":65}'}<EVENT_END>
+<EVENT_START>{'topic': 'keyboard', 'timestamp_ns': 1745362786814673800, 'message_type': 'desktop/KeyboardEvent', 'msg': '{"event_type":"press","vk":65}'}<EVENT_END>
 ```
 
 **Best For:**
