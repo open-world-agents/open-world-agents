@@ -54,6 +54,16 @@ class McapMessage:
         return self._message.log_time
 
     @property
+    def log_time(self) -> int:
+        """Get the log timestamp in nanoseconds."""
+        return self._message.log_time
+
+    @property
+    def publish_time(self) -> int:
+        """Get the publish timestamp in nanoseconds."""
+        return self._message.publish_time
+
+    @property
     def message(self) -> bytes:
         """Get the raw message data."""
         return self._message.data
