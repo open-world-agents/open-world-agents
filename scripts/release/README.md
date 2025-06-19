@@ -11,25 +11,31 @@ pip install typer packaging rich tomli  # tomli only for Python < 3.11
 ## Quick Start
 
 ```bash
-# Update all packages to version 1.0.0
-python scripts/release/main.py version 1.0.0
+# Update all packages to version 1.0.0 with tagging
+vuv run scripts/release/main.py version 1.0.0
 
 # Publish to PyPI
 export PYPI_TOKEN=your_token_here
-python scripts/release/main.py publish
+vuv run scripts/release/main.py publish
 
 # Update lock files
-python scripts/release/main.py lock --upgrade
+vuv run scripts/release/main.py lock --upgrade
 ```
 
 ## Release Workflow
 
 1. **Create branch**: `git checkout -b release/v1.0.0`
-2. **Update versions**: `python scripts/release/main.py version 1.0.0`
+2. **Update versions**: `vuv run scripts/release/main.py version 1.0.0`
 3. **Create PR**: `git push origin release/v1.0.0`
 4. **Merge with rebase** (maintains clean git history)
 5. **Push tag**: `git push origin v1.0.0`
-6. **Publish**: `python scripts/release/main.py publish`
+6. **Publish**: `vuv run scripts/release/main.py publish`
+
+Above workflow can be automated with the release script:
+
+```bash
+vuv run scripts/release/main.py version $VERSION --tag --push
+```
 
 ## Commands
 
