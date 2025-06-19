@@ -23,13 +23,16 @@ git checkout -b release/v1.0.0
 
 ```bash
 # Use the release script to update all package versions
-python scripts/release/main.py new-version 1.0.0 --lock
+python scripts/release/main.py version 1.0.0
 
 # This will:
-# - Update version in all pyproject.toml files
-# - Update uv.lock files
-# - Create a commit with version changes
-# - Create a git tag
+# - Detect first-party dependencies for each package
+# - Update dependencies using 'vuv add x==v --locked'
+# - Update package version using 'vuv version v' or 'hatch version v'
+# - Create a commit with version changes and git tag (default)
+
+# Optional flags:
+python scripts/release/main.py version 1.0.0 --lock --push
 ```
 
 ### 3. Create Pull Request
@@ -89,8 +92,14 @@ git push origin --delete release/v1.0.0
 
 ## Release Script Commands
 
-- `new-version <version>` - Update versions and create tag
+- `version <version>` - Update package versions using vuv/hatch with dependency management
+  - `--lock` - Update uv.lock files after version changes
+  - `--tag/--no-tag` - Create git tag and commit changes (default: true)
+  - `--push` - Push changes to remote repository
+- `lock [ARGS]` - Run `vuv lock ARGS` in all first-party repositories
+  - Example: `lock --upgrade` to upgrade all dependencies
 - `publish` - Build and publish to PyPI
-- `upgrade-all` - Update all uv.lock files
 
 See `python scripts/release/main.py --help` for full options.
+
+**Note:** The `upgrade-all` command has been removed. Use `lock --upgrade` instead.
