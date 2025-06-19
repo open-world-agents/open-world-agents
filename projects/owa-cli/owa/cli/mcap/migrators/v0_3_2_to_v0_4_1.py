@@ -71,7 +71,7 @@ class V032ToV041Migrator(BaseMigrator):
                 with OWAMcapWriter(str(temp_path)) as writer:
                     with OWAMcapReader(str(file_path)) as reader:
                         for msg in reader.iter_messages():
-                            schema_name = analysis["schemas"].get(msg.channel.schema_id, "unknown")
+                            schema_name = msg.message_type
 
                             if schema_name in analysis["conversions"]:
                                 new_schema_name = analysis["conversions"][schema_name]
@@ -85,7 +85,7 @@ class V032ToV041Migrator(BaseMigrator):
 
                                     new_message = new_message_class(**data)
                                     writer.write_message(
-                                        msg.channel.topic,
+                                        msg.topic,
                                         new_message,
                                         publish_time=msg.publish_time,
                                         log_time=msg.log_time,
@@ -94,9 +94,17 @@ class V032ToV041Migrator(BaseMigrator):
 
                                     if verbose:
                                         console.print(f"  Migrated: {schema_name} → {new_schema_name}")
+                            else:
+                                # Copy message as-is if no conversion needed
+                                writer.write_message(
+                                    msg.topic,
+                                    msg.decoded,
+                                    publish_time=msg.publish_time,
+                                    log_time=msg.log_time,
+                                )
 
                 # Replace original file with migrated version
-                temp_path.replace(file_path)
+                shutil.move(str(temp_path), str(file_path))
 
                 return MigrationResult(
                     success=True,
