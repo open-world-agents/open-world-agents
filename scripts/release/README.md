@@ -1,96 +1,41 @@
-# Release Workflow
+# OWA Release Manager
 
-This document outlines the recommended workflow for creating and publishing OWA releases.
+CLI tool for managing OWA package releases with lockstep versioning and clean output.
 
-## Overview
-
-Use a dedicated release branch with rebase merging to maintain clean git history and proper version tagging.
-
-## Workflow Steps
-
-### 1. Create Release Branch
+## Installation
 
 ```bash
-# Start from latest main
-git checkout main
-git pull origin main
-
-# Create release branch
-git checkout -b release/v1.0.0
+pip install typer packaging rich tomli  # tomli only for Python < 3.11
 ```
 
-### 2. Update Versions
+## Quick Start
 
 ```bash
-# Use the release script to update all package versions
-python scripts/release/main.py new-version 1.0.0 --lock
+# Update all packages to version 1.0.0
+python scripts/release/main.py version 1.0.0
 
-# This will:
-# - Update version in all pyproject.toml files
-# - Update uv.lock files
-# - Create a commit with version changes
-# - Create a git tag
-```
-
-### 3. Create Pull Request
-
-```bash
-# Push release branch
-git push origin release/v1.0.0
-
-# Create PR: release/v1.0.0 → main
-# Use GitHub UI or gh CLI
-```
-
-### 4. Merge with Rebase
-
-**Option A: GitHub UI**
-- Use "Rebase and merge" button in the PR
-
-**Option B: Command Line**
-```bash
-git checkout main
-git rebase release/v1.0.0
-git push origin main
-```
-
-### 5. Push Tag
-
-```bash
-# Push the version tag to remote
-git push origin v1.0.0
-```
-
-### 6. Publish Packages
-
-```bash
-# Set PyPI token
+# Publish to PyPI
 export PYPI_TOKEN=your_token_here
-
-# Publish all packages
 python scripts/release/main.py publish
+
+# Update lock files
+python scripts/release/main.py lock --upgrade
 ```
 
-### 7. Clean Up
+## Release Workflow
 
-```bash
-# Delete release branch
-git branch -d release/v1.0.0
-git push origin --delete release/v1.0.0
-```
+1. **Create branch**: `git checkout -b release/v1.0.0`
+2. **Update versions**: `python scripts/release/main.py version 1.0.0`
+3. **Create PR**: `git push origin release/v1.0.0`
+4. **Merge with rebase** (maintains clean git history)
+5. **Push tag**: `git push origin v1.0.0`
+6. **Publish**: `python scripts/release/main.py publish`
 
-## Why Rebase?
+## Commands
 
-- ✅ Clean linear git history
-- ✅ Version tags point to actual commits, not merge commits
-- ✅ Better compatibility with release tooling
-- ✅ Easier to track version progression
-- ✅ Cleaner release notes generation
-
-## Release Script Commands
-
-- `new-version <version>` - Update versions and create tag
-- `publish` - Build and publish to PyPI
-- `upgrade-all` - Update all uv.lock files
-
-See `python scripts/release/main.py --help` for full options.
+- `version <ver>` - Update all package versions in lockstep
+  - `--lock/--no-lock` - Update uv.lock files (default: on)
+  - `--tag/--no-tag` - Create git tag and commit (default: on)
+  - `--push` - Push to remote (default: off)
+- `publish` - Build and publish all packages to PyPI
+- `lock [args]` - Run `vuv lock` in all repositories
