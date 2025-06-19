@@ -251,7 +251,6 @@ def migrate(
     files: List[Path] = typer.Argument(..., help="MCAP files to migrate"),
     target_version: Optional[str] = typer.Option(None, "--target", "-t", help="Target version (default: latest)"),
     dry_run: bool = typer.Option(False, "--dry-run", help="Show what would be migrated without making changes"),
-    force: bool = typer.Option(False, "--force", help="Force migration even if files appear up-to-date"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed migration information"),
     keep_backups: bool = typer.Option(True, "--keep-backups/--no-backups", help="Keep backup files after migration"),
 ) -> None:
@@ -289,7 +288,7 @@ def migrate(
         return
 
     # Filter files that need migration
-    files_needing_migration = [info for info in file_infos if info.needs_migration or force]
+    files_needing_migration = [info for info in file_infos if info.needs_migration]
 
     if not files_needing_migration:
         console.print("[green]✓ All files are already at the target version[/green]")
@@ -304,7 +303,7 @@ def migrate(
     table.add_column("Status", justify="center")
 
     for info in file_infos:
-        status = "🔄" if (info.needs_migration or force) else "✅"
+        status = "🔄" if info.needs_migration else "✅"
         table.add_row(str(info.file_path.name), info.detected_version, info.target_version, status)
 
     console.print(table)
