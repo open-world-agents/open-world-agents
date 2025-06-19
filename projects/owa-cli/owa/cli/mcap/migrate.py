@@ -112,6 +112,24 @@ class MigrationOrchestrator:
 
         return path
 
+    def get_highest_reachable_version(self, from_version: str) -> str:
+        """Get the highest version reachable from the given version using available migrators."""
+        if not self.migrators:
+            return from_version
+
+        # Build migration graph
+        migration_graph = {}
+        for migrator in self.migrators:
+            migration_graph[migrator.from_version] = migrator
+
+        # Follow the migration chain as far as possible
+        current = from_version
+        while current in migration_graph:
+            migrator = migration_graph[current]
+            current = migrator.to_version
+
+        return current
+
     def migrate_file(
         self, file_path: Path, target_version: Optional[str] = None, console: Console = None, verbose: bool = False
     ) -> List[MigrationResult]:
@@ -197,7 +215,9 @@ class MigrationOrchestrator:
         console.print("[red]✗ No valid backup found for rollback[/red]")
 
 
-def detect_files_needing_migration(file_paths: List[Path], console: Console) -> List[FileVersionInfo]:
+def detect_files_needing_migration(
+    file_paths: List[Path], console: Console, target_version_explicit: bool, target_version: Optional[str]
+) -> List[FileVersionInfo]:
     """Detect all files that need migration."""
     orchestrator = MigrationOrchestrator()
     file_infos = []
@@ -228,14 +248,23 @@ def detect_files_needing_migration(file_paths: List[Path], console: Console) -> 
         for file_path in valid_file_paths:
             try:
                 detected_version = orchestrator.detect_version(file_path)
-                needs_migration = detected_version != orchestrator.current_version
+
+                # Determine target version for this file
+                if target_version_explicit:
+                    # Use explicit target version
+                    file_target_version = target_version
+                    needs_migration = detected_version != target_version
+                else:
+                    # Use highest reachable version from detected version
+                    file_target_version = orchestrator.get_highest_reachable_version(detected_version)
+                    needs_migration = detected_version != file_target_version
 
                 file_infos.append(
                     FileVersionInfo(
                         file_path=file_path,
                         detected_version=detected_version,
                         needs_migration=needs_migration,
-                        target_version=orchestrator.current_version,
+                        target_version=file_target_version,
                     )
                 )
 
@@ -249,17 +278,19 @@ def detect_files_needing_migration(file_paths: List[Path], console: Console) -> 
 
 def migrate(
     files: List[Path] = typer.Argument(..., help="MCAP files to migrate"),
-    target_version: Optional[str] = typer.Option(None, "--target", "-t", help="Target version (default: latest)"),
+    target_version: Optional[str] = typer.Option(
+        None, "--target", "-t", help="Target version (default: highest reachable)"
+    ),
     dry_run: bool = typer.Option(False, "--dry-run", help="Show what would be migrated without making changes"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed migration information"),
     keep_backups: bool = typer.Option(True, "--keep-backups/--no-backups", help="Keep backup files after migration"),
 ) -> None:
     """
-    Migrate MCAP files to the latest version with automatic version detection.
+    Migrate MCAP files to the highest reachable version with automatic version detection.
 
     This command automatically detects the version of MCAP files and applies
-    sequential migrations to bring them up to the latest version. Each migration
-    step is verified and can be rolled back on failure.
+    sequential migrations to bring them up to the highest reachable version using
+    available migrators. Each migration step is verified and can be rolled back on failure.
 
     Examples:
         owl mcap migrate *.mcap                      # Migrate all MCAP files (shell expands glob)
@@ -270,18 +301,18 @@ def migrate(
     console = Console()
     orchestrator = MigrationOrchestrator()
 
-    if target_version is None:
-        target_version = orchestrator.current_version
+    # Determine target version strategy
+    target_version_explicit = target_version is not None
 
     console.print("[bold blue]MCAP Migration Tool[/bold blue]")
-    console.print(f"Target version: {target_version}")
+    console.print(f"Target version: {target_version or 'highest reachable'}")
     console.print(f"Files to process: {len(files)}")
 
     if dry_run:
         console.print("[yellow]DRY RUN MODE - No files will be modified[/yellow]")
 
     # Detect files needing migration
-    file_infos = detect_files_needing_migration(files, console)
+    file_infos = detect_files_needing_migration(files, console, target_version_explicit, target_version)
 
     if not file_infos:
         console.print("[yellow]No files found matching the pattern[/yellow]")
@@ -328,7 +359,8 @@ def migrate(
         console.print(f"\n[bold cyan]File {i}/{len(files_needing_migration)}: {info.file_path}[/bold cyan]")
 
         try:
-            results = orchestrator.migrate_file(info.file_path, target_version, console, verbose)
+            # Use the file's specific target version (which may be different from global target)
+            results = orchestrator.migrate_file(info.file_path, info.target_version, console, verbose)
 
             if results and all(r.success for r in results):
                 successful_migrations += 1
