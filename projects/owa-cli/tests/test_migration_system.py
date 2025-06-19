@@ -10,10 +10,9 @@ import pytest
 
 from owa.cli.mcap.migrate import (
     MigrationOrchestrator,
-    V030ToV032Migrator,
-    V032ToV040Migrator,
     detect_files_needing_migration,
 )
+from owa.cli.mcap.migrators import discover_migrators
 
 
 class TestMigrationOrchestrator:
@@ -69,21 +68,23 @@ class TestMigrationOrchestrator:
 class TestMigrators:
     """Test individual migrators."""
 
-    def test_v030_to_v032_migrator_properties(self):
-        """Test V030ToV032Migrator properties."""
-        migrator = V030ToV032Migrator()
-        assert migrator.from_version == "0.3.0"
-        assert migrator.to_version == "0.3.2"
+    def test_discovered_migrators_have_expected_versions(self):
+        """Test that discovered migrators have expected version transitions."""
+        migrator_classes = discover_migrators()
+        migrators = [cls() for cls in migrator_classes]
 
-    def test_v032_to_v040_migrator_properties(self):
-        """Test V032ToV040Migrator properties."""
-        migrator = V032ToV040Migrator()
-        assert migrator.from_version == "0.3.2"
-        assert migrator.to_version == "0.4.0"
+        # Should have at least 2 migrators
+        assert len(migrators) >= 2
+
+        # Check for expected version transitions
+        version_transitions = {(m.from_version, m.to_version) for m in migrators}
+        assert ("0.3.0", "0.3.2") in version_transitions
+        assert ("0.3.2", "0.4.0") in version_transitions
 
     def test_migrators_have_required_properties(self):
-        """Test that all migrators have required properties."""
-        migrators = [V030ToV032Migrator(), V032ToV040Migrator()]
+        """Test that all discovered migrators have required properties."""
+        migrator_classes = discover_migrators()
+        migrators = [cls() for cls in migrator_classes]
 
         for migrator in migrators:
             assert hasattr(migrator, "from_version")
