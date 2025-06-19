@@ -21,13 +21,9 @@ passwd -d "$USERNAME"
 
 # Install essential development packages
 apt-get update && apt-get install -y --no-install-recommends \
-    # Terminal and shell environment
     sudo bash-completion zsh tmux vim nano htop tree \
-    # Network and file utilities
     git curl wget openssh-client jq unzip rsync xz-utils locales \
-    # Compilation and build dependencies
     build-essential libssl-dev zlib1g-dev libbz2-dev liblzma-dev \
-    # Language runtime libraries
     libreadline-dev libsqlite3-dev libncursesw5-dev tk-dev libxml2-dev libxmlsec1-dev libffi-dev
 
 # Generate locale and configure user permissions
