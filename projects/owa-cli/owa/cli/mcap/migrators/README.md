@@ -46,6 +46,16 @@ Backup creation is handled centrally by the `MigrationOrchestrator` for high rel
 
 Individual migrators should **not** create their own backups. The backup path is provided to migrators for reference in the `MigrationResult` only.
 
+## Version Override During Migration
+
+To ensure correct multi-step migrations, the orchestrator temporarily overrides the library version written to MCAP files:
+
+- **Problem**: Without override, the first migration (0.3.0 → 0.3.2) would write the current library version (0.4.2) to the file header, causing the second migration (0.3.2 → 0.4.1) to be skipped
+- **Solution**: The `_override_library_version()` context manager temporarily patches `mcap_owa.writer._library_identifier()` to return the target migration version instead of the current version
+- **Result**: Each migration step writes the correct target version, enabling proper sequential migrations
+
+This ensures that a file migrated from 0.3.0 → 0.3.2 → 0.4.1 will have the correct version headers at each step.
+
 ## Version Detection
 
 Version detection is simplified and reliable:

@@ -12,7 +12,7 @@ from owa.cli.mcap.migrate import (
     MigrationOrchestrator,
     detect_files_needing_migration,
 )
-from owa.cli.mcap.migrators import discover_migrators
+from owa.cli.mcap.migrators import MigrationResult, discover_migrators
 
 
 class TestMigrationOrchestrator:
@@ -67,6 +67,28 @@ class TestMigrationOrchestrator:
 
         result = orchestrator.create_backup(source_path, backup_path)
         assert result is False
+
+    def test_override_library_version(self):
+        """Test that library version override works correctly."""
+        orchestrator = MigrationOrchestrator()
+
+        # Import the writer module to check the function
+        import mcap_owa.writer
+
+        # Store original function
+        original_func = mcap_owa.writer._library_identifier
+        original_result = original_func()
+
+        # Test that override works
+        target_version = "0.3.2"
+        with orchestrator._override_library_version(target_version):
+            overridden_result = mcap_owa.writer._library_identifier()
+            assert target_version in overridden_result
+            assert "mcap-owa-support 0.3.2" in overridden_result
+
+        # Test that function is restored after context
+        restored_result = mcap_owa.writer._library_identifier()
+        assert restored_result == original_result
 
     def test_get_migration_path_no_migration_needed(self):
         """Test migration path when no migration is needed."""
@@ -180,3 +202,63 @@ class TestMigrationIntegration:
             tmp_path = Path(tmp_file.name)
             version = orchestrator.detect_version(tmp_path)
             assert version == "0.3.2"
+
+    @patch("owa.cli.mcap.migrate.OWAMcapReader")
+    def test_multi_step_migration_version_override(self, mock_reader_class):
+        """Test that multi-step migration correctly writes intermediate versions."""
+        orchestrator = MigrationOrchestrator()
+
+        # Mock the reader to simulate version progression
+        mock_reader = MagicMock()
+
+        # First call: detect initial version as 0.3.0
+        # Second call: after first migration, should detect 0.3.2 (not current version)
+        # Third call: after second migration, should detect 0.4.1
+        mock_reader.file_version = "0.3.0"  # Initial version
+        mock_reader_class.return_value.__enter__.return_value = mock_reader
+
+        # Create a mock migrator that we can track
+        mock_migrator_1 = MagicMock()
+        mock_migrator_1.from_version = "0.3.0"
+        mock_migrator_1.to_version = "0.3.2"
+        mock_migrator_1.migrate.return_value = MigrationResult(
+            success=True,
+            version_from="0.3.0",
+            version_to="0.3.2",
+            changes_made=1,
+            backup_path=Path("/tmp/backup1.mcap"),
+        )
+
+        mock_migrator_2 = MagicMock()
+        mock_migrator_2.from_version = "0.3.2"
+        mock_migrator_2.to_version = "0.4.1"
+        mock_migrator_2.migrate.return_value = MigrationResult(
+            success=True,
+            version_from="0.3.2",
+            version_to="0.4.1",
+            changes_made=1,
+            backup_path=Path("/tmp/backup2.mcap"),
+        )
+
+        # Replace orchestrator's migrators with our mocks
+        orchestrator.migrators = [mock_migrator_1, mock_migrator_2]
+
+        with tempfile.NamedTemporaryFile(suffix=".mcap") as tmp_file:
+            tmp_path = Path(tmp_file.name)
+
+            # Test that version override context manager is used
+            with patch.object(orchestrator, "_override_library_version") as mock_override:
+                mock_override.return_value.__enter__ = MagicMock()
+                mock_override.return_value.__exit__ = MagicMock()
+
+                # This should trigger two migrations: 0.3.0 -> 0.3.2 -> 0.4.1
+                results = orchestrator.migrate_file(tmp_path, target_version="0.4.1")
+
+                # Verify migration was successful
+                assert len(results) == 2
+                assert all(result.success for result in results)
+
+                # Verify that version override was called for each migration step
+                assert mock_override.call_count == 2
+                mock_override.assert_any_call("0.3.2")  # First migration target
+                mock_override.assert_any_call("0.4.1")  # Second migration target
