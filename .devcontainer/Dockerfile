@@ -30,7 +30,7 @@ RUN --mount=type=cache,target=${HOME}/.cache,sharing=locked,uid=${USER_UID},gid=
     rm /tmp/devcontainer_user.sh
 
 # Setup conda environment and cleanup
-RUN chmod -R ${USER}:${USER} ${CONDA_INSTALL_PATH}
+RUN sudo chown -R ${USER}:${USER} ${CONDA_INSTALL_PATH}
 RUN conda clean -afy
 
 # Default configuration

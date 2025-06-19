@@ -32,14 +32,4 @@ usermod -aG sudo "$USERNAME"
 echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" > "/etc/sudoers.d/$USERNAME"
 chmod 0440 "/etc/sudoers.d/$USERNAME"
 
-# Setup docker group
-groupadd -g "$DOCKER_GID" docker 2>/dev/null || true
-usermod -aG docker "$USERNAME"
-
-# Setup conda group for efficient permission management (if conda exists)
-if [ -d "/opt/conda" ]; then
-    usermod -aG conda "$USERNAME"
-    echo "Conda group permissions configured"
-fi
-
 echo "Devcontainer setup completed successfully"
