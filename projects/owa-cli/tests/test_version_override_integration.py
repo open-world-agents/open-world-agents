@@ -10,7 +10,6 @@ import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
 
 from owa.cli.mcap.migrate import MigrationOrchestrator
 from owa.cli.mcap.migrators import MigrationResult
