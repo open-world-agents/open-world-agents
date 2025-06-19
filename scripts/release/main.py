@@ -25,7 +25,14 @@ try:
 except ImportError:
     raise ImportError("packaging is required. Install with: pip install packaging")
 
+try:
+    from rich.console import Console
+    from rich.panel import Panel
+except ImportError:
+    raise ImportError("rich is required. Install with: pip install rich")
+
 app = typer.Typer(help="OWA Release Manager - A tool for managing OWA package releases")
+console = Console()
 
 # Project paths and first-party packages
 PROJECTS = [
@@ -87,18 +94,20 @@ def get_first_party_dependencies(package_dir: Path) -> Set[str]:
     return dependencies
 
 
-def run_git_command(command: List[str]) -> str:
+def run_git_command(command: List[str], verbose: bool = False) -> str:
     """Run a git command."""
-    print(f"Running: git {' '.join(command)}")
+    if verbose:
+        console.print(f"[dim]$ git {' '.join(command)}[/dim]")
     result = subprocess.run(["git"] + command, capture_output=True, text=True, encoding="utf-8", errors="replace")
     if result.returncode != 0:
         raise RuntimeError(f"Git command failed: {result.stderr}")
     return result.stdout.strip()
 
 
-def run_command(command: List[str], cwd: Path = None) -> str:
+def run_command(command: List[str], cwd: Path = None, verbose: bool = False) -> str:
     """Run a shell command."""
-    print(f"Running: {' '.join(command)}")
+    if verbose:
+        console.print(f"[dim]$ {' '.join(command)}[/dim]")
     result = subprocess.run(command, capture_output=True, text=True, cwd=cwd, encoding="utf-8", errors="replace")
     if result.returncode != 0:
         raise RuntimeError(f"Command failed: {result.stderr}")
@@ -126,14 +135,14 @@ def version(
     if value.startswith("v"):
         value = value[1:]
 
-    print(f"Setting all package versions to: {value}")
+    console.print(Panel(f"[bold blue]Setting all package versions to: {value}[/bold blue]", title="Version Update"))
 
     # Check if tag already exists when tagging is enabled
     if tag:
         tag_name = f"v{value}"
         existing_tags = run_git_command(["tag"]).splitlines()
         if tag_name in existing_tags:
-            print(f"! Error: Tag '{tag_name}' already exists. Aborting version update.")
+            console.print(f"[bold red]✗ Error: Tag '{tag_name}' already exists. Aborting version update.[/bold red]")
             raise typer.Exit(code=1)
 
     # Process each package
@@ -141,79 +150,81 @@ def version(
     packages_updated = 0
 
     for package_dir in package_dirs:
-        print("=======================")
-        print(f"Processing package in {package_dir}")
-
         package_name = get_package_name(package_dir)
         if not package_name:
-            print(f"! Warning: Could not determine package name for {package_dir}")
+            console.print(f"[yellow]⚠ Warning: Could not determine package name for {package_dir}[/yellow]")
             continue
 
         first_party_deps = get_first_party_dependencies(package_dir)
-        print(f"Package: {package_name}")
-        print(f"First-party dependencies: {first_party_deps}")
 
-        # Step 1: Detect first-party dependencies and update them
+        # Create a clean package info display
+        console.print(f"\n[bold cyan]📦 {package_name}[/bold cyan] [dim]({package_dir})[/dim]")
+
+        if first_party_deps:
+            deps_str = ", ".join(sorted(first_party_deps))
+            console.print(f"   Dependencies: [dim]{deps_str}[/dim]")
+
+        # Step 1: Update first-party dependencies
         for dep in first_party_deps:
-            print(f"Updating dependency {dep} to version {value}")
-            run_command(["vuv", "add", f"{dep}=={value}", "--frozen"], cwd=package_dir)
-            print(f"✓ Updated {dep} dependency to {value}")
+            with console.status(f"Updating {dep} dependency..."):
+                run_command(["vuv", "add", f"{dep}=={value}", "--frozen"], cwd=package_dir)
+            console.print(f"   [green]✓[/green] Updated {dep} → {value}")
 
         # Step 2: Update package version
-        print(f"Updating {package_name} version to {value}")
-        try:
-            run_command(["vuv", "version", value], cwd=package_dir)
-            print(f"✓ Updated {package_name} version to {value} using vuv")
-        except RuntimeError:
-            run_command(["hatch", "version", value], cwd=package_dir)
-            print(f"✓ Updated {package_name} version to {value} using hatch")
-        packages_updated += 1
+        with console.status(f"Updating {package_name} version..."):
+            try:
+                run_command(["vuv", "version", value], cwd=package_dir)
+                version_tool = "vuv"
+            except RuntimeError:
+                run_command(["hatch", "version", value], cwd=package_dir)
+                version_tool = "hatch"
 
-        print("=======================")
+        console.print(f"   [green]✓[/green] Updated version → {value} [dim]({version_tool})[/dim]")
+        packages_updated += 1
 
     # Step 3: Run lock command if requested
     if lock:
-        print("Running lock command...")
+        console.print("\n[bold yellow]🔒 Updating lock files...[/bold yellow]")
         for package_dir in package_dirs:
-            run_command(["vuv", "lock"], cwd=package_dir)
-            print(f"✓ Successfully ran 'vuv lock' in {package_dir}")
+            with console.status(f"Locking {package_dir.name}..."):
+                run_command(["vuv", "lock"], cwd=package_dir)
+            console.print(f"   [green]✓[/green] {package_dir.name}")
 
     # Step 4: Commit and tag changes if requested
     if tag:
-        print("Committing version changes...")
-        files_added = False
+        console.print("\n[bold magenta]📝 Committing and tagging changes...[/bold magenta]")
 
-        for package_dir in package_dirs:
-            pyproject_file = package_dir / "pyproject.toml"
-            uv_lock_file = package_dir / "uv.lock"
+        # Check if there are any modified files to commit
+        git_status = run_git_command(["status", "--porcelain"])
 
-            if pyproject_file.exists():
-                run_git_command(["add", str(pyproject_file)])
-                files_added = True
-            if uv_lock_file.exists():
-                run_git_command(["add", str(uv_lock_file)])
-                files_added = True
+        if git_status.strip():
+            # Add all modified files (handles dynamic versioning and any other changes)
+            run_git_command(["add", "-A"])
+            files_added = True
+        else:
+            files_added = False
 
         if files_added:
             tag_name = f"v{value}"
             run_git_command(["commit", "-m", f"{tag_name}"])
             run_git_command(["tag", tag_name])
-            print(f"✓ Version updates committed and tagged as {tag_name}.")
+            console.print(f"   [green]✓[/green] Committed and tagged as [bold]{tag_name}[/bold]")
 
             # Step 5: Push changes if requested
             if push:
-                print("Pushing changes to remote repository...")
+                console.print("\n[bold blue]🚀 Pushing to remote...[/bold blue]")
                 run_git_command(["push", "origin", "main"])
                 run_git_command(["push", "origin", tag_name])
-                print("✓ Changes pushed to remote repository.")
+                console.print("   [green]✓[/green] Pushed changes and tag to remote")
             else:
-                print("")
-                print("To push changes and tag to remote repository:")
-                print(f"  git push origin main && git push origin {tag_name}")
+                console.print("\n[dim]To push changes and tag to remote:[/dim]")
+                console.print(f"[dim]  git push origin main && git push origin {tag_name}[/dim]")
         else:
-            print("No files were modified. Nothing to commit.")
+            console.print("   [yellow]⚠[/yellow] No files were modified. Nothing to commit.")
 
-    print(f"All packages have been updated to version {value}! ({packages_updated} packages processed)")
+    console.print(
+        f"\n[bold green]🎉 Success![/bold green] Updated {packages_updated} packages to version [bold]{value}[/bold]"
+    )
 
 
 @app.command()
@@ -226,36 +237,46 @@ def publish():
     """
     # Check if PyPI token is set
     if "PYPI_TOKEN" not in os.environ:
-        print("PYPI_TOKEN environment variable is not set.")
-        print("Please set it before running this script:")
-        print("  export PYPI_TOKEN=your_token_here")
+        console.print("[bold red]✗ PYPI_TOKEN environment variable is not set.[/bold red]")
+        console.print("Please set it before running this script:")
+        console.print("[dim]  export PYPI_TOKEN=your_token_here[/dim]")
         raise typer.Exit(code=1)
 
     # https://docs.astral.sh/uv/guides/package/#publishing-your-package
     os.environ["UV_PUBLISH_TOKEN"] = os.environ["PYPI_TOKEN"]
 
-    print("Building and publishing packages to PyPI...")
+    console.print(Panel("[bold blue]Building and publishing packages to PyPI[/bold blue]", title="Publish"))
+
+    published_count = 0
+    skipped_count = 0
 
     # Process each package
     for package_dir in get_package_dirs():
-        print("=======================")
-        print(f"Processing package in {package_dir}")
+        package_name = get_package_name(package_dir) or package_dir.name
 
         # Check if package directory has required files
         pyproject_exists = (package_dir / "pyproject.toml").exists()
         setup_exists = (package_dir / "setup.py").exists()
 
         if pyproject_exists or setup_exists:
-            print(f"Building and publishing package in {package_dir}")
-            run_command(["uv", "build"], cwd=package_dir)
-            run_command(["uv", "publish"], cwd=package_dir)
-            print(f"✓ Published {package_dir.name} successfully")
+            console.print(f"\n[bold cyan]📦 {package_name}[/bold cyan] [dim]({package_dir})[/dim]")
+
+            with console.status("Building package..."):
+                run_command(["uv", "build"], cwd=package_dir)
+            console.print("   [green]✓[/green] Built package")
+
+            with console.status("Publishing to PyPI..."):
+                run_command(["uv", "publish"], cwd=package_dir)
+            console.print("   [green]✓[/green] Published to PyPI")
+            published_count += 1
         else:
-            print(f"! Skipping {package_dir.name} - No pyproject.toml or setup.py found")
+            console.print(f"\n[yellow]⚠ {package_name}[/yellow] [dim]({package_dir})[/dim]")
+            console.print("   [dim]Skipped - No pyproject.toml or setup.py found[/dim]")
+            skipped_count += 1
 
-        print("=======================")
-
-    print("All packages have been built and published!")
+    console.print(f"\n[bold green]🎉 Success![/bold green] Published {published_count} packages")
+    if skipped_count > 0:
+        console.print(f"[dim]Skipped {skipped_count} packages[/dim]")
 
 
 @app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
@@ -267,19 +288,21 @@ def lock(ctx: typer.Context):
     Common usage: 'lock --upgrade' to upgrade all dependencies.
     """
     args = ctx.params.get("args", []) or ctx.args
+    args_str = " ".join(args) if args else ""
 
-    print(f"Running 'vuv lock {' '.join(args)}' in all repositories...")
+    title = f"Lock Dependencies{' ' + args_str if args_str else ''}"
+    command_desc = f"vuv lock{' ' + args_str if args_str else ''}"
+    console.print(Panel(f"[bold blue]Running '{command_desc}' in all repositories[/bold blue]", title=title))
 
     for package_dir in get_package_dirs():
-        print("=======================")
-        print(f"Processing package in {package_dir}")
+        package_name = get_package_name(package_dir) or package_dir.name
+        console.print(f"\n[bold cyan]📦 {package_name}[/bold cyan] [dim]({package_dir})[/dim]")
 
-        run_command(["vuv", "lock"] + args, cwd=package_dir)
-        print(f"✓ Successfully ran 'vuv lock {' '.join(args)}' in {package_dir}")
+        with console.status(f"Running vuv lock{' ' + args_str if args_str else ''}..."):
+            run_command(["vuv", "lock"] + args, cwd=package_dir)
+        console.print("   [green]✓[/green] Lock completed")
 
-        print("=======================")
-
-    print("Lock command completed for all repositories!")
+    console.print("\n[bold green]🎉 Success![/bold green] Lock command completed for all repositories")
 
 
 if __name__ == "__main__":
