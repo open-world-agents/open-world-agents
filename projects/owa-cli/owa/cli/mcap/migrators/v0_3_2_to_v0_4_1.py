@@ -1,5 +1,5 @@
 """
-Migrator from MCAP v0.3.2 to v0.4.0.
+Migrator from MCAP v0.3.2 to v0.4.1.
 
 This migrator handles the schema format changes:
 - Migrates from module-based schema names (e.g., 'owa.env.desktop.msg.KeyboardEvent')
@@ -22,8 +22,8 @@ except ImportError as e:
 from .base import BaseMigrator, MigrationResult
 
 
-class V032ToV040Migrator(BaseMigrator):
-    """Migrator from v0.3.2 to v0.4.0 (domain-based schema format)."""
+class V032ToV041Migrator(BaseMigrator):
+    """Migrator from v0.3.2 to v0.4.1 (domain-based schema format)."""
 
     # Legacy to new message type mapping
     LEGACY_MESSAGE_MAPPING = {
@@ -32,7 +32,7 @@ class V032ToV040Migrator(BaseMigrator):
         "owa.env.desktop.msg.MouseEvent": "desktop/MouseEvent",
         "owa.env.desktop.msg.MouseState": "desktop/MouseState",
         "owa.env.desktop.msg.WindowInfo": "desktop/WindowInfo",
-        "owa.env.gst.msg.ScreenCaptured": "desktop/ScreenCaptured",
+        "owa.env.gst.msg.ScreenEmitted": "desktop/ScreenCaptured",
     }
 
     @property
@@ -41,7 +41,7 @@ class V032ToV040Migrator(BaseMigrator):
 
     @property
     def to_version(self) -> str:
-        return "0.4.0"
+        return "0.4.1"
 
     def migrate(self, file_path: Path, backup_path: Path, console: Console, verbose: bool) -> MigrationResult:
         """Migrate legacy schemas to domain-based format."""
@@ -163,4 +163,4 @@ class V032ToV040Migrator(BaseMigrator):
 
 
 # Explicit export - only this migrator should be discovered
-__all__ = ["V032ToV040Migrator"]
+__all__ = ["V032ToV041Migrator"]

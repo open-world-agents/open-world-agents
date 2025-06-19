@@ -2,15 +2,18 @@
 
 This package contains individual migrator implementations for different MCAP version transitions. Each migrator is responsible for handling a specific version-to-version migration with verification and rollback capabilities.
 
+**Important TODO**:
+- [ ] Contanerized migration script is needed to ensure sequential migration.
+
 ## Structure
 
 ```
 migrators/
-├── __init__.py          # Package exports
-├── base.py              # Base classes and common structures
-├── v030_to_v032.py      # v0.3.0 → v0.3.2 migration
-├── v032_to_v040.py      # v0.3.2 → v0.4.0 migration
-└── README.md            # This file
+├── __init__.py              # Package exports
+├── base.py                  # Base classes and common structures
+├── v0_3_0_to_v0_3_2.py      # v0.3.0 → v0.3.2 migration
+├── v0_3_2_to_v0_4_1.py      # v0.3.2 → v0.4.1 migration
+└── README.md                # This file
 ```
 
 ## Base Classes
@@ -37,10 +40,28 @@ Data class containing the result of a migration operation:
 The migration system automatically discovers and registers migrators using `__all__` exports for safety and predictability:
 
 ### Discovery Rules
-- **File naming**: Must follow pattern `vXYZ_to_vABC.py` (e.g., `v030_to_v032.py`)
+- **File naming**: Must follow pattern `v{X}_{Y}_{Z}_to_v{A}_{B}_{C}.py` (e.g., `v0_3_0_to_v0_3_2.py`, `v1_113_0_to_v2_0_0.py`)
 - **Explicit exports**: Must define `__all__` with migrator class names
 - **Class inheritance**: Exported classes must inherit from `BaseMigrator`
 - **Location**: Must be in the `migrators/` package
+
+### File Naming Convention
+The naming convention supports full semantic versioning by replacing dots with underscores:
+
+**Examples:**
+- `v0_3_0_to_v0_3_2.py` for version 0.3.0 → 0.3.2
+- `v0_4_1_to_v1_0_0.py` for version 0.4.1 → 1.0.0
+- `v1_113_0_to_v2_0_0.py` for version 1.113.0 → 2.0.0
+- `v2_5_17_to_v3_0_0.py` for version 2.5.17 → 3.0.0
+
+**Class naming follows the same pattern:**
+- `V1_113_0_To_V2_0_0_Migrator` for the class in `v1_113_0_to_v2_0_0.py`
+
+**Benefits:**
+- ✅ **Full semantic versioning support**: Handles any X.Y.Z version format
+- ✅ **Clear version mapping**: Easy to see source and target versions
+- ✅ **Filesystem safe**: No dots in filenames that could cause issues
+- ✅ **Sortable**: Files naturally sort by version order
 
 ### Discovery Process
 1. Scans all Python files in the migrators package matching naming pattern
@@ -68,7 +89,7 @@ The migration system automatically discovers and registers migrators using `__al
 **Changes**: 
 - `pressed_vk_list` field → `buttons` field in keyboard/state messages
 
-### `V032ToV040Migrator`  
+### `V032ToV041Migrator`
 **Purpose**: Migrates to domain-based schema format
 **Changes**:
 - `owa.env.desktop.msg.KeyboardEvent` → `desktop/KeyboardEvent`
@@ -79,18 +100,18 @@ The migration system automatically discovers and registers migrators using `__al
 
 To add a new migrator for version X.Y.Z → A.B.C:
 
-1. **Create the migrator file**: `vXYZ_to_vABC.py`
+1. **Create the migrator file**: `vX_Y_Z_to_vA_B_C.py` (e.g., `v1_113_0_to_v2_0_0.py`)
 
 2. **Implement the migrator class**:
 ```python
 from .base import BaseMigrator, MigrationResult
 
-class VXYZToVABCMigrator(BaseMigrator):
+class VX_Y_Z_ToVA_B_C_Migrator(BaseMigrator):
     @property
     def from_version(self) -> str:
         return "X.Y.Z"
-    
-    @property  
+
+    @property
     def to_version(self) -> str:
         return "A.B.C"
     
@@ -106,13 +127,13 @@ class VXYZToVABCMigrator(BaseMigrator):
 3. **Add explicit export** at the end of the file:
 ```python
 # Explicit export - only this migrator should be discovered
-__all__ = ["VXYZToVABCMigrator"]
+__all__ = ["VX_Y_Z_ToVA_B_C_Migrator"]
 ```
 
 4. **That's it!** The migrator will be automatically discovered and registered.
 
 The system uses automatic discovery based on:
-- File naming pattern: `vXYZ_to_vABC.py`
+- File naming pattern: `vX_Y_Z_to_vA_B_C.py` (supports semantic versioning)
 - Explicit exports: Must define `__all__` with migrator class names
 - Class inheritance: Must inherit from `BaseMigrator`
 - No manual registration required!

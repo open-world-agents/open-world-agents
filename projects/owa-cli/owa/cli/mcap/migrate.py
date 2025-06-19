@@ -177,7 +177,7 @@ class MigrationOrchestrator:
 
             console.print(f"[green]✓ Migration successful ({result.changes_made} changes)[/green]")
 
-        console.print(f"\n[green]✓ All migrations completed successfully![/green]")
+        console.print("\n[green]✓ All migrations completed successfully![/green]")
         return results
 
     def _rollback_migrations(self, file_path: Path, results: List[MigrationResult], console: Console):
@@ -296,7 +296,7 @@ def migrate(
         return
 
     # Show summary table
-    console.print(f"\n[bold]Migration Summary[/bold]")
+    console.print("\n[bold]Migration Summary[/bold]")
     table = Table(show_header=True, header_style="bold magenta")
     table.add_column("File", style="cyan")
     table.add_column("Current Version", style="yellow")
@@ -343,7 +343,7 @@ def migrate(
             failed_migrations += 1
 
     # Final summary
-    console.print(f"\n[bold]Migration Complete[/bold]")
+    console.print("\n[bold]Migration Complete[/bold]")
     console.print(f"✅ Successful: {successful_migrations}")
     console.print(f"❌ Failed: {failed_migrations}")
 
@@ -357,7 +357,7 @@ def migrate(
             except Exception as e:
                 console.print(f"[red]Warning: Could not delete backup {backup_path}: {e}[/red]")
     elif backup_paths and keep_backups:
-        console.print(f"\n[blue]Backup files saved in .mcap_migration_backups directories[/blue]")
+        console.print("\n[blue]Backup files saved in .mcap_migration_backups directories[/blue]")
 
     if failed_migrations > 0:
         raise typer.Exit(1)
