@@ -34,5 +34,8 @@ conda config --set channel_priority strict \
     --set always_yes true \
     --set show_channel_urls true
 
+conda config --set auto_activate_base false
+echo ". activate owa" >> ~/.zshrc
+
 # Install useful tools
 pip3 install glances gpustat

@@ -71,7 +71,7 @@
 			}
 		}
 	},
-	"postCreateCommand": "echo 'OWA Development Environment Ready! 🚀' && conda info --envs",
+	"postCreateCommand": "sudo chown -R vscode:vscode /opt/conda && echo 'OWA Development Environment Ready! 🚀' && conda info --envs",
 	"features": {
 		"ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
 		"ghcr.io/devcontainers/features/git:1": {},

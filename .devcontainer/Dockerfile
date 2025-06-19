@@ -29,10 +29,6 @@ RUN --mount=type=cache,target=${HOME}/.cache,sharing=locked,uid=${USER_UID},gid=
     /tmp/devcontainer_user.sh && \
     rm /tmp/devcontainer_user.sh
 
-# Setup conda environment and cleanup
-RUN sudo chown -R ${USER}:${USER} ${CONDA_INSTALL_PATH}
-RUN conda clean -afy
-
 # Default configuration
 SHELL ["/bin/zsh", "-c"]
 CMD ["/bin/zsh"]
