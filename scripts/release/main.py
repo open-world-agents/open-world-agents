@@ -62,13 +62,9 @@ def get_package_name(package_dir: Path) -> str:
     if not pyproject_file.exists():
         return ""
 
-    try:
-        raw_toml = pyproject_file.read_text(encoding="utf-8")
-        data = tomllib.loads(raw_toml)
-        return data.get("project", {}).get("name", "")
-    except Exception as e:
-        print(f"! Warning: Failed to parse {pyproject_file}: {e}")
-        return ""
+    raw_toml = pyproject_file.read_text(encoding="utf-8")
+    data = tomllib.loads(raw_toml)
+    return data.get("project", {}).get("name", "")
 
 
 def get_first_party_dependencies(package_dir: Path) -> Set[str]:
@@ -77,25 +73,18 @@ def get_first_party_dependencies(package_dir: Path) -> Set[str]:
     if not pyproject_file.exists():
         return set()
 
-    try:
-        raw_toml = pyproject_file.read_text(encoding="utf-8")
-        data = tomllib.loads(raw_toml)
+    raw_toml = pyproject_file.read_text(encoding="utf-8")
+    data = tomllib.loads(raw_toml)
 
-        dependencies = set()
-        raw_deps = data.get("project", {}).get("dependencies", [])
+    dependencies = set()
+    raw_deps = data.get("project", {}).get("dependencies", [])
 
-        for dep_str in raw_deps:
-            try:
-                req = Requirement(dep_str)
-                if req.name in FIRST_PARTY_PACKAGES:
-                    dependencies.add(req.name)
-            except Exception as e:
-                print(f"! Warning: Failed to parse dependency '{dep_str}': {e}")
+    for dep_str in raw_deps:
+        req = Requirement(dep_str)
+        if req.name in FIRST_PARTY_PACKAGES:
+            dependencies.add(req.name)
 
-        return dependencies
-    except Exception as e:
-        print(f"! Warning: Failed to parse {pyproject_file}: {e}")
-        return set()
+    return dependencies
 
 
 def run_git_command(command: List[str]) -> str:
@@ -142,13 +131,10 @@ def version(
     # Check if tag already exists when tagging is enabled
     if tag:
         tag_name = f"v{value}"
-        try:
-            existing_tags = run_git_command(["tag"]).splitlines()
-            if tag_name in existing_tags:
-                print(f"! Error: Tag '{tag_name}' already exists. Aborting version update.")
-                raise typer.Exit(code=1)
-        except RuntimeError:
-            pass  # No tags exist yet
+        existing_tags = run_git_command(["tag"]).splitlines()
+        if tag_name in existing_tags:
+            print(f"! Error: Tag '{tag_name}' already exists. Aborting version update.")
+            raise typer.Exit(code=1)
 
     # Process each package
     package_dirs = get_package_dirs()
@@ -170,25 +156,18 @@ def version(
         # Step 1: Detect first-party dependencies and update them
         for dep in first_party_deps:
             print(f"Updating dependency {dep} to version {value}")
-            try:
-                run_command(["vuv", "add", f"{dep}=={value}", "--locked"], cwd=package_dir)
-                print(f"✓ Updated {dep} dependency to {value}")
-            except RuntimeError as e:
-                print(f"! Warning: Failed to update {dep} dependency: {e}")
+            run_command(["vuv", "add", f"{dep}=={value}", "--locked"], cwd=package_dir)
+            print(f"✓ Updated {dep} dependency to {value}")
 
         # Step 2: Update package version
         print(f"Updating {package_name} version to {value}")
         try:
             run_command(["vuv", "version", value], cwd=package_dir)
             print(f"✓ Updated {package_name} version to {value} using vuv")
-            packages_updated += 1
         except RuntimeError:
-            try:
-                run_command(["hatch", "version", value], cwd=package_dir)
-                print(f"✓ Updated {package_name} version to {value} using hatch")
-                packages_updated += 1
-            except RuntimeError as e:
-                print(f"! Error: Failed to update {package_name} version: {e}")
+            run_command(["hatch", "version", value], cwd=package_dir)
+            print(f"✓ Updated {package_name} version to {value} using hatch")
+        packages_updated += 1
 
         print("=======================")
 
@@ -196,11 +175,8 @@ def version(
     if lock:
         print("Running lock command...")
         for package_dir in package_dirs:
-            try:
-                run_command(["vuv", "lock"], cwd=package_dir)
-                print(f"✓ Successfully ran 'vuv lock' in {package_dir}")
-            except RuntimeError as e:
-                print(f"! Warning: Failed to run 'vuv lock' in {package_dir}: {e}")
+            run_command(["vuv", "lock"], cwd=package_dir)
+            print(f"✓ Successfully ran 'vuv lock' in {package_dir}")
 
     # Step 4: Commit and tag changes if requested
     if tag:
@@ -271,12 +247,9 @@ def publish():
 
         if pyproject_exists or setup_exists:
             print(f"Building and publishing package in {package_dir}")
-            try:
-                run_command(["uv", "build"], cwd=package_dir)
-                run_command(["uv", "publish"], cwd=package_dir)
-                print(f"✓ Published {package_dir.name} successfully")
-            except RuntimeError as e:
-                print(f"! Failed to publish {package_dir.name}: {e}")
+            run_command(["uv", "build"], cwd=package_dir)
+            run_command(["uv", "publish"], cwd=package_dir)
+            print(f"✓ Published {package_dir.name} successfully")
         else:
             print(f"! Skipping {package_dir.name} - No pyproject.toml or setup.py found")
 
@@ -304,11 +277,8 @@ def lock(
         print("=======================")
         print(f"Processing package in {package_dir}")
 
-        try:
-            run_command(["vuv", "lock"] + args, cwd=package_dir)
-            print(f"✓ Successfully ran 'vuv lock {' '.join(args)}' in {package_dir}")
-        except RuntimeError as e:
-            print(f"! Warning: Failed to run 'vuv lock {' '.join(args)}' in {package_dir}: {e}")
+        run_command(["vuv", "lock"] + args, cwd=package_dir)
+        print(f"✓ Successfully ran 'vuv lock {' '.join(args)}' in {package_dir}")
 
         print("=======================")
 
