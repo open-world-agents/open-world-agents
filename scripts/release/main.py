@@ -1,4 +1,13 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#     "hatch",
+#     "packaging",
+#     "rich",
+#     "typer",
+# ]
+# ///
 """
 OWA Release Manager - CLI tool for managing OWA package releases.
 """
@@ -118,7 +127,8 @@ def run_command(command: List[str], cwd: Path = None, verbose: bool = False) -> 
 def version(
     value: str = typer.Argument(..., help="Version to set for all packages (e.g., 1.0.0)"),
     lock: bool = typer.Option(True, "--lock", help="Update uv.lock files after changing versions"),
-    tag: bool = typer.Option(True, "--tag/--no-tag", help="Create git tag and commit changes"),
+    commit: bool = typer.Option(True, "--commit/--no-commit", help="Commit changes to git"),
+    tag: bool = typer.Option(False, "--tag/--no-tag", help="Create git tag (requires --commit)"),
     push: bool = typer.Option(False, "--push", help="Push changes to git remote after committing"),
 ):
     """
@@ -129,11 +139,17 @@ def version(
     2. Updates dependencies using 'vuv add x==v --frozen'
     3. Updates package version using 'vuv version v' or 'hatch version v'
     4. Optionally runs lock command if --lock is specified
-    5. Optionally commits and tags changes if --tag is specified
-    6. Optionally pushes changes if --push is specified
+    5. Optionally commits changes if --commit is specified
+    6. Optionally creates git tag if --tag is specified (requires --commit)
+    7. Optionally pushes changes if --push is specified
     """
     if value.startswith("v"):
         value = value[1:]
+
+    # Validate arguments
+    if tag and not commit:
+        console.print("[bold red]✗ Error: --tag requires --commit to be enabled.[/bold red]")
+        raise typer.Exit(code=1)
 
     console.print(Panel(f"[bold blue]Setting all package versions to: {value}[/bold blue]", title="Version Update"))
 
@@ -190,9 +206,9 @@ def version(
                 run_command(["vuv", "lock"], cwd=package_dir)
             console.print(f"   [green]✓[/green] {package_dir.name}")
 
-    # Step 4: Commit and tag changes if requested
-    if tag:
-        console.print("\n[bold magenta]📝 Committing and tagging changes...[/bold magenta]")
+    # Step 4: Commit changes if requested
+    if commit:
+        console.print("\n[bold magenta]📝 Committing changes...[/bold magenta]")
 
         # Check if there are any modified files to commit
         git_status = run_git_command(["status", "--porcelain"])
@@ -205,22 +221,36 @@ def version(
             files_added = False
 
         if files_added:
-            tag_name = f"v{value}"
-            run_git_command(["commit", "-m", f"{tag_name}"])
-            run_git_command(["tag", tag_name])
-            console.print(f"   [green]✓[/green] Committed and tagged as [bold]{tag_name}[/bold]")
+            commit_message = f"v{value}"
+            run_git_command(["commit", "-m", commit_message])
+            console.print(f"   [green]✓[/green] Committed changes with message: [bold]{commit_message}[/bold]")
 
-            # Step 5: Push changes if requested
+            # Step 5: Create tag if requested
+            if tag:
+                tag_name = f"v{value}"
+                run_git_command(["tag", tag_name])
+                console.print(f"   [green]✓[/green] Created tag: [bold]{tag_name}[/bold]")
+
+            # Step 6: Push changes if requested
             if push:
                 console.print("\n[bold blue]🚀 Pushing to remote...[/bold blue]")
                 run_git_command(["push", "origin", "main"])
-                run_git_command(["push", "origin", tag_name])
-                console.print("   [green]✓[/green] Pushed changes and tag to remote")
+                console.print("   [green]✓[/green] Pushed changes to remote")
+
+                if tag:
+                    run_git_command(["push", "origin", tag_name])
+                    console.print(f"   [green]✓[/green] Pushed tag {tag_name} to remote")
             else:
-                console.print("\n[dim]To push changes and tag to remote:[/dim]")
-                console.print(f"[dim]  git push origin main && git push origin {tag_name}[/dim]")
+                push_commands = ["git push origin main"]
+                if tag:
+                    push_commands.append(f"git push origin {tag_name}")
+
+                console.print("\n[dim]To push changes to remote:[/dim]")
+                console.print(f"[dim]  {' && '.join(push_commands)}[/dim]")
         else:
             console.print("   [yellow]⚠[/yellow] No files were modified. Nothing to commit.")
+            if tag:
+                console.print("   [yellow]⚠[/yellow] Cannot create tag without committing changes.")
 
     console.print(
         f"\n[bold green]🎉 Success![/bold green] Updated {packages_updated} packages to version [bold]{value}[/bold]"
