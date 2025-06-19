@@ -5,42 +5,29 @@ This module provides a comprehensive migration system that can:
 1. Automatically detect the version of MCAP files
 2. Apply sequential migrations to bring files up to the latest version
 3. Verify migration success and rollback on failure
-4. Handle glob patterns for batch processing
+4. Handle multiple files with shell glob expansion
 """
 
 import shutil
-import tempfile
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import List, Optional
 
 import typer
-from packaging.version import Version
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
 try:
     from mcap_owa import __version__ as mcap_owa_version
-    from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
-    from owa.core import MESSAGES
+    from mcap_owa.highlevel import OWAMcapReader
 except ImportError as e:
     typer.echo(f"Error: Required packages not available: {e}", err=True)
     typer.echo("Please install: pip install mcap-owa-support", err=True)
     raise typer.Exit(1)
 
+from dataclasses import dataclass
 
-@dataclass
-class MigrationResult:
-    """Result of a migration operation."""
-
-    success: bool
-    version_from: str
-    version_to: str
-    changes_made: int
-    error_message: Optional[str] = None
-    backup_path: Optional[Path] = None
+from .migrators import BaseMigrator, MigrationResult, get_all_migrators
 
 
 @dataclass
@@ -53,259 +40,11 @@ class FileVersionInfo:
     target_version: str
 
 
-class BaseMigrator(ABC):
-    """Base class for MCAP file migrators."""
-
-    @property
-    @abstractmethod
-    def from_version(self) -> str:
-        """Source version this migrator handles."""
-        pass
-
-    @property
-    @abstractmethod
-    def to_version(self) -> str:
-        """Target version this migrator produces."""
-        pass
-
-    @abstractmethod
-    def migrate(self, file_path: Path, backup_path: Path, console: Console, verbose: bool) -> MigrationResult:
-        """Perform the migration."""
-        pass
-
-    @abstractmethod
-    def verify_migration(self, file_path: Path, console: Console) -> bool:
-        """Verify that migration was successful."""
-        pass
-
-
-class V032ToV040Migrator(BaseMigrator):
-    """Migrator from v0.3.2 to v0.4.0 (domain-based schema format)."""
-
-    # Legacy to new message type mapping
-    LEGACY_MESSAGE_MAPPING = {
-        "owa.env.desktop.msg.KeyboardEvent": "desktop/KeyboardEvent",
-        "owa.env.desktop.msg.KeyboardState": "desktop/KeyboardState",
-        "owa.env.desktop.msg.MouseEvent": "desktop/MouseEvent",
-        "owa.env.desktop.msg.MouseState": "desktop/MouseState",
-        "owa.env.desktop.msg.WindowInfo": "desktop/WindowInfo",
-        "owa.env.gst.msg.ScreenCaptured": "desktop/ScreenCaptured",
-    }
-
-    @property
-    def from_version(self) -> str:
-        return "0.3.2"
-
-    @property
-    def to_version(self) -> str:
-        return "0.4.0"
-
-    def migrate(self, file_path: Path, backup_path: Path, console: Console, verbose: bool) -> MigrationResult:
-        """Migrate legacy schemas to domain-based format."""
-        changes_made = 0
-
-        try:
-            # Create backup
-            shutil.copy2(file_path, backup_path)
-
-            # Analyze file first
-            analysis = self._analyze_file(file_path)
-
-            if not analysis["has_legacy_messages"]:
-                return MigrationResult(
-                    success=True,
-                    version_from=self.from_version,
-                    version_to=self.to_version,
-                    changes_made=0,
-                    backup_path=backup_path,
-                )
-
-            # Perform migration using temporary file
-            with tempfile.NamedTemporaryFile(suffix=".mcap", delete=False) as tmp_file:
-                temp_path = Path(tmp_file.name)
-
-            try:
-                with OWAMcapWriter(str(temp_path)) as writer:
-                    with OWAMcapReader(str(file_path)) as reader:
-                        for msg in reader.iter_messages():
-                            schema_name = analysis["schemas"].get(msg.channel.schema_id, "unknown")
-
-                            if schema_name in analysis["conversions"]:
-                                new_schema_name = analysis["conversions"][schema_name]
-                                new_message_class = MESSAGES[new_schema_name]
-
-                                if hasattr(msg, "decoded") and msg.decoded:
-                                    if hasattr(msg.decoded, "model_dump"):
-                                        data = msg.decoded.model_dump()
-                                    else:
-                                        data = dict(msg.decoded)
-
-                                    new_message = new_message_class(**data)
-                                    writer.write_message(
-                                        msg.channel.topic,
-                                        new_message,
-                                        publish_time=msg.publish_time,
-                                        log_time=msg.log_time,
-                                    )
-                                    changes_made += 1
-
-                                    if verbose:
-                                        console.print(f"  Migrated: {schema_name} → {new_schema_name}")
-
-                # Replace original file with migrated version
-                temp_path.replace(file_path)
-
-                return MigrationResult(
-                    success=True,
-                    version_from=self.from_version,
-                    version_to=self.to_version,
-                    changes_made=changes_made,
-                    backup_path=backup_path,
-                )
-
-            except Exception as e:
-                # Clean up temp file
-                if temp_path.exists():
-                    temp_path.unlink()
-                raise e
-
-        except Exception as e:
-            return MigrationResult(
-                success=False,
-                version_from=self.from_version,
-                version_to=self.to_version,
-                changes_made=0,
-                error_message=str(e),
-                backup_path=backup_path,
-            )
-
-    def verify_migration(self, file_path: Path, console: Console) -> bool:
-        """Verify that no legacy schemas remain."""
-        try:
-            with OWAMcapReader(file_path) as reader:
-                for schema in reader.schemas.values():
-                    if schema.name in self.LEGACY_MESSAGE_MAPPING:
-                        return False
-            return True
-        except Exception:
-            return False
-
-    def _analyze_file(self, file_path: Path) -> Dict:
-        """Analyze file to determine what needs migration."""
-        analysis = {
-            "total_messages": 0,
-            "legacy_message_count": 0,
-            "has_legacy_messages": False,
-            "conversions": {},
-            "schemas": {},
-        }
-
-        with OWAMcapReader(file_path) as reader:
-            # Analyze schemas
-            for schema_id, schema in reader.schemas.items():
-                analysis["schemas"][schema_id] = schema.name
-
-                if schema.name in self.LEGACY_MESSAGE_MAPPING:
-                    new_name = self.LEGACY_MESSAGE_MAPPING[schema.name]
-                    analysis["conversions"][schema.name] = new_name
-                    analysis["has_legacy_messages"] = True
-
-            # Count messages
-            for message in reader.iter_messages():
-                analysis["total_messages"] += 1
-                if message.message_type in self.LEGACY_MESSAGE_MAPPING:
-                    analysis["legacy_message_count"] += 1
-
-        return analysis
-
-
-class V030ToV032Migrator(BaseMigrator):
-    """Migrator from v0.3.0 to v0.3.2 (keyboard state field changes)."""
-
-    @property
-    def from_version(self) -> str:
-        return "0.3.0"
-
-    @property
-    def to_version(self) -> str:
-        return "0.3.2"
-
-    def migrate(self, file_path: Path, backup_path: Path, console: Console, verbose: bool) -> MigrationResult:
-        """Migrate keyboard state field from pressed_vk_list to buttons."""
-        changes_made = 0
-
-        try:
-            # Create backup
-            shutil.copy2(file_path, backup_path)
-
-            msgs = []
-            with OWAMcapReader(file_path) as reader:
-                for schema, channel, message, decoded in reader.reader.iter_decoded_messages():
-                    if channel.topic == "keyboard/state" and "pressed_vk_list" in decoded:
-                        buttons = decoded.pop("pressed_vk_list")
-                        decoded["buttons"] = buttons
-                        changes_made += 1
-
-                        if verbose:
-                            console.print(f"  Updated keyboard/state: pressed_vk_list → buttons")
-
-                    # Reconstruct message object
-                    try:
-                        module, class_name = schema.name.rsplit(".", 1)
-                        import importlib
-
-                        module = importlib.import_module(module)
-                        cls = getattr(module, class_name)
-                        decoded = cls(**decoded)
-                    except Exception:
-                        pass
-
-                    msgs.append((message.log_time, channel.topic, decoded))
-
-            # Write back the file
-            if changes_made > 0:
-                with OWAMcapWriter(file_path) as writer:
-                    for log_time, topic, msg in msgs:
-                        writer.write_message(topic=topic, message=msg, log_time=log_time)
-
-            return MigrationResult(
-                success=True,
-                version_from=self.from_version,
-                version_to=self.to_version,
-                changes_made=changes_made,
-                backup_path=backup_path,
-            )
-
-        except Exception as e:
-            return MigrationResult(
-                success=False,
-                version_from=self.from_version,
-                version_to=self.to_version,
-                changes_made=0,
-                error_message=str(e),
-                backup_path=backup_path,
-            )
-
-    def verify_migration(self, file_path: Path, console: Console) -> bool:
-        """Verify that pressed_vk_list fields are gone."""
-        try:
-            with OWAMcapReader(file_path) as reader:
-                for msg in reader.iter_messages(topics=["keyboard/state"]):
-                    if hasattr(msg.decoded, "pressed_vk_list"):
-                        return False
-            return True
-        except Exception:
-            return False
-
-
 class MigrationOrchestrator:
     """Orchestrates sequential migrations for MCAP files."""
 
     def __init__(self):
-        self.migrators: List[BaseMigrator] = [
-            V030ToV032Migrator(),
-            V032ToV040Migrator(),
-        ]
+        self.migrators: List[BaseMigrator] = get_all_migrators()
         self.current_version = mcap_owa_version  # Use actual library version
 
     def detect_version(self, file_path: Path) -> str:
