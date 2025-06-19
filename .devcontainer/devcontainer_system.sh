@@ -21,10 +21,14 @@ passwd -d "$USERNAME"
 
 # Install essential development packages
 apt-get update && apt-get install -y --no-install-recommends \
-    sudo git curl wget vim tmux bash-completion htop tree nano jq unzip \
-    build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev \
-    libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev \
-    zsh locales rsync
+    # Terminal and shell environment
+    sudo bash-completion zsh tmux vim nano htop tree \
+    # Network and file utilities
+    git curl wget openssh-client jq unzip rsync xz-utils locales \
+    # Compilation and build dependencies
+    build-essential libssl-dev zlib1g-dev libbz2-dev liblzma-dev \
+    # Language runtime libraries
+    libreadline-dev libsqlite3-dev libncursesw5-dev tk-dev libxml2-dev libxmlsec1-dev libffi-dev
 
 # Generate locale and configure user permissions
 locale-gen en_US.UTF-8
@@ -38,11 +42,7 @@ usermod -aG docker "$USERNAME"
 
 # Setup conda group for efficient permission management (if conda exists)
 if [ -d "/opt/conda" ]; then
-    groupadd -g 2000 conda 2>/dev/null || true
     usermod -aG conda "$USERNAME"
-    # Only change group ownership (faster than chown -R)
-    chgrp -R conda /opt/conda
-    chmod -R g+w /opt/conda
     echo "Conda group permissions configured"
 fi
 

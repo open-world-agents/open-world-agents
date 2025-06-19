@@ -3,14 +3,12 @@ set -e
 
 MINIFORGE_VERSION=${1:-latest}
 CONDA_INSTALL_PATH=${2:-/opt/conda}
+CONDA_GID=2000
 
-echo "Installing Miniforge version: $MINIFORGE_VERSION"
-echo "Installation path: $CONDA_INSTALL_PATH"
-
-# Set up environment
 export DEBIAN_FRONTEND=noninteractive
 
-# Create installation directory
+# Create conda group and directory structure
+groupadd -f -g "$CONDA_GID" conda
 mkdir -p "$(dirname "$CONDA_INSTALL_PATH")"
 
 # Download and install Miniforge
@@ -22,16 +20,18 @@ wget -O miniforge.sh "$MINIFORGE_URL"
 bash miniforge.sh -b -p "$CONDA_INSTALL_PATH"
 rm miniforge.sh
 
-# Initialize and configure conda
+# Set group ownership and permissions before configuration
+chgrp -R conda "$CONDA_INSTALL_PATH"
+chmod -R 2770 "$CONDA_INSTALL_PATH"
+
+# Configure conda
 "$CONDA_INSTALL_PATH/bin/conda" init --all
 "$CONDA_INSTALL_PATH/bin/conda" config --set channel_priority strict \
     --set always_yes true \
     --set show_channel_urls true
 
-# Clean up conda installation artifacts to reduce image size
-"$CONDA_INSTALL_PATH/bin/conda" clean -afy
-
-# Install uv, virtual-uv
+# Install additional tools and clean up
 "$CONDA_INSTALL_PATH/bin/pip" install uv virtual-uv
+"$CONDA_INSTALL_PATH/bin/conda" clean -afy
 
 echo "Miniforge installation completed at: $CONDA_INSTALL_PATH"
