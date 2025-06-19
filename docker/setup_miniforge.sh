@@ -22,7 +22,9 @@ rm miniforge.sh
 
 # Set group ownership and permissions before configuration
 chgrp -R conda "$CONDA_INSTALL_PATH"
-chmod -R 2770 "$CONDA_INSTALL_PATH"
+# Add full group permissions and setgid on directories
+chmod -R g+rw "$CONDA_INSTALL_PATH"
+find "$CONDA_INSTALL_PATH" -type d -exec chmod g+xs {} \;
 
 # Configure conda
 "$CONDA_INSTALL_PATH/bin/conda" init --all
