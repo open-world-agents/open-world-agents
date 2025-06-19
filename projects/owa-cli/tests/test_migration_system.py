@@ -27,12 +27,46 @@ class TestMigrationOrchestrator:
 
         assert orchestrator.current_version == mcap_owa_version
 
-    def test_detect_version_fallback_to_current(self):
-        """Test version detection falls back to current version for non-existent file."""
+    def test_detect_version_fallback_to_unknown(self):
+        """Test version detection returns 'unknown' for non-existent file."""
         orchestrator = MigrationOrchestrator()
         non_existent_file = Path("/non/existent/file.mcap")
         version = orchestrator.detect_version(non_existent_file)
-        assert version == orchestrator.current_version
+        assert version == "unknown"
+
+    def test_create_backup_success(self):
+        """Test successful backup creation."""
+        orchestrator = MigrationOrchestrator()
+
+        with tempfile.NamedTemporaryFile(suffix=".mcap", delete=False) as tmp_file:
+            tmp_file.write(b"test content")
+            tmp_file.flush()
+            source_path = Path(tmp_file.name)
+
+        try:
+            backup_path = source_path.with_suffix(".backup.mcap")
+            result = orchestrator.create_backup(source_path, backup_path)
+
+            assert result is True
+            assert backup_path.exists()
+            assert backup_path.stat().st_size == source_path.stat().st_size
+
+        finally:
+            # Cleanup
+            if source_path.exists():
+                source_path.unlink()
+            if backup_path.exists():
+                backup_path.unlink()
+
+    def test_create_backup_nonexistent_source(self):
+        """Test backup creation with non-existent source file."""
+        orchestrator = MigrationOrchestrator()
+
+        source_path = Path("/non/existent/file.mcap")
+        backup_path = Path("/tmp/backup.mcap")
+
+        result = orchestrator.create_backup(source_path, backup_path)
+        assert result is False
 
     def test_get_migration_path_no_migration_needed(self):
         """Test migration path when no migration is needed."""
@@ -100,7 +134,7 @@ class TestDetectFilesNeedingMigration:
     def test_detect_files_no_files(self):
         """Test detection when no files are provided."""
         console = MagicMock()
-        result = detect_files_needing_migration([], console)
+        result = detect_files_needing_migration([], console, False, None)
         assert result == []
         console.print.assert_called_with("[yellow]No valid MCAP files found[/yellow]")
 
@@ -109,7 +143,7 @@ class TestDetectFilesNeedingMigration:
         console = MagicMock()
         non_existent_file = Path("/non/existent/file.mcap")
 
-        result = detect_files_needing_migration([non_existent_file], console)
+        result = detect_files_needing_migration([non_existent_file], console, False, None)
 
         assert result == []
         console.print.assert_any_call(f"[red]File not found: {non_existent_file}[/red]")

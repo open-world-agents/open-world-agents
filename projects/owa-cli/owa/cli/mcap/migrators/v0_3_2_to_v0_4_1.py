@@ -48,8 +48,7 @@ class V032ToV041Migrator(BaseMigrator):
         changes_made = 0
 
         try:
-            # Create backup
-            shutil.copy2(file_path, backup_path)
+            # Note: Backup is now handled by the orchestrator before calling this method
 
             # Analyze file first
             analysis = self._analyze_file(file_path)

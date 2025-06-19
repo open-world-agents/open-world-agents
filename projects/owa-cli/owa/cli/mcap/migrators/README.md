@@ -22,8 +22,8 @@ migrators/
 Abstract base class that all migrators must inherit from. Defines the interface:
 
 - `from_version`: Source version this migrator handles
-- `to_version`: Target version this migrator produces  
-- `migrate()`: Perform the migration with backup and verification
+- `to_version`: Target version this migrator produces
+- `migrate()`: Perform the migration (backup is handled by orchestrator)
 - `verify_migration()`: Verify that migration was successful
 
 ### `MigrationResult`
@@ -34,6 +34,28 @@ Data class containing the result of a migration operation:
 - `changes_made`: Number of changes applied
 - `error_message`: Error details if migration failed
 - `backup_path`: Path to backup file created
+
+## Backup Strategy
+
+Backup creation is handled centrally by the `MigrationOrchestrator` for high reliability:
+
+- **Centralized Logic**: All backup operations go through `MigrationOrchestrator.create_backup()`
+- **High Reliability**: Includes verification of backup size and existence
+- **Consistent Behavior**: All migrators benefit from the same robust backup logic
+- **Error Handling**: Failed backups prevent migration from proceeding
+
+Individual migrators should **not** create their own backups. The backup path is provided to migrators for reference in the `MigrationResult` only.
+
+## Version Detection
+
+Version detection is simplified and reliable:
+
+- **Primary Method**: Uses `OWAMcapReader.file_version` which reads the version from the MCAP file header
+- **Stored at Write Time**: The version is written by `mcap-owa-support` when the file is created
+- **No Complex Logic**: Eliminates the need for schema inspection or message content analysis
+- **Fallback**: If version cannot be read, defaults to current `mcap-owa-support` version
+
+This approach is more reliable than the previous complex detection logic that tried to infer versions from file content.
 
 ## Automatic Discovery
 
