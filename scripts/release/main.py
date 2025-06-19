@@ -90,7 +90,7 @@ def get_first_party_dependencies(package_dir: Path) -> Set[str]:
 def run_git_command(command: List[str]) -> str:
     """Run a git command."""
     print(f"Running: git {' '.join(command)}")
-    result = subprocess.run(["git"] + command, capture_output=True, text=True)
+    result = subprocess.run(["git"] + command, capture_output=True, text=True, encoding="utf-8", errors="replace")
     if result.returncode != 0:
         raise RuntimeError(f"Git command failed: {result.stderr}")
     return result.stdout.strip()
@@ -99,7 +99,7 @@ def run_git_command(command: List[str]) -> str:
 def run_command(command: List[str], cwd: Path = None) -> str:
     """Run a shell command."""
     print(f"Running: {' '.join(command)}")
-    result = subprocess.run(command, capture_output=True, text=True, cwd=cwd)
+    result = subprocess.run(command, capture_output=True, text=True, cwd=cwd, encoding="utf-8", errors="replace")
     if result.returncode != 0:
         raise RuntimeError(f"Command failed: {result.stderr}")
     return result.stdout.strip()
@@ -258,18 +258,15 @@ def publish():
     print("All packages have been built and published!")
 
 
-@app.command()
-def lock(
-    args: List[str] = typer.Argument(None, help="Additional arguments to pass to 'vuv lock'"),
-):
+@app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
+def lock(ctx: typer.Context):
     """
     Run 'vuv lock ARGS' in all first-party repositories.
 
     This command runs 'vuv lock' with the provided arguments in all project directories.
     Common usage: 'lock --upgrade' to upgrade all dependencies.
     """
-    if args is None:
-        args = []
+    args = ctx.params.get("args", []) or ctx.args
 
     print(f"Running 'vuv lock {' '.join(args)}' in all repositories...")
 
