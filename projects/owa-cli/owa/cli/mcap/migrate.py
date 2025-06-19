@@ -48,41 +48,46 @@ class MigrationOrchestrator:
         self.current_version = mcap_owa_version  # Use actual library version
 
     def detect_version(self, file_path: Path) -> str:
-        """Detect the version of an MCAP file."""
+        """Detect the version of an MCAP file using mcap-owa-support's stored version."""
         try:
-            # Try to read version from OWAMcapReader first (most reliable)
-            try:
-                with OWAMcapReader(file_path) as reader:
-                    file_version = reader.file_version
-                    if file_version and file_version != "unknown":
-                        return file_version
-            except Exception:
-                pass
-
-            # Check for legacy format (old schema names) - treat as 0.3.2 since they need schema migration
-            try:
-                with OWAMcapReader(file_path) as reader:
-                    for schema in reader.schemas.values():
-                        if schema.name.startswith("owa.env."):
-                            return "0.3.2"
-            except Exception:
-                pass
-
-            # Check for v0.3.0 format (keyboard state field changes)
-            try:
-                with OWAMcapReader(file_path) as reader:
-                    for msg in reader.iter_messages(topics=["keyboard/state"]):
-                        if hasattr(msg.decoded, "pressed_vk_list"):
-                            return "0.3.0"
-                        break
-            except Exception:
-                pass
-
-            # Default to current version if we can't detect
-            return self.current_version
-
+            with OWAMcapReader(file_path) as reader:
+                file_version = reader.file_version
+                if file_version and file_version != "unknown":
+                    return file_version
+                # If version is unknown, default to current version
+                return self.current_version
         except Exception:
             return "unknown"
+
+    def create_backup(self, file_path: Path, backup_path: Path) -> bool:
+        """
+        Create a backup of the file with high reliability.
+
+        Args:
+            file_path: Source file to backup
+            backup_path: Destination backup path
+
+        Returns:
+            True if backup was successful, False otherwise
+        """
+        try:
+            # Ensure backup directory exists
+            backup_path.parent.mkdir(parents=True, exist_ok=True)
+
+            # Create backup with metadata preservation
+            shutil.copy2(file_path, backup_path)
+
+            # Verify backup was created successfully
+            if not backup_path.exists():
+                return False
+
+            # Verify backup size matches original
+            if backup_path.stat().st_size != file_path.stat().st_size:
+                return False
+
+            return True
+        except Exception:
+            return False
 
     def get_migration_path(self, from_version: str, to_version: str) -> List[BaseMigrator]:
         """Get the sequence of migrators needed to go from one version to another."""
@@ -168,13 +173,18 @@ class MigrationOrchestrator:
                 f"\n[bold]Step {i + 1}/{len(migration_path)}: {migrator.from_version} → {migrator.to_version}[/bold]"
             )
 
-            # Create backup for this step
+            # Create backup for this step using centralized backup logic
             backup_path = (
                 backup_dir
                 / f"{file_path.stem}_backup_{migrator.from_version}_to_{migrator.to_version}{file_path.suffix}"
             )
 
-            # Perform migration
+            # Create backup with high reliability
+            if not self.create_backup(file_path, backup_path):
+                console.print(f"[red]✗ Failed to create backup at {backup_path}[/red]")
+                return results
+
+            # Perform migration (migrator no longer handles backup)
             result = migrator.migrate(file_path, backup_path, console, verbose)
             results.append(result)
 

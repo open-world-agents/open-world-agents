@@ -5,7 +5,6 @@ This migrator handles the keyboard state field changes:
 - Changes `pressed_vk_list` field to `buttons` in keyboard/state messages
 """
 
-import shutil
 from pathlib import Path
 
 from rich.console import Console
@@ -34,9 +33,7 @@ class V030ToV032Migrator(BaseMigrator):
         changes_made = 0
 
         try:
-            # Create backup
-            shutil.copy2(file_path, backup_path)
-
+            # Note: Backup is now handled by the orchestrator before calling this method
             msgs = []
             with OWAMcapReader(file_path) as reader:
                 for schema, channel, message, decoded in reader.reader.iter_decoded_messages():
