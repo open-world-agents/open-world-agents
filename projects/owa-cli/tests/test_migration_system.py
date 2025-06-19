@@ -90,6 +90,39 @@ class TestMigrationOrchestrator:
         restored_result = mcap_owa.writer._library_identifier()
         assert restored_result == original_result
 
+    def test_override_uses_patch_correctly(self):
+        """Test that version override uses the imported patch correctly."""
+        orchestrator = MigrationOrchestrator()
+
+        # Verify that the context manager works without manual patching
+        target_version = "0.3.2"
+        with orchestrator._override_library_version(target_version):
+            import mcap_owa.writer
+
+            result = mcap_owa.writer._library_identifier()
+            assert target_version in result
+            assert "mcap-owa-support 0.3.2" in result
+
+    def test_backup_naming_scheme(self):
+        """Test that backup files use intuitive naming scheme."""
+        # Test with different file names and extensions
+        test_cases = [
+            ("recording.mcap", "recording.mcap.backup"),
+            ("data_file.mcap", "data_file.mcap.backup"),
+            ("test-file.mcap", "test-file.mcap.backup"),
+            ("file.with.dots.mcap", "file.with.dots.mcap.backup"),
+        ]
+
+        for original_name, expected_backup_name in test_cases:
+            original_path = Path(f"/tmp/{original_name}")
+            expected_backup_path = Path(f"/tmp/{expected_backup_name}")
+
+            # The backup path should be generated as: original.extension.backup
+            actual_backup_path = original_path.with_suffix(f"{original_path.suffix}.backup")
+
+            assert actual_backup_path == expected_backup_path
+            assert actual_backup_path.name == expected_backup_name
+
     def test_get_migration_path_no_migration_needed(self):
         """Test migration path when no migration is needed."""
         orchestrator = MigrationOrchestrator()

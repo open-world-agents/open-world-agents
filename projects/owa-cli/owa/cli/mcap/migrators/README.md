@@ -43,8 +43,30 @@ Backup creation is handled centrally by the `MigrationOrchestrator` for high rel
 - **High Reliability**: Includes verification of backup size and existence
 - **Consistent Behavior**: All migrators benefit from the same robust backup logic
 - **Error Handling**: Failed backups prevent migration from proceeding
+- **Simple Naming**: Backup files use intuitive naming: `original.mcap.backup` instead of complex version-specific names
+- **Single Backup**: One backup per file (created before migration starts) instead of multiple backups per migration step
 
 Individual migrators should **not** create their own backups. The backup path is provided to migrators for reference in the `MigrationResult` only.
+
+### Backup Naming Examples
+
+- `recording.mcap` → `recording.mcap.backup`
+- `data_file.mcap` → `data_file.mcap.backup`
+- `experiment-2024.mcap` → `experiment-2024.mcap.backup`
+
+### Glob-Friendly Naming
+
+The `.backup` suffix makes it easy to find all backup files:
+```bash
+# Find all backup files
+ls *.mcap.backup
+
+# Remove all backup files
+rm *.mcap.backup
+
+# Count backup files
+ls *.mcap.backup | wc -l
+```
 
 ## Version Override During Migration
 

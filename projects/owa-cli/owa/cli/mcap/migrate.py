@@ -100,10 +100,6 @@ class MigrationOrchestrator:
         This ensures that migrated files have the correct target version
         in their headers instead of the current library version.
         """
-        import mcap_owa.writer
-
-        # Store original function
-        original_library_identifier = mcap_owa.writer._library_identifier
 
         # Create patched function that returns target version
         def patched_library_identifier():
@@ -112,13 +108,9 @@ class MigrationOrchestrator:
             mcap_version = getattr(mcap, "__version__", "<=0.0.10")
             return f"mcap-owa-support {target_version}; mcap {mcap_version}"
 
-        try:
-            # Apply patch
-            mcap_owa.writer._library_identifier = patched_library_identifier
+        # Use the imported patch decorator
+        with patch("mcap_owa.writer._library_identifier", patched_library_identifier):
             yield
-        finally:
-            # Restore original function
-            mcap_owa.writer._library_identifier = original_library_identifier
 
     def get_migration_path(self, from_version: str, to_version: str) -> List[BaseMigrator]:
         """Get the sequence of migrators needed to go from one version to another."""
@@ -196,24 +188,19 @@ class MigrationOrchestrator:
         console.print(f"Migration path: {' → '.join([m.from_version for m in migration_path] + [target_version])}")
 
         results = []
-        backup_dir = file_path.parent / ".mcap_migration_backups"
-        backup_dir.mkdir(exist_ok=True)
+
+        # Create a single backup before starting migration (only for the first step)
+        backup_path = file_path.with_suffix(f"{file_path.suffix}.backup")
+
+        # Create backup with high reliability before any migration
+        if not self.create_backup(file_path, backup_path):
+            console.print(f"[red]✗ Failed to create backup at {backup_path}[/red]")
+            return results
 
         for i, migrator in enumerate(migration_path):
             console.print(
                 f"\n[bold]Step {i + 1}/{len(migration_path)}: {migrator.from_version} → {migrator.to_version}[/bold]"
             )
-
-            # Create backup for this step using centralized backup logic
-            backup_path = (
-                backup_dir
-                / f"{file_path.stem}_backup_{migrator.from_version}_to_{migrator.to_version}{file_path.suffix}"
-            )
-
-            # Create backup with high reliability
-            if not self.create_backup(file_path, backup_path):
-                console.print(f"[red]✗ Failed to create backup at {backup_path}[/red]")
-                return results
 
             # Perform migration with version override to ensure correct target version is written
             with self._override_library_version(migrator.to_version):
@@ -223,7 +210,7 @@ class MigrationOrchestrator:
             if not result.success:
                 console.print(f"[red]✗ Migration failed: {result.error_message}[/red]")
                 # Rollback all previous migrations
-                self._rollback_migrations(file_path, results, console)
+                self._rollback_migrations(file_path, backup_path, console)
                 return results
 
             # Verify migration
@@ -240,19 +227,17 @@ class MigrationOrchestrator:
         console.print("\n[green]✓ All migrations completed successfully![/green]")
         return results
 
-    def _rollback_migrations(self, file_path: Path, results: List[MigrationResult], console: Console):
-        """Rollback migrations by restoring from the first backup."""
+    def _rollback_migrations(self, file_path: Path, backup_path: Path, console: Console):
+        """Rollback migrations by restoring from the backup."""
         console.print("[yellow]Rolling back migrations...[/yellow]")
 
-        # Find the first successful backup
-        for result in results:
-            if result.backup_path and result.backup_path.exists():
-                try:
-                    shutil.copy2(result.backup_path, file_path)
-                    console.print(f"[green]✓ Restored from backup: {result.backup_path}[/green]")
-                    return
-                except Exception as e:
-                    console.print(f"[red]✗ Failed to restore backup: {e}[/red]")
+        if backup_path and backup_path.exists():
+            try:
+                shutil.copy2(backup_path, file_path)
+                console.print(f"[green]✓ Restored from backup: {backup_path}[/green]")
+                return
+            except Exception as e:
+                console.print(f"[red]✗ Failed to restore backup: {e}[/red]")
 
         console.print("[red]✗ No valid backup found for rollback[/red]")
 
@@ -406,8 +391,9 @@ def migrate(
 
             if results and all(r.success for r in results):
                 successful_migrations += 1
-                # Collect backup paths
-                backup_paths.extend([r.backup_path for r in results if r.backup_path])
+                # Collect backup path (now only one per file)
+                if results and results[0].backup_path:
+                    backup_paths.append(results[0].backup_path)
             else:
                 failed_migrations += 1
 
@@ -430,7 +416,7 @@ def migrate(
             except Exception as e:
                 console.print(f"[red]Warning: Could not delete backup {backup_path}: {e}[/red]")
     elif backup_paths and keep_backups:
-        console.print("\n[blue]Backup files saved in .mcap_migration_backups directories[/blue]")
+        console.print("\n[blue]Backup files saved with .mcap.backup extension[/blue]")
 
     if failed_migrations > 0:
         raise typer.Exit(1)
