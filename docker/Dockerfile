@@ -15,7 +15,7 @@ ENV USER=root UID=0 GID=0 HOME=/root
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && apt-get install -y --no-install-recommends \
-    wget ca-certificates
+    git curl wget ca-certificates build-essential
 
 # Install miniforge
 COPY ./setup_miniforge.sh /tmp/setup_miniforge.sh

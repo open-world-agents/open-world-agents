@@ -4,29 +4,42 @@ Simple Docker setup for Open World Agents development and training.
 
 ## 🏗️ What You Get
 
-Four images that build on each other:
+Two separate workflows:
 
+**Main Workflow (Production):**
 ```
 owa/base:latest     ← CUDA + Python foundation
     ↓
-owa/base:dev        ← + Development tools
+owa/runtime:latest  ← + Project dependencies
     ↓
-owa/runtime:dev     ← + Project dependencies
-    ↓
-owa/train:dev       ← + ML packages (PyTorch, etc.)
+owa/train:latest    ← + ML packages (PyTorch, etc.)
+```
+
+**Devcontainer Workflow (Development):**
+```
+Any base image → Add dev tools → Dev variant
+owa/base:latest    → owa/base:dev
+owa/runtime:latest → owa/runtime:dev
+owa/train:latest   → owa/train:dev
 ```
 
 ## 🚀 Quick Start
 
-**Just want to train models?**
+**Just want to train models? (Production)**
 ```bash
 make train
-docker run -it owa/train:dev
+docker run -it owa/train:latest
+```
+
+**Want development environment?**
+```bash
+# Use VS Code with devcontainer extension
+# or build manually in .devcontainer/ directory
 ```
 
 **Want everything?**
 ```bash
-make all
+make all      # Build main workflow (base, runtime, train)
 ```
 
 **Want to customize?**
@@ -48,10 +61,9 @@ make all
 ### Make (Recommended)
 ```bash
 make base      # Build foundation
-make dev       # Build dev environment
-make project   # Build project environment
+make runtime   # Build runtime environment
 make train     # Build training environment
-make all       # Build everything
+make all       # Build all images
 
 make clean     # Remove all images
 make list      # Show built images
@@ -59,10 +71,10 @@ make list      # Show built images
 
 ### Build Script (More Options)
 ```bash
-./build.sh train                                        # Build owa/train:dev
+./build.sh train                                        # Build owa/train:latest
 ./build.sh train --from owa/base:latest                 # Build from custom base
 ./build.sh train -t my-train:minimal                    # Build my-train:minimal
-./build.sh --registry ghcr.io/user --push all          # Build and push all
+./build.sh --registry ghcr.io/user --push all          # Build and push all images
 ```
 
 ### Make with Custom Options
@@ -76,23 +88,23 @@ make dev TAG=my-dev:custom
 
 ## 🎯 Common Use Cases
 
-**I want to develop:**
+**I want to develop (with VS Code devcontainer):**
 ```bash
-make dev
-docker run -it owa/base:dev
+# Open in VS Code with devcontainer extension
+# Uses .devcontainer/devcontainer.json automatically
 ```
 
 **I want to run the project:**
 ```bash
-make project
-docker run -it owa/runtime:dev
+make runtime
+docker run -it owa/runtime:latest
 ```
 
 **I want to train models:**
 ```bash
 make train
-docker run -it owa/train:dev
-# Working directory: /workspace/projects/nanovlm
+docker run -it owa/train:latest
+# Working directory: /workspace/projects/nanoVLM
 # Branch: feature/data
 # Packages: torch, transformers, wandb, etc.
 ```
@@ -105,10 +117,11 @@ docker run -it owa/train:dev
 
 ## 📦 What's Inside
 
-- **owa/base:latest** (~8GB) - CUDA 12.1 + Python 3.11 + Miniforge
-- **owa/base:dev** (~9GB) - + zsh, git, development tools
-- **owa/runtime:dev** (~10GB) - + project dependencies
-- **owa/train:dev** (~12GB) - + PyTorch, transformers, wandb, datasets
+- **owa/base:latest** (~8GB) - CUDA 12.6 + Python 3.11 + Miniforge
+- **owa/runtime:latest** (~10GB) - + project dependencies
+- **owa/train:latest** (~12GB) - + PyTorch, transformers, wandb, datasets
+
+For development environments, see `.devcontainer/` directory.
 
 ## 🔧 Advanced Options
 
@@ -138,3 +151,28 @@ make help        # Show make targets
 ```
 
 **Problems?** The build script automatically handles dependencies - just run what you need!
+
+## 📁 Directory Structure
+
+```
+docker/                     # Main Docker files
+├── Dockerfile              # Base image (CUDA + Miniforge)
+├── Dockerfile.runtime      # Runtime image (+ project deps)
+├── Dockerfile.train        # Training image (+ ML packages)
+├── setup_runtime.sh        # Runtime setup script
+├── setup_miniforge.sh      # Miniforge installation
+├── build.sh               # Build script
+├── Makefile               # Make targets
+└── README.md              # This file
+
+.devcontainer/             # Devcontainer files
+├── devcontainer.json      # VS Code devcontainer config
+├── Dockerfile             # Single devcontainer Dockerfile (adds dev tools to any base)
+├── devcontainer_system.sh # System setup for devcontainer
+└── devcontainer_user.sh   # User setup for devcontainer
+```
+
+The separation allows:
+- **Main workflow**: Clean production images without dev tools
+- **Single devcontainer**: One Dockerfile that adds dev tools to any base image
+- **Flexibility**: Transform any image (base, runtime, train) into a dev variant

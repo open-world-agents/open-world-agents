@@ -54,10 +54,9 @@ Usage: $0 [OPTIONS] [IMAGES...]
 
 IMAGES:
     base        Build owa/base:latest
-    dev         Build owa/base:dev
-    project     Build owa/runtime:dev
-    train       Build owa/train:dev
-    all         Build all images (default)
+    runtime     Build owa/runtime:latest
+    train       Build owa/train:latest
+    all         Build all images (base, runtime, train)
 
 OPTIONS:
     -t, --tag NAME:TAG         Output image name and tag (like docker build -t)
@@ -68,11 +67,10 @@ OPTIONS:
     -h, --help                 Show help
 
 EXAMPLES:
-    $0 train                                        # Build owa/train:dev
+    $0 train                                        # Build owa/train:latest
     $0 train --from owa/base:latest                 # Build from custom base
     $0 train -t my-train:minimal                    # Build my-train:minimal
-    $0 train --from owa/base:latest -t my-train:v1  # Build my-train:v1 from base
-    $0 --registry ghcr.io/user --push all          # Build and push all
+    $0 --registry ghcr.io/user --push all          # Build and push all images
 
 EOF
 }
@@ -87,7 +85,7 @@ while [[ $# -gt 0 ]]; do
         --push) PUSH=true; shift ;;
         --no-cache) CACHE=false; shift ;;
         -h|--help) show_help; exit 0 ;;
-        base|dev|project|train|all) IMAGES_TO_BUILD+=("$1"); shift ;;
+        base|runtime|train|all) IMAGES_TO_BUILD+=("$1"); shift ;;
         *) log_error "Unknown option: $1"; show_help; exit 1 ;;
     esac
 done
@@ -96,7 +94,7 @@ done
 [ ${#IMAGES_TO_BUILD[@]} -eq 0 ] && IMAGES_TO_BUILD=("all")
 
 # Expand "all"
-[[ " ${IMAGES_TO_BUILD[*]} " =~ " all " ]] && IMAGES_TO_BUILD=("base" "dev" "project" "train")
+[[ " ${IMAGES_TO_BUILD[*]} " =~ " all " ]] && IMAGES_TO_BUILD=("base" "runtime" "train")
 
 # Warn if using custom tag with multiple images
 if [ -n "$CUSTOM_TAG" ] && [ ${#IMAGES_TO_BUILD[@]} -gt 1 ]; then
@@ -113,9 +111,8 @@ get_defaults() {
     local type="$1"
     case $type in
         base) echo "owa/base:latest" ;;
-        dev) echo "owa/base:dev" ;;
-        project) echo "owa/runtime:dev" ;;
-        train) echo "owa/train:dev" ;;
+        runtime) echo "owa/runtime:latest" ;;
+        train) echo "owa/train:latest" ;;
     esac
 }
 
@@ -159,17 +156,11 @@ build_image() {
     # Build command
     local cmd="docker build $CACHE_OPTS"
 
-    # Add user args for dev/project/train
-    if [[ "$type" != "base" ]]; then
-        cmd="$cmd --build-arg USER_UID=$USER_UID --build-arg USER_GID=$USER_GID --build-arg DOCKER_GID=$DOCKER_GID"
-    fi
-
     # Add base image arg
     if [ -n "$base" ]; then
         case $type in
-            dev) cmd="$cmd --build-arg BASE_IMAGE=$base" ;;
-            project) cmd="$cmd --build-arg BASE_DEV_IMAGE=$base" ;;
-            train) cmd="$cmd --build-arg RUNTIME_DEV_IMAGE=$base" ;;
+            runtime) cmd="$cmd --build-arg BASE_IMAGE=$base" ;;
+            train) cmd="$cmd --build-arg RUNTIME_IMAGE=$base" ;;
         esac
     fi
 
@@ -217,9 +208,8 @@ BUILT_IMAGES=()
 # Get default base for image type
 get_base() {
     case $1 in
-        dev) echo "${REGISTRY_PREFIX}owa/base:latest" ;;
-        project) echo "${REGISTRY_PREFIX}owa/base:dev" ;;
-        train) echo "${REGISTRY_PREFIX}owa/runtime:dev" ;;
+        runtime) echo "${REGISTRY_PREFIX}owa/base:latest" ;;
+        train) echo "${REGISTRY_PREFIX}owa/runtime:latest" ;;
     esac
 }
 
@@ -229,22 +219,15 @@ exists() { docker image inspect "$1" >/dev/null 2>&1; }
 # Build dependencies if needed (only when using defaults)
 ensure_deps() {
     case $1 in
-        dev)
+        runtime)
             local base="${REGISTRY_PREFIX}owa/base:latest"
             exists "$base" || build_image "base" "Dockerfile" ""
             ;;
-        project)
-            local dev="${REGISTRY_PREFIX}owa/base:dev"
-            if ! exists "$dev"; then
-                ensure_deps "dev"
-                build_image "dev" "Dockerfile.dev" "${REGISTRY_PREFIX}owa/base:latest"
-            fi
-            ;;
         train)
-            local project="${REGISTRY_PREFIX}owa/runtime:dev"
-            if ! exists "$project"; then
-                ensure_deps "project"
-                build_image "project" "Dockerfile.project-dev" "${REGISTRY_PREFIX}owa/base:dev"
+            local runtime="${REGISTRY_PREFIX}owa/runtime:latest"
+            if ! exists "$runtime"; then
+                ensure_deps "runtime"
+                build_image "runtime" "Dockerfile.runtime" "${REGISTRY_PREFIX}owa/base:latest"
             fi
             ;;
     esac
@@ -256,20 +239,15 @@ for image in "${IMAGES_TO_BUILD[@]}"; do
         base)
             build_image "base" "Dockerfile" ""
             ;;
-        dev)
-            base="${CUSTOM_BASE_IMAGE:-$(get_base dev)}"
-            [ -z "$CUSTOM_BASE_IMAGE" ] && ensure_deps "dev"
-            build_image "dev" "Dockerfile.dev" "$base"
-            ;;
-        project)
-            base="${CUSTOM_BASE_IMAGE:-$(get_base project)}"
-            [ -z "$CUSTOM_BASE_IMAGE" ] && ensure_deps "project"
-            build_image "project" "Dockerfile.project-dev" "$base"
+        runtime)
+            base="${CUSTOM_BASE_IMAGE:-$(get_base runtime)}"
+            [ -z "$CUSTOM_BASE_IMAGE" ] && ensure_deps "runtime"
+            build_image "runtime" "Dockerfile.runtime" "$base"
             ;;
         train)
             base="${CUSTOM_BASE_IMAGE:-$(get_base train)}"
             [ -z "$CUSTOM_BASE_IMAGE" ] && ensure_deps "train"
-            build_image "train" "Dockerfile.train-dev" "$base"
+            build_image "train" "Dockerfile.train" "$base"
             ;;
     esac
 done

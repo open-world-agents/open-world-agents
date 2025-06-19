@@ -21,10 +21,10 @@ passwd -d "$USERNAME"
 
 # Install essential development packages
 apt-get update && apt-get install -y --no-install-recommends \
-    sudo git curl wget vim tmux bash-completion htop tree \
+    sudo git curl wget vim tmux bash-completion htop tree nano jq unzip \
     build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev \
     libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev \
-    zsh locales
+    zsh locales rsync
 
 # Generate locale and configure user permissions
 locale-gen en_US.UTF-8
@@ -35,5 +35,15 @@ chmod 0440 "/etc/sudoers.d/$USERNAME"
 # Setup docker group
 groupadd -g "$DOCKER_GID" docker 2>/dev/null || true
 usermod -aG docker "$USERNAME"
+
+# Setup conda group for efficient permission management (if conda exists)
+if [ -d "/opt/conda" ]; then
+    groupadd -g 2000 conda 2>/dev/null || true
+    usermod -aG conda "$USERNAME"
+    # Only change group ownership (faster than chown -R)
+    chgrp -R conda /opt/conda
+    chmod -R g+w /opt/conda
+    echo "Conda group permissions configured"
+fi
 
 echo "Devcontainer setup completed successfully"

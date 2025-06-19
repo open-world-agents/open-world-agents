@@ -1,5 +1,5 @@
-# Dev Image - Base + Development Tools
-ARG BASE_IMAGE=owa/base:latest
+# Devcontainer Image - Add Development Tools to Any Base Image
+ARG BASE_IMAGE=owa/train:latest
 FROM ${BASE_IMAGE}
 
 # User setup arguments
@@ -10,7 +10,7 @@ ARG DOCKER_GID=998
 ARG CONDA_INSTALL_PATH=/opt/conda
 
 # System setup (packages, user creation, permissions)
-COPY ./devcontainer_system.sh /tmp/devcontainer_system.sh
+COPY ./.devcontainer/devcontainer_system.sh /tmp/devcontainer_system.sh
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     chmod +x /tmp/devcontainer_system.sh && \
@@ -23,15 +23,14 @@ ENV USER=${USERNAME} UID=${USER_UID} GID=${USER_GID} HOME=/home/${USERNAME}
 WORKDIR ${HOME}
 
 # User environment setup (shell, tools, conda) - copy script last for better caching
-COPY --chown=${USER}:${USER} ./devcontainer_user.sh /tmp/devcontainer_user.sh
+COPY --chown=${USER}:${USER} ./.devcontainer/devcontainer_user.sh /tmp/devcontainer_user.sh
 RUN --mount=type=cache,target=${HOME}/.cache,sharing=locked,uid=${USER_UID},gid=${USER_GID} \
     chmod +x /tmp/devcontainer_user.sh && \
     /tmp/devcontainer_user.sh && \
     rm /tmp/devcontainer_user.sh
 
-# Finalize conda permissions and cleanup
-RUN sudo chown -R ${UID}:${GID} ${CONDA_INSTALL_PATH} && \
-    sudo rm -rf ${CONDA_INSTALL_PATH}/pkgs/cache
+# Setup conda environment and cleanup (group permissions already set in system script)
+RUN conda clean -afy
 
 # Default configuration
 SHELL ["/bin/zsh", "-c"]

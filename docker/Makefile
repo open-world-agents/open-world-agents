@@ -1,6 +1,6 @@
 # OWA Docker Makefile - Simple Build Interface
 
-.PHONY: help base dev project train all clean list
+.PHONY: help base runtime train all clean list
 
 # Default values
 REGISTRY ?=
@@ -10,16 +10,14 @@ PUSH ?= false
 help: ## Show help
 	@echo "🐳 OWA Docker Build"
 	@echo ""
-	@echo "Simple targets:"
+	@echo "Main workflow (base -> runtime -> train):"
 	@echo "  make base      # Build owa/base:latest"
-	@echo "  make dev       # Build owa/base:dev"
-	@echo "  make project   # Build owa/runtime:dev"
-	@echo "  make train     # Build owa/train:dev"
+	@echo "  make runtime   # Build owa/runtime:latest"
+	@echo "  make train     # Build owa/train:latest"
 	@echo "  make all       # Build all images"
 	@echo ""
 	@echo "Custom builds:"
 	@echo "  make train FROM=owa/base:latest TAG=my-train:minimal"
-	@echo "  make dev TAG=my-dev:custom"
 	@echo ""
 	@echo "Utilities:"
 	@echo "  make clean     # Remove all images"
@@ -30,15 +28,14 @@ help: ## Show help
 	@echo "  TAG=...        # Output image name:tag (like docker -t)"
 	@echo "  REGISTRY=...   # Docker registry prefix"
 	@echo "  PUSH=true      # Push after build"
+	@echo ""
+	@echo "For devcontainer builds, use .devcontainer/ directory"
 
 base: ## Build base image
 	./build.sh $(if $(REGISTRY),--registry $(REGISTRY)) $(if $(TAG),-t $(TAG)) $(if $(FROM),--from $(FROM)) $(if $(filter true,$(PUSH)),--push) base
 
-dev: ## Build dev image
-	./build.sh $(if $(REGISTRY),--registry $(REGISTRY)) $(if $(TAG),-t $(TAG)) $(if $(FROM),--from $(FROM)) $(if $(filter true,$(PUSH)),--push) dev
-
-project: ## Build project image
-	./build.sh $(if $(REGISTRY),--registry $(REGISTRY)) $(if $(TAG),-t $(TAG)) $(if $(FROM),--from $(FROM)) $(if $(filter true,$(PUSH)),--push) project
+runtime: ## Build runtime image
+	./build.sh $(if $(REGISTRY),--registry $(REGISTRY)) $(if $(TAG),-t $(TAG)) $(if $(FROM),--from $(FROM)) $(if $(filter true,$(PUSH)),--push) runtime
 
 train: ## Build training image
 	./build.sh $(if $(REGISTRY),--registry $(REGISTRY)) $(if $(TAG),-t $(TAG)) $(if $(FROM),--from $(FROM)) $(if $(filter true,$(PUSH)),--push) train
@@ -48,7 +45,7 @@ all: ## Build all images
 
 clean: ## Remove all images
 	@echo "🧹 Cleaning up..."
-	-docker rmi owa/train:dev owa/runtime:dev owa/base:dev owa/base:latest 2>/dev/null || true
+	-docker rmi owa/train:latest owa/runtime:latest owa/base:latest 2>/dev/null || true
 
 list: ## List built images
 	@echo "📋 Built images:"
