@@ -117,7 +117,7 @@ def version(
 
     This command:
     1. Detects first-party dependencies for each package
-    2. Updates dependencies using 'vuv add x==v --locked'
+    2. Updates dependencies using 'vuv add x==v --frozen'
     3. Updates package version using 'vuv version v' or 'hatch version v'
     4. Optionally runs lock command if --lock is specified
     5. Optionally commits and tags changes if --tag is specified
@@ -156,7 +156,7 @@ def version(
         # Step 1: Detect first-party dependencies and update them
         for dep in first_party_deps:
             print(f"Updating dependency {dep} to version {value}")
-            run_command(["vuv", "add", f"{dep}=={value}", "--locked"], cwd=package_dir)
+            run_command(["vuv", "add", f"{dep}=={value}", "--frozen"], cwd=package_dir)
             print(f"✓ Updated {dep} dependency to {value}")
 
         # Step 2: Update package version
