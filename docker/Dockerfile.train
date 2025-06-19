@@ -6,13 +6,12 @@ FROM ${RUNTIME_IMAGE}
 ARG CONDA_INSTALL_PATH=/opt/conda
 
 # Install ML packages using uv
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    --mount=type=cache,target=${CONDA_INSTALL_PATH}/pkgs,sharing=locked \
+RUN --mount=type=cache,target=${HOME}/.cache/uv,sharing=locked \
+    --mount=type=cache,target=${HOME}/.cache/pip,sharing=locked \
     . activate owa && vuv pip install torch numpy torchvision pillow datasets huggingface-hub transformers wandb
 
 # Clone and checkout open-world-agents to feature/data branch with optimizations
-RUN --mount=type=cache,target=/root/.cache/git,sharing=locked \
+RUN --mount=type=cache,target=${HOME}/.cache/git,sharing=locked \
     git clone --depth=1 --branch=feature/data --single-branch \
     https://github.com/open-world-agents/open-world-agents.git /tmp/owa-repo && \
     cd /tmp/owa-repo && \
