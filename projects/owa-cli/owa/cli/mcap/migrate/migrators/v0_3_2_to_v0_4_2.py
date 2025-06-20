@@ -7,7 +7,10 @@
 #   "easydict>=1.10",
 #   "orjson>=3.8.0",
 #   "typer>=0.12.0",
+#   "numpy>=2.2.0",
 #   "mcap-owa-support==0.4.2",
+#   "owa-core==0.4.2",
+#   "owa-msgs==0.4.2",
 # ]
 # [tool.uv]
 # exclude-newer = "2025-06-22T00:00:00Z"
@@ -27,11 +30,8 @@ import orjson
 import typer
 from rich.console import Console
 
-try:
-    from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
-except ImportError as e:
-    print(f"Error: Required packages not available: {e}")
-    sys.exit(1)
+from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
+from owa.core import MESSAGES
 
 app = typer.Typer(help="MCAP Migration: v0.3.2 → v0.4.2")
 
@@ -126,8 +126,7 @@ def migrate(
                     else:
                         data = dict(decoded)
 
-                    new_message = SimpleMessageClass(**data)
-                    new_message._type = new_schema_name
+                    new_message = MESSAGES[new_schema_name](**data)
                     msgs.append((message.log_time, channel.topic, new_message))
                     changes_made += 1
 
