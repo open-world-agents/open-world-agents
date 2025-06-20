@@ -43,17 +43,11 @@ class ScriptMigrator:
     from_version: str
     to_version: str
 
-    def migrate(
-        self, file_path: Path, console: Console, verbose: bool, backup_path: Optional[Path] = None
-    ) -> MigrationResult:
+    def migrate(self, file_path: Path, console: Console, verbose: bool) -> MigrationResult:
         """Execute the standalone migration script."""
         try:
             # Build command for migrate subcommand
             cmd = ["uv", "run", str(self.script_path), "migrate", str(file_path)]
-
-            # Add backup path if provided
-            if backup_path:
-                cmd.extend(["--backup", str(backup_path)])
 
             if verbose:
                 cmd.append("--verbose")
@@ -104,7 +98,7 @@ class ScriptMigrator:
 
             # Add backup path if provided
             if backup_path:
-                cmd.extend(["--backup", str(backup_path)])
+                cmd.extend(["--backup-path", str(backup_path)])
 
             # Execute verification
             result = subprocess.run(
@@ -407,7 +401,7 @@ class MigrationOrchestrator:
                 console.print("Using script migrator")
 
             # Perform migration using script migrator
-            result = migrator.migrate(file_path, console, verbose, backup_path)
+            result = migrator.migrate(file_path, console, verbose)
             results.append(result)
 
             if not result.success:

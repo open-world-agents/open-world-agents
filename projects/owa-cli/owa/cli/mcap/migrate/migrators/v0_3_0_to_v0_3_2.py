@@ -37,7 +37,6 @@ def migrate(
     output_file: Optional[Path] = typer.Argument(
         None, help="Output MCAP file (optional, defaults to overwriting input)"
     ),
-    backup: Optional[Path] = typer.Option(None, "--backup", help="Backup file path (for reference)"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed information"),
 ) -> None:
     """Migrate MCAP file from v0.3.0 to v0.3.2."""
@@ -89,7 +88,7 @@ def migrate(
 @app.command()
 def verify(
     file_path: Path = typer.Argument(..., help="MCAP file to verify"),
-    backup: Optional[Path] = typer.Option(None, "--backup", help="Backup file path (for reference)"),
+    backup_path: Optional[Path] = typer.Option(None, help="Backup file path (for reference)"),
 ) -> None:
     """Verify that pressed_vk_list fields are gone."""
     console = Console()
