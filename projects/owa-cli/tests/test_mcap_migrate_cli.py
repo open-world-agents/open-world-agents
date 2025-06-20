@@ -2,6 +2,7 @@
 Tests for the `owl mcap migrate` CLI command.
 """
 
+import re
 import shutil
 import warnings
 from pathlib import Path
@@ -10,6 +11,12 @@ from unittest.mock import patch
 import pytest
 
 from owa.cli import app
+
+
+def strip_ansi_codes(text: str) -> str:
+    """Strip ANSI escape codes from text for more reliable testing."""
+    ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+    return ansi_escape.sub("", text)
 
 
 def copy_test_file(source_dir: Path, filename: str, dest_dir: Path) -> Path:
@@ -27,9 +34,11 @@ def test_migrate_help(cli_runner):
     """Test migrate command help."""
     result = cli_runner.invoke(app, ["mcap", "migrate", "--help"])
     assert result.exit_code == 0
-    assert "Migrate MCAP files" in result.stdout
-    assert "--target" in result.stdout
-    assert "--dry-run" in result.stdout
+    # Strip ANSI codes for more reliable testing in CI environments
+    clean_output = strip_ansi_codes(result.stdout)
+    assert "Migrate MCAP files" in clean_output
+    assert "--target" in clean_output
+    assert "--dry-run" in clean_output
 
 
 def test_migrate_nonexistent_file(cli_runner):
