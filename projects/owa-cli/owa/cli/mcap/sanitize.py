@@ -95,6 +95,7 @@ def sanitize_mcap_file(
 
     backup_path = file_path.with_suffix(f"{file_path.suffix}.backup")
     temp_path = file_path.with_suffix(f"{file_path.suffix}.temp")
+    backup_created = False
 
     total_messages = 0
     kept_messages = 0
@@ -149,6 +150,7 @@ def sanitize_mcap_file(
 
         # Create backup before making changes
         create_backup(file_path, backup_path)
+        backup_created = True
 
         # Second pass: write sanitized file
         keep_current_events = False
@@ -192,8 +194,8 @@ def sanitize_mcap_file(
         if temp_path.exists():
             temp_path.unlink()
 
-        # Rollback if backup exists
-        if backup_path.exists() and not dry_run:
+        # Rollback only if backup was successfully created and we're not in dry-run mode
+        if backup_created and not dry_run:
             rollback_from_backup(file_path, backup_path, console)
             backup_path.unlink()
 
