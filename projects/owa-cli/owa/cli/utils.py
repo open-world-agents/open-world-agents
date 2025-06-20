@@ -22,7 +22,7 @@ def get_local_version(package_name: str = "owa.cli") -> str:
 def get_latest_release() -> str:
     # Skip GitHub API call if disabled via environment variable (e.g., during testing)
     if os.environ.get("OWA_DISABLE_VERSION_CHECK"):
-        return "0.4.2"  # Return a reasonable default version
+        return get_local_version()  # Return the locally installed version as the default
 
     url = "https://api.github.com/repos/open-world-agents/open-world-agents/releases/latest"
     response = requests.get(url, timeout=5)
