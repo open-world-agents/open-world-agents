@@ -11,10 +11,25 @@ This package contains individual migrator implementations for different MCAP ver
 migrators/
 ├── __init__.py              # Package exports
 ├── base.py                  # Base classes and common structures
-├── v0_3_0_to_v0_3_2.py      # v0.3.0 → v0.3.2 migration
-├── v0_3_2_to_v0_4_1.py      # v0.3.2 → v0.4.1 migration
+├── v0_3_0_to_v0_3_2.py      # v0.3.0 → v0.3.2 migration (uv script)
+├── v0_3_2_to_v0_4_1.py      # v0.3.2 → v0.4.1 migration (uv script)
 └── README.md                # This file
 ```
+
+## Migration Types
+
+This package supports two types of migrators:
+
+### uv Scripts (Preferred)
+- **Dependency Isolation**: Each script has its own frozen dependencies
+- **Reproducibility**: Dependencies frozen to git tag dates using `exclude-newer`
+- **Clean Interface**: Separate `migrate` and `verify` commands
+- **Standalone**: Can be run independently with `uv run`
+
+### Class-based Migrators (Fallback)
+- **Integrated**: Use project dependencies
+- **Legacy Support**: Maintain compatibility with existing workflows
+- **Automatic Discovery**: Based on `__all__` exports
 
 ## Base Classes
 

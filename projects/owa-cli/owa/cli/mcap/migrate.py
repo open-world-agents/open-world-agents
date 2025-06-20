@@ -9,6 +9,7 @@ This module provides a comprehensive migration system that can:
 """
 
 import shutil
+import subprocess
 from contextlib import contextmanager
 from pathlib import Path
 from typing import List, Optional
@@ -33,6 +34,71 @@ from .migrators import BaseMigrator, MigrationResult, get_all_migrators
 
 
 @dataclass
+class ScriptMigrator:
+    """Represents a standalone migration script."""
+
+    script_path: Path
+    from_version: str
+    to_version: str
+
+    def migrate(self, file_path: Path, console: Console, verbose: bool) -> MigrationResult:
+        """Execute the standalone migration script."""
+        try:
+            # Build command for migrate subcommand
+            cmd = ["uv", "run", str(self.script_path), "migrate", str(file_path)]
+            if verbose:
+                cmd.append("--verbose")
+
+            # Execute script
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                cwd=self.script_path.parent.parent.parent.parent,  # Run from owa-cli directory
+            )
+
+            if result.returncode == 0:
+                # Count changes from output (simple heuristic)
+                changes_made = 1 if "changes made" in result.stdout else 0
+                return MigrationResult(
+                    success=True, version_from=self.from_version, version_to=self.to_version, changes_made=changes_made
+                )
+            else:
+                return MigrationResult(
+                    success=False,
+                    version_from=self.from_version,
+                    version_to=self.to_version,
+                    changes_made=0,
+                    error_message=result.stderr.strip() or result.stdout.strip(),
+                )
+
+        except Exception as e:
+            return MigrationResult(
+                success=False,
+                version_from=self.from_version,
+                version_to=self.to_version,
+                changes_made=0,
+                error_message=str(e),
+            )
+
+    def verify_migration(self, file_path: Path, backup_path: Optional[Path], console: Console) -> bool:
+        """Verify migration by running the script with --verify flag."""
+        try:
+            # Build verification command
+            cmd = ["uv", "run", str(self.script_path), "verify", str(file_path)]
+
+            # Execute verification
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, cwd=self.script_path.parent.parent.parent.parent
+            )
+
+            return result.returncode == 0
+
+        except Exception:
+            return False
+
+
+@dataclass
 class FileVersionInfo:
     """Information about an MCAP file's version."""
 
@@ -45,9 +111,61 @@ class FileVersionInfo:
 class MigrationOrchestrator:
     """Orchestrates sequential migrations for MCAP files."""
 
-    def __init__(self):
-        self.migrators: List[BaseMigrator] = get_all_migrators()
+    def __init__(self, use_scripts: bool = True):
+        """
+        Initialize the orchestrator.
+
+        Args:
+            use_scripts: If True, prefer standalone scripts over class-based migrators
+        """
+        self.use_scripts = use_scripts
+        self.migrators: List[BaseMigrator] = []
+        self.script_migrators: List[ScriptMigrator] = []
         self.current_version = mcap_owa_version  # Use actual library version
+
+        # Discover available migrators
+        if use_scripts:
+            self._discover_script_migrators()
+
+        # Always discover class-based migrators as fallback
+        self.migrators = get_all_migrators()
+
+    def _discover_script_migrators(self):
+        """Discover standalone migration scripts."""
+        try:
+            # Get the migrators directory relative to this file
+            # migrate.py is in owa/cli/mcap/, migrators are in owa/cli/mcap/migrators/
+            current_file = Path(__file__)
+            migrators_dir = current_file.parent / "migrators"
+
+            if not migrators_dir.exists():
+                return
+
+            # Look for migration scripts - check if they're uv scripts
+            script_patterns = [
+                ("v0_3_0_to_v0_3_2.py", "0.3.0", "0.3.2"),
+                ("v0_3_2_to_v0_4_1.py", "0.3.2", "0.4.1"),
+            ]
+
+            for script_name, from_version, to_version in script_patterns:
+                script_path = migrators_dir / script_name
+                if script_path.exists():
+                    # Check if it's a uv script by looking for the shebang
+                    try:
+                        with open(script_path, "r") as f:
+                            first_line = f.readline().strip()
+                            if first_line.startswith("#!/usr/bin/env -S uv run --script"):
+                                self.script_migrators.append(
+                                    ScriptMigrator(
+                                        script_path=script_path, from_version=from_version, to_version=to_version
+                                    )
+                                )
+                    except Exception:
+                        pass
+
+        except Exception:
+            # If script discovery fails, fall back to class-based migrators
+            pass
 
     def detect_version(self, file_path: Path) -> str:
         """Detect the version of an MCAP file using mcap-owa-support's stored version."""
@@ -116,15 +234,23 @@ class MigrationOrchestrator:
         with patch("mcap_owa.writer._library_identifier", patched_library_identifier):
             yield
 
-    def get_migration_path(self, from_version: str, to_version: str) -> List[BaseMigrator]:
+    def get_migration_path(self, from_version: str, to_version: str):
         """Get the sequence of migrators needed to go from one version to another."""
         if from_version == to_version:
             return []
 
-        # Build migration graph
+        # Build migration graph - prefer scripts over class-based migrators
         migration_graph = {}
+
+        # Add script migrators first (higher priority)
+        if self.use_scripts:
+            for migrator in self.script_migrators:
+                migration_graph[migrator.from_version] = migrator
+
+        # Add class-based migrators (lower priority, won't override scripts)
         for migrator in self.migrators:
-            migration_graph[migrator.from_version] = migrator
+            if migrator.from_version not in migration_graph:
+                migration_graph[migrator.from_version] = migrator
 
         # Find path from source to target
         path = []
@@ -146,13 +272,21 @@ class MigrationOrchestrator:
 
     def get_highest_reachable_version(self, from_version: str) -> str:
         """Get the highest version reachable from the given version using available migrators."""
-        if not self.migrators:
+        if not self.migrators and not self.script_migrators:
             return from_version
 
-        # Build migration graph
+        # Build migration graph - prefer scripts over class-based migrators
         migration_graph = {}
+
+        # Add script migrators first (higher priority)
+        if self.use_scripts:
+            for migrator in self.script_migrators:
+                migration_graph[migrator.from_version] = migrator
+
+        # Add class-based migrators (lower priority)
         for migrator in self.migrators:
-            migration_graph[migrator.from_version] = migrator
+            if migrator.from_version not in migration_graph:
+                migration_graph[migrator.from_version] = migrator
 
         # Follow the migration chain as far as possible
         current = from_version
@@ -206,9 +340,20 @@ class MigrationOrchestrator:
                 f"\n[bold]Step {i + 1}/{len(migration_path)}: {migrator.from_version} → {migrator.to_version}[/bold]"
             )
 
-            # Perform migration with version override to ensure correct target version is written
-            with self._override_library_version(migrator.to_version):
+            # Show which type of migrator is being used
+            migrator_type = "script" if isinstance(migrator, ScriptMigrator) else "class-based"
+            if verbose:
+                console.print(f"Using {migrator_type} migrator")
+
+            # Perform migration
+            if isinstance(migrator, ScriptMigrator):
+                # Script migrators handle their own backup and don't need version override
                 result = migrator.migrate(file_path, console, verbose)
+            else:
+                # Class-based migrators need version override
+                with self._override_library_version(migrator.to_version):
+                    result = migrator.migrate(file_path, console, verbose)
+
             results.append(result)
 
             if not result.success:
@@ -315,6 +460,7 @@ def migrate(
     dry_run: bool = typer.Option(False, "--dry-run", help="Show what would be migrated without making changes"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed migration information"),
     keep_backups: bool = typer.Option(True, "--keep-backups/--no-backups", help="Keep backup files after migration"),
+    use_scripts: bool = typer.Option(True, "--scripts/--no-scripts", help="Use standalone uv scripts (default: True)"),
 ) -> None:
     """
     Migrate MCAP files to the highest reachable version with automatic version detection.
@@ -330,7 +476,18 @@ def migrate(
         owl mcap migrate *.mcap --target 0.3.2       # Migrate to specific version
     """
     console = Console()
-    orchestrator = MigrationOrchestrator()
+    orchestrator = MigrationOrchestrator(use_scripts=use_scripts)
+
+    # Show migrator information if verbose
+    if verbose:
+        script_count = len(orchestrator.script_migrators)
+        class_count = len(orchestrator.migrators)
+        console.print(f"[dim]Available migrators: {script_count} scripts, {class_count} class-based[/dim]")
+        if use_scripts and script_count > 0:
+            console.print("[dim]Using standalone uv scripts (preferred)[/dim]")
+        elif class_count > 0:
+            console.print("[dim]Using class-based migrators[/dim]")
+        console.print()
 
     # Determine target version strategy
     target_version_explicit = target_version is not None
