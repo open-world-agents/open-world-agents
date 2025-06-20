@@ -64,11 +64,7 @@ class ScriptMigrator:
                 # Count changes from output (simple heuristic) TODO
                 changes_made = 1 if "changes made" in result.stdout else 0
                 return MigrationResult(
-                    success=True,
-                    version_from=self.from_version,
-                    version_to=self.to_version,
-                    changes_made=changes_made,
-                    backup_path=backup_path,
+                    success=True, version_from=self.from_version, version_to=self.to_version, changes_made=changes_made
                 )
             else:
                 return MigrationResult(
@@ -77,7 +73,6 @@ class ScriptMigrator:
                     version_to=self.to_version,
                     changes_made=0,
                     error_message=result.stderr.strip() or result.stdout.strip(),
-                    backup_path=backup_path,
                 )
 
         except Exception as e:
@@ -87,7 +82,6 @@ class ScriptMigrator:
                 version_to=self.to_version,
                 changes_made=0,
                 error_message=str(e),
-                backup_path=backup_path,
             )
 
     def verify_migration(self, file_path: Path, backup_path: Optional[Path], console: Console) -> bool:
@@ -402,6 +396,7 @@ class MigrationOrchestrator:
 
             # Perform migration using script migrator
             result = migrator.migrate(file_path, console, verbose)
+            result.backup_path = backup_path  # FIXME: better flow
             results.append(result)
 
             if not result.success:
