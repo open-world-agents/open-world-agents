@@ -8,6 +8,7 @@ This module provides a comprehensive migration system using standalone script mi
 4. Handle multiple files with shell glob expansion
 """
 
+import os
 import shutil
 import subprocess
 from dataclasses import dataclass
@@ -35,6 +36,13 @@ class MigrationResult:
     backup_path: Optional[Path] = None
 
 
+def _get_subprocess_env():
+    """Get environment variables for subprocess calls with proper encoding."""
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "utf-8"
+    return env
+
+
 @dataclass
 class ScriptMigrator:
     """Represents a standalone migration script."""
@@ -52,22 +60,27 @@ class ScriptMigrator:
             if verbose:
                 cmd.append("--verbose")
 
-            # Execute script
-            result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+            # Execute script with error handling for encoding issues
+            result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", env=_get_subprocess_env())
 
             if result.returncode == 0:
                 # Count changes from output (simple heuristic) TODO
-                changes_made = 1 if "changes made" in result.stdout else 0
+                changes_made = 1 if result.stdout and "changes made" in result.stdout else 0
                 return MigrationResult(
                     success=True, version_from=self.from_version, version_to=self.to_version, changes_made=changes_made
                 )
             else:
+                # Safely handle None values for stderr/stdout
+                stderr_msg = result.stderr.strip() if result.stderr else ""
+                stdout_msg = result.stdout.strip() if result.stdout else ""
+                error_message = stderr_msg or stdout_msg or "Unknown error occurred"
+
                 return MigrationResult(
                     success=False,
                     version_from=self.from_version,
                     version_to=self.to_version,
                     changes_made=0,
-                    error_message=result.stderr.strip() or result.stdout.strip(),
+                    error_message=error_message,
                 )
 
         except Exception as e:
@@ -89,8 +102,8 @@ class ScriptMigrator:
             if backup_path:
                 cmd.extend(["--backup-path", str(backup_path)])
 
-            # Execute verification
-            result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+            # Execute verification with error handling for encoding issues
+            result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", env=_get_subprocess_env())
 
             return result.returncode == 0
 
@@ -352,17 +365,17 @@ class MigrationOrchestrator:
         console.print(f"Detected version: {current_version}")
 
         if current_version == target_version:
-            console.print("[green]✓ File is already at target version[/green]")
+            console.print("[green]File is already at target version[/green]")
             return []
 
         try:
             migration_path = self.get_migration_path(current_version, target_version)
         except ValueError as e:
-            console.print(f"[red]✗ {e}[/red]")
+            console.print(f"[red]Migration error: {e}[/red]")
             return []
 
         if not migration_path:
-            console.print("[green]✓ No migration needed[/green]")
+            console.print("[green]No migration needed[/green]")
             return []
 
         console.print(f"Migration path: {' → '.join([m.from_version for m in migration_path] + [target_version])}")
@@ -376,7 +389,7 @@ class MigrationOrchestrator:
         try:
             self.create_backup(file_path, backup_path)
         except Exception as e:
-            console.print(f"[red]✗ Failed to create backup at {backup_path}: {e}[/red]")
+            console.print(f"[red]Failed to create backup at {backup_path}: {e}[/red]")
             return results
 
         for i, migrator in enumerate(migration_path):
@@ -393,23 +406,23 @@ class MigrationOrchestrator:
             results.append(result)
 
             if not result.success:
-                console.print(f"[red]✗ Migration failed: {result.error_message}[/red]")
+                console.print(f"[red]Migration failed: {result.error_message}[/red]")
                 # Rollback all previous migrations
                 self._rollback_migrations(file_path, backup_path, console)
                 return results
 
             # Verify migration
             if not migrator.verify_migration(file_path, backup_path, console):
-                console.print("[red]✗ Migration verification failed[/red]")
+                console.print("[red]Migration verification failed[/red]")
                 result.success = False
                 result.error_message = "Verification failed"
                 # Rollback all previous migrations
                 self._rollback_migrations(file_path, backup_path, console)
                 return results
 
-            console.print(f"[green]✓ Migration successful ({result.changes_made} changes)[/green]")
+            console.print(f"[green]Migration successful ({result.changes_made} changes)[/green]")
 
-        console.print("\n[green]✓ All migrations completed successfully![/green]")
+        console.print("\n[green]All migrations completed successfully![/green]")
         return results
 
     def _rollback_migrations(self, file_path: Path, backup_path: Path, console: Console) -> None:
@@ -420,12 +433,12 @@ class MigrationOrchestrator:
             try:
                 shutil.copy2(backup_path, file_path)
                 backup_path.unlink()
-                console.print(f"[green]✓ Restored from backup: {backup_path}[/green]")
+                console.print(f"[green]Restored from backup: {backup_path}[/green]")
                 return
             except Exception as e:
-                console.print(f"[red]✗ Failed to restore backup: {e}[/red]")
+                console.print(f"[red]Failed to restore backup: {e}[/red]")
 
-        console.print("[red]✗ No valid backup found for rollback[/red]")
+        console.print("[red]No valid backup found for rollback[/red]")
 
 
 def detect_files_needing_migration(
@@ -541,7 +554,7 @@ def migrate(
     files_needing_migration = [info for info in file_infos if info.needs_migration]
 
     if not files_needing_migration:
-        console.print("[green]✓ All files are already at the target version[/green]")
+        console.print("[green]All files are already at the target version[/green]")
         return
 
     # Show summary table
@@ -553,7 +566,7 @@ def migrate(
     table.add_column("Status", justify="center")
 
     for info in file_infos:
-        status = "🔄" if info.needs_migration else "✅"
+        status = "MIGRATE" if info.needs_migration else "OK"
         table.add_row(str(info.file_path.name), info.detected_version, info.target_version, status)
 
     console.print(table)
@@ -590,13 +603,13 @@ def migrate(
                 failed_migrations += 1
 
         except Exception as e:
-            console.print(f"[red]✗ Unexpected error: {e}[/red]")
+            console.print(f"[red]Unexpected error: {e}[/red]")
             failed_migrations += 1
 
     # Final summary
     console.print("\n[bold]Migration Complete[/bold]")
-    console.print(f"✅ Successful: {successful_migrations}")
-    console.print(f"❌ Failed: {failed_migrations}")
+    console.print(f"[green]Successful: {successful_migrations}[/green]")
+    console.print(f"[red]Failed: {failed_migrations}[/red]")
 
     # Handle backups
     if backup_paths and not keep_backups:
