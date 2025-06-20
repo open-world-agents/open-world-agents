@@ -370,6 +370,15 @@ def detect_files_needing_migration(
     return file_infos
 
 
+def _check_uv_available() -> bool:
+    """Check if uv is available in the system."""
+    try:
+        result = subprocess.run(["uv", "--version"], capture_output=True, text=True)
+        return result.returncode == 0
+    except FileNotFoundError:
+        return False
+
+
 def migrate(
     files: List[Path] = typer.Argument(..., help="MCAP files to migrate"),
     target_version: Optional[str] = typer.Option(
@@ -384,6 +393,15 @@ def migrate(
     Migrate MCAP files to the highest reachable version with automatic version detection.
     """
     console = Console()
+
+    # Check if uv is available before proceeding
+    if not _check_uv_available():
+        console.print("[red]Error: 'uv' is not installed or not available in PATH[/red]")
+        console.print(
+            "[yellow]Please install uv first: https://docs.astral.sh/uv/getting-started/installation/[/yellow]"
+        )
+        raise typer.Exit(1)
+
     orchestrator = MigrationOrchestrator()
 
     if verbose:
