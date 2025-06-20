@@ -22,23 +22,60 @@ class TestMcapVersionFunctions:
 
     def test_get_latest_version_success(self):
         """Test successful retrieval of latest version from GitHub API."""
-        mock_response = MagicMock()
-        mock_response.json.return_value = [
-            {"tag_name": "releases/mcap-cli/v0.0.54"},
-            {"tag_name": "releases/rust/v0.19.0"},
-            {"tag_name": "releases/mcap-cli/v0.0.53"},
-        ]
-        mock_response.raise_for_status.return_value = None
+        import os
 
-        with patch("owa.cli.mcap.info.requests.get", return_value=mock_response):
-            version = get_latest_mcap_cli_version()
-            assert version == "v0.0.54"
+        # Temporarily disable the environment variable set by conftest.py
+        original_value = os.environ.get("OWA_DISABLE_VERSION_CHECK")
+        if "OWA_DISABLE_VERSION_CHECK" in os.environ:
+            del os.environ["OWA_DISABLE_VERSION_CHECK"]
+
+        try:
+            mock_response = MagicMock()
+            mock_response.json.return_value = [
+                {"tag_name": "releases/mcap-cli/v0.0.54"},
+                {"tag_name": "releases/rust/v0.19.0"},
+                {"tag_name": "releases/mcap-cli/v0.0.53"},
+            ]
+            mock_response.raise_for_status.return_value = None
+
+            with patch("owa.cli.mcap.info.requests.get", return_value=mock_response):
+                version = get_latest_mcap_cli_version()
+                assert version == "v0.0.54"
+        finally:
+            # Restore original value
+            if original_value is not None:
+                os.environ["OWA_DISABLE_VERSION_CHECK"] = original_value
 
     def test_get_latest_version_fallback(self):
         """Test fallback to current version when API fails."""
         with patch("owa.cli.mcap.info.requests.get", side_effect=Exception("Network error")):
             version = get_latest_mcap_cli_version()
             assert version == CURRENT_MCAP_CLI_VERSION
+
+    def test_get_latest_version_disabled_by_env_var(self):
+        """Test that version check is disabled when OWA_DISABLE_VERSION_CHECK is set."""
+        import os
+
+        # Save original value
+        original_value = os.environ.get("OWA_DISABLE_VERSION_CHECK")
+
+        try:
+            # Set environment variable to disable version check
+            os.environ["OWA_DISABLE_VERSION_CHECK"] = "1"
+
+            # Should return current version without making API call
+            with patch("owa.cli.mcap.info.requests.get") as mock_get:
+                version = get_latest_mcap_cli_version()
+                assert version == CURRENT_MCAP_CLI_VERSION
+                # Verify no API call was made
+                mock_get.assert_not_called()
+
+        finally:
+            # Restore original value
+            if original_value is None:
+                os.environ.pop("OWA_DISABLE_VERSION_CHECK", None)
+            else:
+                os.environ["OWA_DISABLE_VERSION_CHECK"] = original_value
 
     def test_get_local_version_success(self):
         """Test successful parsing of local mcap version."""
