@@ -176,7 +176,7 @@ class MigrationOrchestrator:
         except Exception:
             return "unknown"
 
-    def create_backup(self, file_path: Path, backup_path: Path) -> bool:
+    def create_backup(self, file_path: Path, backup_path: Path) -> None:
         """
         Create a backup of the file with high reliability.
 
@@ -184,31 +184,32 @@ class MigrationOrchestrator:
             file_path: Source file to backup
             backup_path: Destination backup path
 
-        Returns:
-            True if backup was successful, False otherwise
+        Raises:
+            FileNotFoundError: If source file doesn't exist
+            FileExistsError: If backup path already exists
+            OSError: If backup creation or verification fails
         """
-        try:
-            # Ensure source file exists and is readable
-            if not file_path.exists():
-                return False
+        # Ensure source file exists and is readable
+        if not file_path.exists():
+            raise FileNotFoundError(f"Source file not found: {file_path}")
 
-            # Ensure backup directory exists
-            backup_path.parent.mkdir(parents=True, exist_ok=True)
+        # Check if backup already exists
+        if backup_path.exists():
+            raise FileExistsError(f"Backup file already exists: {backup_path}")
 
-            # Create backup with metadata preservation
-            shutil.copy2(file_path, backup_path)
+        # Ensure backup directory exists
+        backup_path.parent.mkdir(parents=True, exist_ok=True)
 
-            # Verify backup was created successfully
-            if not backup_path.exists():
-                return False
+        # Create backup with metadata preservation
+        shutil.copy2(file_path, backup_path)
 
-            # Verify backup size matches original
-            if backup_path.stat().st_size != file_path.stat().st_size:
-                return False
+        # Verify backup was created successfully
+        if not backup_path.exists():
+            raise OSError(f"Backup creation failed: {backup_path}")
 
-            return True
-        except Exception:
-            return False
+        # Verify backup size matches original
+        if backup_path.stat().st_size != file_path.stat().st_size:
+            raise OSError(f"Backup verification failed: size mismatch for {backup_path}")
 
     def get_migration_path(self, from_version: str, to_version: str):
         """Get the sequence of migrators needed to go from one version to another."""
@@ -291,8 +292,10 @@ class MigrationOrchestrator:
         backup_path = file_path.with_suffix(f"{file_path.suffix}.backup")
 
         # Create backup with high reliability before any migration
-        if not self.create_backup(file_path, backup_path):
-            console.print(f"[red]✗ Failed to create backup at {backup_path}[/red]")
+        try:
+            self.create_backup(file_path, backup_path)
+        except Exception as e:
+            console.print(f"[red]✗ Failed to create backup at {backup_path}: {e}[/red]")
             return results
 
         for i, migrator in enumerate(migration_path):

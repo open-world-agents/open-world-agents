@@ -46,9 +46,9 @@ class TestMigrationOrchestrator:
 
         try:
             backup_path = source_path.with_suffix(".backup.mcap")
-            result = orchestrator.create_backup(source_path, backup_path)
+            # Should not raise any exception
+            orchestrator.create_backup(source_path, backup_path)
 
-            assert result is True
             assert backup_path.exists()
             assert backup_path.stat().st_size == source_path.stat().st_size
 
@@ -66,8 +66,31 @@ class TestMigrationOrchestrator:
         source_path = Path("/non/existent/file.mcap")
         backup_path = Path("/tmp/backup.mcap")
 
-        result = orchestrator.create_backup(source_path, backup_path)
-        assert result is False
+        with pytest.raises(FileNotFoundError, match="Source file not found"):
+            orchestrator.create_backup(source_path, backup_path)
+
+    def test_create_backup_existing_backup(self):
+        """Test backup creation when backup file already exists."""
+        orchestrator = MigrationOrchestrator()
+
+        with tempfile.NamedTemporaryFile(suffix=".mcap", delete=False) as tmp_file:
+            tmp_file.write(b"test content")
+            tmp_file.flush()
+            source_path = Path(tmp_file.name)
+
+        with tempfile.NamedTemporaryFile(suffix=".backup.mcap", delete=False) as backup_file:
+            backup_path = Path(backup_file.name)
+
+        try:
+            with pytest.raises(FileExistsError, match="Backup file already exists"):
+                orchestrator.create_backup(source_path, backup_path)
+
+        finally:
+            # Cleanup
+            if source_path.exists():
+                source_path.unlink()
+            if backup_path.exists():
+                backup_path.unlink()
 
     def test_backup_naming_scheme(self):
         """Test that backup files use intuitive naming scheme."""
