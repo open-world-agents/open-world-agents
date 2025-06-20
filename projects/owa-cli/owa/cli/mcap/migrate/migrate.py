@@ -53,12 +53,7 @@ class ScriptMigrator:
                 cmd.append("--verbose")
 
             # Execute script
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                cwd=self.script_path.parent.parent.parent.parent,  # Run from owa-cli directory
-            )
+            result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
 
             if result.returncode == 0:
                 # Count changes from output (simple heuristic) TODO
@@ -95,9 +90,7 @@ class ScriptMigrator:
                 cmd.extend(["--backup-path", str(backup_path)])
 
             # Execute verification
-            result = subprocess.run(
-                cmd, capture_output=True, text=True, cwd=self.script_path.parent.parent.parent.parent
-            )
+            result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
 
             return result.returncode == 0
 
@@ -426,6 +419,7 @@ class MigrationOrchestrator:
         if backup_path and backup_path.exists():
             try:
                 shutil.copy2(backup_path, file_path)
+                backup_path.unlink()
                 console.print(f"[green]✓ Restored from backup: {backup_path}[/green]")
                 return
             except Exception as e:
