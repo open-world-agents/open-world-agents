@@ -219,7 +219,7 @@ class MigrationOrchestrator:
                 result.success = False
                 result.error_message = "Verification failed"
                 # Rollback all previous migrations
-                self._rollback_migrations(file_path, results, console)
+                self._rollback_migrations(file_path, backup_path, console)
                 return results
 
             console.print(f"[green]✓ Migration successful ({result.changes_made} changes)[/green]")
