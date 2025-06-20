@@ -5,7 +5,6 @@ Tests for OWA CLI version checking utilities.
 import os
 from unittest.mock import MagicMock, patch
 
-import pytest
 import requests
 
 from owa.cli.utils import check_for_update, get_latest_release, get_local_version
