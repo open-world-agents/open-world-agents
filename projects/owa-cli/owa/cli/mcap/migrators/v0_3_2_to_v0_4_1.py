@@ -102,6 +102,7 @@ def migrate(
                         data = dict(decoded)
 
                     new_message = SimpleMessageClass(**data)
+                    new_message._type = new_schema_name
                     msgs.append((message.log_time, channel.topic, new_message))
                     changes_made += 1
 
