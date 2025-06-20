@@ -38,17 +38,6 @@ jobs:
       - name: Install dependencies
         run: vuv install --dev
 
-      - name: Debug encoding settings
-        run: |
-          python -c "
-          import sys, locale
-          print('sys.getfilesystemencoding():', sys.getfilesystemencoding())
-          print('locale.getpreferredencoding(False):', locale.getpreferredencoding(False))
-          print('sys.stdout.encoding:', sys.stdout.encoding)
-          print('sys.stderr.encoding:', sys.stderr.encoding)
-          print('sys.flags.utf8_mode:', sys.flags.utf8_mode)
-          "
-
       - name: Run pytest
         run: pytest
 
