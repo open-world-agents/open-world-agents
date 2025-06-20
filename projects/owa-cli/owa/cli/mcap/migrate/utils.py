@@ -1,33 +1,9 @@
-"""
-Base classes for MCAP migrators.
-
-This module defines the abstract base class and common data structures
-used by all MCAP migrators.
-"""
-
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 from rich.console import Console
 
-try:
-    from mcap_owa.highlevel import OWAMcapReader
-except ImportError as e:
-    raise ImportError(f"Required packages not available: {e}. Please install: pip install mcap-owa-support") from e
-
-
-@dataclass
-class MigrationResult:
-    """Result of a migration operation."""
-
-    success: bool
-    version_from: str
-    version_to: str
-    changes_made: int
-    error_message: Optional[str] = None
-    backup_path: Optional[Path] = None
+from mcap_owa.highlevel import OWAMcapReader
 
 
 @dataclass
@@ -178,43 +154,3 @@ def verify_migration_integrity(
     except Exception as e:
         console.print(f"[red]Error during integrity verification: {e}[/red]")
         return False
-
-
-class BaseMigrator(ABC):
-    """Base class for MCAP file migrators."""
-
-    @property
-    @abstractmethod
-    def from_version(self) -> str:
-        """Source version this migrator handles."""
-        pass
-
-    @property
-    @abstractmethod
-    def to_version(self) -> str:
-        """Target version this migrator produces."""
-        pass
-
-    @abstractmethod
-    def migrate(self, file_path: Path, console: Console, verbose: bool) -> MigrationResult:
-        """
-        Perform the migration.
-
-        Note: Backup creation is handled by the orchestrator before calling this method.
-        """
-        pass
-
-    @abstractmethod
-    def verify_migration(self, file_path: Path, backup_path: Optional[Path], console: Console) -> bool:
-        """
-        Verify that migration was successful.
-
-        Args:
-            file_path: Path to the migrated file
-            backup_path: Path to the backup file (for integrity verification)
-            console: Rich console for output
-
-        Returns:
-            True if verification passes, False otherwise
-        """
-        pass

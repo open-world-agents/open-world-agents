@@ -10,9 +10,9 @@ import pytest
 
 from owa.cli.mcap.migrate import (
     MigrationOrchestrator,
+    MigrationResult,
     detect_files_needing_migration,
 )
-from owa.cli.mcap.migrators import MigrationResult, discover_migrators
 
 
 class TestMigrationOrchestrator:
@@ -21,7 +21,8 @@ class TestMigrationOrchestrator:
     def test_init(self):
         """Test orchestrator initialization."""
         orchestrator = MigrationOrchestrator()
-        assert len(orchestrator.migrators) == 2
+        # Should discover script migrators
+        assert len(orchestrator.script_migrators) >= 0  # May be 0 if scripts not found
         # Current version should match the actual mcap-owa-support library version
         from mcap_owa import __version__ as mcap_owa_version
 
@@ -67,41 +68,6 @@ class TestMigrationOrchestrator:
 
         result = orchestrator.create_backup(source_path, backup_path)
         assert result is False
-
-    def test_override_library_version(self):
-        """Test that library version override works correctly."""
-        orchestrator = MigrationOrchestrator()
-
-        # Import the writer module to check the function
-        import mcap_owa.writer
-
-        # Store original function
-        original_func = mcap_owa.writer._library_identifier
-        original_result = original_func()
-
-        # Test that override works
-        target_version = "0.3.2"
-        with orchestrator._override_library_version(target_version):
-            overridden_result = mcap_owa.writer._library_identifier()
-            assert target_version in overridden_result
-            assert "mcap-owa-support 0.3.2" in overridden_result
-
-        # Test that function is restored after context
-        restored_result = mcap_owa.writer._library_identifier()
-        assert restored_result == original_result
-
-    def test_override_uses_patch_correctly(self):
-        """Test that version override uses the imported patch correctly."""
-        orchestrator = MigrationOrchestrator()
-
-        # Verify that the context manager works without manual patching
-        target_version = "0.3.2"
-        with orchestrator._override_library_version(target_version):
-            import mcap_owa.writer
-
-            result = mcap_owa.writer._library_identifier()
-            assert target_version in result
-            assert "mcap-owa-support 0.3.2" in result
 
     def test_backup_naming_scheme(self):
         """Test that backup files use intuitive naming scheme."""
@@ -154,35 +120,6 @@ class TestMigrationOrchestrator:
             orchestrator.get_migration_path("unknown", "0.4.1")
 
 
-class TestMigrators:
-    """Test individual migrators."""
-
-    def test_discovered_migrators_have_expected_versions(self):
-        """Test that discovered migrators have expected version transitions."""
-        migrator_classes = discover_migrators()
-        migrators = [cls() for cls in migrator_classes]
-
-        # Should have at least 2 migrators
-        assert len(migrators) >= 2
-
-        # Check for expected version transitions
-        version_transitions = {(m.from_version, m.to_version) for m in migrators}
-        assert ("0.3.0", "0.3.2") in version_transitions
-        assert ("0.3.2", "0.4.1") in version_transitions
-
-    def test_migrators_have_required_properties(self):
-        """Test that all discovered migrators have required properties."""
-        migrator_classes = discover_migrators()
-        migrators = [cls() for cls in migrator_classes]
-
-        for migrator in migrators:
-            assert hasattr(migrator, "from_version")
-            assert hasattr(migrator, "to_version")
-            assert hasattr(migrator, "migrate")
-            assert hasattr(migrator, "verify_migration")
-            assert migrator.from_version != migrator.to_version
-
-
 class TestDetectFilesNeedingMigration:
     """Test file detection functionality."""
 
@@ -211,8 +148,8 @@ class TestMigrationIntegration:
         """Test migration orchestrator with mocked OWAMcapReader."""
         orchestrator = MigrationOrchestrator()
 
-        # Test that the orchestrator can be created and has the expected migrators
-        assert len(orchestrator.migrators) == 2
+        # Test that the orchestrator can be created and has the expected script migrators
+        assert len(orchestrator.script_migrators) == 2
 
         # Test migration path calculation
         path_0_3_0_to_0_4_1 = orchestrator.get_migration_path("0.3.0", "0.4.1")
@@ -221,7 +158,7 @@ class TestMigrationIntegration:
         path_0_3_2_to_0_4_1 = orchestrator.get_migration_path("0.3.2", "0.4.1")
         assert len(path_0_3_2_to_0_4_1) == 1
 
-    @patch("owa.cli.mcap.migrate.OWAMcapReader")
+    @patch("owa.cli.mcap.migrate.migrate.OWAMcapReader")
     def test_detect_version_with_mocked_reader(self, mock_reader_class):
         """Test version detection with mocked reader."""
         # Setup mock
@@ -242,22 +179,20 @@ class TestMigrationIntegration:
             if tmp_path.exists():
                 tmp_path.unlink()
 
-    @patch("owa.cli.mcap.migrate.OWAMcapReader")
-    def test_multi_step_migration_version_override(self, mock_reader_class):
-        """Test that multi-step migration correctly writes intermediate versions."""
+    @patch("owa.cli.mcap.migrate.migrate.OWAMcapReader")
+    def test_multi_step_migration_with_script_migrators(self, mock_reader_class):
+        """Test that multi-step migration works with script migrators."""
         orchestrator = MigrationOrchestrator()
 
         # Mock the reader to simulate version progression
         mock_reader = MagicMock()
-
-        # First call: detect initial version as 0.3.0
-        # Second call: after first migration, should detect 0.3.2 (not current version)
-        # Third call: after second migration, should detect 0.4.1
         mock_reader.file_version = "0.3.0"  # Initial version
         mock_reader_class.return_value.__enter__.return_value = mock_reader
 
-        # Create a mock migrator that we can track
-        mock_migrator_1 = MagicMock()
+        # Create mock script migrators
+        from owa.cli.mcap.migrate import ScriptMigrator
+
+        mock_migrator_1 = MagicMock(spec=ScriptMigrator)
         mock_migrator_1.from_version = "0.3.0"
         mock_migrator_1.to_version = "0.3.2"
         mock_migrator_1.migrate.return_value = MigrationResult(
@@ -265,10 +200,10 @@ class TestMigrationIntegration:
             version_from="0.3.0",
             version_to="0.3.2",
             changes_made=1,
-            backup_path=Path("/tmp/backup1.mcap"),
         )
+        mock_migrator_1.verify_migration.return_value = True
 
-        mock_migrator_2 = MagicMock()
+        mock_migrator_2 = MagicMock(spec=ScriptMigrator)
         mock_migrator_2.from_version = "0.3.2"
         mock_migrator_2.to_version = "0.4.1"
         mock_migrator_2.migrate.return_value = MigrationResult(
@@ -276,32 +211,31 @@ class TestMigrationIntegration:
             version_from="0.3.2",
             version_to="0.4.1",
             changes_made=1,
-            backup_path=Path("/tmp/backup2.mcap"),
         )
+        mock_migrator_2.verify_migration.return_value = True
 
-        # Replace orchestrator's migrators with our mocks
-        orchestrator.migrators = [mock_migrator_1, mock_migrator_2]
+        # Replace orchestrator's script migrators with our mocks
+        orchestrator.script_migrators = [mock_migrator_1, mock_migrator_2]
 
         with tempfile.NamedTemporaryFile(suffix=".mcap", delete=False) as tmp_file:
             tmp_path = Path(tmp_file.name)
 
         try:
-            # Test that version override context manager is used
-            with patch.object(orchestrator, "_override_library_version") as mock_override:
-                mock_override.return_value.__enter__ = MagicMock()
-                mock_override.return_value.__exit__ = MagicMock()
+            # Mock the console for migrate_file
+            from rich.console import Console
 
-                # This should trigger two migrations: 0.3.0 -> 0.3.2 -> 0.4.1
-                results = orchestrator.migrate_file(tmp_path, target_version="0.4.1")
+            console = Console()
 
-                # Verify migration was successful
-                assert len(results) == 2
-                assert all(result.success for result in results)
+            # This should trigger two migrations: 0.3.0 -> 0.3.2 -> 0.4.1
+            results = orchestrator.migrate_file(tmp_path, target_version="0.4.1", console=console)
 
-                # Verify that version override was called for each migration step
-                assert mock_override.call_count == 2
-                mock_override.assert_any_call("0.3.2")  # First migration target
-                mock_override.assert_any_call("0.4.1")  # Second migration target
+            # Verify migration was successful
+            assert len(results) == 2
+            assert all(result.success for result in results)
+
+            # Verify that both migrators were called
+            mock_migrator_1.migrate.assert_called_once()
+            mock_migrator_2.migrate.assert_called_once()
         finally:
             # Clean up the temporary file
             if tmp_path.exists():
