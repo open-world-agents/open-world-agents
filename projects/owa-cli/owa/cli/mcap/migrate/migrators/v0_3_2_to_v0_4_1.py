@@ -18,8 +18,6 @@ MCAP Migrator: v0.3.2 → v0.4.1
 Migrates schema format from module-based to domain-based. See OEP-0006.
 """
 
-__all__ = []  # This is a uv script, not a module
-
 import sys
 from pathlib import Path
 from typing import Optional
