@@ -216,6 +216,7 @@ version = "0.4.2"
 source = { editable = "../owa-msgs" }
 dependencies = [
     { name = "annotated-types" },
+    { name = "numpy" },
     { name = "owa-core" },
     { name = "pydantic" },
 ]
@@ -223,6 +224,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "annotated-types" },
+    { name = "numpy", specifier = ">=2.3.0" },
     { name = "owa-core", editable = "../owa-core" },
     { name = "pydantic", specifier = ">=2.10.6" },
 ]
