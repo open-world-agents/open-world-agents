@@ -16,7 +16,7 @@
 """
 MCAP Migrator: v0.2.0 → v0.3.0
 
-Migrates schema names from old format (owa_env_desktop) to new format (owa.env.desktop).
+Migrates schema names from old format (owa_env_desktop) to new format (owa.env.desktop: implicit namespace packaging, PEP 420).
 """
 
 import importlib
