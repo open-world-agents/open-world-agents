@@ -9,7 +9,7 @@ This migrator handles the schema format changes:
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 
 from rich.console import Console
 
@@ -19,7 +19,7 @@ try:
 except ImportError as e:
     raise ImportError(f"Required packages not available: {e}. Please install: pip install mcap-owa-support") from e
 
-from .base import BaseMigrator, MigrationResult
+from .base import BaseMigrator, MigrationResult, verify_migration_integrity
 
 
 class V032ToV041Migrator(BaseMigrator):
@@ -43,7 +43,7 @@ class V032ToV041Migrator(BaseMigrator):
     def to_version(self) -> str:
         return "0.4.1"
 
-    def migrate(self, file_path: Path, backup_path: Path, console: Console, verbose: bool) -> MigrationResult:
+    def migrate(self, file_path: Path, console: Console, verbose: bool) -> MigrationResult:
         """Migrate legacy schemas to domain-based format."""
         changes_made = 0
 
@@ -59,7 +59,6 @@ class V032ToV041Migrator(BaseMigrator):
                     version_from=self.from_version,
                     version_to=self.to_version,
                     changes_made=0,
-                    backup_path=backup_path,
                 )
 
             # Perform migration using temporary file
@@ -110,7 +109,6 @@ class V032ToV041Migrator(BaseMigrator):
                     version_from=self.from_version,
                     version_to=self.to_version,
                     changes_made=changes_made,
-                    backup_path=backup_path,
                 )
 
             except Exception as e:
@@ -126,18 +124,28 @@ class V032ToV041Migrator(BaseMigrator):
                 version_to=self.to_version,
                 changes_made=0,
                 error_message=str(e),
-                backup_path=backup_path,
             )
 
-    def verify_migration(self, file_path: Path, console: Console) -> bool:
-        """Verify that no legacy schemas remain."""
+    def verify_migration(self, file_path: Path, backup_path: Optional[Path], console: Console) -> bool:
+        """Verify that migration was successful."""
         try:
+            # First, verify that no legacy schemas remain
             with OWAMcapReader(file_path) as reader:
                 for schema in reader.schemas.values():
                     if schema.name in self.LEGACY_MESSAGE_MAPPING:
+                        console.print(f"[red]Legacy schema still present: {schema.name}[/red]")
                         return False
+
+            # If backup is available, perform integrity verification
+            if backup_path and backup_path.exists():
+                return verify_migration_integrity(file_path, backup_path, console)
+
+            # If no backup, just verify no legacy schemas remain
+            console.print("[green]✓ No legacy schemas found[/green]")
             return True
-        except Exception:
+
+        except Exception as e:
+            console.print(f"[red]Verification error: {e}[/red]")
             return False
 
     def _analyze_file(self, file_path: Path) -> Dict:

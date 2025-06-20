@@ -208,7 +208,7 @@ class MigrationOrchestrator:
 
             # Perform migration with version override to ensure correct target version is written
             with self._override_library_version(migrator.to_version):
-                result = migrator.migrate(file_path, backup_path, console, verbose)
+                result = migrator.migrate(file_path, console, verbose)
             results.append(result)
 
             if not result.success:
@@ -218,7 +218,7 @@ class MigrationOrchestrator:
                 return results
 
             # Verify migration
-            if not migrator.verify_migration(file_path, console):
+            if not migrator.verify_migration(file_path, backup_path, console):
                 console.print("[red]✗ Migration verification failed[/red]")
                 result.success = False
                 result.error_message = "Verification failed"
