@@ -120,7 +120,7 @@ def no_version_check():
 @pytest.fixture
 def cli_runner():
     """Create a CLI runner for testing."""
-    return CliRunner()
+    return CliRunner(charset="utf-8")
 
 
 @pytest.fixture
