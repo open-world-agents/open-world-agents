@@ -24,6 +24,7 @@ dependencies = [
     "owa-core==0.4.2",
     "pydantic>=2.10.6",
     "annotated-types",
+    "numpy>=2.3.0",
 ]
 
 [tool.uv.sources]
