@@ -49,11 +49,18 @@ class ScriptMigrator:
     from_version: str
     to_version: str
 
-    def migrate(self, file_path: Path, console: Console, verbose: bool) -> MigrationResult:
+    def migrate(
+        self, file_path: Path, console: Console, verbose: bool, backup_path: Optional[Path] = None
+    ) -> MigrationResult:
         """Execute the standalone migration script."""
         try:
             # Build command for migrate subcommand
             cmd = ["uv", "run", str(self.script_path), "migrate", str(file_path)]
+
+            # Add backup path if provided
+            if backup_path:
+                cmd.extend(["--backup", str(backup_path)])
+
             if verbose:
                 cmd.append("--verbose")
 
@@ -69,7 +76,11 @@ class ScriptMigrator:
                 # Count changes from output (simple heuristic)
                 changes_made = 1 if "changes made" in result.stdout else 0
                 return MigrationResult(
-                    success=True, version_from=self.from_version, version_to=self.to_version, changes_made=changes_made
+                    success=True,
+                    version_from=self.from_version,
+                    version_to=self.to_version,
+                    changes_made=changes_made,
+                    backup_path=backup_path,
                 )
             else:
                 return MigrationResult(
@@ -78,6 +89,7 @@ class ScriptMigrator:
                     version_to=self.to_version,
                     changes_made=0,
                     error_message=result.stderr.strip() or result.stdout.strip(),
+                    backup_path=backup_path,
                 )
 
         except Exception as e:
@@ -87,6 +99,7 @@ class ScriptMigrator:
                 version_to=self.to_version,
                 changes_made=0,
                 error_message=str(e),
+                backup_path=backup_path,
             )
 
     def verify_migration(self, file_path: Path, backup_path: Optional[Path], console: Console) -> bool:
@@ -94,6 +107,10 @@ class ScriptMigrator:
         try:
             # Build verification command
             cmd = ["uv", "run", str(self.script_path), "verify", str(file_path)]
+
+            # Add backup path if provided
+            if backup_path:
+                cmd.extend(["--backup", str(backup_path)])
 
             # Execute verification
             result = subprocess.run(
@@ -301,7 +318,7 @@ class MigrationOrchestrator:
                 console.print("Using script migrator")
 
             # Perform migration using script migrator
-            result = migrator.migrate(file_path, console, verbose)
+            result = migrator.migrate(file_path, console, verbose, backup_path)
             results.append(result)
 
             if not result.success:
