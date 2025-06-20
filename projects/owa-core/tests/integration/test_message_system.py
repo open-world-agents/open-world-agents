@@ -114,7 +114,9 @@ class TestMessageSystemIntegration:
         assert RegistryKeyboardEvent is DirectKeyboardEvent
 
         # Legacy should create instances of the same class
-        legacy_event = LegacyKeyboardEvent(event_type="press", vk=65)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            legacy_event = LegacyKeyboardEvent(event_type="press", vk=65)
         assert type(legacy_event) is RegistryKeyboardEvent
 
         # Schemas should be identical
