@@ -35,6 +35,7 @@ class MigrationResult:
     success: bool
     version_from: str
     version_to: str
+    # TODO: define structured output format and add `--output-format` argument to migrators
     changes_made: int
     error_message: str = ""
 
