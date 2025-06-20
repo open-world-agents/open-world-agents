@@ -370,6 +370,292 @@ class TestMcapMigrateIntegration:
         assert f"Files to process: {len(files)}" in result.stdout
 
 
+class TestMcapMigrateOutputVerification:
+    """Test that migration produces expected output by comparing with reference files."""
+
+    @pytest.fixture
+    def test_data_dir(self):
+        """Get the test data directory with example MCAP files."""
+        return Path(__file__).parent
+
+    @pytest.fixture
+    def temp_dir(self):
+        """Create a temporary directory for test files."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            yield Path(temp_dir)
+
+    def copy_test_file(self, source_dir: Path, filename: str, dest_dir: Path) -> Path:
+        """Copy a test file to the destination directory."""
+        source_file = source_dir / filename
+        dest_file = dest_dir / filename
+        if source_file.exists():
+            shutil.copy2(source_file, dest_file)
+            return dest_file
+        else:
+            pytest.skip(f"Test file {filename} not found in {source_dir}")
+
+    def test_migration_produces_expected_output(self, test_data_dir, temp_dir):
+        """Test that migrating 0.3.2.mcap produces output equivalent to expected 0.4.2.mcap."""
+        from typer.testing import CliRunner
+
+        from owa.cli.mcap.migrate import MigrationOrchestrator
+
+        runner = CliRunner()
+
+        # Skip if test files don't exist
+        source_file = test_data_dir / "0.3.2.mcap"
+        expected_file = test_data_dir / "0.4.2.mcap"
+
+        if not source_file.exists() or not expected_file.exists():
+            pytest.skip("Required test files (0.3.2.mcap or 0.4.2.mcap) not found")
+
+        # Copy the 0.3.2.mcap file to temp directory for migration
+        test_file = self.copy_test_file(test_data_dir, "0.3.2.mcap", temp_dir)
+
+        # Perform the migration
+        result = runner.invoke(app, ["mcap", "migrate", str(test_file)], input="y\n")
+        assert result.exit_code == 0
+        assert "Migration successful" in result.stdout
+
+        # Verify the migrated file has the correct version
+        orchestrator = MigrationOrchestrator()
+        migrated_version = orchestrator.detect_version(test_file)
+        expected_version = orchestrator.detect_version(expected_file)
+
+        assert migrated_version == expected_version, (
+            f"Migrated version {migrated_version} != expected {expected_version}"
+        )
+
+        # Verify basic file properties (this is a basic sanity check)
+        # Note: We don't do byte-for-byte comparison as migration timestamps may differ
+        assert test_file.stat().st_size > 0, "Migrated file should not be empty"
+
+        # Verify that the migrated file can be read without errors
+        try:
+            from mcap_owa.highlevel import OWAMcapReader
+
+            with OWAMcapReader(test_file) as reader:
+                # Just verify we can read the file structure
+                assert reader.file_version is not None
+                # Count messages to ensure content is preserved
+                message_count = sum(1 for _ in reader.iter_messages())
+                assert message_count > 0, "Migrated file should contain messages"
+        except Exception as e:
+            pytest.fail(f"Failed to read migrated file: {e}")
+
+    def test_migration_integrity_verification_with_real_files(self, test_data_dir, temp_dir):
+        """Test the verify_migration_integrity function with real migration data."""
+        from rich.console import Console
+        from typer.testing import CliRunner
+
+        from owa.cli.mcap.migrate.utils import verify_migration_integrity
+
+        runner = CliRunner()
+        console = Console()
+
+        # Skip if test files don't exist
+        source_file = test_data_dir / "0.3.2.mcap"
+        if not source_file.exists():
+            pytest.skip("Required test file 0.3.2.mcap not found")
+
+        # Copy the 0.3.2.mcap file to temp directory for migration
+        test_file = self.copy_test_file(test_data_dir, "0.3.2.mcap", temp_dir)
+
+        # Create a manual backup with a different name to avoid conflict
+        manual_backup_file = temp_dir / "original_0.3.2.mcap"
+        shutil.copy2(test_file, manual_backup_file)
+
+        # Perform the migration (this will create its own backup)
+        result = runner.invoke(app, ["mcap", "migrate", str(test_file)], input="y\n")
+        if result.exit_code != 0:
+            print(f"Migration failed with exit code {result.exit_code}")
+            print(f"stdout: {result.stdout}")
+            print(f"stderr: {result.stderr}")
+        assert result.exit_code == 0
+        assert "Migration successful" in result.stdout
+
+        # The migration system should have created its own backup
+        migration_backup_file = temp_dir / "0.3.2.mcap.backup"
+        assert migration_backup_file.exists(), "Migration should have created a backup file"
+
+        # Test the verify_migration_integrity function using the migration's backup
+        integrity_result = verify_migration_integrity(
+            migrated_file=test_file,
+            backup_file=migration_backup_file,
+            console=console,
+            check_message_count=True,
+            check_file_size=True,
+            check_topics=True,
+            size_tolerance_percent=15.0,
+        )
+
+        # The integrity check should pass
+        assert integrity_result is True, "Migration integrity verification should pass"
+
+        # Also test with our manual backup to ensure consistency
+        manual_integrity_result = verify_migration_integrity(
+            migrated_file=test_file,
+            backup_file=manual_backup_file,
+            console=console,
+            check_message_count=True,
+            check_file_size=True,
+            check_topics=True,
+            size_tolerance_percent=50.0,
+        )
+
+        # Both integrity checks should pass
+        assert manual_integrity_result is True, "Manual backup integrity verification should also pass"
+
+    def test_migration_integrity_verification_edge_cases(self, temp_dir):
+        """Test verify_migration_integrity function with edge cases."""
+        from rich.console import Console
+
+        from owa.cli.mcap.migrate.utils import verify_migration_integrity
+
+        console = Console()
+
+        # Test with non-existent files
+        non_existent_file = temp_dir / "non_existent.mcap"
+        result = verify_migration_integrity(
+            migrated_file=non_existent_file,
+            backup_file=non_existent_file,
+            console=console,
+        )
+        assert result is False, "Should fail with non-existent files"
+
+        # Test with only migrated file missing
+        backup_file = temp_dir / "backup.mcap"
+        backup_file.touch()  # Create empty file
+        result = verify_migration_integrity(
+            migrated_file=non_existent_file,
+            backup_file=backup_file,
+            console=console,
+        )
+        assert result is False, "Should fail when migrated file is missing"
+
+    def test_individual_verification_functions_with_real_data(self, test_data_dir, temp_dir):
+        """Test individual verification functions with real migration data."""
+        from rich.console import Console
+        from typer.testing import CliRunner
+
+        from owa.cli.mcap.migrate.utils import (
+            get_file_stats,
+            verify_file_size,
+            verify_message_count,
+            verify_topics_preserved,
+        )
+
+        runner = CliRunner()
+        console = Console()
+
+        # Skip if test files don't exist
+        source_file = test_data_dir / "0.3.2.mcap"
+        if not source_file.exists():
+            pytest.skip("Required test file 0.3.2.mcap not found")
+
+        # Copy and migrate the file
+        test_file = self.copy_test_file(test_data_dir, "0.3.2.mcap", temp_dir)
+        backup_file = temp_dir / "original_backup.mcap"
+        shutil.copy2(test_file, backup_file)
+
+        # Get stats before migration
+        original_stats = get_file_stats(backup_file)
+        assert original_stats.message_count > 0, "Original file should have messages"
+        assert len(original_stats.topics) > 0, "Original file should have topics"
+        assert len(original_stats.schemas) > 0, "Original file should have schemas"
+
+        # Perform migration
+        result = runner.invoke(app, ["mcap", "migrate", str(test_file)], input="y\n")
+        assert result.exit_code == 0
+
+        # Get stats after migration
+        migrated_stats = get_file_stats(test_file)
+
+        # Test individual verification functions
+        message_count_ok = verify_message_count(migrated_stats, original_stats, console)
+        assert message_count_ok is True, "Message count should be preserved"
+
+        file_size_ok = verify_file_size(migrated_stats, original_stats, console, tolerance_percent=50.0)
+        assert file_size_ok is True, "File size should be within tolerance"
+
+        topics_ok = verify_topics_preserved(migrated_stats, original_stats, console)
+        assert topics_ok is True, "Topics should be preserved"
+
+        # Print stats for verification
+        print(
+            f"Original: {original_stats.message_count} messages, {len(original_stats.topics)} topics, {original_stats.file_size} bytes"
+        )
+        print(
+            f"Migrated: {migrated_stats.message_count} messages, {len(migrated_stats.topics)} topics, {migrated_stats.file_size} bytes"
+        )
+        print(f"Topics: {sorted(original_stats.topics)}")
+        print(f"Schemas before: {sorted(original_stats.schemas)}")
+        print(f"Schemas after: {sorted(migrated_stats.schemas)}")
+
+    def test_verification_functions_with_simulated_failures(self):
+        """Test verification functions with simulated failure scenarios."""
+        from rich.console import Console
+
+        from owa.cli.mcap.migrate.utils import (
+            FileStats,
+            verify_file_size,
+            verify_message_count,
+            verify_topics_preserved,
+        )
+
+        console = Console()
+
+        # Create mock file stats for testing
+        original_stats = FileStats(
+            message_count=100, file_size=1000, topics={"topic1", "topic2", "topic3"}, schemas={"schema1", "schema2"}
+        )
+
+        # Test message count mismatch
+        bad_message_stats = FileStats(
+            message_count=99,  # One less message
+            file_size=1000,
+            topics={"topic1", "topic2", "topic3"},
+            schemas={"schema1", "schema2"},
+        )
+
+        result = verify_message_count(bad_message_stats, original_stats, console)
+        assert result is False, "Should fail with message count mismatch"
+
+        # Test file size too different
+        bad_size_stats = FileStats(
+            message_count=100,
+            file_size=2000,  # 100% larger
+            topics={"topic1", "topic2", "topic3"},
+            schemas={"schema1", "schema2"},
+        )
+
+        result = verify_file_size(bad_size_stats, original_stats, console, tolerance_percent=10.0)
+        assert result is False, "Should fail with large file size difference"
+
+        # Test topics mismatch
+        bad_topics_stats = FileStats(
+            message_count=100,
+            file_size=1000,
+            topics={"topic1", "topic2"},  # Missing topic3
+            schemas={"schema1", "schema2"},
+        )
+
+        result = verify_topics_preserved(bad_topics_stats, original_stats, console)
+        assert result is False, "Should fail with topic mismatch"
+
+        # Test successful cases
+        good_stats = FileStats(
+            message_count=100,
+            file_size=1050,  # 5% larger, within tolerance
+            topics={"topic1", "topic2", "topic3"},
+            schemas={"schema1", "schema2", "schema3"},  # Schemas can change
+        )
+
+        assert verify_message_count(good_stats, original_stats, console) is True
+        assert verify_file_size(good_stats, original_stats, console, tolerance_percent=10.0) is True
+        assert verify_topics_preserved(good_stats, original_stats, console) is True
+
+
 class TestMcapMigrateErrorHandling:
     """Test error handling in the migration system."""
 

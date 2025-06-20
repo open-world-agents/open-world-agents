@@ -17,6 +17,7 @@
 MCAP Migrator: v0.3.0 → v0.3.2
 
 Migrates keyboard state field from `pressed_vk_list` to `buttons`.
+Note: Before v0.3.2, mcap-owa-support version was 0.1.0, so this script must be run with manual user's decision.
 """
 
 import importlib

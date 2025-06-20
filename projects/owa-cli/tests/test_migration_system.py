@@ -121,20 +121,20 @@ class TestMigrationOrchestrator:
     def test_get_migration_path_sequential(self):
         """Test sequential migration path."""
         orchestrator = MigrationOrchestrator()
-        path = orchestrator.get_migration_path("0.3.0", "0.4.1")
+        path = orchestrator.get_migration_path("0.3.0", "0.4.2")
         assert len(path) == 2
         assert path[0].from_version == "0.3.0"
         assert path[0].to_version == "0.3.2"
         assert path[1].from_version == "0.3.2"
-        assert path[1].to_version == "0.4.1"
+        assert path[1].to_version == "0.4.2"
 
     def test_get_migration_path_from_v032(self):
-        """Test migration path from v0.3.2 to v0.4.1."""
+        """Test migration path from v0.3.2 to v0.4.2."""
         orchestrator = MigrationOrchestrator()
-        path = orchestrator.get_migration_path("0.3.2", "0.4.1")
+        path = orchestrator.get_migration_path("0.3.2", "0.4.2")
         assert len(path) == 1
         assert path[0].from_version == "0.3.2"
-        assert path[0].to_version == "0.4.1"
+        assert path[0].to_version == "0.4.2"
 
     def test_get_migration_path_invalid(self):
         """Test invalid migration path."""
@@ -147,12 +147,12 @@ class TestMigrationOrchestrator:
         orchestrator = MigrationOrchestrator()
 
         # Test version 0.3.1 (between 0.3.0 and 0.3.2) should use 0.3.0->0.3.2 migrator
-        path = orchestrator.get_migration_path("0.3.1", "0.4.1")
+        path = orchestrator.get_migration_path("0.3.1", "0.4.2")
         assert len(path) == 2
         assert path[0].from_version == "0.3.0"
         assert path[0].to_version == "0.3.2"
         assert path[1].from_version == "0.3.2"
-        assert path[1].to_version == "0.4.1"
+        assert path[1].to_version == "0.4.2"
 
     def test_get_migration_path_version_ranges_single_step(self):
         """Test migration path with version ranges - single step."""
@@ -168,23 +168,23 @@ class TestMigrationOrchestrator:
         """Test migration path with version ranges - version in second range."""
         orchestrator = MigrationOrchestrator()
 
-        # Test version 0.3.5 (between 0.3.2 and 0.4.1) should use 0.3.2->0.4.1 migrator
-        path = orchestrator.get_migration_path("0.3.5", "0.4.1")
+        # Test version 0.3.5 (between 0.3.2 and 0.4.2) should use 0.3.2->0.4.2 migrator
+        path = orchestrator.get_migration_path("0.3.5", "0.4.2")
         assert len(path) == 1
         assert path[0].from_version == "0.3.2"
-        assert path[0].to_version == "0.4.1"
+        assert path[0].to_version == "0.4.2"
 
     def test_get_highest_reachable_version_ranges(self):
         """Test highest reachable version with version ranges."""
         orchestrator = MigrationOrchestrator()
 
-        # Test version 0.3.1 (between 0.3.0 and 0.3.2) should reach 0.4.1
+        # Test version 0.3.1 (between 0.3.0 and 0.3.2) should reach 0.4.2
         highest = orchestrator.get_highest_reachable_version("0.3.1")
-        assert highest == "0.4.1"
+        assert highest == "0.4.2"
 
-        # Test version 0.3.5 (between 0.3.2 and 0.4.1) should reach 0.4.1
+        # Test version 0.3.5 (between 0.3.2 and 0.4.2) should reach 0.4.2
         highest = orchestrator.get_highest_reachable_version("0.3.5")
-        assert highest == "0.4.1"
+        assert highest == "0.4.2"
 
     def test_automatic_migrator_discovery(self):
         """Test that migrators are automatically discovered from filenames."""
@@ -195,7 +195,7 @@ class TestMigrationOrchestrator:
 
         # Check that the versions were parsed correctly from filenames
         migrator_versions = [(m.from_version, m.to_version) for m in orchestrator.script_migrators]
-        expected_versions = [("0.2.0", "0.3.0"), ("0.3.0", "0.3.2"), ("0.3.2", "0.4.1")]
+        expected_versions = [("0.2.0", "0.3.0"), ("0.3.0", "0.3.2"), ("0.3.2", "0.4.2")]
 
         # Sort both lists to ensure consistent comparison
         migrator_versions.sort()
@@ -272,15 +272,15 @@ class TestMigrationIntegration:
         assert len(orchestrator.script_migrators) == 3
 
         # Test migration path calculation
-        path_0_3_0_to_0_4_1 = orchestrator.get_migration_path("0.3.0", "0.4.1")
-        assert len(path_0_3_0_to_0_4_1) == 2
+        path_0_3_0_to_0_4_2 = orchestrator.get_migration_path("0.3.0", "0.4.2")
+        assert len(path_0_3_0_to_0_4_2) == 2
 
-        path_0_3_2_to_0_4_1 = orchestrator.get_migration_path("0.3.2", "0.4.1")
-        assert len(path_0_3_2_to_0_4_1) == 1
+        path_0_3_2_to_0_4_2 = orchestrator.get_migration_path("0.3.2", "0.4.2")
+        assert len(path_0_3_2_to_0_4_2) == 1
 
         # Test the new migrator path
-        path_0_2_0_to_0_4_1 = orchestrator.get_migration_path("0.2.0", "0.4.1")
-        assert len(path_0_2_0_to_0_4_1) == 3
+        path_0_2_0_to_0_4_2 = orchestrator.get_migration_path("0.2.0", "0.4.2")
+        assert len(path_0_2_0_to_0_4_2) == 3
 
     @patch("owa.cli.mcap.migrate.migrate.OWAMcapReader")
     def test_detect_version_with_mocked_reader(self, mock_reader_class):
@@ -330,11 +330,11 @@ class TestMigrationIntegration:
 
         mock_migrator_2 = MagicMock(spec=ScriptMigrator)
         mock_migrator_2.from_version = "0.3.2"
-        mock_migrator_2.to_version = "0.4.1"
+        mock_migrator_2.to_version = "0.4.2"
         mock_migrator_2.migrate.return_value = MigrationResult(
             success=True,
             version_from="0.3.2",
-            version_to="0.4.1",
+            version_to="0.4.2",
             changes_made=1,
             backup_path=None,
         )
@@ -352,8 +352,8 @@ class TestMigrationIntegration:
 
             console = Console()
 
-            # This should trigger two migrations: 0.3.0 -> 0.3.2 -> 0.4.1
-            results = orchestrator.migrate_file(tmp_path, target_version="0.4.1", console=console)
+            # This should trigger two migrations: 0.3.0 -> 0.3.2 -> 0.4.2
+            results = orchestrator.migrate_file(tmp_path, target_version="0.4.2", console=console)
 
             # Verify migration was successful
             assert len(results) == 2
