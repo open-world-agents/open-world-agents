@@ -7,21 +7,23 @@
 #   "easydict>=1.10",
 #   "orjson>=3.8.0",
 #   "typer>=0.12.0",
-#   "mcap-owa-support==0.4.1",
+#   "mcap-owa-support==0.4.2",
 # ]
 # [tool.uv]
-# exclude-newer = "2025-06-15T16:02:47Z"
+# exclude-newer = "2025-06-22T00:00:00Z"
 # ///
 """
-MCAP Migrator: v0.3.2 → v0.4.1
+MCAP Migrator: v0.3.2 → v0.4.2
 
 Migrates schema format from module-based to domain-based. See OEP-0006.
 """
 
+import io
 import sys
 from pathlib import Path
 from typing import Optional
 
+import orjson
 import typer
 from rich.console import Console
 
@@ -31,7 +33,7 @@ except ImportError as e:
     print(f"Error: Required packages not available: {e}")
     sys.exit(1)
 
-app = typer.Typer(help="MCAP Migration: v0.3.2 → v0.4.1")
+app = typer.Typer(help="MCAP Migration: v0.3.2 → v0.4.2")
 
 # Legacy to new message type mapping
 LEGACY_MESSAGE_MAPPING = {
@@ -52,6 +54,29 @@ class SimpleMessageClass:
     def model_dump(self):
         return {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
 
+    def serialize(self, buffer: io.BytesIO) -> None:
+        """Serialize the message to JSON format for MCAP compatibility."""
+        data = self.model_dump()
+        # Convert non-serializable types
+        data = self._make_serializable(data)
+        buffer.write(orjson.dumps(data))
+
+    def _make_serializable(self, obj):
+        """Convert non-serializable types to serializable ones."""
+        if isinstance(obj, set):
+            return list(obj)
+        elif isinstance(obj, dict):
+            return {k: self._make_serializable(v) for k, v in obj.items()}
+        elif isinstance(obj, (list, tuple)):
+            return [self._make_serializable(item) for item in obj]
+        else:
+            return obj
+
+    @classmethod
+    def get_schema(cls):
+        """Return a basic schema for the message."""
+        return {"type": "object", "properties": {}}
+
 
 @app.command()
 def migrate(
@@ -61,7 +86,7 @@ def migrate(
     ),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed information"),
 ) -> None:
-    """Migrate MCAP file from v0.3.2 to v0.4.1."""
+    """Migrate MCAP file from v0.3.2 to v0.4.2."""
     console = Console()
 
     if not input_file.exists():
@@ -77,7 +102,9 @@ def migrate(
 
     # Check if migration is needed
     with OWAMcapReader(input_file) as reader:
-        has_legacy_schemas = any(schema.name in LEGACY_MESSAGE_MAPPING for schema in reader.schemas.values())
+        has_legacy_schemas = any(
+            schema.name in LEGACY_MESSAGE_MAPPING for schema in reader.reader.get_summary().schemas.values()
+        )
 
     if not has_legacy_schemas:
         console.print("[green]✓ No legacy schemas found, no migration needed[/green]")
@@ -134,7 +161,7 @@ def verify(
 
     try:
         with OWAMcapReader(file_path) as reader:
-            for schema in reader.schemas.values():
+            for schema in reader.reader.get_summary().schemas.values():
                 if schema.name in LEGACY_MESSAGE_MAPPING:
                     console.print(f"[red]Legacy schema still present: {schema.name}[/red]")
                     raise typer.Exit(1)
