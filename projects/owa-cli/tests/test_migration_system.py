@@ -324,7 +324,6 @@ class TestMigrationIntegration:
             version_from="0.3.0",
             version_to="0.3.2",
             changes_made=1,
-            backup_path=None,
         )
         mock_migrator_1.verify_migration.return_value = True
 
@@ -336,7 +335,6 @@ class TestMigrationIntegration:
             version_from="0.3.2",
             version_to="0.4.2",
             changes_made=1,
-            backup_path=None,
         )
         mock_migrator_2.verify_migration.return_value = True
 
