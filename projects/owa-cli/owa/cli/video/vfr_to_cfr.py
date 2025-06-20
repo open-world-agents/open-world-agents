@@ -11,17 +11,8 @@ import typer
 from tqdm import tqdm
 
 
-def is_vfr(file_path):
-    """
-    Check if the given file has Variable Frame Rate (VFR).
-
-    Args:
-        file_path (Path): Path to the mkv file
-
-    Returns:
-        bool: True if the file has VFR, False otherwise
-    """
-    # Use ffprobe to get frame rate information
+def is_vfr(file_path: Path) -> bool:
+    """Check if file has Variable Frame Rate."""
     cmd = [
         "ffprobe",
         "-v",
@@ -35,173 +26,152 @@ def is_vfr(file_path):
         str(file_path),
     ]
 
-    result = subprocess.run(cmd, capture_output=True, text=True)
-
     try:
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
         data = json.loads(result.stdout)
 
-        # Extract frame rate information
-        if "streams" in data and data["streams"]:
-            stream = data["streams"][0]
-            avg_frame_rate = stream.get("avg_frame_rate", "")
-            r_frame_rate = stream.get("r_frame_rate", "")
+        if not data.get("streams"):
+            return False
 
-            # Parse the frame rates
-            def parse_rate(rate):
-                if not rate or rate == "0/0":
-                    return 0
+        stream = data["streams"][0]
+        avg_rate = stream.get("avg_frame_rate", "")
+        r_rate = stream.get("r_frame_rate", "")
+
+        def parse_rate(rate):
+            if not rate or rate == "0/0":
+                return 0
+            try:
                 num, den = map(int, rate.split("/"))
                 return num / den if den != 0 else 0
+            except (ValueError, ZeroDivisionError):
+                return 0
 
-            avg_fps = parse_rate(avg_frame_rate)
-            r_fps = parse_rate(r_frame_rate)
+        avg_fps = parse_rate(avg_rate)
+        r_fps = parse_rate(r_rate)
 
-            # If the rates are different or if either is 0, it's likely VFR
-            if abs(avg_fps - r_fps) > 0.01 or avg_fps == 0 or r_fps == 0:
-                print(
-                    f"VFR detected in '{file_path.name}' at {file_path}: avg_rate={avg_frame_rate}, r_rate={r_frame_rate}"
-                )
-                return True
-    except Exception as e:
-        print(f"Error analyzing '{file_path.name}': {e}")
+        return abs(avg_fps - r_fps) > 0.01 or avg_fps == 0 or r_fps == 0
 
-    return False
+    except (subprocess.CalledProcessError, json.JSONDecodeError):
+        return False
 
 
-def convert_to_cfr(file_path):
-    """
-    Convert a VFR file to CFR using ffmpeg.
-
-    Args:
-        file_path (Path): Path to the mkv file
-
-    Returns:
-        str: Status message
-    """
-    temp_dir = None
-    backup_file = None
-
-    try:
-        # Create a temporary directory and file
-        temp_dir = tempfile.mkdtemp()
-        temp_file = Path(temp_dir) / f"cfr_{file_path.name}"
-
-        # Use the ORIGINAL ffmpeg command with your parameters
+def convert_to_cfr(file_path: Path, dry_run: bool = False) -> str:
+    """Convert VFR file to CFR using ffmpeg."""
+    if dry_run:
         cmd = [
             "ffmpeg",
             "-i",
             str(file_path),
             "-vsync",
-            "1",  # Ensure video sync
+            "1",
             "-filter:v",
             "fps=60",
             "-c:v",
-            # Adopt x264 instead of x265 for 3x faster encoding
             "libx264",
             "-x264-params",
             "keyint=30:no-scenecut=1:bframes=0",
-            # Re-encode audio instead of copying to maintain sync
             "-c:a",
-            "aac",  # Use AAC codec for audio
+            "aac",
             "-b:a",
-            "192k",  # Good quality bitrate
+            "192k",
             "-af",
-            "aresample=async=1000",  # Fix potential audio sync issues
+            "aresample=async=1000",
+            "-c:s",
+            "copy",
+            f"cfr_{file_path.name}",
+        ]
+        return f"[DRY RUN] Would convert '{file_path.name}' to CFR using: {' '.join(cmd)}"
+
+    temp_dir = tempfile.mkdtemp()
+    temp_file = Path(temp_dir) / f"cfr_{file_path.name}"
+    backup_file = file_path.with_suffix(f"{file_path.suffix}.bak")
+
+    try:
+        cmd = [
+            "ffmpeg",
+            "-i",
+            str(file_path),
+            "-vsync",
+            "1",
+            "-filter:v",
+            "fps=60",
+            "-c:v",
+            "libx264",
+            "-x264-params",
+            "keyint=30:no-scenecut=1:bframes=0",
+            "-c:a",
+            "aac",
+            "-b:a",
+            "192k",
+            "-af",
+            "aresample=async=1000",
             "-c:s",
             "copy",
             str(temp_file),
         ]
 
-        # Run the ffmpeg command
-        process = subprocess.run(cmd, capture_output=True, text=True)
+        subprocess.run(cmd, capture_output=True, text=True, check=True)
 
-        # Check for errors
-        if process.returncode != 0:
-            raise Exception(f"ffmpeg error: {process.stderr}")
+        if not temp_file.exists() or temp_file.stat().st_size < 1000:
+            raise Exception("Output file missing or too small")
 
-        # Verify the output file exists and has content
-        if not temp_file.exists() or temp_file.stat().st_size < 1000:  # 1KB minimum
-            raise Exception("Output file is missing or too small")
+        if backup_file.exists():
+            raise Exception(f"Backup file already exists: {backup_file}")
 
-        # Make backup of original file
-        backup_file = file_path.with_suffix(f"{file_path.suffix}.bak")
         shutil.copy2(file_path, backup_file)
-
-        # Replace the original file with the temporary file
         shutil.move(str(temp_file), str(file_path))
 
-        # Verify the replacement worked
         if not file_path.exists() or file_path.stat().st_size < 1000:
             raise Exception("File replacement failed")
 
-        # Remove backup if everything worked
         backup_file.unlink(missing_ok=True)
-
-        # Clean up temp directory
-        shutil.rmtree(temp_dir, ignore_errors=True)
-
-        return f"Successfully converted '{file_path.name}' to CFR at {file_path}"
+        return f"Successfully converted '{file_path.name}' to CFR"
 
     except Exception as e:
-        # Clean up temporary directory if it exists
-        if temp_dir and os.path.exists(temp_dir):
+        if backup_file.exists() and (not file_path.exists() or file_path.stat().st_size < 1000):
+            shutil.move(str(backup_file), str(file_path))
+            return f"Error converting '{file_path.name}': {e} (restored from backup)"
+        elif backup_file.exists():
+            backup_file.unlink(missing_ok=True)
+
+        return f"Error converting '{file_path.name}': {e}"
+
+    finally:
+        if os.path.exists(temp_dir):
             shutil.rmtree(temp_dir, ignore_errors=True)
 
-        # Restore from backup if needed
-        if backup_file and backup_file.exists():
-            if not file_path.exists() or file_path.stat().st_size < 1000:
-                shutil.move(str(backup_file), str(file_path))
-                return f"Error converting '{file_path.name}': {str(e)} (original file restored)"
-            else:
-                # Remove backup if original is intact
-                backup_file.unlink(missing_ok=True)
 
-        return f"Error converting '{file_path.name}': {str(e)}"
-
-
-def process_file(file_path):
-    """
-    Process a single .mkv file.
-
-    Args:
-        file_path (str): Path to the .mkv file
-    """
-    file_path = Path(file_path)
+def process_file(file_path: Path, dry_run: bool = False):
+    """Process a single .mkv file."""
     if not file_path.exists():
-        print(f"Error: File '{file_path.name}' does not exist at {file_path}")
+        print(f"Error: File does not exist: {file_path}")
         return
 
     if file_path.suffix.lower() != ".mkv":
-        print(f"Error: '{file_path.name}' is not an MKV file")
+        print(f"Error: Not an MKV file: {file_path.name}")
         return
 
     if is_vfr(file_path):
-        print(f"Converting '{file_path.name}' from VFR to CFR...")
-        result = convert_to_cfr(file_path)
+        if dry_run:
+            print(f"[DRY RUN] Would convert '{file_path.name}' from VFR to CFR...")
+        else:
+            print(f"Converting '{file_path.name}' from VFR to CFR...")
+        result = convert_to_cfr(file_path, dry_run)
         print(result)
     else:
         print(f"'{file_path.name}' is already using CFR. No conversion needed.")
 
 
-def process_directory(directory, max_workers=None):
-    """
-    Process all .mkv files in the given directory recursively.
-
-    Args:
-        directory (str): Directory to scan for .mkv files
-        max_workers (int, optional): Maximum number of parallel conversions
-    """
-    directory_path = Path(directory)
+def process_directory(directory_path: Path, max_workers: Optional[int] = None, dry_run: bool = False):
+    """Process all .mkv files in directory recursively."""
     if not directory_path.is_dir():
-        print(f"Error: '{directory}' is not a valid directory")
+        print(f"Error: '{directory_path}' is not a valid directory")
         return
 
-    # Get all .mkv files recursively
     mkv_files = list(directory_path.rglob("*.mkv"))
+    print(f"Found {len(mkv_files)} .mkv files. Checking for VFR...")
 
-    print(f"Found {len(mkv_files)} .mkv files in '{directory_path.name}'. Checking for VFR...")
-
-    # Filter for VFR files with progress bar
+    # Filter for VFR files
     vfr_files = []
     with tqdm(mkv_files, desc="Analyzing files for VFR", unit="file") as pbar:
         for file in pbar:
@@ -209,23 +179,23 @@ def process_directory(directory, max_workers=None):
             if is_vfr(file):
                 vfr_files.append(file)
 
-    print(f"Found {len(vfr_files)} VFR files out of {len(mkv_files)} total .mkv files.")
+    print(f"Found {len(vfr_files)} VFR files out of {len(mkv_files)} total files.")
 
     if not vfr_files:
-        print("No VFR files to convert. Exiting.")
+        print("No VFR files to convert.")
         return
 
-    # Convert VFR files to CFR in parallel with progress bar
-    print(f"Converting {len(vfr_files)} files to CFR...")
-    with tqdm(total=len(vfr_files), desc="Converting to CFR", unit="file") as pbar:
+    # Convert files
+    desc = "Analyzing conversions (dry run)" if dry_run else "Converting to CFR"
+    with tqdm(total=len(vfr_files), desc=desc, unit="file") as pbar:
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            future_to_file = {executor.submit(convert_to_cfr, file): file for file in vfr_files}
+            future_to_file = {executor.submit(convert_to_cfr, file, dry_run): file for file in vfr_files}
 
             for future in concurrent.futures.as_completed(future_to_file):
                 file = future_to_file[future]
                 try:
                     result = future.result()
-                    pbar.set_postfix_str(f"Completed {file.name}")
+                    pbar.set_postfix_str(f"{'Analyzed' if dry_run else 'Completed'} {file.name}")
                     print(result)
                 except Exception as e:
                     print(f"Error processing '{file.name}': {e}")
@@ -236,17 +206,15 @@ def process_directory(directory, max_workers=None):
 def main(
     path: str = typer.Argument(..., help="Path to MKV file or directory containing MKV files"),
     workers: Optional[int] = typer.Option(None, "--workers", "-w", help="Maximum number of parallel conversions"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Show what would be done without actually converting files"),
 ):
-    """
-    Convert MKV files with Variable Frame Rate (VFR) to Constant Frame Rate (CFR).
-    Can process either a single file or an entire directory recursively.
-    """
+    """Convert MKV files with Variable Frame Rate (VFR) to Constant Frame Rate (CFR)."""
     path_obj = Path(path)
 
     if path_obj.is_file():
-        process_file(path)
+        process_file(path_obj, dry_run)
     elif path_obj.is_dir():
-        process_directory(path, workers)
+        process_directory(path_obj, workers, dry_run)
     else:
         print(f"Error: '{path}' is neither a valid file nor directory")
 
