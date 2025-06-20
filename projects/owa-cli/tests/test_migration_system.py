@@ -191,11 +191,11 @@ class TestMigrationOrchestrator:
         orchestrator = MigrationOrchestrator()
 
         # Should have discovered the existing migrators
-        assert len(orchestrator.script_migrators) == 2
+        assert len(orchestrator.script_migrators) == 3
 
         # Check that the versions were parsed correctly from filenames
         migrator_versions = [(m.from_version, m.to_version) for m in orchestrator.script_migrators]
-        expected_versions = [("0.3.0", "0.3.2"), ("0.3.2", "0.4.1")]
+        expected_versions = [("0.2.0", "0.3.0"), ("0.3.0", "0.3.2"), ("0.3.2", "0.4.1")]
 
         # Sort both lists to ensure consistent comparison
         migrator_versions.sort()
@@ -269,7 +269,7 @@ class TestMigrationIntegration:
         orchestrator = MigrationOrchestrator()
 
         # Test that the orchestrator can be created and has the expected script migrators
-        assert len(orchestrator.script_migrators) == 2
+        assert len(orchestrator.script_migrators) == 3
 
         # Test migration path calculation
         path_0_3_0_to_0_4_1 = orchestrator.get_migration_path("0.3.0", "0.4.1")
@@ -277,6 +277,10 @@ class TestMigrationIntegration:
 
         path_0_3_2_to_0_4_1 = orchestrator.get_migration_path("0.3.2", "0.4.1")
         assert len(path_0_3_2_to_0_4_1) == 1
+
+        # Test the new migrator path
+        path_0_2_0_to_0_4_1 = orchestrator.get_migration_path("0.2.0", "0.4.1")
+        assert len(path_0_2_0_to_0_4_1) == 3
 
     @patch("owa.cli.mcap.migrate.migrate.OWAMcapReader")
     def test_detect_version_with_mocked_reader(self, mock_reader_class):

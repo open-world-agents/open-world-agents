@@ -10,6 +10,7 @@ This module provides a comprehensive migration system using standalone script mi
 
 import shutil
 import subprocess
+from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
 
@@ -18,15 +19,8 @@ from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
-try:
-    from mcap_owa import __version__ as mcap_owa_version
-    from mcap_owa.highlevel import OWAMcapReader
-except ImportError as e:
-    typer.echo(f"Error: Required packages not available: {e}", err=True)
-    typer.echo("Please install: pip install mcap-owa-support", err=True)
-    raise typer.Exit(1)
-
-from dataclasses import dataclass
+from mcap_owa import __version__ as mcap_owa_version
+from mcap_owa.highlevel import OWAMcapReader
 
 
 @dataclass
@@ -73,7 +67,7 @@ class ScriptMigrator:
             )
 
             if result.returncode == 0:
-                # Count changes from output (simple heuristic)
+                # Count changes from output (simple heuristic) TODO
                 changes_made = 1 if "changes made" in result.stdout else 0
                 return MigrationResult(
                     success=True,
