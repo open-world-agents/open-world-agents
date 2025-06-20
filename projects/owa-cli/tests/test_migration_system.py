@@ -142,6 +142,59 @@ class TestMigrationOrchestrator:
         with pytest.raises(ValueError, match="No migration path found"):
             orchestrator.get_migration_path("unknown", "0.4.1")
 
+    def test_automatic_migrator_discovery(self):
+        """Test that migrators are automatically discovered from filenames."""
+        orchestrator = MigrationOrchestrator()
+
+        # Should have discovered the existing migrators
+        assert len(orchestrator.script_migrators) == 2
+
+        # Check that the versions were parsed correctly from filenames
+        migrator_versions = [(m.from_version, m.to_version) for m in orchestrator.script_migrators]
+        expected_versions = [("0.3.0", "0.3.2"), ("0.3.2", "0.4.1")]
+
+        # Sort both lists to ensure consistent comparison
+        migrator_versions.sort()
+        expected_versions.sort()
+
+        assert migrator_versions == expected_versions
+
+    def test_filename_pattern_parsing(self):
+        """Test that the filename pattern parsing works correctly."""
+        import re
+
+        # Test the regex pattern used in the discovery
+        version_pattern = re.compile(r"^v(\d+_\d+_\d+)_to_v(\d+_\d+_\d+)\.py$")
+
+        # Test valid patterns
+        valid_cases = [
+            ("v0_3_0_to_v0_3_2.py", "0.3.0", "0.3.2"),
+            ("v0_3_2_to_v0_4_1.py", "0.3.2", "0.4.1"),
+            ("v1_0_0_to_v2_0_0.py", "1.0.0", "2.0.0"),
+            ("v0_4_1_to_v0_5_0.py", "0.4.1", "0.5.0"),
+        ]
+
+        for filename, expected_from, expected_to in valid_cases:
+            match = version_pattern.match(filename)
+            assert match is not None, f"Pattern should match {filename}"
+            from_version = match.group(1).replace("_", ".")
+            to_version = match.group(2).replace("_", ".")
+            assert from_version == expected_from
+            assert to_version == expected_to
+
+        # Test invalid patterns
+        invalid_cases = [
+            "v0_3_0_to_v0_3_2.txt",  # Wrong extension
+            "0_3_0_to_v0_3_2.py",  # Missing 'v' prefix
+            "v0_3_to_v0_3_2.py",  # Incomplete version
+            "v0_3_0_v0_3_2.py",  # Missing 'to'
+            "random_file.py",  # Completely different pattern
+        ]
+
+        for filename in invalid_cases:
+            match = version_pattern.match(filename)
+            assert match is None, f"Pattern should not match {filename}"
+
 
 class TestDetectFilesNeedingMigration:
     """Test file detection functionality."""

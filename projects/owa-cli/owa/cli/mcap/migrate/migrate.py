@@ -119,7 +119,7 @@ class FileVersionInfo:
 class MigrationOrchestrator:
     """Orchestrates sequential migrations for MCAP files using script migrators."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the orchestrator."""
         self.script_migrators: List[ScriptMigrator] = []
         self.current_version = mcap_owa_version  # Use actual library version
@@ -127,8 +127,8 @@ class MigrationOrchestrator:
         # Discover available script migrators
         self._discover_script_migrators()
 
-    def _discover_script_migrators(self):
-        """Discover standalone migration scripts."""
+    def _discover_script_migrators(self) -> None:
+        """Discover standalone migration scripts automatically from filename patterns."""
         try:
             # Get the migrators directory relative to this file
             # migrate.py is in owa/cli/mcap/, migrators are in owa/cli/mcap/migrators/
@@ -138,31 +138,25 @@ class MigrationOrchestrator:
             if not migrators_dir.exists():
                 return
 
-            # Look for migration scripts - check if they're uv scripts
-            script_patterns = [
-                ("v0_3_0_to_v0_3_2.py", "0.3.0", "0.3.2"),
-                ("v0_3_2_to_v0_4_1.py", "0.3.2", "0.4.1"),
-            ]
+            # Automatically discover all Python files matching the pattern v{from}_to_v{to}.py
+            import re
 
-            for script_name, from_version, to_version in script_patterns:
-                script_path = migrators_dir / script_name
-                if script_path.exists():
-                    # Check if it's a uv script by looking for the shebang
-                    try:
-                        with open(script_path, "r", encoding="utf-8") as f:
-                            first_line = f.readline().strip()
-                            if first_line.startswith("#!/usr/bin/env -S uv run --script"):
-                                self.script_migrators.append(
-                                    ScriptMigrator(
-                                        script_path=script_path, from_version=from_version, to_version=to_version
-                                    )
-                                )
-                    except Exception:
-                        pass
+            version_pattern = re.compile(r"^v(\d+_\d+_\d+)_to_v(\d+_\d+_\d+)\.py$")
 
-        except Exception:
-            # If script discovery fails, silently continue
-            pass
+            for script_path in migrators_dir.glob("*.py"):
+                match = version_pattern.match(script_path.name)
+                if match:
+                    # Convert underscores back to dots for version strings
+                    from_version = match.group(1).replace("_", ".")
+                    to_version = match.group(2).replace("_", ".")
+
+                    self.script_migrators.append(
+                        ScriptMigrator(script_path=script_path, from_version=from_version, to_version=to_version)
+                    )
+
+        except Exception as e:
+            # If script discovery fails, log the error and continue
+            typer.echo(f"Error discovering script migrators: {e}", err=True)
 
     def detect_version(self, file_path: Path) -> str:
         """Detect the version of an MCAP file using mcap-owa-support's stored version."""
@@ -211,7 +205,7 @@ class MigrationOrchestrator:
         if backup_path.stat().st_size != file_path.stat().st_size:
             raise OSError(f"Backup verification failed: size mismatch for {backup_path}")
 
-    def get_migration_path(self, from_version: str, to_version: str):
+    def get_migration_path(self, from_version: str, to_version: str) -> List[ScriptMigrator]:
         """Get the sequence of migrators needed to go from one version to another."""
         if from_version == to_version:
             return []
@@ -330,7 +324,7 @@ class MigrationOrchestrator:
         console.print("\n[green]✓ All migrations completed successfully![/green]")
         return results
 
-    def _rollback_migrations(self, file_path: Path, backup_path: Path, console: Console):
+    def _rollback_migrations(self, file_path: Path, backup_path: Path, console: Console) -> None:
         """Rollback migrations by restoring from the backup."""
         console.print("[yellow]Rolling back migrations...[/yellow]")
 
