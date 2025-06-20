@@ -7,7 +7,7 @@
 #   "easydict>=1.10",
 #   "orjson>=3.8.0",
 #   "typer>=0.12.0",
-#   "mcap-owa-support @ git+https://github.com/open-world-agents/open-world-agents.git@v0.4.1#subdirectory=projects/mcap-owa-support",
+#   "mcap-owa-support==0.4.1",
 # ]
 # [tool.uv]
 # exclude-newer = "2025-06-15T16:02:47Z"

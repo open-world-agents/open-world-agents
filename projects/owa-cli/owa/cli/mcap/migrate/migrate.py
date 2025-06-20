@@ -227,6 +227,57 @@ class MigrationOrchestrator:
         if from_version == to_version:
             return []
 
+        # Parse versions for comparison
+        from packaging.version import Version
+
+        try:
+            from_ver = Version(from_version)
+            to_ver = Version(to_version)
+        except Exception:
+            # If version parsing fails, fall back to exact matching
+            return self._get_migration_path_exact(from_version, to_version)
+
+        # Build migration ranges - each migrator covers a version range
+        migration_ranges = []
+        for migrator in self.script_migrators:
+            try:
+                range_start = Version(migrator.from_version)
+                range_end = Version(migrator.to_version)
+                migration_ranges.append((range_start, range_end, migrator))
+            except Exception:
+                # Skip migrators with unparseable versions
+                continue
+
+        # Sort migration ranges by start version
+        migration_ranges.sort(key=lambda x: x[0])
+
+        # Find path from source to target using version ranges
+        path = []
+        current_ver = from_ver
+
+        while current_ver < to_ver:
+            # Find a migrator that can handle the current version
+            found_migrator = None
+            for range_start, range_end, migrator in migration_ranges:
+                # Check if current version is in the range [range_start, range_end)
+                if range_start <= current_ver < range_end:
+                    found_migrator = migrator
+                    break
+
+            if found_migrator is None:
+                raise ValueError(f"No migration path found from {from_version} to {to_version}")
+
+            path.append(found_migrator)
+            current_ver = Version(found_migrator.to_version)
+
+            # Prevent infinite loops
+            if len(path) > 10:
+                raise ValueError(f"Migration path too long from {from_version} to {to_version}")
+
+        return path
+
+    def _get_migration_path_exact(self, from_version: str, to_version: str) -> List[ScriptMigrator]:
+        """Fallback method for exact version matching when version parsing fails."""
         # Build migration graph using script migrators
         migration_graph = {}
         for migrator in self.script_migrators:
@@ -255,6 +306,50 @@ class MigrationOrchestrator:
         if not self.script_migrators:
             return from_version
 
+        # Parse version for comparison
+        from packaging.version import Version
+
+        try:
+            from_ver = Version(from_version)
+        except Exception:
+            # If version parsing fails, fall back to exact matching
+            return self._get_highest_reachable_version_exact(from_version)
+
+        # Build migration ranges
+        migration_ranges = []
+        for migrator in self.script_migrators:
+            try:
+                range_start = Version(migrator.from_version)
+                range_end = Version(migrator.to_version)
+                migration_ranges.append((range_start, range_end, migrator))
+            except Exception:
+                continue
+
+        # Sort migration ranges by start version
+        migration_ranges.sort(key=lambda x: x[0])
+
+        # Follow the migration chain as far as possible using version ranges
+        current_ver = from_ver
+        max_iterations = 10  # Prevent infinite loops
+
+        for _ in range(max_iterations):
+            # Find a migrator that can handle the current version
+            found_migrator = None
+            for range_start, range_end, migrator in migration_ranges:
+                if range_start <= current_ver < range_end:
+                    found_migrator = migrator
+                    break
+
+            if found_migrator is None:
+                # No more migrations possible
+                break
+
+            current_ver = Version(found_migrator.to_version)
+
+        return str(current_ver)
+
+    def _get_highest_reachable_version_exact(self, from_version: str) -> str:
+        """Fallback method for exact version matching when version parsing fails."""
         # Build migration graph using script migrators
         migration_graph = {}
         for migrator in self.script_migrators:
