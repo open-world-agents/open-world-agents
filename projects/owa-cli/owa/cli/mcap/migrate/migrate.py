@@ -1,14 +1,8 @@
 """
 MCAP file migration system with automatic version detection and sequential migration.
-
-This module provides a comprehensive migration system using standalone script migrators that can:
-1. Automatically detect the version of MCAP files
-2. Apply sequential migrations to bring files up to the latest version
-3. Verify migration success and rollback on failure
-4. Handle multiple files with shell glob expansion
 """
 
-import os
+import re
 import shutil
 import subprocess
 from dataclasses import dataclass
@@ -16,12 +10,22 @@ from pathlib import Path
 from typing import List, Optional
 
 import typer
+from packaging.version import Version
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
 from mcap_owa import __version__ as mcap_owa_version
 from mcap_owa.highlevel import OWAMcapReader
+
+
+def _get_subprocess_env():
+    """Get environment variables for subprocess calls with proper encoding."""
+    import os
+
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "utf-8"
+    return env
 
 
 @dataclass
@@ -32,15 +36,7 @@ class MigrationResult:
     version_from: str
     version_to: str
     changes_made: int
-    error_message: Optional[str] = None
-    backup_path: Optional[Path] = None
-
-
-def _get_subprocess_env():
-    """Get environment variables for subprocess calls with proper encoding."""
-    env = os.environ.copy()
-    env["PYTHONIOENCODING"] = "utf-8"
-    return env
+    error_message: str = ""
 
 
 @dataclass
@@ -51,64 +47,31 @@ class ScriptMigrator:
     from_version: str
     to_version: str
 
-    def migrate(self, file_path: Path, console: Console, verbose: bool) -> MigrationResult:
+    def migrate(self, file_path: Path, verbose: bool) -> MigrationResult:
         """Execute the standalone migration script."""
-        try:
-            # Build command for migrate subcommand
-            cmd = ["uv", "run", str(self.script_path), "migrate", str(file_path)]
+        cmd = ["uv", "run", str(self.script_path), "migrate", str(file_path)]
+        if verbose:
+            cmd.append("--verbose")
 
-            if verbose:
-                cmd.append("--verbose")
+        result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", env=_get_subprocess_env())
 
-            # Execute script with error handling for encoding issues
-            result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", env=_get_subprocess_env())
+        if result.returncode == 0:
+            changes_made = 1 if result.stdout and "changes made" in result.stdout else 0
+            return MigrationResult(True, self.from_version, self.to_version, changes_made)
 
-            if result.returncode == 0:
-                # Count changes from output (simple heuristic) TODO
-                changes_made = 1 if result.stdout and "changes made" in result.stdout else 0
-                return MigrationResult(
-                    success=True, version_from=self.from_version, version_to=self.to_version, changes_made=changes_made
-                )
-            else:
-                # Safely handle None values for stderr/stdout
-                stderr_msg = result.stderr.strip() if result.stderr else ""
-                stdout_msg = result.stdout.strip() if result.stdout else ""
-                error_message = stderr_msg or stdout_msg or "Unknown error occurred"
+        error_msg = (
+            result.stderr.strip() if result.stderr else result.stdout.strip() if result.stdout else "Migration failed"
+        )
+        return MigrationResult(False, self.from_version, self.to_version, 0, error_msg)
 
-                return MigrationResult(
-                    success=False,
-                    version_from=self.from_version,
-                    version_to=self.to_version,
-                    changes_made=0,
-                    error_message=error_message,
-                )
-
-        except Exception as e:
-            return MigrationResult(
-                success=False,
-                version_from=self.from_version,
-                version_to=self.to_version,
-                changes_made=0,
-                error_message=str(e),
-            )
-
-    def verify_migration(self, file_path: Path, backup_path: Optional[Path], console: Console) -> bool:
+    def verify_migration(self, file_path: Path, backup_path: Optional[Path]) -> bool:
         """Verify migration by running the script with --verify flag."""
-        try:
-            # Build verification command
-            cmd = ["uv", "run", str(self.script_path), "verify", str(file_path)]
+        cmd = ["uv", "run", str(self.script_path), "verify", str(file_path)]
+        if backup_path:
+            cmd.extend(["--backup-path", str(backup_path)])
 
-            # Add backup path if provided
-            if backup_path:
-                cmd.extend(["--backup-path", str(backup_path)])
-
-            # Execute verification with error handling for encoding issues
-            result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", env=_get_subprocess_env())
-
-            return result.returncode == 0
-
-        except Exception:
-            return False
+        result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", env=_get_subprocess_env())
+        return result.returncode == 0
 
 
 @dataclass
@@ -127,86 +90,47 @@ class MigrationOrchestrator:
     def __init__(self) -> None:
         """Initialize the orchestrator."""
         self.script_migrators: List[ScriptMigrator] = []
-        self.current_version = mcap_owa_version  # Use actual library version
-
-        # Discover available script migrators
+        self.current_version = mcap_owa_version
         self._discover_script_migrators()
 
     def _discover_script_migrators(self) -> None:
         """Discover standalone migration scripts automatically from filename patterns."""
-        try:
-            # Get the migrators directory relative to this file
-            # migrate.py is in owa/cli/mcap/, migrators are in owa/cli/mcap/migrators/
-            current_file = Path(__file__)
-            migrators_dir = current_file.parent / "migrators"
+        migrators_dir = Path(__file__).parent / "migrators"
+        if not migrators_dir.exists():
+            return
 
-            if not migrators_dir.exists():
-                return
+        version_pattern = re.compile(r"^v(\d+_\d+_\d+)_to_v(\d+_\d+_\d+)\.py$")
 
-            # Automatically discover all Python files matching the pattern v{from}_to_v{to}.py
-            import re
-
-            version_pattern = re.compile(r"^v(\d+_\d+_\d+)_to_v(\d+_\d+_\d+)\.py$")
-
-            for script_path in migrators_dir.glob("*.py"):
-                match = version_pattern.match(script_path.name)
-                if match:
-                    # Convert underscores back to dots for version strings
-                    from_version = match.group(1).replace("_", ".")
-                    to_version = match.group(2).replace("_", ".")
-
-                    self.script_migrators.append(
-                        ScriptMigrator(script_path=script_path, from_version=from_version, to_version=to_version)
-                    )
-
-        except Exception as e:
-            # If script discovery fails, log the error and continue
-            typer.echo(f"Error discovering script migrators: {e}", err=True)
+        for script_path in migrators_dir.glob("*.py"):
+            match = version_pattern.match(script_path.name)
+            if match:
+                from_version = match.group(1).replace("_", ".")
+                to_version = match.group(2).replace("_", ".")
+                self.script_migrators.append(ScriptMigrator(script_path, from_version, to_version))
 
     def detect_version(self, file_path: Path) -> str:
         """Detect the version of an MCAP file using mcap-owa-support's stored version."""
         try:
             with OWAMcapReader(file_path) as reader:
                 file_version = reader.file_version
-                if file_version and file_version != "unknown":
-                    return file_version
-                # If version is unknown, default to current version
-                return self.current_version
+                return file_version if file_version and file_version != "unknown" else self.current_version
         except Exception:
             return "unknown"
 
     def create_backup(self, file_path: Path, backup_path: Path) -> None:
-        """
-        Create a backup of the file with high reliability.
-
-        Args:
-            file_path: Source file to backup
-            backup_path: Destination backup path
-
-        Raises:
-            FileNotFoundError: If source file doesn't exist
-            FileExistsError: If backup path already exists
-            OSError: If backup creation or verification fails
-        """
-        # Ensure source file exists and is readable
+        """Create a backup of the file with high reliability."""
         if not file_path.exists():
             raise FileNotFoundError(f"Source file not found: {file_path}")
 
-        # Check if backup already exists
         if backup_path.exists():
             raise FileExistsError(f"Backup file already exists: {backup_path}")
 
-        # Ensure backup directory exists
         backup_path.parent.mkdir(parents=True, exist_ok=True)
-
-        # Create backup with metadata preservation
         shutil.copy2(file_path, backup_path)
 
-        # Verify backup was created successfully
         if not backup_path.exists():
             raise OSError(f"Backup creation failed: {backup_path}")
 
-        # Verify backup size matches original
         if backup_path.stat().st_size != file_path.stat().st_size:
             raise OSError(f"Backup verification failed: size mismatch for {backup_path}")
 
@@ -215,63 +139,52 @@ class MigrationOrchestrator:
         if from_version == to_version:
             return []
 
-        # Parse versions for comparison
-        from packaging.version import Version
-
         try:
             from_ver = Version(from_version)
             to_ver = Version(to_version)
+
+            # Build migration ranges
+            migration_ranges = []
+            for migrator in self.script_migrators:
+                try:
+                    range_start = Version(migrator.from_version)
+                    range_end = Version(migrator.to_version)
+                    migration_ranges.append((range_start, range_end, migrator))
+                except Exception:
+                    continue
+
+            migration_ranges.sort(key=lambda x: x[0])
+
+            # Find path from source to target
+            path = []
+            current_ver = from_ver
+
+            while current_ver < to_ver:
+                found_migrator = None
+                for range_start, range_end, migrator in migration_ranges:
+                    if range_start <= current_ver < range_end:
+                        found_migrator = migrator
+                        break
+
+                if found_migrator is None:
+                    raise ValueError(f"No migration path found from {from_version} to {to_version}")
+
+                path.append(found_migrator)
+                current_ver = Version(found_migrator.to_version)
+
+                if len(path) > 10:  # Prevent infinite loops
+                    raise ValueError(f"Migration path too long from {from_version} to {to_version}")
+
+            return path
+
         except Exception:
-            # If version parsing fails, fall back to exact matching
+            # Fallback to exact matching
             return self._get_migration_path_exact(from_version, to_version)
-
-        # Build migration ranges - each migrator covers a version range
-        migration_ranges = []
-        for migrator in self.script_migrators:
-            try:
-                range_start = Version(migrator.from_version)
-                range_end = Version(migrator.to_version)
-                migration_ranges.append((range_start, range_end, migrator))
-            except Exception:
-                # Skip migrators with unparseable versions
-                continue
-
-        # Sort migration ranges by start version
-        migration_ranges.sort(key=lambda x: x[0])
-
-        # Find path from source to target using version ranges
-        path = []
-        current_ver = from_ver
-
-        while current_ver < to_ver:
-            # Find a migrator that can handle the current version
-            found_migrator = None
-            for range_start, range_end, migrator in migration_ranges:
-                # Check if current version is in the range [range_start, range_end)
-                if range_start <= current_ver < range_end:
-                    found_migrator = migrator
-                    break
-
-            if found_migrator is None:
-                raise ValueError(f"No migration path found from {from_version} to {to_version}")
-
-            path.append(found_migrator)
-            current_ver = Version(found_migrator.to_version)
-
-            # Prevent infinite loops
-            if len(path) > 10:
-                raise ValueError(f"Migration path too long from {from_version} to {to_version}")
-
-        return path
 
     def _get_migration_path_exact(self, from_version: str, to_version: str) -> List[ScriptMigrator]:
         """Fallback method for exact version matching when version parsing fails."""
-        # Build migration graph using script migrators
-        migration_graph = {}
-        for migrator in self.script_migrators:
-            migration_graph[migrator.from_version] = migrator
+        migration_graph = {migrator.from_version: migrator for migrator in self.script_migrators}
 
-        # Find path from source to target
         path = []
         current = from_version
 
@@ -283,8 +196,7 @@ class MigrationOrchestrator:
             path.append(migrator)
             current = migrator.to_version
 
-            # Prevent infinite loops
-            if len(path) > 10:
+            if len(path) > 10:  # Prevent infinite loops
                 raise ValueError(f"Migration path too long from {from_version} to {to_version}")
 
         return path
@@ -294,62 +206,45 @@ class MigrationOrchestrator:
         if not self.script_migrators:
             return from_version
 
-        # Parse version for comparison
-        from packaging.version import Version
-
         try:
             from_ver = Version(from_version)
-        except Exception:
-            # If version parsing fails, fall back to exact matching
-            return self._get_highest_reachable_version_exact(from_version)
 
-        # Build migration ranges
-        migration_ranges = []
-        for migrator in self.script_migrators:
-            try:
-                range_start = Version(migrator.from_version)
-                range_end = Version(migrator.to_version)
-                migration_ranges.append((range_start, range_end, migrator))
-            except Exception:
-                continue
+            # Build migration ranges
+            migration_ranges = []
+            for migrator in self.script_migrators:
+                try:
+                    range_start = Version(migrator.from_version)
+                    range_end = Version(migrator.to_version)
+                    migration_ranges.append((range_start, range_end, migrator))
+                except Exception:
+                    continue
 
-        # Sort migration ranges by start version
-        migration_ranges.sort(key=lambda x: x[0])
+            migration_ranges.sort(key=lambda x: x[0])
 
-        # Follow the migration chain as far as possible using version ranges
-        current_ver = from_ver
-        max_iterations = 10  # Prevent infinite loops
+            # Follow the migration chain as far as possible
+            current_ver = from_ver
+            for _ in range(10):  # Prevent infinite loops
+                found_migrator = None
+                for range_start, range_end, migrator in migration_ranges:
+                    if range_start <= current_ver < range_end:
+                        found_migrator = migrator
+                        break
 
-        for _ in range(max_iterations):
-            # Find a migrator that can handle the current version
-            found_migrator = None
-            for range_start, range_end, migrator in migration_ranges:
-                if range_start <= current_ver < range_end:
-                    found_migrator = migrator
+                if found_migrator is None:
                     break
 
-            if found_migrator is None:
-                # No more migrations possible
-                break
+                current_ver = Version(found_migrator.to_version)
 
-            current_ver = Version(found_migrator.to_version)
+            return str(current_ver)
 
-        return str(current_ver)
-
-    def _get_highest_reachable_version_exact(self, from_version: str) -> str:
-        """Fallback method for exact version matching when version parsing fails."""
-        # Build migration graph using script migrators
-        migration_graph = {}
-        for migrator in self.script_migrators:
-            migration_graph[migrator.from_version] = migrator
-
-        # Follow the migration chain as far as possible
-        current = from_version
-        while current in migration_graph:
-            migrator = migration_graph[current]
-            current = migrator.to_version
-
-        return current
+        except Exception:
+            # Fallback to exact matching
+            migration_graph = {migrator.from_version: migrator for migrator in self.script_migrators}
+            current = from_version
+            while current in migration_graph:
+                migrator = migration_graph[current]
+                current = migrator.to_version
+            return current
 
     def migrate_file(
         self, file_path: Path, target_version: Optional[str] = None, console: Console = None, verbose: bool = False
@@ -380,18 +275,11 @@ class MigrationOrchestrator:
 
         console.print(f"Migration path: {' → '.join([m.from_version for m in migration_path] + [target_version])}")
 
-        results = []
-
-        # Create a single backup before starting migration (only for the first step)
+        # Create backup before starting migration
         backup_path = file_path.with_suffix(f"{file_path.suffix}.backup")
+        self.create_backup(file_path, backup_path)
 
-        # Create backup with high reliability before any migration
-        try:
-            self.create_backup(file_path, backup_path)
-        except Exception as e:
-            console.print(f"[red]Failed to create backup at {backup_path}: {e}[/red]")
-            return results
-
+        results = []
         for i, migrator in enumerate(migration_path):
             console.print(
                 f"\n[bold]Step {i + 1}/{len(migration_path)}: {migrator.from_version} → {migrator.to_version}[/bold]"
@@ -400,23 +288,20 @@ class MigrationOrchestrator:
             if verbose:
                 console.print("Using script migrator")
 
-            # Perform migration using script migrator
-            result = migrator.migrate(file_path, console, verbose)
-            result.backup_path = backup_path  # FIXME: better flow
+            # Perform migration
+            result = migrator.migrate(file_path, verbose)
             results.append(result)
 
             if not result.success:
                 console.print(f"[red]Migration failed: {result.error_message}[/red]")
-                # Rollback all previous migrations
                 self._rollback_migrations(file_path, backup_path, console)
                 return results
 
             # Verify migration
-            if not migrator.verify_migration(file_path, backup_path, console):
+            if not migrator.verify_migration(file_path, backup_path):
                 console.print("[red]Migration verification failed[/red]")
                 result.success = False
                 result.error_message = "Verification failed"
-                # Rollback all previous migrations
                 self._rollback_migrations(file_path, backup_path, console)
                 return results
 
@@ -429,16 +314,12 @@ class MigrationOrchestrator:
         """Rollback migrations by restoring from the backup."""
         console.print("[yellow]Rolling back migrations...[/yellow]")
 
-        if backup_path and backup_path.exists():
-            try:
-                shutil.copy2(backup_path, file_path)
-                backup_path.unlink()
-                console.print(f"[green]Restored from backup: {backup_path}[/green]")
-                return
-            except Exception as e:
-                console.print(f"[red]Failed to restore backup: {e}[/red]")
-
-        console.print("[red]No valid backup found for rollback[/red]")
+        if backup_path.exists():
+            shutil.copy2(backup_path, file_path)
+            backup_path.unlink()
+            console.print(f"[green]Restored from backup: {backup_path}[/green]")
+        else:
+            console.print("[red]No valid backup found for rollback[/red]")
 
 
 def detect_files_needing_migration(
@@ -446,16 +327,14 @@ def detect_files_needing_migration(
 ) -> List[FileVersionInfo]:
     """Detect all files that need migration."""
     orchestrator = MigrationOrchestrator()
-    file_infos = []
 
     # Filter for valid MCAP files
-    valid_file_paths = []
+    valid_file_paths = [fp for fp in file_paths if fp.is_file() and fp.suffix == ".mcap"]
+
     for file_path in file_paths:
-        if file_path.is_file() and file_path.suffix == ".mcap":
-            valid_file_paths.append(file_path)
-        elif not file_path.exists():
+        if not file_path.exists():
             console.print(f"[red]File not found: {file_path}[/red]")
-        elif not file_path.suffix == ".mcap":
+        elif file_path.suffix != ".mcap":
             console.print(f"[yellow]Skipping non-MCAP file: {file_path}[/yellow]")
 
     if not valid_file_paths:
@@ -464,10 +343,9 @@ def detect_files_needing_migration(
 
     console.print(f"Found {len(valid_file_paths)} MCAP files")
 
+    file_infos = []
     with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console,
+        SpinnerColumn(), TextColumn("[progress.description]{task.description}"), console=console
     ) as progress:
         task = progress.add_task("Analyzing files...", total=len(valid_file_paths))
 
@@ -475,24 +353,14 @@ def detect_files_needing_migration(
             try:
                 detected_version = orchestrator.detect_version(file_path)
 
-                # Determine target version for this file
                 if target_version_explicit:
-                    # Use explicit target version
                     file_target_version = target_version
                     needs_migration = detected_version != target_version
                 else:
-                    # Use highest reachable version from detected version
                     file_target_version = orchestrator.get_highest_reachable_version(detected_version)
                     needs_migration = detected_version != file_target_version
 
-                file_infos.append(
-                    FileVersionInfo(
-                        file_path=file_path,
-                        detected_version=detected_version,
-                        needs_migration=needs_migration,
-                        target_version=file_target_version,
-                    )
-                )
+                file_infos.append(FileVersionInfo(file_path, detected_version, needs_migration, file_target_version))
 
             except Exception as e:
                 console.print(f"[red]Error analyzing {file_path}: {e}[/red]")
@@ -510,30 +378,17 @@ def migrate(
     dry_run: bool = typer.Option(False, "--dry-run", help="Show what would be migrated without making changes"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed migration information"),
     keep_backups: bool = typer.Option(True, "--keep-backups/--no-backups", help="Keep backup files after migration"),
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation prompt"),
 ) -> None:
     """
     Migrate MCAP files to the highest reachable version with automatic version detection.
-
-    This command automatically detects the version of MCAP files and applies
-    sequential migrations to bring them up to the highest reachable version using
-    standalone script migrators. Each migration step is verified and can be rolled back on failure.
-
-    Examples:
-        owl mcap migrate *.mcap                      # Migrate all MCAP files (shell expands glob)
-        owl mcap migrate data/**/*.mcap              # Migrate all MCAP files recursively
-        owl mcap migrate recording.mcap --dry-run    # Preview migration for single file
-        owl mcap migrate *.mcap --target 0.3.2       # Migrate to specific version
     """
     console = Console()
     orchestrator = MigrationOrchestrator()
 
-    # Show migrator information if verbose
     if verbose:
-        script_count = len(orchestrator.script_migrators)
-        console.print(f"[dim]Available script migrators: {script_count}[/dim]")
-        console.print()
+        console.print(f"[dim]Available script migrators: {len(orchestrator.script_migrators)}[/dim]\n")
 
-    # Determine target version strategy
     target_version_explicit = target_version is not None
 
     console.print("[bold blue]MCAP Migration Tool[/bold blue]")
@@ -550,7 +405,6 @@ def migrate(
         console.print("[yellow]No files found matching the pattern[/yellow]")
         return
 
-    # Filter files that need migration
     files_needing_migration = [info for info in file_infos if info.needs_migration]
 
     if not files_needing_migration:
@@ -575,8 +429,7 @@ def migrate(
         console.print(f"\n[yellow]Would migrate {len(files_needing_migration)} files[/yellow]")
         return
 
-    # Confirm migration
-    if not typer.confirm(f"\nProceed with migrating {len(files_needing_migration)} files?", default=True):
+    if not yes and not typer.confirm(f"\nProceed with migrating {len(files_needing_migration)} files?", default=True):
         console.print("Migration cancelled.")
         return
 
@@ -591,14 +444,13 @@ def migrate(
         console.print(f"\n[bold cyan]File {i}/{len(files_needing_migration)}: {info.file_path}[/bold cyan]")
 
         try:
-            # Use the file's specific target version (which may be different from global target)
             results = orchestrator.migrate_file(info.file_path, info.target_version, console, verbose)
 
             if results and all(r.success for r in results):
                 successful_migrations += 1
-                # Collect backup path (now only one per file)
-                if results and results[0].backup_path:
-                    backup_paths.append(results[0].backup_path)
+                backup_path = info.file_path.with_suffix(f"{info.file_path.suffix}.backup")
+                if backup_path.exists():
+                    backup_paths.append(backup_path)
             else:
                 failed_migrations += 1
 
@@ -616,7 +468,7 @@ def migrate(
         console.print(f"\n[yellow]Cleaning up {len(backup_paths)} backup files...[/yellow]")
         for backup_path in backup_paths:
             try:
-                if backup_path and backup_path.exists():
+                if backup_path.exists():
                     backup_path.unlink()
             except Exception as e:
                 console.print(f"[red]Warning: Could not delete backup {backup_path}: {e}[/red]")
