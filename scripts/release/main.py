@@ -188,6 +188,7 @@ def version(
 
         # Step 2: Update package version
         with console.status(f"Updating {package_name} version..."):
+            # TODO?: we may adopt hatch-vcs, a plugin for Hatch that uses Git to determine project versions.
             try:
                 run_command(["vuv", "version", value], cwd=package_dir)
                 version_tool = "vuv"
