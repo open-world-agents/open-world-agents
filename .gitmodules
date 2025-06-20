@@ -1,3 +1,0 @@
-[submodule "projects/nanoVLM"]
-	path = projects/nanoVLM
-	url = https://github.com/huggingface/nanoVLM
