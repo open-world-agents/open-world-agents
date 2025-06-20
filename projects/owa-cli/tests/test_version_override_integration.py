@@ -23,7 +23,7 @@ class MockMigrator:
         self.migrate_called = False
         self.version_written = None
 
-    def migrate(self, file_path: Path, backup_path: Path, console, verbose: bool) -> MigrationResult:
+    def migrate(self, file_path: Path, console, verbose: bool) -> MigrationResult:
         """Mock migration that captures the version being written."""
         self.migrate_called = True
 
@@ -39,10 +39,9 @@ class MockMigrator:
             version_from=self.from_version,
             version_to=self.to_version,
             changes_made=1,
-            backup_path=backup_path,
         )
 
-    def verify_migration(self, file_path: Path, console) -> bool:
+    def verify_migration(self, file_path: Path, backup_path, console) -> bool:
         return True
 
 
