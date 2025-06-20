@@ -1,181 +1,150 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#   "rich>=13.0.0",
+#   "mcap>=1.0.0",
+#   "easydict>=1.10",
+#   "orjson>=3.8.0",
+#   "typer>=0.12.0",
+#   "mcap-owa-support @ git+https://github.com/open-world-agents/open-world-agents.git@v0.4.1#subdirectory=projects/mcap-owa-support",
+# ]
+# [tool.uv]
+# exclude-newer = "2025-06-15T16:02:47Z"
+# ///
 """
-Migrator from MCAP v0.3.2 to v0.4.1.
+MCAP Migrator: v0.3.2 → v0.4.1
 
-This migrator handles the schema format changes:
-- Migrates from module-based schema names (e.g., 'owa.env.desktop.msg.KeyboardEvent')
-  to domain-based format (e.g., 'desktop/KeyboardEvent')
+Migrates schema format from module-based to domain-based.
 """
 
-import shutil
-import tempfile
+__all__ = []  # This is a uv script, not a module
+
+import sys
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Optional
 
+import typer
 from rich.console import Console
 
 try:
     from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
-    from owa.core import MESSAGES
 except ImportError as e:
-    raise ImportError(f"Required packages not available: {e}. Please install: pip install mcap-owa-support") from e
+    print(f"Error: Required packages not available: {e}")
+    sys.exit(1)
 
-from .base import BaseMigrator, MigrationResult, verify_migration_integrity
+app = typer.Typer(help="MCAP Migration: v0.3.2 → v0.4.1")
+
+# Legacy to new message type mapping
+LEGACY_MESSAGE_MAPPING = {
+    "owa.env.desktop.msg.KeyboardEvent": "desktop/KeyboardEvent",
+    "owa.env.desktop.msg.KeyboardState": "desktop/KeyboardState",
+    "owa.env.desktop.msg.MouseEvent": "desktop/MouseEvent",
+    "owa.env.desktop.msg.MouseState": "desktop/MouseState",
+    "owa.env.desktop.msg.WindowInfo": "desktop/WindowInfo",
+    "owa.env.gst.msg.ScreenEmitted": "desktop/ScreenCaptured",
+}
 
 
-class V032ToV041Migrator(BaseMigrator):
-    """Migrator from v0.3.2 to v0.4.1 (domain-based schema format)."""
+class SimpleMessageClass:
+    def __init__(self, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
-    # Legacy to new message type mapping
-    LEGACY_MESSAGE_MAPPING = {
-        "owa.env.desktop.msg.KeyboardEvent": "desktop/KeyboardEvent",
-        "owa.env.desktop.msg.KeyboardState": "desktop/KeyboardState",
-        "owa.env.desktop.msg.MouseEvent": "desktop/MouseEvent",
-        "owa.env.desktop.msg.MouseState": "desktop/MouseState",
-        "owa.env.desktop.msg.WindowInfo": "desktop/WindowInfo",
-        "owa.env.gst.msg.ScreenEmitted": "desktop/ScreenCaptured",
-    }
+    def model_dump(self):
+        return {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
 
-    @property
-    def from_version(self) -> str:
-        return "0.3.2"
 
-    @property
-    def to_version(self) -> str:
-        return "0.4.1"
+@app.command()
+def migrate(
+    input_file: Path = typer.Argument(..., help="Input MCAP file"),
+    output_file: Optional[Path] = typer.Argument(
+        None, help="Output MCAP file (optional, defaults to overwriting input)"
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed information"),
+) -> None:
+    """Migrate MCAP file from v0.3.2 to v0.4.1."""
+    console = Console()
 
-    def migrate(self, file_path: Path, console: Console, verbose: bool) -> MigrationResult:
-        """Migrate legacy schemas to domain-based format."""
-        changes_made = 0
+    if not input_file.exists():
+        console.print(f"[red]Input file not found: {input_file}[/red]")
+        raise typer.Exit(1)
 
-        try:
-            # Note: Backup is now handled by the orchestrator before calling this method
+    if not input_file.suffix == ".mcap":
+        console.print(f"[red]Input file must be an MCAP file: {input_file}[/red]")
+        raise typer.Exit(1)
 
-            # Analyze file first
-            analysis = self._analyze_file(file_path)
+    output_path = output_file or input_file
+    changes_made = 0
 
-            if not analysis["has_legacy_messages"]:
-                return MigrationResult(
-                    success=True,
-                    version_from=self.from_version,
-                    version_to=self.to_version,
-                    changes_made=0,
-                )
+    # Check if migration is needed
+    with OWAMcapReader(input_file) as reader:
+        has_legacy_schemas = any(schema.name in LEGACY_MESSAGE_MAPPING for schema in reader.schemas.values())
 
-            # Perform migration using temporary file
-            with tempfile.NamedTemporaryFile(suffix=".mcap", delete=False) as tmp_file:
-                temp_path = Path(tmp_file.name)
+    if not has_legacy_schemas:
+        console.print("[green]✓ No legacy schemas found, no migration needed[/green]")
+        return
 
-            try:
-                with OWAMcapWriter(str(temp_path)) as writer:
-                    with OWAMcapReader(str(file_path)) as reader:
-                        for msg in reader.iter_messages():
-                            schema_name = msg.message_type
+    try:
+        msgs = []
+        with OWAMcapReader(input_file) as reader:
+            for schema, channel, message, decoded in reader.reader.iter_decoded_messages():
+                schema_name = schema.name
 
-                            if schema_name in analysis["conversions"]:
-                                new_schema_name = analysis["conversions"][schema_name]
-                                new_message_class = MESSAGES[new_schema_name]
+                if schema_name in LEGACY_MESSAGE_MAPPING:
+                    new_schema_name = LEGACY_MESSAGE_MAPPING[schema_name]
 
-                                if hasattr(msg, "decoded") and msg.decoded:
-                                    if hasattr(msg.decoded, "model_dump"):
-                                        data = msg.decoded.model_dump()
-                                    else:
-                                        data = dict(msg.decoded)
+                    if hasattr(decoded, "model_dump"):
+                        data = decoded.model_dump()
+                    elif hasattr(decoded, "__dict__"):
+                        data = decoded.__dict__
+                    else:
+                        data = dict(decoded)
 
-                                    new_message = new_message_class(**data)
-                                    writer.write_message(
-                                        msg.topic,
-                                        new_message,
-                                        publish_time=msg.publish_time,
-                                        log_time=msg.log_time,
-                                    )
-                                    changes_made += 1
+                    new_message = SimpleMessageClass(**data)
+                    msgs.append((message.log_time, channel.topic, new_message))
+                    changes_made += 1
 
-                                    if verbose:
-                                        console.print(f"  Migrated: {schema_name} → {new_schema_name}")
-                            else:
-                                # Copy message as-is if no conversion needed
-                                writer.write_message(
-                                    msg.topic,
-                                    msg.decoded,
-                                    publish_time=msg.publish_time,
-                                    log_time=msg.log_time,
-                                )
+                    if verbose:
+                        console.print(f"  Migrated: {schema_name} → {new_schema_name}")
+                else:
+                    msgs.append((message.log_time, channel.topic, decoded))
 
-                # Replace original file with migrated version
-                shutil.move(str(temp_path), str(file_path))
+        with OWAMcapWriter(output_path) as writer:
+            for log_time, topic, msg in msgs:
+                writer.write_message(topic=topic, message=msg, log_time=log_time)
 
-                return MigrationResult(
-                    success=True,
-                    version_from=self.from_version,
-                    version_to=self.to_version,
-                    changes_made=changes_made,
-                )
+        console.print(f"[green]✓ Migration completed: {changes_made} changes made[/green]")
 
-            except Exception as e:
-                # Clean up temp file
-                if temp_path.exists():
-                    temp_path.unlink()
-                raise e
+    except Exception as e:
+        console.print(f"[red]Migration failed: {e}[/red]")
+        raise typer.Exit(1)
 
-        except Exception as e:
-            return MigrationResult(
-                success=False,
-                version_from=self.from_version,
-                version_to=self.to_version,
-                changes_made=0,
-                error_message=str(e),
-            )
 
-    def verify_migration(self, file_path: Path, backup_path: Optional[Path], console: Console) -> bool:
-        """Verify that migration was successful."""
-        try:
-            # First, verify that no legacy schemas remain
-            with OWAMcapReader(file_path) as reader:
-                for schema in reader.schemas.values():
-                    if schema.name in self.LEGACY_MESSAGE_MAPPING:
-                        console.print(f"[red]Legacy schema still present: {schema.name}[/red]")
-                        return False
+@app.command()
+def verify(
+    file_path: Path = typer.Argument(..., help="MCAP file to verify"),
+) -> None:
+    """Verify that no legacy schemas remain."""
+    console = Console()
 
-            # If backup is available, perform integrity verification
-            if backup_path and backup_path.exists():
-                return verify_migration_integrity(file_path, backup_path, console)
+    if not file_path.exists():
+        console.print(f"[red]File not found: {file_path}[/red]")
+        raise typer.Exit(1)
 
-            # If no backup, just verify no legacy schemas remain
-            console.print("[green]✓ No legacy schemas found[/green]")
-            return True
-
-        except Exception as e:
-            console.print(f"[red]Verification error: {e}[/red]")
-            return False
-
-    def _analyze_file(self, file_path: Path) -> Dict:
-        """Analyze file to determine what needs migration."""
-        analysis = {
-            "total_messages": 0,
-            "legacy_message_count": 0,
-            "has_legacy_messages": False,
-            "conversions": {},
-            "schemas": {},
-        }
-
+    try:
         with OWAMcapReader(file_path) as reader:
-            # Analyze schemas
-            for schema_id, schema in reader.schemas.items():
-                analysis["schemas"][schema_id] = schema.name
+            for schema in reader.schemas.values():
+                if schema.name in LEGACY_MESSAGE_MAPPING:
+                    console.print(f"[red]Legacy schema still present: {schema.name}[/red]")
+                    raise typer.Exit(1)
 
-                if schema.name in self.LEGACY_MESSAGE_MAPPING:
-                    new_name = self.LEGACY_MESSAGE_MAPPING[schema.name]
-                    analysis["conversions"][schema.name] = new_name
-                    analysis["has_legacy_messages"] = True
+        console.print("[green]✓ No legacy schemas found[/green]")
 
-            # Count messages
-            for message in reader.iter_messages():
-                analysis["total_messages"] += 1
-                if message.message_type in self.LEGACY_MESSAGE_MAPPING:
-                    analysis["legacy_message_count"] += 1
-
-        return analysis
+    except Exception as e:
+        console.print(f"[red]Verification error: {e}[/red]")
+        raise typer.Exit(1)
 
 
-# Explicit export - only this migrator should be discovered
-__all__ = ["V032ToV041Migrator"]
+if __name__ == "__main__":
+    app()
