@@ -15,6 +15,7 @@ jobs:
 
     env:
       PYTHONIOENCODING: utf-8 # https://github.com/Textualize/rich/issues/212
+      PYTHONUTF8: 1 # from https://github.com/ndonkoHenri/flet-github-action-workflows/blob/main/.github/workflows/windows-build.yml#L29C3-L29C16
       # below line is legacy line, but I'm keeping it here for reference to know where the packages are installed
       # GST_PLUGIN_PATH: "D:\\a\\open-world-agents\\open-world-agents\\projects\\owa-env-gst\\gst-plugins"
 
