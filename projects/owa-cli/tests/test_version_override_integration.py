@@ -10,7 +10,6 @@ import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-
 from owa.cli.mcap.migrate import MigrationOrchestrator
 from owa.cli.mcap.migrators import MigrationResult
 
@@ -67,9 +66,10 @@ class TestVersionOverrideIntegration:
             mock_reader.file_version = "0.3.0"  # Initial version
             mock_reader_class.return_value.__enter__.return_value = mock_reader
 
-            with tempfile.NamedTemporaryFile(suffix=".mcap") as tmp_file:
+            with tempfile.NamedTemporaryFile(suffix=".mcap", delete=False) as tmp_file:
                 tmp_path = Path(tmp_file.name)
 
+            try:
                 # Perform migration
                 results = orchestrator.migrate_file(tmp_path, target_version="0.4.1")
 
@@ -84,6 +84,10 @@ class TestVersionOverrideIntegration:
                 # Verify migration results
                 assert len(results) == 2
                 assert all(result.success for result in results)
+            finally:
+                # Clean up the temporary file
+                if tmp_path.exists():
+                    tmp_path.unlink()
 
     def test_single_step_migration_writes_correct_version(self):
         """Test that single-step migration writes correct target version."""
@@ -99,9 +103,10 @@ class TestVersionOverrideIntegration:
             mock_reader.file_version = "0.3.2"
             mock_reader_class.return_value.__enter__.return_value = mock_reader
 
-            with tempfile.NamedTemporaryFile(suffix=".mcap") as tmp_file:
+            with tempfile.NamedTemporaryFile(suffix=".mcap", delete=False) as tmp_file:
                 tmp_path = Path(tmp_file.name)
 
+            try:
                 # Perform migration
                 results = orchestrator.migrate_file(tmp_path, target_version="0.4.1")
 
@@ -114,6 +119,10 @@ class TestVersionOverrideIntegration:
                 # Verify migration result
                 assert len(results) == 1
                 assert results[0].success
+            finally:
+                # Clean up the temporary file
+                if tmp_path.exists():
+                    tmp_path.unlink()
 
     def test_version_override_restores_original_function(self):
         """Test that version override properly restores the original function."""

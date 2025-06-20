@@ -73,6 +73,10 @@ class MigrationOrchestrator:
             True if backup was successful, False otherwise
         """
         try:
+            # Ensure source file exists and is readable
+            if not file_path.exists():
+                return False
+
             # Ensure backup directory exists
             backup_path.parent.mkdir(parents=True, exist_ok=True)
 

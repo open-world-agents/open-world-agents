@@ -231,10 +231,16 @@ class TestMigrationIntegration:
 
         orchestrator = MigrationOrchestrator()
 
-        with tempfile.NamedTemporaryFile(suffix=".mcap") as tmp_file:
+        with tempfile.NamedTemporaryFile(suffix=".mcap", delete=False) as tmp_file:
             tmp_path = Path(tmp_file.name)
+
+        try:
             version = orchestrator.detect_version(tmp_path)
             assert version == "0.3.2"
+        finally:
+            # Clean up the temporary file
+            if tmp_path.exists():
+                tmp_path.unlink()
 
     @patch("owa.cli.mcap.migrate.OWAMcapReader")
     def test_multi_step_migration_version_override(self, mock_reader_class):
@@ -276,9 +282,10 @@ class TestMigrationIntegration:
         # Replace orchestrator's migrators with our mocks
         orchestrator.migrators = [mock_migrator_1, mock_migrator_2]
 
-        with tempfile.NamedTemporaryFile(suffix=".mcap") as tmp_file:
+        with tempfile.NamedTemporaryFile(suffix=".mcap", delete=False) as tmp_file:
             tmp_path = Path(tmp_file.name)
 
+        try:
             # Test that version override context manager is used
             with patch.object(orchestrator, "_override_library_version") as mock_override:
                 mock_override.return_value.__enter__ = MagicMock()
@@ -295,3 +302,7 @@ class TestMigrationIntegration:
                 assert mock_override.call_count == 2
                 mock_override.assert_any_call("0.3.2")  # First migration target
                 mock_override.assert_any_call("0.4.1")  # Second migration target
+        finally:
+            # Clean up the temporary file
+            if tmp_path.exists():
+                tmp_path.unlink()
