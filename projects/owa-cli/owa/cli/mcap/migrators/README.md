@@ -3,7 +3,7 @@
 This package contains individual migrator implementations for different MCAP version transitions. Each migrator is responsible for handling a specific version-to-version migration with verification and rollback capabilities.
 
 **Important TODO**:
-- [ ] Contanerized migration script is needed to ensure sequential migration.
+- [ ] Containerized migration script is needed to ensure sequential migration.
 
 ## Structure
 
