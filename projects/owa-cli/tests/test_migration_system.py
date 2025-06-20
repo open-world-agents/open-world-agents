@@ -142,6 +142,50 @@ class TestMigrationOrchestrator:
         with pytest.raises(ValueError, match="No migration path found"):
             orchestrator.get_migration_path("unknown", "0.4.1")
 
+    def test_get_migration_path_version_ranges(self):
+        """Test migration path with version ranges - versions between migrator ranges."""
+        orchestrator = MigrationOrchestrator()
+
+        # Test version 0.3.1 (between 0.3.0 and 0.3.2) should use 0.3.0->0.3.2 migrator
+        path = orchestrator.get_migration_path("0.3.1", "0.4.1")
+        assert len(path) == 2
+        assert path[0].from_version == "0.3.0"
+        assert path[0].to_version == "0.3.2"
+        assert path[1].from_version == "0.3.2"
+        assert path[1].to_version == "0.4.1"
+
+    def test_get_migration_path_version_ranges_single_step(self):
+        """Test migration path with version ranges - single step."""
+        orchestrator = MigrationOrchestrator()
+
+        # Test version 0.3.1 (between 0.3.0 and 0.3.2) should use 0.3.0->0.3.2 migrator
+        path = orchestrator.get_migration_path("0.3.1", "0.3.2")
+        assert len(path) == 1
+        assert path[0].from_version == "0.3.0"
+        assert path[0].to_version == "0.3.2"
+
+    def test_get_migration_path_version_ranges_second_range(self):
+        """Test migration path with version ranges - version in second range."""
+        orchestrator = MigrationOrchestrator()
+
+        # Test version 0.3.5 (between 0.3.2 and 0.4.1) should use 0.3.2->0.4.1 migrator
+        path = orchestrator.get_migration_path("0.3.5", "0.4.1")
+        assert len(path) == 1
+        assert path[0].from_version == "0.3.2"
+        assert path[0].to_version == "0.4.1"
+
+    def test_get_highest_reachable_version_ranges(self):
+        """Test highest reachable version with version ranges."""
+        orchestrator = MigrationOrchestrator()
+
+        # Test version 0.3.1 (between 0.3.0 and 0.3.2) should reach 0.4.1
+        highest = orchestrator.get_highest_reachable_version("0.3.1")
+        assert highest == "0.4.1"
+
+        # Test version 0.3.5 (between 0.3.2 and 0.4.1) should reach 0.4.1
+        highest = orchestrator.get_highest_reachable_version("0.3.5")
+        assert highest == "0.4.1"
+
     def test_automatic_migrator_discovery(self):
         """Test that migrators are automatically discovered from filenames."""
         orchestrator = MigrationOrchestrator()
