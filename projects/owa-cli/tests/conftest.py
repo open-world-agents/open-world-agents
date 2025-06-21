@@ -133,4 +133,4 @@ def temp_dir():
 @pytest.fixture
 def test_data_dir():
     """Get the test data directory with example MCAP files."""
-    return Path(__file__).parent
+    return Path(__file__).parent / "data"
