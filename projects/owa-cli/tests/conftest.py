@@ -116,7 +116,7 @@ def no_version_check():
         yield mock_check
 
 
-# Common fixtures for MCAP migration tests
+# Common fixtures for all CLI tests
 @pytest.fixture
 def cli_runner():
     """Create a CLI runner for testing."""
@@ -128,9 +128,3 @@ def temp_dir():
     """Create a temporary directory for test files."""
     with tempfile.TemporaryDirectory() as temp_dir:
         yield Path(temp_dir)
-
-
-@pytest.fixture
-def test_data_dir():
-    """Get the test data directory with example MCAP files."""
-    return Path(__file__).parent / "data"

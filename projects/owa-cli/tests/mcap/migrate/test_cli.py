@@ -2,10 +2,6 @@
 Tests for the `owl mcap migrate` CLI command.
 """
 
-import re
-import shutil
-import warnings
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -13,24 +9,7 @@ import pytest
 from owa.cli import app
 
 
-def strip_ansi_codes(text: str) -> str:
-    """Strip ANSI escape codes from text for more reliable testing."""
-    ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
-    return ansi_escape.sub("", text)
-
-
-def copy_test_file(source_dir: Path, filename: str, dest_dir: Path) -> Path:
-    """Copy a test file to the destination directory."""
-    source_file = source_dir / filename
-    dest_file = dest_dir / filename
-    if source_file.exists():
-        shutil.copy2(source_file, dest_file)
-        return dest_file
-    else:
-        pytest.skip(f"Test file {filename} not found in {source_dir}")
-
-
-def test_migrate_help(cli_runner):
+def test_migrate_help(cli_runner, strip_ansi_codes):
     """Test migrate command help."""
     result = cli_runner.invoke(app, ["mcap", "migrate", "--help"])
     assert result.exit_code == 0
@@ -58,16 +37,14 @@ def test_migrate_non_mcap_file(cli_runner, temp_dir):
     assert "Skipping non-MCAP file" in result.stdout
 
 
-def test_migrate_dry_run(cli_runner, test_data_dir, temp_dir):
+def test_migrate_dry_run(cli_runner, test_data_dir, temp_dir, copy_test_file, suppress_mcap_warnings):
     """Test dry run mode doesn't modify files."""
     test_file = copy_test_file(test_data_dir, "0.3.2.mcap", temp_dir)
     original_size = test_file.stat().st_size
     original_mtime = test_file.stat().st_mtime
 
-    # Suppress warnings only for MCAP version detection during CLI execution
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", "Reader version.*may not be compatible with writer version.*", UserWarning)
-        result = cli_runner.invoke(app, ["mcap", "migrate", str(test_file), "--dry-run"])
+    # Warnings are suppressed by the fixture
+    result = cli_runner.invoke(app, ["mcap", "migrate", str(test_file), "--dry-run"])
 
     assert result.exit_code == 0
     assert "DRY RUN MODE" in result.stdout
@@ -78,7 +55,7 @@ def test_migrate_dry_run(cli_runner, test_data_dir, temp_dir):
 
 
 @patch("owa.cli.mcap.migrate.migrate.OWAMcapReader")
-def test_migrate_already_current_version(mock_reader_class, cli_runner, test_data_dir, temp_dir):
+def test_migrate_already_current_version(mock_reader_class, cli_runner, test_data_dir, temp_dir, copy_test_file):
     """Test migration when file is already at current version."""
     mock_reader = mock_reader_class.return_value.__enter__.return_value
     mock_reader.file_version = "0.4.2"
@@ -89,60 +66,52 @@ def test_migrate_already_current_version(mock_reader_class, cli_runner, test_dat
     assert "already at the target version" in result.stdout
 
 
-def test_migrate_verbose_mode(cli_runner, test_data_dir, temp_dir):
+def test_migrate_verbose_mode(cli_runner, test_data_dir, temp_dir, copy_test_file, suppress_mcap_warnings):
     """Test verbose mode shows additional information."""
     test_file = copy_test_file(test_data_dir, "0.3.2.mcap", temp_dir)
 
-    # Suppress warnings only for MCAP version detection during CLI execution
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", "Reader version.*may not be compatible with writer version.*", UserWarning)
-        result = cli_runner.invoke(app, ["mcap", "migrate", str(test_file), "--verbose", "--dry-run"])
+    # Warnings are suppressed by the fixture
+    result = cli_runner.invoke(app, ["mcap", "migrate", str(test_file), "--verbose", "--dry-run"])
 
     assert result.exit_code == 0
     assert "Available script migrators" in result.stdout
 
 
-def test_migrate_with_target_version(cli_runner, test_data_dir, temp_dir):
+def test_migrate_with_target_version(cli_runner, test_data_dir, temp_dir, copy_test_file, suppress_mcap_warnings):
     """Test migration with specific target version."""
     test_file = copy_test_file(test_data_dir, "0.3.2.mcap", temp_dir)
 
-    # Suppress warnings only for MCAP version detection during CLI execution
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", "Reader version.*may not be compatible with writer version.*", UserWarning)
-        result = cli_runner.invoke(app, ["mcap", "migrate", str(test_file), "--target", "0.4.2", "--dry-run"])
+    # Warnings are suppressed by the fixture
+    result = cli_runner.invoke(app, ["mcap", "migrate", str(test_file), "--target", "0.4.2", "--dry-run"])
 
     assert result.exit_code == 0
     assert "Target version: 0.4.2" in result.stdout
 
 
-def test_migrate_multiple_files(cli_runner, test_data_dir, temp_dir):
+def test_migrate_multiple_files(cli_runner, test_data_dir, temp_dir, copy_test_file, suppress_mcap_warnings):
     """Test migration with multiple files."""
     file1 = copy_test_file(test_data_dir, "0.3.2.mcap", temp_dir)
     file2 = copy_test_file(test_data_dir, "0.4.2.mcap", temp_dir)
 
-    # Suppress warnings only for MCAP version detection during CLI execution
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", "Reader version.*may not be compatible with writer version.*", UserWarning)
-        result = cli_runner.invoke(app, ["mcap", "migrate", str(file1), str(file2), "--dry-run"])
+    # Warnings are suppressed by the fixture
+    result = cli_runner.invoke(app, ["mcap", "migrate", str(file1), str(file2), "--dry-run"])
 
     assert result.exit_code == 0
     assert "Files to process: 2" in result.stdout
 
 
-def test_migrate_user_cancellation(cli_runner, test_data_dir, temp_dir):
+def test_migrate_user_cancellation(cli_runner, test_data_dir, temp_dir, copy_test_file, suppress_mcap_warnings):
     """Test user cancellation of migration."""
     test_file = copy_test_file(test_data_dir, "0.3.2.mcap", temp_dir)
 
-    # Suppress warnings only for MCAP version detection during CLI execution
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", "Reader version.*may not be compatible with writer version.*", UserWarning)
-        result = cli_runner.invoke(app, ["mcap", "migrate", str(test_file)], input="n\n")
+    # Warnings are suppressed by the fixture
+    result = cli_runner.invoke(app, ["mcap", "migrate", str(test_file)], input="n\n")
 
     assert result.exit_code == 0
 
 
 @patch("owa.cli.mcap.migrate.migrate.OWAMcapReader")
-def test_migrate_shows_migration_summary_table(mock_reader_class, cli_runner, test_data_dir, temp_dir):
+def test_migrate_shows_migration_summary_table(mock_reader_class, cli_runner, test_data_dir, temp_dir, copy_test_file):
     """Test that migration shows a summary table."""
     mock_reader = mock_reader_class.return_value.__enter__.return_value
     mock_reader.file_version = "0.3.2"
@@ -154,23 +123,20 @@ def test_migrate_shows_migration_summary_table(mock_reader_class, cli_runner, te
 
 
 # Integration tests
-def test_migration_orchestrator_with_real_files(test_data_dir):
+def test_migration_orchestrator_with_real_files(test_data_dir, suppress_mcap_warnings):
     """Test that the migration orchestrator can analyze real MCAP files."""
     from owa.cli.mcap.migrate import MigrationOrchestrator
 
     orchestrator = MigrationOrchestrator()
     test_files = ["0.3.2.mcap", "0.4.2.mcap"]
 
-    # Suppress warnings only for MCAP version detection
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", "Reader version.*may not be compatible with writer version.*", UserWarning)
-
-        for filename in test_files:
-            test_file = test_data_dir / filename
-            if test_file.exists():
-                version = orchestrator.detect_version(test_file)
-                assert version is not None
-                assert isinstance(version, str)
+    # Warnings are suppressed by the fixture
+    for filename in test_files:
+        test_file = test_data_dir / filename
+        if test_file.exists():
+            version = orchestrator.detect_version(test_file)
+            assert version is not None
+            assert isinstance(version, str)
 
 
 def test_migrator_discovery():
@@ -201,7 +167,7 @@ def test_version_range_matching():
         pass  # No path exists, which is acceptable
 
 
-def test_cli_with_multiple_files(cli_runner, test_data_dir, temp_dir):
+def test_cli_with_multiple_files(cli_runner, test_data_dir, temp_dir, copy_test_file, suppress_mcap_warnings):
     """Test CLI with multiple files."""
     files = []
     for filename in ["0.3.2.mcap", "0.4.2.mcap"]:
@@ -214,17 +180,17 @@ def test_cli_with_multiple_files(cli_runner, test_data_dir, temp_dir):
     if not files:
         pytest.skip("No test files available")
 
-    # Suppress warnings only for MCAP version detection during CLI execution
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", "Reader version.*may not be compatible with writer version.*", UserWarning)
-        result = cli_runner.invoke(app, ["mcap", "migrate"] + files + ["--dry-run"])
+    # Warnings are suppressed by the fixture
+    result = cli_runner.invoke(app, ["mcap", "migrate"] + files + ["--dry-run"])
 
     assert result.exit_code == 0
     assert f"Files to process: {len(files)}" in result.stdout
 
 
 # Output verification tests
-def test_migration_produces_expected_output(cli_runner, test_data_dir, temp_dir):
+def test_migration_produces_expected_output(
+    cli_runner, test_data_dir, temp_dir, copy_test_file, suppress_mcap_warnings
+):
     """Test that migrating 0.3.2.mcap produces expected output."""
     from owa.cli.mcap.migrate import MigrationOrchestrator
 
@@ -236,15 +202,13 @@ def test_migration_produces_expected_output(cli_runner, test_data_dir, temp_dir)
 
     test_file = copy_test_file(test_data_dir, "0.3.2.mcap", temp_dir)
 
-    # Suppress warnings only for MCAP operations during CLI execution
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", "Reader version.*may not be compatible with writer version.*", UserWarning)
-        result = cli_runner.invoke(app, ["mcap", "migrate", str(test_file)], input="y\n")
+    # Warnings are suppressed by the fixture
+    result = cli_runner.invoke(app, ["mcap", "migrate", str(test_file)], input="y\n")
 
-        # Verify the migrated file has the correct version
-        orchestrator = MigrationOrchestrator()
-        migrated_version = orchestrator.detect_version(test_file)
-        expected_version = orchestrator.detect_version(expected_file)
+    # Verify the migrated file has the correct version
+    orchestrator = MigrationOrchestrator()
+    migrated_version = orchestrator.detect_version(test_file)
+    expected_version = orchestrator.detect_version(expected_file)
 
     assert result.exit_code == 0
     assert "Migration successful" in result.stdout
@@ -254,7 +218,7 @@ def test_migration_produces_expected_output(cli_runner, test_data_dir, temp_dir)
     assert test_file.stat().st_size > 0
 
 
-def test_migration_integrity_verification(cli_runner, test_data_dir, temp_dir):
+def test_migration_integrity_verification(cli_runner, test_data_dir, temp_dir, copy_test_file, suppress_mcap_warnings):
     """Test migration integrity verification functionality."""
     from rich.console import Console
 
@@ -266,56 +230,44 @@ def test_migration_integrity_verification(cli_runner, test_data_dir, temp_dir):
 
     test_file = copy_test_file(test_data_dir, "0.3.2.mcap", temp_dir)
 
-    # Suppress warnings only for MCAP operations during CLI execution
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", "Reader version.*may not be compatible with writer version.*", UserWarning)
-        result = cli_runner.invoke(app, ["mcap", "migrate", str(test_file)], input="y\n")
+    # Warnings are suppressed by the fixture
+    result = cli_runner.invoke(app, ["mcap", "migrate", str(test_file)], input="y\n")
 
     assert result.exit_code == 0
 
     # Test integrity verification with backup file (BackupContext creates this automatically)
     backup_file = temp_dir / "0.3.2.mcap.backup"
     if backup_file.exists():  # Only test if backup was created by BackupContext
-        # Verify integrity - suppress warnings for MCAP version detection
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                "ignore", "Reader version.*may not be compatible with writer version.*", UserWarning
-            )
-            console = Console()
-            integrity_result = verify_migration_integrity(
-                migrated_file=test_file,
-                backup_file=backup_file,
-                console=console,
-                size_tolerance_percent=50.0,
-            )
+        # Verify integrity - warnings are suppressed by the fixture
+        console = Console()
+        integrity_result = verify_migration_integrity(
+            migrated_file=test_file,
+            backup_file=backup_file,
+            console=console,
+            size_tolerance_percent=50.0,
+        )
 
         assert integrity_result is True
 
 
 # Error handling tests
-def test_migrate_with_corrupted_file(cli_runner, temp_dir):
+def test_migrate_with_corrupted_file(cli_runner, temp_dir, suppress_mcap_warnings):
     """Test migration with corrupted MCAP file."""
     corrupted_file = temp_dir / "corrupted.mcap"
     corrupted_file.write_bytes(b"not a valid mcap file content")
 
-    # Suppress warnings only for corrupted file handling during CLI execution
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", "Reader version.*may not be compatible with writer version.*", UserWarning)
-        warnings.filterwarnings("ignore", "unclosed file.*", ResourceWarning)
-        result = cli_runner.invoke(app, ["mcap", "migrate", str(corrupted_file), "--dry-run"])
+    # Warnings are suppressed by the fixture
+    result = cli_runner.invoke(app, ["mcap", "migrate", str(corrupted_file), "--dry-run"])
 
     assert result.exit_code == 0
 
 
-def test_migrate_with_empty_file(cli_runner, temp_dir):
+def test_migrate_with_empty_file(cli_runner, temp_dir, suppress_mcap_warnings):
     """Test migration with empty MCAP file."""
     empty_file = temp_dir / "empty.mcap"
     empty_file.touch()
 
-    # Suppress warnings only for empty file handling during CLI execution
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", "Reader version.*may not be compatible with writer version.*", UserWarning)
-        warnings.filterwarnings("ignore", "unclosed file.*", ResourceWarning)
-        result = cli_runner.invoke(app, ["mcap", "migrate", str(empty_file), "--dry-run"])
+    # Warnings are suppressed by the fixture
+    result = cli_runner.invoke(app, ["mcap", "migrate", str(empty_file), "--dry-run"])
 
     assert result.exit_code == 0
