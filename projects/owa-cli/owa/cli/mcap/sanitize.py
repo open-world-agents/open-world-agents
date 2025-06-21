@@ -4,6 +4,8 @@ MCAP file sanitization command for filtering events based on window activation.
 This module provides functionality to sanitize MCAP files by keeping only events
 that occurred when a specific window was active, with automatic backup and rollback
 capabilities for data safety.
+
+TODO: implement configurable feature which blocks sanitize if message to be removed is more than specific ratio, say 10%.
 """
 
 import shutil
@@ -130,11 +132,14 @@ def sanitize_mcap_file(
                     kept_messages += 1
 
         if verbose:
+            removed_messages = total_messages - kept_messages
+            removal_percentage = (removed_messages / total_messages * 100) if total_messages > 0 else 0
+
             console.print(f"[blue]Analysis for {file_path}:[/blue]")
             console.print(f"  Total messages: {total_messages}")
             console.print(f"  Window messages: {window_messages}")
             console.print(f"  Messages to keep: {kept_messages}")
-            console.print(f"  Messages to remove: {total_messages - kept_messages}")
+            console.print(f"  Messages to remove: {removed_messages} ({removal_percentage:.1f}%)")
             if matching_windows:
                 console.print(f"  Matching windows: {', '.join(sorted(matching_windows))}")
 
@@ -301,8 +306,13 @@ def sanitize(
                         backup_paths.append(result["backup_path"])
 
                     if not verbose:
+                        # Calculate percentage of messages removed
+                        total = result["total_messages"]
+                        removed = result["removed_messages"]
+                        percentage = (removed / total * 100) if total > 0 else 0
+
                         console.print(
-                            f"[green]✓ {file_path.name}: {result['removed_messages']} messages removed[/green]"
+                            f"[green]✓ {file_path.name}: {removed} messages removed ({percentage:.1f}%)[/green]"
                         )
                 else:
                     failed_sanitizations += 1
