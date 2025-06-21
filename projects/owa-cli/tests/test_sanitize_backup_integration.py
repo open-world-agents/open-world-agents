@@ -5,12 +5,7 @@ This module tests that the sanitize command correctly uses the unified backup
 and rollback utilities and maintains data safety during file operations.
 """
 
-import tempfile
-from pathlib import Path
 from unittest.mock import patch
-
-import pytest
-from typer.testing import CliRunner
 
 from owa.cli.mcap import app as mcap_app
 
@@ -26,7 +21,7 @@ class TestSanitizeBackupIntegration:
         # Mock the MCAP reading/writing to avoid actual MCAP dependencies
         with (
             patch("owa.cli.mcap.sanitize.OWAMcapReader") as mock_reader,
-            patch("owa.cli.mcap.sanitize.OWAMcapWriter") as mock_writer,
+            patch("owa.cli.mcap.sanitize.OWAMcapWriter"),
         ):
             # Mock reader to return some test messages
             mock_reader_instance = mock_reader.return_value.__enter__.return_value
@@ -113,7 +108,7 @@ class TestSanitizeBackupIntegration:
 
         with (
             patch("owa.cli.mcap.sanitize.OWAMcapReader") as mock_reader,
-            patch("owa.cli.mcap.sanitize.OWAMcapWriter") as mock_writer,
+            patch("owa.cli.mcap.sanitize.OWAMcapWriter"),
         ):
             mock_reader_instance = mock_reader.return_value.__enter__.return_value
             mock_reader_instance.iter_messages.return_value = [
@@ -146,7 +141,7 @@ class TestSanitizeBackupIntegration:
 
         with (
             patch("owa.cli.mcap.sanitize.OWAMcapReader") as mock_reader,
-            patch("owa.cli.mcap.sanitize.OWAMcapWriter") as mock_writer,
+            patch("owa.cli.mcap.sanitize.OWAMcapWriter"),
         ):
             mock_reader_instance = mock_reader.return_value.__enter__.return_value
             mock_reader_instance.iter_messages.return_value = [
@@ -182,7 +177,7 @@ class TestSanitizeBackupIntegration:
 
         with (
             patch("owa.cli.mcap.sanitize.OWAMcapReader") as mock_reader,
-            patch("owa.cli.mcap.sanitize.OWAMcapWriter") as mock_writer,
+            patch("owa.cli.mcap.sanitize.OWAMcapWriter"),
         ):
             mock_reader_instance = mock_reader.return_value.__enter__.return_value
             mock_reader_instance.iter_messages.return_value = [
@@ -296,7 +291,7 @@ class TestSanitizeBackupIntegration:
 
         with (
             patch("owa.cli.mcap.sanitize.OWAMcapReader") as mock_reader,
-            patch("owa.cli.mcap.sanitize.OWAMcapWriter") as mock_writer,
+            patch("owa.cli.mcap.sanitize.OWAMcapWriter"),
         ):
             mock_reader_instance = mock_reader.return_value.__enter__.return_value
             mock_reader_instance.iter_messages.return_value = [

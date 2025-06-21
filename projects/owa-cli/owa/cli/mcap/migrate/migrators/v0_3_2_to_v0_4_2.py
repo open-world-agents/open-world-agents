@@ -22,7 +22,6 @@ Migrates schema format from module-based to domain-based. See OEP-0006.
 """
 
 import io
-import sys
 from pathlib import Path
 from typing import Optional
 

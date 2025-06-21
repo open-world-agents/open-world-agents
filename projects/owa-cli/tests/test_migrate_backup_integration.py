@@ -5,12 +5,7 @@ This module tests that the migrate command correctly uses the unified backup
 and rollback utilities and maintains data safety during migration operations.
 """
 
-import tempfile
-from pathlib import Path
 from unittest.mock import MagicMock, patch
-
-import pytest
-from typer.testing import CliRunner
 
 from owa.cli.mcap import app as mcap_app
 from owa.cli.mcap.migrate.migrate import MigrationOrchestrator
@@ -51,7 +46,6 @@ class TestMigrateBackupIntegration:
                 assert result.exit_code == 0
 
                 # Check that backup was created during migration
-                backup_file = test_file.with_suffix(".mcap.backup")
                 # Note: In real scenario, backup would be created by migrate_file
                 # Here we verify the orchestrator was called correctly
                 mock_orchestrator.migrate_file.assert_called_once()
@@ -325,7 +319,7 @@ class TestMigrationOrchestratorBackupIntegration:
         orchestrator = MigrationOrchestrator()
 
         with (
-            patch("owa.cli.mcap.migrate.migrate.create_backup") as mock_create_backup,
+            patch("owa.cli.mcap.migrate.migrate.create_backup"),
             patch("owa.cli.mcap.migrate.migrate.generate_backup_path") as mock_generate_path,
             patch("owa.cli.mcap.migrate.migrate.rollback_from_backup") as mock_rollback,
             patch("owa.cli.mcap.migrate.migrate.OWAMcapReader") as mock_reader,
