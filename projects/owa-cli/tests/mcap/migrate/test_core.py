@@ -15,67 +15,52 @@ from owa.cli.mcap.migrate.migrate import MigrationOrchestrator
 class TestMigrateIntegration:
     """Integration tests for migrate command core functionality."""
 
-    def test_migrate_successful_operation(self, temp_dir, cli_runner):
+    def test_migrate_successful_operation(
+        self,
+        temp_dir,
+        cli_runner,
+        mock_migration_orchestrator,
+        mock_migration_result,
+        mock_file_info,
+        mock_file_detection,
+    ):
         """Test successful migration operation."""
         test_file = temp_dir / "test.mcap"
         test_file.write_bytes(b"original mcap content")
 
-        with patch("owa.cli.mcap.migrate.migrate.MigrationOrchestrator") as mock_orchestrator_class:
-            mock_orchestrator = MagicMock()
-            mock_orchestrator_class.return_value = mock_orchestrator
+        # Setup mocks
+        mock_migration_orchestrator.migrate_file.return_value = [mock_migration_result]
+        mock_info = mock_file_info(test_file)
+        mock_file_detection.return_value = [mock_info]
 
-            # Mock successful migration
-            mock_result = MagicMock()
-            mock_result.success = True
-            mock_result.changes_made = 1
-            mock_orchestrator.migrate_file.return_value = [mock_result]
+        # Run migrate command
+        result = cli_runner.invoke(mcap_app, ["migrate", str(test_file), "--yes"])
 
-            # Mock file detection
-            mock_info = MagicMock()
-            mock_info.file_path = test_file
-            mock_info.detected_version = "0.3.0"
-            mock_info.needs_migration = True
-            mock_info.target_version = "0.4.0"
+        assert result.exit_code == 0
+        mock_migration_orchestrator.migrate_file.assert_called_once()
 
-            with patch("owa.cli.mcap.migrate.migrate.detect_files_needing_migration") as mock_detect:
-                mock_detect.return_value = [mock_info]
-
-                # Run migrate command
-                result = cli_runner.invoke(mcap_app, ["migrate", str(test_file), "--yes"])
-
-                assert result.exit_code == 0
-                mock_orchestrator.migrate_file.assert_called_once()
-
-    def test_migrate_failed_operation(self, temp_dir, cli_runner):
+    def test_migrate_failed_operation(
+        self, temp_dir, cli_runner, mock_migration_orchestrator, mock_file_info, mock_file_detection
+    ):
         """Test failed migration operation."""
         test_file = temp_dir / "test.mcap"
         test_file.write_bytes(b"original mcap content")
 
-        with patch("owa.cli.mcap.migrate.migrate.MigrationOrchestrator") as mock_orchestrator_class:
-            mock_orchestrator = MagicMock()
-            mock_orchestrator_class.return_value = mock_orchestrator
+        # Mock failed migration
+        mock_result = MagicMock()
+        mock_result.success = False
+        mock_result.error_message = "Migration failed"
+        mock_migration_orchestrator.migrate_file.return_value = [mock_result]
 
-            # Mock failed migration
-            mock_result = MagicMock()
-            mock_result.success = False
-            mock_result.error_message = "Migration failed"
-            mock_orchestrator.migrate_file.return_value = [mock_result]
+        # Mock file detection
+        mock_info = mock_file_info(test_file)
+        mock_file_detection.return_value = [mock_info]
 
-            # Mock file detection
-            mock_info = MagicMock()
-            mock_info.file_path = test_file
-            mock_info.detected_version = "0.3.0"
-            mock_info.needs_migration = True
-            mock_info.target_version = "0.4.0"
+        # Run migrate command
+        result = cli_runner.invoke(mcap_app, ["migrate", str(test_file), "--yes"])
 
-            with patch("owa.cli.mcap.migrate.migrate.detect_files_needing_migration") as mock_detect:
-                mock_detect.return_value = [mock_info]
-
-                # Run migrate command
-                result = cli_runner.invoke(mcap_app, ["migrate", str(test_file), "--yes"])
-
-                assert result.exit_code == 1
-                mock_orchestrator.migrate_file.assert_called_once()
+        assert result.exit_code == 1
+        mock_migration_orchestrator.migrate_file.assert_called_once()
 
     def test_migrate_multiple_files(self, temp_dir, cli_runner):
         """Test migration with multiple files."""
