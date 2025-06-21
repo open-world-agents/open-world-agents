@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
 
+import orjson
 import typer
 from packaging.version import Version
 from rich.console import Console
@@ -35,9 +36,46 @@ class MigrationResult:
     success: bool
     version_from: str
     version_to: str
-    # TODO: define structured output format and add `--output-format` argument to migrators
     changes_made: int
     error_message: str = ""
+
+
+# JSON output format validation
+# Full schema definitions available in: schemas.json
+
+
+def validate_migration_output(data: dict) -> bool:
+    """Basic validation for migration JSON output. Full schema in schemas.json."""
+    try:
+        if not isinstance(data, dict) or "success" not in data or not isinstance(data["success"], bool):
+            return False
+
+        if data["success"]:
+            # Success: require changes_made, from_version, to_version; no error
+            return (
+                all(field in data for field in ["changes_made", "from_version", "to_version"]) and "error" not in data
+            )
+        else:
+            # Failure: require error; changes_made should be 0 if present
+            return "error" in data and isinstance(data["error"], str) and data.get("changes_made", 0) == 0
+    except Exception:
+        return False
+
+
+def validate_verification_output(data: dict) -> bool:
+    """Basic validation for verification JSON output. Full schema in schemas.json."""
+    try:
+        if not isinstance(data, dict) or "success" not in data or not isinstance(data["success"], bool):
+            return False
+
+        if data["success"]:
+            # Success: require message; no error
+            return "message" in data and isinstance(data["message"], str) and "error" not in data
+        else:
+            # Failure: require error
+            return "error" in data and isinstance(data["error"], str)
+    except Exception:
+        return False
 
 
 @dataclass
@@ -50,15 +88,33 @@ class ScriptMigrator:
 
     def migrate(self, file_path: Path, verbose: bool) -> MigrationResult:
         """Execute the standalone migration script."""
-        cmd = ["uv", "run", str(self.script_path), "migrate", str(file_path)]
+        cmd = ["uv", "run", str(self.script_path), "migrate", str(file_path), "--output-format", "json"]
         if verbose:
             cmd.append("--verbose")
 
         result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", env=_get_subprocess_env())
 
         if result.returncode == 0:
+            # Try to parse JSON output
+            try:
+                output_data = orjson.loads(result.stdout.strip())
+                if validate_migration_output(output_data):
+                    changes_made = output_data.get("changes_made", 0)
+                    return MigrationResult(output_data["success"], self.from_version, self.to_version, changes_made)
+            except (orjson.JSONDecodeError, KeyError):
+                pass
+
+            # Fallback to text parsing for backward compatibility
             changes_made = 1 if result.stdout and "changes made" in result.stdout else 0
             return MigrationResult(True, self.from_version, self.to_version, changes_made)
+
+        # Handle error case
+        try:
+            output_data = orjson.loads(result.stdout.strip())
+            if validate_migration_output(output_data) and not output_data.get("success", True):
+                return MigrationResult(False, self.from_version, self.to_version, 0, output_data["error"])
+        except (orjson.JSONDecodeError, KeyError):
+            pass
 
         error_msg = (
             result.stderr.strip() if result.stderr else result.stdout.strip() if result.stdout else "Migration failed"
@@ -67,11 +123,21 @@ class ScriptMigrator:
 
     def verify_migration(self, file_path: Path, backup_path: Optional[Path]) -> bool:
         """Verify migration by running the script with --verify flag."""
-        cmd = ["uv", "run", str(self.script_path), "verify", str(file_path)]
+        cmd = ["uv", "run", str(self.script_path), "verify", str(file_path), "--output-format", "json"]
         if backup_path:
             cmd.extend(["--backup-path", str(backup_path)])
 
         result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", env=_get_subprocess_env())
+
+        # Try to parse JSON output for more detailed verification results
+        if result.returncode == 0:
+            try:
+                output_data = orjson.loads(result.stdout.strip())
+                if validate_verification_output(output_data):
+                    return output_data["success"]
+            except (orjson.JSONDecodeError, KeyError):
+                pass
+
         return result.returncode == 0
 
 

@@ -24,6 +24,7 @@ import importlib
 from pathlib import Path
 from typing import Optional
 
+import orjson
 import typer
 from rich.console import Console
 
@@ -51,6 +52,7 @@ def migrate(
         None, help="Output MCAP file (optional, defaults to overwriting input)"
     ),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed information"),
+    output_format: str = typer.Option("text", "--output-format", help="Output format: text or json"),
 ) -> None:
     """Migrate MCAP file from v0.2.0 to v0.3.0."""
     console = Console()
@@ -96,15 +98,36 @@ def migrate(
                 writer.write_message(topic=topic, message=msg, log_time=log_time)
 
         changes_made = len(schema_conversions)
-        if verbose and schema_conversions:
-            console.print("[green]Schema conversions:[/green]")
-            for old, new in schema_conversions.items():
-                console.print(f"  {old} → {new}")
 
-        console.print(f"[green]✓ Migration completed: {changes_made} changes made[/green]")
+        if output_format == "json":
+            result = {
+                "success": True,
+                "changes_made": changes_made,
+                "schema_conversions": schema_conversions,
+                "from_version": "0.2.0",
+                "to_version": "0.3.0",
+            }
+            print(orjson.dumps(result).decode())
+        else:
+            if verbose and schema_conversions:
+                console.print("[green]Schema conversions:[/green]")
+                for old, new in schema_conversions.items():
+                    console.print(f"  {old} → {new}")
+
+            console.print(f"[green]✓ Migration completed: {changes_made} changes made[/green]")
 
     except Exception as e:
-        console.print(f"[red]Migration failed: {e}[/red]")
+        if output_format == "json":
+            result = {
+                "success": False,
+                "changes_made": 0,
+                "error": str(e),
+                "from_version": "0.2.0",
+                "to_version": "0.3.0",
+            }
+            print(orjson.dumps(result).decode())
+        else:
+            console.print(f"[red]Migration failed: {e}[/red]")
         raise typer.Exit(1)
 
 
@@ -112,6 +135,7 @@ def migrate(
 def verify(
     file_path: Path = typer.Argument(..., help="MCAP file to verify"),
     backup_path: Optional[Path] = typer.Option(None, help="Backup file path (for reference)"),
+    output_format: str = typer.Option("text", "--output-format", help="Output format: text or json"),
 ) -> None:
     """Verify that old schema names are gone."""
     console = Console()
@@ -131,13 +155,29 @@ def verify(
                     found_old_schemas.add(schema.name)
 
         if found_old_schemas:
-            console.print(f"[red]Old schema names still present: {', '.join(found_old_schemas)}[/red]")
+            if output_format == "json":
+                result = {
+                    "success": False,
+                    "error": f"Old schema names still present: {', '.join(found_old_schemas)}",
+                    "found_old_schemas": list(found_old_schemas),
+                }
+                print(orjson.dumps(result).decode())
+            else:
+                console.print(f"[red]Old schema names still present: {', '.join(found_old_schemas)}[/red]")
             raise typer.Exit(1)
 
-        console.print("[green]✓ Old schema names successfully migrated[/green]")
+        if output_format == "json":
+            result = {"success": True, "message": "Old schema names successfully migrated"}
+            print(orjson.dumps(result).decode())
+        else:
+            console.print("[green]✓ Old schema names successfully migrated[/green]")
 
     except Exception as e:
-        console.print(f"[red]Verification error: {e}[/red]")
+        if output_format == "json":
+            result = {"success": False, "error": str(e)}
+            print(orjson.dumps(result).decode())
+        else:
+            console.print(f"[red]Verification error: {e}[/red]")
         raise typer.Exit(1)
 
 

@@ -84,6 +84,7 @@ def migrate(
         None, help="Output MCAP file (optional, defaults to overwriting input)"
     ),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed information"),
+    output_format: str = typer.Option("text", "--output-format", help="Output format: text or json"),
 ) -> None:
     """Migrate MCAP file from v0.3.2 to v0.4.2."""
     console = Console()
@@ -106,7 +107,17 @@ def migrate(
         )
 
     if not has_legacy_schemas:
-        console.print("[green]✓ No legacy schemas found, no migration needed[/green]")
+        if output_format == "json":
+            result = {
+                "success": True,
+                "changes_made": 0,
+                "message": "No legacy schemas found, no migration needed",
+                "from_version": "0.3.2",
+                "to_version": "0.4.2",
+            }
+            print(orjson.dumps(result).decode())
+        else:
+            console.print("[green]✓ No legacy schemas found, no migration needed[/green]")
         return
 
     try:
@@ -138,10 +149,24 @@ def migrate(
             for log_time, topic, msg in msgs:
                 writer.write_message(topic=topic, message=msg, log_time=log_time)
 
-        console.print(f"[green]✓ Migration completed: {changes_made} changes made[/green]")
+        if output_format == "json":
+            result = {"success": True, "changes_made": changes_made, "from_version": "0.3.2", "to_version": "0.4.2"}
+            print(orjson.dumps(result).decode())
+        else:
+            console.print(f"[green]✓ Migration completed: {changes_made} changes made[/green]")
 
     except Exception as e:
-        console.print(f"[red]Migration failed: {e}[/red]")
+        if output_format == "json":
+            result = {
+                "success": False,
+                "changes_made": 0,
+                "error": str(e),
+                "from_version": "0.3.2",
+                "to_version": "0.4.2",
+            }
+            print(orjson.dumps(result).decode())
+        else:
+            console.print(f"[red]Migration failed: {e}[/red]")
         raise typer.Exit(1)
 
 
@@ -149,6 +174,7 @@ def migrate(
 def verify(
     file_path: Path = typer.Argument(..., help="MCAP file to verify"),
     backup_path: Optional[Path] = typer.Option(None, help="Backup file path (for reference)"),
+    output_format: str = typer.Option("text", "--output-format", help="Output format: text or json"),
 ) -> None:
     """Verify that no legacy schemas remain."""
     console = Console()
@@ -161,13 +187,25 @@ def verify(
         with OWAMcapReader(file_path) as reader:
             for schema in reader.reader.get_summary().schemas.values():
                 if schema.name in LEGACY_MESSAGE_MAPPING:
-                    console.print(f"[red]Legacy schema still present: {schema.name}[/red]")
+                    if output_format == "json":
+                        result = {"success": False, "error": f"Legacy schema still present: {schema.name}"}
+                        print(orjson.dumps(result).decode())
+                    else:
+                        console.print(f"[red]Legacy schema still present: {schema.name}[/red]")
                     raise typer.Exit(1)
 
-        console.print("[green]✓ No legacy schemas found[/green]")
+        if output_format == "json":
+            result = {"success": True, "message": "No legacy schemas found"}
+            print(orjson.dumps(result).decode())
+        else:
+            console.print("[green]✓ No legacy schemas found[/green]")
 
     except Exception as e:
-        console.print(f"[red]Verification error: {e}[/red]")
+        if output_format == "json":
+            result = {"success": False, "error": str(e)}
+            print(orjson.dumps(result).decode())
+        else:
+            console.print(f"[red]Verification error: {e}[/red]")
         raise typer.Exit(1)
 
 
