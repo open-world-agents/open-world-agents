@@ -9,6 +9,7 @@ TODO: implement configurable feature which blocks sanitize if message to be remo
 """
 
 import shutil
+import tempfile
 from pathlib import Path
 from typing import List
 
@@ -18,35 +19,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from typing_extensions import Annotated
 
 from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
-
-
-def create_backup(file_path: Path, backup_path: Path) -> None:
-    """Create a backup of the file with high reliability."""
-    if not file_path.exists():
-        raise FileNotFoundError(f"Source file not found: {file_path}")
-
-    if backup_path.exists():
-        raise FileExistsError(f"Backup file already exists: {backup_path}")
-
-    backup_path.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(file_path, backup_path)
-
-    if not backup_path.exists():
-        raise OSError(f"Backup creation failed: {backup_path}")
-
-    if backup_path.stat().st_size != file_path.stat().st_size:
-        raise OSError(f"Backup verification failed: size mismatch for {backup_path}")
-
-
-def rollback_from_backup(file_path: Path, backup_path: Path, console: Console) -> None:
-    """Rollback file by restoring from backup."""
-    console.print("[yellow]Rolling back changes...[/yellow]")
-
-    if backup_path.exists():
-        shutil.copy2(backup_path, file_path)
-        console.print(f"[green]Restored from backup: {backup_path}[/green]")
-    else:
-        console.print("[red]No valid backup found for rollback[/red]")
+from owa.cli.mcap.backup_utils import BackupContext
 
 
 def window_matches_target(window_title: str, target_window: str, exact_match: bool) -> bool:
@@ -74,6 +47,7 @@ def sanitize_mcap_file(
     console: Console,
     dry_run: bool = False,
     verbose: bool = False,
+    keep_backup: bool = True,
 ) -> dict:
     """
     Sanitize a single MCAP file by filtering events based on window activation.
@@ -95,67 +69,64 @@ def sanitize_mcap_file(
     if file_path.suffix != ".mcap":
         raise ValueError(f"File must be an MCAP file: {file_path}")
 
-    backup_path = file_path.with_suffix(f"{file_path.suffix}.backup")
-    temp_path = file_path.with_suffix(f"{file_path.suffix}.temp")
-    backup_created = False
-
     total_messages = 0
     kept_messages = 0
     window_messages = 0
     matching_windows = set()
     keep_current_events = False
 
-    try:
-        # First pass: analyze the file
-        with OWAMcapReader(file_path) as reader:
-            for mcap_msg in reader.iter_messages():
-                total_messages += 1
+    # First pass: analyze the file
+    with OWAMcapReader(file_path) as reader:
+        for mcap_msg in reader.iter_messages():
+            total_messages += 1
 
-                if mcap_msg.topic == "window":
-                    window_messages += 1
-                    # Handle both dict and object formats
-                    if hasattr(mcap_msg.decoded, "title"):
-                        window_title = mcap_msg.decoded.title
-                    elif isinstance(mcap_msg.decoded, dict):
-                        window_title = mcap_msg.decoded.get("title", "")
-                    else:
-                        window_title = ""
+            if mcap_msg.topic == "window":
+                window_messages += 1
+                # Handle both dict and object formats
+                if hasattr(mcap_msg.decoded, "title"):
+                    window_title = mcap_msg.decoded.title
+                elif isinstance(mcap_msg.decoded, dict):
+                    window_title = mcap_msg.decoded.get("title", "")
+                else:
+                    window_title = ""
 
-                    # Update current window state
-                    keep_current_events = window_matches_target(window_title, keep_window, exact_match)
+                # Update current window state
+                keep_current_events = window_matches_target(window_title, keep_window, exact_match)
 
-                    if keep_current_events:
-                        matching_windows.add(window_title)
-
-                # Count messages that would be kept
                 if keep_current_events:
-                    kept_messages += 1
+                    matching_windows.add(window_title)
 
-        if verbose:
-            removed_messages = total_messages - kept_messages
-            removal_percentage = (removed_messages / total_messages * 100) if total_messages > 0 else 0
+            if keep_current_events:
+                kept_messages += 1
 
-            console.print(f"[blue]Analysis for {file_path}:[/blue]")
-            console.print(f"  Total messages: {total_messages}")
-            console.print(f"  Window messages: {window_messages}")
-            console.print(f"  Messages to keep: {kept_messages}")
-            console.print(f"  Messages to remove: {removed_messages} ({removal_percentage:.1f}%)")
-            if matching_windows:
-                console.print(f"  Matching windows: {', '.join(sorted(matching_windows))}")
+    if verbose:
+        removed_messages = total_messages - kept_messages
+        removal_percentage = (removed_messages / total_messages * 100) if total_messages > 0 else 0
 
-        if dry_run:
-            return {
-                "file_path": file_path,
-                "total_messages": total_messages,
-                "kept_messages": kept_messages,
-                "removed_messages": total_messages - kept_messages,
-                "matching_windows": list(matching_windows),
-                "success": True,
-            }
+        console.print(f"[blue]Analysis for {file_path}:[/blue]")
+        console.print(f"  Total messages: {total_messages}")
+        console.print(f"  Window messages: {window_messages}")
+        console.print(f"  Messages to keep: {kept_messages}")
+        console.print(f"  Messages to remove: {removed_messages} ({removal_percentage:.1f}%)")
+        if matching_windows:
+            console.print(f"  Matching windows: {', '.join(sorted(matching_windows))}")
 
-        # Create backup before making changes
-        create_backup(file_path, backup_path)
-        backup_created = True
+    if dry_run:
+        return {
+            "file_path": file_path,
+            "total_messages": total_messages,
+            "kept_messages": kept_messages,
+            "removed_messages": total_messages - kept_messages,
+            "matching_windows": list(matching_windows),
+            "success": True,
+        }
+
+    # Use combined context managers for safe file operations
+    with (
+        BackupContext(file_path, console, keep_backup=keep_backup) as backup_ctx,
+        tempfile.NamedTemporaryFile(mode="wb", suffix=".mcap", delete=True) as temp_file,
+    ):
+        temp_path = Path(temp_file.name)
 
         # Second pass: write sanitized file
         keep_current_events = False
@@ -190,21 +161,9 @@ def sanitize_mcap_file(
             "kept_messages": kept_messages,
             "removed_messages": total_messages - kept_messages,
             "matching_windows": list(matching_windows),
-            "backup_path": backup_path,
+            "backup_path": backup_ctx.backup_path,
             "success": True,
         }
-
-    except Exception as e:
-        # Clean up temporary file if it exists
-        if temp_path.exists():
-            temp_path.unlink()
-
-        # Rollback only if backup was successfully created and we're not in dry-run mode
-        if backup_created and not dry_run:
-            rollback_from_backup(file_path, backup_path, console)
-            backup_path.unlink()
-
-        raise e
 
 
 def sanitize(
@@ -280,7 +239,6 @@ def sanitize(
     # Process files
     successful_sanitizations = 0
     failed_sanitizations = 0
-    backup_paths = []
 
     with Progress(
         SpinnerColumn(),
@@ -298,12 +256,11 @@ def sanitize(
                     console=console,
                     dry_run=dry_run,
                     verbose=verbose,
+                    keep_backup=keep_backups,
                 )
 
                 if result["success"]:
                     successful_sanitizations += 1
-                    if not dry_run and "backup_path" in result:
-                        backup_paths.append(result["backup_path"])
 
                     if not verbose:
                         # Calculate percentage of messages removed
@@ -327,18 +284,6 @@ def sanitize(
     console.print(f"\n[bold]Sanitization {'Analysis' if dry_run else 'Complete'}[/bold]")
     console.print(f"[green]Successful: {successful_sanitizations}[/green]")
     console.print(f"[red]Failed: {failed_sanitizations}[/red]")
-
-    # Handle backups
-    if backup_paths and not keep_backups:
-        console.print(f"\n[yellow]Cleaning up {len(backup_paths)} backup files...[/yellow]")
-        for backup_path in backup_paths:
-            try:
-                if backup_path.exists():
-                    backup_path.unlink()
-            except Exception as e:
-                console.print(f"[red]Warning: Could not delete backup {backup_path}: {e}[/red]")
-    elif backup_paths and keep_backups:
-        console.print("\n[blue]Backup files saved with .mcap.backup extension[/blue]")
 
     if failed_sanitizations > 0:
         raise typer.Exit(1)

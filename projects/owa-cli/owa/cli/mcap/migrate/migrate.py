@@ -3,7 +3,6 @@ MCAP file migration system with automatic version detection and sequential migra
 """
 
 import re
-import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -17,6 +16,7 @@ from rich.table import Table
 
 from mcap_owa import __version__ as mcap_owa_version
 from mcap_owa.highlevel import OWAMcapReader
+from owa.cli.mcap.backup_utils import BackupContext
 
 
 def _get_subprocess_env():
@@ -117,23 +117,6 @@ class MigrationOrchestrator:
                 return file_version if file_version and file_version != "unknown" else self.current_version
         except Exception:
             return "unknown"
-
-    def create_backup(self, file_path: Path, backup_path: Path) -> None:
-        """Create a backup of the file with high reliability."""
-        if not file_path.exists():
-            raise FileNotFoundError(f"Source file not found: {file_path}")
-
-        if backup_path.exists():
-            raise FileExistsError(f"Backup file already exists: {backup_path}")
-
-        backup_path.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(file_path, backup_path)
-
-        if not backup_path.exists():
-            raise OSError(f"Backup creation failed: {backup_path}")
-
-        if backup_path.stat().st_size != file_path.stat().st_size:
-            raise OSError(f"Backup verification failed: size mismatch for {backup_path}")
 
     def get_migration_path(self, from_version: str, to_version: str) -> List[ScriptMigrator]:
         """Get the sequence of migrators needed to go from one version to another."""
@@ -248,7 +231,12 @@ class MigrationOrchestrator:
             return current
 
     def migrate_file(
-        self, file_path: Path, target_version: Optional[str] = None, console: Console = None, verbose: bool = False
+        self,
+        file_path: Path,
+        target_version: Optional[str] = None,
+        console: Console = None,
+        verbose: bool = False,
+        keep_backup: bool = True,
     ) -> List[MigrationResult]:
         """Migrate a single file through all necessary steps."""
         if console is None:
@@ -276,51 +264,38 @@ class MigrationOrchestrator:
 
         console.print(f"Migration path: {' → '.join([m.from_version for m in migration_path] + [target_version])}")
 
-        # Create backup before starting migration
-        backup_path = file_path.with_suffix(f"{file_path.suffix}.backup")
-        self.create_backup(file_path, backup_path)
+        # Use BackupContext for safe migration operations
+        with BackupContext(file_path, console, keep_backup=keep_backup) as backup_ctx:
+            results = []
+            for i, migrator in enumerate(migration_path):
+                console.print(
+                    f"\n[bold]Step {i + 1}/{len(migration_path)}: {migrator.from_version} → {migrator.to_version}[/bold]"
+                )
 
-        results = []
-        for i, migrator in enumerate(migration_path):
-            console.print(
-                f"\n[bold]Step {i + 1}/{len(migration_path)}: {migrator.from_version} → {migrator.to_version}[/bold]"
-            )
+                if verbose:
+                    console.print("Using script migrator")
 
-            if verbose:
-                console.print("Using script migrator")
+                # Perform migration
+                result = migrator.migrate(file_path, verbose)
+                results.append(result)
 
-            # Perform migration
-            result = migrator.migrate(file_path, verbose)
-            results.append(result)
+                if not result.success:
+                    console.print(f"[red]Migration failed: {result.error_message}[/red]")
+                    # BackupContext will automatically rollback on exception
+                    raise RuntimeError(f"Migration failed: {result.error_message}")
 
-            if not result.success:
-                console.print(f"[red]Migration failed: {result.error_message}[/red]")
-                self._rollback_migrations(file_path, backup_path, console)
-                return results
+                # Verify migration
+                if not migrator.verify_migration(file_path, backup_ctx.backup_path):
+                    console.print("[red]Migration verification failed[/red]")
+                    result.success = False
+                    result.error_message = "Verification failed"
+                    # BackupContext will automatically rollback on exception
+                    raise RuntimeError("Migration verification failed")
 
-            # Verify migration
-            if not migrator.verify_migration(file_path, backup_path):
-                console.print("[red]Migration verification failed[/red]")
-                result.success = False
-                result.error_message = "Verification failed"
-                self._rollback_migrations(file_path, backup_path, console)
-                return results
+                console.print(f"[green]Migration successful ({result.changes_made} changes)[/green]")
 
-            console.print(f"[green]Migration successful ({result.changes_made} changes)[/green]")
-
-        console.print("\n[green]All migrations completed successfully![/green]")
-        return results
-
-    def _rollback_migrations(self, file_path: Path, backup_path: Path, console: Console) -> None:
-        """Rollback migrations by restoring from the backup."""
-        console.print("[yellow]Rolling back migrations...[/yellow]")
-
-        if backup_path.exists():
-            shutil.copy2(backup_path, file_path)
-            backup_path.unlink()
-            console.print(f"[green]Restored from backup: {backup_path}[/green]")
-        else:
-            console.print("[red]No valid backup found for rollback[/red]")
+            console.print("\n[green]All migrations completed successfully![/green]")
+            return results
 
 
 def detect_files_needing_migration(
@@ -457,19 +432,15 @@ def migrate(
 
     successful_migrations = 0
     failed_migrations = 0
-    backup_paths = []
 
     for i, info in enumerate(files_needing_migration, 1):
         console.print(f"\n[bold cyan]File {i}/{len(files_needing_migration)}: {info.file_path}[/bold cyan]")
 
         try:
-            results = orchestrator.migrate_file(info.file_path, info.target_version, console, verbose)
+            results = orchestrator.migrate_file(info.file_path, info.target_version, console, verbose, keep_backups)
 
             if results and all(r.success for r in results):
                 successful_migrations += 1
-                backup_path = info.file_path.with_suffix(f"{info.file_path.suffix}.backup")
-                if backup_path.exists():
-                    backup_paths.append(backup_path)
             else:
                 failed_migrations += 1
 
@@ -481,18 +452,6 @@ def migrate(
     console.print("\n[bold]Migration Complete[/bold]")
     console.print(f"[green]Successful: {successful_migrations}[/green]")
     console.print(f"[red]Failed: {failed_migrations}[/red]")
-
-    # Handle backups
-    if backup_paths and not keep_backups:
-        console.print(f"\n[yellow]Cleaning up {len(backup_paths)} backup files...[/yellow]")
-        for backup_path in backup_paths:
-            try:
-                if backup_path.exists():
-                    backup_path.unlink()
-            except Exception as e:
-                console.print(f"[red]Warning: Could not delete backup {backup_path}: {e}[/red]")
-    elif backup_paths and keep_backups:
-        console.print("\n[blue]Backup files saved with .mcap.backup extension[/blue]")
 
     if failed_migrations > 0:
         raise typer.Exit(1)

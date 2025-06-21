@@ -175,13 +175,12 @@ def test_migration_orchestrator_with_real_files(test_data_dir):
 
 def test_backup_creation_with_real_files(test_data_dir, temp_dir):
     """Test backup creation with real MCAP files."""
-    from owa.cli.mcap.migrate import MigrationOrchestrator
+    from owa.cli.mcap.backup_utils import create_backup
 
-    orchestrator = MigrationOrchestrator()
     test_file = copy_test_file(test_data_dir, "0.3.2.mcap", temp_dir)
     backup_file = temp_dir / "backup.mcap"
 
-    orchestrator.create_backup(test_file, backup_file)
+    create_backup(test_file, backup_file)
 
     assert backup_file.exists()
     assert backup_file.stat().st_size == test_file.stat().st_size
