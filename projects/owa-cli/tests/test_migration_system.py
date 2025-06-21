@@ -32,41 +32,8 @@ def test_detect_version_fallback():
     assert version == "unknown"
 
 
-def test_create_backup_success(temp_dir):
-    """Test successful backup creation."""
-    orchestrator = MigrationOrchestrator()
-
-    source_path = temp_dir / "test.mcap"
-    source_path.write_bytes(b"test content")
-    backup_path = temp_dir / "backup.mcap"
-
-    orchestrator.create_backup(source_path, backup_path)
-
-    assert backup_path.exists()
-    assert backup_path.stat().st_size == source_path.stat().st_size
-
-
-def test_create_backup_nonexistent_source():
-    """Test backup creation with non-existent source file."""
-    orchestrator = MigrationOrchestrator()
-    source_path = Path("/non/existent/file.mcap")
-    backup_path = Path("/tmp/backup.mcap")
-
-    with pytest.raises(FileNotFoundError, match="Source file not found"):
-        orchestrator.create_backup(source_path, backup_path)
-
-
-def test_create_backup_existing_backup(temp_dir):
-    """Test backup creation when backup file already exists."""
-    orchestrator = MigrationOrchestrator()
-
-    source_path = temp_dir / "test.mcap"
-    source_path.write_bytes(b"test content")
-    backup_path = temp_dir / "backup.mcap"
-    backup_path.touch()  # Create existing backup
-
-    with pytest.raises(FileExistsError, match="Backup file already exists"):
-        orchestrator.create_backup(source_path, backup_path)
+# Note: Backup functionality is now handled by BackupContext in backup_utils.py
+# These tests have been moved to test_backup_utils.py
 
 
 def test_backup_naming_scheme():

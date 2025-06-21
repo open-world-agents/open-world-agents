@@ -8,6 +8,7 @@ capabilities for data safety.
 
 import shutil
 import tempfile
+from contextlib import contextmanager
 from pathlib import Path
 from typing import List
 
@@ -18,6 +19,25 @@ from typing_extensions import Annotated
 
 from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
 from owa.cli.mcap.backup_utils import BackupContext
+
+
+@contextmanager
+def safe_temp_file(mode="wb", suffix=".mcap"):
+    """
+    Context manager for temporary files that works reliably on Windows.
+
+    This handles the Windows file locking issue by using delete=False
+    and cleaning up manually, while providing the same interface as
+    tempfile.NamedTemporaryFile with delete=True.
+    """
+    with tempfile.NamedTemporaryFile(mode=mode, suffix=suffix, delete=False) as temp_file:
+        temp_path = Path(temp_file.name)
+
+    try:
+        yield temp_file, temp_path
+    finally:
+        if temp_path.exists():
+            temp_path.unlink()
 
 
 def window_matches_target(window_title: str, target_window: str, exact_match: bool) -> bool:
@@ -140,13 +160,12 @@ def sanitize_mcap_file(
     # Use combined context managers for safe file operations
     with (
         BackupContext(file_path, console, keep_backup=keep_backup) as backup_ctx,
-        tempfile.NamedTemporaryFile(mode="wb", suffix=".mcap", delete=True) as temp_file,
+        safe_temp_file(mode="wb", suffix=".mcap") as (temp_file, temp_path),
     ):
-        temp_path = Path(temp_file.name)
-
         # Second pass: write sanitized file
         keep_current_events = False
 
+        # Ensure writer is properly closed before copying
         with OWAMcapReader(file_path) as reader, OWAMcapWriter(temp_path) as writer:
             for mcap_msg in reader.iter_messages():
                 if mcap_msg.topic == "window":
@@ -168,7 +187,7 @@ def sanitize_mcap_file(
                         publish_time=mcap_msg.timestamp,
                     )
 
-        # Replace original file with sanitized version
+        # Replace original file with sanitized version (after writer is closed)
         shutil.copy2(temp_path, file_path)
 
         return {
