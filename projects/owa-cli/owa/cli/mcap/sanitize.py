@@ -169,7 +169,7 @@ def sanitize_mcap_file(
                     )
 
         # Replace original file with sanitized version
-        shutil.move(temp_path, file_path)
+        shutil.copy2(temp_path, file_path)
 
         return {
             "file_path": file_path,
