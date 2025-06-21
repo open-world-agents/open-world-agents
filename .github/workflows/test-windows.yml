@@ -38,11 +38,29 @@ jobs:
       - name: Install dependencies
         run: vuv install --dev
 
-      - name: Run pytest
-        run: pytest
+      - name: Run pytest with coverage
+        run: pytest --cov --cov-report=xml --cov-report=html --cov-report=term
 
       - name: Install owa-env-example
         run: vuv pip install -e projects/owa-env-example
 
-      - name: Run pytest for owa-env-example
-        run: pytest projects/owa-env-example/tests
+      - name: Run pytest for owa-env-example with coverage
+        run: pytest projects/owa-env-example/tests --cov=projects/owa-env-example --cov-append --cov-report=xml --cov-report=html --cov-report=term
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload coverage to GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            coverage.xml
+            htmlcov/
