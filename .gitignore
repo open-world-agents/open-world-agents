@@ -16,8 +16,14 @@ wheels/
 *.egg-info
 downloads/
 
+# Coverage reports
+/htmlcov/
+/.coverage
+/coverage.xml
+.pytest_cache/
+
 # Virtual environments
 .venv
 
 # Ignore
-__ignore__/
+__ignore__/
