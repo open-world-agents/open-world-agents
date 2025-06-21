@@ -6,11 +6,6 @@ on:
   pull_request:
     branches: [main, dev]
 
-permissions:
-  contents: read
-  pull-requests: write
-  issues: write
-
 jobs:
   test-windows:
     runs-on: windows-latest
@@ -43,68 +38,94 @@ jobs:
       - name: Install dependencies
         run: vuv install --dev
 
+      - run: mkdir coverage
+
       - name: Run pytest with coverage
-        run: pytest --cov --cov-report=xml --cov-report=html --cov-report=term
+        run: coverage run -m pytest
+        env:
+          COVERAGE_FILE: coverage/.coverage.main-tests
+          CONTEXT: main-tests
 
       - name: Install owa-env-example
         run: vuv pip install -e projects/owa-env-example
 
       - name: Run pytest for owa-env-example with coverage
-        run: pytest projects/owa-env-example/tests --cov=projects/owa-env-example --cov-append --cov-report=xml --cov-report=html --cov-report=term
+        run: coverage run -m pytest projects/owa-env-example/tests
+        env:
+          COVERAGE_FILE: coverage/.coverage.owa-env-example
+          CONTEXT: owa-env-example
 
-      - name: Upload coverage reports to GitHub
+      - name: Store coverage files
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report-${{ github.run_number }}
-          path: |
-            coverage.xml
-            htmlcov/
-          retention-days: 30
+          name: coverage-windows
+          path: coverage
+          include-hidden-files: true
 
-      - name: Extract and display coverage
-        run: |
-          COVERAGE=$(python -c "
-          import xml.etree.ElementTree as ET
-          tree = ET.parse('coverage.xml')
-          root = tree.getroot()
-          coverage = float(root.attrib['line-rate']) * 100
-          print(f'{coverage:.1f}')
-          ")
-          echo "## Coverage Report" >> $GITHUB_STEP_SUMMARY
-          echo "**Overall Coverage: ${COVERAGE}%**" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Coverage Files Available:" >> $GITHUB_STEP_SUMMARY
-          echo "- **HTML Report**: Download artifacts and open \`htmlcov/index.html\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **XML Report**: Available in \`coverage.xml\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Terminal Report**: See workflow logs above" >> $GITHUB_STEP_SUMMARY
+  # copied from: https://github.com/pydantic/pydantic/blob/main/.github/workflows/ci.yml#L229-L294
+  coverage-combine:
+    needs: [test-windows]
+    runs-on: ubuntu-latest
 
-      - name: Comment coverage on PR
-        if: github.event_name == 'pull_request'
-        run: |
-          COVERAGE=$(python -c "
-          import xml.etree.ElementTree as ET
-          tree = ET.parse('coverage.xml')
-          root = tree.getroot()
-          coverage = float(root.attrib['line-rate']) * 100
-          print(f'{coverage:.1f}')
-          ")
+    steps:
+      - uses: actions/checkout@v4
 
-          echo "Coverage: ${COVERAGE}%"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
-          # Try to create PR comment using GitHub CLI
-          if gh pr comment ${{ github.event.number }} --body "## Coverage Report
+      - name: Get coverage files
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          pattern: coverage-*
+          path: coverage
 
-          Overall Coverage: ${COVERAGE}%
+      - run: pip install coverage[toml]
 
-          Coverage artifacts are available for download from this workflow run.
+      - run: ls -la coverage
+      - run: coverage combine coverage
+      - run: coverage report
+      - run: coverage html --show-contexts --title "pydantic coverage for ${{ github.sha }}"
 
-          To view detailed coverage:
-          1. Download the coverage-report-${{ github.run_number }} artifact
-          2. Extract and open htmlcov/index.html in your browser"; then
-            echo "✅ Successfully posted coverage comment to PR"
-          else
-            echo "⚠️ Could not post PR comment, but coverage is available in workflow summary"
-          fi
-        env:
-          GH_TOKEN: ${{ github.token }}
-        continue-on-error: true
+      - name: Store coverage data
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-data
+          path: .coverage
+          include-hidden-files: true
+
+      - name: Store coverage HTML
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html
+          path: htmlcov
+
+  coverage-pr-comment:
+    needs: coverage-combine
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      pull-requests: write
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download coverage data
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-data
+
+      - name: Generate coverage comment
+        id: coverage-comment
+        uses: py-cov-action/python-coverage-comment-action@v3
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Store coverage comment
+        uses: actions/upload-artifact@v4
+        if: steps.coverage-comment.outputs.COMMENT_FILE_WRITTEN == 'true'
+        with:
+          name: python-coverage-comment-action
+          path: python-coverage-comment-action.txt
