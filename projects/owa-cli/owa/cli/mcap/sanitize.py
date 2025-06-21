@@ -4,8 +4,6 @@ MCAP file sanitization command for filtering events based on window activation.
 This module provides functionality to sanitize MCAP files by keeping only events
 that occurred when a specific window was active, with automatic backup and rollback
 capabilities for data safety.
-
-TODO: implement configurable feature which blocks sanitize if message to be removed is more than specific ratio, say 10%.
 """
 
 import shutil
@@ -48,6 +46,7 @@ def sanitize_mcap_file(
     dry_run: bool = False,
     verbose: bool = False,
     keep_backup: bool = True,
+    max_removal_ratio: float = 1.0,
 ) -> dict:
     """
     Sanitize a single MCAP file by filtering events based on window activation.
@@ -59,9 +58,15 @@ def sanitize_mcap_file(
         console: Rich console for output
         dry_run: If True, only analyze without making changes
         verbose: If True, show detailed information
+        keep_backup: Whether to keep backup files after sanitization
+        max_removal_ratio: Maximum ratio of messages that can be removed (0.0-1.0).
+                          If removal ratio exceeds this, operation is blocked for safety.
 
     Returns:
         Dictionary with sanitization results
+
+    Raises:
+        ValueError: If the removal ratio exceeds the safety threshold
     """
     if not file_path.exists():
         raise FileNotFoundError(f"File not found: {file_path}")
@@ -99,9 +104,12 @@ def sanitize_mcap_file(
             if keep_current_events:
                 kept_messages += 1
 
+    # Calculate removal ratio for safety check
+    removed_messages = total_messages - kept_messages
+    removal_ratio = removed_messages / total_messages if total_messages > 0 else 0.0
+
     if verbose:
-        removed_messages = total_messages - kept_messages
-        removal_percentage = (removed_messages / total_messages * 100) if total_messages > 0 else 0
+        removal_percentage = removal_ratio * 100
 
         console.print(f"[blue]Analysis for {file_path}:[/blue]")
         console.print(f"  Total messages: {total_messages}")
@@ -110,6 +118,14 @@ def sanitize_mcap_file(
         console.print(f"  Messages to remove: {removed_messages} ({removal_percentage:.1f}%)")
         if matching_windows:
             console.print(f"  Matching windows: {', '.join(sorted(matching_windows))}")
+
+    # Safety check: prevent excessive removal
+    if removal_ratio > max_removal_ratio:
+        raise ValueError(
+            f"Safety check failed: removal ratio {removal_ratio:.1%} exceeds maximum allowed "
+            f"{max_removal_ratio:.1%}. This would remove {removed_messages} out of "
+            f"{total_messages} messages. Use a higher --max-removal-ratio if this is intentional."
+        )
 
     if dry_run:
         return {
@@ -180,6 +196,15 @@ def sanitize(
     keep_backups: Annotated[
         bool, typer.Option("--keep-backups/--no-backups", help="Keep backup files after sanitization")
     ] = True,
+    max_removal_ratio: Annotated[
+        float,
+        typer.Option(
+            "--max-removal-ratio",
+            help="Maximum ratio of messages that can be removed (0.0-1.0). Safety feature to prevent accidental over-sanitization.",
+            min=0.0,
+            max=1.0,
+        ),
+    ] = 0.2,
 ) -> None:
     """
     Sanitize MCAP files by keeping only events when a specific window is active.
@@ -188,10 +213,15 @@ def sanitize(
     the specified window was active, effectively removing data from other applications
     for privacy or focus purposes.
 
+    Safety feature: By default, the operation will be blocked if more than 20% of
+    messages would be removed, preventing accidental over-sanitization. Use
+    --max-removal-ratio to adjust this threshold.
+
     Examples:
         owl mcap sanitize recording.mcap --keep-window "Notepad"
         owl mcap sanitize *.mcap --keep-window "Work App" --exact
         owl mcap sanitize data.mcap --keep-window "Browser" --dry-run
+        owl mcap sanitize data.mcap --keep-window "App" --max-removal-ratio 0.95
     """
     console = Console()
 
@@ -257,6 +287,7 @@ def sanitize(
                     dry_run=dry_run,
                     verbose=verbose,
                     keep_backup=keep_backups,
+                    max_removal_ratio=max_removal_ratio,
                 )
 
                 if result["success"]:
