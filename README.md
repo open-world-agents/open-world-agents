@@ -8,8 +8,6 @@
   [![Documentation](https://img.shields.io/badge/docs-mkdocs-blue)](https://open-world-agents.github.io/open-world-agents/)
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
   [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-  [![Tests](https://github.com/open-world-agents/open-world-agents/workflows/CI/badge.svg)](https://github.com/open-world-agents/open-world-agents/actions/workflows/ci.yml)
-  [![Coverage](https://raw.githubusercontent.com/open-world-agents/open-world-agents/python-coverage-comment-action-data/badge.svg)](https://github.com/open-world-agents/open-world-agents/tree/python-coverage-comment-action-data)
   [![GitHub stars](https://img.shields.io/github/stars/open-world-agents/open-world-agents?style=social)](https://github.com/open-world-agents/open-world-agents/stargazers)
   
 </div>
