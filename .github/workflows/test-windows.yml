@@ -47,20 +47,67 @@ jobs:
       - name: Run pytest for owa-env-example with coverage
         run: pytest projects/owa-env-example/tests --cov=projects/owa-env-example --cov-append --cov-report=xml --cov-report=html --cov-report=term
 
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          file: ./coverage.xml
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: false
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
-      - name: Upload coverage to GitHub
+      - name: Upload coverage reports to GitHub
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report
+          name: coverage-report-${{ github.run_number }}
           path: |
             coverage.xml
             htmlcov/
+          retention-days: 30
+
+      - name: Extract and display coverage
+        run: |
+          COVERAGE=$(python -c "
+          import xml.etree.ElementTree as ET
+          tree = ET.parse('coverage.xml')
+          root = tree.getroot()
+          coverage = float(root.attrib['line-rate']) * 100
+          print(f'{coverage:.1f}')
+          ")
+          echo "## 📊 Coverage Report" >> $GITHUB_STEP_SUMMARY
+          echo "**Overall Coverage: ${COVERAGE}%**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📁 Coverage Files Available:" >> $GITHUB_STEP_SUMMARY
+          echo "- **HTML Report**: Download artifacts and open \`htmlcov/index.html\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **XML Report**: Available in \`coverage.xml\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Terminal Report**: See workflow logs above" >> $GITHUB_STEP_SUMMARY
+
+      - name: Comment coverage on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const xml2js = require('xml2js');
+
+            // Read coverage XML
+            const coverageXml = fs.readFileSync('coverage.xml', 'utf8');
+            const parser = new xml2js.Parser();
+
+            parser.parseString(coverageXml, (err, result) => {
+              if (err) {
+                console.error('Error parsing coverage XML:', err);
+                return;
+              }
+
+              const coverage = (parseFloat(result.coverage.$.['line-rate']) * 100).toFixed(1);
+
+              const comment = `## 📊 Coverage Report
+
+**Overall Coverage: ${coverage}%**
+
+📁 **Coverage artifacts are available for download from this workflow run.**
+
+🔍 **To view detailed coverage:**
+1. Download the \`coverage-report-${{ github.run_number }}\` artifact
+2. Extract and open \`htmlcov/index.html\` in your browser
+              `;
+
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            });

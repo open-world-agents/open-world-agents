@@ -49,25 +49,27 @@ xdg-open htmlcov/index.html
 
 Coverage is automatically generated in our CI pipeline:
 - Runs on every push and pull request
-- Uploads reports to Codecov
-- Stores artifacts for download
+- Uploads reports as GitHub artifacts
+- Shows coverage percentage in PR comments
+- Displays coverage summary in workflow output
 
-### Codecov Setup
+### GitHub-Only Coverage Setup
 
-To enable Codecov integration:
+Our coverage setup uses only GitHub's built-in features:
 
-1. **Repository Setup**:
-   - Go to [codecov.io](https://codecov.io)
-   - Sign in with GitHub
-   - Add the repository
+1. **Automatic Coverage Reports**:
+   - Coverage runs automatically on every push and PR
+   - Reports are uploaded as GitHub artifacts
+   - Coverage summary appears in workflow summaries
 
-2. **Token Configuration**:
-   - Get the repository token from Codecov
-   - Add it as `CODECOV_TOKEN` in GitHub repository secrets
-   - Path: Settings → Secrets and variables → Actions → New repository secret
+2. **Viewing Coverage**:
+   - Go to Actions → "Pytest on Windows (common)" workflow
+   - Download the coverage artifact from any workflow run
+   - Open `htmlcov/index.html` for detailed coverage
 
-3. **Badge Integration**:
-   The coverage badge in README.md automatically updates with current coverage percentage.
+3. **PR Comments**:
+   - Coverage percentage is automatically commented on PRs
+   - No external services or tokens required
 
 ## Configuration
 
