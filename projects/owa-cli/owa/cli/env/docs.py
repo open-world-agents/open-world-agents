@@ -244,9 +244,6 @@ def _output_text(
             )
 
 
-# Removed unused functions - _apply_quality_checks and _has_critical_issues
-
-
 # Additional helper command for development
 def docs_stats(
     plugin_namespace: Optional[str] = typer.Argument(None, help="Specific plugin namespace (optional)"),
