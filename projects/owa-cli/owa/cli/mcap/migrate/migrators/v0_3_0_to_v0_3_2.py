@@ -24,6 +24,7 @@ import importlib
 from pathlib import Path
 from typing import Optional
 
+import orjson
 import typer
 from rich.console import Console
 
@@ -39,6 +40,7 @@ def migrate(
         None, help="Output MCAP file (optional, defaults to overwriting input)"
     ),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed information"),
+    output_format: str = typer.Option("text", "--output-format", help="Output format: text or json"),
 ) -> None:
     """Migrate MCAP file from v0.3.0 to v0.3.2."""
     console = Console()
@@ -79,10 +81,24 @@ def migrate(
             for log_time, topic, msg in msgs:
                 writer.write_message(topic=topic, message=msg, log_time=log_time)
 
-        console.print(f"[green]✓ Migration completed: {changes_made} changes made[/green]")
+        if output_format == "json":
+            result = {"success": True, "changes_made": changes_made, "from_version": "0.3.0", "to_version": "0.3.2"}
+            print(orjson.dumps(result).decode())
+        else:
+            console.print(f"[green]✓ Migration completed: {changes_made} changes made[/green]")
 
     except Exception as e:
-        console.print(f"[red]Migration failed: {e}[/red]")
+        if output_format == "json":
+            result = {
+                "success": False,
+                "changes_made": 0,
+                "error": str(e),
+                "from_version": "0.3.0",
+                "to_version": "0.3.2",
+            }
+            print(orjson.dumps(result).decode())
+        else:
+            console.print(f"[red]Migration failed: {e}[/red]")
         raise typer.Exit(1)
 
 
@@ -90,6 +106,7 @@ def migrate(
 def verify(
     file_path: Path = typer.Argument(..., help="MCAP file to verify"),
     backup_path: Optional[Path] = typer.Option(None, help="Backup file path (for reference)"),
+    output_format: str = typer.Option("text", "--output-format", help="Output format: text or json"),
 ) -> None:
     """Verify that pressed_vk_list fields are gone."""
     console = Console()
@@ -102,13 +119,28 @@ def verify(
         with OWAMcapReader(file_path) as reader:
             for schema, channel, message, decoded in reader.reader.iter_decoded_messages():
                 if channel.topic == "keyboard/state" and hasattr(decoded, "pressed_vk_list"):
-                    console.print("[red]pressed_vk_list field still present in keyboard/state message[/red]")
+                    if output_format == "json":
+                        result = {
+                            "success": False,
+                            "error": "pressed_vk_list field still present in keyboard/state message",
+                        }
+                        print(orjson.dumps(result).decode())
+                    else:
+                        console.print("[red]pressed_vk_list field still present in keyboard/state message[/red]")
                     raise typer.Exit(1)
 
-        console.print("[green]✓ pressed_vk_list fields successfully migrated[/green]")
+        if output_format == "json":
+            result = {"success": True, "message": "pressed_vk_list fields successfully migrated"}
+            print(orjson.dumps(result).decode())
+        else:
+            console.print("[green]✓ pressed_vk_list fields successfully migrated[/green]")
 
     except Exception as e:
-        console.print(f"[red]Verification error: {e}[/red]")
+        if output_format == "json":
+            result = {"success": False, "error": str(e)}
+            print(orjson.dumps(result).decode())
+        else:
+            console.print(f"[red]Verification error: {e}[/red]")
         raise typer.Exit(1)
 
 

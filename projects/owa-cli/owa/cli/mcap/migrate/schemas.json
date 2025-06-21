@@ -1,0 +1,186 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MCAP Migration JSON Output Schemas",
+  "description": "JSON Schema definitions for --output-format json in MCAP migration tools",
+  
+  "$defs": {
+    "migrationOutput": {
+      "title": "Migration Operation Output",
+      "description": "JSON output format for MCAP migration operations",
+      "type": "object",
+      "required": ["success"],
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "description": "Whether the migration operation succeeded"
+        },
+        "changes_made": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of changes/transformations made during migration"
+        },
+        "from_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$",
+          "description": "Source version in semver format (e.g., '0.2.0')"
+        },
+        "to_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$",
+          "description": "Target version in semver format (e.g., '0.3.0')"
+        },
+        "error": {
+          "type": "string",
+          "description": "Error message when success=false"
+        },
+        "message": {
+          "type": "string",
+          "description": "Success or informational message"
+        },
+        "schema_conversions": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Mapping of old schema names to new schema names"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "success": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "required": ["success", "changes_made", "from_version", "to_version"],
+            "not": {
+              "required": ["error"]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "success": {
+                "const": false
+              }
+            }
+          },
+          "then": {
+            "required": ["success", "error"],
+            "properties": {
+              "changes_made": {
+                "const": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    
+    "verificationOutput": {
+      "title": "Verification Operation Output",
+      "description": "JSON output format for MCAP verification operations",
+      "type": "object",
+      "required": ["success"],
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "description": "Whether the verification passed"
+        },
+        "message": {
+          "type": "string",
+          "description": "Descriptive message about verification result"
+        },
+        "error": {
+          "type": "string",
+          "description": "Error message when success=false"
+        },
+        "found_old_schemas": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of problematic schema names found during verification"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "success": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "required": ["success", "message"],
+            "not": {
+              "required": ["error"]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "success": {
+                "const": false
+              }
+            }
+          },
+          "then": {
+            "required": ["success", "error"]
+          }
+        }
+      ]
+    }
+  },
+  
+  "examples": [
+    {
+      "title": "Successful Migration",
+      "description": "Example of successful migration output",
+      "data": {
+        "success": true,
+        "changes_made": 5,
+        "from_version": "0.2.0",
+        "to_version": "0.3.0",
+        "schema_conversions": {
+          "owa_env_desktop.KeyboardEvent": "owa.env.desktop.KeyboardEvent",
+          "owa_env_desktop.MouseEvent": "owa.env.desktop.MouseEvent"
+        }
+      }
+    },
+    {
+      "title": "Failed Migration",
+      "description": "Example of failed migration output",
+      "data": {
+        "success": false,
+        "changes_made": 0,
+        "error": "Input file not found: /path/to/file.mcap",
+        "from_version": "0.2.0",
+        "to_version": "0.3.0"
+      }
+    },
+    {
+      "title": "Successful Verification",
+      "description": "Example of successful verification output",
+      "data": {
+        "success": true,
+        "message": "Old schema names successfully migrated"
+      }
+    },
+    {
+      "title": "Failed Verification",
+      "description": "Example of failed verification output",
+      "data": {
+        "success": false,
+        "error": "Old schema names still present: owa_env_desktop.KeyboardEvent",
+        "found_old_schemas": ["owa_env_desktop.KeyboardEvent", "owa_env_desktop.MouseEvent"]
+      }
+    }
+  ]
+}
