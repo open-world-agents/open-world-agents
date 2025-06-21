@@ -57,6 +57,7 @@ bypass-selection = true
 
 [tool.coverage.run]
 source = ["projects"]
+relative_files = true
 omit = [
     "*/tests/*",
     "*/test_*",
