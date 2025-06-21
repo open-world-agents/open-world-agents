@@ -158,7 +158,7 @@ class TestMigrateIntegration:
             result = cli_runner.invoke(mcap_app, ["migrate", str(test_file), "--yes"])
 
             assert result.exit_code == 0
-            assert "No files need migration" in result.output
+            assert "No files found matching the pattern" in result.output
 
 
 class TestMigrationOrchestrator:
