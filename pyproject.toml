@@ -57,7 +57,9 @@ bypass-selection = true
 
 [tool.coverage.run]
 source = ["projects"]
+branch = true
 relative_files = true
+context = "${CONTEXT}"
 omit = [
     "*/tests/*",
     "*/test_*",
@@ -67,20 +69,25 @@ omit = [
 ]
 
 [tool.coverage.report]
+precision = 2
 exclude_lines = [
-    "pragma: no cover",
-    "def __repr__",
-    "if self.debug:",
-    "if settings.DEBUG",
-    "raise AssertionError",
-    "raise NotImplementedError",
-    "if 0:",
-    "if __name__ == .__main__.:",
-    "class .*\\bProtocol\\):",
-    "@(abc\\.)?abstractmethod",
+    'pragma: no cover',
+    'raise NotImplementedError',
+    'if TYPE_CHECKING:',
+    'if typing.TYPE_CHECKING:',
+    '@overload',
+    '@typing.overload',
+    '\(Protocol\):$',
+    'typing.assert_never',
+    'assert_never',
 ]
-show_missing = true
-skip_covered = false
+
+[tool.coverage.paths]
+source = [
+    "projects/",
+    "/home/runner/work/open-world-agents/open-world-agents/projects/",
+    "D:\\a\\open-world-agents\\open-world-agents\\projects\\",
+]
 
 [tool.coverage.html]
 directory = "htmlcov"

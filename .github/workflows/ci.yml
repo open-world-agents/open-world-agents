@@ -1,4 +1,4 @@
-name: Pytest on Windows (common)
+name: CI
 
 on:
   push:
@@ -9,6 +9,7 @@ on:
 jobs:
   test-windows:
     runs-on: windows-latest
+    name: Pytest on Windows
     defaults:
       run:
         shell: bash -el {0}
