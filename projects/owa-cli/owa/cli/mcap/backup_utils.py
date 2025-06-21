@@ -89,30 +89,6 @@ def generate_backup_path(file_path: Path, suffix: str = ".backup") -> Path:
     return file_path.with_suffix(f"{file_path.suffix}{suffix}")
 
 
-def cleanup_backup_files(backup_paths: List[Path], console: Console, keep_backups: bool = True) -> None:
-    """
-    Handle cleanup of backup files based on user preference.
-
-    Args:
-        backup_paths: List of backup file paths to potentially clean up
-        console: Rich console for output
-        keep_backups: Whether to keep backup files (if False, they will be deleted)
-    """
-    if not backup_paths:
-        return
-
-    if not keep_backups:
-        console.print(f"\n[yellow]Cleaning up {len(backup_paths)} backup files...[/yellow]")
-        for backup_path in backup_paths:
-            try:
-                if backup_path.exists():
-                    backup_path.unlink()
-            except Exception as e:
-                console.print(f"[red]Warning: Could not delete backup {backup_path}: {e}[/red]")
-    else:
-        console.print("\n[blue]Backup files saved with .mcap.backup extension[/blue]")
-
-
 class BackupContext:
     """
     Context manager for safe file operations with automatic backup, rollback, and cleanup.
