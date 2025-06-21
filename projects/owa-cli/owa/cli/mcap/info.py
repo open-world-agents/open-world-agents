@@ -64,6 +64,10 @@ def get_local_mcap_version(mcap_executable: Path) -> str:
 
 def get_latest_mcap_cli_version() -> str:
     """Get the latest mcap CLI version from GitHub releases."""
+    # Skip GitHub API call if disabled via environment variable (e.g., during testing)
+    if os.environ.get("OWA_DISABLE_VERSION_CHECK"):
+        return CURRENT_MCAP_CLI_VERSION
+
     try:
         url = "https://api.github.com/repos/foxglove/mcap/releases"
         response = requests.get(url, timeout=10)

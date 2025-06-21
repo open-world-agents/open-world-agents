@@ -3,7 +3,7 @@ import io
 import re
 import warnings
 from pathlib import Path
-from typing import Any, Callable, Iterable, Iterator, Optional, TypeAlias, Union
+from typing import Any, Callable, Dict, Iterable, Iterator, Optional, TypeAlias, Union
 
 import requests
 from mcap.exceptions import DecoderNotFoundError
@@ -52,6 +52,16 @@ class McapMessage:
     def timestamp(self) -> int:
         """Get the log timestamp in nanoseconds."""
         return self._message.log_time
+
+    @property
+    def log_time(self) -> int:
+        """Get the log timestamp in nanoseconds."""
+        return self._message.log_time
+
+    @property
+    def publish_time(self) -> int:
+        """Get the publish timestamp in nanoseconds."""
+        return self._message.publish_time
 
     @property
     def message(self) -> bytes:
@@ -126,13 +136,17 @@ class OWAMcapReader:
         )
 
         # Use packaging.version instead of semantic_version for PEP 440 compliance
-        file_version_str = m["version"]
+        self._file_version_str = m["version"] if m else "unknown"
+        self._mcap_version_str = m["mcap_version"] if m else "unknown"
         current_version = version.Version(__version__)
 
         # ~=X.Y.Z is equivalent to >=X.Y.Z, ==X.Y.* (allows patch-level changes)
-        specifier = SpecifierSet(f"~={file_version_str}")
-        if current_version not in specifier:
-            warnings.warn(f"Reader version {__version__} may not be compatible with writer version {file_version_str}")
+        if m:
+            specifier = SpecifierSet(f"~={self._file_version_str}")
+            if current_version not in specifier:
+                warnings.warn(
+                    f"Reader version {__version__} may not be compatible with writer version {self._file_version_str}"
+                )
 
     def finish(self):
         """Close the file and release resources."""
@@ -170,6 +184,21 @@ class OWAMcapReader:
     def duration(self):
         """Get the duration of the MCAP file in nanoseconds."""
         return self.end_time - self.start_time
+
+    @property
+    def file_version(self) -> str:
+        """Get the mcap-owa-support version that created this file."""
+        return self._file_version_str
+
+    @property
+    def mcap_version(self) -> str:
+        """Get the mcap library version that created this file."""
+        return self._mcap_version_str
+
+    @property
+    def schemas(self) -> Dict[int, Any]:
+        """Get all schemas in the MCAP file."""
+        return self.reader.get_summary().schemas
 
     def __enter__(self):
         return self

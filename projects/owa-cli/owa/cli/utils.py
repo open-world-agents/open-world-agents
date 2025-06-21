@@ -1,3 +1,5 @@
+import os
+
 import requests
 from packaging.version import parse as parse_version
 from rich import print
@@ -18,6 +20,10 @@ def get_local_version(package_name: str = "owa.cli") -> str:
 
 
 def get_latest_release() -> str:
+    # Skip GitHub API call if disabled via environment variable (e.g., during testing)
+    if os.environ.get("OWA_DISABLE_VERSION_CHECK"):
+        return get_local_version()  # Return the locally installed version as the default
+
     url = "https://api.github.com/repos/open-world-agents/open-world-agents/releases/latest"
     response = requests.get(url, timeout=5)
     response.raise_for_status()
@@ -32,6 +38,10 @@ def check_for_update(package_name: str = "owa.cli") -> bool:
     Returns:
         bool: True if the local version is up to date, False otherwise.
     """
+    # Skip version check if disabled via environment variable (e.g., during testing)
+    if os.environ.get("OWA_DISABLE_VERSION_CHECK"):
+        return True
+
     try:
         local_version = get_local_version(package_name)
         latest_version = get_latest_release()
