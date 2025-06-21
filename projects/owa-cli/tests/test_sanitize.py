@@ -176,18 +176,11 @@ class TestSanitizeIntegration:
                         "timestamp": 1000,
                     },
                 )(),
-                # Window message that should be filtered out
-                type(
-                    "MockMessage",
-                    (),
-                    {
-                        "topic": "window",
-                        "decoded": type("MockDecoded", (), {"title": "Remove This Window"})(),
-                        "timestamp": 1001,
-                    },
-                )(),
-                # Non-window message
-                type("MockMessage", (), {"topic": "keyboard", "decoded": {"key": "a"}, "timestamp": 1002})(),
+                # Messages that should be kept (after window activation)
+                type("MockMessage", (), {"topic": "keyboard", "decoded": {"key": "a"}, "timestamp": 1001})(),
+                type("MockMessage", (), {"topic": "keyboard", "decoded": {"key": "b"}, "timestamp": 1002})(),
+                type("MockMessage", (), {"topic": "keyboard", "decoded": {"key": "c"}, "timestamp": 1003})(),
+                type("MockMessage", (), {"topic": "keyboard", "decoded": {"key": "d"}, "timestamp": 1004})(),
             ]
 
             result = cli_runner.invoke(
@@ -196,8 +189,8 @@ class TestSanitizeIntegration:
 
             assert result.exit_code == 0
 
-    def test_sanitize_time_range_filtering(self, temp_dir, cli_runner):
-        """Test time range filtering functionality."""
+    def test_sanitize_exact_window_matching(self, temp_dir, cli_runner):
+        """Test exact window matching functionality."""
         test_file = temp_dir / "test.mcap"
         test_file.write_bytes(b"content")
 
@@ -207,45 +200,53 @@ class TestSanitizeIntegration:
         ):
             mock_reader_instance = mock_reader.return_value.__enter__.return_value
             mock_reader_instance.iter_messages.return_value = [
-                # Message within time range
-                type("MockMessage", (), {"topic": "keyboard", "decoded": {"key": "a"}, "timestamp": 1500})(),
-                # Message outside time range
-                type("MockMessage", (), {"topic": "keyboard", "decoded": {"key": "b"}, "timestamp": 2500})(),
-            ]
-
-            result = cli_runner.invoke(
-                mcap_app, ["sanitize", str(test_file), "--start-time", "1000", "--end-time", "2000", "--yes"]
-            )
-
-            assert result.exit_code == 0
-
-    def test_sanitize_topic_filtering(self, temp_dir, cli_runner):
-        """Test topic filtering functionality."""
-        test_file = temp_dir / "test.mcap"
-        test_file.write_bytes(b"content")
-
-        with (
-            patch("owa.cli.mcap.sanitize.OWAMcapReader") as mock_reader,
-            patch("owa.cli.mcap.sanitize.OWAMcapWriter"),
-        ):
-            mock_reader_instance = mock_reader.return_value.__enter__.return_value
-            mock_reader_instance.iter_messages.return_value = [
-                # Keyboard message (should be kept)
-                type("MockMessage", (), {"topic": "keyboard", "decoded": {"key": "a"}, "timestamp": 1000})(),
-                # Mouse message (should be filtered out)
-                type("MockMessage", (), {"topic": "mouse", "decoded": {"x": 100, "y": 200}, "timestamp": 1001})(),
-                # Window message (should be filtered out)
+                # Window message with exact title match
                 type(
                     "MockMessage",
                     (),
                     {
                         "topic": "window",
-                        "decoded": type("MockDecoded", (), {"title": "Test Window"})(),
-                        "timestamp": 1002,
+                        "decoded": type("MockDecoded", (), {"title": "Exact Window"})(),
+                        "timestamp": 1000,
                     },
                 )(),
+                # Messages that should be kept (after window activation)
+                type("MockMessage", (), {"topic": "keyboard", "decoded": {"key": "a"}, "timestamp": 1001})(),
             ]
 
-            result = cli_runner.invoke(mcap_app, ["sanitize", str(test_file), "--keep-topic", "keyboard", "--yes"])
+            result = cli_runner.invoke(
+                mcap_app, ["sanitize", str(test_file), "--keep-window", "Exact Window", "--exact", "--yes"]
+            )
+
+            assert result.exit_code == 0
+
+    def test_sanitize_substring_window_matching(self, temp_dir, cli_runner):
+        """Test substring window matching functionality."""
+        test_file = temp_dir / "test.mcap"
+        test_file.write_bytes(b"content")
+
+        with (
+            patch("owa.cli.mcap.sanitize.OWAMcapReader") as mock_reader,
+            patch("owa.cli.mcap.sanitize.OWAMcapWriter"),
+        ):
+            mock_reader_instance = mock_reader.return_value.__enter__.return_value
+            mock_reader_instance.iter_messages.return_value = [
+                # Window message with partial title match
+                type(
+                    "MockMessage",
+                    (),
+                    {
+                        "topic": "window",
+                        "decoded": type("MockDecoded", (), {"title": "My Test Window Application"})(),
+                        "timestamp": 1000,
+                    },
+                )(),
+                # Messages that should be kept (after window activation)
+                type("MockMessage", (), {"topic": "keyboard", "decoded": {"key": "a"}, "timestamp": 1001})(),
+            ]
+
+            result = cli_runner.invoke(
+                mcap_app, ["sanitize", str(test_file), "--keep-window", "Test Window", "--substring", "--yes"]
+            )
 
             assert result.exit_code == 0
