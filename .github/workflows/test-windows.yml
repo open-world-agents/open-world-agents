@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main, dev]
 
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
 jobs:
   test-windows:
     runs-on: windows-latest
@@ -84,8 +89,10 @@ jobs:
           print(f'{coverage:.1f}')
           ")
 
-          # Create PR comment using GitHub CLI (pre-installed in GitHub Actions)
-          gh pr comment ${{ github.event.number }} --body "## Coverage Report
+          echo "Coverage: ${COVERAGE}%"
+
+          # Try to create PR comment using GitHub CLI
+          if gh pr comment ${{ github.event.number }} --body "## Coverage Report
 
           Overall Coverage: ${COVERAGE}%
 
@@ -93,6 +100,11 @@ jobs:
 
           To view detailed coverage:
           1. Download the coverage-report-${{ github.run_number }} artifact
-          2. Extract and open htmlcov/index.html in your browser"
+          2. Extract and open htmlcov/index.html in your browser"; then
+            echo "✅ Successfully posted coverage comment to PR"
+          else
+            echo "⚠️ Could not post PR comment, but coverage is available in workflow summary"
+          fi
         env:
           GH_TOKEN: ${{ github.token }}
+        continue-on-error: true
