@@ -19,8 +19,8 @@ Raw MCAP Data → Event Dataset → Binned Dataset → MLLM Dataset → Training
 ```bash
 # Filter only screen and keyboard
 python scripts/01_raw_events_to_event_dataset.py \
-  --train_dir /mnt/raid11/datasets/owa/mcaps/super-hexagon \
-  --output-dir /mnt/raid11/datasets/owa/data/super-hexagon-event \
+  --train_dir /mnt/raid12/datasets/owa/mcaps/super-hexagon \
+  --output-dir /mnt/raid12/datasets/owa/data/super-hexagon-event \
   --rate mouse=60 --rate screen=20 \
   --keep_topic screen --keep_topic keyboard  # Only screen and keyboard
 ```
@@ -51,8 +51,8 @@ python scripts/01_raw_events_to_event_dataset.py \
 **Usage**:
 ```bash
 python scripts/02_event_dataset_to_binned_dataset.py \
-  --input_dir /mnt/raid11/datasets/owa/data/super-hexagon-event \
-  --output_dir /mnt/raid11/datasets/owa/data/super-hexagon-bin \
+  --input_dir /mnt/raid12/datasets/owa/data/super-hexagon-event \
+  --output_dir /mnt/raid12/datasets/owa/data/super-hexagon-bin \
   --fps 10
 ```
 
@@ -81,8 +81,8 @@ python scripts/02_event_dataset_to_binned_dataset.py \
 **Usage**:
 ```bash
 python scripts/03_binned_dataset_to_mllm_dataset.py \
-  --input_dir /mnt/raid11/datasets/owa/data/super-hexagon-bin \
-  --output_dir /mnt/raid11/datasets/owa/data/super-hexagon-mllm \
+  --input_dir /mnt/raid12/datasets/owa/data/super-hexagon-bin \
+  --output_dir /mnt/raid12/datasets/owa/data/super-hexagon-mllm \
   --instruction "Complete the computer task" \
   --filter-empty-actions  # Filter out samples with no actions (default: enabled)
 ```
@@ -127,7 +127,7 @@ from datasets import load_from_disk
 from owa.data.vlm_dataset_builder import VLMDatasetBuilder
 
 # Load MLLM dataset
-mllm_dataset = load_from_disk('/mnt/raid11/datasets/owa/data/super-hexagon-mllm')
+mllm_dataset = load_from_disk('/mnt/raid12/datasets/owa/data/super-hexagon-mllm')
 
 # Create PyTorch dataset with lazy image loading
 vlm_dataset = VLMDatasetBuilder(

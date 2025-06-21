@@ -23,7 +23,7 @@
 	"mounts": [
 		"source=${localWorkspaceFolder},target=/workspace,type=bind",
 		"source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind",
-		"source=/mnt/raid11/datasets/owa,target=/mnt/raid11/datasets/owa,type=bind",
+		"source=/mnt/raid12/datasets/owa,target=/mnt/raid12/datasets/owa,type=bind",
 		"source=/mnt/raid12/cache,target=/mnt/raid12/cache,type=bind",
 		{
 			"source": "${localEnv:HOME}/.cache",
