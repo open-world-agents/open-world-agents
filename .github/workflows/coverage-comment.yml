@@ -3,7 +3,7 @@ name: Post coverage comment
 
 on:
   workflow_run:
-    workflows: ["Pytest on Windows (common)"]
+    workflows: ["CI"]
     types:
       - completed
 
