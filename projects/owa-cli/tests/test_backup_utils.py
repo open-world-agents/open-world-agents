@@ -6,7 +6,6 @@ Feature-specific integration tests should only verify that features correctly
 use BackupContext, not test BackupContext functionality itself.
 """
 
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
