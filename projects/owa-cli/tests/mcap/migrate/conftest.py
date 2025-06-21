@@ -4,7 +4,7 @@ Pytest configuration for MCAP migration tests.
 This module provides fixtures specific to migration testing.
 """
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -22,6 +22,7 @@ def mock_migration_result():
 @pytest.fixture
 def mock_file_info():
     """Fixture that provides a mock file info object."""
+
     def _create_file_info(file_path, detected_version="0.3.0", needs_migration=True, target_version="0.4.0"):
         info = MagicMock()
         info.file_path = file_path
@@ -29,4 +30,5 @@ def mock_file_info():
         info.needs_migration = needs_migration
         info.target_version = target_version
         return info
+
     return _create_file_info
