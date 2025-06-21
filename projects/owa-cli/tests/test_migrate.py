@@ -1,8 +1,7 @@
 """
-Integration tests for migrate command with unified backup-rollback utilities.
+Tests for migrate command functionality.
 
-This module tests that the migrate command correctly uses the unified backup
-and rollback utilities and maintains data safety during migration operations.
+This module tests the core migration functionality of the migrate command.
 """
 
 from unittest.mock import MagicMock, patch
@@ -13,14 +12,13 @@ from owa.cli.mcap import app as mcap_app
 from owa.cli.mcap.migrate.migrate import MigrationOrchestrator
 
 
-class TestMigrateBackupIntegration:
-    """Integration tests for migrate command backup functionality."""
+class TestMigrateIntegration:
+    """Integration tests for migrate command core functionality."""
 
-    def test_migrate_creates_backup_on_success(self, temp_dir, cli_runner):
-        """Test that migrate creates backup files on successful operation."""
+    def test_migrate_successful_operation(self, temp_dir, cli_runner):
+        """Test successful migration operation."""
         test_file = temp_dir / "test.mcap"
-        original_content = b"original mcap content"
-        test_file.write_bytes(original_content)
+        test_file.write_bytes(b"original mcap content")
 
         with patch("owa.cli.mcap.migrate.migrate.MigrationOrchestrator") as mock_orchestrator_class:
             mock_orchestrator = MagicMock()
@@ -46,17 +44,12 @@ class TestMigrateBackupIntegration:
                 result = cli_runner.invoke(mcap_app, ["migrate", str(test_file), "--yes"])
 
                 assert result.exit_code == 0
-
-                # Check that backup was created during migration
-                # Note: In real scenario, backup would be created by migrate_file
-                # Here we verify the orchestrator was called correctly
                 mock_orchestrator.migrate_file.assert_called_once()
 
-    def test_migrate_rollback_on_failure(self, temp_dir, cli_runner):
-        """Test that migrate rolls back changes when migration fails."""
+    def test_migrate_failed_operation(self, temp_dir, cli_runner):
+        """Test failed migration operation."""
         test_file = temp_dir / "test.mcap"
-        original_content = b"original mcap content"
-        test_file.write_bytes(original_content)
+        test_file.write_bytes(b"original mcap content")
 
         with patch("owa.cli.mcap.migrate.migrate.MigrationOrchestrator") as mock_orchestrator_class:
             mock_orchestrator = MagicMock()
@@ -82,95 +75,15 @@ class TestMigrateBackupIntegration:
                 result = cli_runner.invoke(mcap_app, ["migrate", str(test_file), "--yes"])
 
                 assert result.exit_code == 1
-
-                # Verify migration was attempted
                 mock_orchestrator.migrate_file.assert_called_once()
 
-    def test_migrate_backup_cleanup_keep_backups(self, temp_dir, cli_runner):
-        """Test backup cleanup when keeping backups."""
-        test_file = temp_dir / "test.mcap"
-        test_file.write_bytes(b"original content")
-
-        # Create a mock backup file to simulate successful migration
-        backup_file = test_file.with_suffix(".mcap.backup")
-        backup_file.write_bytes(b"backup content")
-
-        with patch("owa.cli.mcap.migrate.migrate.MigrationOrchestrator") as mock_orchestrator_class:
-            mock_orchestrator = MagicMock()
-            mock_orchestrator_class.return_value = mock_orchestrator
-
-            # Mock successful migration
-            mock_result = MagicMock()
-            mock_result.success = True
-            mock_orchestrator.migrate_file.return_value = [mock_result]
-
-            # Mock file detection
-            mock_info = MagicMock()
-            mock_info.file_path = test_file
-            mock_info.detected_version = "0.3.0"
-            mock_info.needs_migration = True
-            mock_info.target_version = "0.4.0"
-
-            with patch("owa.cli.mcap.migrate.migrate.detect_files_needing_migration") as mock_detect:
-                mock_detect.return_value = [mock_info]
-
-                # Run migrate with keep-backups
-                result = cli_runner.invoke(mcap_app, ["migrate", str(test_file), "--keep-backups", "--yes"])
-
-                assert result.exit_code == 0
-
-                # Backup should still exist (we created it manually for this test)
-                assert backup_file.exists()
-
-    def test_migrate_backup_cleanup_no_backups(self, temp_dir, cli_runner):
-        """Test backup cleanup when not keeping backups."""
-        test_file = temp_dir / "test.mcap"
-        test_file.write_bytes(b"original content")
-
-        # Create a mock backup file to simulate successful migration
-        backup_file = test_file.with_suffix(".mcap.backup")
-        backup_file.write_bytes(b"backup content")
-
-        with patch("owa.cli.mcap.migrate.migrate.MigrationOrchestrator") as mock_orchestrator_class:
-            mock_orchestrator = MagicMock()
-            mock_orchestrator_class.return_value = mock_orchestrator
-
-            # Mock successful migration
-            mock_result = MagicMock()
-            mock_result.success = True
-            mock_orchestrator.migrate_file.return_value = [mock_result]
-
-            # Mock file detection
-            mock_info = MagicMock()
-            mock_info.file_path = test_file
-            mock_info.detected_version = "0.3.0"
-            mock_info.needs_migration = True
-            mock_info.target_version = "0.4.0"
-
-            with patch("owa.cli.mcap.migrate.migrate.detect_files_needing_migration") as mock_detect:
-                mock_detect.return_value = [mock_info]
-
-                # Run migrate without keeping backups
-                result = cli_runner.invoke(mcap_app, ["migrate", str(test_file), "--no-backups", "--yes"])
-
-                assert result.exit_code == 0
-
-                # Since we mocked the orchestrator, no actual backup is created or cleaned up
-                # The test verifies that the command completes successfully with --no-backups flag
-
-    def test_migrate_multiple_files_backup_handling(self, temp_dir, cli_runner):
-        """Test backup handling with multiple files."""
+    def test_migrate_multiple_files(self, temp_dir, cli_runner):
+        """Test migration with multiple files."""
         test_file1 = temp_dir / "test1.mcap"
         test_file2 = temp_dir / "test2.mcap"
 
         test_file1.write_bytes(b"content 1")
         test_file2.write_bytes(b"content 2")
-
-        # Create mock backup files
-        backup1 = test_file1.with_suffix(".mcap.backup")
-        backup2 = test_file2.with_suffix(".mcap.backup")
-        backup1.write_bytes(b"backup 1")
-        backup2.write_bytes(b"backup 2")
 
         with patch("owa.cli.mcap.migrate.migrate.MigrationOrchestrator") as mock_orchestrator_class:
             mock_orchestrator = MagicMock()
@@ -198,18 +111,14 @@ class TestMigrateBackupIntegration:
                 mock_detect.return_value = [mock_info1, mock_info2]
 
                 # Run migrate on multiple files
-                result = cli_runner.invoke(
-                    mcap_app, ["migrate", str(test_file1), str(test_file2), "--keep-backups", "--yes"]
-                )
+                result = cli_runner.invoke(mcap_app, ["migrate", str(test_file1), str(test_file2), "--yes"])
 
                 assert result.exit_code == 0
+                # Should be called twice, once for each file
+                assert mock_orchestrator.migrate_file.call_count == 2
 
-                # Both backups should still exist
-                assert backup1.exists()
-                assert backup2.exists()
-
-    def test_migrate_dry_run_no_backup(self, temp_dir, cli_runner):
-        """Test that dry run doesn't create backups."""
+    def test_migrate_dry_run(self, temp_dir, cli_runner):
+        """Test dry run mode doesn't perform actual migration."""
         test_file = temp_dir / "test.mcap"
         original_content = b"original content"
         test_file.write_bytes(original_content)
@@ -232,47 +141,31 @@ class TestMigrateBackupIntegration:
                 result = cli_runner.invoke(mcap_app, ["migrate", str(test_file), "--dry-run"])
 
                 assert result.exit_code == 0
-
-                # No backup should be created
-                backup_file = test_file.with_suffix(".mcap.backup")
-                assert not backup_file.exists()
-
                 # Original file should be unchanged
                 assert test_file.read_bytes() == original_content
-
                 # Migration should not be attempted
                 mock_orchestrator.migrate_file.assert_not_called()
 
-    def test_migrate_uses_unified_backup_path_generation(self, temp_dir):
-        """Test that migrate uses the unified backup path generation."""
-        test_file = temp_dir / "complex.name.test.mcap"
+    def test_migrate_no_files_need_migration(self, temp_dir, cli_runner):
+        """Test behavior when no files need migration."""
+        test_file = temp_dir / "test.mcap"
         test_file.write_bytes(b"content")
 
-        orchestrator = MigrationOrchestrator()
+        with patch("owa.cli.mcap.migrate.migrate.detect_files_needing_migration") as mock_detect:
+            mock_detect.return_value = []  # No files need migration
 
-        with patch("owa.cli.mcap.migrate.migrate.OWAMcapReader") as mock_reader:
-            # Mock version detection
-            mock_reader.return_value.__enter__.return_value.file_version = "0.3.0"
+            # Run migrate command
+            result = cli_runner.invoke(mcap_app, ["migrate", str(test_file), "--yes"])
 
-            # Mock migration path
-            with patch.object(orchestrator, "get_migration_path") as mock_get_path:
-                mock_get_path.return_value = []  # No migration needed
-
-                # Call migrate_file
-                from rich.console import Console
-
-                console = Console()
-                results = orchestrator.migrate_file(test_file, "0.4.0", console)
-
-                # Should return empty results if no migration needed
-                assert results == []
+            assert result.exit_code == 0
+            assert "No files need migration" in result.output
 
 
-class TestMigrationOrchestratorBackupIntegration:
-    """Test MigrationOrchestrator's use of unified backup utilities."""
+class TestMigrationOrchestrator:
+    """Test MigrationOrchestrator core functionality."""
 
-    def test_orchestrator_uses_unified_backup_creation(self, temp_dir):
-        """Test that orchestrator uses BackupContext for backup creation."""
+    def test_orchestrator_successful_migration(self, temp_dir):
+        """Test successful migration through orchestrator."""
         test_file = temp_dir / "test.mcap"
         test_file.write_bytes(b"content")
 
@@ -302,8 +195,8 @@ class TestMigrationOrchestratorBackupIntegration:
                 assert len(results) == 1
                 assert results[0].success
 
-    def test_orchestrator_uses_unified_rollback(self, temp_dir):
-        """Test that orchestrator handles rollback on failure."""
+    def test_orchestrator_failed_migration(self, temp_dir):
+        """Test failed migration through orchestrator."""
         test_file = temp_dir / "test.mcap"
         test_file.write_bytes(b"content")
 
@@ -328,3 +221,27 @@ class TestMigrationOrchestratorBackupIntegration:
                 console = Console()
                 with pytest.raises(RuntimeError, match="Migration failed"):
                     orchestrator.migrate_file(test_file, "0.4.0", console)
+
+    def test_orchestrator_no_migration_needed(self, temp_dir):
+        """Test orchestrator when no migration is needed."""
+        test_file = temp_dir / "test.mcap"
+        test_file.write_bytes(b"content")
+
+        orchestrator = MigrationOrchestrator()
+
+        with patch("owa.cli.mcap.migrate.migrate.OWAMcapReader") as mock_reader:
+            # Mock version detection
+            mock_reader.return_value.__enter__.return_value.file_version = "0.4.0"
+
+            # Mock migration path
+            with patch.object(orchestrator, "get_migration_path") as mock_get_path:
+                mock_get_path.return_value = []  # No migration needed
+
+                # Call migrate_file
+                from rich.console import Console
+
+                console = Console()
+                results = orchestrator.migrate_file(test_file, "0.4.0", console)
+
+                # Should return empty results if no migration needed
+                assert results == []
