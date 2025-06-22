@@ -16,11 +16,11 @@ except ImportError:
 DecodeFunction: TypeAlias = Callable[[bytes], Any]
 
 
-def generate_decode_function(message_type: str) -> Optional[DecodeFunction]:
+def _create_message_decoder(message_type: str) -> Optional[DecodeFunction]:
     """
-    Generate a decode function for a given message type/schema name.
+    Create a decode function for a specific OWA message type/schema name.
 
-    This function attempts to create a decoder for the specified message type by:
+    This internal function attempts to create a decoder for the specified message type by:
     1. First trying the new domain-based format (domain/MessageType) via MESSAGES registry
     2. Then trying the old module-based format (module.path.ClassName) via importlib
     3. Finally falling back to dictionary decoding with EasyDict
@@ -87,7 +87,7 @@ class DecodeCache:
         :return: DecodeFunction that can decode messages of this type, or None if unsupported
         """
         if message_type not in self._cache:
-            decode_fn = generate_decode_function(message_type)
+            decode_fn = _create_message_decoder(message_type)
             if decode_fn is not None:
                 self._cache[message_type] = decode_fn
             else:
@@ -112,8 +112,3 @@ def get_decode_function(message_type: str) -> Optional[DecodeFunction]:
     :return: DecodeFunction that can decode messages of this type, or None if unsupported
     """
     return _global_decode_cache.get_decode_function(message_type)
-
-
-def clear_decode_cache():
-    """Clear the global decode function cache."""
-    _global_decode_cache.clear()
