@@ -17,9 +17,11 @@ wheels/
 downloads/
 
 # Coverage reports
-/htmlcov/
-/.coverage
-/coverage.xml
+htmlcov/
+.coverage
+coverage.xml
+
+# pytest cache
 .pytest_cache/
 
 # Virtual environments

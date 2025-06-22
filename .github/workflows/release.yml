@@ -1,4 +1,4 @@
-name: ocap Release
+name: Release
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  release_ocap:
+  release-ocap:
     runs-on: windows-latest
     defaults:
       run:

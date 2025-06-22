@@ -14,7 +14,7 @@ from loguru import logger
 from ..runnable import RunnableThread
 
 
-def disable_ctrl_c_once():
+def disable_ctrl_c_once():  # pragma: no cover
     """
     DO NOT USE THIS FUNCTION.
     Instead, pass CREATE_NEW_PROCESS_GROUP to the subprocess.Popen() function

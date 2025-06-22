@@ -1,5 +1,4 @@
 import typer
-from rich.console import Console
 
 from . import docs, list, quick, search, show, stats, validate
 
@@ -23,6 +22,3 @@ app.command("health")(stats.health_check)
 app.command("ls")(quick.ls)
 app.command("find")(quick.find)
 app.command("namespaces")(quick.namespaces)
-
-# Create console for rich output
-console = Console()
