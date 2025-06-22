@@ -106,7 +106,7 @@ class OWAMcapReader:
 
         # Check profile of mcap file
         header = self.reader.get_header()
-        assert header.profile == "owa"
+        assert header.profile == "owa", f"MCAP file is not an OWA file (profile={header.profile})"
 
         # Check version compatibility
         libversion = header.library
