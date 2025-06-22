@@ -2,6 +2,7 @@ import functools
 import io
 import re
 import warnings
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Iterable, Iterator, Optional, TypeAlias, Union
 
@@ -18,6 +19,7 @@ from .. import __version__
 PathType: TypeAlias = Union[str, Path]
 
 
+@dataclass
 class McapMessage:
     """
     A wrapper around MCAP message data that provides lazy evaluation of high-level properties.
@@ -26,17 +28,9 @@ class McapMessage:
     and provides convenient access to topic, timestamp, raw data, schema name, and decoded content.
     """
 
-    def __init__(self, schema: Schema, channel: Channel, message: Message):
-        """
-        Initialize a McapMessage wrapper.
-
-        :param schema: MCAP schema object
-        :param channel: MCAP channel object
-        :param message: MCAP message object
-        """
-        self._schema = schema
-        self._channel = channel
-        self._message = message
+    _schema: Schema
+    _channel: Channel
+    _message: Message
 
     @property
     def topic(self) -> str:
@@ -47,16 +41,6 @@ class McapMessage:
     def timestamp(self) -> int:
         """Get the log timestamp in nanoseconds."""
         return self._message.log_time
-
-    @property
-    def log_time(self) -> int:
-        """Get the log timestamp in nanoseconds."""
-        return self._message.log_time
-
-    @property
-    def publish_time(self) -> int:
-        """Get the publish timestamp in nanoseconds."""
-        return self._message.publish_time
 
     @property
     def message(self) -> bytes:
