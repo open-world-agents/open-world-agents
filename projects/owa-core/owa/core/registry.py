@@ -100,7 +100,6 @@ class LazyImportRegistry(Registry[T]):
             else:
                 raise ValueError(f"Invalid import path format: {import_path}. Must contain ':' or '.'")
 
-
             module = importlib.import_module(module_path)
             component = getattr(module, object_name)
             return component
