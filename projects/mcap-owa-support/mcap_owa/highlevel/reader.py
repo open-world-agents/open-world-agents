@@ -24,33 +24,29 @@ class McapMessage:
     """
     A wrapper around MCAP message data that provides lazy evaluation of high-level properties.
 
-    This class wraps the low-level (schema, channel, message) tuple from the MCAP reader
-    and provides convenient access to topic, timestamp, raw data, schema name, and decoded content.
+    This class stores the 4 core fields (topic, timestamp, message, message_type) directly
+    and provides convenient access to decoded content.
     """
 
-    _schema: Schema
-    _channel: Channel
-    _message: Message
+    topic: str
+    timestamp: int
+    message: bytes
+    message_type: str
 
-    @property
-    def topic(self) -> str:
-        """Get the topic name."""
-        return self._channel.topic
+    @classmethod
+    def from_mcap_primitives(cls, schema: Schema, channel: Channel, message: Message) -> "McapMessage":
+        """
+        Create a McapMessage from MCAP primitive objects.
 
-    @property
-    def timestamp(self) -> int:
-        """Get the log timestamp in nanoseconds."""
-        return self._message.log_time
+        Args:
+            schema: MCAP Schema object
+            channel: MCAP Channel object
+            message: MCAP Message object
 
-    @property
-    def message(self) -> bytes:
-        """Get the raw message data."""
-        return self._message.data
-
-    @property
-    def message_type(self) -> str:
-        """Get the message type."""
-        return self._schema.name
+        Returns:
+            McapMessage instance
+        """
+        return cls(topic=channel.topic, timestamp=message.log_time, message=message.data, message_type=schema.name)
 
     @functools.cached_property
     def decoded(self) -> Any:
@@ -65,6 +61,38 @@ class McapMessage:
             return decode_fn(self.message)
         else:
             raise ValueError(f"Could not generate decode function for message type '{self.message_type}'")
+
+    def as_dict(self) -> dict:
+        """
+        Convert McapMessage to dictionary format for serialization.
+
+        Returns:
+            dict with the 4 core fields: topic, timestamp, message, message_type
+        """
+        return {
+            "topic": self.topic,
+            "timestamp": self.timestamp,
+            "message": self.message,
+            "message_type": self.message_type,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "McapMessage":
+        """
+        Create a McapMessage from dictionary data.
+
+        Args:
+            data: dict with topic, timestamp, message, message_type fields
+
+        Returns:
+            McapMessage instance
+        """
+        return cls(
+            topic=data["topic"],
+            timestamp=data["timestamp"],
+            message=data["message"],
+            message_type=data["message_type"],
+        )
 
     def __repr__(self) -> str:
         return f"McapMessage(topic={self.topic}, timestamp={self.timestamp}, message_type={self.message_type})"
@@ -214,4 +242,4 @@ class OWAMcapReader:
             log_time_order=log_time_order,
             reverse=reverse,
         ):
-            yield McapMessage(schema, channel, message)
+            yield McapMessage.from_mcap_primitives(schema, channel, message)

@@ -1,4 +1,4 @@
-from .reader import OWAMcapReader
+from .reader import McapMessage, OWAMcapReader
 from .writer import OWAMcapWriter
 
-__all__ = ["OWAMcapReader", "OWAMcapWriter"]
+__all__ = ["McapMessage", "OWAMcapReader", "OWAMcapWriter"]
