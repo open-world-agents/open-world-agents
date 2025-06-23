@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Dict, Optional
 
 from mcap.decoder import DecoderFactory as McapDecoderFactory
 from mcap.records import Schema
