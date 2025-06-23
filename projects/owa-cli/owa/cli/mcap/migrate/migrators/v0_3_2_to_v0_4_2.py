@@ -21,7 +21,6 @@ MCAP Migrator: v0.3.2 → v0.4.2
 Migrates schema format from module-based to domain-based. See OEP-0006.
 """
 
-import io
 from pathlib import Path
 from typing import Optional
 
@@ -43,38 +42,6 @@ LEGACY_MESSAGE_MAPPING = {
     "owa.env.desktop.msg.WindowInfo": "desktop/WindowInfo",
     "owa.env.gst.msg.ScreenEmitted": "desktop/ScreenCaptured",
 }
-
-
-class SimpleMessageClass:
-    def __init__(self, **kwargs):
-        for key, value in kwargs.items():
-            setattr(self, key, value)
-
-    def model_dump(self):
-        return {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
-
-    def serialize(self, buffer: io.BytesIO) -> None:
-        """Serialize the message to JSON format for MCAP compatibility."""
-        data = self.model_dump()
-        # Convert non-serializable types
-        data = self._make_serializable(data)
-        buffer.write(orjson.dumps(data))
-
-    def _make_serializable(self, obj):
-        """Convert non-serializable types to serializable ones."""
-        if isinstance(obj, set):
-            return list(obj)
-        elif isinstance(obj, dict):
-            return {k: self._make_serializable(v) for k, v in obj.items()}
-        elif isinstance(obj, (list, tuple)):
-            return [self._make_serializable(item) for item in obj]
-        else:
-            return obj
-
-    @classmethod
-    def get_schema(cls):
-        """Return a basic schema for the message."""
-        return {"type": "object", "properties": {}}
 
 
 @app.command()

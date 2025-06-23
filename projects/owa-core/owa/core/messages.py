@@ -104,6 +104,11 @@ class MessageRegistry:
         self._messages.clear()
         self._load_messages()
 
+    def __repr__(self) -> str:
+        """Show both loaded and unloaded messages."""
+        loaded = list(self._messages.keys())
+        return f"MessageRegistry({loaded})"
+
 
 # Global message registry instance
 MESSAGES = MessageRegistry()

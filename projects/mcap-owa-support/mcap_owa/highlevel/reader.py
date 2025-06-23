@@ -2,87 +2,97 @@ import functools
 import io
 import re
 import warnings
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, Iterator, Optional, TypeAlias, Union
+from typing import Any, Dict, Iterable, Iterator, Optional, TypeAlias, Union
 
 import requests
-from mcap.exceptions import DecoderNotFoundError
 from mcap.reader import McapReader, make_reader
 from mcap.records import Channel, Message, Schema
 from packaging import version
 from packaging.specifiers import SpecifierSet
 
-from mcap_owa.decoder import DecoderFactory
+from mcap_owa.decode_utils import get_decode_function
 
 from .. import __version__
 
 PathType: TypeAlias = Union[str, Path]
 
 
+@dataclass
 class McapMessage:
     """
     A wrapper around MCAP message data that provides lazy evaluation of high-level properties.
 
-    This class wraps the low-level (schema, channel, message) tuple from the MCAP reader
-    and provides convenient access to topic, timestamp, raw data, schema name, and decoded content.
+    This class stores the 4 core fields (topic, timestamp, message, message_type) directly
+    and provides convenient access to decoded content.
     """
 
-    def __init__(
-        self, schema: Schema, channel: Channel, message: Message, decode_fn: Callable[[Message], Any] | None = None
-    ):
+    topic: str
+    timestamp: int
+    message: bytes
+    message_type: str
+
+    @classmethod
+    def from_mcap_primitives(cls, schema: Schema, channel: Channel, message: Message) -> "McapMessage":
         """
-        Initialize a McapMessage wrapper.
+        Create a McapMessage from MCAP primitive objects.
 
-        :param schema: MCAP schema object
-        :param channel: MCAP channel object
-        :param message: MCAP message object
-        :param decode_fn: Function to decode the message data into a high-level object
+        Args:
+            schema: MCAP Schema object
+            channel: MCAP Channel object
+            message: MCAP Message object
+
+        Returns:
+            McapMessage instance
         """
-        self._schema = schema
-        self._channel = channel
-        self._message = message
-        self._decode_fn = decode_fn
-
-    @property
-    def topic(self) -> str:
-        """Get the topic name."""
-        return self._channel.topic
-
-    @property
-    def timestamp(self) -> int:
-        """Get the log timestamp in nanoseconds."""
-        return self._message.log_time
-
-    @property
-    def log_time(self) -> int:
-        """Get the log timestamp in nanoseconds."""
-        return self._message.log_time
-
-    @property
-    def publish_time(self) -> int:
-        """Get the publish timestamp in nanoseconds."""
-        return self._message.publish_time
-
-    @property
-    def message(self) -> bytes:
-        """Get the raw message data."""
-        return self._message.data
-
-    @property
-    def message_type(self) -> str:
-        """Get the message type."""
-        return self._schema.name
+        return cls(topic=channel.topic, timestamp=message.log_time, message=message.data, message_type=schema.name)
 
     @functools.cached_property
     def decoded(self) -> Any:
         """
         Get the decoded message content. This is lazily evaluated.
 
-        :return: Decoded message content, or None if decoding fails
+        :return: Decoded message content
         """
-        if self._decode_fn is None:
-            raise NotImplementedError("Automatic decode function generation is not implemented yet.")
-        return self._decode_fn(self._message)
+        # Use automatic decode function generation
+        decode_fn = get_decode_function(self.message_type)
+        if decode_fn is not None:
+            return decode_fn(self.message)
+        else:
+            raise ValueError(f"Could not generate decode function for message type '{self.message_type}'")
+
+    def as_dict(self) -> dict:
+        """
+        Convert McapMessage to dictionary format for serialization.
+
+        Returns:
+            dict with the 4 core fields: topic, timestamp, message, message_type
+        """
+        return {
+            "topic": self.topic,
+            "timestamp": self.timestamp,
+            "message": self.message,
+            "message_type": self.message_type,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "McapMessage":
+        """
+        Create a McapMessage from dictionary data.
+
+        Args:
+            data: dict with topic, timestamp, message, message_type fields
+
+        Returns:
+            McapMessage instance
+        """
+        return cls(
+            topic=data["topic"],
+            timestamp=data["timestamp"],
+            message=data["message"],
+            message_type=data["message_type"],
+        )
 
     def __repr__(self) -> str:
         return f"McapMessage(topic={self.topic}, timestamp={self.timestamp}, message_type={self.message_type})"
@@ -119,14 +129,12 @@ class OWAMcapReader:
             self._file = open(file_path, "rb")
             self._is_network_path = False
 
-        self._decoder_factories = [DecoderFactory()]
-        self._decoders: dict[int, Callable[[bytes], Any]] = {}
-        self.reader: McapReader = make_reader(self._file, decoder_factories=self._decoder_factories)
+        self.reader: McapReader = make_reader(self._file)
         self.__finished = False
 
         # Check profile of mcap file
         header = self.reader.get_header()
-        assert header.profile == "owa"
+        assert header.profile == "owa", f"MCAP file is not an OWA file (profile={header.profile})"
 
         # Check version compatibility
         libversion = header.library
@@ -234,23 +242,4 @@ class OWAMcapReader:
             log_time_order=log_time_order,
             reverse=reverse,
         ):
-            yield McapMessage(
-                schema, channel, message, lambda message: self.get_decoded_message()(schema, channel, message)
-            )
-
-    def get_decoded_message(self) -> Callable[[Schema, Channel, Message], Any]:
-        def decoded_message(schema: Optional[Schema], channel: Channel, message: Message) -> Any:
-            decoder = self._decoders.get(message.channel_id)
-            if decoder is not None:
-                return decoder(message.data)
-            for factory in self._decoder_factories:
-                decoder = factory.decoder_for(channel.message_encoding, schema)
-                if decoder is not None:
-                    self._decoders[message.channel_id] = decoder
-                    return decoder(message.data)
-
-            raise DecoderNotFoundError(
-                f"no decoder factory supplied for message encoding {channel.message_encoding}, schema {schema}"
-            )
-
-        return decoded_message
+            yield McapMessage.from_mcap_primitives(schema, channel, message)
