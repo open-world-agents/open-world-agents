@@ -62,7 +62,7 @@ class McapMessage:
         # Use automatic decode function generation
         decode_fn = get_decode_function(self.message_type)
         if decode_fn is not None:
-            return decode_fn(self._message.data)
+            return decode_fn(self.message)
         else:
             raise ValueError(f"Could not generate decode function for message type '{self.message_type}'")
 
