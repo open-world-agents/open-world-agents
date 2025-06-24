@@ -355,29 +355,6 @@ def main(
         dataset_dict.save_to_disk(str(output_dir))
         typer.echo(f"DatasetDict saved to {output_dir}")
 
-    # 10. Show few examples from each split
-    def pretty_print_example(example: Dict):
-        typer.echo("----------------------------------------")
-        typer.echo(f"file_path: {example['file_path']}")
-        typer.echo(f"topic:     {example['topic']}")
-        typer.echo(f"timestamp_ns: {example['timestamp_ns']}")
-        typer.echo(f"message_type: {example['message_type']}")
-        # Show first 100 chars of the serialized message
-        msg_preview = (
-            str(example["mcap_message"])[:100] + "..."
-            if len(str(example["mcap_message"])) > 100
-            else str(example["mcap_message"])
-        )
-        typer.echo(f"mcap_message: {msg_preview}")
-
-    typer.echo("=== Train sample ===")
-    for example in train_dataset.select(range(min(2, len(train_dataset)))):
-        pretty_print_example(example)
-
-    typer.echo("=== Test sample ===")
-    for example in test_dataset.select(range(min(2, len(test_dataset)))):
-        pretty_print_example(example)
-
 
 if __name__ == "__main__":
     app()
