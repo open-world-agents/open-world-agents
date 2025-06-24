@@ -49,37 +49,5 @@ class McapMessage(BaseModel):
         else:
             raise ValueError(f"Could not generate decode function for message type '{self.message_type}'")
 
-    def as_dict(self) -> dict:
-        """
-        Convert McapMessage to dictionary format for serialization.
-
-        Returns:
-            dict with the 4 core fields: topic, timestamp, message, message_type
-        """
-        return {
-            "topic": self.topic,
-            "timestamp": self.timestamp,
-            "message": self.message,
-            "message_type": self.message_type,
-        }
-
-    @classmethod
-    def from_dict(cls, data: dict) -> "McapMessage":
-        """
-        Create a McapMessage from dictionary data.
-
-        Args:
-            data: dict with topic, timestamp, message, message_type fields
-
-        Returns:
-            McapMessage instance
-        """
-        return cls(
-            topic=data["topic"],
-            timestamp=data["timestamp"],
-            message=data["message"],
-            message_type=data["message_type"],
-        )
-
     def __repr__(self) -> str:
         return f"McapMessage(topic={self.topic}, timestamp={self.timestamp}, message_type={self.message_type})"

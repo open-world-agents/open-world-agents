@@ -13,6 +13,7 @@ import json
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
+from mcap_owa.highlevel.reader import McapMessage
 from owa.core.time import TimeUnits
 from owa.msgs.desktop.keyboard import KeyboardEvent
 from owa.msgs.desktop.mouse import MouseEvent
@@ -240,17 +241,12 @@ class FlatEventEncoder(BaseEventEncoder):
         """Encode keyboard event: <KEYBOARD_vk_action>"""
         return self.config.keyboard_token_format.format(vk=event.vk, pressed=event.event_type)
 
-    def encode(self, raw_event: Dict[str, Any]) -> Tuple[str, List[ScreenCaptured]]:
+    def encode(self, mcap_message: McapMessage) -> Tuple[str, List[ScreenCaptured]]:
         """
-        Encode a single raw event to flat token format.
+        Encode a single McapMessage object to flat token format.
 
         Args:
-            raw_event: Raw event dictionary with keys:
-                - topic: Event topic (e.g., 'keyboard', 'screen')
-                - timestamp_ns: Timestamp in nanoseconds
-                - message_type: Full message type identifier
-                - msg: Serialized message content (bytes or string)
-                - file_path: Source MCAP file path (optional)
+            mcap_message: McapMessage instance
 
         Returns:
             Tuple containing:
@@ -258,42 +254,34 @@ class FlatEventEncoder(BaseEventEncoder):
                 - List[ScreenCaptured]: Image data for screen events (empty for others)
 
         Raises:
-            ValueError: If the raw_event format is invalid
+            ValueError: If the mcap_message format is invalid
             json.JSONDecodeError: If message content cannot be parsed
         """
-        if not isinstance(raw_event, dict):
-            raise ValueError("raw_event must be a dictionary")
-
-        required_keys = {"topic", "timestamp_ns", "message_type", "msg"}
-        if not self.config.drop_file_path:
-            required_keys.add("file_path")
-        if not required_keys.issubset(raw_event.keys()):
-            missing = required_keys - raw_event.keys()
-            raise ValueError(f"raw_event missing required keys: {missing}")
+        mcap_message = mcap_message if isinstance(mcap_message, McapMessage) else McapMessage(**mcap_message)
 
         # Start with timestamp
-        tokens = [self._encode_timestamp(raw_event["timestamp_ns"])]
+        tokens = [self._encode_timestamp(mcap_message.timestamp)]
         images = []
 
         # Parse message content
         try:
-            if isinstance(raw_event["msg"], bytes):
-                msg_data = json.loads(raw_event["msg"].decode("utf-8"))
+            if isinstance(mcap_message.message, bytes):
+                msg_data = json.loads(mcap_message.message.decode("utf-8"))
             else:
-                msg_data = json.loads(raw_event["msg"])
+                msg_data = json.loads(mcap_message.message)
         except (json.JSONDecodeError, TypeError) as e:
             raise ValueError(f"Failed to parse message content: {e}")
 
         # Encode based on event type
-        if raw_event["topic"] == "keyboard" and raw_event["message_type"] == "desktop/KeyboardEvent":
+        if mcap_message.topic == "keyboard" and mcap_message.message_type == "desktop/KeyboardEvent":
             keyboard_event = KeyboardEvent(**msg_data)
             tokens.append(self._encode_keyboard(keyboard_event))
 
-        elif raw_event["topic"] == "mouse" and raw_event["message_type"] == "desktop/MouseEvent":
+        elif mcap_message.topic == "mouse" and mcap_message.message_type == "desktop/MouseEvent":
             mouse_event = MouseEvent(**msg_data)
             tokens.extend(self.mouse_processor.encode_mouse_event(mouse_event))
 
-        elif raw_event["topic"] == "screen" and raw_event["message_type"] == "desktop/ScreenCaptured":
+        elif mcap_message.topic == "screen" and mcap_message.message_type == "desktop/ScreenCaptured":
             screen_event = ScreenCaptured(**msg_data)
             tokens.append(self.config.screen_token)
             # Store image data
@@ -311,7 +299,7 @@ class FlatEventEncoder(BaseEventEncoder):
         encoded_data: str,
         images: Optional[List[ScreenCaptured]] = None,
         screen_size: Optional[Tuple[int, int]] = None,
-    ) -> Dict[str, Any]:
+    ) -> McapMessage:
         """
         Decode flat tokens back to original raw event format.
 
@@ -321,7 +309,7 @@ class FlatEventEncoder(BaseEventEncoder):
             screen_size: Optional screen size for mouse coordinate decoding
 
         Returns:
-            Dict: Reconstructed raw event in original format
+            McapMessage: Reconstructed message in McapMessage format
 
         Raises:
             ValueError: If token sequence format is invalid
@@ -350,12 +338,12 @@ class FlatEventEncoder(BaseEventEncoder):
         # Determine event type and decode accordingly
         if len(tokens) < 2:
             # Only timestamp, create unknown event
-            return {
-                "topic": "unknown",
-                "timestamp_ns": timestamp_ns,
-                "message_type": "unknown",
-                "msg": "{}",
-            }
+            return McapMessage(
+                topic="unknown",
+                timestamp=timestamp_ns,
+                message_type="unknown",
+                message="{}".encode("utf-8"),
+            )
 
         event_token = tokens[1]
 
@@ -370,12 +358,12 @@ class FlatEventEncoder(BaseEventEncoder):
 
             msg_data = {"event_type": event_type, "vk": vk}
 
-            return {
-                "topic": "keyboard",
-                "timestamp_ns": timestamp_ns,
-                "message_type": "desktop/KeyboardEvent",
-                "msg": json.dumps(msg_data),
-            }
+            return McapMessage(
+                topic="keyboard",
+                timestamp=timestamp_ns,
+                message_type="desktop/KeyboardEvent",
+                message=json.dumps(msg_data).encode("utf-8"),
+            )
 
         elif event_token.startswith("<MOUSE_move_"):
             # Decode mouse event (complex due to multi-level encoding)
@@ -395,25 +383,25 @@ class FlatEventEncoder(BaseEventEncoder):
                 # Fallback for unexpected data types
                 msg = json.dumps(image_data) if image_data else "{}"
 
-            return {
-                "topic": "screen",
-                "timestamp_ns": timestamp_ns,
-                "message_type": "desktop/ScreenCaptured",
-                "msg": msg,
-            }
+            return McapMessage(
+                topic="screen",
+                timestamp=timestamp_ns,
+                message_type="desktop/ScreenCaptured",
+                message=msg.encode("utf-8") if isinstance(msg, str) else msg,
+            )
 
         else:
             # Unknown event type
-            return {
-                "topic": "unknown",
-                "timestamp_ns": timestamp_ns,
-                "message_type": "unknown",
-                "msg": "{}",
-            }
+            return McapMessage(
+                topic="unknown",
+                timestamp=timestamp_ns,
+                message_type="unknown",
+                message="{}".encode("utf-8"),
+            )
 
     def _decode_mouse_event(
         self, mouse_tokens: List[str], timestamp_ns: int, screen_size: Optional[Tuple[int, int]] = None
-    ) -> Dict[str, Any]:
+    ) -> McapMessage:
         """Decode mouse tokens back to MouseEvent."""
         if screen_size is None:
             screen_size = self.config.screen_size
@@ -507,19 +495,19 @@ class FlatEventEncoder(BaseEventEncoder):
                 "y": pix_y,
             }
 
-        return {
-            "topic": "mouse",
-            "timestamp_ns": timestamp_ns,
-            "message_type": "desktop/MouseEvent",
-            "msg": json.dumps(msg_data),
-        }
+        return McapMessage(
+            topic="mouse",
+            timestamp=timestamp_ns,
+            message_type="desktop/MouseEvent",
+            message=json.dumps(msg_data).encode("utf-8"),
+        )
 
-    def encode_batch(self, raw_events: List[Dict[str, Any]]) -> Tuple[List[str], List[List[ScreenCaptured]]]:
+    def encode_batch(self, mcap_messages: List[McapMessage]) -> Tuple[List[str], List[List[ScreenCaptured]]]:
         """
-        Encode a batch of raw events.
+        Encode a batch of McapMessage-like objects.
 
         Args:
-            raw_events: List of raw event dictionaries
+            mcap_messages: List of McapMessage instances or dictionaries
 
         Returns:
             Tuple containing:
@@ -529,7 +517,7 @@ class FlatEventEncoder(BaseEventEncoder):
         all_tokens = []
         all_images = []
 
-        for event in raw_events:
+        for event in mcap_messages:
             tokens, images = self.encode(event)
             all_tokens.append(tokens)
             all_images.append(images)
@@ -541,7 +529,7 @@ class FlatEventEncoder(BaseEventEncoder):
         encoded_batch: List[str],
         all_images: Optional[List[List[ScreenCaptured]]] = None,
         screen_size: Optional[Tuple[int, int]] = None,
-    ) -> List[Dict[str, Any]]:
+    ) -> List[McapMessage]:
         """
         Decode a batch of flat token sequences.
 
@@ -551,7 +539,7 @@ class FlatEventEncoder(BaseEventEncoder):
             screen_size: Optional screen size for mouse coordinate decoding
 
         Returns:
-            List[Dict]: Reconstructed raw events
+            List[McapMessage]: Reconstructed messages
         """
         if all_images is None:
             all_images = [[] for _ in encoded_batch]

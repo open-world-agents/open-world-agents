@@ -87,17 +87,10 @@ def encode_actions(actions_sequence: List[Any], encoder: BaseEventEncoder) -> Li
         try:
             # Deserialize McapMessage from bytes
             mcap_msg = McapMessage.model_validate_json(item.decode("utf-8"))
-            action_event = {
-                "topic": mcap_msg.topic,
-                "timestamp_ns": mcap_msg.timestamp,
-                "message_type": mcap_msg.message_type,
-                "msg": mcap_msg.message.decode("utf-8") if isinstance(mcap_msg.message, bytes) else mcap_msg.message,
-            }
-
-            # BaseEventEncoder expects this format
-            encoded_text, _ = encoder.encode(action_event)
+            # Encode using EventEncoder
+            encoded_text, _ = encoder.encode(mcap_msg)
             encoded_actions.append(encoded_text)
-        except Exception:
+        except ValueError:
             # Skip invalid actions
             continue
 

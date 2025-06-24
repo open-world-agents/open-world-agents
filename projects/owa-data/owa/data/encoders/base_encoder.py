@@ -6,12 +6,10 @@ ensuring consistency across different encoding strategies.
 """
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
+from mcap_owa.highlevel.reader import McapMessage
 from owa.msgs.desktop.screen import ScreenCaptured
-
-if TYPE_CHECKING:
-    from mcap_owa.highlevel.reader import McapMessage
 
 
 class BaseEventEncoder(ABC):
@@ -24,17 +22,12 @@ class BaseEventEncoder(ABC):
     """
 
     @abstractmethod
-    def encode(self, mcap_message: "McapMessage") -> Tuple[str, List[ScreenCaptured]]:
+    def encode(self, mcap_message: McapMessage) -> Tuple[str, List[ScreenCaptured]]:
         """
-        Encode a single McapMessage to the encoder's format.
+        Encode a single McapMessage object to the encoder's format.
 
         Args:
-            mcap_message: McapMessage object with fields:
-                - topic: Event topic (e.g., 'keyboard', 'screen')
-                - timestamp: Timestamp in nanoseconds
-                - message_type: Full message type identifier
-                - message: Serialized message content (bytes)
-                - decoded: Decoded message content (accessible via property)
+            mcap_message: McapMessage instance
 
         Returns:
             Tuple containing:
@@ -64,12 +57,12 @@ class BaseEventEncoder(ABC):
         pass
 
     @abstractmethod
-    def encode_batch(self, mcap_messages: List["McapMessage"]) -> Tuple[List[str], List[List[ScreenCaptured]]]:
+    def encode_batch(self, mcap_messages: List[McapMessage]) -> Tuple[List[str], List[List[ScreenCaptured]]]:
         """
-        Encode a batch of McapMessages.
+        Encode a batch of McapMessage-like objects.
 
         Args:
-            mcap_messages: List of McapMessage objects
+            mcap_messages: List of McapMessage instances or dictionaries
 
         Returns:
             Tuple containing:
@@ -81,7 +74,7 @@ class BaseEventEncoder(ABC):
     @abstractmethod
     def decode_batch(
         self, encoded_batch: List[str], all_images: Optional[List[List[ScreenCaptured]]] = None
-    ) -> List["McapMessage"]:
+    ) -> List[McapMessage]:
         """
         Decode a batch of encoded data.
 
@@ -90,7 +83,7 @@ class BaseEventEncoder(ABC):
             all_images: Optional list of image data lists for each event
 
         Returns:
-            List[McapMessage]: Reconstructed messages
+            List[McapMessage]: Reconstructed messages in McapMessage format
         """
         pass
 

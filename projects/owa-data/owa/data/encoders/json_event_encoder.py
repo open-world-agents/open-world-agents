@@ -11,14 +11,12 @@ The encoder supports:
 """
 
 import json
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
+from mcap_owa.highlevel.reader import McapMessage
 from owa.msgs.desktop.screen import ScreenCaptured
 
 from .base_encoder import BaseEventEncoder
-
-if TYPE_CHECKING:
-    from mcap_owa.highlevel.reader import McapMessage
 
 
 class JSONEventEncoder(BaseEventEncoder):
@@ -55,17 +53,12 @@ class JSONEventEncoder(BaseEventEncoder):
         """
         self.drop_file_path = drop_file_path
 
-    def encode(self, mcap_message: "McapMessage") -> Tuple[str, List[ScreenCaptured]]:
+    def encode(self, mcap_message: McapMessage) -> Tuple[str, List[ScreenCaptured]]:
         """
-        Encode a single McapMessage to MLLM training format.
+        Encode a single McapMessage-like object to MLLM training format.
 
         Args:
-            mcap_message: McapMessage object with fields:
-                - topic: Event topic (e.g., 'keyboard', 'screen')
-                - timestamp: Timestamp in nanoseconds
-                - message_type: Full message type identifier
-                - message: Serialized message content (bytes)
-                - decoded: Decoded message content (accessible via property)
+            mcap_message: McapMessage instance
 
         Returns:
             Tuple containing:
@@ -76,19 +69,17 @@ class JSONEventEncoder(BaseEventEncoder):
             ValueError: If the mcap_message format is invalid
             json.JSONDecodeError: If message content cannot be parsed
         """
-        # Validate McapMessage
-        if not hasattr(mcap_message, "topic") or not hasattr(mcap_message, "timestamp"):
-            raise ValueError("mcap_message must be a valid McapMessage object")
+        mcap_message = mcap_message if isinstance(mcap_message, McapMessage) else McapMessage(**mcap_message)
 
         # Handle screen events with image data
         images = []
 
-        # Create event dictionary for serialization (similar to original format)
+        # Create event dictionary for serialization
         event_dict = {
             "topic": mcap_message.topic,
-            "timestamp_ns": mcap_message.timestamp,  # McapMessage uses timestamp, not timestamp_ns
+            "timestamp_ns": mcap_message.timestamp,
             "message_type": mcap_message.message_type,
-            "msg": mcap_message.message,  # This is bytes in McapMessage
+            "msg": mcap_message.message,
         }
 
         if mcap_message.topic == "screen" and mcap_message.message_type == "desktop/ScreenCaptured":
@@ -113,7 +104,7 @@ class JSONEventEncoder(BaseEventEncoder):
 
         return serialized_text, images
 
-    def decode(self, serialized_text: str, images: Optional[List[ScreenCaptured]] = None) -> "McapMessage":
+    def decode(self, serialized_text: str, images: Optional[List[ScreenCaptured]] = None) -> McapMessage:
         """
         Decode serialized event back to McapMessage format.
 
@@ -164,23 +155,19 @@ class JSONEventEncoder(BaseEventEncoder):
                 # Fallback for unexpected data types
                 event_dict["msg"] = json.dumps(image_data) if image_data else "{}"
 
-        # Create and return McapMessage
-        # Import McapMessage at runtime to avoid circular imports
-        from mcap_owa.highlevel.reader import McapMessage
-
         return McapMessage(
             topic=event_dict["topic"],
-            timestamp=event_dict["timestamp_ns"],  # Convert back to timestamp
+            timestamp=event_dict["timestamp_ns"],
             message_type=event_dict["message_type"],
             message=event_dict["msg"] if isinstance(event_dict["msg"], bytes) else event_dict["msg"].encode("utf-8"),
         )
 
-    def encode_batch(self, mcap_messages: List["McapMessage"]) -> Tuple[List[str], List[List[ScreenCaptured]]]:
+    def encode_batch(self, mcap_messages: List[McapMessage]) -> Tuple[List[str], List[List[ScreenCaptured]]]:
         """
         Encode a batch of McapMessages.
 
         Args:
-            mcap_messages: List of McapMessage objects
+            mcap_messages: List of McapMessage instances or dictionaries
 
         Returns:
             Tuple containing:
@@ -199,7 +186,7 @@ class JSONEventEncoder(BaseEventEncoder):
 
     def decode_batch(
         self, serialized_texts: List[str], all_images: Optional[List[List[ScreenCaptured]]] = None
-    ) -> List["McapMessage"]:
+    ) -> List[McapMessage]:
         """
         Decode a batch of serialized events.
 
