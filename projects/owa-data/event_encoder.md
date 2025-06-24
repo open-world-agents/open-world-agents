@@ -16,13 +16,13 @@ The OWA data pipeline provides multiple event encoding strategies for converting
 - **Format**: Flat tokens like `<TIMESTAMP_123>`, `<KEYBOARD_65_press>` wrapped with `<EVENT_START>` and `<EVENT_END>`
 - **Use Case**: Models that work well with large vocabularies and direct token prediction
 - **Vocabulary**: ~12,000+ tokens (combinatorial)
-- **Example**: `<EVENT_START><TIMESTAMP_123> <KEYBOARD_65_press><EVENT_END>`
+- **Example**: `<EVENT_START><TIMESTAMP_123><KEYBOARD_65_press><EVENT_END>`
 
 ### 3. **HierarchicalEventEncoder** (Compositional Token-Based)
 - **Format**: Hierarchical tokens like `<TIMESTAMP><123>`, `<KEYBOARD><65><press>` wrapped with `<EVENT_START>` and `<EVENT_END>`
 - **Use Case**: Efficient VLA training with compositional understanding
 - **Vocabulary**: ~292 tokens (96.6% reduction vs flat)
-- **Example**: `<EVENT_START><TIMESTAMP> <123> <KEYBOARD> <65> <press><EVENT_END>`
+- **Example**: `<EVENT_START><TIMESTAMP><123><KEYBOARD><65><press><EVENT_END>`
 
 ## Architecture
 
@@ -35,22 +35,22 @@ from owa.data import BaseEventEncoder
 
 class BaseEventEncoder(ABC):
     @abstractmethod
-    def encode(self, raw_event: Dict[str, Any]) -> Tuple[Any, List[Union[ScreenCaptured, Dict]]]:
+    def encode(self, raw_event: Dict[str, Any]) -> Tuple[str, List[Union[ScreenCaptured, Dict]]]:
         """Encode a single raw event."""
         pass
-    
+
     @abstractmethod
-    def decode(self, encoded_data: Any, images: Optional[List] = None) -> Dict[str, Any]:
+    def decode(self, encoded_data: str, images: Optional[List[Union[ScreenCaptured, Dict]]] = None) -> Dict[str, Any]:
         """Decode back to original raw event format."""
         pass
-    
+
     @abstractmethod
-    def encode_batch(self, raw_events: List[Dict[str, Any]]) -> Tuple[Any, List]:
+    def encode_batch(self, raw_events: List[Dict[str, Any]]) -> Tuple[List[str], List[List[Union[ScreenCaptured, Dict]]]]:
         """Encode a batch of raw events."""
         pass
-    
+
     @abstractmethod
-    def decode_batch(self, encoded_batch: Any, all_images: Optional[List] = None) -> List[Dict[str, Any]]:
+    def decode_batch(self, encoded_batch: List[str], all_images: Optional[List[List[Union[ScreenCaptured, Dict]]]] = None) -> List[Dict[str, Any]]:
         """Decode a batch of encoded data."""
         pass
 ```
@@ -66,6 +66,8 @@ owa/data/encoders/
 └── hierarchical_event_encoder.py   # Hierarchical token encoder
 ```
 
+**Note**: There is no `event_encoder.py` file - the module structure uses individual encoder files.
+
 ## Usage Examples
 
 ### Basic Usage
@@ -79,11 +81,11 @@ text, images = json_encoder.encode(raw_event)
 
 # Flat token encoder
 flat_encoder = FlatEventEncoder()
-flat_tokens, images = flat_encoder.encode(raw_event)  # flat_tokens is now a string with EVENT_START/EVENT_END
+flat_tokens, images = flat_encoder.encode(raw_event)  # flat_tokens is a string with concatenated tokens
 
 # Hierarchical token encoder
 hierarchical_encoder = HierarchicalEventEncoder()
-hierarchical_tokens, images = hierarchical_encoder.encode(raw_event)
+hierarchical_tokens, images = hierarchical_encoder.encode(raw_event)  # hierarchical_tokens is a string
 ```
 
 ### Batch Processing
@@ -99,8 +101,11 @@ decoded_events = encoder.decode_batch(all_tokens, all_images)
 ### Token ID Conversion (for neural networks)
 
 ```python
-# For token-based encoders
+# For token-based encoders (FlatEventEncoder and HierarchicalEventEncoder)
 if hasattr(encoder, 'get_token_ids'):
+    # Note: tokens must be parsed from the string first
+    import re
+    tokens = re.findall(r"<[^>]*>", encoded_string.replace("<EVENT_START>", "").replace("<EVENT_END>", ""))
     token_ids = encoder.get_token_ids(tokens)
     vocab_size = encoder.get_vocab_size()
 ```
@@ -128,9 +133,9 @@ if hasattr(encoder, 'get_token_ids'):
 ### FlatEventEncoder (Flat Tokens)
 
 **Characteristics:**
-- **Output Format**: List of flat tokens per event
-- **Vocabulary**: ~12,000+ tokens
-- **Token Count**: 2-5 tokens per event
+- **Output Format**: String with concatenated flat tokens wrapped in `<EVENT_START>` and `<EVENT_END>`
+- **Vocabulary**: Configurable (default ~13,000+ tokens)
+- **Token Count**: Variable tokens per event (timestamp + event-specific tokens)
 - **Memory**: High vocabulary size
 
 **Token Examples:**
@@ -141,13 +146,16 @@ Mouse:     <MOUSE_move_0_15_32>, <MOUSE_click_left_press>
 Screen:    <SCREEN>
 ```
 
-**Vocabulary Breakdown:**
-- Timestamp tokens: 201
-- Keyboard tokens: 512 (256 keys × 2 actions)
-- Mouse move tokens: 12,288 (16³ levels × 2 coords)
-- Mouse click tokens: 8
-- Mouse scroll tokens: 49
-- **Total**: ~13,058 tokens
+**Vocabulary Breakdown (Default Config):**
+- EVENT_START/EVENT_END: 2 tokens
+- Timestamp tokens: 201 (configurable based on time range and interval)
+- Keyboard tokens: 512 (256 keys × 2 actions: press/release)
+- Mouse move tokens: 12,288 (16³ levels × 3 quantization levels × 2 coords)
+- Mouse click tokens: 8 (4 buttons × 2 actions)
+- Mouse scroll tokens: 49 (7×7 grid for dx/dy from -3 to +3)
+- Screen tokens: 1
+- Unknown token: 1
+- **Total**: ~13,062 tokens
 
 **Best For:**
 - Models with large vocabulary capacity
@@ -157,9 +165,9 @@ Screen:    <SCREEN>
 ### HierarchicalEventEncoder (Compositional Tokens)
 
 **Characteristics:**
-- **Output Format**: List of hierarchical tokens per event
-- **Vocabulary**: 292 tokens (96.6% reduction)
-- **Token Count**: 3-12 tokens per event
+- **Output Format**: String with concatenated hierarchical tokens wrapped in `<EVENT_START>` and `<EVENT_END>`
+- **Vocabulary**: ~292 tokens (calculated from HierarchicalVocabulary class)
+- **Token Count**: Variable tokens per event (timestamp + event-specific tokens)
 - **Memory**: Very efficient
 
 **Token Examples:**
@@ -184,10 +192,13 @@ Level 3: Parameters
 <KEYBOARD><press> → <65> (A key) | <72> (H key)
 ```
 
-**Vocabulary Breakdown:**
-- Base tokens: 6 (event types, special tokens)
-- Parameter tokens: 275 (numbers, actions, buttons)
-- **Total**: 292 tokens
+**Vocabulary Breakdown (From HierarchicalVocabulary class):**
+- Base tokens: 8 (`<EVENT_START>`, `<EVENT_END>`, `<TIMESTAMP>`, `<KEYBOARD>`, `<MOUSE>`, `<SCREEN>`, `<PAD>`, `<UNK>`)
+- Number tokens: 256 (0-255 for various parameters)
+- Action tokens: 5 (`<press>`, `<release>`, `<move>`, `<click>`, `<scroll>`)
+- Button tokens: 4 (`<left>`, `<right>`, `<middle>`, `<unknown>`)
+- Negative number tokens: 21 (-10 to +10 for scroll deltas)
+- **Total**: ~294 tokens (exact count from vocabulary.get_vocab_size())
 
 **Best For:**
 - Efficient VLA training
@@ -202,17 +213,19 @@ Level 3: Parameters
 | Encoder | Vocabulary Size | Reduction | Memory Usage |
 |---------|----------------|-----------|--------------|
 | JSONEventEncoder | N/A (strings) | - | High |
-| FlatEventEncoder | ~13,058 tokens | - | Very High |
-| HierarchicalEventEncoder | 292 tokens | 96.6% ↓ | Low |
+| FlatEventEncoder | ~13,062 tokens | - | Very High |
+| HierarchicalEventEncoder | ~294 tokens | 97.7% ↓ | Low |
 
 ### Token Efficiency
 
+**Note**: Token counts are approximate and depend on specific event parameters and configuration.
+
 | Event Type | JSONEventEncoder | FlatEventEncoder | HierarchicalEventEncoder |
 |------------|-----------------|------------------|-------------------------|
-| Keyboard | 176 chars | 2 tokens | 5 tokens |
-| Mouse Move | 177 chars | 4 tokens | 10 tokens |
-| Mouse Click | 209 chars | 5 tokens | 12 tokens |
-| Screen | 147 chars | 2 tokens | 3 tokens |
+| Keyboard | ~176 chars | String with timestamp + keyboard tokens | String with `<TIMESTAMP><idx><KEYBOARD><vk><action>` |
+| Mouse Move | ~177 chars | String with timestamp + move tokens | String with `<TIMESTAMP><idx><MOUSE><move>` + coordinates |
+| Mouse Click | ~209 chars | String with timestamp + move + click tokens | String with timestamp + move + click tokens |
+| Screen | ~147 chars | String with timestamp + `<SCREEN>` | String with `<TIMESTAMP><idx><SCREEN>` |
 
 ### Round-Trip Accuracy
 
@@ -279,12 +292,18 @@ level_2_x, level_2_y = 0, 0  # Precise center
 
 ### Token ID Conversion
 
-For neural network training, token-based encoders provide ID conversion:
+For neural network training, token-based encoders (FlatEventEncoder and HierarchicalEventEncoder) provide ID conversion:
 
 ```python
+# First, parse tokens from the encoded string
+import re
+encoded_string = "<EVENT_START><TIMESTAMP><123><KEYBOARD><65><press><EVENT_END>"
+token_content = encoded_string.replace("<EVENT_START>", "").replace("<EVENT_END>", "")
+tokens = re.findall(r"<[^>]*>", token_content)
+
 # Convert tokens to integer IDs
 token_ids = encoder.get_token_ids(tokens)
-# Result: [0, 146, 1, 78, 262]
+# Result: [2, 123, 3, 65, 48] (example IDs)
 
 # Convert back to tokens
 tokens = encoder.get_tokens_from_ids(token_ids)
@@ -330,8 +349,8 @@ decoded_events = encoder.decode_batch(all_tokens, all_images)
 ```python
 # Example training sample
 {
-    "observation": PIL.Image,           # Screen capture
-    "encoded_events": List[str/tokens], # Encoded action sequence
+    "observation": PIL.Image,      # Screen capture
+    "encoded_events": List[str],   # Encoded action sequence (all encoders return strings)
     "metadata": {
         "episode_id": str,
         "timestamp_ns": int,
@@ -354,7 +373,7 @@ def compute_hierarchical_loss(predictions, targets, token_weights=None):
             "param_tokens": 1.0      # coordinates, indices
         }
 
-    weighted_loss = 0
+    weighted_loss = 0.0
     for pred, target in zip(predictions, targets):
         token_type = get_token_type(target)
         weight = token_weights.get(token_type, 1.0)
@@ -441,7 +460,7 @@ def test_round_trip(encoder, raw_events):
         if orig['topic'] == decoded['topic']:
             success_count += 1
 
-    accuracy = success_count / len(raw_events)
+    accuracy = success_count / len(raw_events) if raw_events else 0.0
     print(f"Round-trip accuracy: {accuracy:.2%}")
     return accuracy
 ```
@@ -507,10 +526,10 @@ The OWA event encoder ecosystem provides flexible, efficient solutions for diffe
 
 **Key Takeaways:**
 - **HierarchicalEventEncoder** is recommended for most VLA training scenarios
-- **96.6% vocabulary reduction** compared to flat approaches
+- **97.7% vocabulary reduction** compared to flat approaches (294 vs 13,062 tokens)
 - **100% round-trip accuracy** across all encoders
 - **Modular architecture** enables easy extension and customization
-- **Production-ready** with comprehensive testing and validation
+- **All encoders return strings** wrapped with `<EVENT_START>` and `<EVENT_END>` tokens
 
 For questions or contributions, please refer to the OWA project documentation and community guidelines.
 ```
