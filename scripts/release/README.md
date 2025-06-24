@@ -4,6 +4,8 @@ CLI tool for managing OWA package releases with lockstep versioning and clean ou
 
 ## Installation
 
+Note that if you execute script with `uv run`, you don't need to install anything.
+
 ```bash
 pip install typer packaging rich tomli  # tomli only for Python < 3.11
 ```

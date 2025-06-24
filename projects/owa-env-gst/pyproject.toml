@@ -1,18 +1,18 @@
 [project]
 name = "owa-env-gst"
-version = "0.4.2"
+version = "0.4.3"
 description = "High-performance GStreamer-based screen capture plugin for Open World Agents"
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.11"
 dependencies = [
-    "owa-core==0.4.2",
+    "owa-core==0.4.3",
     "pillow>=11.1.0",
     "av>=14.4.0",
     "pygobject-stubs>=2.12.0",
     "tqdm>=4.67.1",
     "opencv-python>=4.11.0",
-    "owa-msgs==0.4.2",
+    "owa-msgs==0.4.3",
 ]
 
 [tool.uv.sources]
