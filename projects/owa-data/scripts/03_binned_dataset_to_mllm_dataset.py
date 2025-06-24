@@ -82,7 +82,7 @@ def extract_screen_captured_objects(state_sequence: List[Any]) -> List[Any]:
                     shape=tuple(decoded_msg["shape"]) if decoded_msg.get("shape") else None,
                 )
                 screen_captured_objects.append(screen_obj)
-        except Exception as e:
+        except Exception:
             # Skip invalid messages
             continue
 
