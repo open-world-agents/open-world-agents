@@ -8,6 +8,9 @@ requires-python = ">=3.11"
 dependencies = [
     "datasets>=3.6.0",
     "huggingface_hub>=0.20.0",
+    "rich>=13.7.0",
+    "typer>=0.15.1",
+    "tqdm>=4.67.1",
 ]
 
 [build-system]

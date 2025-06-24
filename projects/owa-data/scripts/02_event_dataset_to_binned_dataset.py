@@ -20,9 +20,12 @@ from typing import Any, Dict, List
 
 import typer
 from datasets import Dataset, Features, Sequence, Value, load_from_disk
+from rich.console import Console
+from rich.panel import Panel
 from tqdm import tqdm
 
 app = typer.Typer(add_completion=False)
+console = Console()
 
 
 def aggregate_events_to_bins(
@@ -132,11 +135,18 @@ def main(
     Convert event-per-row dataset to binned dataset format with state/actions per bin.
     """
     start_time = time.time()
-    typer.echo(f"Loading event dataset from {input_dir} ...")
+
+    # Print header
+    console.print(Panel.fit("🗂️ Event Dataset to Binned Dataset", style="bold blue"))
+
+    console.print(f"[cyan]📁[/cyan] Loading event dataset from {input_dir}")
+    console.print(f"[cyan]⚡[/cyan] Target FPS: [bold]{fps}[/bold]")
     if filter_empty_actions:
-        typer.echo("Filter empty actions: ENABLED - bins with no actions will be filtered out")
+        console.print(
+            "[yellow]🔍[/yellow] Filter empty actions: [bold]ENABLED[/bold] - bins with no actions will be filtered out"
+        )
     else:
-        typer.echo("Filter empty actions: DISABLED - all bins will be kept")
+        console.print("[cyan]🔍[/cyan] Filter empty actions: [bold]DISABLED[/bold] - all bins will be kept")
     ds_dict = load_from_disk(str(input_dir))
     # Support both DatasetDict and Dataset
     if hasattr(ds_dict, "keys"):
@@ -153,11 +163,11 @@ def main(
         else:
             ds = ds_dict
         # Group by file_path more efficiently
-        typer.echo(f"Analyzing {len(ds)} events to group by file...")
+        console.print(f"[cyan]🔍[/cyan] Analyzing [bold]{len(ds):,}[/bold] events to group by file...")
         file_paths = sorted(set(ds["file_path"]))  # Sort for consistent ordering
         all_binned_data = []
 
-        typer.echo(f"Found {len(file_paths)} unique files to process")
+        console.print(f"[green]📊[/green] Found [bold]{len(file_paths)}[/bold] unique files to process")
 
         # Create a progress bar for files
         file_pbar = tqdm(file_paths, desc=f"Processing {split or 'dataset'} files")
@@ -191,14 +201,16 @@ def main(
             }
         )
         # McapMessage objects are already serialized as bytes from previous step
-        typer.echo(f"Creating dataset from {len(all_binned_data)} binned entries...")
+        console.print(f"[cyan]🔧[/cyan] Creating dataset from [bold]{len(all_binned_data):,}[/bold] binned entries...")
         binned_dataset = Dataset.from_list(all_binned_data, features=features)
 
         # Store the dataset for this split
         split_name = split if split else "train"  # Default to "train" if no split
         processed_datasets[split_name] = binned_dataset
 
-        typer.echo(f"Processed {len(binned_dataset)} binned entries for {split_name} split")
+        console.print(
+            f"[green]✓[/green] Processed [bold]{len(binned_dataset):,}[/bold] binned entries for [bold]{split_name}[/bold] split"
+        )
 
     # Save all datasets as DatasetDict or single Dataset
     if len(processed_datasets) > 1:
@@ -212,21 +224,24 @@ def main(
 
     # Save to output directory
     output_dir.mkdir(parents=True, exist_ok=True)
+    console.print(f"[cyan]💾[/cyan] Saving binned dataset to {output_dir}")
     final_dataset.save_to_disk(str(output_dir))
 
     # Calculate and display timing information
     elapsed_time = time.time() - start_time
     if len(processed_datasets) > 1:
         total_entries = sum(len(ds) for ds in processed_datasets.values())
-        typer.echo(f"Saved DatasetDict with {total_entries} total binned entries to {output_dir}")
+        console.print(f"[green]✓[/green] Saved DatasetDict with [bold]{total_entries:,}[/bold] total binned entries")
         for split_name, ds in processed_datasets.items():
-            typer.echo(f"  {split_name}: {len(ds)} entries")
+            console.print(f"  [cyan]•[/cyan] {split_name}: [bold]{len(ds):,}[/bold] entries")
     else:
         split_name = list(processed_datasets.keys())[0]
         ds = list(processed_datasets.values())[0]
-        typer.echo(f"Saved {len(ds)} binned entries ({split_name}) to {output_dir}")
+        console.print(f"[green]✓[/green] Saved [bold]{len(ds):,}[/bold] binned entries ([bold]{split_name}[/bold])")
 
-    typer.echo(f"Processing completed in {elapsed_time:.2f} seconds ({elapsed_time / 60:.1f} minutes)")
+    console.print(
+        f"[green]🎉[/green] Processing completed in [bold]{elapsed_time:.2f}s[/bold] ([bold]{elapsed_time / 60:.1f}min[/bold])"
+    )
 
 
 if __name__ == "__main__":

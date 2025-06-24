@@ -34,8 +34,10 @@ import typer
 from datasets import Dataset as HFDataset
 from datasets import DatasetDict, Features, Value
 from datasets import DatasetInfo as HFDatasetInfo
+from rich.console import Console
+from rich.panel import Panel
 
-# Progress bar
+# Progress bar and styling
 from tqdm import tqdm
 
 # MCAP and interval extraction imports
@@ -44,6 +46,7 @@ from owa.data.interval import Intervals
 from owa.data.interval.selector import All
 
 app = typer.Typer(add_completion=False)
+console = Console()
 
 
 def parse_rate_argument(rate_args: List[str]) -> Dict[str, float]:
@@ -60,7 +63,7 @@ def parse_rate_argument(rate_args: List[str]) -> Dict[str, float]:
     rate_settings: Dict[str, float] = {}
     for arg in rate_args:
         if "=" not in arg:
-            typer.echo(f"Invalid rate argument '{arg}'. Expected format: topic=Hz", err=True)
+            console.print(f"[red]✗[/red] Invalid rate argument '{arg}'. Expected format: topic=Hz", err=True)
             raise typer.Exit(code=1)
         topic, rate_str = arg.split("=", maxsplit=1)
         try:
@@ -68,7 +71,7 @@ def parse_rate_argument(rate_args: List[str]) -> Dict[str, float]:
             if rate <= 0:
                 raise ValueError("Rate must be positive")
         except ValueError as e:
-            typer.echo(f"Invalid rate value in '{arg}': {e}", err=True)
+            console.print(f"[red]✗[/red] Invalid rate value in '{arg}': {e}", err=True)
             raise typer.Exit(code=1)
         rate_settings[topic] = rate
     return rate_settings
@@ -97,7 +100,7 @@ def process_raw_events_file(
     try:
         valid_intervals: Intervals = interval_extractor.extract_intervals(Path(file_path))
     except Exception as e:
-        typer.echo(f"[Warning] Failed to extract intervals from {file_path}: {e}", err=True)
+        console.print(f"[yellow]⚠[/yellow] Failed to extract intervals from {Path(file_path).name}: {e}", err=True)
         return events
 
     # Prepare per-topic tracking for last-kept timestamp in nanoseconds
@@ -138,7 +141,7 @@ def process_raw_events_file(
                         }
                     )
     except Exception as e:
-        typer.echo(f"[Warning] Error reading file {file_path}: {e}", err=True)
+        console.print(f"[yellow]⚠[/yellow] Error reading file {Path(file_path).name}: {e}", err=True)
 
     return events
 
@@ -175,7 +178,7 @@ def generate_event_examples(
                     for event in events:
                         yield event
                 except Exception as e:
-                    typer.echo(f"[Warning] Exception raised for file {fp}: {e}", err=True)
+                    console.print(f"[yellow]⚠[/yellow] Exception raised for file {Path(fp).name}: {e}", err=True)
                 finally:
                     pbar.update(1)
 
@@ -280,45 +283,51 @@ def main(
     Generate a Hugging Face event dataset with 'train' and 'test' splits from raw MCAP files in specified directories.
     If --test_dir is omitted, randomly split files in train_dir according to --test_percent.
     """
+    # Print header
+    console.print(Panel.fit("🔄 Raw Events to Event Dataset", style="bold blue"))
+
     # 1. Validate test_percent
     if test_percent <= 0 or test_percent >= 1:
-        typer.echo("[Error] --test_percent must be between 0 and 1 (exclusive).", err=True)
+        console.print("[red]✗[/red] --test_percent must be between 0 and 1 (exclusive).", err=True)
         raise typer.Exit(code=1)
 
     # 2. Parse rate settings or set defaults
     default_rates = {"mouse": 60.0, "screen": 20.0}
     if rate:
         rate_settings = parse_rate_argument(rate)
+        console.print(f"[cyan]📊[/cyan] Rate settings: {rate_settings}")
     else:
         rate_settings = default_rates
-        typer.echo(f"No --rate given. Using default rates: {rate_settings}")
+        console.print(f"[cyan]📊[/cyan] Using default rates: {rate_settings}")
 
     # 3. Set topic filtering or use defaults
     default_topics = ["screen", "keyboard", "mouse"]
     if keep_topic:
         topics_to_keep = keep_topic
-        typer.echo(f"Using specified topics: {topics_to_keep}")
+        console.print(f"[cyan]🎯[/cyan] Keeping topics: {topics_to_keep}")
     else:
         topics_to_keep = default_topics
-        typer.echo(f"No --keep_topic given. Using default topics: {topics_to_keep}")
+        console.print(f"[cyan]🎯[/cyan] Using default topics: {topics_to_keep}")
 
     # 4. Gather all MCAP files in train_dir
+    console.print(f"[cyan]📁[/cyan] Scanning training directory: {train_dir}")
     train_files = sorted(train_dir.glob("*.mcap"))
     if not train_files:
-        typer.echo(f"[Error] No MCAP files found in train_dir: {train_dir}", err=True)
+        console.print(f"[red]✗[/red] No MCAP files found in train_dir: {train_dir}", err=True)
         raise typer.Exit(code=1)
 
     # 5. Determine test_files
     if test_dir:
+        console.print(f"[cyan]📁[/cyan] Scanning test directory: {test_dir}")
         test_files = sorted(test_dir.glob("*.mcap"))
         if not test_files:
-            typer.echo(f"[Error] No MCAP files found in test_dir: {test_dir}", err=True)
+            console.print(f"[red]✗[/red] No MCAP files found in test_dir: {test_dir}", err=True)
             raise typer.Exit(code=1)
         # Ensure train and test do not overlap
         train_set = set(str(p) for p in train_files)
         overlap = set(str(p) for p in test_files).intersection(train_set)
         if overlap:
-            typer.echo(f"[Error] Same files present in train_dir and test_dir: {overlap}", err=True)
+            console.print(f"[red]✗[/red] Same files present in train_dir and test_dir: {len(overlap)} files", err=True)
             raise typer.Exit(code=1)
     else:
         shuffled = train_files.copy()
@@ -327,18 +336,18 @@ def main(
         test_files = shuffled[:test_count]
         train_files = shuffled[test_count:]
         percent = (test_count / len(shuffled)) * 100
-        typer.echo(
-            f"No --test_dir given. Split {test_count} of {len(shuffled)} train files into test set ({percent:.1f}%)."
-        )
+        console.print(f"[cyan]🔀[/cyan] Split {test_count} of {len(shuffled)} files into test set ({percent:.1f}%)")
 
-    typer.echo(f"Train files: {len(train_files)}, Test files: {len(test_files)}")
-    typer.echo(f"Processing with {num_workers} workers...")
+    console.print(
+        f"[green]📊[/green] Dataset split: [bold]{len(train_files)}[/bold] train, [bold]{len(test_files)}[/bold] test files"
+    )
+    console.print(f"[cyan]⚙️[/cyan] Processing with [bold]{num_workers}[/bold] workers")
 
     # 6. Prompt for confirmation if output_dir not provided
     if not output_dir:
         confirm = typer.confirm("No --output-dir given. Continue without saving to disk?", default=False)
         if not confirm:
-            typer.echo("Aborting because no output directory was provided.", err=True)
+            console.print("[yellow]⚠[/yellow] Aborting because no output directory was provided.", err=True)
             raise typer.Exit(code=1)
 
     # 7. Create event datasets for train and test
@@ -347,13 +356,16 @@ def main(
 
     # 8. Combine into DatasetDict
     dataset_dict = DatasetDict({"train": train_dataset, "test": test_dataset})
-    typer.echo(f"DatasetDict created. Train examples: {len(train_dataset)}, Test examples: {len(test_dataset)}")
+    console.print(
+        f"[green]✓[/green] Dataset created: [bold]{len(train_dataset):,}[/bold] train, [bold]{len(test_dataset):,}[/bold] test examples"
+    )
 
     # 9. Save to disk if requested
     if output_dir:
         output_dir.mkdir(parents=True, exist_ok=True)
+        console.print(f"[cyan]💾[/cyan] Saving dataset to {output_dir}")
         dataset_dict.save_to_disk(str(output_dir))
-        typer.echo(f"DatasetDict saved to {output_dir}")
+        console.print("[green]✓[/green] Dataset saved successfully")
 
 
 if __name__ == "__main__":
