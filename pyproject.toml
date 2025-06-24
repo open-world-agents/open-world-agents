@@ -11,7 +11,7 @@ dependencies = [
     "owa-core==0.4.2",
     "owa-env-desktop==0.4.2",
     "owa-env-gst==0.4.2",
-    "owa-msgs==0.4.2",
+    "owa-msgs==0.4.2"
 ]
 
 [project.optional-dependencies]
@@ -23,6 +23,7 @@ docs = [
     "mkdocs-mermaid2-plugin>=1.1.1",
     "mkdocs-redirects>=1.2.2",
     "mkdocstrings-owa>=1.16.12",
+    "termynal>=0.13.0"
 ]
 viewer = [
     "owa-mcap-viewer",
