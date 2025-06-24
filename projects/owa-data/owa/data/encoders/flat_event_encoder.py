@@ -11,7 +11,7 @@ large vocabularies and direct token prediction.
 
 import json
 import re
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 from owa.core.time import TimeUnits
 from owa.msgs.desktop.keyboard import KeyboardEvent
@@ -240,7 +240,7 @@ class FlatEventEncoder(BaseEventEncoder):
         """Encode keyboard event: <KEYBOARD_vk_action>"""
         return self.config.keyboard_token_format.format(vk=event.vk, pressed=event.event_type)
 
-    def encode(self, raw_event: Dict[str, Any]) -> Tuple[str, List[Union[ScreenCaptured, Dict]]]:
+    def encode(self, raw_event: Dict[str, Any]) -> Tuple[str, List[ScreenCaptured]]:
         """
         Encode a single raw event to flat token format.
 
@@ -255,7 +255,7 @@ class FlatEventEncoder(BaseEventEncoder):
         Returns:
             Tuple containing:
                 - str: Flat token sequence concatenated without spaces
-                - List[Union[ScreenCaptured, Dict]]: Image data for screen events (empty for others)
+                - List[ScreenCaptured]: Image data for screen events (empty for others)
 
         Raises:
             ValueError: If the raw_event format is invalid
@@ -297,7 +297,7 @@ class FlatEventEncoder(BaseEventEncoder):
             screen_event = ScreenCaptured(**msg_data)
             tokens.append(self.config.screen_token)
             # Store image data
-            images.append({"screen_event": screen_event, "original_msg": raw_event["msg"]})
+            images.append(screen_event)
 
         else:
             tokens.append("<UNKNOWN>")
@@ -309,7 +309,7 @@ class FlatEventEncoder(BaseEventEncoder):
     def decode(
         self,
         encoded_data: str,
-        images: Optional[List[Union[ScreenCaptured, Dict]]] = None,
+        images: Optional[List[ScreenCaptured]] = None,
         screen_size: Optional[Tuple[int, int]] = None,
     ) -> Dict[str, Any]:
         """
@@ -387,18 +387,13 @@ class FlatEventEncoder(BaseEventEncoder):
                 raise ValueError("Screen event requires image data but none provided")
 
             image_data = images[0]
-            if isinstance(image_data, dict) and "original_msg" in image_data:
-                # Use preserved original message for exact round-trip consistency
-                msg = image_data["original_msg"]
-            elif isinstance(image_data, ScreenCaptured):
-                # Fallback: convert ScreenCaptured back to JSON
+            if isinstance(image_data, ScreenCaptured):
+                # Convert ScreenCaptured back to JSON
                 msg_dict = image_data.model_dump(exclude={"frame_arr"})
                 msg = json.dumps(msg_dict)
-            elif isinstance(image_data, dict):
-                # Fallback: assume it's a message dict
-                msg = json.dumps(image_data)
             else:
-                msg = "{}"
+                # Fallback for unexpected data types
+                msg = json.dumps(image_data) if image_data else "{}"
 
             return {
                 "topic": "screen",
@@ -519,9 +514,7 @@ class FlatEventEncoder(BaseEventEncoder):
             "msg": json.dumps(msg_data),
         }
 
-    def encode_batch(
-        self, raw_events: List[Dict[str, Any]]
-    ) -> Tuple[List[str], List[List[Union[ScreenCaptured, Dict]]]]:
+    def encode_batch(self, raw_events: List[Dict[str, Any]]) -> Tuple[List[str], List[List[ScreenCaptured]]]:
         """
         Encode a batch of raw events.
 
@@ -531,7 +524,7 @@ class FlatEventEncoder(BaseEventEncoder):
         Returns:
             Tuple containing:
                 - List[str]: Flat token sequences for each event as strings
-                - List[List[Union[ScreenCaptured, Dict]]]: Image data for each event
+                - List[List[ScreenCaptured]]: Image data for each event
         """
         all_tokens = []
         all_images = []
@@ -546,7 +539,7 @@ class FlatEventEncoder(BaseEventEncoder):
     def decode_batch(
         self,
         encoded_batch: List[str],
-        all_images: Optional[List[List[Union[ScreenCaptured, Dict]]]] = None,
+        all_images: Optional[List[List[ScreenCaptured]]] = None,
         screen_size: Optional[Tuple[int, int]] = None,
     ) -> List[Dict[str, Any]]:
         """

@@ -11,7 +11,7 @@ The encoder supports:
 """
 
 import json
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 from owa.msgs.desktop.screen import ScreenCaptured
 
@@ -58,7 +58,7 @@ class JSONEventEncoder(BaseEventEncoder):
         """
         self.drop_file_path = drop_file_path
 
-    def encode(self, raw_event: Dict[str, Any]) -> Tuple[str, List[Union[ScreenCaptured, Dict]]]:
+    def encode(self, raw_event: Dict[str, Any]) -> Tuple[str, List[ScreenCaptured]]:
         """
         Encode a single raw event to MLLM training format.
 
@@ -73,7 +73,7 @@ class JSONEventEncoder(BaseEventEncoder):
         Returns:
             Tuple containing:
                 - str: Serialized text with <IMAGE> placeholders for screen events
-                - List[Union[ScreenCaptured, Dict]]: Image data for screen events (empty for others)
+                - List[ScreenCaptured]: Image data for screen events (empty for others)
 
         Raises:
             ValueError: If the raw_event format is invalid
@@ -107,9 +107,8 @@ class JSONEventEncoder(BaseEventEncoder):
                     msg_data = json.loads(raw_event["msg"])
                 screen_event = ScreenCaptured(**msg_data)
 
-                # Store both the ScreenCaptured object and the original message data
-                # This preserves the exact original format for round-trip consistency
-                images.append({"screen_event": screen_event, "original_msg": raw_event["msg"]})
+                # Store the ScreenCaptured object directly
+                images.append(screen_event)
 
                 # Replace message content with <IMAGE> placeholder in serialized text
                 # Use same format as original (bytes or string)
@@ -125,9 +124,7 @@ class JSONEventEncoder(BaseEventEncoder):
 
         return serialized_text, images
 
-    def decode(
-        self, serialized_text: str, images: Optional[List[Union[ScreenCaptured, Dict]]] = None
-    ) -> Dict[str, Any]:
+    def decode(self, serialized_text: str, images: Optional[List[ScreenCaptured]] = None) -> Dict[str, Any]:
         """
         Decode serialized event back to original raw event format.
 
@@ -170,16 +167,13 @@ class JSONEventEncoder(BaseEventEncoder):
 
             # Restore the original message content
             image_data = images[0]
-            if isinstance(image_data, dict) and "original_msg" in image_data:
-                # Use the preserved original message for exact round-trip consistency
-                event_dict["msg"] = image_data["original_msg"]
-            elif isinstance(image_data, ScreenCaptured):
-                # Fallback: convert ScreenCaptured back to JSON (string format for new pipeline)
+            if isinstance(image_data, ScreenCaptured):
+                # Convert ScreenCaptured back to JSON format
                 msg_dict = image_data.model_dump(exclude={"frame_arr"})
                 event_dict["msg"] = json.dumps(msg_dict)
-            elif isinstance(image_data, dict):
-                # Fallback: assume it's a message dict (string format for new pipeline)
-                event_dict["msg"] = json.dumps(image_data)
+            else:
+                # Fallback for unexpected data types
+                event_dict["msg"] = json.dumps(image_data) if image_data else "{}"
 
         # Add back file_path if it was dropped during encoding
         if self.drop_file_path and "file_path" not in event_dict:
@@ -187,9 +181,7 @@ class JSONEventEncoder(BaseEventEncoder):
 
         return event_dict
 
-    def encode_batch(
-        self, raw_events: List[Dict[str, Any]]
-    ) -> Tuple[List[str], List[List[Union[ScreenCaptured, Dict]]]]:
+    def encode_batch(self, raw_events: List[Dict[str, Any]]) -> Tuple[List[str], List[List[ScreenCaptured]]]:
         """
         Encode a batch of raw events.
 
@@ -199,7 +191,7 @@ class JSONEventEncoder(BaseEventEncoder):
         Returns:
             Tuple containing:
                 - List[str]: Serialized texts for each event
-                - List[List[Union[ScreenCaptured, Dict]]]: Image data for each event
+                - List[List[ScreenCaptured]]: Image data for each event
         """
         texts = []
         all_images = []
@@ -212,7 +204,7 @@ class JSONEventEncoder(BaseEventEncoder):
         return texts, all_images
 
     def decode_batch(
-        self, serialized_texts: List[str], all_images: Optional[List[List[Union[ScreenCaptured, Dict]]]] = None
+        self, serialized_texts: List[str], all_images: Optional[List[List[ScreenCaptured]]] = None
     ) -> List[Dict[str, Any]]:
         """
         Decode a batch of serialized events.
