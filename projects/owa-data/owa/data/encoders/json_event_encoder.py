@@ -11,11 +11,14 @@ The encoder supports:
 """
 
 import json
-from typing import Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from owa.msgs.desktop.screen import ScreenCaptured
 
 from .base_encoder import BaseEventEncoder
+
+if TYPE_CHECKING:
+    from mcap_owa.highlevel.reader import McapMessage
 
 
 class JSONEventEncoder(BaseEventEncoder):
@@ -27,25 +30,19 @@ class JSONEventEncoder(BaseEventEncoder):
     work well with structured JSON input.
 
     Examples:
-        >>> # Default: drop file_path to reduce token usage
+        >>> from mcap_owa.highlevel.reader import McapMessage
         >>> encoder = JSONEventEncoder()
         >>>
-        >>> # Encode a keyboard event
-        >>> raw_event = {
-        ...     'file_path': '/path/to/file.mcap',
-        ...     'topic': 'keyboard',
-        ...     'timestamp_ns': 1745362786814673800,
-        ...     'message_type': 'desktop/KeyboardEvent',
-        ...     'msg': b'{"event_type":"press","vk":37}'
-        ... }
-        >>> text, images = encoder.encode(raw_event)
+        >>> # Encode a keyboard event from McapMessage
+        >>> mcap_message = McapMessage(
+        ...     topic='keyboard',
+        ...     timestamp=1745362786814673800,
+        ...     message_type='desktop/KeyboardEvent',
+        ...     message=b'{"event_type":"press","vk":37}'
+        ... )
+        >>> text, images = encoder.encode(mcap_message)
         >>> print(text)
         <EVENT_START>{'topic': 'keyboard', 'timestamp_ns': 1745362786814673800, ...}<EVENT_END>
-        >>>
-        >>> # Keep file_path if needed
-        >>> encoder_with_path = JSONEventEncoder(drop_file_path=False)
-        >>> text, images = encoder_with_path.encode(raw_event)
-        >>> # Now file_path is preserved in the encoded text
     """
 
     def __init__(self, drop_file_path: bool = True):
@@ -58,17 +55,17 @@ class JSONEventEncoder(BaseEventEncoder):
         """
         self.drop_file_path = drop_file_path
 
-    def encode(self, raw_event: Dict[str, Any]) -> Tuple[str, List[ScreenCaptured]]:
+    def encode(self, mcap_message: "McapMessage") -> Tuple[str, List[ScreenCaptured]]:
         """
-        Encode a single raw event to MLLM training format.
+        Encode a single McapMessage to MLLM training format.
 
         Args:
-            raw_event: Raw event dictionary with keys:
-                - file_path: Source MCAP file path
+            mcap_message: McapMessage object with fields:
                 - topic: Event topic (e.g., 'keyboard', 'screen')
-                - timestamp_ns: Timestamp in nanoseconds
+                - timestamp: Timestamp in nanoseconds
                 - message_type: Full message type identifier
-                - msg: Serialized message content (bytes or string)
+                - message: Serialized message content (bytes)
+                - decoded: Decoded message content (accessible via property)
 
         Returns:
             Tuple containing:
@@ -76,64 +73,56 @@ class JSONEventEncoder(BaseEventEncoder):
                 - List[ScreenCaptured]: Image data for screen events (empty for others)
 
         Raises:
-            ValueError: If the raw_event format is invalid
+            ValueError: If the mcap_message format is invalid
             json.JSONDecodeError: If message content cannot be parsed
         """
-        if not isinstance(raw_event, dict):
-            raise ValueError("raw_event must be a dictionary")
-
-        required_keys = {"topic", "timestamp_ns", "message_type", "msg"}
-        if not self.drop_file_path:
-            required_keys.add("file_path")
-        if not required_keys.issubset(raw_event.keys()):
-            missing = required_keys - raw_event.keys()
-            raise ValueError(f"raw_event missing required keys: {missing}")
+        # Validate McapMessage
+        if not hasattr(mcap_message, "topic") or not hasattr(mcap_message, "timestamp"):
+            raise ValueError("mcap_message must be a valid McapMessage object")
 
         # Handle screen events with image data
         images = []
-        event_copy = raw_event.copy()
 
-        # Drop file_path if requested
-        if self.drop_file_path and "file_path" in event_copy:
-            del event_copy["file_path"]
+        # Create event dictionary for serialization (similar to original format)
+        event_dict = {
+            "topic": mcap_message.topic,
+            "timestamp_ns": mcap_message.timestamp,  # McapMessage uses timestamp, not timestamp_ns
+            "message_type": mcap_message.message_type,
+            "msg": mcap_message.message,  # This is bytes in McapMessage
+        }
 
-        if raw_event["topic"] == "screen" and raw_event["message_type"] == "desktop/ScreenCaptured":
+        if mcap_message.topic == "screen" and mcap_message.message_type == "desktop/ScreenCaptured":
             # Parse the message to create ScreenCaptured object
             try:
-                # Handle both bytes and string msg formats
-                if isinstance(raw_event["msg"], bytes):
-                    msg_data = json.loads(raw_event["msg"].decode("utf-8"))
-                else:
-                    msg_data = json.loads(raw_event["msg"])
-                screen_event = ScreenCaptured(**msg_data)
+                # McapMessage.message is always bytes, and we can use the decoded property
+                screen_event = mcap_message.decoded
+                if not isinstance(screen_event, ScreenCaptured):
+                    raise ValueError(f"Expected ScreenCaptured object, got {type(screen_event)}")
 
                 # Store the ScreenCaptured object directly
                 images.append(screen_event)
 
                 # Replace message content with <IMAGE> placeholder in serialized text
-                # Use same format as original (bytes or string)
-                if isinstance(raw_event["msg"], bytes):
-                    event_copy["msg"] = b"<IMAGE>"
-                else:
-                    event_copy["msg"] = "<IMAGE>"
-            except (json.JSONDecodeError, TypeError) as e:
+                # Keep as bytes since McapMessage.message is bytes
+                event_dict["msg"] = b"<IMAGE>"
+            except Exception as e:
                 raise ValueError(f"Failed to parse screen event message: {e}")
 
         # Create the serialized text format
-        serialized_text = f"<EVENT_START>{event_copy}<EVENT_END>"
+        serialized_text = f"<EVENT_START>{event_dict}<EVENT_END>"
 
         return serialized_text, images
 
-    def decode(self, serialized_text: str, images: Optional[List[ScreenCaptured]] = None) -> Dict[str, Any]:
+    def decode(self, serialized_text: str, images: Optional[List[ScreenCaptured]] = None) -> "McapMessage":
         """
-        Decode serialized event back to original raw event format.
+        Decode serialized event back to McapMessage format.
 
         Args:
             serialized_text: Encoded event text with <EVENT_START>/<EVENT_END> tokens
             images: Optional list of image data for screen events
 
         Returns:
-            Dict: Reconstructed raw event in original format
+            McapMessage: Reconstructed message in McapMessage format
 
         Raises:
             ValueError: If serialized_text format is invalid
@@ -175,18 +164,23 @@ class JSONEventEncoder(BaseEventEncoder):
                 # Fallback for unexpected data types
                 event_dict["msg"] = json.dumps(image_data) if image_data else "{}"
 
-        # Add back file_path if it was dropped during encoding
-        if self.drop_file_path and "file_path" not in event_dict:
-            event_dict["file_path"] = "<DROPPED>"
+        # Create and return McapMessage
+        # Import McapMessage at runtime to avoid circular imports
+        from mcap_owa.highlevel.reader import McapMessage
 
-        return event_dict
+        return McapMessage(
+            topic=event_dict["topic"],
+            timestamp=event_dict["timestamp_ns"],  # Convert back to timestamp
+            message_type=event_dict["message_type"],
+            message=event_dict["msg"] if isinstance(event_dict["msg"], bytes) else event_dict["msg"].encode("utf-8"),
+        )
 
-    def encode_batch(self, raw_events: List[Dict[str, Any]]) -> Tuple[List[str], List[List[ScreenCaptured]]]:
+    def encode_batch(self, mcap_messages: List["McapMessage"]) -> Tuple[List[str], List[List[ScreenCaptured]]]:
         """
-        Encode a batch of raw events.
+        Encode a batch of McapMessages.
 
         Args:
-            raw_events: List of raw event dictionaries
+            mcap_messages: List of McapMessage objects
 
         Returns:
             Tuple containing:
@@ -196,8 +190,8 @@ class JSONEventEncoder(BaseEventEncoder):
         texts = []
         all_images = []
 
-        for event in raw_events:
-            text, images = self.encode(event)
+        for mcap_message in mcap_messages:
+            text, images = self.encode(mcap_message)
             texts.append(text)
             all_images.append(images)
 
@@ -205,7 +199,7 @@ class JSONEventEncoder(BaseEventEncoder):
 
     def decode_batch(
         self, serialized_texts: List[str], all_images: Optional[List[List[ScreenCaptured]]] = None
-    ) -> List[Dict[str, Any]]:
+    ) -> List["McapMessage"]:
         """
         Decode a batch of serialized events.
 
@@ -214,7 +208,7 @@ class JSONEventEncoder(BaseEventEncoder):
             all_images: Optional list of image data lists for each event
 
         Returns:
-            List[Dict]: Reconstructed raw events
+            List[McapMessage]: Reconstructed messages
         """
         if all_images is None:
             all_images = [[] for _ in serialized_texts]
@@ -222,12 +216,12 @@ class JSONEventEncoder(BaseEventEncoder):
         if len(serialized_texts) != len(all_images):
             raise ValueError("Length mismatch between texts and images")
 
-        events = []
+        messages = []
         for text, images in zip(serialized_texts, all_images):
-            event = self.decode(text, images)
-            events.append(event)
+            message = self.decode(text, images)
+            messages.append(message)
 
-        return events
+        return messages
 
     def get_encoder_info(self) -> Dict[str, Any]:
         """Get information about this encoder."""

@@ -11,7 +11,7 @@ large vocabularies and direct token prediction.
 
 import json
 import re
-from typing import Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from owa.core.time import TimeUnits
 from owa.msgs.desktop.keyboard import KeyboardEvent
@@ -19,6 +19,9 @@ from owa.msgs.desktop.mouse import MouseEvent
 from owa.msgs.desktop.screen import ScreenCaptured
 
 from .base_encoder import BaseEventEncoder
+
+if TYPE_CHECKING:
+    from mcap_owa.highlevel.reader import McapMessage
 
 
 class FlatEventEncoderConfig:

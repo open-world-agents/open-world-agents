@@ -6,16 +6,12 @@ ensuring consistency across different encoding strategies.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from owa.msgs.desktop.screen import ScreenCaptured
 
-# Import McapMessage - we'll need to add this import
-try:
+if TYPE_CHECKING:
     from mcap_owa.highlevel.reader import McapMessage
-except ImportError:
-    # Fallback for when mcap_owa is not available
-    McapMessage = None
 
 
 class BaseEventEncoder(ABC):
@@ -28,17 +24,17 @@ class BaseEventEncoder(ABC):
     """
 
     @abstractmethod
-    def encode(self, raw_event: Dict[str, Any]) -> Tuple[str, List[ScreenCaptured]]:
+    def encode(self, mcap_message: "McapMessage") -> Tuple[str, List[ScreenCaptured]]:
         """
-        Encode a single raw event to the encoder's format.
+        Encode a single McapMessage to the encoder's format.
 
         Args:
-            raw_event: Raw event dictionary with keys:
+            mcap_message: McapMessage object with fields:
                 - topic: Event topic (e.g., 'keyboard', 'screen')
-                - timestamp_ns: Timestamp in nanoseconds
+                - timestamp: Timestamp in nanoseconds
                 - message_type: Full message type identifier
-                - msg: Serialized message content (bytes or string)
-                - file_path: Source MCAP file path (optional)
+                - message: Serialized message content (bytes)
+                - decoded: Decoded message content (accessible via property)
 
         Returns:
             Tuple containing:
@@ -46,21 +42,21 @@ class BaseEventEncoder(ABC):
                 - List[ScreenCaptured]: Image data for screen events
 
         Raises:
-            ValueError: If the raw_event format is invalid
+            ValueError: If the mcap_message format is invalid
         """
         pass
 
     @abstractmethod
-    def decode(self, encoded_data: str, images: Optional[List[ScreenCaptured]] = None) -> Dict[str, Any]:
+    def decode(self, encoded_data: str, images: Optional[List[ScreenCaptured]] = None) -> "McapMessage":
         """
-        Decode encoded data back to original raw event format.
+        Decode encoded data back to McapMessage format.
 
         Args:
             encoded_data: Encoded representation as string
             images: Optional list of image data for screen events
 
         Returns:
-            Dict: Reconstructed raw event in original format
+            McapMessage: Reconstructed message in McapMessage format
 
         Raises:
             ValueError: If encoded_data format is invalid
@@ -68,12 +64,12 @@ class BaseEventEncoder(ABC):
         pass
 
     @abstractmethod
-    def encode_batch(self, raw_events: List[Dict[str, Any]]) -> Tuple[List[str], List[List[ScreenCaptured]]]:
+    def encode_batch(self, mcap_messages: List["McapMessage"]) -> Tuple[List[str], List[List[ScreenCaptured]]]:
         """
-        Encode a batch of raw events.
+        Encode a batch of McapMessages.
 
         Args:
-            raw_events: List of raw event dictionaries
+            mcap_messages: List of McapMessage objects
 
         Returns:
             Tuple containing:
@@ -85,7 +81,7 @@ class BaseEventEncoder(ABC):
     @abstractmethod
     def decode_batch(
         self, encoded_batch: List[str], all_images: Optional[List[List[ScreenCaptured]]] = None
-    ) -> List[Dict[str, Any]]:
+    ) -> List["McapMessage"]:
         """
         Decode a batch of encoded data.
 
@@ -94,7 +90,7 @@ class BaseEventEncoder(ABC):
             all_images: Optional list of image data lists for each event
 
         Returns:
-            List[Dict]: Reconstructed raw events
+            List[McapMessage]: Reconstructed messages
         """
         pass
 
