@@ -3,7 +3,6 @@
 Minimal demo for OWADataset usage.
 """
 
-import numpy as np
 from datasets import load_from_disk
 
 from owa.data import OWADataset
@@ -29,3 +28,12 @@ for i, image in enumerate(sample["images"]):
 # Show first few events
 for i, event in enumerate(sample["encoded_events"][:3]):
     print(f"  Event {i}: {event}")
+
+"""
+Dataset length: 3189
+Instruction: Complete the computer task
+Images: 1 loaded
+Encoded events: 1 events
+  Image 0: image.size=(768, 480), image.mode='RGB'
+  Event 0: <EVENT_START><TIMESTAMP><111><KEYBOARD><27><press><EVENT_END>
+"""

@@ -40,9 +40,6 @@ def aggregate_events_to_bins(
     if not events:
         return []
 
-    if not events:
-        return []
-
     # Sort by timestamp
     events.sort(key=lambda e: e["timestamp_ns"])
 
@@ -152,43 +149,14 @@ def main(
         for fp in file_pbar:
             file_pbar.set_postfix({"current_file": Path(fp).name})
 
-            # Get all events for this file - use indices for better performance on large datasets
-            if len(ds) > 10000:
-                # For very large datasets, use indices instead of filter
-                indices = [i for i, path in enumerate(ds["file_path"]) if path == fp]
-                file_ds = ds.select(indices)
-            else:
-                # For smaller datasets, filter is fine
-                file_ds = ds.filter(lambda example: example["file_path"] == fp)
+            # Get all events for this file
+            file_ds = ds.filter(lambda example: example["file_path"] == fp)
 
-            if len(file_ds) > 1000:
-                typer.echo(f"  Extracting {len(file_ds)} events from large file...")
-
-            # Convert to list of dicts using HuggingFace's efficient methods
-            # This is much faster than individual indexing
-            try:
-                # Use to_dict() method which is optimized for batch conversion
-                events_dict = file_ds.to_dict()
-                events = []
-
-                # Convert columnar format to row format efficiently
-                num_events = len(events_dict[list(events_dict.keys())[0]])
-
-                if len(file_ds) > 1000:
-                    event_range = tqdm(range(num_events), desc="Converting to rows", leave=False)
-                else:
-                    event_range = range(num_events)
-
-                for i in event_range:
-                    event = {k: v[i] for k, v in events_dict.items()}
-                    events.append(event)
-
-            except Exception as e:
-                # Fallback to slower method if to_dict() fails
-                typer.echo(f"  Warning: Fast conversion failed ({e}), using slower method...")
-                events = []
-                for i in tqdm(range(len(file_ds)), desc="Extracting events", leave=False):
-                    events.append({k: file_ds[k][i] for k in file_ds.column_names})
+            # Convert to list of dicts
+            events = []
+            for i in range(len(file_ds)):
+                event = {k: file_ds[k][i] for k in file_ds.column_names}
+                events.append(event)
 
             binned_data = aggregate_events_to_bins(events, fps)
             all_binned_data.extend(binned_data)

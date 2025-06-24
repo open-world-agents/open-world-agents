@@ -44,52 +44,21 @@ def extract_screen_captured_objects(state_sequence: List[Any]) -> List[bytes]:
     Returns:
         List of serialized ScreenCaptured bytes
     """
-    if state_sequence is None or len(state_sequence) == 0:
+    if not state_sequence:
         return []
 
     screen_captured_bytes = []
 
-    # Handle numpy arrays from pandas conversion
-    import numpy as np
-
-    if isinstance(state_sequence, np.ndarray):
-        state_sequence = state_sequence.tolist()
-
     for item in state_sequence:
         try:
-            # Handle serialized McapMessage bytes
-            if isinstance(item, bytes):
-                # Deserialize McapMessage from bytes
-                mcap_msg = McapMessage.model_validate_json(item.decode("utf-8"))
-                decoded_msg = mcap_msg.decoded
-            elif isinstance(item, dict):
-                # It's already a dictionary (from pandas conversion)
-                # Parse the message field if it's bytes
-                if "message" in item and isinstance(item["message"], bytes):
-                    import json
+            # Deserialize McapMessage from bytes
+            mcap_msg = McapMessage.model_validate_json(item.decode("utf-8"))
+            decoded_msg = mcap_msg.decoded
 
-                    decoded_msg = json.loads(item["message"].decode("utf-8"))
-                else:
-                    decoded_msg = item
-            else:
-                continue
-
-            # Check if it's a screen event with the required fields
+            # Check if it's a ScreenCaptured object
             if isinstance(decoded_msg, ScreenCaptured):
-                # It's already a ScreenCaptured object - serialize directly
+                # Serialize ScreenCaptured object to bytes
                 screen_obj_bytes = decoded_msg.model_dump_json().encode("utf-8")
-                screen_captured_bytes.append(screen_obj_bytes)
-            elif isinstance(decoded_msg, dict) and "path" in decoded_msg and "pts" in decoded_msg:
-                # Create ScreenCaptured object from the decoded message dictionary
-                screen_obj = ScreenCaptured(
-                    utc_ns=decoded_msg.get("utc_ns"),
-                    path=decoded_msg["path"],
-                    pts=decoded_msg["pts"],
-                    original_shape=tuple(decoded_msg["original_shape"]) if decoded_msg.get("original_shape") else None,
-                    shape=tuple(decoded_msg["shape"]) if decoded_msg.get("shape") else None,
-                )
-                # Serialize ScreenCaptured object to bytes using model_dump_json
-                screen_obj_bytes = screen_obj.model_dump_json().encode("utf-8")
                 screen_captured_bytes.append(screen_obj_bytes)
         except Exception:
             # Skip invalid messages
@@ -109,43 +78,21 @@ def encode_actions(actions_sequence: List[Any], encoder: BaseEventEncoder) -> Li
     Returns:
         List of encoded action strings
     """
-    if actions_sequence is None or len(actions_sequence) == 0:
+    if not actions_sequence:
         return []
 
     encoded_actions = []
 
-    # Handle numpy arrays from pandas conversion
-    import numpy as np
-
-    if isinstance(actions_sequence, np.ndarray):
-        actions_sequence = actions_sequence.tolist()
-
     for item in actions_sequence:
         try:
-            # Handle serialized McapMessage bytes
-            if isinstance(item, bytes):
-                # Deserialize McapMessage from bytes
-                mcap_msg = McapMessage.model_validate_json(item.decode("utf-8"))
-                action_event = {
-                    "topic": mcap_msg.topic,
-                    "timestamp_ns": mcap_msg.timestamp,
-                    "message_type": mcap_msg.message_type,
-                    "msg": mcap_msg.message.decode("utf-8")
-                    if isinstance(mcap_msg.message, bytes)
-                    else mcap_msg.message,
-                }
-            elif isinstance(item, dict):
-                # It's already a dictionary (from pandas conversion)
-                action_event = {
-                    "topic": item.get("topic"),
-                    "timestamp_ns": item.get("timestamp"),
-                    "message_type": item.get("message_type"),
-                    "msg": item.get("message").decode("utf-8")
-                    if isinstance(item.get("message"), bytes)
-                    else item.get("message"),
-                }
-            else:
-                continue
+            # Deserialize McapMessage from bytes
+            mcap_msg = McapMessage.model_validate_json(item.decode("utf-8"))
+            action_event = {
+                "topic": mcap_msg.topic,
+                "timestamp_ns": mcap_msg.timestamp,
+                "message_type": mcap_msg.message_type,
+                "msg": mcap_msg.message.decode("utf-8") if isinstance(mcap_msg.message, bytes) else mcap_msg.message,
+            }
 
             # BaseEventEncoder expects this format
             encoded_text, _ = encoder.encode(action_event)
@@ -269,17 +216,13 @@ def main(
 
         typer.echo(f"Processing {split_name} split with {len(ds)} binned entries...")
 
-        # Convert dataset to pandas for much faster processing
-        typer.echo("Converting dataset to pandas for faster processing...")
-        df = ds.to_pandas()
-
         all_mllm_samples = []
         valid_samples = 0
         skipped_no_state = 0
         skipped_no_actions = 0
 
         # Process each bin directly (1:1 conversion)
-        bin_pbar = tqdm(df.to_dict("records"), desc=f"Converting {split_name} bins to samples")
+        bin_pbar = tqdm(ds, desc=f"Converting {split_name} bins to samples")
         for bin_data in bin_pbar:
             # Convert bin to sample
             sample = convert_bin_to_sample(bin_data, instruction, encoder, filter_empty_actions)

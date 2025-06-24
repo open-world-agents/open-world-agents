@@ -22,7 +22,6 @@ Usage (CLI):
     - Output is saved (optional) as an event dataset with "train" and "test" keys.
 """
 
-import json
 import random
 
 # Concurrency imports
@@ -356,55 +355,27 @@ def main(
         dataset_dict.save_to_disk(str(output_dir))
         typer.echo(f"DatasetDict saved to {output_dir}")
 
-    # 10. Show few examples from each split in a more readable format
+    # 10. Show few examples from each split
     def pretty_print_example(example: Dict):
         typer.echo("----------------------------------------")
         typer.echo(f"file_path: {example['file_path']}")
         typer.echo(f"topic:     {example['topic']}")
         typer.echo(f"timestamp_ns: {example['timestamp_ns']}")
-        # Handle McapMessage bytes - deserialize back to McapMessage object
-        mcap_msg_bytes = example["mcap_message"]
-        try:
-            # Deserialize bytes back to McapMessage using model_validate_json
-            mcap_msg = McapMessage.model_validate_json(mcap_msg_bytes.decode("utf-8"))
-            # Access the decoded property to get the parsed message content
-            decoded_msg = mcap_msg.decoded
-            # Try Pydantic model_dump_json first
-            try:
-                pretty_msg = decoded_msg.model_dump_json(indent=2, exclude_none=True)
-            except AttributeError:
-                # Fall back to standard JSON serialization with default=str for non-serializable objects
-                try:
-                    # Handle dict-like objects (EasyDict, etc.)
-                    if hasattr(decoded_msg, "__dict__"):
-                        pretty_msg = json.dumps(decoded_msg.__dict__, indent=2, ensure_ascii=False, default=str)
-                    else:
-                        pretty_msg = json.dumps(decoded_msg, indent=2, ensure_ascii=False, default=str)
-                except (TypeError, ValueError):
-                    # Last resort: convert to string
-                    pretty_msg = str(decoded_msg)
-        except Exception as e:
-            # Fallback to repr if decoding fails
-            pretty_msg = f"Failed to decode: {repr(e)}"
-        typer.echo("mcap_message (decoded):\n" + pretty_msg)
+        typer.echo(f"message_type: {example['message_type']}")
+        # Show first 100 chars of the serialized message
+        msg_preview = (
+            str(example["mcap_message"])[:100] + "..."
+            if len(str(example["mcap_message"])) > 100
+            else str(example["mcap_message"])
+        )
+        typer.echo(f"mcap_message: {msg_preview}")
 
     typer.echo("=== Train sample ===")
-    for example in train_dataset.select(range(min(3, len(train_dataset)))):
+    for example in train_dataset.select(range(min(2, len(train_dataset)))):
         pretty_print_example(example)
 
-    # For each unique topic in train, print one example
-    seen_topics = set()
-    typer.echo("=== One example per topic (train) ===")
-    for example in train_dataset:
-        topic = example["topic"]
-        if topic not in seen_topics:
-            pretty_print_example(example)
-            seen_topics.add(topic)
-        if len(seen_topics) == len(set(train_dataset["topic"])):
-            break
-
     typer.echo("=== Test sample ===")
-    for example in test_dataset.select(range(min(3, len(test_dataset)))):
+    for example in test_dataset.select(range(min(2, len(test_dataset)))):
         pretty_print_example(example)
 
 
