@@ -53,6 +53,6 @@ To address this gap, open-world-agents provides the following four solutions:
     - **Easy Upload & Sharing**: Upload your `ocap` recordings directly to HuggingFace with one command
     - **Standardized Format**: All datasets use the unified OWAMcap format for seamless integration
     - **Interactive Visualization**: Preview any dataset at [Hugging Face Spaces](https://huggingface.co/spaces/open-world-agents/visualize_dataset)
-    - **Browse Available Datasets**: [🤗 datasets?other=owamcap](https://huggingface.co/datasets?other=owamcap)
+    - **Browse Available Datasets**: [🤗 datasets?other=OWA](https://huggingface.co/datasets?other=OWA)
 
 > 🚀 **Community Impact**: With OWA's streamlined recording and sharing pipeline, the open-source desktop agent community has rapidly grown from zero to hundreds of publicly available multimodal datasets, democratizing access to high-quality training data.

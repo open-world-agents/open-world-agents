@@ -1,0 +1,25 @@
+# OWA Runtime Image - Project Runtime Environment
+ARG BASE_IMAGE=owa/base:latest
+FROM ${BASE_IMAGE}
+
+# libgl1 is required for opencv-python to work, https://stackoverflow.com/a/68666500
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
+    libgl1
+
+# Project setup arguments
+ARG PROJECT_DIR=/workspace
+ARG CONDA_INSTALL_PATH=/opt/conda
+
+# Set working directory
+WORKDIR ${PROJECT_DIR}
+
+# Copy and run project setup script
+COPY ./setup_runtime.sh /tmp/setup_runtime.sh
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    --mount=type=cache,target=${CONDA_INSTALL_PATH}/pkgs,sharing=locked \
+    chmod +x /tmp/setup_runtime.sh && \
+    /tmp/setup_runtime.sh ${PROJECT_DIR} && \
+    rm /tmp/setup_runtime.sh

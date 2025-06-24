@@ -1,8 +1,8 @@
 """
-HuggingFace datasets integration for McapMessage.
+HuggingFace datasets integration for McapMessage and ScreenCaptured.
 
-This module provides the McapMessageFeature class that implements the datasets
-feature interface for serializing/deserializing McapMessage objects.
+This module provides feature classes that implement the datasets
+feature interface for serializing/deserializing McapMessage and ScreenCaptured objects.
 """
 
 import warnings
@@ -55,7 +55,7 @@ class McapMessageFeature:
         from .highlevel.reader import McapMessage
 
         if isinstance(value, McapMessage):
-            return value.as_dict()
+            return value.model_dump()
         elif isinstance(value, dict):
             # Validate required fields
             required_fields = {"topic", "timestamp", "message", "message_type"}
@@ -121,7 +121,7 @@ class McapMessageFeature:
         return f"McapMessageFeature(decode={self.decode})"
 
 
-# Register McapMessageFeature as a HuggingFace datasets feature
+# Register features as HuggingFace datasets features
 if _DATASETS_AVAILABLE:
     with warnings.catch_warnings():
         warnings.filterwarnings(

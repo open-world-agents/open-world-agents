@@ -1,0 +1,23 @@
+# OWA Training Image - ML Training Environment
+ARG RUNTIME_IMAGE=owa/runtime:latest
+FROM ${RUNTIME_IMAGE}
+
+# Build arguments
+ARG CONDA_INSTALL_PATH=/opt/conda
+
+# Install ML packages using uv
+RUN --mount=type=cache,target=${HOME}/.cache/uv,sharing=locked \
+    --mount=type=cache,target=${HOME}/.cache/pip,sharing=locked \
+    . activate owa && vuv pip install torch numpy torchvision pillow datasets huggingface-hub transformers wandb
+
+# Clone and checkout open-world-agents to feature/data branch with optimizations
+RUN --mount=type=cache,target=${HOME}/.cache/git,sharing=locked \
+    git clone --depth=1 --branch=feature/data --single-branch \
+    https://github.com/open-world-agents/open-world-agents.git /tmp/owa-repo && \
+    cd /tmp/owa-repo && \
+    git submodule update --init --recursive --depth=1 && \
+    cp -r . /workspace/ && \
+    rm -rf /tmp/owa-repo
+
+# Set working directory to projects/nanoVLM
+WORKDIR /workspace/projects/nanoVLM
