@@ -11,7 +11,6 @@ Raw MCAP Data → Event Dataset → Binned Dataset → VLA Training Ready
 ```
 
 **Key Features:**
-- **Stage 2** includes `filter_empty_actions` option for better efficiency
 - **VLADataset** provides on-the-fly conversion from binned datasets to training format
 
 ## Stage 1: Raw MCAP Data → Event Dataset
@@ -79,46 +78,6 @@ python scripts/02_event_dataset_to_binned_dataset.py \
 - Optional filtering of bins with no actions for efficiency
 - Preserves temporal structure for sequence modeling
 
-## VLA Training with VLADataset
-
-**Class**: `owa.data.VLADataset`
-
-**Purpose**: Direct training interface with on-the-fly conversion from binned datasets
-
-**Usage**:
-```python
-from datasets import load_from_disk
-from owa.data import VLADataset
-
-# Load binned dataset
-binned_dataset = load_from_disk("/path/to/binned/dataset")
-
-# Create VLADataset with on-the-fly conversion
-vla_dataset = VLADataset(
-    dataset=binned_dataset["train"],
-    instruction="Complete the computer task",
-    encoder_type="hierarchical",
-    cache_samples=True  # Cache for performance
-)
-
-# Use directly for training
-sample = vla_dataset[0]
-print(f"Instruction: {sample['instruction']}")
-print(f"Images: {len(sample['images'])} loaded")
-print(f"Actions: {len(sample['encoded_events'])} encoded")
-```
-
-**Key Features**:
-- **On-the-fly Conversion**: Convert binned datasets to training format during data loading
-- **Configurable Encoders**: Support for hierarchical, JSON, and flat event encoders
-- **Lazy Image Loading**: Efficient memory usage with on-demand image loading
-- **Sample Caching**: Optional caching for improved training performance
-
-**Encoder Types**:
-- `hierarchical`: Compositional token structure (default, most efficient)
-- `json`: JSON string format with event tokens
-- `flat`: Traditional flat token-based encoding
-
 ## Dataset Transforms
 
 **Purpose**: Apply encoding and image loading transforms directly to HuggingFace datasets using `set_transform`
@@ -126,8 +85,10 @@ print(f"Actions: {len(sample['encoded_events'])} encoded")
 **Key Benefits**:
 - Works with both Event Dataset and Binned Dataset
 - Better integration with training pipelines (DataLoader, Trainer, etc.)
-- More flexible than wrapper classes
-- Same core functionality as VLADataset
+- More flexible and efficient than wrapper classes
+- Direct HuggingFace datasets integration
+- Configurable encoders (hierarchical, JSON, flat)
+- On-demand image loading and action encoding
 
 ### Event Dataset Transform
 
@@ -160,7 +121,7 @@ for sample in event_dataset["train"].take(10):
 
 **Function**: `create_binned_dataset_transform()`
 
-**Purpose**: Transform Binned Dataset to VLA training format (same as VLADataset)
+**Purpose**: Transform Binned Dataset to VLA training format for vision-language-action models
 
 **Usage**:
 ```python
@@ -179,7 +140,7 @@ transform = create_binned_dataset_transform(
 )
 binned_dataset.set_transform(transform)
 
-# Use transformed dataset (same format as VLADataset)
+# Use transformed dataset for VLA training
 for sample in binned_dataset["train"].take(10):
     print(f"{sample=}")
 ```
@@ -215,4 +176,9 @@ for batch in dataloader:
 ## EventEncoder
 
 Converts raw events to text representations for LLM training using `<EVENT_START>` and `<EVENT_END>` tokens.
+
+**Encoder Types**:
+- `hierarchical`: Compositional token structure (default, most efficient)
+- `json`: JSON string format with event tokens
+- `flat`: Traditional flat token-based encoding
 

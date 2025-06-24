@@ -8,7 +8,7 @@ from .encoders import (
     JSONEventEncoder,
 )
 from .load_dataset import load_dataset
-from .owa_dataset import VLADataset, create_encoder
+from .owa_dataset import create_encoder
 from .transforms import (
     create_binned_dataset_transform,
     create_event_dataset_transform,
@@ -22,7 +22,6 @@ __all__ = [
     "HierarchicalEventEncoder",
     "HierarchicalEventEncoderConfig",
     "load_dataset",
-    "VLADataset",
     "create_encoder",
     "create_event_dataset_transform",
     "create_binned_dataset_transform",
