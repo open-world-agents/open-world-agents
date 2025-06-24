@@ -6,8 +6,8 @@ Convert event-per-row dataset (output of 01_raw_events_to_event_dataset.py) into
 
 Usage (CLI):
     python 02_event_dataset_to_binned_dataset.py \
-        --input_dir /path/to/input_event_dataset \
-        --output_dir /path/to/output_binned_dataset \
+        --input-dir /path/to/input_event_dataset \
+        --output-dir /path/to/output_binned_dataset \
         [--fps 10]
 
 - Bins events into fixed-rate time intervals at the specified FPS.
@@ -108,7 +108,7 @@ def aggregate_events_to_bins(
 def main(
     input_dir: Path = typer.Option(
         ...,
-        "--input_dir",
+        "--input-dir",
         "-i",
         exists=True,
         file_okay=False,
@@ -118,7 +118,7 @@ def main(
     ),
     output_dir: Path = typer.Option(
         ...,
-        "--output_dir",
+        "--output-dir",
         "-o",
         file_okay=False,
         dir_okay=True,

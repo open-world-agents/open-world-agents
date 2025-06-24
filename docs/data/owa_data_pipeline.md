@@ -8,7 +8,7 @@
 
 ```
 $ python scripts/01_raw_events_to_event_dataset.py \
-  --train_dir /data/mcaps/game-session \
+  --train-dir /data/mcaps/game-session \
   --output-dir /data/event-dataset \
   --rate mouse=60 --rate screen=20 \
   --keep_topic screen --keep_topic keyboard
@@ -28,8 +28,8 @@ $ python scripts/01_raw_events_to_event_dataset.py \
 
 ```
 $ python scripts/02_event_dataset_to_binned_dataset.py \
-  --input_dir /data/event-dataset \
-  --output_dir /data/binned-dataset \
+  --input-dir /data/event-dataset \
+  --output-dir /data/binned-dataset \
   --fps 10 \
   --filter-empty-actions
 🗂️ Event Dataset to Binned Dataset
@@ -109,7 +109,7 @@ graph LR
 
 ```bash
 python scripts/01_raw_events_to_event_dataset.py \
-  --train_dir /path/to/mcap/files \
+  --train-dir /path/to/mcap/files \
   --output-dir /path/to/event/dataset \
   --rate mouse=60 --rate screen=20 \
   --keep_topic screen --keep_topic keyboard
@@ -119,7 +119,7 @@ python scripts/01_raw_events_to_event_dataset.py \
 
 | Parameter | Description | Example |
 |-----------|-------------|---------|
-| `--train_dir` | Directory containing MCAP files | `/data/recordings/` |
+| `--train-dir` | Directory containing MCAP files | `/data/recordings/` |
 | `--output-dir` | Output directory for Event Dataset | `/data/event-dataset/` |
 | `--rate` | Rate limiting per topic (Hz) | `mouse=60 screen=20` |
 | `--keep_topic` | Topics to include in dataset | `screen keyboard mouse` |
@@ -153,8 +153,8 @@ The Event Dataset uses a flat structure optimized for temporal queries:
 
 ```bash
 python scripts/02_event_dataset_to_binned_dataset.py \
-  --input_dir /path/to/event/dataset \
-  --output_dir /path/to/binned/dataset \
+  --input-dir /path/to/event/dataset \
+  --output-dir /path/to/binned/dataset \
   --fps 10 \
   --filter-empty-actions
 ```
@@ -165,8 +165,8 @@ python scripts/02_event_dataset_to_binned_dataset.py \
 |-----------|-------------|---------|
 | `--fps` | Binning frequency (frames per second) | `10` |
 | `--filter-empty-actions` | Remove bins with no actions | `False` |
-| `--input_dir` | Event Dataset directory | Required |
-| `--output_dir` | Output directory for Binned Dataset | Required |
+| `--input-dir` | Event Dataset directory | Required |
+| `--output-dir` | Output directory for Binned Dataset | Required |
 
 ### Output Schema
 

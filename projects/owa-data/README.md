@@ -30,7 +30,7 @@ Raw MCAP Data → Event Dataset ────────────→ VLA Trai
 ```bash
 # Filter only screen and keyboard
 python scripts/01_raw_events_to_event_dataset.py \
-  --train_dir /mnt/raid12/datasets/owa/mcaps/super-hexagon \
+  --train-dir /mnt/raid12/datasets/owa/mcaps/super-hexagon \
   --output-dir /mnt/raid12/datasets/owa/data/super-hexagon-event \
   --rate mouse=60 --rate screen=20 \
   --keep_topic screen --keep_topic keyboard  # Only screen and keyboard
@@ -62,8 +62,8 @@ python scripts/01_raw_events_to_event_dataset.py \
 **Usage**:
 ```bash
 python scripts/02_event_dataset_to_binned_dataset.py \
-  --input_dir /mnt/raid12/datasets/owa/data/super-hexagon-event \
-  --output_dir /mnt/raid12/datasets/owa/data/super-hexagon-bin \
+  --input-dir /mnt/raid12/datasets/owa/data/super-hexagon-event \
+  --output-dir /mnt/raid12/datasets/owa/data/super-hexagon-bin \
   --fps 10 \
   --filter-empty-actions  # Filter out bins with no actions
 ```

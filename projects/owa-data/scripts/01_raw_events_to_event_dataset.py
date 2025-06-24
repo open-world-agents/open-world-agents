@@ -8,15 +8,15 @@ a certain percentage of training files will be randomly split into a test set.
 
 Usage (CLI):
     python 01_raw_events_to_event_dataset.py \
-        --train_dir /path/to/train_folder \
-        [--test_dir /path/to/test_folder] \
+        --train-dir /path/to/train_folder \
+        [--test-dir /path/to/test_folder] \
         [--test_percent 0.2] \
         [--rate mouse=60 screen=20] \
         [--keep_topic screen --keep_topic keyboard --keep_topic mouse] \
         [--num_workers 8] \
         [--output_dir /path/to/save_dataset]
 
-    - If --test_dir is omitted, test set is formed by randomly sampling `test_percent` fraction of files in train_dir.
+    - If --test-dir is omitted, test set is formed by randomly sampling `test_percent` fraction of files in train-dir.
     - --rate topic=Hz can be repeated to apply drop-only downsampling per topic. Defaults to mouse=60, screen=20 if omitted.
     - --keep_topic can be repeated to specify which topics to keep. Defaults to screen, keyboard, mouse if omitted.
     - Output is saved (optional) as an event dataset with "train" and "test" keys.
@@ -64,7 +64,7 @@ def parse_rate_argument(rate_args: List[str]) -> Dict[str, float]:
     rate_settings: Dict[str, float] = {}
     for arg in rate_args:
         if "=" not in arg:
-            console.print(f"[red]✗[/red] Invalid rate argument '{arg}'. Expected format: topic=Hz", err=True)
+            console.print(f"[red]✗[/red] Invalid rate argument '{arg}'. Expected format: topic=Hz")
             raise typer.Exit(code=1)
         topic, rate_str = arg.split("=", maxsplit=1)
         try:
@@ -72,7 +72,7 @@ def parse_rate_argument(rate_args: List[str]) -> Dict[str, float]:
             if rate <= 0:
                 raise ValueError("Rate must be positive")
         except ValueError as e:
-            console.print(f"[red]✗[/red] Invalid rate value in '{arg}': {e}", err=True)
+            console.print(f"[red]✗[/red] Invalid rate value in '{arg}': {e}")
             raise typer.Exit(code=1)
         rate_settings[topic] = rate
     return rate_settings
@@ -244,7 +244,7 @@ def create_event_dataset(
 def main(
     train_dir: Path = typer.Option(
         ...,
-        "--train_dir",
+        "--train-dir",
         "-tr",
         exists=True,
         file_okay=False,
@@ -254,13 +254,13 @@ def main(
     ),
     test_dir: Optional[Path] = typer.Option(
         None,
-        "--test_dir",
+        "--test-dir",
         "-te",
         exists=True,
         file_okay=False,
         dir_okay=True,
         readable=True,
-        help="(Optional) Directory containing MCAP files to use for testing. If omitted, a fraction of train_dir is used.",
+        help="(Optional) Directory containing MCAP files to use for testing. If omitted, a fraction of train-dir is used.",
     ),
     test_percent: float = typer.Option(
         0.2,
@@ -294,7 +294,7 @@ def main(
 
     # 1. Validate test_percent
     if test_percent <= 0 or test_percent >= 1:
-        console.print("[red]✗[/red] --test_percent must be between 0 and 1 (exclusive).", err=True)
+        console.print("[red]✗[/red] --test_percent must be between 0 and 1 (exclusive).")
         raise typer.Exit(code=1)
 
     # 2. Parse rate settings or set defaults
@@ -319,7 +319,7 @@ def main(
     console.print(f"[cyan]📁[/cyan] Loading from: {train_dir}")
     train_files = sorted(train_dir.glob("*.mcap"))
     if not train_files:
-        console.print(f"[red]✗[/red] No MCAP files found in train_dir: {train_dir}", err=True)
+        console.print(f"[red]✗[/red] No MCAP files found in train-dir: {train_dir}")
         raise typer.Exit(code=1)
 
     # 5. Determine test_files
@@ -327,13 +327,13 @@ def main(
         console.print(f"[cyan]📁[/cyan] Loading test from: {test_dir}")
         test_files = sorted(test_dir.glob("*.mcap"))
         if not test_files:
-            console.print(f"[red]✗[/red] No MCAP files found in test_dir: {test_dir}", err=True)
+            console.print(f"[red]✗[/red] No MCAP files found in test-dir: {test_dir}")
             raise typer.Exit(code=1)
         # Ensure train and test do not overlap
         train_set = set(str(p) for p in train_files)
         overlap = set(str(p) for p in test_files).intersection(train_set)
         if overlap:
-            console.print(f"[red]✗[/red] Same files present in train_dir and test_dir: {len(overlap)} files", err=True)
+            console.print(f"[red]✗[/red] Same files present in train-dir and test-dir: {len(overlap)} files")
             raise typer.Exit(code=1)
     else:
         shuffled = train_files.copy()
@@ -353,7 +353,7 @@ def main(
     if not output_dir:
         confirm = typer.confirm("No --output-dir given. Continue without saving to disk?", default=False)
         if not confirm:
-            console.print("[yellow]⚠[/yellow] Aborting because no output directory was provided.", err=True)
+            console.print("[yellow]⚠[/yellow] Aborting because no output directory was provided.")
             raise typer.Exit(code=1)
 
     # 7. Create event datasets for train and test
