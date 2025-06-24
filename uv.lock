@@ -1214,6 +1214,7 @@ docs = [
     { name = "mkdocs-redirects" },
     { name = "mkdocstrings", extra = ["python"] },
     { name = "mkdocstrings-owa" },
+    { name = "termynal" },
 ]
 viewer = [
     { name = "owa-mcap-viewer" },
@@ -1246,6 +1247,7 @@ requires-dist = [
     { name = "owa-env-gst", editable = "projects/owa-env-gst" },
     { name = "owa-mcap-viewer", marker = "extra == 'viewer'", editable = "projects/owa-mcap-viewer" },
     { name = "owa-msgs", editable = "projects/owa-msgs" },
+    { name = "termynal", marker = "extra == 'docs'", specifier = ">=0.13.0" },
 ]
 provides-extras = ["docs", "viewer"]
 
@@ -2137,6 +2139,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/ce/20/08dfcd9c983f6a6f4a1000d934b9e6d626cff8d2eeb77a89a68eef20a2b7/starlette-0.46.2.tar.gz", hash = "sha256:7f7361f34eed179294600af672f565727419830b54b7b084efe44bb82d2fccd5", size = 2580846, upload-time = "2025-04-13T13:56:17.942Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/8b/0c/9d30a4ebeb6db2b25a841afbb80f6ef9a854fc3b41be131d249a977b4959/starlette-0.46.2-py3-none-any.whl", hash = "sha256:595633ce89f8ffa71a015caed34a5b2dc1c0cdb3f0f1fbd1e69339cf2abeec35", size = 72037, upload-time = "2025-04-13T13:56:16.21Z" },
+]
+
+[[package]]
+name = "termynal"
+version = "0.13.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "markdown" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/6f/f4/499b6559a8dc8dd9d06fcab1c573d2e9e5c3b5a4ceedc5fef75de9df1776/termynal-0.13.0.tar.gz", hash = "sha256:8d41cc80b03e040398bf57f37a584d06295b5ad82a7add54f1ad000daf537573", size = 174126, upload-time = "2025-01-14T18:54:34.877Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5e/2d/a00bb03c0db99de80944fa522d5fbfdc844b9c5aa45db31e6edb0cb5e02c/termynal-0.13.0-py3-none-any.whl", hash = "sha256:0507eba6d8d96a2b29fddb8ae4d58b07b2a48b9144bda976629de3b9e2a47ced", size = 10620, upload-time = "2025-01-14T18:54:33.809Z" },
 ]
 
 [[package]]
