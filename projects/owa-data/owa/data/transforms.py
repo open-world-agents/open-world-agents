@@ -20,6 +20,7 @@ def create_event_dataset_transform(
     encoder_type: str = "hierarchical",
     load_images: bool = True,
     encode_actions: bool = True,
+    keep_original: bool = False,
 ):
     """
     Create a transform function for Event Dataset that can be used with dataset.set_transform().
@@ -29,6 +30,7 @@ def create_event_dataset_transform(
         encoder_type: Type of encoder to create if encoder is None ('hierarchical', 'json', 'flat')
         load_images: Whether to load images for screen events
         encode_actions: Whether to encode action events (keyboard/mouse)
+        keep_original: Whether to keep original fields in the output (default: False)
 
     Returns:
         Transform function that can be used with dataset.set_transform()
@@ -44,17 +46,14 @@ def create_event_dataset_transform(
         # Create and apply transform
         transform = create_event_dataset_transform(
             encoder_type="hierarchical",
-            load_images=True,
-            encode_actions=True,
+            load_images=True,  # Load images for screen events
+            encode_actions=True,  # Encode keyboard/mouse events
         )
         event_dataset.set_transform(transform)
 
         # Use transformed dataset
-        sample = event_dataset[0]
-        if sample['image'] is not None:
-            print(f"Loaded image: {sample['image'].size}")
-        if sample['encoded_event'] is not None:
-            print(f"Encoded action: {sample['encoded_event']}")
+        for sample in event_dataset["train"].take(10):
+            print(f"{sample=}")
         ```
     """
     # Initialize encoder once
@@ -70,9 +69,9 @@ def create_event_dataset_transform(
         is_batch = isinstance(examples.get("file_path", ""), list)
 
         if is_batch:
-            return _transform_event_batch(examples, event_encoder, load_images, encode_actions)
+            return _transform_event_batch(examples, event_encoder, load_images, encode_actions, keep_original)
         else:
-            return _transform_event_single(examples, event_encoder, load_images, encode_actions)
+            return _transform_event_single(examples, event_encoder, load_images, encode_actions, keep_original)
 
     return transform_examples
 
@@ -83,6 +82,7 @@ def create_binned_dataset_transform(
     encoder_type: str = "hierarchical",
     load_images: bool = True,
     encode_actions: bool = True,
+    keep_original: bool = False,
 ):
     """
     Create a transform function for Binned Dataset that can be used with dataset.set_transform().
@@ -93,6 +93,7 @@ def create_binned_dataset_transform(
         encoder_type: Type of encoder to create if encoder is None ('hierarchical', 'json', 'flat')
         load_images: Whether to load images from state sequence
         encode_actions: Whether to encode action events
+        keep_original: Whether to keep original fields in the output (default: False)
 
     Returns:
         Transform function that can be used with dataset.set_transform()
@@ -107,18 +108,16 @@ def create_binned_dataset_transform(
 
         # Create and apply transform
         transform = create_binned_dataset_transform(
-            instruction="Complete the computer task",
             encoder_type="hierarchical",
+            instruction="Complete the computer task",
             load_images=True,
             encode_actions=True,
         )
         binned_dataset.set_transform(transform)
 
         # Use transformed dataset (same format as VLADataset)
-        sample = binned_dataset[0]
-        print(f"Instruction: {sample['instruction']}")
-        print(f"Images: {len(sample['images'])} loaded")
-        print(f"Actions: {len(sample['encoded_events'])} encoded")
+        for sample in binned_dataset["train"].take(10):
+            print(f"{sample=}")
         ```
     """
     # Initialize encoder once
@@ -134,9 +133,13 @@ def create_binned_dataset_transform(
         is_batch = isinstance(examples.get("file_path", ""), list)
 
         if is_batch:
-            return _transform_binned_batch(examples, instruction, event_encoder, load_images, encode_actions)
+            return _transform_binned_batch(
+                examples, instruction, event_encoder, load_images, encode_actions, keep_original
+            )
         else:
-            return _transform_binned_single(examples, instruction, event_encoder, load_images, encode_actions)
+            return _transform_binned_single(
+                examples, instruction, event_encoder, load_images, encode_actions, keep_original
+            )
 
     return transform_examples
 
@@ -146,9 +149,13 @@ def _transform_event_single(
     encoder: BaseEventEncoder,
     load_images: bool,
     encode_actions: bool,
+    keep_original: bool,
 ) -> Dict[str, Any]:
     """Transform a single Event Dataset example."""
-    result = example.copy()
+    if keep_original:
+        result = example.copy()
+    else:
+        result = {}
 
     # Initialize new fields
     result["encoded_event"] = None
@@ -185,18 +192,22 @@ def _transform_event_batch(
     encoder: BaseEventEncoder,
     load_images: bool,
     encode_actions: bool,
+    keep_original: bool,
 ) -> Dict[str, Any]:
     """Transform a batch of Event Dataset examples."""
     batch_size = len(examples["file_path"])
 
     # Initialize result with original data
-    result = examples.copy()
+    if keep_original:
+        result = examples.copy()
+    else:
+        result = {}
     result["encoded_event"] = [None] * batch_size
     result["image"] = [None] * batch_size
 
     for i in range(batch_size):
         single_example = {key: values[i] for key, values in examples.items()}
-        transformed = _transform_event_single(single_example, encoder, load_images, encode_actions)
+        transformed = _transform_event_single(single_example, encoder, load_images, encode_actions, keep_original)
         result["encoded_event"][i] = transformed["encoded_event"]
         result["image"][i] = transformed["image"]
 
@@ -209,6 +220,7 @@ def _transform_binned_single(
     encoder: BaseEventEncoder,
     load_images: bool,
     encode_actions: bool,
+    keep_original: bool,
 ) -> Dict[str, Any]:
     """Transform a single Binned Dataset example."""
     result = {
@@ -217,8 +229,9 @@ def _transform_binned_single(
         "encoded_events": [],
     }
 
-    # Keep original fields
-    result.update(example)
+    # Keep original fields if requested
+    if keep_original:
+        result.update(example)
 
     if load_images:
         # Load images from state sequence
@@ -241,19 +254,25 @@ def _transform_binned_batch(
     encoder: BaseEventEncoder,
     load_images: bool,
     encode_actions: bool,
+    keep_original: bool,
 ) -> Dict[str, Any]:
     """Transform a batch of Binned Dataset examples."""
     batch_size = len(examples["file_path"])
 
     # Initialize result
-    result = examples.copy()
+    if keep_original:
+        result = examples.copy()
+    else:
+        result = {}
     result["instruction"] = [instruction] * batch_size
     result["images"] = []
     result["encoded_events"] = []
 
     for i in range(batch_size):
         single_example = {key: values[i] for key, values in examples.items()}
-        transformed = _transform_binned_single(single_example, instruction, encoder, load_images, encode_actions)
+        transformed = _transform_binned_single(
+            single_example, instruction, encoder, load_images, encode_actions, keep_original
+        )
         result["images"].append(transformed["images"])
         result["encoded_events"].append(transformed["encoded_events"])
 

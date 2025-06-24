@@ -168,7 +168,7 @@ from datasets import load_from_disk
 from owa.data import create_binned_dataset_transform
 
 # Load binned dataset
-binned_dataset = load_from_disk("/mnt/raid12/datasets/owa/data/super-hexagon-binned")
+binned_dataset = load_from_disk("/mnt/raid12/datasets/owa/data/super-hexagon-bin")
 
 # Create and apply transform
 transform = create_binned_dataset_transform(
@@ -188,15 +188,24 @@ for sample in binned_dataset["train"].take(10):
 
 **Usage with PyTorch DataLoader**:
 ```python
+from datasets import load_from_disk
 from torch.utils.data import DataLoader
 from owa.data import create_binned_dataset_transform
 
 # Transform and use with DataLoader
-dataset = load_from_disk("/path/to/dataset")["train"]
+dataset = load_from_disk("/mnt/raid12/datasets/owa/data/super-hexagon-binned")["train"]
 transform = create_binned_dataset_transform()
 dataset.set_transform(transform)
 
-dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+def collate_fn(examples):
+    ret = {
+        "images": [example["images"] for example in examples],
+        "encoded_events": [example["encoded_events"] for example in examples],
+        "instruction": [example["instruction"] for example in examples],
+    }
+    return ret
+
+dataloader = DataLoader(dataset, batch_size=32, shuffle=True, collate_fn=collate_fn)
 for batch in dataloader:
     images = batch['images']        # List of List[PIL.Image]
     actions = batch['encoded_events']  # List of List[str]
