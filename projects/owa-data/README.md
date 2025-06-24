@@ -111,56 +111,49 @@ python scripts/03_binned_dataset_to_mllm_dataset.py \
 
 ## Stage 4: MLLM Dataset → Training Ready
 
-**Class**: `owa.data.vlm_dataset_builder.VLMDatasetBuilder`
+**Class**: `owa.data.owa_dataset.OWADataset`
 
 **Purpose**: PyTorch Dataset interface with lazy image loading for efficient training
 
 **Usage**:
 ```python
 from datasets import load_from_disk
-from owa.data.vlm_dataset_builder import VLMDatasetBuilder
+
+from owa.data import OWADataset
 
 # Load MLLM dataset
-mllm_dataset = load_from_disk('/mnt/raid12/datasets/owa/data/super-hexagon-mllm')
+dataset_path = "/mnt/raid12/datasets/owa/data/super-hexagon-mllm"
+mllm_dataset = load_from_disk(dataset_path)
 
-# Create PyTorch dataset with lazy image loading
-vlm_dataset = VLMDatasetBuilder(
-    mllm_dataset['train'],
-    image_format='pil',
-    cache_images=True,
-    max_cache_size=1000
-)
+# Create OWADataset
+owa_dataset = OWADataset(mllm_dataset["train"])
+print(f"Dataset length: {len(owa_dataset)}")
 
-# Use with DataLoader
-from torch.utils.data import DataLoader
-dataloader = DataLoader(vlm_dataset, batch_size=4)
+# Get a sample
+sample = owa_dataset[0]
+print(f"Instruction: {sample['instruction']}")
+print(f"Images: {len(sample['images'])} loaded")
+print(f"Encoded events: {len(sample['encoded_events'])} events")
+
+# Show image details
+for i, image in enumerate(sample["images"]):
+    print(f"  Image {i}: {image=}")
+
+# Show first few events
+for i, event in enumerate(sample["encoded_events"][:3]):
+    print(f"  Event {i}: {event}")
+
+"""
+Dataset length: 3189
+Instruction: Complete the computer task
+Images: 1 loaded
+Encoded events: 1 events
+  Image 0: image=<PIL.Image.Image image mode=RGB size=768x480 at 0x7F2F995F9C50>
+  Event 0: <EVENT_START><TIMESTAMP><111><KEYBOARD><27><press><EVENT_END>
+"""
 ```
-
-**Output Format**:
-```python
-{
-    "instruction": str,                    # Task instruction
-    "encoded_events": List[str],           # EventEncoder outputs for actions
-    "images": List[PIL.Image],             # Lazy-loaded images from MKV files
-    "metadata": Dict                       # Sample metadata
-}
-```
-
-**Key Features**:
-- Lazy image loading from MKV files using single image reference per sample
-- Multiple image formats (PIL, tensor, numpy)
-- Optional LRU caching for performance
-- Proper PyTorch Dataset interface for VLA training
 
 ## EventEncoder
 
 Converts raw events to text representations for LLM training using `<EVENT_START>` and `<EVENT_END>` tokens.
 
-## nanoVLM Integration
-
-```python
-from data.datasets import OWADataset
-
-owa_dataset = OWADataset(vlm_dataset, tokenizer, image_processor, mp_image_token_length)
-dataloader = DataLoader(owa_dataset, batch_size=32, collate_fn=vqa_collator)
-```
