@@ -1,13 +1,18 @@
 # OWA Data Pipeline
 
-A 4-stage data processing pipeline for Vision-Language-Action (VLA) model training.
+A streamlined 2-stage data processing pipeline for Vision-Language-Action (VLA) model training.
 
 ## Pipeline Overview
 
 ```
-Raw MCAP Data → Event Dataset → Binned Dataset → MLLM Dataset → Training Ready
-     (1)            (2)            (3)             (4)
+Raw MCAP Data → Event Dataset → Binned Dataset → VLA Training Ready
+     (1)            (2)            VLADataset
+                                (on-the-fly conversion)
 ```
+
+**Key Features:**
+- **Stage 2** includes `filter_empty_actions` option for better efficiency
+- **VLADataset** provides on-the-fly conversion from binned datasets to training format
 
 ## Stage 1: Raw MCAP Data → Event Dataset
 
@@ -53,7 +58,8 @@ python scripts/01_raw_events_to_event_dataset.py \
 python scripts/02_event_dataset_to_binned_dataset.py \
   --input_dir /mnt/raid12/datasets/owa/data/super-hexagon-event \
   --output_dir /mnt/raid12/datasets/owa/data/super-hexagon-bin \
-  --fps 10
+  --fps 10 \
+  --filter-empty-actions  # Filter out bins with no actions
 ```
 
 **Output Schema**:
@@ -70,97 +76,140 @@ python scripts/02_event_dataset_to_binned_dataset.py \
 **Key Features**:
 - Fixed-rate temporal binning (e.g., 10 FPS = 100ms bins)
 - State-action separation (screen = state, keyboard/mouse = actions)
+- Optional filtering of bins with no actions for efficiency
 - Preserves temporal structure for sequence modeling
 
-## Stage 3: Binned Dataset → MLLM Dataset
+## VLA Training with VLADataset
 
-**Script**: `scripts/03_binned_dataset_to_mllm_dataset.py`
+**Class**: `owa.data.VLADataset`
 
-**Purpose**: Convert each bin into one training sample (1:1 conversion)
-
-**Usage**:
-```bash
-python scripts/03_binned_dataset_to_mllm_dataset.py \
-  --input_dir /mnt/raid12/datasets/owa/data/super-hexagon-bin \
-  --output_dir /mnt/raid12/datasets/owa/data/super-hexagon-mllm \
-  --instruction "Complete the computer task" \
-  --filter-empty-actions  # Filter out samples with no actions (default: enabled)
-```
-
-**Output Schema**:
-```python
-{
-    "instruction": Value("string"),           # Task instruction
-    "image_refs": Sequence(feature=Value("binary"), length=-1),  # Sequence of serialized ScreenCaptured bytes
-    "encoded_events": Sequence(Value("string")),  # EventEncoder outputs for actions
-    "metadata": {                            # Sample metadata
-        "file_path": Value("string"),        # Source file
-        "bin_idx": Value("int32"),           # Bin index
-        "timestamp_ns": Value("int64"),      # Timestamp
-        "num_actions": Value("int32"),       # Number of actions
-    }
-}
-```
-
-**Key Features**:
-- Simple 1:1 bin-to-sample conversion (each bin = one training sample)
-- Single state image per sample for clear state-action pairing
-- EventEncoder integration for action text serialization
-- Configurable filtering of samples with no actions (no-ops)
-- Efficient format for VLA training: instruction + state_image → target_actions
-
-## Stage 4: MLLM Dataset → Training Ready
-
-**Class**: `owa.data.vlm_dataset_builder.VLMDatasetBuilder`
-
-**Purpose**: PyTorch Dataset interface with lazy image loading for efficient training
+**Purpose**: Direct training interface with on-the-fly conversion from binned datasets
 
 **Usage**:
 ```python
 from datasets import load_from_disk
-from owa.data.vlm_dataset_builder import VLMDatasetBuilder
+from owa.data import VLADataset
 
-# Load MLLM dataset
-mllm_dataset = load_from_disk('/mnt/raid12/datasets/owa/data/super-hexagon-mllm')
+# Load binned dataset
+binned_dataset = load_from_disk("/path/to/binned/dataset")
 
-# Create PyTorch dataset with lazy image loading
-vlm_dataset = VLMDatasetBuilder(
-    mllm_dataset['train'],
-    image_format='pil',
-    cache_images=True,
-    max_cache_size=1000
+# Create VLADataset with on-the-fly conversion
+vla_dataset = VLADataset(
+    dataset=binned_dataset["train"],
+    instruction="Complete the computer task",
+    encoder_type="hierarchical",
+    cache_samples=True  # Cache for performance
 )
 
-# Use with DataLoader
-from torch.utils.data import DataLoader
-dataloader = DataLoader(vlm_dataset, batch_size=4)
-```
-
-**Output Format**:
-```python
-{
-    "instruction": str,                    # Task instruction
-    "encoded_events": List[str],           # EventEncoder outputs for actions
-    "images": List[PIL.Image],             # Lazy-loaded images from MKV files
-    "metadata": Dict                       # Sample metadata
-}
+# Use directly for training
+sample = vla_dataset[0]
+print(f"Instruction: {sample['instruction']}")
+print(f"Images: {len(sample['images'])} loaded")
+print(f"Actions: {len(sample['encoded_events'])} encoded")
 ```
 
 **Key Features**:
-- Lazy image loading from MKV files using single image reference per sample
-- Multiple image formats (PIL, tensor, numpy)
-- Optional LRU caching for performance
-- Proper PyTorch Dataset interface for VLA training
+- **On-the-fly Conversion**: Convert binned datasets to training format during data loading
+- **Configurable Encoders**: Support for hierarchical, JSON, and flat event encoders
+- **Lazy Image Loading**: Efficient memory usage with on-demand image loading
+- **Sample Caching**: Optional caching for improved training performance
+
+**Encoder Types**:
+- `hierarchical`: Compositional token structure (default, most efficient)
+- `json`: JSON string format with event tokens
+- `flat`: Traditional flat token-based encoding
+
+## Dataset Transforms
+
+**Purpose**: Apply encoding and image loading transforms directly to HuggingFace datasets using `set_transform`
+
+**Key Benefits**:
+- Works with both Event Dataset and Binned Dataset
+- Better integration with training pipelines (DataLoader, Trainer, etc.)
+- More flexible than wrapper classes
+- Same core functionality as VLADataset
+
+### Event Dataset Transform
+
+**Function**: `create_event_dataset_transform()`
+
+**Purpose**: Transform Event Dataset to add encoded events and loaded images
+
+**Usage**:
+```python
+from datasets import load_from_disk
+from owa.data import create_event_dataset_transform
+
+# Load event dataset
+event_dataset = load_from_disk("/path/to/event/dataset")
+
+# Create and apply transform
+transform = create_event_dataset_transform(
+    encoder_type="hierarchical",
+    load_images=True,      # Load images for screen events
+    encode_actions=True,   # Encode keyboard/mouse events
+)
+event_dataset.set_transform(transform)
+
+# Use transformed dataset
+sample = event_dataset[0]
+print(f"Topic: {sample['topic']}")
+if sample['image'] is not None:
+    print(f"Image: {sample['image'].size}")
+if sample['encoded_event'] is not None:
+    print(f"Action: {sample['encoded_event']}")
+```
+
+### Binned Dataset Transform
+
+**Function**: `create_binned_dataset_transform()`
+
+**Purpose**: Transform Binned Dataset to VLA training format (same as VLADataset)
+
+**Usage**:
+```python
+from datasets import load_from_disk
+from owa.data import create_binned_dataset_transform
+
+# Load binned dataset
+binned_dataset = load_from_disk("/path/to/binned/dataset")
+
+# Create and apply transform
+transform = create_binned_dataset_transform(
+    encoder_type="hierarchical",
+    instruction="Complete the computer task",
+    load_images=True,
+    encode_actions=True,
+)
+binned_dataset.set_transform(transform)
+
+# Use transformed dataset (same format as VLADataset)
+sample = binned_dataset[0]
+print(f"Instruction: {sample['instruction']}")
+print(f"Images: {len(sample['images'])} loaded")
+print(f"Actions: {len(sample['encoded_events'])} encoded")
+```
+
+### Training Pipeline Integration
+
+**Usage with PyTorch DataLoader**:
+```python
+from torch.utils.data import DataLoader
+from owa.data import create_binned_dataset_transform
+
+# Transform and use with DataLoader
+dataset = load_from_disk("/path/to/dataset")["train"]
+transform = create_binned_dataset_transform()
+dataset.set_transform(transform)
+
+dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+for batch in dataloader:
+    images = batch['images']        # List of List[PIL.Image]
+    actions = batch['encoded_events']  # List of List[str]
+    instructions = batch['instruction']  # List[str]
+```
 
 ## EventEncoder
 
 Converts raw events to text representations for LLM training using `<EVENT_START>` and `<EVENT_END>` tokens.
 
-## nanoVLM Integration
-
-```python
-from data.datasets import OWADataset
-
-owa_dataset = OWADataset(vlm_dataset, tokenizer, image_processor, mp_image_token_length)
-dataloader = DataLoader(owa_dataset, batch_size=32, collate_fn=vqa_collator)
-```

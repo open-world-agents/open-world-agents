@@ -28,12 +28,14 @@ app = typer.Typer(add_completion=False)
 def aggregate_events_to_bins(
     events: List[Dict[str, Any]],
     fps: float,
+    filter_empty_actions: bool = False,
 ) -> List[Dict[str, Any]]:
     """
     Aggregate events into time bins at the specified FPS.
     Args:
         events: List of event dicts (from input event dataset).
         fps: Global FPS for bins.
+        filter_empty_actions: If True, filter out bins with no actions.
     Returns:
         List of dicts, each representing a time bin with state and actions.
     """
@@ -83,7 +85,11 @@ def aggregate_events_to_bins(
             else [],  # Store as list of serialized McapMessage bytes
             "actions": actions,  # Store list of serialized McapMessage bytes
         }
-        bins.append(bin_data)
+
+        # Filter out bins with no actions if requested
+        if not filter_empty_actions or len(actions) > 0:
+            bins.append(bin_data)
+
         bin_idx += 1
         bin_start = bin_end
         bin_end += bin_interval_ns
@@ -116,12 +122,21 @@ def main(
         help="Output binned dataset directory",
     ),
     fps: float = typer.Option(10.0, "--fps", help="Global FPS for bins (default: 10)"),
+    filter_empty_actions: bool = typer.Option(
+        False,
+        "--filter-empty-actions/--no-filter-empty-actions",
+        help="Filter out bins with no actions (default: False)",
+    ),
 ):
     """
     Convert event-per-row dataset to binned dataset format with state/actions per bin.
     """
     start_time = time.time()
     typer.echo(f"Loading event dataset from {input_dir} ...")
+    if filter_empty_actions:
+        typer.echo("Filter empty actions: ENABLED - bins with no actions will be filtered out")
+    else:
+        typer.echo("Filter empty actions: DISABLED - all bins will be kept")
     ds_dict = load_from_disk(str(input_dir))
     # Support both DatasetDict and Dataset
     if hasattr(ds_dict, "keys"):
@@ -158,7 +173,7 @@ def main(
                 event = {k: file_ds[k][i] for k in file_ds.column_names}
                 events.append(event)
 
-            binned_data = aggregate_events_to_bins(events, fps)
+            binned_data = aggregate_events_to_bins(events, fps, filter_empty_actions)
             all_binned_data.extend(binned_data)
 
             # Update file progress with bin count
