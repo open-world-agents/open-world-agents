@@ -21,8 +21,9 @@ htmlcov/
 .coverage
 coverage.xml
 
-# pytest cache
+# caches
 .pytest_cache/
+.ruff_cache/
 
 # Virtual environments
 .venv
