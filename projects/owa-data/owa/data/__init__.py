@@ -9,6 +9,10 @@ from .encoders import (
 )
 from .load_dataset import load_dataset
 from .owa_dataset import VLADataset, create_encoder
+from .transforms import (
+    create_binned_dataset_transform,
+    create_event_dataset_transform,
+)
 
 __all__ = [
     "BaseEventEncoder",
@@ -20,4 +24,6 @@ __all__ = [
     "load_dataset",
     "VLADataset",
     "create_encoder",
+    "create_event_dataset_transform",
+    "create_binned_dataset_transform",
 ]

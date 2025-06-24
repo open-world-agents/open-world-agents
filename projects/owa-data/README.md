@@ -119,6 +119,96 @@ print(f"Actions: {len(sample['encoded_events'])} encoded")
 - `json`: JSON string format with event tokens
 - `flat`: Traditional flat token-based encoding
 
+## Dataset Transforms
+
+**Purpose**: Apply encoding and image loading transforms directly to HuggingFace datasets using `set_transform`
+
+**Key Benefits**:
+- Works with both Event Dataset and Binned Dataset
+- Better integration with training pipelines (DataLoader, Trainer, etc.)
+- More flexible than wrapper classes
+- Same core functionality as VLADataset
+
+### Event Dataset Transform
+
+**Function**: `create_event_dataset_transform()`
+
+**Purpose**: Transform Event Dataset to add encoded events and loaded images
+
+**Usage**:
+```python
+from datasets import load_from_disk
+from owa.data import create_event_dataset_transform
+
+# Load event dataset
+event_dataset = load_from_disk("/path/to/event/dataset")
+
+# Create and apply transform
+transform = create_event_dataset_transform(
+    encoder_type="hierarchical",
+    load_images=True,      # Load images for screen events
+    encode_actions=True,   # Encode keyboard/mouse events
+)
+event_dataset.set_transform(transform)
+
+# Use transformed dataset
+sample = event_dataset[0]
+print(f"Topic: {sample['topic']}")
+if sample['image'] is not None:
+    print(f"Image: {sample['image'].size}")
+if sample['encoded_event'] is not None:
+    print(f"Action: {sample['encoded_event']}")
+```
+
+### Binned Dataset Transform
+
+**Function**: `create_binned_dataset_transform()`
+
+**Purpose**: Transform Binned Dataset to VLA training format (same as VLADataset)
+
+**Usage**:
+```python
+from datasets import load_from_disk
+from owa.data import create_binned_dataset_transform
+
+# Load binned dataset
+binned_dataset = load_from_disk("/path/to/binned/dataset")
+
+# Create and apply transform
+transform = create_binned_dataset_transform(
+    encoder_type="hierarchical",
+    instruction="Complete the computer task",
+    load_images=True,
+    encode_actions=True,
+)
+binned_dataset.set_transform(transform)
+
+# Use transformed dataset (same format as VLADataset)
+sample = binned_dataset[0]
+print(f"Instruction: {sample['instruction']}")
+print(f"Images: {len(sample['images'])} loaded")
+print(f"Actions: {len(sample['encoded_events'])} encoded")
+```
+
+### Training Pipeline Integration
+
+**Usage with PyTorch DataLoader**:
+```python
+from torch.utils.data import DataLoader
+from owa.data import create_binned_dataset_transform
+
+# Transform and use with DataLoader
+dataset = load_from_disk("/path/to/dataset")["train"]
+transform = create_binned_dataset_transform()
+dataset.set_transform(transform)
+
+dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+for batch in dataloader:
+    images = batch['images']        # List of List[PIL.Image]
+    actions = batch['encoded_events']  # List of List[str]
+    instructions = batch['instruction']  # List[str]
+```
+
 ## EventEncoder
 
 Converts raw events to text representations for LLM training using `<EVENT_START>` and `<EVENT_END>` tokens.
