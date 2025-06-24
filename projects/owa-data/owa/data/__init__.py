@@ -8,7 +8,7 @@ from .encoders import (
     JSONEventEncoder,
 )
 from .load_dataset import load_dataset
-from .vlm_dataset_builder import VLMDatasetBuilder
+from .owa_dataset import OWADataset
 
 __all__ = [
     "BaseEventEncoder",
@@ -18,5 +18,5 @@ __all__ = [
     "HierarchicalEventEncoder",
     "HierarchicalEventEncoderConfig",
     "load_dataset",
-    "VLMDatasetBuilder",
+    "OWADataset",
 ]

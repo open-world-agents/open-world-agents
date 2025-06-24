@@ -22,6 +22,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import numpy as np
 import typer
 from datasets import Dataset, Features, Sequence, Value, load_from_disk
 from tqdm import tqdm
@@ -255,6 +256,9 @@ def main(
     # Store all processed datasets
     processed_datasets = {}
 
+    # Collect action length statistics across all splits
+    all_action_lengths = []
+
     for split in splits:
         if split:
             ds = ds_dict[split]
@@ -283,6 +287,8 @@ def main(
             if sample:
                 all_mllm_samples.append(sample)
                 valid_samples += 1
+                # Collect action length for statistics
+                all_action_lengths.append(len(sample["encoded_events"]))
             else:
                 # Check why it was skipped
                 if not extract_screen_captured_objects(bin_data["state"]):
@@ -393,6 +399,26 @@ def main(
         typer.echo(f"Saved {len(ds)} MLLM samples ({split_name}) to {output_dir}")
 
     typer.echo(f"Processing completed in {elapsed_time:.2f} seconds ({elapsed_time / 60:.1f} minutes)")
+
+    # Print action length statistics
+    if all_action_lengths:
+        action_lengths_array = np.array(all_action_lengths)
+        mean_length = np.mean(action_lengths_array)
+        std_length = np.std(action_lengths_array)
+        max_length = np.max(action_lengths_array)
+        min_length = np.min(action_lengths_array)
+
+        typer.echo("\n" + "=" * 60)
+        typer.echo("ACTION LENGTH STATISTICS")
+        typer.echo("=" * 60)
+        typer.echo(f"Total samples: {len(all_action_lengths)}")
+        typer.echo(f"Mean length: {mean_length:.2f}")
+        typer.echo(f"Std deviation: {std_length:.2f}")
+        typer.echo(f"Max length: {max_length}")
+        typer.echo(f"Min length: {min_length}")
+        typer.echo("=" * 60)
+    else:
+        typer.echo("\nNo valid samples found for action length statistics.")
 
 
 if __name__ == "__main__":
