@@ -26,33 +26,41 @@ import typer
 from datasets import Dataset, Features, Sequence, Value, load_from_disk
 from tqdm import tqdm
 
-from mcap_owa.hf_integration import ScreenCapturedFeature
+from mcap_owa.highlevel import McapMessage
 from owa.data import BaseEventEncoder, HierarchicalEventEncoder, JSONEventEncoder  # noqa: F401
+from owa.msgs.desktop.screen import ScreenCaptured
 
 app = typer.Typer(add_completion=False)
 
 
-def extract_screen_captured_objects(state_sequence: List[Any]) -> List[Any]:
+def extract_screen_captured_objects(state_sequence: List[Any]) -> List[bytes]:
     """
-    Extract ScreenCaptured objects from a sequence of McapMessage objects or dictionaries.
+    Extract ScreenCaptured objects from a sequence of serialized McapMessage bytes and serialize them to bytes.
 
     Args:
-        state_sequence: List of McapMessage objects or dictionaries from the state field
+        state_sequence: List of serialized McapMessage bytes from the state field
 
     Returns:
-        List of ScreenCaptured objects
+        List of serialized ScreenCaptured bytes
     """
     if state_sequence is None or len(state_sequence) == 0:
         return []
 
-    screen_captured_objects = []
+    screen_captured_bytes = []
+
+    # Handle numpy arrays from pandas conversion
+    import numpy as np
+
+    if isinstance(state_sequence, np.ndarray):
+        state_sequence = state_sequence.tolist()
 
     for item in state_sequence:
         try:
-            # Handle both McapMessage objects and dictionaries
-            if hasattr(item, "decoded"):
-                # It's a McapMessage object
-                decoded_msg = item.decoded
+            # Handle serialized McapMessage bytes
+            if isinstance(item, bytes):
+                # Deserialize McapMessage from bytes
+                mcap_msg = McapMessage.model_validate_json(item.decode("utf-8"))
+                decoded_msg = mcap_msg.decoded
             elif isinstance(item, dict):
                 # It's already a dictionary (from pandas conversion)
                 # Parse the message field if it's bytes
@@ -66,14 +74,12 @@ def extract_screen_captured_objects(state_sequence: List[Any]) -> List[Any]:
                 continue
 
             # Check if it's a screen event with the required fields
-            if isinstance(decoded_msg, dict) and "path" in decoded_msg and "pts" in decoded_msg:
-                # Import ScreenCaptured here to avoid circular imports
-                try:
-                    from owa.msgs.desktop.screen import ScreenCaptured
-                except ImportError:
-                    raise ImportError("ScreenCaptured not available. Install owa-msgs package.")
-
-                # Create ScreenCaptured object from the decoded message
+            if isinstance(decoded_msg, ScreenCaptured):
+                # It's already a ScreenCaptured object - serialize directly
+                screen_obj_bytes = decoded_msg.model_dump_json().encode("utf-8")
+                screen_captured_bytes.append(screen_obj_bytes)
+            elif isinstance(decoded_msg, dict) and "path" in decoded_msg and "pts" in decoded_msg:
+                # Create ScreenCaptured object from the decoded message dictionary
                 screen_obj = ScreenCaptured(
                     utc_ns=decoded_msg.get("utc_ns"),
                     path=decoded_msg["path"],
@@ -81,12 +87,14 @@ def extract_screen_captured_objects(state_sequence: List[Any]) -> List[Any]:
                     original_shape=tuple(decoded_msg["original_shape"]) if decoded_msg.get("original_shape") else None,
                     shape=tuple(decoded_msg["shape"]) if decoded_msg.get("shape") else None,
                 )
-                screen_captured_objects.append(screen_obj)
+                # Serialize ScreenCaptured object to bytes using model_dump_json
+                screen_obj_bytes = screen_obj.model_dump_json().encode("utf-8")
+                screen_captured_bytes.append(screen_obj_bytes)
         except Exception:
             # Skip invalid messages
             continue
 
-    return screen_captured_objects
+    return screen_captured_bytes
 
 
 def encode_actions(actions_sequence: List[Any], encoder: BaseEventEncoder) -> List[str]:
@@ -94,7 +102,7 @@ def encode_actions(actions_sequence: List[Any], encoder: BaseEventEncoder) -> Li
     Encode actions using BaseEventEncoder.
 
     Args:
-        actions_sequence: List of McapMessage objects or dictionaries containing action events
+        actions_sequence: List of serialized McapMessage bytes containing action events
         encoder: BaseEventEncoder instance
 
     Returns:
@@ -104,16 +112,26 @@ def encode_actions(actions_sequence: List[Any], encoder: BaseEventEncoder) -> Li
         return []
 
     encoded_actions = []
+
+    # Handle numpy arrays from pandas conversion
+    import numpy as np
+
+    if isinstance(actions_sequence, np.ndarray):
+        actions_sequence = actions_sequence.tolist()
+
     for item in actions_sequence:
         try:
-            # Handle both McapMessage objects and dictionaries
-            if hasattr(item, "topic"):
-                # It's a McapMessage object
+            # Handle serialized McapMessage bytes
+            if isinstance(item, bytes):
+                # Deserialize McapMessage from bytes
+                mcap_msg = McapMessage.model_validate_json(item.decode("utf-8"))
                 action_event = {
-                    "topic": item.topic,
-                    "timestamp_ns": item.timestamp,
-                    "message_type": item.message_type,
-                    "msg": item.message.decode("utf-8") if isinstance(item.message, bytes) else item.message,
+                    "topic": mcap_msg.topic,
+                    "timestamp_ns": mcap_msg.timestamp,
+                    "message_type": mcap_msg.message_type,
+                    "msg": mcap_msg.message.decode("utf-8")
+                    if isinstance(mcap_msg.message, bytes)
+                    else mcap_msg.message,
                 }
             elif isinstance(item, dict):
                 # It's already a dictionary (from pandas conversion)
@@ -156,9 +174,9 @@ def convert_bin_to_sample(
     Returns:
         MLLM training sample or None if no valid state/actions or filtered out
     """
-    # Extract ScreenCaptured objects from state sequence
-    screen_captured_objects = extract_screen_captured_objects(bin_data["state"])
-    if not screen_captured_objects:
+    # Extract ScreenCaptured objects from state sequence and serialize to bytes
+    screen_captured_bytes = extract_screen_captured_objects(bin_data["state"])
+    if not screen_captured_bytes:
         # Skip bins without valid screen state
         return None
 
@@ -172,7 +190,7 @@ def convert_bin_to_sample(
     # Create MLLM sample
     mllm_sample = {
         "instruction": instruction,
-        "image_refs": screen_captured_objects,  # Now a list of ScreenCaptured objects
+        "image_refs": screen_captured_bytes,  # Now a list of serialized ScreenCaptured bytes
         "encoded_events": target_actions,
         "metadata": {
             "file_path": bin_data["file_path"],
@@ -297,8 +315,8 @@ def main(
             {
                 "instruction": Value("string"),
                 "image_refs": Sequence(
-                    feature=ScreenCapturedFeature(decode=True), length=-1
-                ),  # Sequence of ScreenCaptured
+                    feature=Value("binary"), length=-1
+                ),  # Sequence of serialized ScreenCaptured bytes
                 "encoded_events": Sequence(Value("string")),
                 "metadata": {
                     "file_path": Value("string"),

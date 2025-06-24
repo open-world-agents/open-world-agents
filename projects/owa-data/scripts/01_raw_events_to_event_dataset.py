@@ -39,8 +39,6 @@ from datasets import DatasetInfo as HFDatasetInfo
 # Progress bar
 from tqdm import tqdm
 
-from mcap_owa.hf_integration import McapMessageFeature
-
 # MCAP and interval extraction imports
 from mcap_owa.highlevel import McapMessage, OWAMcapReader
 from owa.data.interval import Intervals
@@ -124,10 +122,12 @@ def process_raw_events_file(
                             continue
                         last_kept_ts[topic] = timestamp_ns
 
-                    # Create McapMessage object instead of decoding to string
+                    # Create McapMessage object and serialize to bytes
                     mcap_message_obj = McapMessage(
                         topic=topic, timestamp=timestamp_ns, message=msg, message_type=message_type
                     )
+                    # Serialize McapMessage to bytes using model_dump_json
+                    mcap_message_bytes = mcap_message_obj.model_dump_json().encode("utf-8")
 
                     events.append(
                         {
@@ -135,7 +135,7 @@ def process_raw_events_file(
                             "topic": topic,
                             "timestamp_ns": timestamp_ns,
                             "message_type": message_type,
-                            "mcap_message": mcap_message_obj,  # Store McapMessage object
+                            "mcap_message": mcap_message_bytes,  # Store serialized bytes
                         }
                     )
     except Exception as e:
@@ -209,7 +209,7 @@ def create_event_dataset(
             "topic": Value("string"),
             "timestamp_ns": Value("int64"),
             "message_type": Value("string"),
-            "mcap_message": McapMessageFeature(decode=True),  # Use McapMessageFeature for binary McapMessage
+            "mcap_message": Value("binary"),  # Use bytes serialization for McapMessage
         }
     )
 
@@ -362,9 +362,11 @@ def main(
         typer.echo(f"file_path: {example['file_path']}")
         typer.echo(f"topic:     {example['topic']}")
         typer.echo(f"timestamp_ns: {example['timestamp_ns']}")
-        # Handle McapMessage object
-        mcap_msg = example["mcap_message"]
+        # Handle McapMessage bytes - deserialize back to McapMessage object
+        mcap_msg_bytes = example["mcap_message"]
         try:
+            # Deserialize bytes back to McapMessage using model_validate_json
+            mcap_msg = McapMessage.model_validate_json(mcap_msg_bytes.decode("utf-8"))
             # Access the decoded property to get the parsed message content
             decoded_msg = mcap_msg.decoded
             # Try Pydantic model_dump_json first

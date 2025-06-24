@@ -89,55 +89,36 @@ class VLMDatasetBuilder(Dataset):
         Load images from MKV files using image references.
 
         Args:
-            image_refs: Either list of dicts or dict with lists (HuggingFace Sequence format)
+            image_refs: List of serialized ScreenCaptured bytes
 
         Returns:
             List of loaded images in the specified format
         """
         images = []
 
-        # Handle HuggingFace Sequence format (dict with lists)
-        if isinstance(image_refs, dict) and "path" in image_refs:
-            # Convert from HF Sequence format to list of dicts
-            num_refs = len(image_refs["path"])
-            img_ref_list = []
-            for i in range(num_refs):
-                img_ref = {
-                    "path": image_refs["path"][i],
-                    "pts": image_refs["pts"][i],
-                    "utc_ns": image_refs["utc_ns"][i],
-                    "timestamp_ns": image_refs["timestamp_ns"][i],
-                    "bin_idx": image_refs["bin_idx"][i],
-                }
-                img_ref_list.append(img_ref)
-        else:
-            # Already in list format
-            img_ref_list = image_refs
-
-        for img_ref in img_ref_list:
-            # Handle both ScreenCaptured objects and dictionaries
-            if hasattr(img_ref, "path") and hasattr(img_ref, "pts"):
-                # It's a ScreenCaptured object
-                cache_key = f"{img_ref.path}:{img_ref.pts}"
-                screen_captured = img_ref
-            else:
-                # It's a dictionary
-                cache_key = f"{img_ref['path']}:{img_ref['pts']}"
-                screen_captured = None
-
-            # Check cache first
-            if self.cache_images and cache_key in self._image_cache:
-                images.append(self._image_cache[cache_key])
-                continue
-
-            # Load image using ScreenCaptured
+        # image_refs now contains serialized ScreenCaptured bytes
+        for img_ref_bytes in image_refs:
             try:
-                if screen_captured:
-                    # Use the ScreenCaptured object directly
-                    image = self._load_from_screen_captured(screen_captured)
+                # Deserialize ScreenCaptured from bytes
+                if isinstance(img_ref_bytes, bytes):
+                    screen_captured = ScreenCaptured.model_validate_json(img_ref_bytes.decode("utf-8"))
                 else:
-                    # Create ScreenCaptured from dictionary
-                    image = self._load_single_image(img_ref)
+                    # Fallback for backward compatibility
+                    if hasattr(img_ref_bytes, "path") and hasattr(img_ref_bytes, "pts"):
+                        screen_captured = img_ref_bytes
+                    else:
+                        # It's a dictionary - create ScreenCaptured from it
+                        screen_captured = ScreenCaptured(**img_ref_bytes)
+
+                cache_key = f"{screen_captured.path}:{screen_captured.pts}"
+
+                # Check cache first
+                if self.cache_images and cache_key in self._image_cache:
+                    images.append(self._image_cache[cache_key])
+                    continue
+
+                # Load image using ScreenCaptured
+                image = self._load_from_screen_captured(screen_captured)
 
                 if image is not None:
                     # Add to cache if enabled
@@ -145,7 +126,7 @@ class VLMDatasetBuilder(Dataset):
                         self._add_to_cache(cache_key, image)
                     images.append(image)
             except Exception as e:
-                print(f"Warning: Could not load image from {img_ref}: {e}")
+                print(f"Warning: Could not load image from {img_ref_bytes}: {e}")
                 continue
 
         return images

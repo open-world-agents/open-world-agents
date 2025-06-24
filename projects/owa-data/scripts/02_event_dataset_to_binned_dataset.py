@@ -22,8 +22,6 @@ import typer
 from datasets import Dataset, Features, Sequence, Value, load_from_disk
 from tqdm import tqdm
 
-from mcap_owa.hf_integration import McapMessageFeature
-
 app = typer.Typer(add_completion=False)
 
 
@@ -75,7 +73,7 @@ def aggregate_events_to_bins(
             if ev["topic"].startswith("screen"):
                 last_screen = ev  # Use latest screen as state
             elif ev["topic"].startswith("keyboard") or ev["topic"].startswith("mouse"):
-                actions.append(ev["mcap_message"])  # Store McapMessage object
+                actions.append(ev["mcap_message"])  # Store serialized McapMessage bytes
             event_idx += 1
 
         # Compose bin
@@ -83,8 +81,10 @@ def aggregate_events_to_bins(
             "file_path": events[0]["file_path"],
             "bin_idx": bin_idx,
             "timestamp_ns": bin_start,
-            "state": [last_screen["mcap_message"]] if last_screen else [],  # Store as list of McapMessage
-            "actions": actions,  # Store list of McapMessage objects
+            "state": [last_screen["mcap_message"]]
+            if last_screen
+            else [],  # Store as list of serialized McapMessage bytes
+            "actions": actions,  # Store list of serialized McapMessage bytes
         }
         bins.append(bin_data)
         bin_idx += 1
@@ -203,11 +203,11 @@ def main(
                 "file_path": Value("string"),
                 "bin_idx": Value("int32"),
                 "timestamp_ns": Value("int64"),
-                "state": Sequence(feature=McapMessageFeature(decode=True), length=-1),  # Sequence of McapMessage
-                "actions": Sequence(feature=McapMessageFeature(decode=True), length=-1),  # Sequence of McapMessage
+                "state": Sequence(feature=Value("binary"), length=-1),  # Sequence of serialized McapMessage bytes
+                "actions": Sequence(feature=Value("binary"), length=-1),  # Sequence of serialized McapMessage bytes
             }
         )
-        # No need to convert to binary - McapMessage objects are handled by McapMessageFeature
+        # McapMessage objects are already serialized as bytes from previous step
         typer.echo(f"Creating dataset from {len(all_binned_data)} binned entries...")
         binned_dataset = Dataset.from_list(all_binned_data, features=features)
 

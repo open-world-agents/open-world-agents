@@ -32,7 +32,7 @@ python scripts/01_raw_events_to_event_dataset.py \
     "topic": Value("string"),          # Event topic (keyboard, mouse, screen)
     "timestamp_ns": Value("int64"),    # Timestamp in nanoseconds
     "message_type": Value("string"),   # Full message type identifier
-    "mcap_message": McapMessageFeature(decode=True),  # Binary McapMessage object (topic/timestamp_ns/message_type duplicated for preview)
+    "mcap_message": Value("binary"),   # Serialized McapMessage bytes (topic/timestamp_ns/message_type duplicated for preview)
 }
 ```
 
@@ -62,8 +62,8 @@ python scripts/02_event_dataset_to_binned_dataset.py \
     "file_path": Value("string"),      # Source MCAP file path
     "bin_idx": Value("int32"),         # Time bin index
     "timestamp_ns": Value("int64"),    # Bin start timestamp
-    "state": Sequence(feature=McapMessageFeature(decode=True), length=-1),    # Sequence of McapMessage (screen events)
-    "actions": Sequence(feature=McapMessageFeature(decode=True), length=-1),  # Sequence of McapMessage (action events)
+    "state": Sequence(feature=Value("binary"), length=-1),    # Sequence of serialized McapMessage bytes (screen events)
+    "actions": Sequence(feature=Value("binary"), length=-1),  # Sequence of serialized McapMessage bytes (action events)
 }
 ```
 
@@ -91,7 +91,7 @@ python scripts/03_binned_dataset_to_mllm_dataset.py \
 ```python
 {
     "instruction": Value("string"),           # Task instruction
-    "image_refs": Sequence(feature=ScreenCapturedFeature(decode=True), length=-1),  # Sequence of ScreenCaptured objects
+    "image_refs": Sequence(feature=Value("binary"), length=-1),  # Sequence of serialized ScreenCaptured bytes
     "encoded_events": Sequence(Value("string")),  # EventEncoder outputs for actions
     "metadata": {                            # Sample metadata
         "file_path": Value("string"),        # Source file
