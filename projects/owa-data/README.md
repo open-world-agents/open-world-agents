@@ -5,13 +5,20 @@ A streamlined 2-stage data processing pipeline for Vision-Language-Action (VLA) 
 ## Pipeline Overview
 
 ```
-Raw MCAP Data → Event Dataset → Binned Dataset → VLA Training Ready
-     (1)            (2)            VLADataset
-                                (on-the-fly conversion)
+Raw MCAP Data → Event Dataset ────────────→ VLA Training Ready
+     (1)            (2)      Dataset Transforms
+                              (on-the-fly conversion)
+                    ↓
+               Binned Dataset ────────────→ VLA Training Ready
+                              Dataset Transforms
+                              (on-the-fly conversion)
 ```
 
 **Key Features:**
-- **VLADataset** provides on-the-fly conversion from binned datasets to training format
+- **Dataset Transforms** work with both Event Dataset and Binned Dataset
+- On-the-fly conversion to VLA training format during data loading
+- Direct HuggingFace datasets integration with `set_transform()`
+- Flexible pipeline: skip binning step and use Event Dataset directly if preferred
 
 ## Stage 1: Raw MCAP Data → Event Dataset
 
@@ -82,13 +89,17 @@ python scripts/02_event_dataset_to_binned_dataset.py \
 
 **Purpose**: Apply encoding and image loading transforms directly to HuggingFace datasets using `set_transform`
 
+Dataset transforms provide a unified interface for both Event Dataset and Binned Dataset, allowing you to:
+- Use Event Dataset directly for training (skip binning step)
+- Use Binned Dataset for training (traditional approach)
+- Switch between approaches without changing training code
+
 **Key Benefits**:
-- Works with both Event Dataset and Binned Dataset
-- Better integration with training pipelines (DataLoader, Trainer, etc.)
-- More flexible and efficient than wrapper classes
-- Direct HuggingFace datasets integration
-- Configurable encoders (hierarchical, JSON, flat)
-- On-demand image loading and action encoding
+- **Unified Interface**: Works with both Event Dataset and Binned Dataset
+- **Flexible Pipeline**: Choose your preferred dataset format
+- **Better Integration**: Direct HuggingFace datasets integration with training pipelines
+- **Efficient**: On-demand image loading and action encoding
+- **Configurable**: Support for multiple encoder types (hierarchical, JSON, flat)
 
 ### Event Dataset Transform
 
