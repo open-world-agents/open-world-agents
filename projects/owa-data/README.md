@@ -32,7 +32,7 @@ python scripts/01_raw_events_to_event_dataset.py \
     "topic": Value("string"),          # Event topic (keyboard, mouse, screen)
     "timestamp_ns": Value("int64"),    # Timestamp in nanoseconds
     "message_type": Value("string"),   # Full message type identifier
-    "msg": Value("string"),            # Serialized message content (JSON string)
+    "mcap_message": McapMessageFeature(decode=True),  # Binary McapMessage object (topic/timestamp_ns/message_type duplicated for preview)
 }
 ```
 
@@ -62,8 +62,8 @@ python scripts/02_event_dataset_to_binned_dataset.py \
     "file_path": Value("string"),      # Source MCAP file path
     "bin_idx": Value("int32"),         # Time bin index
     "timestamp_ns": Value("int64"),    # Bin start timestamp
-    "state": Value("binary"),          # Screen event data (latest in bin)
-    "actions": Value("binary"),        # List of action events in bin
+    "state": Sequence(feature=McapMessageFeature(decode=True), length=-1),    # Sequence of McapMessage (screen events)
+    "actions": Sequence(feature=McapMessageFeature(decode=True), length=-1),  # Sequence of McapMessage (action events)
 }
 ```
 
@@ -91,14 +91,8 @@ python scripts/03_binned_dataset_to_mllm_dataset.py \
 ```python
 {
     "instruction": Value("string"),           # Task instruction
-    "state_image_ref": {                     # Single state image reference
-        "path": Value("string"),             # MKV file path
-        "pts": Value("int64"),               # Presentation timestamp
-        "utc_ns": Value("int64"),            # UTC timestamp
-        "timestamp_ns": Value("int64"),      # Event timestamp
-        "bin_idx": Value("int32"),           # Bin index
-    },
-    "target_actions": Sequence(Value("string")),  # EventEncoder outputs for actions
+    "image_refs": Sequence(feature=ScreenCapturedFeature(decode=True), length=-1),  # Sequence of ScreenCaptured objects
+    "encoded_events": Sequence(Value("string")),  # EventEncoder outputs for actions
     "metadata": {                            # Sample metadata
         "file_path": Value("string"),        # Source file
         "bin_idx": Value("int32"),           # Bin index
@@ -146,8 +140,8 @@ dataloader = DataLoader(vlm_dataset, batch_size=4)
 ```python
 {
     "instruction": str,                    # Task instruction
-    "target_actions": List[str],           # EventEncoder outputs for actions
-    "state_image": PIL.Image,              # Lazy-loaded state image from MKV file
+    "encoded_events": List[str],           # EventEncoder outputs for actions
+    "images": List[PIL.Image],             # Lazy-loaded images from MKV files
     "metadata": Dict                       # Sample metadata
 }
 ```
@@ -169,27 +163,4 @@ from data.datasets import OWADataset
 
 owa_dataset = OWADataset(vlm_dataset, tokenizer, image_processor, mp_image_token_length)
 dataloader = DataLoader(owa_dataset, batch_size=32, collate_fn=vqa_collator)
-```
-
-## Usage
-
-```bash
-# Stage 1: Extract events (uses default topics: screen, keyboard, mouse)
-python scripts/01_raw_events_to_event_dataset.py \
-    --train_dir /data/mcap_files \
-    --output-dir /data/event_dataset
-
-# Stage 2: Create bins
-python scripts/02_event_dataset_to_binned_dataset.py \
-    --input_dir /data/event_dataset \
-    --output_dir /data/binned_dataset \
-    --fps 10
-
-# Stage 3: Create MLLM dataset
-python scripts/03_binned_dataset_to_mllm_dataset.py \
-    --input_dir /data/binned_dataset \
-    --output_dir /data/mllm_dataset
-
-# Stage 4: Use in training
-python load_owa_for_nanovlm.py
 ```

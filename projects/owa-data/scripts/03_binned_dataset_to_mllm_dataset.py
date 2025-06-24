@@ -18,104 +18,124 @@ Usage (CLI):
 - Each output row contains: instruction, state_image_ref, target_actions, metadata.
 """
 
-import json
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 import typer
 from datasets import Dataset, Features, Sequence, Value, load_from_disk
 from tqdm import tqdm
 
+from mcap_owa.hf_integration import ScreenCapturedFeature
 from owa.data import BaseEventEncoder, HierarchicalEventEncoder, JSONEventEncoder  # noqa: F401
 
 app = typer.Typer(add_completion=False)
 
 
-def extract_image_reference(state_msg: Union[bytes, str]) -> Optional[Dict[str, Any]]:
+def extract_screen_captured_objects(state_sequence: List[Any]) -> List[Any]:
     """
-    Extract image reference from screen event state message.
+    Extract ScreenCaptured objects from a sequence of McapMessage objects or dictionaries.
 
     Args:
-        state_msg: Message from screen event (bytes or string)
+        state_sequence: List of McapMessage objects or dictionaries from the state field
 
     Returns:
-        Dict with image reference info or None if not a screen event
+        List of ScreenCaptured objects
     """
-    if state_msg is None:
-        return None
+    if state_sequence is None or len(state_sequence) == 0:
+        return []
 
-    try:
-        # Decode the state message
-        if isinstance(state_msg, bytes):
-            state_data = json.loads(state_msg.decode("utf-8"))
-        else:
-            state_data = state_msg
+    screen_captured_objects = []
 
-        # Check if it's a screen event with path and pts
-        if isinstance(state_data, dict) and "path" in state_data and "pts" in state_data:
-            return {
-                "path": state_data["path"],
-                "pts": state_data["pts"],
-                "utc_ns": state_data.get("utc_ns"),
-            }
-    except (json.JSONDecodeError, TypeError, KeyError):
-        pass
+    for item in state_sequence:
+        try:
+            # Handle both McapMessage objects and dictionaries
+            if hasattr(item, "decoded"):
+                # It's a McapMessage object
+                decoded_msg = item.decoded
+            elif isinstance(item, dict):
+                # It's already a dictionary (from pandas conversion)
+                # Parse the message field if it's bytes
+                if "message" in item and isinstance(item["message"], bytes):
+                    import json
 
-    return None
+                    decoded_msg = json.loads(item["message"].decode("utf-8"))
+                else:
+                    decoded_msg = item
+            else:
+                continue
+
+            # Check if it's a screen event with the required fields
+            if isinstance(decoded_msg, dict) and "path" in decoded_msg and "pts" in decoded_msg:
+                # Import ScreenCaptured here to avoid circular imports
+                try:
+                    from owa.msgs.desktop.screen import ScreenCaptured
+                except ImportError:
+                    raise ImportError("ScreenCaptured not available. Install owa-msgs package.")
+
+                # Create ScreenCaptured object from the decoded message
+                screen_obj = ScreenCaptured(
+                    utc_ns=decoded_msg.get("utc_ns"),
+                    path=decoded_msg["path"],
+                    pts=decoded_msg["pts"],
+                    original_shape=tuple(decoded_msg["original_shape"]) if decoded_msg.get("original_shape") else None,
+                    shape=tuple(decoded_msg["shape"]) if decoded_msg.get("shape") else None,
+                )
+                screen_captured_objects.append(screen_obj)
+        except Exception as e:
+            # Skip invalid messages
+            continue
+
+    return screen_captured_objects
 
 
-def encode_actions(actions_msg: Union[bytes, str], encoder: BaseEventEncoder) -> List[str]:
+def encode_actions(actions_sequence: List[Any], encoder: BaseEventEncoder) -> List[str]:
     """
     Encode actions using BaseEventEncoder.
 
     Args:
-        actions_msg: Message containing list of full action events (bytes or string)
+        actions_sequence: List of McapMessage objects or dictionaries containing action events
         encoder: BaseEventEncoder instance
 
     Returns:
         List of encoded action strings
-
-    Note:
-        This function expects full event objects with all required fields (topic, timestamp_ns,
-        message_type, msg) rather than just the message content.
     """
-    if actions_msg is None:
+    if actions_sequence is None or len(actions_sequence) == 0:
         return []
 
-    try:
-        # Decode the actions message
-        if isinstance(actions_msg, bytes):
-            actions_data = json.loads(actions_msg.decode("utf-8"))
-        else:
-            actions_data = actions_msg
-
-        if not isinstance(actions_data, list):
-            return []
-
-        encoded_actions = []
-        for action_event in actions_data:
-            # action_event should already be a full event dict with all required fields
-            if not isinstance(action_event, dict):
+    encoded_actions = []
+    for item in actions_sequence:
+        try:
+            # Handle both McapMessage objects and dictionaries
+            if hasattr(item, "topic"):
+                # It's a McapMessage object
+                action_event = {
+                    "topic": item.topic,
+                    "timestamp_ns": item.timestamp,
+                    "message_type": item.message_type,
+                    "msg": item.message.decode("utf-8") if isinstance(item.message, bytes) else item.message,
+                }
+            elif isinstance(item, dict):
+                # It's already a dictionary (from pandas conversion)
+                action_event = {
+                    "topic": item.get("topic"),
+                    "timestamp_ns": item.get("timestamp"),
+                    "message_type": item.get("message_type"),
+                    "msg": item.get("message").decode("utf-8")
+                    if isinstance(item.get("message"), bytes)
+                    else item.get("message"),
+                }
+            else:
                 continue
 
-            # Verify required fields are present
-            required_fields = {"topic", "timestamp_ns", "message_type", "msg"}
-            if not required_fields.issubset(action_event.keys()):
-                continue
+            # BaseEventEncoder expects this format
+            encoded_text, _ = encoder.encode(action_event)
+            encoded_actions.append(encoded_text)
+        except Exception:
+            # Skip invalid actions
+            continue
 
-            # BaseEventEncoder now handles both bytes and string msg formats
-            try:
-                encoded_text, _ = encoder.encode(action_event)
-                encoded_actions.append(encoded_text)
-            except Exception:
-                # Skip invalid actions
-                continue
-
-        return encoded_actions
-
-    except (json.JSONDecodeError, TypeError):
-        return []
+    return encoded_actions
 
 
 def convert_bin_to_sample(
@@ -136,15 +156,11 @@ def convert_bin_to_sample(
     Returns:
         MLLM training sample or None if no valid state/actions or filtered out
     """
-    # Extract image reference from state
-    image_ref = extract_image_reference(bin_data["state"])
-    if not image_ref:
+    # Extract ScreenCaptured objects from state sequence
+    screen_captured_objects = extract_screen_captured_objects(bin_data["state"])
+    if not screen_captured_objects:
         # Skip bins without valid screen state
         return None
-
-    # Add bin metadata to image reference
-    image_ref["timestamp_ns"] = bin_data["timestamp_ns"]
-    image_ref["bin_idx"] = bin_data["bin_idx"]
 
     # Encode actions
     target_actions = encode_actions(bin_data["actions"], encoder)
@@ -156,8 +172,8 @@ def convert_bin_to_sample(
     # Create MLLM sample
     mllm_sample = {
         "instruction": instruction,
-        "state_image_ref": image_ref,
-        "target_actions": target_actions,
+        "image_refs": screen_captured_objects,  # Now a list of ScreenCaptured objects
+        "encoded_events": target_actions,
         "metadata": {
             "file_path": bin_data["file_path"],
             "bin_idx": bin_data["bin_idx"],
@@ -251,7 +267,7 @@ def main(
                 valid_samples += 1
             else:
                 # Check why it was skipped
-                if extract_image_reference(bin_data["state"]) is None:
+                if not extract_screen_captured_objects(bin_data["state"]):
                     skipped_no_state += 1
                 else:
                     # Must be due to empty actions (if filtering is enabled)
@@ -280,14 +296,10 @@ def main(
         features = Features(
             {
                 "instruction": Value("string"),
-                "state_image_ref": {
-                    "path": Value("string"),
-                    "pts": Value("int64"),
-                    "utc_ns": Value("int64"),
-                    "timestamp_ns": Value("int64"),
-                    "bin_idx": Value("int32"),
-                },
-                "target_actions": Sequence(Value("string")),
+                "image_refs": Sequence(
+                    feature=ScreenCapturedFeature(decode=True), length=-1
+                ),  # Sequence of ScreenCaptured
+                "encoded_events": Sequence(Value("string")),
                 "metadata": {
                     "file_path": Value("string"),
                     "bin_idx": Value("int32"),
@@ -299,7 +311,14 @@ def main(
 
         # Create MLLM dataset
         typer.echo(f"Creating MLLM dataset with {len(all_mllm_samples)} samples...")
-        mllm_dataset = Dataset.from_list(all_mllm_samples, features=features)
+
+        # Try creating dataset without explicit features first to see what gets inferred
+        try:
+            mllm_dataset = Dataset.from_list(all_mllm_samples, features=features)
+        except Exception as e:
+            typer.echo(f"Error with explicit features: {e}")
+            typer.echo("Trying without explicit features...")
+            mllm_dataset = Dataset.from_list(all_mllm_samples)
 
         # Store the dataset for this split
         split_name = split if split else "train"  # Default to "train" if no split
@@ -316,11 +335,11 @@ def main(
             typer.echo("\nInstruction:")
             typer.echo(f"  {sample['instruction']}")
 
-            typer.echo("\nState Image Reference:")
-            typer.echo(f"  {sample['state_image_ref']}")
+            typer.echo("\nImage References:")
+            typer.echo(f"  {sample['image_refs']}")
 
-            typer.echo(f"\nTarget Actions ({len(sample['target_actions'])} total):")
-            for i, action in enumerate(sample["target_actions"]):
+            typer.echo(f"\nEncoded Events ({len(sample['encoded_events'])} total):")
+            for i, action in enumerate(sample["encoded_events"]):
                 typer.echo(f"  [{i:3d}] {action}")
 
             typer.echo("\nMetadata:")

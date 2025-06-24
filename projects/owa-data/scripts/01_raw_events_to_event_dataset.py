@@ -39,8 +39,10 @@ from datasets import DatasetInfo as HFDatasetInfo
 # Progress bar
 from tqdm import tqdm
 
+from mcap_owa.hf_integration import McapMessageFeature
+
 # MCAP and interval extraction imports
-from mcap_owa.highlevel import OWAMcapReader
+from mcap_owa.highlevel import McapMessage, OWAMcapReader
 from owa.data.interval import Intervals
 from owa.data.interval.selector import All
 
@@ -90,8 +92,8 @@ def process_raw_events_file(
         keep_topics: Optional list of topics to keep. If None, all topics are kept.
 
     Returns:
-        List of event dictionaries with keys: file_path, topic, timestamp, msg.
-        Messages are returned as decoded strings for JSON compatibility.
+        List of event dictionaries with keys: file_path, topic, timestamp_ns, message_type, mcap_message.
+        Messages are returned as McapMessage objects for binary storage.
     """
     events: List[Dict] = []
     interval_extractor = All()  # Select all intervals
@@ -122,13 +124,18 @@ def process_raw_events_file(
                             continue
                         last_kept_ts[topic] = timestamp_ns
 
+                    # Create McapMessage object instead of decoding to string
+                    mcap_message_obj = McapMessage(
+                        topic=topic, timestamp=timestamp_ns, message=msg, message_type=message_type
+                    )
+
                     events.append(
                         {
                             "file_path": file_path,
                             "topic": topic,
                             "timestamp_ns": timestamp_ns,
                             "message_type": message_type,
-                            "msg": msg.decode("utf-8"),  # Decode bytes to string
+                            "mcap_message": mcap_message_obj,  # Store McapMessage object
                         }
                     )
     except Exception as e:
@@ -202,7 +209,7 @@ def create_event_dataset(
             "topic": Value("string"),
             "timestamp_ns": Value("int64"),
             "message_type": Value("string"),
-            "msg": Value("string"),  # Changed from binary to string
+            "mcap_message": McapMessageFeature(decode=True),  # Use McapMessageFeature for binary McapMessage
         }
     )
 
@@ -355,15 +362,29 @@ def main(
         typer.echo(f"file_path: {example['file_path']}")
         typer.echo(f"topic:     {example['topic']}")
         typer.echo(f"timestamp_ns: {example['timestamp_ns']}")
-        # Attempt to parse and pretty-print the msg field (now string)
-        raw_msg = example["msg"]
+        # Handle McapMessage object
+        mcap_msg = example["mcap_message"]
         try:
-            parsed_json = json.loads(raw_msg)
-            pretty_msg = json.dumps(parsed_json, ensure_ascii=False, indent=2)
-        except Exception:
-            # Fallback to repr if not valid JSON
-            pretty_msg = repr(raw_msg)
-        typer.echo("msg:\n" + pretty_msg)
+            # Access the decoded property to get the parsed message content
+            decoded_msg = mcap_msg.decoded
+            # Try Pydantic model_dump_json first
+            try:
+                pretty_msg = decoded_msg.model_dump_json(indent=2, exclude_none=True)
+            except AttributeError:
+                # Fall back to standard JSON serialization with default=str for non-serializable objects
+                try:
+                    # Handle dict-like objects (EasyDict, etc.)
+                    if hasattr(decoded_msg, "__dict__"):
+                        pretty_msg = json.dumps(decoded_msg.__dict__, indent=2, ensure_ascii=False, default=str)
+                    else:
+                        pretty_msg = json.dumps(decoded_msg, indent=2, ensure_ascii=False, default=str)
+                except (TypeError, ValueError):
+                    # Last resort: convert to string
+                    pretty_msg = str(decoded_msg)
+        except Exception as e:
+            # Fallback to repr if decoding fails
+            pretty_msg = f"Failed to decode: {repr(e)}"
+        typer.echo("mcap_message (decoded):\n" + pretty_msg)
 
     typer.echo("=== Train sample ===")
     for example in train_dataset.select(range(min(3, len(train_dataset)))):

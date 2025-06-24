@@ -14,14 +14,15 @@ Usage (CLI):
 - Each output row contains: file_path, bin_idx, timestamp_ns, state, actions.
 """
 
-import json
 import time
 from pathlib import Path
 from typing import Any, Dict, List
 
 import typer
-from datasets import Dataset, Features, Value, load_from_disk
+from datasets import Dataset, Features, Sequence, Value, load_from_disk
 from tqdm import tqdm
+
+from mcap_owa.hf_integration import McapMessageFeature
 
 app = typer.Typer(add_completion=False)
 
@@ -74,7 +75,7 @@ def aggregate_events_to_bins(
             if ev["topic"].startswith("screen"):
                 last_screen = ev  # Use latest screen as state
             elif ev["topic"].startswith("keyboard") or ev["topic"].startswith("mouse"):
-                actions.append(ev)
+                actions.append(ev["mcap_message"])  # Store McapMessage object
             event_idx += 1
 
         # Compose bin
@@ -82,8 +83,8 @@ def aggregate_events_to_bins(
             "file_path": events[0]["file_path"],
             "bin_idx": bin_idx,
             "timestamp_ns": bin_start,
-            "state": last_screen["msg"] if last_screen else None,
-            "actions": actions,  # Store full event objects for proper EventEncoder usage
+            "state": [last_screen["mcap_message"]] if last_screen else [],  # Store as list of McapMessage
+            "actions": actions,  # Store list of McapMessage objects
         }
         bins.append(bin_data)
         bin_idx += 1
@@ -202,19 +203,12 @@ def main(
                 "file_path": Value("string"),
                 "bin_idx": Value("int32"),
                 "timestamp_ns": Value("int64"),
-                "state": Value("binary"),
-                "actions": Value("binary"),
+                "state": Sequence(feature=McapMessageFeature(decode=True), length=-1),  # Sequence of McapMessage
+                "actions": Sequence(feature=McapMessageFeature(decode=True), length=-1),  # Sequence of McapMessage
             }
         )
-        # Convert state/actions to binary (if not None)
-        typer.echo(f"Converting {len(all_binned_data)} binned entries to binary format...")
-        for t in tqdm(all_binned_data, desc="Converting to binary", disable=len(all_binned_data) < 1000):
-            if t["state"] is not None and not isinstance(t["state"], bytes):
-                # State is now a string, so we can directly encode it
-                t["state"] = t["state"].encode("utf-8")
-            if t["actions"] is not None and not isinstance(t["actions"], bytes):
-                # Actions are now event objects with string msg fields, can directly serialize
-                t["actions"] = json.dumps(t["actions"]).encode("utf-8")
+        # No need to convert to binary - McapMessage objects are handled by McapMessageFeature
+        typer.echo(f"Creating dataset from {len(all_binned_data)} binned entries...")
         binned_dataset = Dataset.from_list(all_binned_data, features=features)
 
         # Store the dataset for this split

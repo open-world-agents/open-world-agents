@@ -115,8 +115,15 @@ class VLMDatasetBuilder(Dataset):
             img_ref_list = image_refs
 
         for img_ref in img_ref_list:
-            # Create cache key
-            cache_key = f"{img_ref['path']}:{img_ref['pts']}"
+            # Handle both ScreenCaptured objects and dictionaries
+            if hasattr(img_ref, "path") and hasattr(img_ref, "pts"):
+                # It's a ScreenCaptured object
+                cache_key = f"{img_ref.path}:{img_ref.pts}"
+                screen_captured = img_ref
+            else:
+                # It's a dictionary
+                cache_key = f"{img_ref['path']}:{img_ref['pts']}"
+                screen_captured = None
 
             # Check cache first
             if self.cache_images and cache_key in self._image_cache:
@@ -125,7 +132,13 @@ class VLMDatasetBuilder(Dataset):
 
             # Load image using ScreenCaptured
             try:
-                image = self._load_single_image(img_ref)
+                if screen_captured:
+                    # Use the ScreenCaptured object directly
+                    image = self._load_from_screen_captured(screen_captured)
+                else:
+                    # Create ScreenCaptured from dictionary
+                    image = self._load_single_image(img_ref)
+
                 if image is not None:
                     # Add to cache if enabled
                     if self.cache_images:
@@ -136,6 +149,33 @@ class VLMDatasetBuilder(Dataset):
                 continue
 
         return images
+
+    def _load_from_screen_captured(self, screen_captured: ScreenCaptured) -> Optional[Any]:
+        """
+        Load image directly from a ScreenCaptured object.
+
+        Args:
+            screen_captured: ScreenCaptured object
+
+        Returns:
+            Loaded image in the specified format or None if failed
+        """
+        try:
+            # Load the frame using ScreenCaptured's methods
+            if self.image_format == "pil":
+                return screen_captured.to_pil_image()
+            elif self.image_format == "numpy":
+                return screen_captured.to_rgb_array()
+            elif self.image_format == "tensor":
+                # Convert PIL to tensor
+                pil_image = screen_captured.to_pil_image()
+                return self._pil_to_tensor(pil_image)
+            else:
+                raise ValueError(f"Unsupported image format: {self.image_format}")
+
+        except Exception as e:
+            print(f"Error loading image from ScreenCaptured {screen_captured.path} at {screen_captured.pts}: {e}")
+            return None
 
     def _load_single_image(self, img_ref: Dict[str, Any]) -> Optional[Any]:
         """
