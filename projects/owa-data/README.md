@@ -1,13 +1,18 @@
 # OWA Data Pipeline
 
-A 4-stage data processing pipeline for Vision-Language-Action (VLA) model training.
+A streamlined 3-stage data processing pipeline for Vision-Language-Action (VLA) model training.
 
 ## Pipeline Overview
 
 ```
-Raw MCAP Data → Event Dataset → Binned Dataset → MLLM Dataset → Training Ready
-     (1)            (2)            (3)             (4)
+Raw MCAP Data → Event Dataset → Binned Dataset → VLA Training Ready
+     (1)            (2)            (3)
 ```
+
+**Key Changes:**
+- **Stage 2** now includes `filter_empty_actions` option for better efficiency
+- **Stage 3** simplified to use unified `VLADataset` class
+- **VLADataset** provides both on-the-fly conversion and pre-converted dataset support
 
 ## Stage 1: Raw MCAP Data → Event Dataset
 
@@ -53,7 +58,8 @@ python scripts/01_raw_events_to_event_dataset.py \
 python scripts/02_event_dataset_to_binned_dataset.py \
   --input_dir /mnt/raid12/datasets/owa/data/super-hexagon-event \
   --output_dir /mnt/raid12/datasets/owa/data/super-hexagon-bin \
-  --fps 10
+  --fps 10 \
+  --filter-empty-actions  # NEW: Filter out bins with no actions
 ```
 
 **Output Schema**:
@@ -70,21 +76,46 @@ python scripts/02_event_dataset_to_binned_dataset.py \
 **Key Features**:
 - Fixed-rate temporal binning (e.g., 10 FPS = 100ms bins)
 - State-action separation (screen = state, keyboard/mouse = actions)
+- **NEW**: Optional filtering of bins with no actions for efficiency
 - Preserves temporal structure for sequence modeling
 
-## Stage 3: Binned Dataset → MLLM Dataset
+## Stage 3: Binned Dataset → VLA Training Ready
 
-**Script**: `scripts/03_binned_dataset_to_mllm_dataset.py`
+**Script**: `scripts/03_binned_dataset_to_mllm_dataset.py` (simplified)
+**Class**: `owa.data.VLADataset` (unified interface)
 
-**Purpose**: Convert each bin into one training sample (1:1 conversion)
+**Purpose**: Provide unified interface for VLA training with on-the-fly or pre-converted data
 
-**Usage**:
+**Usage (CLI - for pre-conversion)**:
 ```bash
 python scripts/03_binned_dataset_to_mllm_dataset.py \
   --input_dir /mnt/raid12/datasets/owa/data/super-hexagon-bin \
   --output_dir /mnt/raid12/datasets/owa/data/super-hexagon-mllm \
   --instruction "Complete the computer task" \
-  --filter-empty-actions  # Filter out samples with no actions (default: enabled)
+  --encoder-type hierarchical
+```
+
+**Usage (Python - direct training)**:
+```python
+from datasets import load_from_disk
+from owa.data import VLADataset
+
+# Load binned dataset
+binned_dataset = load_from_disk("/path/to/binned/dataset")
+
+# Create VLADataset with on-the-fly conversion
+vla_dataset = VLADataset(
+    dataset=binned_dataset["train"],
+    instruction="Complete the computer task",
+    encoder_type="hierarchical",
+    cache_samples=True  # Cache for performance
+)
+
+# Use directly for training
+sample = vla_dataset[0]
+print(f"Instruction: {sample['instruction']}")
+print(f"Images: {len(sample['images'])} loaded")
+print(f"Actions: {len(sample['encoded_events'])} encoded")
 ```
 
 **Output Schema**:
@@ -103,55 +134,21 @@ python scripts/03_binned_dataset_to_mllm_dataset.py \
 ```
 
 **Key Features**:
-- Simple 1:1 bin-to-sample conversion (each bin = one training sample)
-- Single state image per sample for clear state-action pairing
-- EventEncoder integration for action text serialization
-- Configurable filtering of samples with no actions (no-ops)
-- Efficient format for VLA training: instruction + state_image → target_actions
+- **Unified Interface**: Single `VLADataset` class handles both binned and pre-converted data
+- **On-the-fly Conversion**: No need to pre-convert datasets - convert during training
+- **Configurable Encoders**: Support for hierarchical, JSON, and flat event encoders
+- **Lazy Image Loading**: Efficient memory usage with on-demand image loading
+- **Sample Caching**: Optional caching for improved training performance
 
-## Stage 4: MLLM Dataset → Training Ready
+**Encoder Types**:
+- `hierarchical`: Compositional token structure (default, most efficient)
+- `json`: JSON string format with event tokens
+- `flat`: Traditional flat token-based encoding
 
-**Class**: `owa.data.owa_dataset.OWADataset`
-
-**Purpose**: PyTorch Dataset interface with lazy image loading for efficient training
-
-**Usage**:
-```python
-from datasets import load_from_disk
-
-from owa.data import OWADataset
-
-# Load MLLM dataset
-dataset_path = "/mnt/raid12/datasets/owa/data/super-hexagon-mllm"
-mllm_dataset = load_from_disk(dataset_path)
-
-# Create OWADataset
-owa_dataset = OWADataset(mllm_dataset["train"])
-print(f"Dataset length: {len(owa_dataset)}")
-
-# Get a sample
-sample = owa_dataset[0]
-print(f"Instruction: {sample['instruction']}")
-print(f"Images: {len(sample['images'])} loaded")
-print(f"Encoded events: {len(sample['encoded_events'])} events")
-
-# Show image details
-for i, image in enumerate(sample["images"]):
-    print(f"  Image {i}: {image=}")
-
-# Show first few events
-for i, event in enumerate(sample["encoded_events"][:3]):
-    print(f"  Event {i}: {event}")
-
-"""
-Dataset length: 3189
-Instruction: Complete the computer task
-Images: 1 loaded
-Encoded events: 1 events
-  Image 0: image=<PIL.Image.Image image mode=RGB size=768x480 at 0x7F2F995F9C50>
-  Event 0: <EVENT_START><TIMESTAMP><111><KEYBOARD><27><press><EVENT_END>
-"""
-```
+**Migration Notes**:
+- `filter_empty_actions` moved to Stage 2 for better efficiency
+- On-the-fly conversion eliminates need for Stage 3 file conversion in many cases
+- Use `VLADataset` for all new projects - it's the unified solution
 
 ## EventEncoder
 

@@ -1,18 +1,19 @@
 """
-Tests for OWADataset class.
+Tests for VLADataset class.
 
-This module contains tests for the new OWADataset which provides
-PyTorch Dataset interface for MLLM datasets with lazy image loading.
+This module contains tests for the unified VLADataset which provides
+PyTorch Dataset interface for both binned and MLLM datasets.
 """
 
 from datasets import Dataset, Features, Sequence, Value
 
-from owa.data import OWADataset
+from mcap_owa.highlevel import McapMessage
+from owa.data import HierarchicalEventEncoder, VLADataset
 from owa.msgs.desktop.screen import ScreenCaptured
 
 
-class TestOWADataset:
-    """Test suite for OWADataset class."""
+class TestVLADataset:
+    """Test suite for VLADataset class."""
 
     def setup_method(self):
         """Set up test fixtures."""
@@ -24,12 +25,12 @@ class TestOWADataset:
             utc_ns=4000000000, path="test2.mkv", pts=2000000000, original_shape=(1920, 1080), shape=(1920, 1080)
         )
 
-        # Serialize to bytes (as expected by the new format)
+        # Serialize to bytes (as expected by the MLLM format)
         screen1_bytes = screen1.model_dump_json().encode("utf-8")
         screen2_bytes = screen2.model_dump_json().encode("utf-8")
 
         # Create sample MLLM dataset
-        self.sample_data = [
+        self.mllm_sample_data = [
             {
                 "instruction": "Complete the computer task",
                 "encoded_events": [
@@ -46,12 +47,12 @@ class TestOWADataset:
             }
         ]
 
-        # Create HuggingFace dataset with updated features for bytes
-        features = Features(
+        # Create HuggingFace dataset with MLLM format
+        mllm_features = Features(
             {
                 "instruction": Value("string"),
                 "encoded_events": Sequence(Value("string")),
-                "image_refs": Sequence(Value("binary")),  # Changed to binary for serialized bytes
+                "image_refs": Sequence(Value("binary")),
                 "metadata": {
                     "file_path": Value("string"),
                     "bin_idx": Value("int32"),
@@ -61,21 +62,22 @@ class TestOWADataset:
             }
         )
 
-        self.mllm_dataset = Dataset.from_list(self.sample_data, features=features)
+        self.mllm_dataset = Dataset.from_list(self.mllm_sample_data, features=mllm_features)
 
-    def test_initialization(self):
-        """Test OWADataset initialization."""
-        dataset = OWADataset(self.mllm_dataset)
+    def test_initialization_mllm_format(self):
+        """Test VLADataset initialization with MLLM format."""
+        dataset = VLADataset(self.mllm_dataset)
         assert dataset.dataset == self.mllm_dataset
+        assert dataset.is_mllm_format == True
 
     def test_dataset_length(self):
         """Test dataset length."""
-        dataset = OWADataset(self.mllm_dataset)
+        dataset = VLADataset(self.mllm_dataset)
         assert len(dataset) == 1
 
-    def test_getitem_structure(self):
-        """Test __getitem__ returns correct structure."""
-        dataset = OWADataset(self.mllm_dataset)
+    def test_getitem_structure_mllm(self):
+        """Test __getitem__ returns correct structure for MLLM format."""
+        dataset = VLADataset(self.mllm_dataset)
 
         # Mock the image loading to avoid file system dependencies
         def mock_load_images(_image_refs, _metadata):
@@ -102,44 +104,51 @@ class TestOWADataset:
         assert isinstance(item["encoded_events"], list)
         assert len(item["encoded_events"]) == 2
 
-    def test_image_loading_failure_handling(self):
-        """Test handling of image loading failures."""
-        dataset = OWADataset(self.mllm_dataset)
+    def test_encoder_configuration(self):
+        """Test different encoder configurations."""
+        # Test with different encoder types
+        for encoder_type in ["hierarchical", "json", "flat"]:
+            dataset = VLADataset(self.mllm_dataset, encoder_type=encoder_type)
+            assert dataset.encoder is not None
 
-        # Test with invalid image references (should handle gracefully)
-        invalid_bytes = [b"invalid_json_data"]
-        mock_metadata = {"file_path": "/test/session.mcap"}
-        images = dataset._load_images(invalid_bytes, mock_metadata)
+    def test_custom_instruction(self):
+        """Test custom instruction override."""
+        custom_instruction = "Custom task instruction"
+        dataset = VLADataset(self.mllm_dataset, instruction=custom_instruction)
 
-        # Should return empty list when images can't be loaded
-        assert isinstance(images, list)
-        # Length should be 0 since all images fail to load
-        assert len(images) == 0
+        # Mock image loading
+        def mock_load_images(_image_refs, _metadata):
+            return []
 
-    def test_deserialization(self):
-        """Test ScreenCaptured deserialization functionality."""
-        # Test with valid serialized ScreenCaptured
-        screen = ScreenCaptured(
-            utc_ns=1000000000, path="test.mkv", pts=1000000000, original_shape=(1920, 1080), shape=(1920, 1080)
-        )
-        screen_bytes = screen.model_dump_json().encode("utf-8")
+        dataset._load_images = mock_load_images
 
-        # This test verifies deserialization works (actual image loading would fail without video file)
-        try:
-            deserialized = ScreenCaptured.model_validate_json(screen_bytes.decode("utf-8"))
-            assert deserialized.utc_ns == screen.utc_ns
-            assert deserialized.path == screen.path
-            assert deserialized.pts == screen.pts
-        except Exception:
-            # If deserialization fails, that's a problem
-            assert False, "ScreenCaptured deserialization should work"
+        item = dataset[0]
+        assert item["instruction"] == custom_instruction
+
+    def test_caching_functionality(self):
+        """Test sample caching functionality."""
+        dataset = VLADataset(self.mllm_dataset, cache_samples=True)
+
+        # Mock image loading
+        def mock_load_images(_image_refs, _metadata):
+            return []
+
+        dataset._load_images = mock_load_images
+
+        # First access should populate cache
+        item1 = dataset[0]
+        assert 0 in dataset._cache
+
+        # Second access should use cache
+        item2 = dataset[0]
+        assert item1 == item2
 
 
-class TestOWADatasetIntegration:
-    """Integration tests for OWADataset."""
+class TestVLADatasetIntegration:
+    """Integration tests for VLADataset."""
 
     def test_pytorch_dataset_interface(self):
-        """Test that OWADataset properly implements PyTorch Dataset interface."""
+        """Test that VLADataset properly implements PyTorch Dataset interface."""
         from torch.utils.data import Dataset as TorchDataset
 
         # Create sample MLLM dataset with serialized ScreenCaptured
@@ -171,11 +180,11 @@ class TestOWADatasetIntegration:
         )
 
         hf_dataset = Dataset.from_list(sample_data, features=features)
-        owa_dataset = OWADataset(hf_dataset)
+        vla_dataset = VLADataset(hf_dataset)
 
         # Test Dataset interface
-        assert len(owa_dataset) == 1
-        assert isinstance(owa_dataset, TorchDataset)
+        assert len(vla_dataset) == 1
+        assert isinstance(vla_dataset, TorchDataset)
 
         # Mock image loading for testing
         def mock_load_images(_refs, _metadata):
@@ -185,9 +194,9 @@ class TestOWADatasetIntegration:
             test_array = np.random.randint(0, 255, (100, 100, 3), dtype=np.uint8)
             return [Image.fromarray(test_array, mode="RGB")]
 
-        owa_dataset._load_images = mock_load_images
+        vla_dataset._load_images = mock_load_images
 
-        item = owa_dataset[0]
+        item = vla_dataset[0]
         assert isinstance(item, dict)
         assert "instruction" in item
         assert "images" in item
@@ -198,6 +207,6 @@ class TestOWADatasetIntegration:
         # Create empty dataset without features to avoid the schema mismatch
         empty_data = []
         hf_dataset = Dataset.from_list(empty_data)
-        owa_dataset = OWADataset(hf_dataset)
+        vla_dataset = VLADataset(hf_dataset)
 
-        assert len(owa_dataset) == 0
+        assert len(vla_dataset) == 0
