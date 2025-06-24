@@ -36,7 +36,8 @@ vuv run scripts/release/main.py lock --upgrade
 Above workflow can be automated with the release script:
 
 ```bash
-vuv run scripts/release/main.py version $VERSION --tag --push
+$ vuv run scripts/release/main.py version $VERSION --tag --push
+$ vuv run scripts/release/main.py publish
 ```
 
 ## Commands
