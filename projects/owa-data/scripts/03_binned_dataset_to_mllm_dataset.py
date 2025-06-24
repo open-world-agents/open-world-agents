@@ -9,13 +9,19 @@ Usage (CLI):
         --input_dir /path/to/input_binned_dataset \
         --output_dir /path/to/output_mllm_dataset \
         [--instruction "Complete the computer task"] \
+        [--encoder-type hierarchical] \
         [--show-example/--no-show-example] \
         [--filter-empty-actions/--no-filter-empty-actions]
 
 - Converts each bin into one training sample (1:1 conversion).
 - Extracts image reference from screen event for lazy loading.
-- Encodes actions using EventEncoder for text representation.
+- Encodes actions using configurable EventEncoder for text representation.
 - Each output row contains: instruction, state_image_ref, target_actions, metadata.
+
+Encoder Types:
+- hierarchical: HierarchicalEventEncoder (default) - compositional token structure
+- json: JSONEventEncoder - JSON string format with <EVENT_START>/<EVENT_END> tokens
+- flat: FlatEventEncoder - flat token-based encoding
 """
 
 import time
@@ -28,10 +34,35 @@ from datasets import Dataset, Features, Sequence, Value, load_from_disk
 from tqdm import tqdm
 
 from mcap_owa.highlevel import McapMessage
-from owa.data import BaseEventEncoder, HierarchicalEventEncoder, JSONEventEncoder  # noqa: F401
+from owa.data import BaseEventEncoder, FlatEventEncoder, HierarchicalEventEncoder, JSONEventEncoder  # noqa: F401
 from owa.msgs.desktop.screen import ScreenCaptured
 
 app = typer.Typer(add_completion=False)
+
+
+def create_encoder(encoder_type: str) -> BaseEventEncoder:
+    """
+    Create an encoder instance based on the specified type.
+
+    Args:
+        encoder_type: Type of encoder to create ('hierarchical', 'json', 'flat')
+
+    Returns:
+        BaseEventEncoder: Initialized encoder instance
+
+    Raises:
+        ValueError: If encoder_type is not supported
+    """
+    encoder_type = encoder_type.lower()
+
+    if encoder_type == "hierarchical":
+        return HierarchicalEventEncoder()
+    elif encoder_type == "json":
+        return JSONEventEncoder()
+    elif encoder_type == "flat":
+        return FlatEventEncoder()
+    else:
+        raise ValueError(f"Unsupported encoder type: {encoder_type}. Supported types: hierarchical, json, flat")
 
 
 def extract_screen_captured_objects(state_sequence: List[Any]) -> List[bytes]:
@@ -175,14 +206,25 @@ def main(
         "--filter-empty-actions/--no-filter-empty-actions",
         help="Filter out samples with no actions (default: True)",
     ),
+    encoder_type: str = typer.Option(
+        "hierarchical",
+        "--encoder-type",
+        "-e",
+        help="Type of encoder to use: hierarchical, json, flat (default: hierarchical)",
+    ),
 ):
     """
     Convert binned dataset to MLLM dataset format with 1:1 bin-to-sample conversion for VLA training.
     """
     start_time = time.time()
 
-    # Initialize HierarchicalEventEncoder
-    encoder = HierarchicalEventEncoder()
+    # Initialize encoder based on specified type
+    try:
+        encoder = create_encoder(encoder_type)
+        typer.echo(f"Using {encoder.__class__.__name__} encoder")
+    except ValueError as e:
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(1)
 
     typer.echo(f"Loading binned dataset from {input_dir} ...")
     ds_dict = load_from_disk(str(input_dir))
