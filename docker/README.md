@@ -117,9 +117,9 @@ docker run -it owa/train:latest
 
 ## 📦 What's Inside
 
-- **owa/base:latest** (~8GB) - CUDA 12.6 + Python 3.11 + Miniforge
-- **owa/runtime:latest** (~10GB) - + project dependencies
-- **owa/train:latest** (~12GB) - + PyTorch, transformers, wandb, datasets
+- **owa/base:latest** (3.05GB) - CUDA 12.6 + Python 3.11 + Miniforge
+- **owa/runtime:latest** (4GB) - + project dependencies
+- **owa/train:latest** (9.68GB) - + PyTorch, transformers, wandb, datasets
 
 For development environments, see `.devcontainer/` directory.
 
