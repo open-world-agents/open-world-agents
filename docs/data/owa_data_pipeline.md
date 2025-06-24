@@ -12,10 +12,14 @@ $ python scripts/01_raw_events_to_event_dataset.py \
   --output-dir /data/event-dataset \
   --rate mouse=60 --rate screen=20 \
   --keep_topic screen --keep_topic keyboard
-Processing MCAP files...
+🔄 Raw Events to Event Dataset
+📁 Loading from: /data/mcaps/game-session
+📊 Found 3 train, 1 test files
 ---> 100%
-✓ Processed 4 files: 38,583 train examples, 6,795 test examples
-✓ Dataset saved to /data/event-dataset
+✓ Created 24,907 train, 20,471 test examples
+💾 Saving to /data/event-dataset
+✓ Saved successfully
+🎉 Completed in 3.9s (0.1min)
 ```
 
 **Step 2: Create time bins (optional)**
@@ -28,11 +32,15 @@ $ python scripts/02_event_dataset_to_binned_dataset.py \
   --output_dir /data/binned-dataset \
   --fps 10 \
   --filter-empty-actions
-Creating time bins at 10 FPS...
+🗂️ Event Dataset to Binned Dataset
+📁 Loading from: /data/event-dataset
+📊 Found 3 files to process
 ---> 100%
-✓ Processed 36,557 events into 4,007 bins
-✓ Train: 3,189 entries, Test: 818 entries
-✓ Dataset saved to /data/binned-dataset
+✓ Created 2,235 binned entries for train split
+✓ Created 1,772 binned entries for test split
+💾 Saving to /data/binned-dataset
+✓ Saved 4,007 total binned entries
+🎉 Completed in 4.0s (0.1min)
 ```
 
 **Step 3: Train your model**

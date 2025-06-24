@@ -23,6 +23,7 @@ Usage (CLI):
 """
 
 import random
+import time
 
 # Concurrency imports
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -100,7 +101,8 @@ def process_raw_events_file(
     try:
         valid_intervals: Intervals = interval_extractor.extract_intervals(Path(file_path))
     except Exception as e:
-        console.print(f"[yellow]⚠[/yellow] Failed to extract intervals from {Path(file_path).name}: {e}", err=True)
+        # Use print instead of console to avoid pickling issues in multiprocessing
+        print(f"⚠ Failed to extract intervals from {Path(file_path).name}: {e}")
         return events
 
     # Prepare per-topic tracking for last-kept timestamp in nanoseconds
@@ -141,7 +143,8 @@ def process_raw_events_file(
                         }
                     )
     except Exception as e:
-        console.print(f"[yellow]⚠[/yellow] Error reading file {Path(file_path).name}: {e}", err=True)
+        # Use print instead of console to avoid pickling issues in multiprocessing
+        print(f"⚠ Error reading file {Path(file_path).name}: {e}")
 
     return events
 
@@ -178,7 +181,8 @@ def generate_event_examples(
                     for event in events:
                         yield event
                 except Exception as e:
-                    console.print(f"[yellow]⚠[/yellow] Exception raised for file {Path(fp).name}: {e}", err=True)
+                    # Use print instead of console to avoid pickling issues in multiprocessing
+                    print(f"⚠ Exception raised for file {Path(fp).name}: {e}")
                 finally:
                     pbar.update(1)
 
@@ -283,6 +287,8 @@ def main(
     Generate a Hugging Face event dataset with 'train' and 'test' splits from raw MCAP files in specified directories.
     If --test_dir is omitted, randomly split files in train_dir according to --test_percent.
     """
+    start_time = time.time()
+
     # Print header
     console.print(Panel.fit("🔄 Raw Events to Event Dataset", style="bold blue"))
 
@@ -310,7 +316,7 @@ def main(
         console.print(f"[cyan]🎯[/cyan] Using default topics: {topics_to_keep}")
 
     # 4. Gather all MCAP files in train_dir
-    console.print(f"[cyan]📁[/cyan] Scanning training directory: {train_dir}")
+    console.print(f"[cyan]📁[/cyan] Loading from: {train_dir}")
     train_files = sorted(train_dir.glob("*.mcap"))
     if not train_files:
         console.print(f"[red]✗[/red] No MCAP files found in train_dir: {train_dir}", err=True)
@@ -318,7 +324,7 @@ def main(
 
     # 5. Determine test_files
     if test_dir:
-        console.print(f"[cyan]📁[/cyan] Scanning test directory: {test_dir}")
+        console.print(f"[cyan]📁[/cyan] Loading test from: {test_dir}")
         test_files = sorted(test_dir.glob("*.mcap"))
         if not test_files:
             console.print(f"[red]✗[/red] No MCAP files found in test_dir: {test_dir}", err=True)
@@ -339,7 +345,7 @@ def main(
         console.print(f"[cyan]🔀[/cyan] Split {test_count} of {len(shuffled)} files into test set ({percent:.1f}%)")
 
     console.print(
-        f"[green]📊[/green] Dataset split: [bold]{len(train_files)}[/bold] train, [bold]{len(test_files)}[/bold] test files"
+        f"[green]📊[/green] Found [bold]{len(train_files)}[/bold] train, [bold]{len(test_files)}[/bold] test files"
     )
     console.print(f"[cyan]⚙️[/cyan] Processing with [bold]{num_workers}[/bold] workers")
 
@@ -357,15 +363,21 @@ def main(
     # 8. Combine into DatasetDict
     dataset_dict = DatasetDict({"train": train_dataset, "test": test_dataset})
     console.print(
-        f"[green]✓[/green] Dataset created: [bold]{len(train_dataset):,}[/bold] train, [bold]{len(test_dataset):,}[/bold] test examples"
+        f"[green]✓[/green] Created [bold]{len(train_dataset):,}[/bold] train, [bold]{len(test_dataset):,}[/bold] test examples"
     )
 
     # 9. Save to disk if requested
     if output_dir:
         output_dir.mkdir(parents=True, exist_ok=True)
-        console.print(f"[cyan]💾[/cyan] Saving dataset to {output_dir}")
+        console.print(f"[cyan]💾[/cyan] Saving to {output_dir}")
         dataset_dict.save_to_disk(str(output_dir))
-        console.print("[green]✓[/green] Dataset saved successfully")
+        console.print("[green]✓[/green] Saved successfully")
+
+    # 10. Display timing information
+    elapsed_time = time.time() - start_time
+    console.print(
+        f"[green]🎉[/green] Completed in [bold]{elapsed_time:.2f}s[/bold] ([bold]{elapsed_time / 60:.1f}min[/bold])"
+    )
 
 
 if __name__ == "__main__":

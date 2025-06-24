@@ -139,7 +139,7 @@ def main(
     # Print header
     console.print(Panel.fit("🗂️ Event Dataset to Binned Dataset", style="bold blue"))
 
-    console.print(f"[cyan]📁[/cyan] Loading event dataset from {input_dir}")
+    console.print(f"[cyan]📁[/cyan] Loading from: {input_dir}")
     console.print(f"[cyan]⚡[/cyan] Target FPS: [bold]{fps}[/bold]")
     if filter_empty_actions:
         console.print(
@@ -167,7 +167,7 @@ def main(
         file_paths = sorted(set(ds["file_path"]))  # Sort for consistent ordering
         all_binned_data = []
 
-        console.print(f"[green]📊[/green] Found [bold]{len(file_paths)}[/bold] unique files to process")
+        console.print(f"[green]📊[/green] Found [bold]{len(file_paths)}[/bold] files to process")
 
         # Create a progress bar for files
         file_pbar = tqdm(file_paths, desc=f"Processing {split or 'dataset'} files")
@@ -209,7 +209,7 @@ def main(
         processed_datasets[split_name] = binned_dataset
 
         console.print(
-            f"[green]✓[/green] Processed [bold]{len(binned_dataset):,}[/bold] binned entries for [bold]{split_name}[/bold] split"
+            f"[green]✓[/green] Created [bold]{len(binned_dataset):,}[/bold] binned entries for [bold]{split_name}[/bold] split"
         )
 
     # Save all datasets as DatasetDict or single Dataset
@@ -224,14 +224,14 @@ def main(
 
     # Save to output directory
     output_dir.mkdir(parents=True, exist_ok=True)
-    console.print(f"[cyan]💾[/cyan] Saving binned dataset to {output_dir}")
+    console.print(f"[cyan]💾[/cyan] Saving to {output_dir}")
     final_dataset.save_to_disk(str(output_dir))
 
     # Calculate and display timing information
     elapsed_time = time.time() - start_time
     if len(processed_datasets) > 1:
         total_entries = sum(len(ds) for ds in processed_datasets.values())
-        console.print(f"[green]✓[/green] Saved DatasetDict with [bold]{total_entries:,}[/bold] total binned entries")
+        console.print(f"[green]✓[/green] Saved [bold]{total_entries:,}[/bold] total binned entries")
         for split_name, ds in processed_datasets.items():
             console.print(f"  [cyan]•[/cyan] {split_name}: [bold]{len(ds):,}[/bold] entries")
     else:
@@ -240,7 +240,7 @@ def main(
         console.print(f"[green]✓[/green] Saved [bold]{len(ds):,}[/bold] binned entries ([bold]{split_name}[/bold])")
 
     console.print(
-        f"[green]🎉[/green] Processing completed in [bold]{elapsed_time:.2f}s[/bold] ([bold]{elapsed_time / 60:.1f}min[/bold])"
+        f"[green]🎉[/green] Completed in [bold]{elapsed_time:.2f}s[/bold] ([bold]{elapsed_time / 60:.1f}min[/bold])"
     )
 
 
