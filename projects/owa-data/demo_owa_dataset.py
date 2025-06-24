@@ -23,7 +23,7 @@ print(f"Encoded events: {len(sample['encoded_events'])} events")
 
 # Show image details
 for i, image in enumerate(sample["images"]):
-    print(f"  Image {i}: {image.size=}, {image.mode=}")
+    print(f"  Image {i}: {image=}")
 
 # Show first few events
 for i, event in enumerate(sample["encoded_events"][:3]):
@@ -34,6 +34,6 @@ Dataset length: 3189
 Instruction: Complete the computer task
 Images: 1 loaded
 Encoded events: 1 events
-  Image 0: image.size=(768, 480), image.mode='RGB'
+  Image 0: image=<PIL.Image.Image image mode=RGB size=768x480 at 0x7F2F995F9C50>
   Event 0: <EVENT_START><TIMESTAMP><111><KEYBOARD><27><press><EVENT_END>
 """
