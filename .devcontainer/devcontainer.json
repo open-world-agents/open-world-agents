@@ -23,23 +23,12 @@
 	"mounts": [
 		"source=${localWorkspaceFolder},target=/workspace,type=bind",
 		"source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind",
-		"source=/mnt/raid12/datasets/owa,target=/mnt/raid12/datasets/owa,type=bind",
+		"source=/mnt/raid12/datasets/owa,target=/mnt/raid12/datasets/owa,type=bind,readonly",
+		"source=/mnt/raid12/datasets/owa/data,target=/mnt/raid12/datasets/owa/data,type=bind",
 		"source=/mnt/raid12/cache,target=/mnt/raid12/cache,type=bind",
-		{
-			"source": "${localEnv:HOME}/.cache",
-			"target": "/home/vscode/.cache",
-			"type": "bind"
-		},
-		{
-			"source": "${localEnv:HOME}/.ssh",
-			"target": "/home/vscode/.ssh",
-			"type": "bind"
-		},
-		{
-			"source": "${localEnv:HOME}/.gitconfig",
-			"target": "/home/vscode/.gitconfig",
-			"type": "bind"
-		}
+		"source=${localEnv:HOME}/.cache,target=/home/vscode/.cache,type=bind",
+		"source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,type=bind",
+		"source=${localEnv:HOME}/.gitconfig,target=/home/vscode/.gitconfig,type=bind,readonly"
 	],
 	"customizations": {
 		"vscode": {
