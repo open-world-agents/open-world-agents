@@ -1,18 +1,18 @@
 # OWA Data Pipeline
 
-A streamlined 3-stage data processing pipeline for Vision-Language-Action (VLA) model training.
+A streamlined 2-stage data processing pipeline for Vision-Language-Action (VLA) model training.
 
 ## Pipeline Overview
 
 ```
 Raw MCAP Data → Event Dataset → Binned Dataset → VLA Training Ready
-     (1)            (2)            (3)
+     (1)            (2)            VLADataset
+                                (on-the-fly conversion)
 ```
 
-**Key Changes:**
-- **Stage 2** now includes `filter_empty_actions` option for better efficiency
-- **Stage 3** simplified to use unified `VLADataset` class
-- **VLADataset** provides both on-the-fly conversion and pre-converted dataset support
+**Key Features:**
+- **Stage 2** includes `filter_empty_actions` option for better efficiency
+- **VLADataset** provides on-the-fly conversion from binned datasets to training format
 
 ## Stage 1: Raw MCAP Data → Event Dataset
 
@@ -59,7 +59,7 @@ python scripts/02_event_dataset_to_binned_dataset.py \
   --input_dir /mnt/raid12/datasets/owa/data/super-hexagon-event \
   --output_dir /mnt/raid12/datasets/owa/data/super-hexagon-bin \
   --fps 10 \
-  --filter-empty-actions  # NEW: Filter out bins with no actions
+  --filter-empty-actions  # Filter out bins with no actions
 ```
 
 **Output Schema**:
@@ -76,26 +76,16 @@ python scripts/02_event_dataset_to_binned_dataset.py \
 **Key Features**:
 - Fixed-rate temporal binning (e.g., 10 FPS = 100ms bins)
 - State-action separation (screen = state, keyboard/mouse = actions)
-- **NEW**: Optional filtering of bins with no actions for efficiency
+- Optional filtering of bins with no actions for efficiency
 - Preserves temporal structure for sequence modeling
 
-## Stage 3: Binned Dataset → VLA Training Ready
+## VLA Training with VLADataset
 
-**Script**: `scripts/03_binned_dataset_to_mllm_dataset.py` (simplified)
-**Class**: `owa.data.VLADataset` (unified interface)
+**Class**: `owa.data.VLADataset`
 
-**Purpose**: Provide unified interface for VLA training with on-the-fly or pre-converted data
+**Purpose**: Direct training interface with on-the-fly conversion from binned datasets
 
-**Usage (CLI - for pre-conversion)**:
-```bash
-python scripts/03_binned_dataset_to_mllm_dataset.py \
-  --input_dir /mnt/raid12/datasets/owa/data/super-hexagon-bin \
-  --output_dir /mnt/raid12/datasets/owa/data/super-hexagon-mllm \
-  --instruction "Complete the computer task" \
-  --encoder-type hierarchical
-```
-
-**Usage (Python - direct training)**:
+**Usage**:
 ```python
 from datasets import load_from_disk
 from owa.data import VLADataset
@@ -118,24 +108,8 @@ print(f"Images: {len(sample['images'])} loaded")
 print(f"Actions: {len(sample['encoded_events'])} encoded")
 ```
 
-**Output Schema**:
-```python
-{
-    "instruction": Value("string"),           # Task instruction
-    "image_refs": Sequence(feature=Value("binary"), length=-1),  # Sequence of serialized ScreenCaptured bytes
-    "encoded_events": Sequence(Value("string")),  # EventEncoder outputs for actions
-    "metadata": {                            # Sample metadata
-        "file_path": Value("string"),        # Source file
-        "bin_idx": Value("int32"),           # Bin index
-        "timestamp_ns": Value("int64"),      # Timestamp
-        "num_actions": Value("int32"),       # Number of actions
-    }
-}
-```
-
 **Key Features**:
-- **Unified Interface**: Single `VLADataset` class handles both binned and pre-converted data
-- **On-the-fly Conversion**: No need to pre-convert datasets - convert during training
+- **On-the-fly Conversion**: Convert binned datasets to training format during data loading
 - **Configurable Encoders**: Support for hierarchical, JSON, and flat event encoders
 - **Lazy Image Loading**: Efficient memory usage with on-demand image loading
 - **Sample Caching**: Optional caching for improved training performance
@@ -144,11 +118,6 @@ print(f"Actions: {len(sample['encoded_events'])} encoded")
 - `hierarchical`: Compositional token structure (default, most efficient)
 - `json`: JSON string format with event tokens
 - `flat`: Traditional flat token-based encoding
-
-**Migration Notes**:
-- `filter_empty_actions` moved to Stage 2 for better efficiency
-- On-the-fly conversion eliminates need for Stage 3 file conversion in many cases
-- Use `VLADataset` for all new projects - it's the unified solution
 
 ## EventEncoder
 
