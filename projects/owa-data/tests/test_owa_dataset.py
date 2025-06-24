@@ -118,8 +118,6 @@ class TestOWADataset:
 
     def test_deserialization(self):
         """Test ScreenCaptured deserialization functionality."""
-        dataset = OWADataset(self.mllm_dataset)
-
         # Test with valid serialized ScreenCaptured
         screen = ScreenCaptured(
             utc_ns=1000000000, path="test.mkv", pts=1000000000, original_shape=(1920, 1080), shape=(1920, 1080)
