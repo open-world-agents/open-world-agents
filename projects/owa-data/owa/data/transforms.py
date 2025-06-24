@@ -160,13 +160,9 @@ def _transform_event_single(
     try:
         # Deserialize McapMessage
         mcap_msg = McapMessage.model_validate_json(mcap_message_bytes.decode("utf-8"))
-
         if topic == "screen" and load_images:
             # Load image for screen events
-            if hasattr(mcap_msg.msg, "model_validate_json"):
-                screen_captured = ScreenCaptured.model_validate_json(mcap_msg.msg)
-            else:
-                screen_captured = ScreenCaptured.model_validate(mcap_msg.msg)
+            screen_captured = ScreenCaptured.model_validate_json(mcap_msg.message)
 
             # Resolve path and load image
             screen_captured = _resolve_video_path(screen_captured, example)
@@ -274,10 +270,7 @@ def _load_images_from_state(state_sequence: List[bytes], metadata: Dict[str, Any
             mcap_msg = McapMessage.model_validate_json(state_bytes.decode("utf-8"))
 
             # Extract ScreenCaptured from message
-            if hasattr(mcap_msg.msg, "model_validate_json"):
-                screen_captured = ScreenCaptured.model_validate_json(mcap_msg.msg)
-            else:
-                screen_captured = ScreenCaptured.model_validate(mcap_msg.msg)
+            screen_captured = ScreenCaptured.model_validate_json(mcap_msg.message)
 
             # Resolve path and load image
             screen_captured = _resolve_video_path(screen_captured, metadata)

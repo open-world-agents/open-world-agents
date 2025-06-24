@@ -141,23 +141,19 @@ from datasets import load_from_disk
 from owa.data import create_event_dataset_transform
 
 # Load event dataset
-event_dataset = load_from_disk("/path/to/event/dataset")
+event_dataset = load_from_disk("/mnt/raid12/datasets/owa/data/super-hexagon-event")
 
 # Create and apply transform
 transform = create_event_dataset_transform(
     encoder_type="hierarchical",
-    load_images=True,      # Load images for screen events
-    encode_actions=True,   # Encode keyboard/mouse events
+    load_images=True,  # Load images for screen events
+    encode_actions=True,  # Encode keyboard/mouse events
 )
 event_dataset.set_transform(transform)
 
 # Use transformed dataset
-sample = event_dataset[0]
-print(f"Topic: {sample['topic']}")
-if sample['image'] is not None:
-    print(f"Image: {sample['image'].size}")
-if sample['encoded_event'] is not None:
-    print(f"Action: {sample['encoded_event']}")
+for sample in event_dataset["train"].take(10):
+    print(f"{sample=}")
 ```
 
 ### Binned Dataset Transform
@@ -172,7 +168,7 @@ from datasets import load_from_disk
 from owa.data import create_binned_dataset_transform
 
 # Load binned dataset
-binned_dataset = load_from_disk("/path/to/binned/dataset")
+binned_dataset = load_from_disk("/mnt/raid12/datasets/owa/data/super-hexagon-binned")
 
 # Create and apply transform
 transform = create_binned_dataset_transform(
@@ -184,10 +180,8 @@ transform = create_binned_dataset_transform(
 binned_dataset.set_transform(transform)
 
 # Use transformed dataset (same format as VLADataset)
-sample = binned_dataset[0]
-print(f"Instruction: {sample['instruction']}")
-print(f"Images: {len(sample['images'])} loaded")
-print(f"Actions: {len(sample['encoded_events'])} encoded")
+for sample in binned_dataset["train"].take(10):
+    print(f"{sample=}")
 ```
 
 ### Training Pipeline Integration
