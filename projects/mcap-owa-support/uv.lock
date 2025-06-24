@@ -254,6 +254,7 @@ dependencies = [
     { name = "orjson" },
     { name = "owa-core" },
     { name = "packaging" },
+    { name = "pydantic" },
     { name = "requests" },
 ]
 
@@ -264,6 +265,7 @@ requires-dist = [
     { name = "orjson", specifier = ">=3.10.15" },
     { name = "owa-core", editable = "../owa-core" },
     { name = "packaging", specifier = ">=25.0" },
+    { name = "pydantic", specifier = ">=2.11.7" },
     { name = "requests", specifier = ">=2.32.3" },
 ]
 
