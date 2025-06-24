@@ -170,7 +170,7 @@ def main(
             # Convert to list of dicts
             events = []
             for i in range(len(file_ds)):
-                event = {k: file_ds[k][i] for k in file_ds.column_names}
+                event = file_ds[i]
                 events.append(event)
 
             binned_data = aggregate_events_to_bins(events, fps, filter_empty_actions)
