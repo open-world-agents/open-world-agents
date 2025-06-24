@@ -32,9 +32,17 @@ class TestVersionUtilityFunctions:
         mock_response.json.return_value = {"tag_name": "v0.4.2"}
         mock_response.raise_for_status.return_value = None
 
-        with patch("owa.cli.utils.requests.get", return_value=mock_response):
-            version = get_latest_release()
-            assert version == "0.4.2"  # Should strip the 'v' prefix
+        # Temporarily unset OWA_DISABLE_VERSION_CHECK
+        original_value = os.environ.get("OWA_DISABLE_VERSION_CHECK")
+        if "OWA_DISABLE_VERSION_CHECK" in os.environ:
+            del os.environ["OWA_DISABLE_VERSION_CHECK"]
+        try:
+            with patch("owa.cli.utils.requests.get", return_value=mock_response):
+                version = get_latest_release()
+                assert version == "0.4.2"  # Should strip the 'v' prefix
+        finally:
+            if original_value is not None:
+                os.environ["OWA_DISABLE_VERSION_CHECK"] = original_value
 
     def test_get_latest_release_with_no_v_prefix(self):
         """Test handling of release tags without 'v' prefix."""
@@ -42,9 +50,17 @@ class TestVersionUtilityFunctions:
         mock_response.json.return_value = {"tag_name": "0.4.2"}
         mock_response.raise_for_status.return_value = None
 
-        with patch("owa.cli.utils.requests.get", return_value=mock_response):
-            version = get_latest_release()
-            assert version == "0.4.2"
+        # Temporarily unset OWA_DISABLE_VERSION_CHECK
+        original_value = os.environ.get("OWA_DISABLE_VERSION_CHECK")
+        if "OWA_DISABLE_VERSION_CHECK" in os.environ:
+            del os.environ["OWA_DISABLE_VERSION_CHECK"]
+        try:
+            with patch("owa.cli.utils.requests.get", return_value=mock_response):
+                version = get_latest_release()
+                assert version == "0.4.2"
+        finally:
+            if original_value is not None:
+                os.environ["OWA_DISABLE_VERSION_CHECK"] = original_value
 
     def test_check_for_update_disabled_by_env_var(self):
         """Test that update check is disabled when OWA_DISABLE_VERSION_CHECK is set."""
