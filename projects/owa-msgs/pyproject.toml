@@ -25,6 +25,7 @@ dependencies = [
     "pydantic>=2.10.6",
     "annotated-types",
     "numpy>=2.3.0",
+    "opencv-python>=4.11.0",
 ]
 
 [tool.uv.sources]

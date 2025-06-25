@@ -10,6 +10,7 @@ from fractions import Fraction
 from pathlib import Path
 from typing import Literal, Optional, Self, Tuple, Union
 
+import cv2
 import numpy as np
 from pydantic import BaseModel, Field, model_validator
 from pydantic.json_schema import SkipJsonSchema
@@ -58,10 +59,6 @@ def _compress_frame_to_embedded(
     Returns:
         EmbeddedRef: Compressed embedded reference
     """
-    try:
-        import cv2
-    except ImportError as e:
-        raise ImportError("opencv-python is required for image compression") from e
 
     # Use provided quality or default
     compression_quality = quality if quality is not None else 85
@@ -93,10 +90,6 @@ def _compress_frame_to_embedded(
 
 def _load_from_embedded(embedded_ref: EmbeddedRef) -> np.ndarray:
     """Load frame from embedded data."""
-    try:
-        import cv2
-    except ImportError as e:
-        raise ImportError("opencv-python is required for embedded data loading") from e
 
     image_bytes = base64.b64decode(embedded_ref.data)
 
@@ -131,11 +124,6 @@ def _load_from_external(external_ref: ExternalRef, *, force_close: bool = False)
 
 def _load_video_frame(path: str, pts_ns: int, force_close: bool) -> np.ndarray:
     """Load a specific frame from video."""
-    try:
-        import cv2
-    except ImportError as e:
-        raise ImportError(f"Required libraries not available for video loading: {e}") from e
-
     # Convert nanoseconds to Fraction for VideoReader
     pts_fraction = Fraction(pts_ns, TimeUnits.SECOND)
 
@@ -156,10 +144,6 @@ def _load_video_frame(path: str, pts_ns: int, force_close: bool) -> np.ndarray:
 
 def _load_static_image(path: str) -> np.ndarray:
     """Load a static image file."""
-    try:
-        import cv2
-    except ImportError as e:
-        raise ImportError("opencv-python is required for image loading") from e
 
     try:
         # Load image
@@ -355,11 +339,6 @@ class ScreenCaptured(OWAMessage):
 
     def to_rgb_array(self) -> np.ndarray:
         """Return the frame as an RGB numpy array."""
-        try:
-            import cv2
-        except ImportError as e:
-            raise ImportError("opencv-python is required for color conversion") from e
-
         # Ensure frame is loaded
         bgra_array = self.lazy_load()
 
