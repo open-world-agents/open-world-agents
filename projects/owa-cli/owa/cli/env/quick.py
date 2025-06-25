@@ -23,17 +23,12 @@ def ls(
             search=None,
             details=False,
             table_format=False,
-            inspect=None
+            inspect=None,
         )
     else:
         # Show all plugins
         list_module.list_plugins(
-            namespace=None,
-            component_type=None,
-            search=None,
-            details=False,
-            table_format=False,
-            sort_by="namespace"
+            namespace=None, component_type=None, search=None, details=False, table_format=False, sort_by="namespace"
         )
 
 
@@ -48,22 +43,19 @@ def find(
         case_sensitive=False,
         details=False,
         table_format=True,
-        limit=50
+        limit=50,
     )
-
-
-
 
 
 def namespaces():
     """List all available namespaces."""
     from owa.core import list_components
     from collections import Counter
-    
+
     # Collect all namespaces
     all_namespaces = set()
     namespace_counts = Counter()
-    
+
     for comp_type in ["callables", "listeners", "runnables"]:
         components = list_components(comp_type)
         if components and components.get(comp_type):
@@ -71,28 +63,23 @@ def namespaces():
                 namespace = comp_name.split("/")[0]
                 all_namespaces.add(namespace)
                 namespace_counts[namespace] += 1
-    
+
     if not all_namespaces:
         console.print("[yellow]No namespaces found[/yellow]")
         return
-    
+
     from rich.table import Table
-    
+
     table = Table(title="Available Namespaces")
     table.add_column("Namespace", style="cyan")
     table.add_column("Components", justify="right", style="green")
     table.add_column("Quick Access", style="dim")
-    
+
     for namespace in sorted(all_namespaces):
         count = namespace_counts[namespace]
-        table.add_row(
-            namespace,
-            str(count),
-            f"owl env ls {namespace}"
-        )
-    
+        table.add_row(namespace, str(count), f"owl env ls {namespace}")
+
     console.print(table)
-    console.print(f"\n[dim]💡 Found {len(all_namespaces)} namespaces with {sum(namespace_counts.values())} total components[/dim]")
-
-
-
+    console.print(
+        f"\n[dim]💡 Found {len(all_namespaces)} namespaces with {sum(namespace_counts.values())} total components[/dim]"
+    )

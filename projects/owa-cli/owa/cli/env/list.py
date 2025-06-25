@@ -34,9 +34,7 @@ def list_plugins(
 
     # Validate sort option
     if sort_by not in ["namespace", "name", "type"]:
-        console.print(
-            f"[red]Error: Invalid sort option '{sort_by}'. Must be one of: namespace, name, type[/red]"
-        )
+        console.print(f"[red]Error: Invalid sort option '{sort_by}'. Must be one of: namespace, name, type[/red]")
         sys.exit(1)
 
     if component_type:
@@ -47,8 +45,14 @@ def list_plugins(
         _list_all_plugins(namespace, search, components, details, table_format, sort_by)
 
 
-def _list_components_by_type(component_type: str, namespace: Optional[str], search: Optional[str],
-                           details: bool, table_format: bool, sort_by: str):
+def _list_components_by_type(
+    component_type: str,
+    namespace: Optional[str],
+    search: Optional[str],
+    details: bool,
+    table_format: bool,
+    sort_by: str,
+):
     """List components of a specific type."""
     components = list_components(component_type, namespace=namespace)
     if not components or not components.get(component_type):
@@ -74,8 +78,9 @@ def _list_components_by_type(component_type: str, namespace: Optional[str], sear
         _display_components_tree(component_type, comp_list, details)
 
 
-def _list_all_plugins(namespace: Optional[str], search: Optional[str], components: bool,
-                     details: bool, table_format: bool, sort_by: str):
+def _list_all_plugins(
+    namespace: Optional[str], search: Optional[str], components: bool, details: bool, table_format: bool, sort_by: str
+):
     """List all plugins with their components."""
     # Collect all plugins
     plugins = {}
@@ -278,7 +283,7 @@ def _display_plugins_table(plugins: dict, show_components: bool, show_details: b
             str(callables_count) if callables_count > 0 else "-",
             str(listeners_count) if listeners_count > 0 else "-",
             str(runnables_count) if runnables_count > 0 else "-",
-            str(total_count)
+            str(total_count),
         ]
 
         if show_details:
@@ -287,8 +292,9 @@ def _display_plugins_table(plugins: dict, show_components: bool, show_details: b
             for comp_type in ["callables", "listeners", "runnables"]:
                 if components[comp_type]:
                     comp_info = get_component_info(comp_type)
-                    loaded_count += sum(1 for comp_name in components[comp_type]
-                                      if comp_info.get(comp_name, {}).get("loaded", False))
+                    loaded_count += sum(
+                        1 for comp_name in components[comp_type] if comp_info.get(comp_name, {}).get("loaded", False)
+                    )
 
             load_percentage = (loaded_count / total_count) * 100 if total_count > 0 else 0
             row_data.extend([str(loaded_count), f"{load_percentage:.1f}%"])
