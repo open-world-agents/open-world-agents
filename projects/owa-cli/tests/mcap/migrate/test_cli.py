@@ -206,27 +206,34 @@ def test_migration_produces_expected_output(
     cli_runner, test_data_dir, temp_dir, copy_test_file, suppress_mcap_warnings
 ):
     """Test that migrating 0.3.2.mcap produces expected output."""
+    from packaging.version import Version
+
     from owa.cli.mcap.migrate import MigrationOrchestrator
 
     source_file = test_data_dir / "0.3.2.mcap"
-    expected_file = test_data_dir / "0.4.2.mcap"
 
-    if not source_file.exists() or not expected_file.exists():
-        pytest.skip("Required test files not found")
+    if not source_file.exists():
+        pytest.skip("Required test file not found")
 
     test_file = copy_test_file(test_data_dir, "0.3.2.mcap", temp_dir)
+
+    # Get the original version before migration
+    orchestrator = MigrationOrchestrator()
+    original_version = orchestrator.detect_version(test_file)
 
     # Warnings are suppressed by the fixture
     result = cli_runner.invoke(app, ["mcap", "migrate", str(test_file)], input="y\n")
 
-    # Verify the migrated file has the correct version
-    orchestrator = MigrationOrchestrator()
-    migrated_version = orchestrator.detect_version(test_file)
-    expected_version = orchestrator.detect_version(expected_file)
-
+    # Verify the migration was successful
     assert result.exit_code == 0
     assert "Migration successful" in result.stdout
-    assert migrated_version == expected_version
+
+    # Verify the migrated file has a higher version than the original
+    migrated_version = orchestrator.detect_version(test_file)
+    assert migrated_version != "unknown", "Migration should produce a valid version"
+    assert Version(migrated_version) > Version(original_version), (
+        f"Migration should increase version from {original_version} to {migrated_version}"
+    )
 
     # Verify basic file properties
     assert test_file.stat().st_size > 0

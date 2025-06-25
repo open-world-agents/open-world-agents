@@ -14,7 +14,7 @@ class String(OWAMessage):
 
 
 def read_owa_messages(stream: BytesIO):
-    reader = make_reader(stream, decoder_factories=[DecoderFactory()])
+    reader = make_reader(stream, decoder_factories=[DecoderFactory(decode_args={"return_dict_on_failure": True})])
     return reader.iter_decoded_messages()
 
 
