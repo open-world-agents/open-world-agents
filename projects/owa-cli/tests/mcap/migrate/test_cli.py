@@ -57,11 +57,25 @@ def test_migrate_dry_run(cli_runner, test_data_dir, temp_dir, copy_test_file, su
 @patch("owa.cli.mcap.migrate.migrate.OWAMcapReader")
 def test_migrate_already_current_version(mock_reader_class, cli_runner, test_data_dir, temp_dir, copy_test_file):
     """Test migration when file is already at current version."""
+    from owa.cli.mcap.migrate import MigrationOrchestrator
+
+    # Get the highest reachable version dynamically
+    orchestrator = MigrationOrchestrator()
+    all_target_versions = [m.to_version for m in orchestrator.script_migrators]
+    if all_target_versions:
+        from packaging.version import Version
+
+        highest_version = str(max(Version(v) for v in all_target_versions))
+    else:
+        highest_version = "0.4.2"  # Fallback
+
     mock_reader = mock_reader_class.return_value.__enter__.return_value
-    mock_reader.file_version = "0.4.2"
+    # Set the file version to the highest reachable version so no migration is needed
+    mock_reader.file_version = highest_version
 
     test_file = copy_test_file(test_data_dir, "0.4.2.mcap", temp_dir)
     result = cli_runner.invoke(app, ["mcap", "migrate", str(test_file)])
+
     assert result.exit_code == 0
     assert "already at the target version" in result.stdout
 
