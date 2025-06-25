@@ -1,7 +1,7 @@
 import importlib
 import io
 import warnings
-from typing import Any, Callable, Dict, Optional, TypeAlias
+from typing import Any, Callable, TypeAlias
 
 import orjson
 from easydict import EasyDict
@@ -20,7 +20,7 @@ def dict_decoder(message_data: bytes) -> Any:
     return EasyDict(orjson.loads(message_data))
 
 
-def _create_message_decoder(message_type: str) -> DecodeFunction:
+def create_message_decoder(message_type: str, fallback: bool = False) -> DecodeFunction:
     """
     Create a decode function for a specific OWA message type/schema name.
 
@@ -51,14 +51,18 @@ def _create_message_decoder(message_type: str) -> DecodeFunction:
             pass  # Fall through to dictionary decoding
 
     if cls is None:
-        # Fall back to dictionary decoding. TODO: make fallback configurable
-        if "/" in message_type:
-            warnings.warn(
-                f"Domain-based message '{message_type}' not found in registry. Falling back to dictionary decoding."
-            )
-        else:
-            warnings.warn(f"Failed to import module for schema '{message_type}'. Falling back to dictionary decoding.")
-        return dict_decoder
+        if fallback:
+            if "/" in message_type:
+                warnings.warn(
+                    f"Domain-based message '{message_type}' not found in registry. Falling back to dictionary decoding."
+                )
+            else:
+                warnings.warn(
+                    f"Failed to import module for schema '{message_type}'. Falling back to dictionary decoding."
+                )
+            return dict_decoder
+
+        raise ValueError(f"Unsupported message type: {message_type}")
 
     def decoder(message_data: bytes) -> Any:
         buffer = io.BytesIO(message_data)
@@ -67,41 +71,16 @@ def _create_message_decoder(message_type: str) -> DecodeFunction:
     return decoder
 
 
-class DecodeCache:
-    """
-    Cache for decode functions to avoid regenerating them for the same message types.
-    """
-
-    def __init__(self):
-        self._cache: Dict[str, DecodeFunction] = {}
-
-    def get_decode_function(self, message_type: str) -> DecodeFunction:
-        """
-        Get a decode function for the given message type, using cache if available.
-
-        :param message_type: The message type or schema name
-        :return: DecodeFunction that can decode messages of this type, or None if unsupported
-        """
-        if message_type not in self._cache:
-            decode_fn = _create_message_decoder(message_type)
-            self._cache[message_type] = decode_fn
-
-        return self._cache[message_type]
-
-    def clear(self):
-        """Clear the decode function cache."""
-        self._cache.clear()
-
-
-# Global cache instance for convenience
-_global_decode_cache = DecodeCache()
-
-
-def get_decode_function(message_type: str) -> DecodeFunction:
+def get_decode_function(
+    message_type: str, *, return_dict: bool = False, return_dict_on_failure: bool = False
+) -> DecodeFunction:
     """
     Convenience function to get a decode function using the global cache.
 
     :param message_type: The message type or schema name
     :return: DecodeFunction that can decode messages of this type, or None if unsupported
     """
-    return _global_decode_cache.get_decode_function(message_type)
+    if return_dict:
+        return dict_decoder
+    else:
+        return create_message_decoder(message_type, fallback=return_dict_on_failure)
