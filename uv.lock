@@ -1413,6 +1413,7 @@ source = { editable = "projects/owa-msgs" }
 dependencies = [
     { name = "annotated-types" },
     { name = "numpy" },
+    { name = "opencv-python" },
     { name = "owa-core" },
     { name = "pydantic" },
 ]
@@ -1421,6 +1422,7 @@ dependencies = [
 requires-dist = [
     { name = "annotated-types" },
     { name = "numpy", specifier = ">=2.3.0" },
+    { name = "opencv-python", specifier = ">=4.11.0" },
     { name = "owa-core", editable = "projects/owa-core" },
     { name = "pydantic", specifier = ">=2.10.6" },
 ]
