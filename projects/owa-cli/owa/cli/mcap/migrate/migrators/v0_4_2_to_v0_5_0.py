@@ -37,6 +37,7 @@ import orjson
 import typer
 from rich.console import Console
 
+from mcap_owa.decoder import dict_decoder
 from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
 from owa.core import MESSAGES
 
@@ -110,41 +111,26 @@ def migrate(
 
     try:
         msgs = []
-        with OWAMcapReader(input_file, decode_as_dict=True) as reader:
-            for schema, channel, message, decoded in reader.reader.iter_decoded_messages():
-                schema_name = schema.name
+        with OWAMcapReader(input_file) as reader:
+            for mcap_msg in reader.iter_messages():
+                schema_name, message = mcap_msg.message_type, mcap_msg.message
 
                 if schema_name == "desktop/ScreenCaptured":
                     # Extract data from the decoded message
-                    if hasattr(decoded, "model_dump"):
-                        data = decoded.model_dump()
-                    elif hasattr(decoded, "__dict__"):
-                        data = decoded.__dict__
-                    else:
-                        data = dict(decoded)
+                    data = dict_decoder(message)
 
-                    # Check if this message needs migration (has legacy fields)
-                    needs_migration = (
-                        "original_shape" in data or "path" in data or ("pts" in data and "media_ref" not in data)
-                    )
+                    migrated_data = migrate_screen_captured_data(data)
 
-                    if needs_migration:
-                        # Migrate the data structure
-                        migrated_data = migrate_screen_captured_data(data)
+                    # Create new message with migrated data
+                    new_message = MESSAGES["desktop/ScreenCaptured"](**migrated_data)
+                    msgs.append((mcap_msg.timestamp, mcap_msg.topic, new_message))
+                    changes_made += 1
 
-                        # Create new message with migrated data
-                        new_message = MESSAGES["desktop/ScreenCaptured"](**migrated_data)
-                        msgs.append((message.log_time, channel.topic, new_message))
-                        changes_made += 1
-
-                        if verbose:
-                            console.print("  Migrated ScreenCaptured message with legacy fields")
-                    else:
-                        # Message already in new format
-                        msgs.append((message.log_time, channel.topic, decoded))
+                    if verbose:
+                        console.print("  Migrated ScreenCaptured message with legacy fields")
                 else:
                     # Non-ScreenCaptured messages pass through unchanged
-                    msgs.append((message.log_time, channel.topic, decoded))
+                    msgs.append((mcap_msg.timestamp, mcap_msg.topic, mcap_msg.decoded))
 
         # Write migrated messages
         with OWAMcapWriter(output_path) as writer:
@@ -188,15 +174,10 @@ def verify(
     try:
         # Check for legacy field structures
         with OWAMcapReader(file_path) as reader:
-            for schema, _, _, decoded in reader.reader.iter_decoded_messages():
-                if schema.name == "desktop/ScreenCaptured":
-                    # Check if message has legacy field structure
-                    if hasattr(decoded, "model_dump"):
-                        data = decoded.model_dump()
-                    elif hasattr(decoded, "__dict__"):
-                        data = decoded.__dict__
-                    else:
-                        data = dict(decoded)
+            for mcap_msg in reader.iter_messages():
+                message_type, message = mcap_msg.message_type, mcap_msg.message
+                if message_type == "desktop/ScreenCaptured":
+                    data = dict_decoder(message)
 
                     # Check for legacy fields
                     has_legacy_fields = (
@@ -239,7 +220,7 @@ def verify(
             result = {"success": True, "message": success_message}
             print(orjson.dumps(result).decode())
         else:
-            console.print("[green]✓ No legacy ScreenCaptured field structures found[/green]")
+            console.print(f"[green]✓ {success_message}[/green]")
             if backup_path is not None and not integrity_verified:
                 console.print("[yellow]⚠ Migration integrity verification failed[/yellow]")
 
