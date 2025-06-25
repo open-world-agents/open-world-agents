@@ -4,6 +4,7 @@ MCAP file migration system with automatic version detection and sequential migra
 
 import re
 import subprocess
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
@@ -44,37 +45,83 @@ class MigrationResult:
 # Full schema definitions available in: schemas.json
 
 
-def validate_migration_output(data: dict) -> bool:
+def validate_migration_output(data: dict, verbose: bool = False) -> bool:
     """Basic validation for migration JSON output. Full schema in schemas.json."""
     try:
-        if not isinstance(data, dict) or "success" not in data or not isinstance(data["success"], bool):
+        if not isinstance(data, dict):
+            if verbose:
+                print(f"Validation failed: Expected dict, got {type(data)}", file=sys.stderr)
+            return False
+
+        if "success" not in data or not isinstance(data["success"], bool):
+            if verbose:
+                print("Validation failed: Missing or invalid 'success' field", file=sys.stderr)
             return False
 
         if data["success"]:
             # Success: require changes_made, from_version, to_version; no error
-            return (
-                all(field in data for field in ["changes_made", "from_version", "to_version"]) and "error" not in data
-            )
+            required_fields = ["changes_made", "from_version", "to_version"]
+            missing_fields = [field for field in required_fields if field not in data]
+            if missing_fields:
+                if verbose:
+                    print(f"Validation failed: Missing required fields for success: {missing_fields}", file=sys.stderr)
+                return False
+            if "error" in data:
+                if verbose:
+                    print("Validation failed: Success output should not contain 'error' field", file=sys.stderr)
+                return False
+            return True
         else:
             # Failure: require error; changes_made should be 0 if present
-            return "error" in data and isinstance(data["error"], str) and data.get("changes_made", 0) == 0
-    except Exception:
+            if "error" not in data or not isinstance(data["error"], str):
+                if verbose:
+                    print("Validation failed: Missing or invalid 'error' field for failure", file=sys.stderr)
+                return False
+            if data.get("changes_made", 0) != 0:
+                if verbose:
+                    print("Validation failed: Failure output should have changes_made=0", file=sys.stderr)
+                return False
+            return True
+    except Exception as e:
+        if verbose:
+            print(f"Validation failed with exception: {e}", file=sys.stderr)
         return False
 
 
-def validate_verification_output(data: dict) -> bool:
+def validate_verification_output(data: dict, verbose: bool = False) -> bool:
     """Basic validation for verification JSON output. Full schema in schemas.json."""
     try:
-        if not isinstance(data, dict) or "success" not in data or not isinstance(data["success"], bool):
+        if not isinstance(data, dict):
+            if verbose:
+                print(f"Validation failed: Expected dict, got {type(data)}", file=sys.stderr)
+            return False
+
+        if "success" not in data or not isinstance(data["success"], bool):
+            if verbose:
+                print("Validation failed: Missing or invalid 'success' field", file=sys.stderr)
             return False
 
         if data["success"]:
             # Success: require message; no error
-            return "message" in data and isinstance(data["message"], str) and "error" not in data
+            if "message" not in data or not isinstance(data["message"], str):
+                if verbose:
+                    print("Validation failed: Missing or invalid 'message' field for success", file=sys.stderr)
+                return False
+            if "error" in data:
+                if verbose:
+                    print("Validation failed: Success output should not contain 'error' field", file=sys.stderr)
+                return False
+            return True
         else:
             # Failure: require error
-            return "error" in data and isinstance(data["error"], str)
-    except Exception:
+            if "error" not in data or not isinstance(data["error"], str):
+                if verbose:
+                    print("Validation failed: Missing or invalid 'error' field for failure", file=sys.stderr)
+                return False
+            return True
+    except Exception as e:
+        if verbose:
+            print(f"Validation failed with exception: {e}", file=sys.stderr)
         return False
 
 
@@ -89,39 +136,58 @@ class ScriptMigrator:
     def migrate(self, file_path: Path, verbose: bool) -> MigrationResult:
         """Execute the standalone migration script."""
         cmd = ["uv", "run", str(self.script_path), "migrate", str(file_path), "--output-format", "json"]
-        if verbose:
-            cmd.append("--verbose")
 
         result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", env=_get_subprocess_env())
 
-        if result.returncode == 0:
-            # Try to parse JSON output
+        # First, try to parse JSON output regardless of return code
+        json_output = None
+        if result.stdout.strip():
             try:
-                output_data = orjson.loads(result.stdout.strip())
-                if validate_migration_output(output_data):
-                    changes_made = output_data.get("changes_made", 0)
-                    return MigrationResult(output_data["success"], self.from_version, self.to_version, changes_made)
-            except (orjson.JSONDecodeError, KeyError):
+                json_output = orjson.loads(result.stdout.strip())
+            except orjson.JSONDecodeError:
                 pass
 
-            # Fallback to text parsing for backward compatibility
-            changes_made = 1 if result.stdout and "changes made" in result.stdout else 0
-            return MigrationResult(True, self.from_version, self.to_version, changes_made)
+        # Handle successful execution (return code 0)
+        if result.returncode == 0:
+            if json_output and validate_migration_output(json_output, verbose=verbose):
+                # Valid JSON output - use it
+                changes_made = json_output.get("changes_made", 0)
+                success = json_output.get("success", True)
+                error_msg = json_output.get("error", "") if not success else ""
+                return MigrationResult(success, self.from_version, self.to_version, changes_made, error_msg)
+            else:
+                # Fallback to text parsing for backward compatibility
+                if verbose and json_output:
+                    print(
+                        f"Warning: Invalid JSON output from migrator {self.script_path.name}, falling back to text parsing",
+                        file=sys.stderr,
+                    )
+                changes_made = 1 if result.stdout and "changes made" in result.stdout else 0
+                return MigrationResult(True, self.from_version, self.to_version, changes_made)
 
-        # Handle error case
-        try:
-            output_data = orjson.loads(result.stdout.strip())
-            if validate_migration_output(output_data) and not output_data.get("success", True):
-                return MigrationResult(False, self.from_version, self.to_version, 0, output_data["error"])
-        except (orjson.JSONDecodeError, KeyError):
-            pass
+        # Handle error case (non-zero return code)
+        if json_output and validate_migration_output(json_output, verbose=verbose):
+            # Valid JSON error output - use structured error information
+            error_msg = json_output.get("error", "Migration failed")
+            changes_made = json_output.get("changes_made", 0)
+            return MigrationResult(False, self.from_version, self.to_version, changes_made, error_msg)
+        else:
+            # Fallback to stderr/stdout for error message
+            if verbose and json_output:
+                print(
+                    f"Warning: Invalid JSON error output from migrator {self.script_path.name}, using fallback error message",
+                    file=sys.stderr,
+                )
+            error_msg = (
+                result.stderr.strip()
+                if result.stderr
+                else result.stdout.strip()
+                if result.stdout
+                else f"Migration failed with exit code {result.returncode}"
+            )
+            return MigrationResult(False, self.from_version, self.to_version, 0, error_msg)
 
-        error_msg = (
-            result.stderr.strip() if result.stderr else result.stdout.strip() if result.stdout else "Migration failed"
-        )
-        return MigrationResult(False, self.from_version, self.to_version, 0, error_msg)
-
-    def verify_migration(self, file_path: Path, backup_path: Optional[Path]) -> bool:
+    def verify_migration(self, file_path: Path, backup_path: Optional[Path], verbose: bool = False) -> bool:
         """Verify migration by running the script with --verify flag."""
         cmd = ["uv", "run", str(self.script_path), "verify", str(file_path), "--output-format", "json"]
         if backup_path:
@@ -129,15 +195,27 @@ class ScriptMigrator:
 
         result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", env=_get_subprocess_env())
 
-        # Try to parse JSON output for more detailed verification results
-        if result.returncode == 0:
+        # Try to parse JSON output regardless of return code for better error reporting
+        json_output = None
+        if result.stdout.strip():
             try:
-                output_data = orjson.loads(result.stdout.strip())
-                if validate_verification_output(output_data):
-                    return output_data["success"]
-            except (orjson.JSONDecodeError, KeyError):
-                pass
+                json_output = orjson.loads(result.stdout.strip())
+            except orjson.JSONDecodeError:
+                if verbose:
+                    print(
+                        f"Warning: Failed to parse JSON output from verifier {self.script_path.name}", file=sys.stderr
+                    )
 
+        # If we have valid JSON output, use it to determine success
+        if json_output and validate_verification_output(json_output, verbose=verbose):
+            return json_output.get("success", False)
+
+        # Fallback to return code for backward compatibility
+        if verbose and json_output:
+            print(
+                f"Warning: Invalid JSON verification output from {self.script_path.name}, using return code",
+                file=sys.stderr,
+            )
         return result.returncode == 0
 
 
@@ -351,7 +429,7 @@ class MigrationOrchestrator:
                     raise RuntimeError(f"Migration failed: {result.error_message}")
 
                 # Verify migration
-                if not migrator.verify_migration(file_path, backup_ctx.backup_path):
+                if not migrator.verify_migration(file_path, backup_ctx.backup_path, verbose):
                     console.print("[red]Migration verification failed[/red]")
                     result.success = False
                     result.error_message = "Verification failed"

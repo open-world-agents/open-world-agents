@@ -2,6 +2,7 @@
 Tests for the MCAP migration system.
 """
 
+import subprocess
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -10,7 +11,10 @@ import pytest
 from owa.cli.mcap.migrate import (
     MigrationOrchestrator,
     MigrationResult,
+    ScriptMigrator,
     detect_files_needing_migration,
+    validate_migration_output,
+    validate_verification_output,
 )
 
 
@@ -282,3 +286,165 @@ def test_multi_step_migration_with_script_migrators(mock_reader_class, temp_dir)
     # Verify that both migrators were called
     mock_migrator_1.migrate.assert_called_once()
     mock_migrator_2.migrate.assert_called_once()
+
+
+class TestScriptMigratorErrorHandling:
+    """Test error handling improvements in ScriptMigrator."""
+
+    def test_migrate_with_json_error_output(self, temp_dir):
+        """Test that JSON error output is properly parsed and handled."""
+        script_path = temp_dir / "test_migrator.py"
+        script_path.write_text("#!/usr/bin/env python3\nprint('test')")
+
+        migrator = ScriptMigrator(script_path, "0.3.0", "0.4.0")
+
+        # Mock subprocess to return JSON error output with non-zero exit code
+        error_json = '{"success": false, "changes_made": 0, "error": "Test migration error", "from_version": "0.3.0", "to_version": "0.4.0"}'
+        mock_result = MagicMock()
+        mock_result.returncode = 1
+        mock_result.stdout = error_json
+        mock_result.stderr = ""
+
+        with patch("subprocess.run", return_value=mock_result):
+            result = migrator.migrate(temp_dir / "test.mcap", verbose=False)
+
+        assert not result.success
+        assert result.error_message == "Test migration error"
+        assert result.changes_made == 0
+        assert result.version_from == "0.3.0"
+        assert result.version_to == "0.4.0"
+
+    def test_migrate_with_invalid_json_error_fallback(self, temp_dir):
+        """Test fallback to stderr/stdout when JSON is invalid."""
+        script_path = temp_dir / "test_migrator.py"
+        script_path.write_text("#!/usr/bin/env python3\nprint('test')")
+
+        migrator = ScriptMigrator(script_path, "0.3.0", "0.4.0")
+
+        # Mock subprocess to return invalid JSON with non-zero exit code
+        mock_result = MagicMock()
+        mock_result.returncode = 1
+        mock_result.stdout = "Invalid JSON output"
+        mock_result.stderr = "Script execution failed"
+
+        with patch("subprocess.run", return_value=mock_result):
+            result = migrator.migrate(temp_dir / "test.mcap", verbose=False)
+
+        assert not result.success
+        assert result.error_message == "Script execution failed"
+        assert result.changes_made == 0
+
+    def test_migrate_with_json_success_false_on_zero_exit(self, temp_dir):
+        """Test handling JSON with success=false even when exit code is 0."""
+        script_path = temp_dir / "test_migrator.py"
+        script_path.write_text("#!/usr/bin/env python3\nprint('test')")
+
+        migrator = ScriptMigrator(script_path, "0.3.0", "0.4.0")
+
+        # Mock subprocess to return JSON with success=false but exit code 0
+        error_json = '{"success": false, "changes_made": 0, "error": "Validation failed", "from_version": "0.3.0", "to_version": "0.4.0"}'
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = error_json
+        mock_result.stderr = ""
+
+        with patch("subprocess.run", return_value=mock_result):
+            result = migrator.migrate(temp_dir / "test.mcap", verbose=False)
+
+        assert not result.success
+        assert result.error_message == "Validation failed"
+        assert result.changes_made == 0
+
+    def test_verify_migration_with_json_error_output(self, temp_dir):
+        """Test that verification JSON error output is properly handled."""
+        script_path = temp_dir / "test_migrator.py"
+        script_path.write_text("#!/usr/bin/env python3\nprint('test')")
+
+        migrator = ScriptMigrator(script_path, "0.3.0", "0.4.0")
+
+        # Mock subprocess to return JSON error output
+        error_json = '{"success": false, "error": "Legacy structures found"}'
+        mock_result = MagicMock()
+        mock_result.returncode = 1
+        mock_result.stdout = error_json
+        mock_result.stderr = ""
+
+        with patch("subprocess.run", return_value=mock_result):
+            result = migrator.verify_migration(temp_dir / "test.mcap", None, verbose=False)
+
+        assert not result
+
+    def test_verify_migration_with_json_success_output(self, temp_dir):
+        """Test that verification JSON success output is properly handled."""
+        script_path = temp_dir / "test_migrator.py"
+        script_path.write_text("#!/usr/bin/env python3\nprint('test')")
+
+        migrator = ScriptMigrator(script_path, "0.3.0", "0.4.0")
+
+        # Mock subprocess to return JSON success output
+        success_json = '{"success": true, "message": "Verification completed successfully"}'
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = success_json
+        mock_result.stderr = ""
+
+        with patch("subprocess.run", return_value=mock_result):
+            result = migrator.verify_migration(temp_dir / "test.mcap", None, verbose=False)
+
+        assert result
+
+
+class TestOutputValidation:
+    """Test output validation functions."""
+
+    def test_validate_migration_output_success(self):
+        """Test validation of successful migration output."""
+        valid_success = {"success": True, "changes_made": 5, "from_version": "0.3.0", "to_version": "0.4.0"}
+        assert validate_migration_output(valid_success)
+
+    def test_validate_migration_output_failure(self):
+        """Test validation of failed migration output."""
+        valid_failure = {
+            "success": False,
+            "changes_made": 0,
+            "error": "Migration failed",
+            "from_version": "0.3.0",
+            "to_version": "0.4.0",
+        }
+        assert validate_migration_output(valid_failure)
+
+    def test_validate_migration_output_invalid_success(self):
+        """Test validation rejects invalid success output."""
+        invalid_success = {
+            "success": True,
+            "changes_made": 5,
+            # Missing from_version and to_version
+        }
+        assert not validate_migration_output(invalid_success)
+
+    def test_validate_migration_output_invalid_failure(self):
+        """Test validation rejects invalid failure output."""
+        invalid_failure = {
+            "success": False,
+            "changes_made": 5,  # Should be 0 for failure
+            "error": "Migration failed",
+        }
+        assert not validate_migration_output(invalid_failure)
+
+    def test_validate_verification_output_success(self):
+        """Test validation of successful verification output."""
+        valid_success = {"success": True, "message": "Verification completed successfully"}
+        assert validate_verification_output(valid_success)
+
+    def test_validate_verification_output_failure(self):
+        """Test validation of failed verification output."""
+        valid_failure = {"success": False, "error": "Legacy structures found"}
+        assert validate_verification_output(valid_failure)
+
+    def test_validate_verification_output_invalid(self):
+        """Test validation rejects invalid verification output."""
+        invalid_output = {
+            "success": True,
+            # Missing message field
+        }
+        assert not validate_verification_output(invalid_output)
