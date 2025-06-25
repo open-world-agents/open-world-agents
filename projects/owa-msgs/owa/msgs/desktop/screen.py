@@ -15,6 +15,7 @@ import numpy as np
 from pydantic import BaseModel, Field, model_validator
 from pydantic.json_schema import SkipJsonSchema
 
+from owa.core.io import load_image
 from owa.core.io.video import VideoReader
 from owa.core.message import OWAMessage
 from owa.core.time import TimeUnits
@@ -144,27 +145,17 @@ def _load_video_frame(path: str, pts_ns: int, force_close: bool) -> np.ndarray:
 
 def _load_static_image(path: str) -> np.ndarray:
     """Load a static image file."""
-
     try:
-        # Load image
-        if path.startswith(("http://", "https://")):
-            # Remote image
-            import urllib.request
+        # Load image using owa.core.io.load_image
+        pil_image = load_image(path)
 
-            with urllib.request.urlopen(path) as response:
-                image_data = response.read()
+        # Convert PIL image to numpy array (RGB format)
+        rgb_array = np.array(pil_image)
 
-            nparr = np.frombuffer(image_data, np.uint8)
-            bgr_array = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        else:
-            # Local image
-            bgr_array = cv2.imread(path, cv2.IMREAD_COLOR)
+        # Convert RGB to BGRA
+        bgra_array = cv2.cvtColor(rgb_array, cv2.COLOR_RGB2BGRA)
 
-        if bgr_array is None:
-            raise ValueError(f"Failed to load image from {path}")
-
-        # Convert BGR to BGRA
-        return cv2.cvtColor(bgr_array, cv2.COLOR_BGR2BGRA)
+        return bgra_array
 
     except Exception as e:
         source_type = "remote" if path.startswith(("http://", "https://")) else "local"
