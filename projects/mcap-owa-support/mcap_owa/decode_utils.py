@@ -20,7 +20,7 @@ def dict_decoder(message_data: bytes) -> Any:
     return EasyDict(orjson.loads(message_data))
 
 
-def _create_message_decoder(message_type: str) -> Optional[DecodeFunction]:
+def _create_message_decoder(message_type: str) -> DecodeFunction:
     """
     Create a decode function for a specific OWA message type/schema name.
 
@@ -32,9 +32,6 @@ def _create_message_decoder(message_type: str) -> Optional[DecodeFunction]:
     :param message_type: The message type or schema name (e.g., "desktop/KeyboardEvent" or "owa.env.desktop.msg.KeyboardState")
     :return: DecodeFunction that can decode messages of this type, or None if unsupported
     """
-    if not message_type:
-        return None
-
     cls = None
 
     # Try new domain-based format first
@@ -53,23 +50,21 @@ def _create_message_decoder(message_type: str) -> Optional[DecodeFunction]:
         except (ValueError, ImportError, AttributeError):
             pass  # Fall through to dictionary decoding
 
-    if cls is not None:
-        # Successfully found message class
-        def decoder(message_data: bytes) -> Any:
-            buffer = io.BytesIO(message_data)
-            return cls.deserialize(buffer)
-
-        return decoder
-    else:
-        # Fall back to dictionary decoding
+    if cls is None:
+        # Fall back to dictionary decoding. TODO: make fallback configurable
         if "/" in message_type:
             warnings.warn(
                 f"Domain-based message '{message_type}' not found in registry. Falling back to dictionary decoding."
             )
         else:
             warnings.warn(f"Failed to import module for schema '{message_type}'. Falling back to dictionary decoding.")
-
         return dict_decoder
+
+    def decoder(message_data: bytes) -> Any:
+        buffer = io.BytesIO(message_data)
+        return cls.deserialize(buffer)
+
+    return decoder
 
 
 class DecodeCache:
@@ -80,7 +75,7 @@ class DecodeCache:
     def __init__(self):
         self._cache: Dict[str, DecodeFunction] = {}
 
-    def get_decode_function(self, message_type: str) -> Optional[DecodeFunction]:
+    def get_decode_function(self, message_type: str) -> DecodeFunction:
         """
         Get a decode function for the given message type, using cache if available.
 
@@ -89,10 +84,7 @@ class DecodeCache:
         """
         if message_type not in self._cache:
             decode_fn = _create_message_decoder(message_type)
-            if decode_fn is not None:
-                self._cache[message_type] = decode_fn
-            else:
-                return None
+            self._cache[message_type] = decode_fn
 
         return self._cache[message_type]
 
@@ -105,7 +97,7 @@ class DecodeCache:
 _global_decode_cache = DecodeCache()
 
 
-def get_decode_function(message_type: str) -> Optional[DecodeFunction]:
+def get_decode_function(message_type: str) -> DecodeFunction:
     """
     Convenience function to get a decode function using the global cache.
 
