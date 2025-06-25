@@ -344,11 +344,11 @@ def test_video_reader_container_caching_with_urls():
     try:
         # First access - should create new container
         reader1 = VideoReader(test_url)
-        container1_id = id(reader1.container)
+        container1_id = id(reader1.container)  # noqa: F841
 
         # Second access - should potentially reuse cached container
         reader2 = VideoReader(test_url)
-        container2_id = id(reader2.container)
+        container2_id = id(reader2.container)  # noqa: F841
 
         # Clean up
         reader1.close()
