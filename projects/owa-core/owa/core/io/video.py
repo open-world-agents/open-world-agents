@@ -1,3 +1,25 @@
+"""
+Video I/O utilities for Open World Agents.
+
+This module provides VideoReader and VideoWriter classes for reading and writing
+video files using PyAV. Both local files and remote URLs (HTTP/HTTPS) are supported.
+
+Examples:
+    Reading from a local file:
+        with VideoReader("video.mp4") as reader:
+            for frame in reader.read_frames():
+                # Process frame
+                pass
+
+    Reading from a remote URL:
+        with VideoReader("https://example.com/video.mp4") as reader:
+            frame = reader.read_frame(pts=1.5)  # Read frame at 1.5 seconds
+
+    Writing a video:
+        with VideoWriter("output.mp4", fps=30.0) as writer:
+            writer.write_frame(frame_array)
+"""
+
 import atexit
 import gc
 import os
@@ -16,11 +38,47 @@ from loguru import logger
 SECOND_TYPE = Union[float, Fraction]
 DUPLICATE_TOLERANCE_SECOND: Fraction = Fraction(1, 120)
 PTSUnit = Literal["pts", "sec"]
+VideoPathType = Union[str, os.PathLike, Path]  # Supports both local paths and URLs
 
 # Garbage collection counters for PyAV reference cycles
 # Reference: https://github.com/pytorch/vision/blob/428a54c96e82226c0d2d8522e9cbfdca64283da0/torchvision/io/video.py#L53-L55
 _CALLED_TIMES = 0
 _GC_COLLECTION_INTERVAL = 10
+
+
+def _normalize_video_path(video_path: VideoPathType) -> Union[str, Path]:
+    """
+    Normalize video path for use with PyAV.
+
+    Args:
+        video_path: Input video file path or URL
+
+    Returns:
+        str for URLs, Path for local files
+
+    Raises:
+        ValueError: If URL scheme is not supported or path is invalid
+        FileNotFoundError: If local file does not exist
+    """
+    if isinstance(video_path, str):
+        # Check if it's any kind of URL (not just http/https)
+        if "://" in video_path:
+            # Validate that we only support HTTP/HTTPS
+            if not (video_path.startswith("http://") or video_path.startswith("https://")):
+                raise ValueError(f"Unsupported URL scheme. Only http:// and https:// are supported, got: {video_path}")
+            return video_path
+        else:
+            # It's a string path, convert to Path and validate
+            local_path = Path(video_path)
+            if not local_path.exists():
+                raise FileNotFoundError(f"Video file not found: {local_path}")
+            return local_path
+    else:
+        # Convert to Path for local files and validate existence
+        local_path = Path(video_path)
+        if not local_path.exists():
+            raise FileNotFoundError(f"Video file not found: {local_path}")
+        return local_path
 
 
 class ContainerCache:
@@ -33,7 +91,7 @@ class ContainerCache:
         self.inactive_timeout = inactive_timeout
         atexit.register(self.close_all)
 
-    def get_container(self, video_path: Path, mode: str = "r") -> av.container.Container:
+    def get_container(self, video_path: Union[str, Path], mode: str = "r") -> av.container.Container:
         """Get or create cached container with reference counting."""
         path_str = str(video_path)
 
@@ -57,7 +115,7 @@ class ContainerCache:
 
             return container
 
-    def release_container(self, video_path: Path) -> None:
+    def release_container(self, video_path: Union[str, Path]) -> None:
         """Decrease reference count."""
         path_str = str(video_path)
 
@@ -66,7 +124,7 @@ class ContainerCache:
                 container, refs, _ = self._cache[path_str]
                 self._cache[path_str] = (container, max(0, refs - 1), time.time())
 
-    def force_close_container(self, video_path: Path) -> None:
+    def force_close_container(self, video_path: Union[str, Path]) -> None:
         """Immediately close and remove container."""
         path_str = str(video_path)
 
@@ -122,12 +180,12 @@ class ContainerCache:
 _container_cache = ContainerCache(max_size=10)
 
 
-def get_video_container(video_path: Path) -> av.container.InputContainer:
+def get_video_container(video_path: Union[str, Path]) -> av.container.InputContainer:
     """Get a container from the cache or create a new one."""
     return _container_cache.get_container(video_path, mode="r")
 
 
-def release_video_container(video_path: Path) -> None:
+def release_video_container(video_path: Union[str, Path]) -> None:
     """Release a container reference."""
     _container_cache.release_container(video_path)
 
@@ -137,7 +195,7 @@ def close_all_containers():
     _container_cache.close_all()
 
 
-def force_close_video_container(video_path: Path) -> None:
+def force_close_video_container(video_path: Union[str, Path]) -> None:
     """Force immediate closure of a specific container."""
     _container_cache.force_close_container(video_path)
 
@@ -287,15 +345,18 @@ class VideoWriter:
 
 
 class VideoReader:
-    """VideoReader uses PyAV to read video frames with caching support."""
+    """VideoReader uses PyAV to read video frames with caching support.
 
-    def __init__(self, video_path: Union[str, os.PathLike, Path], force_close: bool = False):
+    Supports both local video files and remote URLs (HTTP/HTTPS).
+    """
+
+    def __init__(self, video_path: VideoPathType, force_close: bool = False):
         """
         Args:
-            video_path: Input video file path
+            video_path: Input video file path or URL (HTTP/HTTPS)
             force_close: Force complete closure instead of using cache
         """
-        self.video_path = Path(video_path)
+        self.video_path = _normalize_video_path(video_path)
         self.force_close = force_close
         self.container = get_video_container(self.video_path)
 
@@ -407,12 +468,22 @@ if __name__ == "__main__":
             img = np.zeros((48, 64, 3), dtype=np.uint8)
             writer_cfr.write_frame(img)
 
-    # Read back frames starting at 0.5 seconds
+    # Read back frames from local file
     with VideoReader(video_path) as reader:
         for frame in reader.read_frames(start_pts=Fraction(1, 2)):
-            print(f"PTS: {frame.pts}, Time: {frame.time}, Shape: {frame.to_ndarray(format='rgb24').shape}")
+            print(f"Local PTS: {frame.pts}, Time: {frame.time}, Shape: {frame.to_ndarray(format='rgb24').shape}")
+            break  # Just show first frame
         try:
             frame = reader.read_frame(pts=Fraction(1, 2))
             print(f"Single frame at 0.5s: PTS={frame.pts}, Time={frame.time}")
         except ValueError as e:
             logger.error(e)
+
+    # Example with remote URL (commented out to avoid network dependency in tests)
+    # remote_url = "https://open-world-agents.github.io/open-world-agents/data/ocap.mkv"
+    # try:
+    #     with VideoReader(remote_url) as reader:
+    #         frame = reader.read_frame(pts=0.0)
+    #         print(f"Remote frame: PTS={frame.pts}, Time={frame.time}")
+    # except Exception as e:
+    #     logger.error(f"Failed to read remote video: {e}")
