@@ -6,7 +6,6 @@ using set_transform to enable event encoding and image loading on-the-fly.
 These transforms extract the core functionality from VLADataset for broader reuse.
 """
 
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 from mcap_owa.highlevel import McapMessage
