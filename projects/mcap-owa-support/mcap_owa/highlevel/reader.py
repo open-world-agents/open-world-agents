@@ -25,7 +25,7 @@ class OWAMcapReader:
     in an MCAP file, with support for both local filesystem paths and remote HTTP/HTTPS URLs.
     """
 
-    def __init__(self, file_path: PathType):
+    def __init__(self, file_path: PathType, *, decode_args: dict = {}):
         """
         Initialize an OWA MCAP reader.
 
@@ -33,6 +33,8 @@ class OWAMcapReader:
                           - A local file path (string or Path object)
                           - A network URL (http:// or https:// protocol)
                           e.g., "https://huggingface.co/datasets/.../example.mcap"
+        :param return_dict: If True, always return dictionary decoder for messages
+        :param return_dict_on_failure: If True, fall back to dictionary decoder on failure
         """
         self.file_path = file_path
 
@@ -48,7 +50,8 @@ class OWAMcapReader:
             self._file = open(file_path, "rb")
             self._is_network_path = False
 
-        self.reader: McapReader = make_reader(self._file, decoder_factories=[DecoderFactory()])
+        self.reader: McapReader = make_reader(self._file, decoder_factories=[DecoderFactory(decode_args=decode_args)])
+        self.decode_args = decode_args
         self.__finished = False
 
         # Check profile of mcap file
@@ -161,4 +164,4 @@ class OWAMcapReader:
             log_time_order=log_time_order,
             reverse=reverse,
         ):
-            yield McapMessage.from_mcap_primitives(schema, channel, message)
+            yield McapMessage.from_mcap_primitives(schema, channel, message, decode_args=self.decode_args)

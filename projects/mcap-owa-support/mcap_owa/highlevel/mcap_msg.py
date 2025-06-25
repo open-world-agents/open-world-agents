@@ -20,8 +20,23 @@ class McapMessage(BaseModel):
     message: bytes
     message_type: str
 
+    # Non-serialized decode configuration
+    model_config = {"extra": "forbid"}
+
+    def __init__(self, *, decode_args: dict = {}, **data):
+        super().__init__(**data)
+        # Store decode parameters as private attributes (not serialized)
+        self._decode_args = {"return_dict": False, "return_dict_on_failure": False, **decode_args}
+
     @classmethod
-    def from_mcap_primitives(cls, schema: Schema, channel: Channel, message: Message) -> "McapMessage":
+    def from_mcap_primitives(
+        cls,
+        schema: Schema,
+        channel: Channel,
+        message: Message,
+        *,
+        decode_args: dict = None,
+    ) -> "McapMessage":
         """
         Create a McapMessage from MCAP primitive objects.
 
@@ -29,11 +44,18 @@ class McapMessage(BaseModel):
             schema: MCAP Schema object
             channel: MCAP Channel object
             message: MCAP Message object
+            decode_args: Optional dictionary of decode arguments (return_dict, return_dict_on_failure)
 
         Returns:
             McapMessage instance
         """
-        return cls(topic=channel.topic, timestamp=message.log_time, message=message.data, message_type=schema.name)
+        return cls(
+            topic=channel.topic,
+            timestamp=message.log_time,
+            message=message.data,
+            message_type=schema.name,
+            decode_args=decode_args,
+        )
 
     @functools.cached_property
     def decoded(self) -> Any:
@@ -43,7 +65,7 @@ class McapMessage(BaseModel):
         :return: Decoded message content
         """
         # Use automatic decode function generation
-        decode_fn = get_decode_function(self.message_type)
+        decode_fn = get_decode_function(self.message_type, **self._decode_args)
         if decode_fn is not None:
             return decode_fn(self.message)
         else:
