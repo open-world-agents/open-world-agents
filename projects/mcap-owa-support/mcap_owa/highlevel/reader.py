@@ -11,6 +11,7 @@ from packaging import version
 from packaging.specifiers import SpecifierSet
 
 from .. import __version__
+from ..decoder import DecoderFactory
 from .mcap_msg import McapMessage
 
 PathType: TypeAlias = Union[str, Path]
@@ -47,7 +48,7 @@ class OWAMcapReader:
             self._file = open(file_path, "rb")
             self._is_network_path = False
 
-        self.reader: McapReader = make_reader(self._file)
+        self.reader: McapReader = make_reader(self._file, decoder_factories=[DecoderFactory()])
         self.__finished = False
 
         # Check profile of mcap file
