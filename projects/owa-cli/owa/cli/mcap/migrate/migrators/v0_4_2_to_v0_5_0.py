@@ -8,12 +8,16 @@
 #   "orjson>=3.8.0",
 #   "typer>=0.12.0",
 #   "numpy>=2.2.0",
-#   "mcap-owa-support==0.5.0a2",
-#   "owa-core==0.5.0a2",
-#   "owa-msgs==0.5.0a2",
+#   "mcap-owa-support==0.5.0a3",
+#   "owa-core==0.5.0a3",
+#   "owa-msgs==0.5.0a3",
 # ]
 # [tool.uv]
 # exclude-newer = "2025-06-26T00:00:00Z"
+# [tool.uv.sources]
+# mcap-owa-support = { path = "../../../../../../mcap-owa-support", editable = true }
+# owa-core = { path = "../../../../../../owa-core", editable = true }
+# owa-msgs = { path = "../../../../../../owa-msgs", editable = true }
 # ///
 """
 MCAP Migrator: v0.4.2 → v0.5.0
