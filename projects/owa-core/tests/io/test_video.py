@@ -322,13 +322,13 @@ def test_video_reader_path_type_handling():
             writer.write_frame(img)
 
         # Test with Path object
-        with VideoReader(video_path) as reader:
+        with VideoReader(video_path, force_close=True) as reader:
             assert isinstance(reader.video_path, Path)
             frame = reader.read_frame(pts=0.0)
             assert frame is not None
 
         # Test with string path
-        with VideoReader(str(video_path)) as reader:
+        with VideoReader(str(video_path), force_close=True) as reader:
             assert isinstance(reader.video_path, Path)
             frame = reader.read_frame(pts=0.0)
             assert frame is not None

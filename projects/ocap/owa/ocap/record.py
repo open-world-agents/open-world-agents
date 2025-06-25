@@ -14,6 +14,7 @@ from mcap_owa.highlevel import OWAMcapWriter
 from owa.cli.utils import check_for_update
 from owa.core import LISTENERS, get_plugin_discovery
 from owa.core.time import TimeUnits
+from owa.msgs.desktop.screen import ScreenCaptured
 
 # TODO: apply https://loguru.readthedocs.io/en/stable/resources/recipes.html#configuring-loguru-to-be-used-by-a-library-or-an-application
 logger.remove()
@@ -37,7 +38,7 @@ def keyboard_monitor_callback(event):
 
 def screen_capture_callback(event):
     global MCAP_LOCATION
-    event.path = Path(event.path).relative_to(MCAP_LOCATION.parent).as_posix()
+    event.media_ref.path = Path(event.media_ref.path).relative_to(MCAP_LOCATION.parent).as_posix()
     enqueue_event(event, topic="screen")
 
 

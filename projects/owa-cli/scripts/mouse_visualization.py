@@ -25,8 +25,20 @@ def main(mcap_path: Annotated[Path, typer.Argument(help="Path to the input .mcap
             if mcap_msg.topic == "mouse":
                 x, y = mcap_msg.decoded["x"], mcap_msg.decoded["y"]
             elif mcap_msg.topic == "screen":
-                mcap_msg.decoded.path = (mcap_path.parent / mcap_msg.decoded.path).as_posix()
-                msg = ScreenCaptured(**mcap_msg.decoded)
+                # Handle legacy format by creating ScreenCaptured with new API
+                decoded = mcap_msg.decoded
+                if hasattr(decoded, "path") and hasattr(decoded, "pts"):
+                    # Legacy format - convert to new format
+                    resolved_path = (mcap_path.parent / decoded.path).as_posix()
+                    msg = ScreenCaptured(
+                        utc_ns=getattr(decoded, "utc_ns", None),
+                        source_shape=getattr(decoded, "original_shape", None),
+                        shape=getattr(decoded, "shape", None),
+                    )
+                    msg.set_external_video_reference(resolved_path, decoded.pts)
+                else:
+                    # New format - use directly
+                    msg = decoded
                 image = msg.to_pil_image()
                 # convert image to frame
                 frame = np.array(image)

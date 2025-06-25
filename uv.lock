@@ -1305,8 +1305,10 @@ dependencies = [
     { name = "av" },
     { name = "griffe" },
     { name = "loguru" },
+    { name = "pillow" },
     { name = "pydantic" },
     { name = "pyyaml" },
+    { name = "requests" },
 ]
 
 [package.metadata]
@@ -1315,8 +1317,10 @@ requires-dist = [
     { name = "griffe", specifier = ">=1.7.3" },
     { name = "importlib-metadata", marker = "python_full_version < '3.10'", specifier = ">=4.0.0" },
     { name = "loguru", specifier = ">=0.7.3" },
+    { name = "pillow", specifier = ">=10.0.0" },
     { name = "pydantic", specifier = ">=2.10.6" },
     { name = "pyyaml", specifier = ">=6.0.2" },
+    { name = "requests", specifier = ">=2.25.0" },
 ]
 
 [[package]]

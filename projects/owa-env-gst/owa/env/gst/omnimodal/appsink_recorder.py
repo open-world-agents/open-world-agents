@@ -118,15 +118,16 @@ class AppsinkRecorder(GstPipelineRunner):
                 logger.success(f"Video's original shape: {original_shape}, rescaled shape: {shape}")
                 notified_shape = (original_shape, shape)
 
-            callback(
-                ScreenCaptured(
-                    path=filesink_location,
-                    pts=buf.pts,
-                    utc_ns=frame_time_ns,
-                    original_shape=original_shape,
-                    shape=shape,
-                )
+            # Create ScreenCaptured with external video reference
+            screen_captured = ScreenCaptured(
+                utc_ns=frame_time_ns,
+                source_shape=original_shape,
+                shape=shape,
             )
+            # Set external video reference with path and timestamp
+            screen_captured.set_external_video_reference(filesink_location, buf.pts)
+
+            callback(screen_captured)
             return Gst.PadProbeReturn.OK
 
         identity.get_static_pad("src").add_probe(Gst.PadProbeType.BUFFER, buffer_probe_callback)

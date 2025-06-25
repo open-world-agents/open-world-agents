@@ -29,16 +29,23 @@ class EmbeddedRef(BaseModel):
     data: str  # base64 encoded image data
 
 
-class ExternalRef(BaseModel):
-    """Reference to external media file (image or video with timestamp)."""
+class ExternalImageRef(BaseModel):
+    """Reference to external static image file."""
 
-    type: Literal["external"] = "external"
-    path: str  # file path or URL
-    pts_ns: Optional[int] = None  # timestamp in nanoseconds (for video frames), None for static images
+    type: Literal["external_image"] = "external_image"
+    path: str  # file path or URL to static image
+
+
+class ExternalVideoRef(BaseModel):
+    """Reference to external video file with specific frame timestamp."""
+
+    type: Literal["external_video"] = "external_video"
+    path: str  # file path or URL to video file
+    pts_ns: int  # timestamp in nanoseconds for the specific frame (required for video)
 
 
 # Union type for all media reference types
-MediaRef = Union[EmbeddedRef, ExternalRef]
+MediaRef = Union[EmbeddedRef, ExternalImageRef, ExternalVideoRef]
 
 
 # ============================================================================
@@ -105,8 +112,21 @@ def _load_from_embedded(embedded_ref: EmbeddedRef) -> np.ndarray:
     return cv2.cvtColor(bgr_array, cv2.COLOR_BGR2BGRA)
 
 
-def _load_from_external(external_ref: ExternalRef, *, force_close: bool = False) -> np.ndarray:
-    """Load frame from external media reference."""
+def _load_from_external_image(external_ref: ExternalImageRef) -> np.ndarray:
+    """Load frame from external image reference."""
+    path = external_ref.path
+
+    # Validate file exists for local files only
+    if not path.startswith(("http://", "https://")):
+        media_path = Path(path)
+        if not media_path.exists():
+            raise FileNotFoundError(f"Image file not found: {path}")
+
+    return _load_static_image(path)
+
+
+def _load_from_external_video(external_ref: ExternalVideoRef, *, force_close: bool = False) -> np.ndarray:
+    """Load frame from external video reference."""
     path = external_ref.path
     pts_ns = external_ref.pts_ns
 
@@ -114,13 +134,9 @@ def _load_from_external(external_ref: ExternalRef, *, force_close: bool = False)
     if not path.startswith(("http://", "https://")):
         media_path = Path(path)
         if not media_path.exists():
-            raise FileNotFoundError(f"Media file not found: {path}")
+            raise FileNotFoundError(f"Video file not found: {path}")
 
-    # Determine if this is a video frame or static image
-    if pts_ns is not None:
-        return _load_video_frame(path, pts_ns, force_close)
-    else:
-        return _load_static_image(path)
+    return _load_video_frame(path, pts_ns, force_close)
 
 
 def _load_video_frame(path: str, pts_ns: int, force_close: bool) -> np.ndarray:
@@ -174,22 +190,27 @@ def _get_media_info(media_ref: Optional[MediaRef]) -> dict:
             "size_bytes": size_bytes,
         }
 
-    if media_ref.type == "external":
+    if media_ref.type == "external_image":
         is_remote = media_ref.path.startswith(("http://", "https://"))
-
-        info = {
-            "type": "external",
+        return {
+            "type": "external_image",
             "path": media_ref.path,
             "is_local": not is_remote,
             "is_remote": is_remote,
-            "media_type": "video" if media_ref.pts_ns is not None else "image",
+            "media_type": "image",
         }
 
-        if media_ref.pts_ns is not None:
-            info["pts_ns"] = media_ref.pts_ns
-            info["pts_seconds"] = media_ref.pts_ns / 1_000_000_000  # Also provide seconds for convenience
-
-        return info
+    if media_ref.type == "external_video":
+        is_remote = media_ref.path.startswith(("http://", "https://"))
+        return {
+            "type": "external_video",
+            "path": media_ref.path,
+            "is_local": not is_remote,
+            "is_remote": is_remote,
+            "media_type": "video",
+            "pts_ns": media_ref.pts_ns,
+            "pts_seconds": media_ref.pts_ns / 1_000_000_000,  # Also provide seconds for convenience
+        }
 
     return {"type": "unknown"}
 
@@ -200,20 +221,20 @@ def _format_media_display(media_ref: MediaRef) -> str:
         size_kb = len(base64.b64decode(media_ref.data)) / 1024
         return f"embedded_{media_ref.format}({size_kb:.1f}KB)"
 
-    elif media_ref.type == "external":
+    elif media_ref.type == "external_image":
         path_display = (
             Path(media_ref.path).name if not media_ref.path.startswith(("http://", "https://")) else media_ref.path
         )
+        prefix = "remote" if media_ref.path.startswith(("http://", "https://")) else "local"
+        return f"{prefix}_image({path_display})"
 
-        if media_ref.pts_ns is not None:
-            # Video frame
-            prefix = "remote" if media_ref.path.startswith(("http://", "https://")) else "local"
-            pts_seconds = media_ref.pts_ns / 1_000_000_000
-            return f"{prefix}_video({path_display}@{pts_seconds:.3f}s)"
-        else:
-            # Static image
-            prefix = "remote" if media_ref.path.startswith(("http://", "https://")) else "local"
-            return f"{prefix}_image({path_display})"
+    elif media_ref.type == "external_video":
+        path_display = (
+            Path(media_ref.path).name if not media_ref.path.startswith(("http://", "https://")) else media_ref.path
+        )
+        prefix = "remote" if media_ref.path.startswith(("http://", "https://")) else "local"
+        pts_seconds = media_ref.pts_ns / 1_000_000_000
+        return f"{prefix}_video({path_display}@{pts_seconds:.3f}s)"
 
     return "unknown_media"
 
@@ -251,11 +272,7 @@ class ScreenCaptured(OWAMessage):
 
     @model_validator(mode="after")
     def validate_screen_emitted(self) -> "ScreenCaptured":
-        """Validate that at least one frame data source is provided."""
-        # At least one source must be provided
-        if self.frame_arr is None and self.media_ref is None:
-            raise ValueError("ScreenCaptured requires either 'frame_arr' or 'media_ref' to be provided")
-
+        """Validate frame data and set shape information."""
         # Validate frame_arr if provided and set shape
         if self.frame_arr is not None:
             if len(self.frame_arr.shape) < 2:
@@ -282,8 +299,20 @@ class ScreenCaptured(OWAMessage):
         return self.media_ref is not None and self.media_ref.type == "embedded"
 
     def has_external_reference(self) -> bool:
-        """Check if this frame has external media reference."""
-        return self.media_ref is not None and self.media_ref.type == "external"
+        """Check if this frame has any external media reference (image or video)."""
+        return self.media_ref is not None and self.media_ref.type in ("external_image", "external_video")
+
+    def has_external_image_reference(self) -> bool:
+        """Check if this frame has external image reference."""
+        return self.media_ref is not None and self.media_ref.type == "external_image"
+
+    def has_external_video_reference(self) -> bool:
+        """Check if this frame has external video reference."""
+        return self.media_ref is not None and self.media_ref.type == "external_video"
+
+    def is_loaded(self) -> bool:
+        """Check if the frame data is currently loaded in memory."""
+        return self.frame_arr is not None
 
     # Media reference creation methods
     def embed_from_array(self, format: Literal["png", "jpeg"] = "png", *, quality: Optional[int] = None) -> Self:
@@ -294,12 +323,21 @@ class ScreenCaptured(OWAMessage):
         self.media_ref = _compress_frame_to_embedded(self.frame_arr, format, quality)
         return self
 
-    def set_external_reference(self, path: Union[str, Path], pts_ns: Optional[int] = None) -> None:
-        """Set an external media reference."""
+    def set_external_image_reference(self, path: Union[str, Path]) -> Self:
+        """Set an external image reference."""
         if isinstance(path, Path):
             path = str(path)
 
-        self.media_ref = ExternalRef(path=path, pts_ns=pts_ns)
+        self.media_ref = ExternalImageRef(path=path)
+        return self
+
+    def set_external_video_reference(self, path: Union[str, Path], pts_ns: int) -> Self:
+        """Set an external video reference with timestamp."""
+        if isinstance(path, Path):
+            path = str(path)
+
+        self.media_ref = ExternalVideoRef(path=path, pts_ns=pts_ns)
+        return self
 
     # Frame loading and conversion methods
     def lazy_load(self, *, force_close: bool = False) -> np.ndarray:
@@ -313,8 +351,10 @@ class ScreenCaptured(OWAMessage):
         # Load based on reference type
         if self.media_ref.type == "embedded":
             self.frame_arr = _load_from_embedded(self.media_ref)
-        elif self.media_ref.type == "external":
-            self.frame_arr = _load_from_external(self.media_ref, force_close=force_close)
+        elif self.media_ref.type == "external_image":
+            self.frame_arr = _load_from_external_image(self.media_ref)
+        elif self.media_ref.type == "external_video":
+            self.frame_arr = _load_from_external_video(self.media_ref, force_close=force_close)
         else:
             raise ValueError(f"Unsupported media reference type: {self.media_ref.type}")
 
