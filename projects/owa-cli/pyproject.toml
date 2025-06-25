@@ -1,15 +1,15 @@
 [project]
 name = "owa-cli"
-version = "0.4.3"
+version = "0.5.0a1"
 description = "Command-line tools for Open World Agents data analysis and management"
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.11"
 dependencies = [
     "loguru>=0.7.3",
-    "mcap-owa-support==0.4.3",
+    "mcap-owa-support==0.5.0a1",
     "orjson>=3.10.15",
-    "owa-core==0.4.3",
+    "owa-core==0.5.0a1",
     "packaging>=25.0",
     "plotext>=5.3.2",
     "pydantic>=2.10.6",
