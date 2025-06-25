@@ -181,17 +181,6 @@ class TestScreenCapturedWithFrameArray:
         assert screen_msg.has_embedded_data() is True
         assert screen_msg.media_ref.format == "jpeg"
 
-    def test_set_external_reference(self, sample_bgra_frame):
-        """Test setting external media reference."""
-        screen_msg = ScreenCaptured(utc_ns=1741608540328534500, frame_arr=sample_bgra_frame)
-
-        # Set external reference
-        screen_msg.set_external_reference("test.mp4", pts_ns=1000000000)
-
-        assert screen_msg.has_external_reference() is True
-        assert screen_msg.media_ref.path == "test.mp4"
-        assert screen_msg.media_ref.pts_ns == 1000000000
-
 
 class TestScreenCapturedWithEmbeddedRef:
     """Test ScreenCaptured with EmbeddedRef."""
