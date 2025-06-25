@@ -246,8 +246,8 @@ def version(
                 if tag:
                     push_commands.append(f"git push origin {tag_name}")
 
-                console.print("\n[dim]To push changes to remote:[/dim]")
-                console.print(f"[dim]  {' && '.join(push_commands)}[/dim]")
+                console.print("\n[blue]To push changes to remote:[/blue]")
+                console.print(f"[cyan]  {' && '.join(push_commands)}[/cyan]")
         else:
             console.print("   [yellow]⚠[/yellow] No files were modified. Nothing to commit.")
             if tag:
@@ -270,7 +270,7 @@ def publish():
     if "PYPI_TOKEN" not in os.environ:
         console.print("[bold red]✗ PYPI_TOKEN environment variable is not set.[/bold red]")
         console.print("Please set it before running this script:")
-        console.print("[dim]  export PYPI_TOKEN=your_token_here[/dim]")
+        console.print("[cyan]  export PYPI_TOKEN=your_token_here[/cyan]")
         raise typer.Exit(code=1)
 
     # https://docs.astral.sh/uv/guides/package/#publishing-your-package
