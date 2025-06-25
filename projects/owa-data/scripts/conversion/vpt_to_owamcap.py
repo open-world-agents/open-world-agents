@@ -144,7 +144,8 @@ def process_single_file(jsonl_file_path):
 
         ## SCREEN EVENT
         topic = "screen"
-        event = ScreenCaptured(path=str(mp4_file_path), pts=unix_epoch_ns)
+        event = ScreenCaptured(utc_ns=unix_epoch_ns)
+        event.set_external_video_reference(str(mp4_file_path), unix_epoch_ns)
         writer.write_message(topic, event, log_time=unix_epoch_ns)
 
         for i, tick in enumerate(ticks):
@@ -153,7 +154,8 @@ def process_single_file(jsonl_file_path):
 
             ## SCREEN EVENT
             topic = "screen"
-            event = ScreenCaptured(path=str(mp4_file_path), pts=log_time)
+            event = ScreenCaptured(utc_ns=log_time)
+            event.set_external_video_reference(str(mp4_file_path), log_time)
             writer.write_message(topic, event, log_time=log_time)
 
             ## KEYBOARD EVENT
