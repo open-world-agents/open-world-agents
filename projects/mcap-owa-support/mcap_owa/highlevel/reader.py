@@ -51,7 +51,7 @@ class OWAMcapReader:
             self._is_network_path = False
 
         self.reader: McapReader = make_reader(self._file, decoder_factories=[DecoderFactory(decode_args=decode_args)])
-        self.decode_args = decode_args
+        self.decode_args = decode_args  # TODO: merge with decoded_message in McapReader.iter_decoded_messages
         self.__finished = False
 
         # Check profile of mcap file
