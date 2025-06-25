@@ -1,17 +1,17 @@
 [project]
 name = "owa"
-version = "0.5.0a1"
+version = "0.5.0a2"
 description = "Everything you need to build state-of-the-art foundation multimodal desktop agent, end-to-end."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "mcap-owa-support==0.5.0a1",
-    "ocap==0.5.0a1",
-    "owa-cli==0.5.0a1",
-    "owa-core==0.5.0a1",
-    "owa-env-desktop==0.5.0a1",
-    "owa-env-gst==0.5.0a1",
-    "owa-msgs==0.5.0a1",
+    "mcap-owa-support==0.5.0a2",
+    "ocap==0.5.0a2",
+    "owa-cli==0.5.0a2",
+    "owa-core==0.5.0a2",
+    "owa-env-desktop==0.5.0a2",
+    "owa-env-gst==0.5.0a2",
+    "owa-msgs==0.5.0a2",
 ]
 
 [project.optional-dependencies]
