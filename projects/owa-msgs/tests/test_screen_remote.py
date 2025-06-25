@@ -8,7 +8,7 @@ video file handling capabilities in VideoReader.
 import numpy as np
 import pytest
 
-from owa.msgs.desktop.screen import ExternalImageRef, ExternalVideoRef, ScreenCaptured
+from owa.msgs.desktop.screen import MediaRef, ScreenCaptured
 
 
 class TestScreenCapturedRemoteFiles:
@@ -26,9 +26,9 @@ class TestScreenCapturedRemoteFiles:
         try:
             # Create external reference
             if pts_ns is not None:
-                external_ref = ExternalVideoRef(path=test_url, pts_ns=pts_ns)
+                external_ref = MediaRef.from_path(test_url, pts_ns=pts_ns)
             else:
-                external_ref = ExternalImageRef(path=test_url)
+                external_ref = MediaRef.from_path(test_url)
 
             # Create ScreenCaptured with remote reference
             screen_msg = ScreenCaptured(media_ref=external_ref)
@@ -88,7 +88,7 @@ class TestScreenCapturedRemoteFiles:
         pts_ns = 1_000_000_000  # 1 second
 
         try:
-            external_ref = ExternalVideoRef(path=test_url, pts_ns=pts_ns)
+            external_ref = MediaRef.from_path(test_url, pts_ns=pts_ns)
             screen_msg = ScreenCaptured(media_ref=external_ref)
 
             # Test that we can load the frame
@@ -115,7 +115,7 @@ class TestScreenCapturedRemoteFiles:
         test_url = "https://httpbin.org/image/png"
 
         try:
-            external_ref = ExternalImageRef(path=test_url)
+            external_ref = MediaRef.from_path(test_url)
             screen_msg = ScreenCaptured(media_ref=external_ref)
 
             # Test that we can load the image
@@ -138,7 +138,7 @@ class TestScreenCapturedRemoteFiles:
         test_url = "https://example.com/video.mp4"
         pts_ns = 1_000_000_000  # 1 second
 
-        external_ref = ExternalVideoRef(path=test_url, pts_ns=pts_ns)
+        external_ref = MediaRef.from_path(test_url, pts_ns=pts_ns)
         screen_msg = ScreenCaptured(
             media_ref=external_ref, utc_ns=1234567890000000000, source_shape=(1920, 1080), shape=(1920, 1080)
         )
@@ -159,14 +159,14 @@ class TestScreenCapturedRemoteFiles:
     def test_screen_captured_error_handling(self):
         """Test error handling with invalid remote references."""
         # Test invalid URL scheme - FTP URLs are treated as local files and should raise FileNotFoundError
-        external_ref = ExternalVideoRef(path="ftp://example.com/video.mp4", pts_ns=0)
+        external_ref = MediaRef.from_path("ftp://example.com/video.mp4", pts_ns=0)
         screen_msg = ScreenCaptured(media_ref=external_ref)
 
-        with pytest.raises(FileNotFoundError, match="Media file not found"):
+        with pytest.raises(FileNotFoundError, match="Video file not found"):
             screen_msg.lazy_load()
 
         # Test non-existent remote file (should raise network-related error)
-        external_ref = ExternalVideoRef(path="https://nonexistent.example.com/video.mp4", pts_ns=0)
+        external_ref = MediaRef.from_path("https://nonexistent.example.com/video.mp4", pts_ns=0)
         screen_msg = ScreenCaptured(media_ref=external_ref)
 
         with pytest.raises(Exception):  # Could be various network-related errors
@@ -175,8 +175,8 @@ class TestScreenCapturedRemoteFiles:
     def test_screen_captured_format_media_display_remote(self):
         """Test media display formatting for remote files."""
         # Test remote video
-        video_ref = ExternalVideoRef(
-            path="https://example.com/long/path/to/video.mp4",
+        video_ref = MediaRef.from_path(
+            "https://example.com/long/path/to/video.mp4",
             pts_ns=1_500_000_000,  # 1.5 seconds
         )
         screen_msg = ScreenCaptured(media_ref=video_ref)
@@ -186,7 +186,7 @@ class TestScreenCapturedRemoteFiles:
         assert "video.mp4" in str_repr or "https://example.com/long/path/to/video.mp4" in str_repr
 
         # Test remote image
-        image_ref = ExternalImageRef(path="https://example.com/image.jpg")
+        image_ref = MediaRef.from_path("https://example.com/image.jpg")
         screen_msg = ScreenCaptured(media_ref=image_ref)
         str_repr = str(screen_msg)
         assert "remote_image" in str_repr

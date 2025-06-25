@@ -8,7 +8,7 @@ from PIL import Image
 
 from owa.core.io.video import VideoWriter, force_close_video_container
 from owa.core.time import TimeUnits
-from owa.msgs.desktop.screen import EmbeddedRef, ExternalImageRef, ExternalVideoRef, ScreenCaptured
+from owa.msgs.desktop.screen import MediaRef, ScreenCaptured
 
 
 @pytest.fixture
@@ -51,56 +51,116 @@ def sample_video_file():
         force_close_video_container(video_path)
 
 
-class TestEmbeddedRef:
-    """Test EmbeddedRef creation and operations."""
+class TestMediaRefEmbedded:
+    """Test MediaRef embedded data creation and operations."""
 
     def test_create_embedded_ref(self):
-        """Test creating EmbeddedRef directly."""
+        """Test creating MediaRef with embedded data."""
         data = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
-        ref = EmbeddedRef(format="png", data=data)
+        ref = MediaRef.from_embedded(format="png", data=data)
 
-        assert ref.type == "embedded"
+        assert ref.is_embedded == True
         assert ref.format == "png"
         assert ref.data == data
+        assert ref.scheme == "data"
 
     def test_create_embedded_ref_jpeg(self):
-        """Test creating EmbeddedRef with JPEG format."""
+        """Test creating MediaRef with JPEG embedded data."""
         data = "base64encodeddata"
-        ref = EmbeddedRef(format="jpeg", data=data)
+        ref = MediaRef.from_embedded(format="jpeg", data=data)
 
-        assert ref.type == "embedded"
+        assert ref.is_embedded == True
         assert ref.format == "jpeg"
         assert ref.data == data
+        assert ref.scheme == "data"
 
 
-class TestExternalImageRef:
-    """Test ExternalImageRef creation and operations."""
+class TestMediaRefExternal:
+    """Test MediaRef external reference creation and operations."""
 
     def test_create_external_image_ref(self):
-        """Test creating ExternalImageRef for static image."""
-        ref = ExternalImageRef(path="image.png")
+        """Test creating MediaRef for external image."""
+        ref = MediaRef.from_path("image.png")
 
-        assert ref.type == "external_image"
+        assert ref.is_external == True
+        assert ref.is_video == False
         assert ref.path == "image.png"
+        assert ref.scheme == "path"
 
     def test_create_external_image_ref_remote_url(self):
-        """Test creating ExternalImageRef for remote URL."""
-        ref = ExternalImageRef(path="https://example.com/image.jpg")
+        """Test creating MediaRef for remote image URL."""
+        ref = MediaRef.from_path("https://example.com/image.jpg")
 
-        assert ref.type == "external_image"
+        assert ref.is_external == True
+        assert ref.is_video == False
         assert ref.path == "https://example.com/image.jpg"
-
-
-class TestExternalVideoRef:
-    """Test ExternalVideoRef creation and operations."""
+        assert ref.scheme == "https"
 
     def test_create_external_video_ref(self):
-        """Test creating ExternalVideoRef for video with timestamp."""
-        ref = ExternalVideoRef(path="test.mp4", pts_ns=1000000000)
+        """Test creating MediaRef for video with timestamp."""
+        ref = MediaRef.from_path("test.mp4", pts_ns=1000000000)
 
-        assert ref.type == "external_video"
+        assert ref.is_external == True
+        assert ref.is_video == True
         assert ref.path == "test.mp4"
         assert ref.pts_ns == 1000000000
+        assert ref.scheme == "path"
+
+    def test_data_uri_validation(self):
+        """Test data URI validation."""
+        # Valid data URI
+        valid_uri = "data:image/png;base64,iVBORw0KGgo="
+        ref = MediaRef(uri=valid_uri)
+        assert ref.is_embedded == True
+        assert ref.mime_type == "image/png"
+
+        # Invalid data URI should raise validation error
+        with pytest.raises(ValueError, match="Invalid data URI format"):
+            MediaRef(uri="data:invalid")
+
+    def test_url_validation(self):
+        """Test URL validation."""
+        # Valid URLs
+        ref1 = MediaRef(uri="https://example.com/video.mp4", pts_ns=1000)
+        assert ref1.scheme == "https"
+        assert ref1.is_external == True
+
+        # Invalid URL should raise validation error
+        with pytest.raises(ValueError, match="Invalid URL format"):
+            MediaRef(uri="https://")
+
+    def test_file_uri_validation(self):
+        """Test file URI validation."""
+        # Valid file URI
+        ref = MediaRef(uri="file:///path/to/file.mp4", pts_ns=1000)
+        assert ref.scheme == "file"
+        assert ref.path == "/path/to/file.mp4"
+
+        # Invalid file URI should raise validation error
+        with pytest.raises(ValueError, match="Invalid file URI format"):
+            MediaRef(uri="file://")
+
+    def test_factory_methods(self):
+        """Test factory methods."""
+        # Test from_embedded
+        ref1 = MediaRef.from_embedded("jpeg", "base64data")
+        assert ref1.uri == "data:image/jpeg;base64,base64data"
+        assert ref1.format == "jpeg"
+
+        # Test from_path
+        ref2 = MediaRef.from_path("/path/to/video.mp4", pts_ns=5000)
+        assert ref2.uri == "/path/to/video.mp4"
+        assert ref2.pts_ns == 5000
+        assert ref2.is_video == True
+
+        # Test from_file_uri
+        ref3 = MediaRef.from_file_uri("/absolute/path/file.png")
+        assert ref3.uri == "file:///absolute/path/file.png"
+        assert ref3.scheme == "file"
+
+        # Test from_file_uri with relative path should fail
+        with pytest.raises(ValueError, match="File path must be absolute"):
+            MediaRef.from_file_uri("relative/path")
 
 
 class TestScreenCapturedWithFrameArray:
@@ -167,7 +227,7 @@ class TestScreenCapturedWithFrameArray:
 
         # Now should have embedded data
         assert screen_msg.has_embedded_data() is True
-        assert screen_msg.media_ref.type == "embedded"
+        assert screen_msg.media_ref.is_embedded == True
         assert screen_msg.media_ref.format == "png"
         assert len(screen_msg.media_ref.data) > 0  # Should have base64 data
 
@@ -183,7 +243,7 @@ class TestScreenCapturedWithFrameArray:
 
 
 class TestScreenCapturedWithEmbeddedRef:
-    """Test ScreenCaptured with EmbeddedRef."""
+    """Test ScreenCaptured with embedded MediaRef."""
 
     def test_create_with_embedded_ref(self, sample_bgra_frame):
         """Test creating ScreenCaptured with embedded reference."""
@@ -263,7 +323,7 @@ class TestScreenCapturedWithExternalRef:
         video_path, timestamps = sample_video_file
         pts_ns = int(timestamps[2] * TimeUnits.SECOND)  # Third frame (0.2s)
 
-        media_ref = ExternalVideoRef(path=str(video_path), pts_ns=pts_ns)
+        media_ref = MediaRef.from_path(str(video_path), pts_ns=pts_ns)
         screen_msg = ScreenCaptured(utc_ns=1741608540328534500, media_ref=media_ref)
 
         assert screen_msg.utc_ns == 1741608540328534500
@@ -277,7 +337,7 @@ class TestScreenCapturedWithExternalRef:
 
     def test_create_with_external_image_ref(self):
         """Test creating ScreenCaptured with external image reference."""
-        media_ref = ExternalImageRef(path="test_image.png")
+        media_ref = MediaRef.from_path("test_image.png")
         screen_msg = ScreenCaptured(utc_ns=1741608540328534500, media_ref=media_ref)
 
         assert screen_msg.media_ref.path == "test_image.png"
@@ -289,7 +349,7 @@ class TestScreenCapturedWithExternalRef:
         video_path, timestamps = sample_video_file
         pts_ns = int(timestamps[1] * TimeUnits.SECOND)  # Second frame (0.1s)
 
-        media_ref = ExternalVideoRef(path=str(video_path), pts_ns=pts_ns)
+        media_ref = MediaRef.from_path(str(video_path), pts_ns=pts_ns)
         screen_msg = ScreenCaptured(utc_ns=1741608540328534500, media_ref=media_ref)
 
         # Initially, frame should not be loaded
@@ -313,7 +373,7 @@ class TestScreenCapturedWithExternalRef:
         video_path, timestamps = sample_video_file
         pts_ns = int(timestamps[0] * TimeUnits.SECOND)  # First frame
 
-        media_ref = ExternalVideoRef(path=str(video_path), pts_ns=pts_ns)
+        media_ref = MediaRef.from_path(str(video_path), pts_ns=pts_ns)
         screen_msg = ScreenCaptured(utc_ns=1741608540328534500, media_ref=media_ref)
 
         # Trigger lazy loading
@@ -328,7 +388,7 @@ class TestScreenCapturedWithExternalRef:
         video_path, timestamps = sample_video_file
         pts_ns = int(timestamps[3] * TimeUnits.SECOND)  # Fourth frame
 
-        media_ref = ExternalVideoRef(path=str(video_path), pts_ns=pts_ns)
+        media_ref = MediaRef.from_path(str(video_path), pts_ns=pts_ns)
         screen_msg = ScreenCaptured(utc_ns=1741608540328534500, media_ref=media_ref)
 
         # First lazy load
@@ -347,7 +407,7 @@ class TestScreenCapturedWithExternalRef:
         for i, timestamp in enumerate(timestamps[:3]):  # Test first 3 frames
             pts_ns = int(timestamp * TimeUnits.SECOND)
 
-            media_ref = ExternalVideoRef(path=str(video_path), pts_ns=pts_ns)
+            media_ref = MediaRef.from_path(str(video_path), pts_ns=pts_ns)
             screen_msg = ScreenCaptured(utc_ns=1741608540328534500, media_ref=media_ref)
 
             rgb_array = screen_msg.to_rgb_array()
@@ -367,7 +427,7 @@ class TestScreenCapturedWithExternalRef:
         video_path, timestamps = sample_video_file
         pts_ns = int(timestamps[2] * TimeUnits.SECOND)
 
-        media_ref = ExternalVideoRef(path=str(video_path), pts_ns=pts_ns)
+        media_ref = MediaRef.from_path(str(video_path), pts_ns=pts_ns)
         screen_msg = ScreenCaptured(utc_ns=1741608540328534500, media_ref=media_ref)
 
         # Initially no frame loaded
@@ -386,7 +446,7 @@ class TestScreenCapturedWithExternalRef:
         video_path, timestamps = sample_video_file
         pts_ns = int(timestamps[3] * TimeUnits.SECOND)  # Fourth frame (0.3s) instead of last frame
 
-        media_ref = ExternalVideoRef(path=str(video_path), pts_ns=pts_ns)
+        media_ref = MediaRef.from_path(str(video_path), pts_ns=pts_ns)
         screen_msg = ScreenCaptured(utc_ns=1741608540328534500, media_ref=media_ref)
 
         # Initially no frame loaded
@@ -414,7 +474,7 @@ class TestScreenCapturedValidation:
 
     def test_embed_without_frame_arr(self):
         """Test that embed_from_array requires frame_arr."""
-        media_ref = ExternalVideoRef(path="test.mp4", pts_ns=1000000000)
+        media_ref = MediaRef.from_path("test.mp4", pts_ns=1000000000)
         screen_msg = ScreenCaptured(utc_ns=1741608540328534500, media_ref=media_ref)
 
         with pytest.raises(ValueError, match="No frame_arr available to embed"):
@@ -422,7 +482,7 @@ class TestScreenCapturedValidation:
 
     def test_lazy_load_with_invalid_file(self):
         """Test lazy loading with non-existent file."""
-        media_ref = ExternalVideoRef(path="non_existent_file.mp4", pts_ns=1000000000)
+        media_ref = MediaRef.from_path("non_existent_file.mp4", pts_ns=1000000000)
         screen_msg = ScreenCaptured(utc_ns=1741608540328534500, media_ref=media_ref)
 
         with pytest.raises((FileNotFoundError, ValueError)):
@@ -433,7 +493,7 @@ class TestScreenCapturedValidation:
         video_path, _ = sample_video_file
         invalid_pts_ns = int(10.0 * TimeUnits.SECOND)  # Way beyond video duration
 
-        media_ref = ExternalVideoRef(path=str(video_path), pts_ns=invalid_pts_ns)
+        media_ref = MediaRef.from_path(str(video_path), pts_ns=invalid_pts_ns)
         screen_msg = ScreenCaptured(utc_ns=1741608540328534500, media_ref=media_ref)
 
         with pytest.raises(ValueError):
@@ -477,13 +537,13 @@ class TestScreenCapturedValidation:
         assert "shape=(64, 48)" in repr_str1
 
         # Test with external video ref
-        media_ref2 = ExternalVideoRef(path="test.mp4", pts_ns=2000000000)
+        media_ref2 = MediaRef.from_path("test.mp4", pts_ns=2000000000)
         screen_msg2 = ScreenCaptured(utc_ns=1741608540328534500, media_ref=media_ref2)
         repr_str2 = repr(screen_msg2)
         assert "local_video(test.mp4@2.000s)" in repr_str2
 
         # Test with external image ref
-        media_ref3 = ExternalImageRef(path="image.png")
+        media_ref3 = MediaRef.from_path("image.png")
         screen_msg3 = ScreenCaptured(utc_ns=1741608540328534500, media_ref=media_ref3)
         repr_str3 = repr(screen_msg3)
         assert "local_image(image.png)" in repr_str3
@@ -504,7 +564,7 @@ class TestScreenCapturedIntegration:
         pts_ns = int(timestamps[1] * TimeUnits.SECOND)
 
         # Start with external reference
-        media_ref = ExternalVideoRef(path=str(video_path), pts_ns=pts_ns)
+        media_ref = MediaRef.from_path(str(video_path), pts_ns=pts_ns)
         external_msg = ScreenCaptured(utc_ns=1741608540328534500, media_ref=media_ref)
 
         # Load the frame
@@ -544,7 +604,7 @@ class TestScreenCapturedIntegration:
         pts_ns = int(timestamps[0] * TimeUnits.SECOND)
 
         # Start with external reference
-        media_ref = ExternalVideoRef(path=str(video_path), pts_ns=pts_ns)
+        media_ref = MediaRef.from_path(str(video_path), pts_ns=pts_ns)
         external_msg = ScreenCaptured(utc_ns=1741608540328534500, media_ref=media_ref)
 
         # Load from external
@@ -614,7 +674,7 @@ class TestMediaUtils:
         """Test get_media_info with external video reference."""
         from owa.msgs.desktop.screen import _get_media_info
 
-        media_ref = ExternalVideoRef(path="test.mp4", pts_ns=1000000000)
+        media_ref = MediaRef.from_path("test.mp4", pts_ns=1000000000)
         info = _get_media_info(media_ref)
 
         assert info["type"] == "external_video"
@@ -629,7 +689,7 @@ class TestMediaUtils:
         """Test get_media_info with external image reference."""
         from owa.msgs.desktop.screen import _get_media_info
 
-        media_ref = ExternalImageRef(path="https://example.com/image.png")
+        media_ref = MediaRef.from_path("https://example.com/image.png")
         info = _get_media_info(media_ref)
 
         assert info["type"] == "external_image"
@@ -654,7 +714,7 @@ class TestMediaUtils:
         """Test format_media_display with external video reference."""
         from owa.msgs.desktop.screen import _format_media_display
 
-        media_ref = ExternalVideoRef(path="/path/to/video.mp4", pts_ns=2500000000)
+        media_ref = MediaRef.from_path("/path/to/video.mp4", pts_ns=2500000000)
         display = _format_media_display(media_ref)
 
         assert display == "local_video(video.mp4@2.500s)"
@@ -663,7 +723,7 @@ class TestMediaUtils:
         """Test format_media_display with remote image reference."""
         from owa.msgs.desktop.screen import _format_media_display
 
-        media_ref = ExternalImageRef(path="https://example.com/image.jpg")
+        media_ref = MediaRef.from_path("https://example.com/image.jpg")
         display = _format_media_display(media_ref)
 
         assert display == "remote_image(https://example.com/image.jpg)"
@@ -683,7 +743,7 @@ class TestMediaUtils:
         assert info2["size_bytes"] > 0
 
         # Test with external reference
-        media_ref = ExternalVideoRef(path="test.mp4", pts_ns=1000000000)
+        media_ref = MediaRef.from_path("test.mp4", pts_ns=1000000000)
         msg2 = ScreenCaptured(utc_ns=1741608540328534500, media_ref=media_ref)
         info3 = msg2.get_media_info()
         assert info3["type"] == "external_video"
