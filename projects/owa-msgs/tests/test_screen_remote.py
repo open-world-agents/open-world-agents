@@ -109,6 +109,7 @@ class TestScreenCapturedRemoteFiles:
             assert frame_arr3.shape == frame_arr.shape
 
         except Exception as e:
+            # TODO: categorize exceptions and skip only if network related
             pytest.skip(f"Remote video test skipped due to error: {e}")
 
     def test_screen_captured_remote_image_specific(self):
