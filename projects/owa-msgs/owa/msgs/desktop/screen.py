@@ -129,7 +129,6 @@ def _load_video_frame(path: str, pts_ns: int, force_close: bool) -> np.ndarray:
     pts_fraction = Fraction(pts_ns, TimeUnits.SECOND)
 
     try:
-        # TODO: implement remote file handling in VideoReader.
         with VideoReader(path, force_close=force_close) as reader:
             frame = reader.read_frame(pts=pts_fraction)
 
