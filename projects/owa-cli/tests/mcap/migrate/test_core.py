@@ -34,7 +34,7 @@ class TestMigrateIntegration:
         mock_file_detection.return_value = [mock_info]
 
         # Run migrate command
-        result = cli_runner.invoke(mcap_app, ["migrate", str(test_file), "--yes"])
+        result = cli_runner.invoke(mcap_app, ["migrate", "run", str(test_file), "--yes"])
 
         assert result.exit_code == 0
         mock_migration_orchestrator.migrate_file.assert_called_once()
@@ -57,7 +57,7 @@ class TestMigrateIntegration:
         mock_file_detection.return_value = [mock_info]
 
         # Run migrate command
-        result = cli_runner.invoke(mcap_app, ["migrate", str(test_file), "--yes"])
+        result = cli_runner.invoke(mcap_app, ["migrate", "run", str(test_file), "--yes"])
 
         assert result.exit_code == 1
         mock_migration_orchestrator.migrate_file.assert_called_once()
@@ -96,7 +96,7 @@ class TestMigrateIntegration:
                 mock_detect.return_value = [mock_info1, mock_info2]
 
                 # Run migrate on multiple files
-                result = cli_runner.invoke(mcap_app, ["migrate", str(test_file1), str(test_file2), "--yes"])
+                result = cli_runner.invoke(mcap_app, ["migrate", "run", str(test_file1), str(test_file2), "--yes"])
 
                 assert result.exit_code == 0
                 # Should be called twice, once for each file
@@ -123,7 +123,7 @@ class TestMigrateIntegration:
                 mock_detect.return_value = [mock_info]
 
                 # Run migrate in dry-run mode
-                result = cli_runner.invoke(mcap_app, ["migrate", str(test_file), "--dry-run"])
+                result = cli_runner.invoke(mcap_app, ["migrate", "run", str(test_file), "--dry-run"])
 
                 assert result.exit_code == 0
                 # Original file should be unchanged
@@ -140,7 +140,7 @@ class TestMigrateIntegration:
             mock_detect.return_value = []  # No files need migration
 
             # Run migrate command
-            result = cli_runner.invoke(mcap_app, ["migrate", str(test_file), "--yes"])
+            result = cli_runner.invoke(mcap_app, ["migrate", "run", str(test_file), "--yes"])
 
             assert result.exit_code == 0
             assert "No files found matching the pattern" in result.output
