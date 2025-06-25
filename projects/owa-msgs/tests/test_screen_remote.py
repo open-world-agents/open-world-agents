@@ -41,7 +41,8 @@ class TestScreenCapturedRemoteFiles:
 
             # Test media info
             media_info = screen_msg.get_media_info()
-            assert media_info["type"] == "external"
+            expected_type = f"external_{expected_media_type}"
+            assert media_info["type"] == expected_type
             assert media_info["path"] == test_url
             assert media_info["is_remote"] is True
             assert media_info["is_local"] is False

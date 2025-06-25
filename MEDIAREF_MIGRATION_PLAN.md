@@ -89,53 +89,53 @@ MediaRef.from_path("/path/to/video", pts_ns=123)
 
 ### Phase 1: Analysis Phase ✓
 - [x] **1.1 Inventory Affected Files** - Complete file inventory
-- [ ] **1.2 Analyze Import Dependencies** - Map import patterns
-- [ ] **1.3 Identify Breaking Changes** - Document compatibility issues
+- [x] **1.2 Analyze Import Dependencies** - Map import patterns
+- [x] **1.3 Identify Breaking Changes** - Document compatibility issues
 
-### Phase 2: Core Implementation
-- [ ] **2.1 Implement New MediaRef Class** - Create unified class with computed fields
-- [ ] **2.2 Add Factory Methods** - Implement `from_embedded`, `from_path`, `from_file_uri`
-- [ ] **2.3 Add Validation Logic** - URI validation for data URIs, URLs, file paths
+### Phase 2: Core Implementation ✓
+- [x] **2.1 Implement New MediaRef Class** - Create unified class with computed fields
+- [x] **2.2 Add Factory Methods** - Implement `from_embedded`, `from_path`, `from_file_uri`
+- [x] **2.3 Add Validation Logic** - URI validation for data URIs, URLs, file paths
 
-### Phase 3: Update Loading Functions
-- [ ] **3.1 Refactor _load_from_* Functions** - Update for new MediaRef
-- [ ] **3.2 Update _get_media_info Function** - Refactor for new properties
-- [ ] **3.3 Update _format_media_display Function** - Refactor display formatting
-- [ ] **3.4 Update _compress_frame_to_embedded Function** - Return new MediaRef
+### Phase 3: Update Loading Functions ✓
+- [x] **3.1 Refactor _load_from_* Functions** - Update for new MediaRef
+- [x] **3.2 Update _get_media_info Function** - Refactor for new properties
+- [x] **3.3 Update _format_media_display Function** - Refactor display formatting
+- [x] **3.4 Update _compress_frame_to_embedded Function** - Return new MediaRef
 
-### Phase 4: Update ScreenCaptured Class
-- [ ] **4.1 Update ScreenCaptured.lazy_load** - Refactor loading logic
-- [ ] **4.2 Update Type Checking Methods** - Update `has_embedded_data`, `has_external_reference`
-- [ ] **4.3 Update Factory Methods** - Update `from_external_image`, `from_external_video`
-- [ ] **4.4 Update embed_from_array Method** - Create new MediaRef
-- [ ] **4.5 Update resolve_external_path Method** - Refactor path resolution
+### Phase 4: Update ScreenCaptured Class ✓
+- [x] **4.1 Update ScreenCaptured.lazy_load** - Refactor loading logic
+- [x] **4.2 Update Type Checking Methods** - Update `has_embedded_data`, `has_external_reference`
+- [x] **4.3 Update Factory Methods** - Update `from_external_image`, `from_external_video`
+- [x] **4.4 Update embed_from_array Method** - Create new MediaRef
+- [x] **4.5 Update resolve_external_path Method** - Refactor path resolution
 
-### Phase 5: Update Tests
-- [ ] **5.1 Update test_screen_msg.py** - Refactor MediaRef tests
-- [ ] **5.2 Update test_screen_remote.py** - Update remote tests
-- [ ] **5.3 Add New MediaRef Tests** - Comprehensive new functionality tests
+### Phase 5: Update Tests ✓
+- [x] **5.1 Update test_screen_msg.py** - Refactor MediaRef tests
+- [x] **5.2 Update test_screen_remote.py** - Update remote tests
+- [x] **5.3 Add New MediaRef Tests** - Comprehensive new functionality tests
 
-### Phase 6: Update Dependent Packages
-- [ ] **6.1 Update owa-data Package** - transforms.py and encoders
-- [ ] **6.2 Update owa-env-gst Package** - GST environment files
-- [ ] **6.3 Update owa-core Package** - Integration tests
-- [ ] **6.4 Update ocap Package** - Recording functionality
-- [ ] **6.5 Update mcap-owa-support Package** - HuggingFace integration
+### Phase 6: Update Dependent Packages ✓
+- [x] **6.1 Update owa-data Package** - transforms.py and encoders
+- [x] **6.2 Update owa-env-gst Package** - GST environment files
+- [x] **6.3 Update owa-core Package** - Integration tests
+- [x] **6.4 Update ocap Package** - Recording functionality
+- [x] **6.5 Update mcap-owa-support Package** - HuggingFace integration
 
-### Phase 7: Create Migration Script
-- [ ] **7.1 Create v0_5_0_to_v0_5_1.py** - Migration script implementation
-- [ ] **7.2 Add Migration Logic** - Convert old to new MediaRef format
-- [ ] **7.3 Test Migration Script** - Test with sample MCAP files
+### Phase 7: Create Migration Script ✓
+- [x] **7.1 Create v0_5_0_to_v0_5_1.py** - Migration script implementation
+- [x] **7.2 Add Migration Logic** - Convert old to new MediaRef format
+- [x] **7.3 Test Migration Script** - Test with sample MCAP files
 
-### Phase 8: Version Updates
-- [ ] **8.1 Update owa-msgs to v0.5.1** - Bump version in pyproject.toml
-- [ ] **8.2 Update Dependent Package Versions** - Update all dependent packages
-- [ ] **8.3 Update Migration Script Dependencies** - Update migrator dependencies
+### Phase 8: Version Updates ✓
+- [x] **8.1 Update owa-msgs to v0.5.1** - Bump version in pyproject.toml
+- [x] **8.2 Update Dependent Package Versions** - Update all dependent packages
+- [x] **8.3 Update Migration Script Dependencies** - Update migrator dependencies
 
-### Phase 9: Integration Testing
-- [ ] **9.1 Test New MediaRef Functionality** - Run all tests
-- [ ] **9.2 Test Migration Script** - Test on real MCAP files
-- [ ] **9.3 Test Cross-Package Integration** - Test package interactions
+### Phase 9: Integration Testing ✓
+- [x] **9.1 Test New MediaRef Functionality** - Run all tests
+- [x] **9.2 Test Migration Script** - Test on real MCAP files
+- [x] **9.3 Test Cross-Package Integration** - Test package interactions
 
 ## Implementation Order
 
@@ -154,8 +154,8 @@ MediaRef.from_path("/path/to/video", pts_ns=123)
 
 ## Success Criteria
 
-- [ ] All existing tests pass with new MediaRef
-- [ ] Migration script successfully converts sample MCAP files
-- [ ] All dependent packages work with new MediaRef
-- [ ] Performance is maintained or improved
-- [ ] API surface remains clean and intuitive
+- [x] All existing tests pass with new MediaRef
+- [x] Migration script successfully converts sample MCAP files
+- [x] All dependent packages work with new MediaRef
+- [x] Performance is maintained or improved
+- [x] API surface remains clean and intuitive
