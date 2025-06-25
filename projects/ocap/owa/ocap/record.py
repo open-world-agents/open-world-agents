@@ -14,7 +14,6 @@ from mcap_owa.highlevel import OWAMcapWriter
 from owa.cli.utils import check_for_update
 from owa.core import LISTENERS, get_plugin_discovery
 from owa.core.time import TimeUnits
-from owa.msgs.desktop.screen import ScreenCaptured
 
 # TODO: apply https://loguru.readthedocs.io/en/stable/resources/recipes.html#configuring-loguru-to-be-used-by-a-library-or-an-application
 logger.remove()
