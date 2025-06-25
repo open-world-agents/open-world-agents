@@ -11,17 +11,18 @@ from owa.core.message import OWAMessage
 class WindowInfo(OWAMessage):
     """
     Represents information about a desktop window.
-    
+
     This message captures window properties including title, position, and handle,
     useful for window management and automation tasks.
-    
+
     Attributes:
         title: Window title text
         rect: Window rectangle as (left, top, right, bottom) coordinates
         hWnd: Window handle (platform-specific identifier)
     """
+
     _type = "desktop/WindowInfo"
-    
+
     title: str
     # rect has (left, top, right, bottom) format
     # normally,

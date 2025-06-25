@@ -19,7 +19,9 @@ def show_plugin(
     search: Optional[str] = typer.Option(None, "--search", "-s", help="Search components by name pattern"),
     details: bool = typer.Option(False, "--details", "-d", help="Show import paths and load status"),
     table_format: bool = typer.Option(False, "--table", help="Display components in table format"),
-    inspect: Optional[str] = typer.Option(None, "--inspect", "-i", help="Inspect specific component (show docstring/signature)"),
+    inspect: Optional[str] = typer.Option(
+        None, "--inspect", "-i", help="Inspect specific component (show docstring/signature)"
+    ),
 ):
     """Show detailed information about a plugin with enhanced filtering and inspection options."""
 
@@ -157,8 +159,8 @@ def _inspect_component(namespace: str, component_name: str):
     tree.add(f"Class: {component.__class__.__name__}")
 
     # Show docstring if available
-    if hasattr(component, '__doc__') and component.__doc__:
-        doc_lines = component.__doc__.strip().split('\n')
+    if hasattr(component, "__doc__") and component.__doc__:
+        doc_lines = component.__doc__.strip().split("\n")
         doc_tree = tree.add("📝 Documentation")
         for line in doc_lines[:10]:  # Limit to first 10 lines
             doc_tree.add(line.strip())
@@ -168,9 +170,10 @@ def _inspect_component(namespace: str, component_name: str):
         tree.add("📝 Documentation: None")
 
     # Show signature for callables
-    if comp_type_found == "callables" and hasattr(component, '__call__'):
+    if comp_type_found == "callables" and hasattr(component, "__call__"):
         try:
             import inspect
+
             sig = inspect.signature(component)
             tree.add(f"🔧 Signature: {component.__name__}{sig}")
         except (ValueError, TypeError):
