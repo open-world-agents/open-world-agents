@@ -67,7 +67,7 @@ def test_write_and_read_messages(temp_mcap_file):
         warnings.filterwarnings("ignore", "Failed to import module for schema 'test.msg.*", UserWarning)
         warnings.filterwarnings("ignore", "Reader version.*may not be compatible with writer version.*", UserWarning)
 
-        with OWAMcapReader(file_path) as reader:
+        with OWAMcapReader(file_path, decode_args={"return_dict_on_failure": True}) as reader:
             messages = list(reader.iter_messages())
             assert len(messages) == 10
             for i, msg in enumerate(messages):
@@ -95,7 +95,7 @@ def test_mcap_message_object(temp_mcap_file):
         warnings.filterwarnings("ignore", "Failed to import module for schema 'test.msg.*", UserWarning)
         warnings.filterwarnings("ignore", "Reader version.*may not be compatible with writer version.*", UserWarning)
 
-        with OWAMcapReader(file_path) as reader:
+        with OWAMcapReader(file_path, decode_args={"return_dict_on_failure": True}) as reader:
             messages = list(reader.iter_messages())
             assert len(messages) == 1
 
@@ -137,7 +137,7 @@ def test_schema_based_filtering(temp_mcap_file):
         warnings.filterwarnings("ignore", "Failed to import module for schema 'test.msg.*", UserWarning)
         warnings.filterwarnings("ignore", "Reader version.*may not be compatible with writer version.*", UserWarning)
 
-        with OWAMcapReader(file_path) as reader:
+        with OWAMcapReader(file_path, decode_args={"return_dict_on_failure": True}) as reader:
             # Filter by schema name
             keyboard_messages = [msg for msg in reader.iter_messages() if msg.message_type == "test.msg.KeyboardEvent"]
 
@@ -173,7 +173,7 @@ def test_multiple_message_types(temp_mcap_file):
         warnings.filterwarnings("ignore", "Failed to import module for schema 'test.msg.*", UserWarning)
         warnings.filterwarnings("ignore", "Reader version.*may not be compatible with writer version.*", UserWarning)
 
-        with OWAMcapReader(file_path) as reader:
+        with OWAMcapReader(file_path, decode_args={"return_dict_on_failure": True}) as reader:
             messages = list(reader.iter_messages())
             assert len(messages) == 2
 
