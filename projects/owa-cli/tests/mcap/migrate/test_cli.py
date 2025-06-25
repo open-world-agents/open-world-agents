@@ -340,8 +340,9 @@ def test_migrate_rollback_no_backups(cli_runner, temp_dir):
 
 
 def test_migrate_cleanup_no_backups(cli_runner, temp_dir):
-    """Test cleanup with no backup files."""
-    result = cli_runner.invoke(app, ["mcap", "migrate", "cleanup", "--dry-run"])
+    """Test cleanup with no backup files in a controlled directory."""
+    # Run cleanup in the temp_dir to confine the operation to a safe directory
+    result = cli_runner.invoke(app, ["mcap", "migrate", "cleanup", str(temp_dir / "*.mcap.backup"), "--dry-run"])
     assert result.exit_code == 0
     assert "No backup files found" in result.stdout
 
@@ -385,8 +386,8 @@ def test_migrate_rollback_cleanup_workflow(
     assert not backup_file.exists(), "Backup file should be removed after cleanup"
 
 
-def test_migrate_rollback_with_missing_original(cli_runner, temp_dir):
-    """Test rollback when original file is missing (restore scenario)."""
+def test_migrate_rollback_with_missing_current(cli_runner, temp_dir):
+    """Test rollback when current file is missing (restore scenario)."""
     # Create backup file without original
     backup_file = temp_dir / "missing.mcap.backup"
     backup_file.write_text("backup content")
@@ -419,7 +420,7 @@ def test_migrate_cleanup_with_patterns(cli_runner, temp_dir):
     # Test cleanup with specific pattern
     result = cli_runner.invoke(app, ["mcap", "migrate", "cleanup", str(temp_dir / "test1.mcap.backup"), "--dry-run"])
     assert result.exit_code == 0
-    assert "test1.m" in result.stdout  # Filename may be truncated in table
+    assert "test1" in result.stdout  # Filename should appear in table (may be truncated)
     assert "Would delete 1 backup files" in result.stdout
 
     # Test cleanup with wildcard pattern

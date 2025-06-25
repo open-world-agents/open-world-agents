@@ -111,31 +111,28 @@ def create_file_info_table(table_type: str = "rollback") -> Table:
     """
     table = Table(show_header=True, header_style="bold magenta")
 
+    # Both tables use consistent column order: Current info first, then Backup info, then Status
     if table_type == "rollback":
-        # Rollback table: focus on original file with backup info
-        table.add_column("Original File", style="cyan")
-        table.add_column("Original Date", style="dim")
-        table.add_column("Original Size", justify="right", style="dim")
-        table.add_column("Backup Date", style="yellow")
-        table.add_column("Backup Size", justify="right")
-        table.add_column("Original Version", style="green")
-        table.add_column("Backup Version", style="blue")
-        table.add_column("Status", justify="center")
+        # Rollback table: focus on current file that will be replaced
+        table.add_column("Current File", style="cyan")
     else:  # cleanup
-        # Cleanup table: focus on backup file with original info
+        # Cleanup table: focus on backup file that will be deleted
         table.add_column("Backup File", style="cyan")
-        table.add_column("Backup Date", style="yellow")
-        table.add_column("Backup Size", justify="right")
-        table.add_column("Original File", style="green")
-        table.add_column("Original Date", style="dim")
-        table.add_column("Original Size", justify="right", style="dim")
-        table.add_column("Status", justify="center")
+
+    # Consistent column order for both tables
+    table.add_column("Current Date", style="dim")
+    table.add_column("Current Size", justify="right", style="dim")
+    table.add_column("Current Version", style="green")
+    table.add_column("Backup Date", style="yellow")
+    table.add_column("Backup Size", justify="right")
+    table.add_column("Backup Version", style="blue")
+    table.add_column("Status", justify="center")
 
     return table
 
 
 def add_rollback_row(
-    table: Table, info, original_date: str, original_size_str: str, backup_date: str, backup_size_str: str, status: str
+    table: Table, info, current_date: str, current_size_str: str, backup_date: str, backup_size_str: str, status: str
 ) -> None:
     """
     Add a row to a rollback table with standardized formatting.
@@ -143,26 +140,34 @@ def add_rollback_row(
     Args:
         table: Rich Table object
         info: BackupInfo object
-        original_date: Formatted original date string
-        original_size_str: Formatted original size string
+        current_date: Formatted current date string
+        current_size_str: Formatted current size string
         backup_date: Formatted backup date string
         backup_size_str: Formatted backup size string
         status: Status string
     """
     table.add_row(
-        str(info.original_path.name),
-        original_date,
-        original_size_str,
-        backup_date,
-        backup_size_str,
-        info.original_version or "Unknown",
-        info.backup_version or "Unknown",
-        status,
+        str(info.original_path.name),  # Current File
+        current_date,  # Current Date
+        current_size_str,  # Current Size
+        info.original_version or "Unknown",  # Current Version
+        backup_date,  # Backup Date
+        backup_size_str,  # Backup Size
+        info.backup_version or "Unknown",  # Backup Version
+        status,  # Status
     )
 
 
 def add_cleanup_row(
-    table: Table, info, backup_date: str, backup_size_str: str, original_date: str, original_size_str: str, status: str
+    table: Table,
+    info,
+    current_date: str,
+    current_size_str: str,
+    backup_date: str,
+    backup_size_str: str,
+    current_version: str,
+    backup_version: str,
+    status: str,
 ) -> None:
     """
     Add a row to a cleanup table with standardized formatting.
@@ -170,18 +175,21 @@ def add_cleanup_row(
     Args:
         table: Rich Table object
         info: BackupFileInfo object
+        current_date: Formatted current date string
+        current_size_str: Formatted current size string
         backup_date: Formatted backup date string
         backup_size_str: Formatted backup size string
-        original_date: Formatted original date string
-        original_size_str: Formatted original size string
+        current_version: Current file version
+        backup_version: Backup file version
         status: Status string
     """
     table.add_row(
-        str(info.backup_path.name),
-        backup_date,
-        backup_size_str,
-        str(info.original_path.name),
-        original_date,
-        original_size_str,
-        status,
+        str(info.backup_path.name),  # Backup File
+        current_date,  # Current Date
+        current_size_str,  # Current Size
+        current_version,  # Current Version
+        backup_date,  # Backup Date
+        backup_size_str,  # Backup Size
+        backup_version,  # Backup Version
+        status,  # Status
     )

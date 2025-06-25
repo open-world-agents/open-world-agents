@@ -567,7 +567,7 @@ def migrate(
         console.print(f"\n[yellow]Would migrate {len(files_needing_migration)} files[/yellow]")
         return
 
-    if not yes and not typer.confirm(f"\nProceed with migrating {len(files_needing_migration)} files?", default=True):
+    if not yes and not typer.confirm(f"\nProceed with migrating {len(files_needing_migration)} files?"):
         console.print("Migration cancelled.")
         return
 

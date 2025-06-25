@@ -117,8 +117,8 @@ def display_rollback_summary(backup_infos: List[BackupInfo], console: Console) -
     for info in rollbackable:
         # Format dates and sizes using shared utilities
         backup_date = format_datetime(info.backup_modified)
-        original_date = format_datetime(info.original_modified)
-        original_size_str = format_file_size(info.original_size)
+        current_date = format_datetime(info.original_modified)
+        current_size_str = format_file_size(info.original_size)
         backup_size_str = format_file_size(info.backup_size)
 
         # Determine status
@@ -130,7 +130,7 @@ def display_rollback_summary(backup_infos: List[BackupInfo], console: Console) -
             status = "READY"
 
         # Add row using unified function
-        add_rollback_row(table, info, original_date, original_size_str, backup_date, backup_size_str, status)
+        add_rollback_row(table, info, current_date, current_size_str, backup_date, backup_size_str, status)
 
     console.print("\n[bold]Rollback Summary[/bold]")
     console.print(table)
@@ -171,9 +171,9 @@ def rollback(
     # Show warnings for problematic cases
     for info in rollbackable:
         if not info.original_exists:
-            console.print(f"[yellow]Warning: Original file missing, will restore: {info.original_path}[/yellow]")
+            console.print(f"[yellow]Warning: Current file missing, will restore: {info.original_path}[/yellow]")
         elif info.original_version == info.backup_version:
-            console.print(f"[yellow]Warning: Original and backup have same version: {info.original_path}[/yellow]")
+            console.print(f"[yellow]Warning: Current and backup have same version: {info.original_path}[/yellow]")
 
     # Confirm rollback
     if not yes and not typer.confirm(f"\nProceed with rolling back {len(rollbackable)} files?", default=False):
