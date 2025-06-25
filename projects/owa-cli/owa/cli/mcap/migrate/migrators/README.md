@@ -252,3 +252,20 @@ Migrators **SHOULD** be tested with:
 - Large file performance validation
 - JSON schema compliance verification
 - Round-trip migration testing (where applicable)
+
+## Testing Tips
+
+You can test your migrator works within virtual environment without uploading package to pypi:
+
+```
+# dependencies = [
+#   ...
+#   "mcap-owa-support==0.5.0a3",
+#   "owa-core==0.5.0a3",
+#   "owa-msgs==0.5.0a3",
+# ]
+# [tool.uv.sources]
+# mcap-owa-support = { path = "../../../../../../mcap-owa-support", editable = true }
+# owa-core = { path = "../../../../../../owa-core", editable = true }
+# owa-msgs = { path = "../../../../../../owa-msgs", editable = true }
+```
