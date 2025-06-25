@@ -1,6 +1,6 @@
 [project]
 name = "owa-core"
-version = "0.4.3"
+version = "0.5.0a1"
 description = "Core framework and registry system for Open World Agents"
 readme = "README.md"
 license = { text = "MIT" }
