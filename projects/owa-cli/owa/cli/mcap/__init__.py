@@ -8,7 +8,7 @@ app = typer.Typer(help="MCAP file management commands.")
 
 app.command()(cat.cat)
 app.command()(convert.convert)
-app.command()(migrate.migrate)
+app.add_typer(migrate.app, name="migrate")
 app.command()(info.info)
 app.command()(sanitize.sanitize)
 

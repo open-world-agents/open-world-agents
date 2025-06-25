@@ -255,7 +255,7 @@ Migrators **SHOULD** be tested with:
 
 ## Testing Tips
 
-You can test your migrator works within virtual environment without uploading package to pypi:
+You can test your migrator works within virtual environment without uploading package to pypi, by adding editable source:
 
 ```
 # dependencies = [
