@@ -18,6 +18,7 @@ from owa.cli.mcap.backup_utils import generate_backup_path
 from owa.cli.mcap.migrate.file_utils import (
     add_cleanup_row,
     create_file_info_table,
+    detect_mcap_version,
     format_datetime,
     format_file_size,
 )
@@ -34,6 +35,8 @@ class BackupFileInfo:
     original_exists: bool = False
     original_size: Optional[int] = None
     original_modified: Optional[datetime] = None
+    backup_version: Optional[str] = None
+    original_version: Optional[str] = None
 
 
 def find_backup_files_by_pattern(patterns: List[str], console: Console) -> List[BackupFileInfo]:
@@ -90,6 +93,7 @@ def find_backup_files_by_pattern(patterns: List[str], console: Console) -> List[
             stat = backup_path.stat()
             backup_info.backup_size = stat.st_size
             backup_info.backup_modified = datetime.fromtimestamp(stat.st_mtime)
+            backup_info.backup_version = detect_mcap_version(backup_path)
         except Exception as e:
             console.print(f"[yellow]Warning: Could not read backup file info for {backup_path}: {e}[/yellow]")
 
@@ -100,6 +104,7 @@ def find_backup_files_by_pattern(patterns: List[str], console: Console) -> List[
                 stat = original_path.stat()
                 backup_info.original_size = stat.st_size
                 backup_info.original_modified = datetime.fromtimestamp(stat.st_mtime)
+                backup_info.original_version = detect_mcap_version(original_path)
             except Exception as e:
                 console.print(f"[yellow]Warning: Could not read original file info for {original_path}: {e}[/yellow]")
 
@@ -158,9 +163,11 @@ def display_cleanup_summary(backup_infos: List[BackupFileInfo], console: Console
     for info in backup_infos:
         # Format dates and sizes using shared utilities
         backup_date = format_datetime(info.backup_modified)
-        original_date = format_datetime(info.original_modified)
+        current_date = format_datetime(info.original_modified)
         backup_size_str = format_file_size(info.backup_size)
-        original_size_str = format_file_size(info.original_size)
+        current_size_str = format_file_size(info.original_size)
+        current_version = info.original_version or "Unknown"
+        backup_version = info.backup_version or "Unknown"
 
         # Track total size for summary
         if info.backup_size is not None:
@@ -176,7 +183,17 @@ def display_cleanup_summary(backup_infos: List[BackupFileInfo], console: Console
             status = "ORPHANED"
 
         # Add row using unified function
-        add_cleanup_row(table, info, backup_date, backup_size_str, original_date, original_size_str, status)
+        add_cleanup_row(
+            table,
+            info,
+            current_date,
+            current_size_str,
+            backup_date,
+            backup_size_str,
+            current_version,
+            backup_version,
+            status,
+        )
 
     console.print("\n[bold]Cleanup Summary[/bold]")
     console.print(table)
