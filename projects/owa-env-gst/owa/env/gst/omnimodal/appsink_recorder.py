@@ -123,10 +123,8 @@ class AppsinkRecorder(GstPipelineRunner):
                 utc_ns=frame_time_ns,
                 source_shape=original_shape,
                 shape=shape,
+                media_ref=dict(type="external_video", path=filesink_location, pts_ns=buf.pts),
             )
-            # Set external video reference with path and timestamp
-            screen_captured.set_external_video_reference(filesink_location, buf.pts)
-
             callback(screen_captured)
             return Gst.PadProbeReturn.OK
 

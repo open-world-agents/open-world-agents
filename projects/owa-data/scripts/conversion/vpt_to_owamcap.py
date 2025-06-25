@@ -144,8 +144,12 @@ def process_single_file(jsonl_file_path):
 
         ## SCREEN EVENT
         topic = "screen"
-        event = ScreenCaptured(utc_ns=unix_epoch_ns)
-        event.set_external_video_reference(str(mp4_file_path), unix_epoch_ns)
+        event = ScreenCaptured(
+            utc_ns=unix_epoch_ns,
+            source_shape=(VPT_X_RESOLUTION, VPT_Y_RESOLUTION),
+            shape=(VPT_X_RESOLUTION, VPT_Y_RESOLUTION),
+            media_ref=dict(type="external_video", path=str(mp4_file_path), pts_ns=unix_epoch_ns),
+        )
         writer.write_message(topic, event, log_time=unix_epoch_ns)
 
         for i, tick in enumerate(ticks):
@@ -154,8 +158,12 @@ def process_single_file(jsonl_file_path):
 
             ## SCREEN EVENT
             topic = "screen"
-            event = ScreenCaptured(utc_ns=log_time)
-            event.set_external_video_reference(str(mp4_file_path), log_time)
+            event = ScreenCaptured(
+                utc_ns=log_time,
+                source_shape=(VPT_X_RESOLUTION, VPT_Y_RESOLUTION),
+                shape=(VPT_X_RESOLUTION, VPT_Y_RESOLUTION),
+                media_ref=dict(type="external_video", path=str(mp4_file_path), pts_ns=log_time),
+            )
             writer.write_message(topic, event, log_time=log_time)
 
             ## KEYBOARD EVENT

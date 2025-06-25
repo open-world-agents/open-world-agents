@@ -338,55 +338,9 @@ def _resolve_video_path(screen_captured: ScreenCaptured, metadata: Dict[str, Any
     Returns:
         ScreenCaptured object with resolved absolute path
     """
-    # Handle new media_ref system
     if screen_captured.media_ref is not None:
         if screen_captured.media_ref.type == "external_video":
-            # If path is already absolute, return as-is
-            if Path(screen_captured.media_ref.path).is_absolute():
-                return screen_captured
+            screen_captured.resolve_external_path(metadata.get("file_path"))
 
-            # Get the directory of the original MCAP file
-            file_path = metadata.get("file_path", "")
-            if file_path:
-                mcap_dir = Path(file_path).parent
-                # Resolve relative path relative to MCAP directory
-                resolved_path = mcap_dir / screen_captured.media_ref.path
-
-                # Create new ScreenCaptured with resolved path
-                new_screen_captured = ScreenCaptured(
-                    utc_ns=screen_captured.utc_ns,
-                    source_shape=screen_captured.source_shape,
-                    shape=screen_captured.shape,
-                )
-                new_screen_captured.set_external_video_reference(str(resolved_path), screen_captured.media_ref.pts_ns)
-                return new_screen_captured
-
-        # For other media_ref types or if no file_path, return as-is
-        return screen_captured
-
-    # Handle legacy format (for backward compatibility)
-    # This code should be removed once all legacy data is migrated
-    if hasattr(screen_captured, "path") and screen_captured.path:
-        # If path is already absolute, return as-is
-        if Path(screen_captured.path).is_absolute():
-            return screen_captured
-
-        # Get the directory of the original MCAP file
-        file_path = metadata.get("file_path", "")
-        if file_path:
-            mcap_dir = Path(file_path).parent
-            # Resolve relative path relative to MCAP directory
-            resolved_path = mcap_dir / screen_captured.path
-
-            # Create new ScreenCaptured with resolved path using new API
-            new_screen_captured = ScreenCaptured(
-                utc_ns=screen_captured.utc_ns,
-                source_shape=getattr(screen_captured, "original_shape", None),
-                shape=screen_captured.shape,
-            )
-            pts_ns = getattr(screen_captured, "pts", 0)
-            new_screen_captured.set_external_video_reference(str(resolved_path), pts_ns)
-            return new_screen_captured
-
-    # If no file_path in metadata, return as-is
+    # For other media_ref types or if no file_path, return as-is
     return screen_captured
