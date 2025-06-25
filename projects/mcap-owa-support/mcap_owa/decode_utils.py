@@ -65,8 +65,16 @@ def create_message_decoder(message_type: str, fallback: bool = False) -> DecodeF
         raise ValueError(f"Unsupported message type: {message_type}")
 
     def decoder(message_data: bytes) -> Any:
-        buffer = io.BytesIO(message_data)
-        return cls.deserialize(buffer)
+        try:
+            buffer = io.BytesIO(message_data)
+            return cls.deserialize(buffer)
+        except Exception as e:
+            if fallback:
+                warnings.warn(
+                    f"Failed to decode message of type {message_type}: {e}. Falling back to dictionary decoding."
+                )
+                return dict_decoder(message_data)
+            raise e
 
     return decoder
 
