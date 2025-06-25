@@ -25,7 +25,7 @@ class OWAMcapReader:
     in an MCAP file, with support for both local filesystem paths and remote HTTP/HTTPS URLs.
     """
 
-    def __init__(self, file_path: PathType):
+    def __init__(self, file_path: PathType, *, decode_as_dict: bool = False):
         """
         Initialize an OWA MCAP reader.
 
@@ -48,7 +48,9 @@ class OWAMcapReader:
             self._file = open(file_path, "rb")
             self._is_network_path = False
 
-        self.reader: McapReader = make_reader(self._file, decoder_factories=[DecoderFactory()])
+        self.reader: McapReader = make_reader(
+            self._file, decoder_factories=[DecoderFactory(decode_as_dict=decode_as_dict)]
+        )
         self.__finished = False
 
         # Check profile of mcap file

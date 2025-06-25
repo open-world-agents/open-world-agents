@@ -16,6 +16,10 @@ except ImportError:
 DecodeFunction: TypeAlias = Callable[[bytes], Any]
 
 
+def dict_decoder(message_data: bytes) -> Any:
+    return EasyDict(orjson.loads(message_data))
+
+
 def _create_message_decoder(message_type: str) -> Optional[DecodeFunction]:
     """
     Create a decode function for a specific OWA message type/schema name.
@@ -64,9 +68,6 @@ def _create_message_decoder(message_type: str) -> Optional[DecodeFunction]:
             )
         else:
             warnings.warn(f"Failed to import module for schema '{message_type}'. Falling back to dictionary decoding.")
-
-        def dict_decoder(message_data: bytes) -> Any:
-            return EasyDict(orjson.loads(message_data))
 
         return dict_decoder
 

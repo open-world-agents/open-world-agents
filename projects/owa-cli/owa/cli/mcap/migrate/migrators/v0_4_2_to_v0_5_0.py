@@ -106,7 +106,7 @@ def migrate(
 
     try:
         msgs = []
-        with OWAMcapReader(input_file) as reader:
+        with OWAMcapReader(input_file, decode_as_dict=True) as reader:
             for schema, channel, message, decoded in reader.reader.iter_decoded_messages():
                 schema_name = schema.name
 
