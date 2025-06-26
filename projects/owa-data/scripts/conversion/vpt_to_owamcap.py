@@ -133,12 +133,12 @@ def process_single_file(jsonl_file_path):
             rect=[0, 0, VPT_X_RESOLUTION, VPT_Y_RESOLUTION],
             hWnd=-1,
         )
-        writer.write_message(topic, event, log_time=unix_epoch_ns)
+        writer.write_message(event, topic=topic, timestamp=unix_epoch_ns)
 
         # NOTE: we assume mouse starts from the center of the screen
         topic = "mouse"
         event = MouseEvent(event_type="move", x=center_x, y=center_y)
-        writer.write_message(topic, event, log_time=unix_epoch_ns)
+        writer.write_message(event, topic=topic, timestamp=unix_epoch_ns)
 
         keyboard_state = set()
 
@@ -152,7 +152,7 @@ def process_single_file(jsonl_file_path):
             shape=(VPT_X_RESOLUTION, VPT_Y_RESOLUTION),
             media_ref=MediaRef(uri=str(mp4_file_path), pts_ns=unix_epoch_ns),
         )
-        writer.write_message(topic, event, log_time=unix_epoch_ns)
+        writer.write_message(event, topic=topic, timestamp=unix_epoch_ns)
 
         for i, tick in enumerate(ticks):
             # milli_timestamp = tick["milli"] # we don't use this value of VPT since it seems inaccurate
@@ -166,7 +166,7 @@ def process_single_file(jsonl_file_path):
                 shape=(VPT_X_RESOLUTION, VPT_Y_RESOLUTION),
                 media_ref=MediaRef(uri=str(mp4_file_path), pts_ns=log_time),
             )
-            writer.write_message(topic, event, log_time=log_time)
+            writer.write_message(event, topic=topic, timestamp=log_time)
 
             ## KEYBOARD EVENT
             current_tick_keys = tick["keyboard"]["keys"]
@@ -184,7 +184,7 @@ def process_single_file(jsonl_file_path):
                         keyboard_state.add(key)
                         topic = "keyboard"
                         event = KeyboardEvent(event_type="press", vk=VPT_KEYBOARD_VK_MAPPING[key])
-                        writer.write_message(topic, event, log_time=log_time)
+                        writer.write_message(event, topic=topic, timestamp=log_time)
 
             # release keys that are not in the current tick
             for state_key in list(keyboard_state):
@@ -192,7 +192,7 @@ def process_single_file(jsonl_file_path):
                     keyboard_state.remove(state_key)
                     topic = "keyboard"
                     event = KeyboardEvent(event_type="release", vk=VPT_KEYBOARD_VK_MAPPING[state_key])
-                    writer.write_message(topic, event, log_time=log_time)
+                    writer.write_message(event, topic=topic, timestamp=log_time)
 
             ## MOUSE EVENT
             dx = tick["mouse"]["dx"]
@@ -206,11 +206,11 @@ def process_single_file(jsonl_file_path):
                 # NOTE: we suppose the mouse is pinned to the center. it takes VPT_MOUSE_PIN_NS for the program to pin the mouse to the center
                 topic = "mouse"
                 event = MouseEvent(event_type="move", x=center_x + dx, y=center_y + dy)
-                writer.write_message(topic, event, log_time=log_time - VPT_MOUSE_PIN_NS)
+                writer.write_message(event, topic=topic, timestamp=log_time - VPT_MOUSE_PIN_NS)
 
                 topic = "mouse"
                 event = MouseEvent(event_type="move", x=center_x, y=center_y)
-                writer.write_message(topic, event, log_time=log_time)
+                writer.write_message(event, topic=topic, timestamp=log_time)
 
 
 def main(max_workers: int = None):

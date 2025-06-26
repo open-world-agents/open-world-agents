@@ -181,10 +181,9 @@ def sanitize_mcap_file(
                 # Write message if it should be kept
                 if keep_current_events:
                     writer.write_message(
-                        mcap_msg.topic,
                         mcap_msg.decoded,
-                        log_time=mcap_msg.timestamp,
-                        publish_time=mcap_msg.timestamp,
+                        topic=mcap_msg.topic,
+                        timestamp=mcap_msg.timestamp,
                     )
 
         # Replace original file with sanitized version (after writer is closed)

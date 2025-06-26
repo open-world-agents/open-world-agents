@@ -138,7 +138,7 @@ event = {message_class.__name__}(
 # Use in OWAMcap
 from mcap_owa.highlevel import OWAMcapWriter
 with OWAMcapWriter("events.mcap") as writer:
-    writer.write_message("keyboard", event)"""
+    writer.write_message(event, topic="keyboard")"""
 
     elif "MouseEvent" in message_class.__name__:
         example_code = f"""from owa.core import MESSAGES
@@ -159,7 +159,7 @@ event = {message_class.__name__}(
 # Use in OWAMcap
 from mcap_owa.highlevel import OWAMcapWriter
 with OWAMcapWriter("events.mcap") as writer:
-    writer.write_message("mouse", event)"""
+    writer.write_message(event, topic="mouse")"""
 
     else:
         example_code = f"""from owa.core import MESSAGES
@@ -175,7 +175,7 @@ message = {message_class.__name__}(
 # Use in OWAMcap
 from mcap_owa.highlevel import OWAMcapWriter
 with OWAMcapWriter("data.mcap") as writer:
-    writer.write_message("topic", message)"""
+    writer.write_message(message, topic="topic")"""
 
     syntax = Syntax(example_code, "python", theme="monokai", line_numbers=True)
     console.print(Panel(syntax, title="Usage Example", border_style="yellow"))

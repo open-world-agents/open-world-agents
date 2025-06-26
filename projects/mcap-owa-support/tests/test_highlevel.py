@@ -60,7 +60,7 @@ def test_write_and_read_messages(temp_mcap_file):
     with OWAMcapWriter(file_path) as writer:
         for i in range(0, 10):
             publish_time = i
-            writer.write_message(topic, event, log_time=publish_time)
+            writer.write_message(event, topic=topic, timestamp=publish_time)
 
     # Suppress warnings only for reading mock messages and version compatibility
     with warnings.catch_warnings():
@@ -88,7 +88,7 @@ def test_mcap_message_object(temp_mcap_file):
         event = MockKeyboardEvent(event_type="press", vk=65)
 
     with OWAMcapWriter(file_path) as writer:
-        writer.write_message(topic, event, log_time=1000)
+        writer.write_message(event, topic=topic, timestamp=1000)
 
     # Suppress warnings only for reading mock messages and version compatibility
     with warnings.catch_warnings():
@@ -128,9 +128,9 @@ def test_schema_based_filtering(temp_mcap_file):
 
     with OWAMcapWriter(file_path) as writer:
         # Write different message types
-        writer.write_message("/keyboard", keyboard_event, log_time=1000)
-        writer.write_message("/keyboard", keyboard_event2, log_time=2000)
-        writer.write_message("/mouse", mouse_event, log_time=3000)
+        writer.write_message(keyboard_event, topic="/keyboard", timestamp=1000)
+        writer.write_message(keyboard_event2, topic="/keyboard", timestamp=2000)
+        writer.write_message(mouse_event, topic="/mouse", timestamp=3000)
 
     # Suppress warnings only for reading mock messages and version compatibility
     with warnings.catch_warnings():
@@ -164,9 +164,9 @@ def test_multiple_message_types(temp_mcap_file):
 
     with OWAMcapWriter(file_path) as writer:
         # Write keyboard events
-        writer.write_message("/keyboard", keyboard_event, log_time=1000)
+        writer.write_message(keyboard_event, topic="/keyboard", timestamp=1000)
         # Write mouse events
-        writer.write_message("/mouse", mouse_event, log_time=2000)
+        writer.write_message(mouse_event, topic="/mouse", timestamp=2000)
 
     # Suppress warnings only for reading mock messages and version compatibility
     with warnings.catch_warnings():

@@ -226,7 +226,7 @@ def record(
                         logger.warning(
                             f"High latency: {latency / TimeUnits.MSECOND:.2f}ms while processing {topic} event."
                         )
-                    writer.write_message(topic, event, publish_time=publish_time)
+                    writer.write_message(event, topic=topic, timestamp=publish_time)
             except KeyboardInterrupt:
                 logger.info("Recording stopped by user.")
             finally:
