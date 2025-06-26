@@ -37,7 +37,7 @@ class TestMcapRegistryIntegration:
 
         # Write to MCAP
         with OWAMcapWriter(temp_mcap_file) as writer:
-            writer.write_message("/keyboard", original_event, log_time=1000)
+            writer.write_message(original_event, topic="/keyboard", timestamp=1000)
 
         # Read from MCAP and verify
         with OWAMcapReader(temp_mcap_file) as reader:
@@ -75,8 +75,8 @@ class TestMcapRegistryIntegration:
         with OWAMcapWriter(kb_file) as writer:
             kb_event1 = KeyboardEvent(event_type="press", vk=65, timestamp=1000)
             kb_event2 = KeyboardEvent(event_type="release", vk=65, timestamp=3000)
-            writer.write_message("/keyboard", kb_event1, log_time=1000)
-            writer.write_message("/keyboard", kb_event2, log_time=3000)
+            writer.write_message(kb_event1, topic="/keyboard", timestamp=1000)
+            writer.write_message(kb_event2, topic="/keyboard", timestamp=3000)
 
         with OWAMcapReader(kb_file) as reader:
             kb_messages = list(reader.iter_messages())
@@ -98,7 +98,7 @@ class TestMcapRegistryIntegration:
 
         with OWAMcapWriter(mouse_file) as writer:
             mouse_event = MouseEvent(event_type="click", x=100, y=200, button="left", pressed=True, timestamp=2000)
-            writer.write_message("/mouse", mouse_event, log_time=2000)
+            writer.write_message(mouse_event, topic="/mouse", timestamp=2000)
 
         with OWAMcapReader(mouse_file) as reader:
             mouse_messages = list(reader.iter_messages())
@@ -126,7 +126,7 @@ class TestMcapRegistryIntegration:
 
         # Write to MCAP
         with OWAMcapWriter(temp_mcap_file) as writer:
-            writer.write_message("/keyboard", kb_event, log_time=1000)
+            writer.write_message(kb_event, topic="/keyboard", timestamp=1000)
 
         # Read and verify schema consistency
         with OWAMcapReader(temp_mcap_file) as reader:
@@ -189,7 +189,7 @@ class TestMcapRegistryIntegration:
         with OWAMcapWriter(kb_file) as writer:
             for i in range(3):
                 event = KeyboardEvent(event_type="press", vk=65 + i)
-                writer.write_message("/keyboard", event, log_time=i * 1000)
+                writer.write_message(event, topic="/keyboard", timestamp=i * 1000)
 
         # Read and verify filtering
         with OWAMcapReader(kb_file) as reader:
@@ -229,8 +229,8 @@ class TestMcapRegistryIntegration:
             kb_event = KeyboardEvent(event_type="press", vk=65)
             mouse_event = MouseEvent(event_type="click", x=100, y=200, button="left", pressed=True)
 
-            writer.write_message("/keyboard", kb_event, log_time=1000)
-            writer.write_message("/mouse", mouse_event, log_time=2000)
+            writer.write_message(kb_event, topic="/keyboard", timestamp=1000)
+            writer.write_message(mouse_event, topic="/mouse", timestamp=2000)
 
         # Reading should work for metadata, but decoding may have issues
         with OWAMcapReader(mixed_file) as reader:
