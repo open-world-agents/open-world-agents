@@ -35,7 +35,7 @@ class McapMessage(BaseModel):
         channel: Channel,
         message: Message,
         *,
-        decode_args: dict = None,
+        decode_args: dict = {},
     ) -> "McapMessage":
         """
         Create a McapMessage from MCAP primitive objects.
