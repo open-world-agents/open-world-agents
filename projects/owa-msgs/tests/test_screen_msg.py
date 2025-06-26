@@ -287,13 +287,13 @@ class TestScreenCapturedWithEmbeddedRef:
         original_msg = ScreenCaptured(utc_ns=1741608540328534500, frame_arr=sample_bgra_frame)
 
         # Embed as PNG
-        original_msg.embed_from_array(format="png")
+        original_msg.embed(format="png")
 
         # Create new message from embedded data
         embedded_msg = ScreenCaptured(utc_ns=1741608540328534500, media_ref=original_msg.media_ref)
 
         # Load back
-        loaded_frame = embedded_msg.lazy_load()
+        loaded_frame = embedded_msg.load()
 
         # Should have same shape and similar content (allowing for compression)
         assert loaded_frame.shape == sample_bgra_frame.shape
@@ -537,22 +537,22 @@ class TestScreenCapturedValidation:
         assert "shape=(64, 48)" in repr_str1
 
         # Test with external video ref
-        media_ref2 = MediaRef.from_path("test.mp4", pts_ns=2000000000)
+        media_ref2 = MediaRef(uri="test.mp4", pts_ns=2000000000)
         screen_msg2 = ScreenCaptured(utc_ns=1741608540328534500, media_ref=media_ref2)
         repr_str2 = repr(screen_msg2)
-        assert "local_video(test.mp4@2.000s)" in repr_str2
+        assert "video@2000000000ns" in repr_str2
 
         # Test with external image ref
-        media_ref3 = MediaRef.from_path("image.png")
+        media_ref3 = MediaRef(uri="image.png")
         screen_msg3 = ScreenCaptured(utc_ns=1741608540328534500, media_ref=media_ref3)
         repr_str3 = repr(screen_msg3)
-        assert "local_image(image.png)" in repr_str3
+        assert "external" in repr_str3
 
         # Test with embedded ref
         screen_msg4 = ScreenCaptured(utc_ns=1741608540328534500, frame_arr=sample_bgra_frame.copy())
-        screen_msg4.embed_from_array(format="png")
+        screen_msg4.embed(format="png")
         repr_str4 = repr(screen_msg4)
-        assert "embedded_png" in repr_str4
+        assert "embedded" in repr_str4
 
 
 class TestScreenCapturedIntegration:
