@@ -81,7 +81,25 @@ class MediaRef(BaseModel):
 
 
 class ScreenCaptured(OWAMessage):
-    """Screen capture with minimal design."""
+    """
+    Screen capture message with flexible media handling.
+
+    Creation patterns:
+    - From raw image: ScreenCaptured(frame_arr=numpy_array).embed_as_data_uri()
+    - From file path: ScreenCaptured(media_ref={"uri": "/path/to/image.png"})
+    - From URL: ScreenCaptured(media_ref={"uri": "https://example.com/image.png"})
+    - From data URI: ScreenCaptured(media_ref={"uri": "data:image/png;base64,..."})
+    - From video frame: ScreenCaptured(media_ref={"uri": "/path/video.mp4", "pts_ns": 123456})
+
+    Image access:
+    - to_rgb_array(): Get RGB numpy array
+    - to_pil_image(): Get PIL Image object
+
+    Path resolution:
+    - resolve_external_path(base_path): Resolve relative paths against base directory
+
+    Serialization requires media_ref (use embed_as_data_uri() for in-memory arrays).
+    """
 
     _type = "desktop/ScreenCaptured"
 

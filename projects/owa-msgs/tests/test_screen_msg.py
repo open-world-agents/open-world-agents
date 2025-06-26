@@ -55,6 +55,22 @@ def sample_video_file():
         force_close_video_container(video_path)
 
 
+@pytest.fixture
+def sample_image_file():
+    """Create a temporary image file for testing."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        image_path = Path(temp_dir) / "test_image.png"
+
+        # Create a simple test image
+        test_image = np.zeros((48, 64, 3), dtype=np.uint8)
+        test_image[:, :, 0] = 255  # Red channel
+
+        # Save as PNG
+        cv2.imwrite(str(image_path), test_image)
+
+        yield image_path
+
+
 class TestMediaRef:
     """Test MediaRef minimal design."""
 
@@ -150,18 +166,145 @@ class TestMediaRef:
 
 
 class TestScreenCaptured:
-    """Test ScreenCaptured minimal design."""
+    """Test ScreenCaptured creation patterns and usage as documented in docstring."""
 
-    def test_create_with_frame_arr(self, sample_bgra_frame):
-        """Test creating ScreenCaptured with direct frame array."""
-        utc_ns = 1741608540328534500
+    # === Creation Patterns (as documented in docstring) ===
 
-        screen_msg = ScreenCaptured(utc_ns=utc_ns, frame_arr=sample_bgra_frame)
+    def test_create_from_raw_image_pattern(self, sample_bgra_frame):
+        """Test: From raw image: ScreenCaptured(frame_arr=numpy_array).embed_as_data_uri()"""
+        # Create from raw image in memory
+        screen_msg = ScreenCaptured(frame_arr=sample_bgra_frame).embed_as_data_uri()
 
-        assert screen_msg.utc_ns == utc_ns
-        assert np.array_equal(screen_msg.frame_arr, sample_bgra_frame)
+        # Verify it's properly embedded
+        assert screen_msg.media_ref is not None
+        assert screen_msg.media_ref.is_embedded
+        assert "data:image/png;base64," in screen_msg.media_ref.uri
         assert screen_msg.shape == (64, 48)  # (width, height)
-        assert screen_msg.media_ref is None  # No media reference initially
+
+    def test_create_from_file_path_pattern(self, sample_image_file):
+        """Test: From file path: ScreenCaptured(media_ref={"uri": "/path/to/image.png"})"""
+        # Create from file path
+        screen_msg = ScreenCaptured(media_ref={"uri": str(sample_image_file)})
+
+        # Verify file reference
+        assert screen_msg.media_ref is not None
+        assert screen_msg.media_ref.uri == str(sample_image_file)
+        assert screen_msg.media_ref.is_local
+        assert not screen_msg.media_ref.is_embedded
+        assert screen_msg.frame_arr is None  # Not loaded yet
+
+    def test_create_from_data_uri_pattern(self, sample_bgra_frame):
+        """Test: From data URI: ScreenCaptured(media_ref={"uri": "data:image/png;base64,..."})"""
+        # First create a data URI
+        temp_msg = ScreenCaptured(frame_arr=sample_bgra_frame).embed_as_data_uri()
+        data_uri = temp_msg.media_ref.uri
+
+        # Create from data URI
+        screen_msg = ScreenCaptured(media_ref={"uri": data_uri})
+
+        # Verify data URI reference
+        assert screen_msg.media_ref is not None
+        assert screen_msg.media_ref.is_embedded
+        assert screen_msg.media_ref.uri == data_uri
+        assert screen_msg.frame_arr is None  # Not loaded yet
+
+    def test_create_from_video_frame_pattern(self, sample_video_file):
+        """Test: From video frame: ScreenCaptured(media_ref={"uri": "/path/video.mp4", "pts_ns": 123456})"""
+        video_path, timestamps = sample_video_file
+        pts_ns = int(timestamps[1] * TimeUnits.SECOND)  # Second frame
+
+        # Create from video frame
+        screen_msg = ScreenCaptured(media_ref={"uri": str(video_path), "pts_ns": pts_ns})
+
+        # Verify video reference
+        assert screen_msg.media_ref is not None
+        assert screen_msg.media_ref.is_video
+        assert screen_msg.media_ref.pts_ns == pts_ns
+        assert screen_msg.frame_arr is None  # Not loaded yet
+
+    def test_create_from_url_pattern(self):
+        """Test: From URL: ScreenCaptured(media_ref={"uri": "https://example.com/image.png"})"""
+        # Create from URL
+        screen_msg = ScreenCaptured(media_ref={"uri": "https://example.com/image.png"})
+
+        # Verify URL reference
+        assert screen_msg.media_ref is not None
+        assert screen_msg.media_ref.is_remote
+        assert not screen_msg.media_ref.is_embedded
+        assert not screen_msg.media_ref.is_local
+        assert screen_msg.frame_arr is None  # Not loaded yet
+
+    # === Image Access Methods (as documented in docstring) ===
+
+    def test_to_rgb_array_method(self, sample_bgra_frame):
+        """Test: to_rgb_array(): Get RGB numpy array"""
+        screen_msg = ScreenCaptured(frame_arr=sample_bgra_frame)
+
+        # Get RGB array
+        rgb_array = screen_msg.to_rgb_array()
+
+        # Verify RGB conversion
+        assert isinstance(rgb_array, np.ndarray)
+        assert rgb_array.shape == (48, 64, 3)  # RGB has 3 channels
+        assert rgb_array.dtype == np.uint8
+
+        # Verify color conversion matches expected
+        expected_rgb = cv2.cvtColor(sample_bgra_frame, cv2.COLOR_BGRA2RGB)
+        assert np.array_equal(rgb_array, expected_rgb)
+
+    def test_to_pil_image_method(self, sample_bgra_frame):
+        """Test: to_pil_image(): Get PIL Image object"""
+        screen_msg = ScreenCaptured(frame_arr=sample_bgra_frame)
+
+        # Get PIL Image
+        pil_image = screen_msg.to_pil_image()
+
+        # Verify PIL Image
+        assert isinstance(pil_image, Image.Image)
+        assert pil_image.mode == "RGB"
+        assert pil_image.size == (64, 48)  # PIL size is (width, height)
+
+        # Verify content matches RGB conversion
+        rgb_array = screen_msg.to_rgb_array()
+        pil_array = np.array(pil_image)
+        assert np.array_equal(pil_array, rgb_array)
+
+    # === Path Resolution (as documented in docstring) ===
+
+    def test_resolve_external_path_method(self):
+        """Test: resolve_external_path(base_path): Resolve relative paths against base directory"""
+        # Create with relative path
+        screen_msg = ScreenCaptured(media_ref={"uri": "videos/frame.jpg"})
+
+        # Resolve against MCAP file path
+        result = screen_msg.resolve_external_path("/data/recordings/session.mcap")
+
+        # Verify path resolution
+        assert result is screen_msg  # Returns self for chaining
+        expected_path = str(Path("/data/recordings/videos/frame.jpg").resolve())
+        assert screen_msg.media_ref.uri == expected_path
+
+        # Test with no media_ref (should not crash)
+        screen_msg_no_ref = ScreenCaptured(frame_arr=np.zeros((10, 10, 4), dtype=np.uint8))
+        screen_msg_no_ref.resolve_external_path("/some/path.mcap")  # Should not crash
+
+    # === Serialization Requirements (as documented in docstring) ===
+
+    def test_serialization_requires_media_ref(self, sample_bgra_frame):
+        """Test: Serialization requires media_ref (use embed_as_data_uri() for in-memory arrays)"""
+        # Raw frame cannot be serialized
+        screen_msg = ScreenCaptured(frame_arr=sample_bgra_frame)
+
+        with pytest.raises(ValueError, match="Cannot serialize without media_ref"):
+            screen_msg.model_dump_json()
+
+        # After embedding, serialization works
+        screen_msg.embed_as_data_uri()
+        json_str = screen_msg.model_dump_json()
+        assert isinstance(json_str, str)
+        assert "data:image/png;base64," in json_str
+
+    # === Legacy Tests (for compatibility) ===
 
     def test_load_frame_array_with_existing_frame(self, sample_bgra_frame):
         """Test that load_frame_array returns existing frame when frame_arr is already set."""
