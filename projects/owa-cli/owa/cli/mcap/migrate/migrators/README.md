@@ -253,7 +253,9 @@ Migrators **SHOULD** be tested with:
 - JSON schema compliance verification
 - Round-trip migration testing (where applicable)
 
-## Testing Tips
+## Development Workflow
+
+### 1. Local Testing
 
 You can test your migrator works within virtual environment without uploading package to pypi, by adding editable source:
 
@@ -269,3 +271,13 @@ You can test your migrator works within virtual environment without uploading pa
 # owa-core = { path = "../../../../../../owa-core", editable = true }
 # owa-msgs = { path = "../../../../../../owa-msgs", editable = true }
 ```
+
+Ensure all local tests pass before uploading to pypi.
+
+### 2. Uploading to pypi
+
+For the detail, see [release/README.md](../../../../../../../scripts/release/README.md)
+
+### 3. Remote Testing
+
+Without local editable source, test the migrator works and all other tests pass on GitHub Actions.
