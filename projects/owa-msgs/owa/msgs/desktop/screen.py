@@ -7,7 +7,6 @@ following the domain-based message naming convention for better organization.
 
 import base64
 import re
-from fractions import Fraction
 from pathlib import Path
 from typing import Literal, Optional, Self, Tuple, Union
 from urllib.parse import urlparse
@@ -17,10 +16,8 @@ import numpy as np
 from pydantic import BaseModel, Field, computed_field, field_validator, model_validator
 from pydantic.json_schema import SkipJsonSchema
 
-from owa.core.io import load_image
-from owa.core.io.video import VideoReader
+from owa.core.io import FormatConverter, MediaSource, default_loader
 from owa.core.message import OWAMessage
-from owa.core.time import TimeUnits
 
 
 class MediaRef(BaseModel):
@@ -161,194 +158,69 @@ class MediaRef(BaseModel):
 # ============================================================================
 
 
-def _compress_frame_to_embedded(
-    frame_arr: np.ndarray, format: Literal["png", "jpeg"] = "png", quality: Optional[int] = None
-) -> MediaRef:
-    """
-    Compress frame array to embedded reference.
+def _load_media_frame(media_ref: MediaRef, *, force_close: bool = False) -> np.ndarray:
+    """Load frame from any media reference type."""
+    source = MediaSource.from_mediaref(media_ref)
 
-    Args:
-        frame_arr: BGRA frame array
-        format: Compression format
-        quality: JPEG quality (1-100)
-
-    Returns:
-        EmbeddedRef: Compressed embedded reference
-    """
-    # Convert BGRA to BGR for cv2 encoding
-    bgr_array = cv2.cvtColor(frame_arr, cv2.COLOR_BGRA2BGR)
-
-    # Encode based on format
-    if format == "png":
-        success, encoded = cv2.imencode(".png", bgr_array)
-    elif format == "jpeg":
-        if quality is None:
-            quality = 85
-        if not (1 <= quality <= 100):
-            raise ValueError("JPEG quality must be between 1 and 100")
-        success, encoded = cv2.imencode(".jpg", bgr_array, [cv2.IMWRITE_JPEG_QUALITY, quality])
+    if media_ref.is_embedded or (media_ref.is_external and not media_ref.is_video):
+        return default_loader.load_image(source)
+    elif media_ref.is_external and media_ref.is_video:
+        return default_loader.load_video_frame(source, media_ref.pts_ns, force_close)
     else:
-        raise ValueError(f"Unsupported format: {format}")
-
-    if not success:
-        raise ValueError(f"Failed to encode image as {format}")
-
-    # Create embedded reference
-    base64_data = base64.b64encode(encoded.tobytes()).decode("utf-8")
-    return MediaRef.from_embedded(format=format, data=base64_data)
+        raise ValueError(f"Unsupported media reference: {media_ref.scheme}")
 
 
-def _load_from_embedded(media_ref: MediaRef) -> np.ndarray:
-    """Load frame from embedded data."""
-    if not media_ref.is_embedded:
-        raise ValueError("MediaRef is not embedded data")
-
-    if not media_ref.data:
-        raise ValueError("No embedded data found")
-
-    image_bytes = base64.b64decode(media_ref.data)
-    nparr = np.frombuffer(image_bytes, np.uint8)
-    bgr_array = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-
-    if bgr_array is None:
-        raise ValueError(f"Failed to decode embedded {media_ref.format} data")
-
-    return cv2.cvtColor(bgr_array, cv2.COLOR_BGR2BGRA)
-
-
-def _load_from_external_image(media_ref: MediaRef) -> np.ndarray:
-    """Load frame from external image reference."""
-    if not media_ref.is_external:
-        raise ValueError("MediaRef is not external reference")
-
-    if not media_ref.path:
-        raise ValueError("No path found in MediaRef")
-
-    path = media_ref.path
-
-    # Validate file exists for local files only
-    if not path.startswith(("http://", "https://")):
-        media_path = Path(path)
-        if not media_path.exists():
-            raise FileNotFoundError(f"Image file not found: {path}")
-
-    return _load_static_image(path)
-
-
-def _load_from_external_video(media_ref: MediaRef, *, force_close: bool = False) -> np.ndarray:
-    """Load frame from external video reference."""
-    if not media_ref.is_external:
-        raise ValueError("MediaRef is not external reference")
-
-    if not media_ref.path:
-        raise ValueError("No path found in MediaRef")
-
-    if media_ref.pts_ns is None:
-        raise ValueError("No timestamp found for video MediaRef")
-
-    path = media_ref.path
-    pts_ns = media_ref.pts_ns
-
-    # Validate file exists for local files only
-    if not path.startswith(("http://", "https://")):
-        media_path = Path(path)
-        if not media_path.exists():
-            raise FileNotFoundError(f"Video file not found: {path}")
-
-    return _load_video_frame(path, pts_ns, force_close)
-
-
-def _load_video_frame(path: str, pts_ns: int, force_close: bool) -> np.ndarray:
-    """Load a specific frame from video."""
-    pts_fraction = Fraction(pts_ns, TimeUnits.SECOND)
-
-    try:
-        with VideoReader(path, force_close=force_close) as reader:
-            frame = reader.read_frame(pts=pts_fraction)
-            rgb_array = frame.to_ndarray(format="rgb24")
-            return cv2.cvtColor(rgb_array, cv2.COLOR_RGB2BGRA)
-    except Exception as e:
-        source_type = "remote" if path.startswith(("http://", "https://")) else "local"
-        pts_seconds = pts_ns / 1_000_000_000
-        raise ValueError(f"Failed to load frame at {pts_seconds:.3f}s from {source_type} video {path}: {e}") from e
-
-
-def _load_static_image(path: str) -> np.ndarray:
-    """Load a static image file."""
-    try:
-        pil_image = load_image(path)
-        rgb_array = np.array(pil_image)
-        return cv2.cvtColor(rgb_array, cv2.COLOR_RGB2BGRA)
-    except Exception as e:
-        source_type = "remote" if path.startswith(("http://", "https://")) else "local"
-        raise ValueError(f"Failed to load {source_type} image from {path}: {e}") from e
-
-
-def _get_media_info(media_ref: Optional[MediaRef]) -> dict:
-    """Get information about the media reference."""
+def _get_media_info_and_display(media_ref: Optional[MediaRef]) -> Tuple[dict, str]:
+    """Get information and display string for media reference."""
     if media_ref is None:
-        return {"type": None}
+        return {"type": None}, "no_media"
 
     if media_ref.is_embedded:
         if not media_ref.data:
-            return {"type": "embedded", "error": "No data found"}
+            return {"type": "embedded", "error": "No data found"}, "embedded_unknown"
 
-        return {
+        size_bytes = len(base64.b64decode(media_ref.data))
+        size_kb = size_bytes / 1024
+        info = {
             "type": "embedded",
             "format": media_ref.format,
-            "size_bytes": len(base64.b64decode(media_ref.data)),
+            "size_bytes": size_bytes,
         }
+        display = f"embedded_{media_ref.format}({size_kb:.1f}KB)" if media_ref.format else "embedded_unknown"
+        return info, display
 
     if media_ref.is_external:
         if not media_ref.path:
-            return {"type": "external", "error": "No path found"}
-
-        is_remote = media_ref.path.startswith(("http://", "https://"))
-        info = {
-            "type": "external_video" if media_ref.is_video else "external_image",
-            "path": media_ref.path,
-            "is_local": not is_remote,
-            "is_remote": is_remote,
-            "media_type": "video" if media_ref.is_video else "image",
-        }
-
-        if media_ref.is_video and media_ref.pts_ns is not None:
-            info.update(
-                {
-                    "pts_ns": media_ref.pts_ns,
-                    "pts_seconds": media_ref.pts_ns / 1_000_000_000,
-                }
-            )
-
-        return info
-
-    return {"type": "unknown"}
-
-
-def _format_media_display(media_ref: MediaRef) -> str:
-    """Format media reference for display in string representation."""
-    if media_ref.is_embedded:
-        if not media_ref.data or not media_ref.format:
-            return "embedded_unknown"
-        size_kb = len(base64.b64decode(media_ref.data)) / 1024
-        return f"embedded_{media_ref.format}({size_kb:.1f}KB)"
-
-    if media_ref.is_external:
-        if not media_ref.path:
-            return "external_unknown"
+            return {"type": "external", "error": "No path found"}, "external_unknown"
 
         is_remote = media_ref.path.startswith(("http://", "https://"))
         path_display = media_ref.path if is_remote else Path(media_ref.path).name
         prefix = "remote" if is_remote else "local"
         media_type = "video" if media_ref.is_video else "image"
 
+        info = {
+            "type": "external_video" if media_ref.is_video else "external_image",
+            "path": media_ref.path,
+            "is_local": not is_remote,
+            "is_remote": is_remote,
+            "media_type": media_type,
+        }
+
         if media_ref.is_video and media_ref.pts_ns is not None:
             pts_seconds = media_ref.pts_ns / 1_000_000_000
-            return f"{prefix}_{media_type}({path_display}@{pts_seconds:.3f}s)"
+            info.update(
+                {
+                    "pts_ns": media_ref.pts_ns,
+                    "pts_seconds": pts_seconds,
+                }
+            )
+            display = f"{prefix}_{media_type}({path_display}@{pts_seconds:.3f}s)"
         else:
-            return f"{prefix}_{media_type}({path_display})"
+            display = f"{prefix}_{media_type}({path_display})"
 
-    return "unknown_media"
+        return info, display
+
+    return {"type": "unknown"}, "unknown_media"
 
 
 # ============================================================================
@@ -410,21 +282,37 @@ class ScreenCaptured(OWAMessage):
         return super().model_dump_json(**kwargs)
 
     # Reference type checking methods
+    def has_media_type(self, media_type: Literal["embedded", "external", "external_image", "external_video"]) -> bool:
+        """Check if this frame has the specified media type."""
+        if self.media_ref is None:
+            return False
+
+        if media_type == "embedded":
+            return self.media_ref.is_embedded
+        elif media_type == "external":
+            return self.media_ref.is_external
+        elif media_type == "external_image":
+            return self.media_ref.is_external and not self.media_ref.is_video
+        elif media_type == "external_video":
+            return self.media_ref.is_external and self.media_ref.is_video
+        return False
+
+    # Convenience methods for backward compatibility
     def has_embedded_data(self) -> bool:
         """Check if this frame has embedded data."""
-        return self.media_ref is not None and self.media_ref.is_embedded
+        return self.has_media_type("embedded")
 
     def has_external_reference(self) -> bool:
-        """Check if this frame has any external media reference (image or video)."""
-        return self.media_ref is not None and self.media_ref.is_external
+        """Check if this frame has any external media reference."""
+        return self.has_media_type("external")
 
     def has_external_image_reference(self) -> bool:
         """Check if this frame has external image reference."""
-        return self.media_ref is not None and self.media_ref.is_external and not self.media_ref.is_video
+        return self.has_media_type("external_image")
 
     def has_external_video_reference(self) -> bool:
         """Check if this frame has external video reference."""
-        return self.media_ref is not None and self.media_ref.is_external and self.media_ref.is_video
+        return self.has_media_type("external_video")
 
     def is_loaded(self) -> bool:
         """Check if the frame data is currently loaded in memory."""
@@ -436,7 +324,9 @@ class ScreenCaptured(OWAMessage):
         if self.frame_arr is None:
             raise ValueError("No frame_arr available to embed")
 
-        self.media_ref = _compress_frame_to_embedded(self.frame_arr, format, quality)
+        # Compress frame array to embedded reference
+        base64_data = FormatConverter.encode_to_base64(self.frame_arr, format, quality)
+        self.media_ref = MediaRef.from_embedded(format=format, data=base64_data)
         return self
 
     def resolve_external_path(self, mcap_path: Union[str, Path]) -> Self:
@@ -475,75 +365,33 @@ class ScreenCaptured(OWAMessage):
         return self
 
     @classmethod
-    def from_external_image(
+    def from_external_media(
         cls,
         path: Union[str, Path],
         *,
+        pts_ns: Optional[int] = None,
         mcap_path: Optional[Union[str, Path]] = None,
         utc_ns: Optional[int] = None,
         source_shape: Optional[Tuple[int, int]] = None,
         shape: Optional[Tuple[int, int]] = None,
     ) -> "ScreenCaptured":
         """
-        Create ScreenCaptured instance with external image reference.
+        Create ScreenCaptured instance with external media reference.
 
         The path can be absolute or relative to the MCAP file. When saving to MCAP,
         paths are stored as provided (absolute or relative to MCAP). During data read,
         relative paths need to be resolved using resolve_external_path().
 
         Args:
-            path: Path to the image file (absolute or relative to MCAP)
+            path: Path to the media file (absolute or relative to MCAP)
+            pts_ns: Optional timestamp in nanoseconds for video frames
             mcap_path: Optional MCAP file path for immediate relative path resolution
             utc_ns: UTC timestamp in nanoseconds
             source_shape: Original source dimensions (width, height)
             shape: Current frame dimensions (width, height)
 
         Returns:
-            ScreenCaptured instance with external image reference
-        """
-        path_str = str(path)
-
-        # If mcap_path is provided and path is relative, resolve it immediately
-        if mcap_path is not None and not Path(path_str).is_absolute():
-            mcap_dir = Path(mcap_path).parent
-            resolved_path = mcap_dir / path_str
-            path_str = str(resolved_path)
-
-        return cls(
-            utc_ns=utc_ns,
-            source_shape=source_shape,
-            shape=shape,
-            media_ref=MediaRef.from_path(path=path_str),
-        )
-
-    @classmethod
-    def from_external_video(
-        cls,
-        path: Union[str, Path],
-        pts_ns: int,
-        *,
-        mcap_path: Optional[Union[str, Path]] = None,
-        utc_ns: Optional[int] = None,
-        source_shape: Optional[Tuple[int, int]] = None,
-        shape: Optional[Tuple[int, int]] = None,
-    ) -> "ScreenCaptured":
-        """
-        Create ScreenCaptured instance with external video reference.
-
-        The path can be absolute or relative to the MCAP file. When saving to MCAP,
-        paths are stored as provided (absolute or relative to MCAP). During data read,
-        relative paths need to be resolved using resolve_external_path().
-
-        Args:
-            path: Path to the video file (absolute or relative to MCAP)
-            pts_ns: Timestamp in nanoseconds for the specific frame
-            mcap_path: Optional MCAP file path for immediate relative path resolution
-            utc_ns: UTC timestamp in nanoseconds
-            source_shape: Original source dimensions (width, height)
-            shape: Current frame dimensions (width, height)
-
-        Returns:
-            ScreenCaptured instance with external video reference
+            ScreenCaptured instance with external media reference
         """
         path_str = str(path)
 
@@ -560,6 +408,37 @@ class ScreenCaptured(OWAMessage):
             media_ref=MediaRef.from_path(path=path_str, pts_ns=pts_ns),
         )
 
+    @classmethod
+    def from_external_image(
+        cls,
+        path: Union[str, Path],
+        *,
+        mcap_path: Optional[Union[str, Path]] = None,
+        utc_ns: Optional[int] = None,
+        source_shape: Optional[Tuple[int, int]] = None,
+        shape: Optional[Tuple[int, int]] = None,
+    ) -> "ScreenCaptured":
+        """Create ScreenCaptured instance with external image reference."""
+        return cls.from_external_media(
+            path=path, mcap_path=mcap_path, utc_ns=utc_ns, source_shape=source_shape, shape=shape
+        )
+
+    @classmethod
+    def from_external_video(
+        cls,
+        path: Union[str, Path],
+        pts_ns: int,
+        *,
+        mcap_path: Optional[Union[str, Path]] = None,
+        utc_ns: Optional[int] = None,
+        source_shape: Optional[Tuple[int, int]] = None,
+        shape: Optional[Tuple[int, int]] = None,
+    ) -> "ScreenCaptured":
+        """Create ScreenCaptured instance with external video reference."""
+        return cls.from_external_media(
+            path=path, pts_ns=pts_ns, mcap_path=mcap_path, utc_ns=utc_ns, source_shape=source_shape, shape=shape
+        )
+
     # Frame loading and conversion methods
     def lazy_load(self, *, force_close: bool = False) -> np.ndarray:
         """Lazy load the frame data from any available source."""
@@ -569,15 +448,8 @@ class ScreenCaptured(OWAMessage):
         if self.media_ref is None:
             raise ValueError("No frame data sources available for loading")
 
-        # Load based on reference type
-        if self.media_ref.is_embedded:
-            self.frame_arr = _load_from_embedded(self.media_ref)
-        elif self.media_ref.is_external and not self.media_ref.is_video:
-            self.frame_arr = _load_from_external_image(self.media_ref)
-        elif self.media_ref.is_external and self.media_ref.is_video:
-            self.frame_arr = _load_from_external_video(self.media_ref, force_close=force_close)
-        else:
-            raise ValueError(f"Unsupported media reference: {self.media_ref.scheme}")
+        # Load frame data
+        self.frame_arr = _load_media_frame(self.media_ref, force_close=force_close)
 
         # Update shape information
         h, w = self.frame_arr.shape[:2]
@@ -604,7 +476,8 @@ class ScreenCaptured(OWAMessage):
 
     def get_media_info(self) -> dict:
         """Get information about the media reference."""
-        return _get_media_info(self.media_ref)
+        info, _ = _get_media_info_and_display(self.media_ref)
+        return info
 
     def __str__(self) -> str:
         """Return a concise string representation of the ScreenCaptured instance."""
@@ -623,7 +496,8 @@ class ScreenCaptured(OWAMessage):
 
         # Add media info
         if self.media_ref:
-            attr_strs.append(_format_media_display(self.media_ref))
+            _, display = _get_media_info_and_display(self.media_ref)
+            attr_strs.append(display)
 
         return f"{self.__class__.__name__}({', '.join(attr_strs)})"
 
