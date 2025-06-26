@@ -87,6 +87,66 @@ class TestMediaRef:
 
         assert ref.is_embedded == False
         assert ref.is_video == False
+        assert ref.is_remote == True
+        assert ref.is_local == False
+
+    def test_file_uri_handling(self):
+        """Test file:// URI handling."""
+        ref = MediaRef(uri="file:///path/to/image.jpg")
+
+        assert ref.is_embedded == False
+        assert ref.is_remote == False
+        assert ref.is_local == True
+        assert ref.is_relative_path == False  # file:// URIs are not relative
+
+    def test_relative_path_detection(self):
+        """Test relative path detection."""
+        # Relative paths
+        ref_rel = MediaRef(uri="images/test.jpg")
+        assert ref_rel.is_relative_path == True
+        assert ref_rel.is_local == True
+
+        # Absolute paths
+        ref_abs = MediaRef(uri="/absolute/path/test.jpg")
+        assert ref_abs.is_relative_path == False
+        assert ref_abs.is_local == True
+
+        # URLs should not be relative
+        ref_url = MediaRef(uri="https://example.com/test.jpg")
+        assert ref_url.is_relative_path == False
+
+        # Data URIs should not be relative
+        ref_data = MediaRef(uri="data:image/png;base64,abc123")
+        assert ref_data.is_relative_path == False
+
+    def test_resolve_relative_path(self):
+        """Test relative path resolution."""
+        ref = MediaRef(uri="images/test.jpg")
+
+        # Test with file path as base
+        resolved = ref.resolve_relative_path("/mcap/files/recording.mcap")
+        assert resolved.uri == str(Path("/mcap/files/images/test.jpg").resolve())
+        assert resolved.pts_ns == ref.pts_ns
+
+        # Test with directory as base
+        resolved2 = ref.resolve_relative_path("/mcap/files/")
+        assert resolved2.uri == str(Path("/mcap/files/images/test.jpg").resolve())
+
+        # Test with absolute path (should return self)
+        ref_abs = MediaRef(uri="/absolute/path/test.jpg")
+        resolved3 = ref_abs.resolve_relative_path("/mcap/files/recording.mcap")
+        assert resolved3 is ref_abs
+
+    def test_from_path_classmethod(self):
+        """Test MediaRef.from_path class method."""
+        ref = MediaRef.from_path("test/path.jpg")
+        assert ref.uri == "test/path.jpg"
+        assert ref.pts_ns is None
+
+        ref_video = MediaRef.from_path("test/video.mp4", pts_ns=1000000000)
+        assert ref_video.uri == "test/video.mp4"
+        assert ref_video.pts_ns == 1000000000
+        assert ref_video.is_video == True
 
 
 class TestScreenCaptured:
@@ -293,3 +353,20 @@ class TestScreenCaptured:
         screen_msg2 = ScreenCaptured(utc_ns=1741608540328534500, media_ref=media_ref)
         repr_str3 = str(screen_msg2)
         assert "video@2000000000ns" in repr_str3
+
+    def test_resolve_external_path(self):
+        """Test resolving relative paths in ScreenCaptured."""
+        # Create with relative path
+        media_ref = MediaRef(uri="videos/frame.jpg")
+        screen_msg = ScreenCaptured(utc_ns=1741608540328534500, media_ref=media_ref)
+
+        # Resolve against MCAP file path
+        screen_msg.resolve_external_path("/data/recordings/session.mcap")
+
+        # Should have resolved path
+        expected_path = str(Path("/data/recordings/videos/frame.jpg").resolve())
+        assert screen_msg.media_ref.uri == expected_path
+
+        # Test with no media_ref (should not crash)
+        screen_msg_no_ref = ScreenCaptured(utc_ns=1741608540328534500, frame_arr=np.zeros((10, 10, 4), dtype=np.uint8))
+        screen_msg_no_ref.resolve_external_path("/some/path.mcap")  # Should not crash

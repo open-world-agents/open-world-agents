@@ -4,6 +4,7 @@ Desktop screen capture message definitions.
 Minimal, clean design focused on essential functionality.
 """
 
+from pathlib import Path
 from typing import Optional, Self, Tuple
 
 import cv2
@@ -18,7 +19,10 @@ from owa.core.message import OWAMessage
 class MediaRef(BaseModel):
     """Simple media reference."""
 
-    uri: str = Field(..., description="URI: data:image/png;base64,... | file:///path | http[s]://... | /path/to/file")
+    uri: str = Field(
+        ...,
+        description="URI(data:image/png;base64,... | file:///path | http[s]://...) or file path(/absolute/path | relative/path)",
+    )
     pts_ns: Optional[int] = Field(None, description="Video frame timestamp in nanoseconds")
 
     @property
@@ -40,6 +44,40 @@ class MediaRef(BaseModel):
     def is_local(self) -> bool:
         """True if this references a local file path (not embedded or remote)."""
         return not self.is_embedded and not self.is_remote
+
+    @property
+    def is_relative_path(self) -> bool:
+        """True if this is a relative path (not absolute, not URI)."""
+        if self.is_embedded or self.is_remote or self.uri.startswith("file://"):
+            return False
+        return not Path(self.uri).is_absolute()
+
+    def resolve_relative_path(self, base_path: str) -> "MediaRef":
+        """
+        Resolve relative path against a base path.
+
+        Args:
+            base_path: Base path (typically MCAP file path) to resolve against
+
+        Returns:
+            New MediaRef with resolved absolute path
+        """
+        if not self.is_relative_path:
+            return self  # Already absolute or not a local path
+
+        # Determine if base_path is a file or directory
+        # If it has an extension or doesn't end with '/', treat as file
+        base_path_obj = Path(base_path)
+        if base_path_obj.suffix or not base_path.endswith("/"):
+            # Treat as file path, use parent directory
+            base = base_path_obj.parent
+        else:
+            # Treat as directory path
+            base = base_path_obj
+
+        resolved_path = (base / self.uri).resolve()
+
+        return MediaRef(uri=str(resolved_path), pts_ns=self.pts_ns)
 
 
 class ScreenCaptured(OWAMessage):
@@ -129,6 +167,22 @@ class ScreenCaptured(OWAMessage):
 
         rgb_array = self.to_rgb_array()
         return Image.fromarray(rgb_array, mode="RGB")
+
+    def resolve_external_path(self, base_path: str) -> Self:
+        """
+        Resolve relative paths in media_ref against a base path.
+
+        Args:
+            base_path: Base path (typically MCAP file path) to resolve against
+
+        Returns:
+            Self for method chaining
+        """
+        if self.media_ref is None:
+            return self
+
+        self.media_ref = self.media_ref.resolve_relative_path(base_path)
+        return self
 
     def __str__(self) -> str:
         """Simple string representation."""
