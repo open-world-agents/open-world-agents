@@ -37,15 +37,6 @@ from mcap_owa.decoder import dict_decoder
 from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
 from owa.core import MESSAGES
 
-# Import migration utilities
-try:
-    from ..utils import verify_migration_integrity
-except ImportError:
-    # Fallback if utils module is not available
-    def verify_migration_integrity(*_args, **_kwargs):
-        return True
-
-
 app = typer.Typer(help="MCAP Migration: v0.4.2 → v0.5.0")
 
 

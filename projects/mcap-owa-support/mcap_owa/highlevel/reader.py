@@ -85,33 +85,31 @@ class OWAMcapReader:
             self._file.close()
 
     @functools.cached_property
-    def topics(self):
-        """
-        Get a list of topics in the MCAP file.
-
-        :return: List of topic names
-        """
+    def topics(self) -> list[str]:
+        """Get a list of topics in the MCAP file."""
         summary = self.reader.get_summary()
-        self._topics = {}
-
-        for channel_id, channel in summary.channels.items():
-            self._topics[channel.topic] = (channel, summary.schemas[channel.schema_id])
-        return list(self._topics.keys())
+        return [channel.topic for channel_id, channel in summary.channels.items()]
 
     @functools.cached_property
-    def start_time(self):
+    def message_count(self) -> int:
+        """Get the number of messages in the MCAP file."""
+        summary = self.reader.get_summary()
+        return summary.statistics.message_count
+
+    @functools.cached_property
+    def start_time(self) -> int:
         """Get the start time of the MCAP file in nanoseconds."""
         summary = self.reader.get_summary()
         return summary.statistics.message_start_time
 
     @functools.cached_property
-    def end_time(self):
+    def end_time(self) -> int:
         """Get the end time of the MCAP file in nanoseconds."""
         summary = self.reader.get_summary()
         return summary.statistics.message_end_time
 
     @functools.cached_property
-    def duration(self):
+    def duration(self) -> int:
         """Get the duration of the MCAP file in nanoseconds."""
         return self.end_time - self.start_time
 
@@ -125,10 +123,10 @@ class OWAMcapReader:
         """Get the mcap library version that created this file."""
         return self._mcap_version_str
 
-    @property
-    def schemas(self) -> Dict[int, Any]:
+    @functools.cached_property
+    def schemas(self) -> list[str]:
         """Get all schemas in the MCAP file."""
-        return self.reader.get_summary().schemas
+        return [schema.name for schema_id, schema in self.reader.get_summary().schemas]
 
     def __enter__(self):
         return self

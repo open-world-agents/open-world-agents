@@ -18,19 +18,10 @@ class FileStats:
 
 def get_file_stats(file_path: Path) -> FileStats:
     """Get comprehensive statistics about an MCAP file."""
-    message_count = 0
-    topics = set()
-    schemas = set()
-
     with OWAMcapReader(file_path) as reader:
-        # Get schemas
-        for schema in reader.schemas.values():
-            schemas.add(schema.name)
-
-        # Count messages and collect topics
-        for msg in reader.iter_messages():
-            message_count += 1
-            topics.add(msg.topic)
+        schemas = set(reader.schemas)
+        topics = set(reader.topics)
+        message_count = reader.message_count
 
     file_size = file_path.stat().st_size
 

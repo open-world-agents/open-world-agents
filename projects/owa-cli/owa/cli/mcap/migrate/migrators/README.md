@@ -260,12 +260,14 @@ You can test your migrator works within virtual environment without uploading pa
 ```
 # dependencies = [
 #   ...
-#   "mcap-owa-support==0.5.0a3",
-#   "owa-core==0.5.0a3",
-#   "owa-msgs==0.5.0a3",
+#   "mcap-owa-support==0.5.1",
+#   "owa-cli==0.5.1",
+#   "owa-core==0.5.1",
+#   "owa-msgs==0.5.1",
 # ]
 # [tool.uv.sources]
 # mcap-owa-support = { path = "../../../../../../mcap-owa-support", editable = true }
+# owa-cli = { path = "../../../../../../owa-cli", editable = true }
 # owa-core = { path = "../../../../../../owa-core", editable = true }
 # owa-msgs = { path = "../../../../../../owa-msgs", editable = true }
 ```
