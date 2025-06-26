@@ -5,55 +5,113 @@ This module tests the integration between ScreenCaptured and the new remote
 video file handling capabilities in VideoReader.
 """
 
+import errno
+import socket
+from urllib.error import URLError
+
 import numpy as np
 import pytest
+import requests
 
 from owa.msgs.desktop.screen import MediaRef, ScreenCaptured
+
+
+def is_network_error(exception: Exception) -> bool:
+    """
+    Check if an exception is network-related.
+
+    Args:
+        exception: The exception to check
+
+    Returns:
+        True if the exception is network-related, False otherwise
+    """
+    # Direct network exceptions
+    if isinstance(exception, (socket.timeout, socket.gaierror, ConnectionError, URLError)):
+        return True
+
+    # Requests library exceptions
+    if isinstance(
+        exception,
+        (
+            requests.exceptions.RequestException,
+            requests.exceptions.Timeout,
+            requests.exceptions.ConnectionError,
+            requests.exceptions.HTTPError,
+        ),
+    ):
+        return True
+
+    # Check for specific errno codes in OSError/IOError
+    if isinstance(exception, (OSError, IOError)):
+        if hasattr(exception, "errno"):
+            network_errnos = {
+                errno.ECONNREFUSED,  # Connection refused
+                errno.ECONNRESET,  # Connection reset by peer
+                errno.EHOSTUNREACH,  # No route to host
+                errno.ENETUNREACH,  # Network is unreachable
+                errno.ETIMEDOUT,  # Connection timed out
+                errno.ENOTCONN,  # Socket is not connected
+                errno.ECONNABORTED,  # Software caused connection abort
+            }
+            if exception.errno in network_errnos:
+                return True
+
+    # Check error message for common network error patterns
+    error_msg = str(exception).lower()
+    network_patterns = [
+        "connection timed out",
+        "connection refused",
+        "network is unreachable",
+        "no route to host",
+        "name resolution failed",
+        "dns lookup failed",
+        "connection reset",
+        "connection aborted",
+        "host is down",
+        "network unreachable",
+        "timeout",
+        "timed out",
+    ]
+
+    return any(pattern in error_msg for pattern in network_patterns)
 
 
 class TestScreenCapturedRemoteFiles:
     """Test ScreenCaptured with remote file references."""
 
     @pytest.mark.parametrize(
-        "test_url,pts_ns,expected_media_type",
+        "test_url,pts_ns",
         [
-            ("https://www.sample-videos.com/video321/mp4/240/big_buck_bunny_240p_2mb.mp4", 1_000_000_000, "video"),
-            ("https://httpbin.org/image/png", None, "image"),
+            ("https://www.sample-videos.com/video321/mp4/240/big_buck_bunny_240p_2mb.mp4", 1_000_000_000),
+            ("https://httpbin.org/image/png", None),
         ],
     )
-    def test_screen_captured_remote_media(self, test_url, pts_ns, expected_media_type):
+    def test_screen_captured_remote_media(self, test_url, pts_ns):
         """Test ScreenCaptured with remote media references."""
         try:
             # Create external reference
             if pts_ns is not None:
-                external_ref = MediaRef.from_path(test_url, pts_ns=pts_ns)
+                external_ref = MediaRef(uri=test_url, pts_ns=pts_ns)
             else:
-                external_ref = MediaRef.from_path(test_url)
+                external_ref = MediaRef(uri=test_url)
 
             # Create ScreenCaptured with remote reference
             screen_msg = ScreenCaptured(media_ref=external_ref)
 
             # Verify media reference properties
-            assert screen_msg.has_media_type("external")
-            assert not screen_msg.has_media_type("embedded")
-            assert screen_msg.media_ref.path == test_url
+            assert not screen_msg.media_ref.is_embedded  # Not embedded data
+            assert screen_msg.media_ref.uri == test_url
             assert screen_msg.media_ref.pts_ns == pts_ns
 
-            # Test media info
-            media_info = screen_msg.get_media_info()
-            expected_type = f"external_{expected_media_type}"
-            assert media_info["type"] == expected_type
-            assert media_info["path"] == test_url
-            assert media_info["is_remote"] is True
-            assert media_info["is_local"] is False
-            assert media_info["media_type"] == expected_media_type
-
+            # Verify video detection
             if pts_ns is not None:
-                assert media_info["pts_ns"] == pts_ns
-                assert media_info["pts_seconds"] == pts_ns / 1_000_000_000
+                assert screen_msg.media_ref.is_video
+            else:
+                assert not screen_msg.media_ref.is_video
 
-            # Test lazy loading
-            frame_arr = screen_msg.lazy_load()
+            # Test frame loading
+            frame_arr = screen_msg.load_frame_array()
             assert isinstance(frame_arr, np.ndarray)
             assert frame_arr.dtype == np.uint8
             assert len(frame_arr.shape) == 3  # Height, Width, Channels
@@ -74,14 +132,20 @@ class TestScreenCapturedRemoteFiles:
             assert pil_img.size == (w, h)  # PIL uses (width, height)
             assert pil_img.mode == "RGB"
 
-            # Test string representation includes remote info
+            # Test string representation includes video info for videos
             str_repr = str(screen_msg)
-            assert "remote" in str_repr.lower()
-            assert test_url in str_repr or test_url.split("/")[-1] in str_repr
+            if pts_ns is not None:
+                assert f"video@{pts_ns}ns" in str_repr
+            else:
+                assert "external" in str_repr
 
         except Exception as e:
-            # Skip test if network is unavailable or URL is inaccessible
-            pytest.skip(f"Remote media test skipped due to error: {e}")
+            # Only skip for network-related errors
+            if is_network_error(e):
+                pytest.skip(f"Remote media test skipped due to network error: {e}")
+            else:
+                # Re-raise non-network errors so they fail the test
+                raise
 
     def test_screen_captured_remote_video_specific(self):
         """Test ScreenCaptured specifically with remote video."""
@@ -89,11 +153,11 @@ class TestScreenCapturedRemoteFiles:
         pts_ns = 1_000_000_000  # 1 second
 
         try:
-            external_ref = MediaRef.from_path(test_url, pts_ns=pts_ns)
+            external_ref = MediaRef(uri=test_url, pts_ns=pts_ns)
             screen_msg = ScreenCaptured(media_ref=external_ref)
 
             # Test that we can load the frame
-            frame_arr = screen_msg.lazy_load()
+            frame_arr = screen_msg.load_frame_array()
 
             # Verify frame properties for this specific video
             assert frame_arr.shape[0] > 0  # Height > 0
@@ -101,46 +165,54 @@ class TestScreenCapturedRemoteFiles:
             assert frame_arr.shape[2] == 4  # BGRA
 
             # Test that subsequent calls return the same cached frame
-            frame_arr2 = screen_msg.lazy_load()
+            frame_arr2 = screen_msg.load_frame_array()
             assert np.array_equal(frame_arr, frame_arr2)
 
             # Test force_close parameter
-            frame_arr3 = screen_msg.lazy_load(force_close=True)
+            frame_arr3 = screen_msg.load_frame_array(force_close=True)
             assert frame_arr3.shape == frame_arr.shape
 
         except Exception as e:
-            # TODO: categorize exceptions and skip only if network related
-            pytest.skip(f"Remote video test skipped due to error: {e}")
+            # Only skip for network-related errors
+            if is_network_error(e):
+                pytest.skip(f"Remote video test skipped due to network error: {e}")
+            else:
+                # Re-raise non-network errors so they fail the test
+                raise
 
     def test_screen_captured_remote_image_specific(self):
         """Test ScreenCaptured specifically with remote image."""
         test_url = "https://httpbin.org/image/png"
 
         try:
-            external_ref = MediaRef.from_path(test_url)
+            external_ref = MediaRef(uri=test_url)
             screen_msg = ScreenCaptured(media_ref=external_ref)
 
             # Test that we can load the image
-            frame_arr = screen_msg.lazy_load()
+            frame_arr = screen_msg.load_frame_array()
 
             # Verify frame properties
             assert frame_arr.shape[2] == 4  # BGRA
             assert frame_arr.dtype == np.uint8
 
-            # Test media info for image
-            media_info = screen_msg.get_media_info()
-            assert media_info["media_type"] == "image"
-            assert "pts_ns" not in media_info or media_info["pts_ns"] is None
+            # Test basic properties
+            assert not screen_msg.media_ref.is_embedded
+            assert not screen_msg.media_ref.is_video
 
         except Exception as e:
-            pytest.skip(f"Remote image test skipped due to error: {e}")
+            # Only skip for network-related errors
+            if is_network_error(e):
+                pytest.skip(f"Remote image test skipped due to network error: {e}")
+            else:
+                # Re-raise non-network errors so they fail the test
+                raise
 
     def test_screen_captured_serialization_with_remote_ref(self):
         """Test JSON serialization with remote media reference."""
         test_url = "https://example.com/video.mp4"
         pts_ns = 1_000_000_000  # 1 second
 
-        external_ref = MediaRef.from_path(test_url, pts_ns=pts_ns)
+        external_ref = MediaRef(uri=test_url, pts_ns=pts_ns)
         screen_msg = ScreenCaptured(
             media_ref=external_ref, utc_ns=1234567890000000000, source_shape=(1920, 1080), shape=(1920, 1080)
         )
@@ -152,7 +224,7 @@ class TestScreenCapturedRemoteFiles:
 
         # Test deserialization
         screen_msg2 = ScreenCaptured.model_validate_json(json_str)
-        assert screen_msg2.media_ref.path == test_url
+        assert screen_msg2.media_ref.uri == test_url
         assert screen_msg2.media_ref.pts_ns == pts_ns
         assert screen_msg2.utc_ns == screen_msg.utc_ns
         assert screen_msg2.source_shape == screen_msg.source_shape
@@ -161,35 +233,32 @@ class TestScreenCapturedRemoteFiles:
     def test_screen_captured_error_handling(self):
         """Test error handling with invalid remote references."""
         # Test invalid URL scheme - FTP URLs are treated as local files and should raise FileNotFoundError
-        external_ref = MediaRef.from_path("ftp://example.com/video.mp4", pts_ns=0)
+        external_ref = MediaRef(uri="ftp://example.com/video.mp4", pts_ns=0)
         screen_msg = ScreenCaptured(media_ref=external_ref)
 
         with pytest.raises(FileNotFoundError, match="Video file not found"):
-            screen_msg.lazy_load()
+            screen_msg.load_frame_array()
 
         # Test non-existent remote file (should raise network-related error)
-        external_ref = MediaRef.from_path("https://nonexistent.example.com/video.mp4", pts_ns=0)
+        external_ref = MediaRef(uri="https://nonexistent.example.com/video.mp4", pts_ns=0)
         screen_msg = ScreenCaptured(media_ref=external_ref)
 
         with pytest.raises(Exception):  # Could be various network-related errors
-            screen_msg.lazy_load()
+            screen_msg.load_frame_array()
 
     def test_screen_captured_format_media_display_remote(self):
         """Test media display formatting for remote files."""
         # Test remote video
-        video_ref = MediaRef.from_path(
-            "https://example.com/long/path/to/video.mp4",
+        video_ref = MediaRef(
+            uri="https://example.com/long/path/to/video.mp4",
             pts_ns=1_500_000_000,  # 1.5 seconds
         )
         screen_msg = ScreenCaptured(media_ref=video_ref)
         str_repr = str(screen_msg)
-        assert "remote_video" in str_repr
-        assert "1.500s" in str_repr
-        assert "video.mp4" in str_repr or "https://example.com/long/path/to/video.mp4" in str_repr
+        assert "video@1500000000ns" in str_repr
 
         # Test remote image
-        image_ref = MediaRef.from_path("https://example.com/image.jpg")
+        image_ref = MediaRef(uri="https://example.com/image.jpg")
         screen_msg = ScreenCaptured(media_ref=image_ref)
         str_repr = str(screen_msg)
-        assert "remote_image" in str_repr
-        assert "image.jpg" in str_repr or "https://example.com/image.jpg" in str_repr
+        assert "external" in str_repr
