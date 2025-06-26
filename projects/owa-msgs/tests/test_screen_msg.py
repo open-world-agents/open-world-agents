@@ -2,12 +2,16 @@
 Minimal tests for screen capture message with new clean API.
 """
 
+import errno
+import socket
 import tempfile
 from pathlib import Path
+from urllib.error import URLError
 
 import cv2
 import numpy as np
 import pytest
+import requests
 from PIL import Image
 
 from owa.core.io.video import VideoWriter, force_close_video_container
@@ -513,3 +517,227 @@ class TestScreenCaptured:
         # Test with no media_ref (should not crash)
         screen_msg_no_ref = ScreenCaptured(utc_ns=1741608540328534500, frame_arr=np.zeros((10, 10, 4), dtype=np.uint8))
         screen_msg_no_ref.resolve_external_path("/some/path.mcap")  # Should not crash
+
+    # === Remote URL Tests (merged from test_screen_remote.py) ===
+
+    def test_create_from_url_pattern_with_loading(self):
+        """
+        Test: From URL: ScreenCaptured(media_ref={"uri": "https://example.com/image.png"})
+
+        This test demonstrates the URL creation pattern from docstring with actual loading.
+        Only skips for network-related errors, not for other types of errors.
+        """
+        test_cases = [
+            ("https://www.sample-videos.com/video321/mp4/240/big_buck_bunny_240p_2mb.mp4", 1_000_000_000, "video"),
+            ("https://httpbin.org/image/png", None, "image"),
+        ]
+
+        for test_url, pts_ns, media_type in test_cases:
+            try:
+                # === Creation Pattern: From URL ===
+                if pts_ns is not None:
+                    # Video with timestamp
+                    screen_msg = ScreenCaptured(media_ref={"uri": test_url, "pts_ns": pts_ns})
+                else:
+                    # Image without timestamp
+                    screen_msg = ScreenCaptured(media_ref={"uri": test_url})
+
+                # === Verify Remote Reference Properties ===
+                assert screen_msg.media_ref.is_remote, f"Should be detected as remote URL for {media_type}"
+                assert not screen_msg.media_ref.is_embedded, f"Should not be embedded data for {media_type}"
+                assert not screen_msg.media_ref.is_local, f"Should not be local file for {media_type}"
+                assert screen_msg.media_ref.uri == test_url
+
+                # === Verify Media Type Detection ===
+                if media_type == "video":
+                    assert screen_msg.media_ref.is_video, "Should detect video media"
+                    assert screen_msg.media_ref.pts_ns == pts_ns, "Should preserve timestamp"
+                else:
+                    assert not screen_msg.media_ref.is_video, "Should detect image media"
+                    assert screen_msg.media_ref.pts_ns is None, "Image should have no timestamp"
+
+                # === Test Frame Loading ===
+                frame_arr = screen_msg.load_frame_array()
+                assert isinstance(frame_arr, np.ndarray), f"Should return numpy array for {media_type}"
+                assert frame_arr.dtype == np.uint8, f"Should be uint8 format for {media_type}"
+                assert len(frame_arr.shape) == 3, f"Should be 3D array (H, W, C) for {media_type}"
+                assert frame_arr.shape[2] == 4, f"Should be BGRA format for {media_type}"
+
+                # === Test Shape Setting ===
+                h, w = frame_arr.shape[:2]
+                expected_shape = (w, h)  # (width, height)
+                assert screen_msg.shape == expected_shape, f"Shape should be set after loading for {media_type}"
+
+                # === Test Image Access Methods (docstring patterns) ===
+                # to_rgb_array(): Get RGB numpy array
+                rgb_arr = screen_msg.to_rgb_array()
+                assert rgb_arr.shape == (h, w, 3), f"RGB should have 3 channels for {media_type}"
+                assert rgb_arr.dtype == np.uint8, f"RGB should be uint8 for {media_type}"
+
+                # to_pil_image(): Get PIL Image object
+                pil_img = screen_msg.to_pil_image()
+                assert pil_img.size == (w, h), f"PIL size should be (width, height) for {media_type}"
+                assert pil_img.mode == "RGB", f"PIL should be RGB mode for {media_type}"
+
+                # === Test String Representation ===
+                str_repr = str(screen_msg)
+                if media_type == "video":
+                    assert f"video@{pts_ns}ns" in str_repr, "Should show video timestamp"
+                else:
+                    assert "external" in str_repr, "Should show external reference"
+
+            except Exception as e:
+                # Only skip for network-related errors - all other errors should fail the test
+                if self._is_network_error(e):
+                    pytest.skip(f"Remote {media_type} test skipped due to network error: {e}")
+                else:
+                    # Re-raise non-network errors so they fail the test
+                    raise
+
+    def test_remote_video_caching_behavior(self):
+        """Test remote video frame caching and force_close functionality."""
+        test_url = "https://www.sample-videos.com/video321/mp4/240/big_buck_bunny_240p_2mb.mp4"
+        pts_ns = 1_000_000_000  # 1 second
+
+        try:
+            # Create from remote video (docstring pattern)
+            screen_msg = ScreenCaptured(media_ref={"uri": test_url, "pts_ns": pts_ns})
+
+            # === Test Initial Frame Loading ===
+            frame_arr = screen_msg.load_frame_array()
+            assert frame_arr.shape[0] > 0, "Height should be > 0"
+            assert frame_arr.shape[1] > 0, "Width should be > 0"
+            assert frame_arr.shape[2] == 4, "Should be BGRA format"
+
+            # === Test Frame Caching ===
+            frame_arr2 = screen_msg.load_frame_array()
+            assert np.array_equal(frame_arr, frame_arr2), "Subsequent calls should return cached frame"
+            assert frame_arr2 is screen_msg.frame_arr, "Should return same object reference"
+
+            # === Test Force Close Parameter ===
+            frame_arr3 = screen_msg.load_frame_array(force_close=True)
+            assert frame_arr3.shape == frame_arr.shape, "Force close should return same shape"
+
+        except Exception as e:
+            if self._is_network_error(e):
+                pytest.skip(f"Remote video caching test skipped due to network error: {e}")
+            else:
+                raise
+
+    def test_remote_serialization_roundtrip(self):
+        """Test JSON serialization with remote media reference."""
+        test_url = "https://example.com/video.mp4"
+        pts_ns = 1_000_000_000  # 1 second
+
+        # Create with remote reference (no network access needed for serialization)
+        screen_msg = ScreenCaptured(
+            media_ref={"uri": test_url, "pts_ns": pts_ns},
+            utc_ns=1234567890000000000,
+            source_shape=(1920, 1080),
+            shape=(1920, 1080),
+        )
+
+        # === Test JSON Serialization ===
+        json_str = screen_msg.model_dump_json()
+        assert test_url in json_str, "URL should be in JSON"
+        assert str(pts_ns) in json_str, "Timestamp should be in JSON"
+
+        # === Test Deserialization ===
+        screen_msg2 = ScreenCaptured.model_validate_json(json_str)
+        assert screen_msg2.media_ref.uri == test_url, "URL should be preserved"
+        assert screen_msg2.media_ref.pts_ns == pts_ns, "Timestamp should be preserved"
+        assert screen_msg2.utc_ns == screen_msg.utc_ns, "UTC timestamp should be preserved"
+        assert screen_msg2.source_shape == screen_msg.source_shape, "Source shape should be preserved"
+        assert screen_msg2.shape == screen_msg.shape, "Shape should be preserved"
+
+    def test_remote_error_handling(self):
+        """Test error handling with invalid remote references."""
+        # Test invalid URL scheme - FTP URLs are treated as local files
+        screen_msg = ScreenCaptured(media_ref={"uri": "ftp://example.com/video.mp4", "pts_ns": 0})
+
+        with pytest.raises(FileNotFoundError, match="Video file not found"):
+            screen_msg.load_frame_array()
+
+        # Test non-existent remote file (should raise network-related error)
+        screen_msg = ScreenCaptured(media_ref={"uri": "https://nonexistent.example.com/video.mp4", "pts_ns": 0})
+
+        with pytest.raises(Exception):  # Could be various network-related errors
+            screen_msg.load_frame_array()
+
+    def test_remote_string_representation(self):
+        """Test string representation for remote files."""
+        # Test remote video
+        screen_msg = ScreenCaptured(
+            media_ref={
+                "uri": "https://example.com/long/path/to/video.mp4",
+                "pts_ns": 1_500_000_000,  # 1.5 seconds
+            }
+        )
+        str_repr = str(screen_msg)
+        assert "video@1500000000ns" in str_repr, "Should show video timestamp"
+
+        # Test remote image
+        screen_msg = ScreenCaptured(media_ref={"uri": "https://example.com/image.jpg"})
+        str_repr = str(screen_msg)
+        assert "external" in str_repr, "Should show external reference"
+
+    @staticmethod
+    def _is_network_error(exception: Exception) -> bool:
+        """
+        Check if an exception is network-related.
+
+        Returns True only for network-related errors, False otherwise.
+        """
+        # Direct network exceptions
+        if isinstance(exception, (socket.timeout, socket.gaierror, ConnectionError, URLError)):
+            return True
+
+        # Requests library exceptions
+        if isinstance(
+            exception,
+            (
+                requests.exceptions.RequestException,
+                requests.exceptions.Timeout,
+                requests.exceptions.ConnectionError,
+                requests.exceptions.HTTPError,
+            ),
+        ):
+            return True
+
+        # Check for specific errno codes in OSError/IOError
+        if isinstance(exception, (OSError, IOError)):
+            if hasattr(exception, "errno"):
+                network_errnos = {
+                    errno.ECONNREFUSED,  # Connection refused
+                    errno.ECONNRESET,  # Connection reset by peer
+                    errno.EHOSTUNREACH,  # No route to host
+                    errno.ENETUNREACH,  # Network is unreachable
+                    errno.ETIMEDOUT,  # Connection timed out
+                    errno.ENOTCONN,  # Socket is not connected
+                    errno.ECONNABORTED,  # Software caused connection abort
+                }
+                if exception.errno in network_errnos:
+                    return True
+
+        # Check error message for common network error patterns
+        error_msg = str(exception).lower()
+        network_patterns = [
+            "connection timed out",
+            "connection refused",
+            "network is unreachable",
+            "no route to host",
+            "name resolution failed",
+            "dns lookup failed",
+            "connection reset",
+            "connection aborted",
+            "host is down",
+            "network unreachable",
+            "timeout",
+            "timed out",
+        ]
+
+        if any(pattern in error_msg for pattern in network_patterns):
+            return True
+
+        # If none of the above conditions match, it's not a network error
+        return False
