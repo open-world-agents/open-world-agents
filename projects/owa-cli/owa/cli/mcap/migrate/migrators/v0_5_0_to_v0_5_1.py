@@ -175,16 +175,16 @@ def migrate(
                     messages.append((message.timestamp, message.topic, message.decoded))
 
         # Always write to temporary file first, then move to final location
-        with tempfile.NamedTemporaryFile(suffix=".mcap", dir=final_output_file.parent, delete=False) as temp_file:
-            temp_path = Path(temp_file.name)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_file = Path(temp_dir) / "temp.mcap"
 
             # Write all messages to temporary file
-            with OWAMcapWriter(temp_path) as writer:
+            with OWAMcapWriter(temp_file) as writer:
                 for log_time, topic, msg in messages:
                     writer.write_message(topic=topic, message=msg, log_time=log_time)
 
             # Atomically move temporary file to final location
-            shutil.move(str(temp_path), str(final_output_file))
+            shutil.copy2(str(temp_file), str(final_output_file))
 
         # Output results according to schema
         if output_format == "json":
@@ -199,6 +199,10 @@ def migrate(
             console.print(f"[green]✓ Migration completed: {changes_made} changes made[/green]")
 
     except Exception as e:
+        # Reraise typer.Exit exceptions to prevent printing duplicate error messages
+        if isinstance(e, typer.Exit):
+            raise e
+
         if output_format == "json":
             result = {
                 "success": False,
@@ -302,6 +306,10 @@ def verify(
             console.print(f"[green]✓ {success_message}[/green]")
 
     except Exception as e:
+        # Reraise typer.Exit exceptions to prevent printing duplicate error messages
+        if isinstance(e, typer.Exit):
+            raise e
+
         if output_format == "json":
             result = {"success": False, "error": str(e)}
             print(orjson.dumps(result).decode())
