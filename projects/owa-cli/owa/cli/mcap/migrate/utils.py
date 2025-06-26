@@ -1,3 +1,10 @@
+"""
+Utilities for migration verification and integrity checks.
+
+This module provides functionality to verify the integrity of migrated MCAP files
+by comparing them with their backup counterparts.
+"""
+
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional

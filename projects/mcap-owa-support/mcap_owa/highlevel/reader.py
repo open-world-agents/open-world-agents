@@ -126,7 +126,7 @@ class OWAMcapReader:
     @functools.cached_property
     def schemas(self) -> list[str]:
         """Get all schemas in the MCAP file."""
-        return [schema.name for schema_id, schema in self.reader.get_summary().schemas]
+        return [schema.name for schema_id, schema in self.reader.get_summary().schemas.items()]
 
     def __enter__(self):
         return self
