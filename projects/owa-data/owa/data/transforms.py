@@ -338,8 +338,10 @@ def _resolve_video_path(screen_captured: ScreenCaptured, metadata: Dict[str, Any
         ScreenCaptured object with resolved absolute path
     """
     if screen_captured.media_ref is not None:
-        if screen_captured.media_ref.type == "external_video":
-            screen_captured.resolve_external_path(metadata.get("file_path"))
+        if screen_captured.media_ref.is_video:
+            file_path = metadata.get("file_path")
+            if file_path:
+                screen_captured.resolve_external_path(file_path)
 
     # For other media_ref types or if no file_path, return as-is
     return screen_captured

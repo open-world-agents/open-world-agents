@@ -168,6 +168,10 @@ def verify(
             console.print("[green]✓ No legacy schemas found[/green]")
 
     except Exception as e:
+        # Reraise typer.Exit exceptions to prevent printing duplicate error messages
+        if isinstance(e, typer.Exit):
+            raise e
+
         if output_format == "json":
             result = {"success": False, "error": str(e)}
             print(orjson.dumps(result).decode())

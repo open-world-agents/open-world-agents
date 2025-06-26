@@ -207,6 +207,7 @@ class ScriptMigrator:
                     )
 
         # If we have valid JSON output, use it to determine success
+        # TODO: output handling and printing the cause of failure as migrate
         if json_output and validate_verification_output(json_output, verbose=verbose):
             return json_output.get("success", False)
 

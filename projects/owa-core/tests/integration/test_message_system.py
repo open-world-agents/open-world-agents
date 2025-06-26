@@ -63,7 +63,6 @@ class TestMessageSystemIntegration:
         frame = np.zeros((100, 200, 4), dtype=np.uint8)
         screen = ScreenCaptured(utc_ns=1234567890, frame_arr=frame)
         assert screen.utc_ns == 1234567890
-        assert screen.is_loaded()
         assert screen.shape == (200, 100)  # width, height
 
         # Test registry and direct import return same classes

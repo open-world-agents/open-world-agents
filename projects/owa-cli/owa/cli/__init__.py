@@ -9,12 +9,14 @@ import importlib
 import platform
 import shutil
 
-# TODO: replace to https://github.com/BrianPugh/cyclopts
+# TODO?: replace to https://github.com/BrianPugh/cyclopts
 import typer
 from loguru import logger
 
 from . import env, mcap, messages, video
 from .utils import check_for_update
+
+# TODO: disable logger as library
 
 
 def create_app() -> typer.Typer:

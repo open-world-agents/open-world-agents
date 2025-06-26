@@ -37,7 +37,11 @@ def keyboard_monitor_callback(event):
 
 def screen_capture_callback(event):
     global MCAP_LOCATION
-    event.media_ref.path = Path(event.media_ref.path).relative_to(MCAP_LOCATION.parent).as_posix()
+    # Update the media_ref with a new relative path
+    from owa.msgs.desktop.screen import MediaRef
+
+    relative_path = Path(event.media_ref.uri).relative_to(MCAP_LOCATION.parent).as_posix()
+    event.media_ref = MediaRef(uri=relative_path, pts_ns=event.media_ref.pts_ns)
     enqueue_event(event, topic="screen")
 
 

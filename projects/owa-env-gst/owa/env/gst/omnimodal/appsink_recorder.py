@@ -119,11 +119,13 @@ class AppsinkRecorder(GstPipelineRunner):
                 notified_shape = (original_shape, shape)
 
             # Create ScreenCaptured with external video reference
+            from owa.msgs.desktop.screen import MediaRef
+
             screen_captured = ScreenCaptured(
                 utc_ns=frame_time_ns,
                 source_shape=original_shape,
                 shape=shape,
-                media_ref=dict(type="external_video", path=filesink_location, pts_ns=buf.pts),
+                media_ref=MediaRef(uri=filesink_location, pts_ns=buf.pts),
             )
             callback(screen_captured)
             return Gst.PadProbeReturn.OK
