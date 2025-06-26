@@ -137,13 +137,13 @@ class TestMediaRef:
         resolved3 = ref_abs.resolve_relative_path("/mcap/files/recording.mcap")
         assert resolved3 is ref_abs
 
-    def test_from_path_classmethod(self):
-        """Test MediaRef.from_path class method."""
-        ref = MediaRef.from_path("test/path.jpg")
+    def test_direct_constructor(self):
+        """Test MediaRef direct constructor."""
+        ref = MediaRef(uri="test/path.jpg")
         assert ref.uri == "test/path.jpg"
         assert ref.pts_ns is None
 
-        ref_video = MediaRef.from_path("test/video.mp4", pts_ns=1000000000)
+        ref_video = MediaRef(uri="test/video.mp4", pts_ns=1000000000)
         assert ref_video.uri == "test/video.mp4"
         assert ref_video.pts_ns == 1000000000
         assert ref_video.is_video == True

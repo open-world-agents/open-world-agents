@@ -150,7 +150,7 @@ def process_single_file(jsonl_file_path):
             utc_ns=unix_epoch_ns,
             source_shape=(VPT_X_RESOLUTION, VPT_Y_RESOLUTION),
             shape=(VPT_X_RESOLUTION, VPT_Y_RESOLUTION),
-            media_ref=MediaRef.from_path(str(mp4_file_path), pts_ns=unix_epoch_ns),
+            media_ref=MediaRef(uri=str(mp4_file_path), pts_ns=unix_epoch_ns),
         )
         writer.write_message(topic, event, log_time=unix_epoch_ns)
 
@@ -164,7 +164,7 @@ def process_single_file(jsonl_file_path):
                 utc_ns=log_time,
                 source_shape=(VPT_X_RESOLUTION, VPT_Y_RESOLUTION),
                 shape=(VPT_X_RESOLUTION, VPT_Y_RESOLUTION),
-                media_ref=MediaRef.from_path(str(mp4_file_path), pts_ns=log_time),
+                media_ref=MediaRef(uri=str(mp4_file_path), pts_ns=log_time),
             )
             writer.write_message(topic, event, log_time=log_time)
 
