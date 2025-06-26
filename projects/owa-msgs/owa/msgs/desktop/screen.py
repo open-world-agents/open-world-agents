@@ -31,6 +31,16 @@ class MediaRef(BaseModel):
         """True if this references video media."""
         return self.pts_ns is not None
 
+    @property
+    def is_remote(self) -> bool:
+        """True if this references a remote URL (http/https)."""
+        return self.uri.startswith(("http://", "https://"))
+
+    @property
+    def is_local(self) -> bool:
+        """True if this references a local file path (not embedded or remote)."""
+        return not self.is_embedded and not self.is_remote
+
 
 class ScreenCaptured(OWAMessage):
     """Screen capture with minimal design."""

@@ -11,7 +11,6 @@ Key functions:
 - encode_to_base64(): Encode numpy array to base64 string
 - decode_from_base64(): Decode base64 string to numpy array
 - validate_media_path(): Check if media path is accessible
-- get_media_info(): Get basic media information
 """
 
 import base64
@@ -189,43 +188,6 @@ def validate_media_path(path: str) -> bool:
             return Path(path).exists()
     except Exception:
         return False
-
-
-def get_media_info(path: str) -> dict:
-    """
-    Get basic media information.
-
-    Args:
-        path: File path or URL
-
-    Returns:
-        Dictionary with media information
-    """
-    info = {"path": path}
-
-    try:
-        if path.startswith(("http://", "https://")):
-            info["is_remote"] = True
-            info["is_local"] = False
-        else:
-            info["is_remote"] = False
-            info["is_local"] = True
-            path_obj = Path(path)
-            info["exists"] = path_obj.exists()
-            if path_obj.exists():
-                info["size_bytes"] = path_obj.stat().st_size
-
-        # Detect media type from extension
-        path_lower = path.lower()
-        if any(path_lower.endswith(ext) for ext in [".mp4", ".avi", ".mov", ".mkv", ".webm"]):
-            info["media_type"] = "video"
-        else:
-            info["media_type"] = "image"
-
-    except Exception as e:
-        info["error"] = str(e)
-
-    return info
 
 
 # ============================================================================
