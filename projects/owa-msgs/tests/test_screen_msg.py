@@ -63,61 +63,61 @@ class TestMediaRef:
         data_uri = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
         ref = MediaRef(uri=data_uri)
 
-        assert ref.is_embedded == True
-        assert ref.is_video == False
+        assert ref.is_embedded
+        assert not ref.is_video
 
     def test_create_video_ref(self):
         """Test creating MediaRef for video."""
         ref = MediaRef(uri="test.mp4", pts_ns=1000000000)
 
-        assert ref.is_embedded == False
-        assert ref.is_video == True
+        assert not ref.is_embedded
+        assert ref.is_video
         assert ref.pts_ns == 1000000000
 
     def test_create_external_image_ref(self):
         """Test creating MediaRef for external image."""
         ref = MediaRef(uri="image.png")
 
-        assert ref.is_embedded == False
-        assert ref.is_video == False
+        assert not ref.is_embedded
+        assert not ref.is_video
 
     def test_create_external_url_ref(self):
         """Test creating MediaRef for remote URL."""
         ref = MediaRef(uri="https://example.com/image.jpg")
 
-        assert ref.is_embedded == False
-        assert ref.is_video == False
-        assert ref.is_remote == True
-        assert ref.is_local == False
+        assert not ref.is_embedded
+        assert not ref.is_video
+        assert ref.is_remote
+        assert not ref.is_local
 
     def test_file_uri_handling(self):
         """Test file:// URI handling."""
         ref = MediaRef(uri="file:///path/to/image.jpg")
 
-        assert ref.is_embedded == False
-        assert ref.is_remote == False
-        assert ref.is_local == True
-        assert ref.is_relative_path == False  # file:// URIs are not relative
+        assert not ref.is_embedded
+        assert not ref.is_remote
+        assert ref.is_local
+        assert not ref.is_relative_path  # file:// URIs are not relative
 
     def test_relative_path_detection(self):
         """Test relative path detection."""
         # Relative paths
         ref_rel = MediaRef(uri="images/test.jpg")
-        assert ref_rel.is_relative_path == True
-        assert ref_rel.is_local == True
+        assert ref_rel.is_relative_path
+        assert ref_rel.is_local
 
         # Absolute paths
         ref_abs = MediaRef(uri="/absolute/path/test.jpg")
-        assert ref_abs.is_relative_path == False
-        assert ref_abs.is_local == True
+        assert not ref_abs.is_relative_path
+        assert ref_abs.is_local
 
         # URLs should not be relative
         ref_url = MediaRef(uri="https://example.com/test.jpg")
-        assert ref_url.is_relative_path == False
+        assert not ref_url.is_relative_path
 
         # Data URIs should not be relative
         ref_data = MediaRef(uri="data:image/png;base64,abc123")
-        assert ref_data.is_relative_path == False
+        assert not ref_data.is_relative_path
 
     def test_resolve_relative_path(self):
         """Test relative path resolution."""
@@ -146,7 +146,7 @@ class TestMediaRef:
         ref_video = MediaRef(uri="test/video.mp4", pts_ns=1000000000)
         assert ref_video.uri == "test/video.mp4"
         assert ref_video.pts_ns == 1000000000
-        assert ref_video.is_video == True
+        assert ref_video.is_video
 
 
 class TestScreenCaptured:
@@ -212,7 +212,7 @@ class TestScreenCaptured:
 
         # Now should have embedded data
         assert screen_msg.media_ref is not None
-        assert screen_msg.media_ref.is_embedded == True
+        assert screen_msg.media_ref.is_embedded
         assert "data:image/png;base64," in screen_msg.media_ref.uri
 
     def test_embed_as_data_uri_jpeg(self, sample_bgra_frame):
@@ -223,7 +223,7 @@ class TestScreenCaptured:
         screen_msg.embed_as_data_uri(format="jpeg", quality=95)
 
         assert screen_msg.media_ref is not None
-        assert screen_msg.media_ref.is_embedded == True
+        assert screen_msg.media_ref.is_embedded
         assert "data:image/jpeg;base64," in screen_msg.media_ref.uri
 
     def test_embedded_roundtrip(self, sample_bgra_frame):
@@ -256,7 +256,7 @@ class TestScreenCaptured:
 
         assert screen_msg.utc_ns == 1741608540328534500
         assert screen_msg.frame_arr is None  # Should not be loaded yet
-        assert screen_msg.media_ref.is_embedded == True
+        assert screen_msg.media_ref.is_embedded
 
     def test_load_from_embedded(self, sample_bgra_frame):
         """Test loading from embedded data."""
@@ -288,7 +288,7 @@ class TestScreenCaptured:
 
         assert screen_msg.utc_ns == 1741608540328534500
         assert screen_msg.frame_arr is None  # Should not be loaded yet
-        assert screen_msg.media_ref.is_video == True
+        assert screen_msg.media_ref.is_video
         assert screen_msg.shape is None  # Not set until loading
 
     def test_load_from_video(self, sample_video_file):

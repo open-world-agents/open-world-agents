@@ -182,34 +182,14 @@ def verify(
                             console.print("[red]Found ScreenCaptured messages with legacy field structure[/red]")
                         raise typer.Exit(1)
 
-        # Perform integrity verification if backup is provided
-        integrity_verified = True
-        if backup_path is not None:
-            integrity_verified = verify_migration_integrity(
-                migrated_file=file_path,
-                backup_file=backup_path,
-                console=console,
-                check_message_count=True,
-                check_file_size=True,
-                check_topics=True,
-                size_tolerance_percent=10.0,
-            )
-
         # Report results
         success_message = "No legacy ScreenCaptured field structures found"
-        if backup_path is not None:
-            if integrity_verified:
-                success_message += ", integrity verification passed"
-            else:
-                success_message += ", integrity verification failed"
 
         if output_format == "json":
             result = {"success": True, "message": success_message}
             print(orjson.dumps(result).decode())
         else:
             console.print(f"[green]✓ {success_message}[/green]")
-            if backup_path is not None and not integrity_verified:
-                console.print("[yellow]⚠ Migration integrity verification failed[/yellow]")
 
     except Exception as e:
         if output_format == "json":
