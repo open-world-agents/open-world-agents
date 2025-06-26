@@ -85,7 +85,7 @@ class ScreenCaptured(OWAMessage):
     Screen capture message with flexible media handling.
 
     Creation patterns:
-    - From raw image: ScreenCaptured(frame_arr=numpy_array).embed_as_data_uri()
+    - From raw image: ScreenCaptured(frame_arr=bgra_np_array).embed_as_data_uri()
     - From file path: ScreenCaptured(media_ref={"uri": "/path/to/image.png"})
     - From URL: ScreenCaptured(media_ref={"uri": "https://example.com/image.png"})
     - From data URI: ScreenCaptured(media_ref={"uri": "data:image/png;base64,..."})
@@ -115,7 +115,7 @@ class ScreenCaptured(OWAMessage):
     )
     media_ref: Optional[MediaRef] = Field(None, description="Structured media reference")
     frame_arr: SkipJsonSchema[Optional[np.ndarray]] = Field(
-        None, exclude=True, description="Frame as numpy array (in-memory only)"
+        None, exclude=True, description="BGRA frame as numpy array (in-memory only)"
     )
 
     @model_validator(mode="after")
@@ -128,6 +128,8 @@ class ScreenCaptured(OWAMessage):
         if self.frame_arr is not None:
             if len(self.frame_arr.shape) < 2:
                 raise ValueError("frame_arr must be at least 2-dimensional")
+            if self.frame_arr.shape[2] != 4:
+                raise ValueError("frame_arr must be BGRA format")
             h, w = self.frame_arr.shape[:2]
             self.shape = (w, h)
 
