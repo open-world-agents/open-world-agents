@@ -16,7 +16,7 @@ import numpy as np
 from pydantic import BaseModel, Field, computed_field, field_validator, model_validator
 from pydantic.json_schema import SkipJsonSchema
 
-from owa.core.io import FormatConverter, MediaSource, default_loader
+from owa.core.io import encode_to_base64, load_image_as_bgra, load_video_frame_as_bgra
 from owa.core.message import OWAMessage
 
 
@@ -160,12 +160,14 @@ class MediaRef(BaseModel):
 
 def _load_media_frame(media_ref: MediaRef, *, force_close: bool = False) -> np.ndarray:
     """Load frame from any media reference type."""
-    source = MediaSource.from_mediaref(media_ref)
-
     if media_ref.is_embedded or (media_ref.is_external and not media_ref.is_video):
-        return default_loader.load_image(source)
+        # Load image from URI (handles both embedded data URIs and external paths)
+        return load_image_as_bgra(media_ref.uri)
     elif media_ref.is_external and media_ref.is_video:
-        return default_loader.load_video_frame(source, media_ref.pts_ns, force_close)
+        # Load video frame from external path
+        if not media_ref.path:
+            raise ValueError("No path available for external video reference")
+        return load_video_frame_as_bgra(media_ref.path, media_ref.pts_ns, force_close)
     else:
         raise ValueError(f"Unsupported media reference: {media_ref.scheme}")
 
@@ -239,7 +241,7 @@ class ScreenCaptured(OWAMessage):
 
     _type = "desktop/ScreenCaptured"
 
-    model_config = {"arbitrary_types_allowed": True}
+    model_config = {"arbitrary_types_allowed": True, "extra": "forbid"}
 
     # Time since epoch as nanoseconds.
     utc_ns: Optional[int] = None
@@ -297,23 +299,6 @@ class ScreenCaptured(OWAMessage):
             return self.media_ref.is_external and self.media_ref.is_video
         return False
 
-    # Convenience methods for backward compatibility
-    def has_embedded_data(self) -> bool:
-        """Check if this frame has embedded data."""
-        return self.has_media_type("embedded")
-
-    def has_external_reference(self) -> bool:
-        """Check if this frame has any external media reference."""
-        return self.has_media_type("external")
-
-    def has_external_image_reference(self) -> bool:
-        """Check if this frame has external image reference."""
-        return self.has_media_type("external_image")
-
-    def has_external_video_reference(self) -> bool:
-        """Check if this frame has external video reference."""
-        return self.has_media_type("external_video")
-
     def is_loaded(self) -> bool:
         """Check if the frame data is currently loaded in memory."""
         return self.frame_arr is not None
@@ -325,7 +310,7 @@ class ScreenCaptured(OWAMessage):
             raise ValueError("No frame_arr available to embed")
 
         # Compress frame array to embedded reference
-        base64_data = FormatConverter.encode_to_base64(self.frame_arr, format, quality)
+        base64_data = encode_to_base64(self.frame_arr, format, quality)
         self.media_ref = MediaRef.from_embedded(format=format, data=base64_data)
         return self
 
@@ -343,7 +328,7 @@ class ScreenCaptured(OWAMessage):
         Returns:
             Self for method chaining
         """
-        if self.media_ref is None or not self.has_external_reference():
+        if self.media_ref is None or not self.has_media_type("external"):
             return self
 
         current_path = self.media_ref.path

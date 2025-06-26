@@ -258,7 +258,7 @@ class TestScreenCapturedWithEmbeddedRef:
         assert screen_msg.utc_ns == 1741608540328534500
         assert screen_msg.frame_arr is None  # Should not be loaded yet
         assert screen_msg.has_embedded_data() is True
-        assert screen_msg.has_external_reference() is False
+        assert screen_msg.has_media_type("external") is False
         assert screen_msg.media_ref.format == "png"
 
     def test_lazy_load_from_embedded(self, sample_bgra_frame):
@@ -332,7 +332,7 @@ class TestScreenCapturedWithExternalRef:
         assert screen_msg.media_ref.pts_ns == pts_ns
         assert screen_msg.shape is None  # Not set until lazy loading
         assert screen_msg.source_shape is None
-        assert screen_msg.has_external_reference() is True
+        assert screen_msg.has_media_type("external") is True
         assert screen_msg.has_embedded_data() is False
 
     def test_create_with_external_image_ref(self):
@@ -342,7 +342,7 @@ class TestScreenCapturedWithExternalRef:
 
         assert screen_msg.media_ref.path == "test_image.png"
         # ExternalImageRef doesn't have pts_ns field
-        assert screen_msg.has_external_reference() is True
+        assert screen_msg.has_media_type("external") is True
 
     def test_lazy_loading_from_video(self, sample_video_file):
         """Test lazy loading from external video file."""

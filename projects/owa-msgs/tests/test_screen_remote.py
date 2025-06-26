@@ -34,8 +34,8 @@ class TestScreenCapturedRemoteFiles:
             screen_msg = ScreenCaptured(media_ref=external_ref)
 
             # Verify media reference properties
-            assert screen_msg.has_external_reference()
-            assert not screen_msg.has_embedded_data()
+            assert screen_msg.has_media_type("external")
+            assert not screen_msg.has_media_type("embedded")
             assert screen_msg.media_ref.path == test_url
             assert screen_msg.media_ref.pts_ns == pts_ns
 
