@@ -231,7 +231,7 @@ wheels = [
 
 [[package]]
 name = "owa-core"
-version = "0.5.0"
+version = "0.5.1"
 source = { editable = "../owa-core" }
 dependencies = [
     { name = "av" },
@@ -257,7 +257,7 @@ requires-dist = [
 
 [[package]]
 name = "owa-msgs"
-version = "0.5.0"
+version = "0.5.1"
 source = { editable = "." }
 dependencies = [
     { name = "annotated-types" },
