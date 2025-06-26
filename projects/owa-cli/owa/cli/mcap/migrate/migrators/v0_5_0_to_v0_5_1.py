@@ -9,13 +9,15 @@
 #   "typer>=0.12.0",
 #   "numpy>=2.2.0",
 #   "mcap-owa-support==0.5.1",
+#   "owa-cli==0.5.1",
 #   "owa-core==0.5.1",
 #   "owa-msgs==0.5.1",
 # ]
 # [tool.uv]
-# exclude-newer = "2025-06-26T00:00:00Z"
+# exclude-newer = "2025-06-27T00:00:00Z"
 # [tool.uv.sources]
 # mcap-owa-support = { path = "../../../../../../mcap-owa-support", editable = true }
+# owa-cli = { path = "../../../../../../owa-cli", editable = true }
 # owa-core = { path = "../../../../../../owa-core", editable = true }
 # owa-msgs = { path = "../../../../../../owa-msgs", editable = true }
 # ///
@@ -30,6 +32,8 @@ Key changes:
 - Unified MediaRef class with computed properties
 """
 
+import shutil
+import tempfile
 from pathlib import Path
 from typing import Optional
 
@@ -39,18 +43,14 @@ from rich.console import Console
 
 from mcap_owa.decoder import dict_decoder
 from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
+from owa.cli.mcap.migrate.utils import verify_migration_integrity
 from owa.core import MESSAGES
 
-# Import migration utilities
-try:
-    from ..utils import verify_migration_integrity
-except ImportError:
-    # Fallback if utils module is not available
-    def verify_migration_integrity(*_args, **_kwargs):
-        return True
-
-
 app = typer.Typer(help="MCAP Migration: v0.5.0 → v0.5.1")
+
+# Version constants
+FROM_VERSION = "0.5.0"
+TO_VERSION = "0.5.1"
 
 
 def migrate_media_ref(media_ref_data: dict) -> dict:
@@ -106,164 +106,213 @@ def migrate_screen_captured_data(data: dict) -> dict:
     return migrated_data
 
 
+def has_legacy_media_ref(data: dict) -> bool:
+    """Check if ScreenCaptured data contains legacy MediaRef format."""
+    media_ref = data.get("media_ref")
+    if not media_ref or not isinstance(media_ref, dict):
+        return False
+
+    # Legacy format has 'type' field, new format has 'uri' field
+    return "type" in media_ref and "uri" not in media_ref
+
+
 @app.command()
 def migrate(
-    input_file: Path = typer.Argument(..., help="Input MCAP file"),
+    input_file: Path = typer.Argument(..., help="Input MCAP file path"),
     output_file: Optional[Path] = typer.Argument(
-        None, help="Output MCAP file (optional, defaults to overwriting input)"
+        None, help="Output MCAP file path (defaults to in-place modification)"
     ),
-    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed information"),
-    output_format: str = typer.Option("text", "--output-format", help="Output format: text or json"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose logging output"),
+    output_format: str = typer.Option("text", "--output-format", help="Output format: 'text' or 'json'"),
 ) -> None:
-    """Migrate MCAP file from v0.5.0 to v0.5.1."""
+    """
+    Migrate MCAP file from source version to target version.
+
+    Transforms the input MCAP file according to the version-specific
+    migration rules. If output_file is not specified, performs in-place
+    modification of the input file.
+    """
     console = Console()
 
     if not input_file.exists():
-        console.print(f"[red]Input file not found: {input_file}[/red]")
+        if output_format == "json":
+            result = {
+                "success": False,
+                "changes_made": 0,
+                "error": f"Input file not found: {input_file}",
+                "from_version": FROM_VERSION,
+                "to_version": TO_VERSION,
+            }
+            print(orjson.dumps(result).decode())
+        else:
+            console.print(f"[red]Input file not found: {input_file}[/red]")
         raise typer.Exit(1)
 
-    # Default output to input file (overwrite)
-    if output_file is None:
-        output_file = input_file
+    # Determine final output location
+    final_output_file = output_file if output_file is not None else input_file
 
     if verbose:
-        console.print(f"[blue]Migrating: {input_file} → {output_file}[/blue]")
+        console.print(f"[blue]Migrating: {input_file} → {final_output_file}[/blue]")
 
     try:
-        # Statistics
-        total_messages = 0
-        migrated_messages = 0
+        changes_made = 0
 
+        # Collect all messages first to avoid reader/writer conflicts
+        messages = []
         with OWAMcapReader(input_file) as reader:
-            with OWAMcapWriter(output_file) as writer:
-                for message in reader.iter_messages():
-                    total_messages += 1
+            for message in reader.iter_messages():
+                if message.message_type == "desktop/ScreenCaptured":
+                    decoded_data = dict_decoder(message.message)
 
-                    # Check if this is a ScreenCaptured message
-                    if message.schema_name == "desktop/ScreenCaptured":
-                        # Decode message data
-                        decoded_data = dict_decoder(message.data, message.schema)
-
-                        # Migrate the data
+                    # Check if migration is needed
+                    if has_legacy_media_ref(decoded_data):
                         migrated_data = migrate_screen_captured_data(decoded_data)
-                        migrated_messages += 1
+                        new_msg = MESSAGES["desktop/ScreenCaptured"](**migrated_data)
+                        messages.append((message.timestamp, message.topic, new_msg))
+                        changes_made += 1
 
-                        # Re-encode and write
-                        writer.write_message(
-                            topic=message.topic,
-                            schema_name=message.schema_name,
-                            data=migrated_data,
-                            log_time_ns=message.log_time_ns,
-                            publish_time_ns=message.publish_time_ns,
-                        )
-
-                        if verbose and migrated_messages % 100 == 0:
-                            console.print(f"[green]Migrated {migrated_messages} ScreenCaptured messages...[/green]")
+                        if output_format != "json" and verbose and changes_made % 100 == 0:
+                            console.print(f"[green]Migrated {changes_made} ScreenCaptured messages...[/green]")
                     else:
-                        # Copy non-ScreenCaptured messages as-is
-                        writer.write_raw_message(message)
+                        # Already in new format
+                        messages.append((message.timestamp, message.topic, message.decoded))
+                else:
+                    # Copy non-ScreenCaptured messages as-is
+                    messages.append((message.timestamp, message.topic, message.decoded))
 
-        # Output results
-        result = {
-            "status": "success",
-            "input_file": str(input_file),
-            "output_file": str(output_file),
-            "total_messages": total_messages,
-            "migrated_messages": migrated_messages,
-        }
+        # Always write to temporary file first, then move to final location
+        with tempfile.NamedTemporaryFile(suffix=".mcap", dir=final_output_file.parent, delete=False) as temp_file:
+            temp_path = Path(temp_file.name)
 
+            # Write all messages to temporary file
+            with OWAMcapWriter(temp_path) as writer:
+                for log_time, topic, msg in messages:
+                    writer.write_message(topic=topic, message=msg, log_time=log_time)
+
+            # Atomically move temporary file to final location
+            shutil.move(str(temp_path), str(final_output_file))
+
+        # Output results according to schema
         if output_format == "json":
-            console.print(orjson.dumps(result, option=orjson.OPT_INDENT_2).decode())
+            result = {
+                "success": True,
+                "changes_made": changes_made,
+                "from_version": FROM_VERSION,
+                "to_version": TO_VERSION,
+            }
+            print(orjson.dumps(result).decode())
         else:
-            console.print(f"[green]✓ Migration completed successfully[/green]")
-            console.print(f"  Total messages: {total_messages}")
-            console.print(f"  Migrated ScreenCaptured messages: {migrated_messages}")
-            console.print(f"  Output file: {output_file}")
+            console.print(f"[green]✓ Migration completed: {changes_made} changes made[/green]")
 
     except Exception as e:
-        error_result = {
-            "status": "error",
-            "input_file": str(input_file),
-            "error": str(e),
-        }
-
         if output_format == "json":
-            console.print(orjson.dumps(error_result, option=orjson.OPT_INDENT_2).decode())
+            result = {
+                "success": False,
+                "changes_made": 0,
+                "error": str(e),
+                "from_version": FROM_VERSION,
+                "to_version": TO_VERSION,
+            }
+            print(orjson.dumps(result).decode())
         else:
-            console.print(f"[red]✗ Migration failed: {e}[/red]")
+            console.print(f"[red]Migration failed: {e}[/red]")
 
         raise typer.Exit(1)
 
 
 @app.command()
 def verify(
-    input_file: Path = typer.Argument(..., help="MCAP file to verify"),
-    output_format: str = typer.Option("text", "--output-format", help="Output format: text or json"),
+    file_path: Path = typer.Argument(..., help="MCAP file path to verify"),
+    backup_path: Optional[Path] = typer.Option(None, help="Reference backup file path (optional)"),
+    output_format: str = typer.Option("text", "--output-format", help="Output format: 'text' or 'json'"),
 ) -> None:
-    """Verify that an MCAP file uses v0.5.1 MediaRef format."""
+    """
+    Verify migration completeness and data integrity.
+
+    Validates that all legacy structures have been properly migrated
+    and no data corruption has occurred during the transformation process.
+    """
     console = Console()
 
-    if not input_file.exists():
-        console.print(f"[red]Input file not found: {input_file}[/red]")
+    if not file_path.exists():
+        if output_format == "json":
+            result = {"success": False, "error": f"File not found: {file_path}"}
+            print(orjson.dumps(result).decode())
+        else:
+            console.print(f"[red]File not found: {file_path}[/red]")
         raise typer.Exit(1)
 
     try:
-        screen_captured_count = 0
-        v0_5_1_format_count = 0
-        legacy_format_count = 0
+        # Check for legacy MediaRef structures
+        legacy_found = False
 
-        with OWAMcapReader(input_file) as reader:
-            for message in reader.iter_messages():
-                if message.schema_name == "desktop/ScreenCaptured":
-                    screen_captured_count += 1
+        with OWAMcapReader(file_path) as reader:
+            for message in reader.iter_messages(topics="screen"):
+                decoded_data = dict_decoder(message.message)
 
-                    # Decode and check format
-                    decoded_data = dict_decoder(message.data, message.schema)
-                    media_ref = decoded_data.get("media_ref")
+                if has_legacy_media_ref(decoded_data):
+                    legacy_found = True
+                    break
 
-                    if media_ref and isinstance(media_ref, dict):
-                        if "uri" in media_ref:
-                            v0_5_1_format_count += 1
-                        elif "type" in media_ref:
-                            legacy_format_count += 1
+        # Perform integrity verification if backup is provided
+        integrity_verified = True
+        if backup_path is not None:
+            if not backup_path.exists():
+                if output_format == "json":
+                    result = {"success": False, "error": f"Backup file not found: {backup_path}"}
+                    print(orjson.dumps(result).decode())
+                else:
+                    console.print(f"[red]Backup file not found: {backup_path}[/red]")
+                raise typer.Exit(1)
 
-        # Determine if migration is needed
-        needs_migration = legacy_format_count > 0
+            verification_result = verify_migration_integrity(
+                migrated_file=file_path,
+                backup_file=backup_path,
+                check_message_count=True,
+                check_file_size=True,
+                check_topics=True,
+                size_tolerance_percent=10.0,
+            )
+            integrity_verified = verification_result.success
 
-        result = {
-            "status": "success",
-            "file": str(input_file),
-            "screen_captured_messages": screen_captured_count,
-            "v0_5_1_format": v0_5_1_format_count,
-            "legacy_format": legacy_format_count,
-            "needs_migration": needs_migration,
-        }
+        # Report results according to schema
+        if legacy_found:
+            if output_format == "json":
+                result = {"success": False, "error": "Legacy MediaRef structures detected"}
+                print(orjson.dumps(result).decode())
+            else:
+                console.print("[red]Legacy MediaRef structures detected[/red]")
+            raise typer.Exit(1)
+
+        # Check if verification failed
+        if backup_path is not None and not integrity_verified:
+            if output_format == "json":
+                result = {
+                    "success": False,
+                    "error": verification_result.error or "Migration integrity verification failed",
+                }
+                print(orjson.dumps(result).decode())
+            else:
+                console.print(f"[red]Migration integrity verification failed: {verification_result.error}[/red]")
+            raise typer.Exit(1)
+
+        # Success case
+        success_message = "No legacy MediaRef structures found"
+        if backup_path is not None and integrity_verified:
+            success_message += ", integrity verification passed"
 
         if output_format == "json":
-            console.print(orjson.dumps(result, option=orjson.OPT_INDENT_2).decode())
+            result = {"success": True, "message": success_message}
+            print(orjson.dumps(result).decode())
         else:
-            console.print(f"[blue]Verification Results for {input_file}[/blue]")
-            console.print(f"  ScreenCaptured messages: {screen_captured_count}")
-            console.print(f"  v0.5.1 format (URI-based): {v0_5_1_format_count}")
-            console.print(f"  Legacy format (type-based): {legacy_format_count}")
-
-            if needs_migration:
-                console.print(f"[yellow]⚠ Migration needed: {legacy_format_count} messages use legacy format[/yellow]")
-            else:
-                console.print(f"[green]✓ All messages use v0.5.1 format[/green]")
+            console.print(f"[green]✓ {success_message}[/green]")
 
     except Exception as e:
-        error_result = {
-            "status": "error",
-            "file": str(input_file),
-            "error": str(e),
-        }
-
         if output_format == "json":
-            console.print(orjson.dumps(error_result, option=orjson.OPT_INDENT_2).decode())
+            result = {"success": False, "error": str(e)}
+            print(orjson.dumps(result).decode())
         else:
-            console.print(f"[red]✗ Verification failed: {e}[/red]")
-
+            console.print(f"[red]Verification failed: {e}[/red]")
         raise typer.Exit(1)
 
 
