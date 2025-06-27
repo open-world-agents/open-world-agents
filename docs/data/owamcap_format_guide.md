@@ -121,7 +121,6 @@ OWAMcap combines the robustness of the MCAP container format with OWA's speciali
     attachments: 0
     metadata: 0
     ```
-    <!-- TODO: example for modern version mcap -->
 
 ### Key Features
 
