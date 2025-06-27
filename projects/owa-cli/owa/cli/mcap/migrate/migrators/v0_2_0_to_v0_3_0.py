@@ -103,9 +103,9 @@ def migrate(
             result = {
                 "success": True,
                 "changes_made": changes_made,
-                "schema_conversions": schema_conversions,
                 "from_version": "0.2.0",
                 "to_version": "0.3.0",
+                "message": "Schema migration completed successfully",
             }
             print(orjson.dumps(result).decode())
         else:

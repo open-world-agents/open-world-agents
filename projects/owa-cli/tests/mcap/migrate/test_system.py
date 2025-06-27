@@ -338,7 +338,7 @@ class TestScriptMigratorErrorHandling:
             result = migrator.migrate(temp_dir / "test.mcap", verbose=False)
 
         assert not result.success
-        assert result.error_message == "Test migration error"
+        assert result.error == "Test migration error"
         assert result.changes_made == 0
         assert result.from_version == "0.3.0"
         assert result.to_version == "0.4.0"
@@ -360,7 +360,7 @@ class TestScriptMigratorErrorHandling:
             result = migrator.migrate(temp_dir / "test.mcap", verbose=False)
 
         assert not result.success
-        assert result.error_message == "Script execution failed"
+        assert result.error == "Script execution failed"
         assert result.changes_made == 0
 
     def test_migrate_with_json_success_false_on_zero_exit(self, temp_dir):
@@ -381,7 +381,7 @@ class TestScriptMigratorErrorHandling:
             result = migrator.migrate(temp_dir / "test.mcap", verbose=False)
 
         assert not result.success
-        assert result.error_message == "Validation failed"
+        assert result.error == "Validation failed"
         assert result.changes_made == 0
 
     def test_verify_migration_with_json_error_output(self, temp_dir):

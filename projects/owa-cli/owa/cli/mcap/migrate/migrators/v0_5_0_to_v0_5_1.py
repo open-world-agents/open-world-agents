@@ -193,6 +193,7 @@ def migrate(
                 "changes_made": changes_made,
                 "from_version": FROM_VERSION,
                 "to_version": TO_VERSION,
+                "message": "Migration completed successfully",
             }
             print(orjson.dumps(result).decode())
         else:

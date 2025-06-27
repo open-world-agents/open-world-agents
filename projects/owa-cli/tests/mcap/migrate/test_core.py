@@ -49,7 +49,7 @@ class TestMigrateIntegration:
         # Mock failed migration
         mock_result = MagicMock()
         mock_result.success = False
-        mock_result.error_message = "Migration failed"
+        mock_result.error = "Migration failed"
         mock_migration_orchestrator.migrate_file.return_value = [mock_result]
 
         # Mock file detection
@@ -197,7 +197,7 @@ class TestMigrationOrchestrator:
             mock_migrator = MagicMock()
             mock_migrator.from_version = "0.3.0"
             mock_migrator.to_version = "0.4.0"
-            mock_migrator.migrate.return_value = MagicMock(success=False, error_message="Failed")
+            mock_migrator.migrate.return_value = MagicMock(success=False, error="Failed")
 
             with patch.object(orchestrator, "get_migration_path") as mock_get_path:
                 mock_get_path.return_value = [mock_migrator]

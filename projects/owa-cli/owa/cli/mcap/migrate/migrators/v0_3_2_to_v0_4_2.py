@@ -117,7 +117,13 @@ def migrate(
                 writer.write_message(topic=topic, message=msg, log_time=log_time)
 
         if output_format == "json":
-            result = {"success": True, "changes_made": changes_made, "from_version": "0.3.2", "to_version": "0.4.2"}
+            result = {
+                "success": True,
+                "changes_made": changes_made,
+                "from_version": "0.3.2",
+                "to_version": "0.4.2",
+                "message": "Migration completed successfully",
+            }
             print(orjson.dumps(result).decode())
         else:
             console.print(f"[green]✓ Migration completed: {changes_made} changes made[/green]")
