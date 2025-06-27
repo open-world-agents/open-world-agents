@@ -188,7 +188,7 @@ class ScriptMigrator:
             return MigrationResult(False, self.from_version, self.to_version, 0, error_msg)
 
     def verify_migration(self, file_path: Path, backup_path: Optional[Path], verbose: bool = False) -> bool:
-        """Verify migration by running the script with --verify flag."""
+        """Verify migration by running the script with verify command."""
         cmd = ["uv", "run", str(self.script_path), "verify", str(file_path), "--output-format", "json"]
         if backup_path:
             cmd.extend(["--backup-path", str(backup_path)])

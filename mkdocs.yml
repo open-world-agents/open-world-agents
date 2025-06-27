@@ -110,7 +110,7 @@ nav:
   - Data in OWA:
     - data/index.md
     - 🚀 Data Pipeline (MCAP → VLA Training): data/owa_data_pipeline.md
-    # - data/data_format.md
+    - OWAMcap Format: data/owamcap_introduction.md
     - Introducing OWAMcap: data/infographic.html
     - Comparison with LeRobot: data/comparison_with_lerobot.md
     - data/ocap.md
