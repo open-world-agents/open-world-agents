@@ -165,7 +165,9 @@ class TestMigrationOrchestrator:
             mock_migrator.from_version = "0.3.0"
             mock_migrator.to_version = "0.4.0"
             mock_migrator.migrate.return_value = MagicMock(success=True, changes_made=1)
-            mock_migrator.verify_migration.return_value = True
+            from owa.cli.mcap.migrate.migrate import VerificationResult
+
+            mock_migrator.verify_migration.return_value = VerificationResult(success=True)
 
             with patch.object(orchestrator, "get_migration_path") as mock_get_path:
                 mock_get_path.return_value = [mock_migrator]

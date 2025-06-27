@@ -32,13 +32,24 @@ def _get_subprocess_env():
 
 @dataclass
 class MigrationResult:
-    """Result of a migration operation."""
+    """Result of a migration operation that matches the JSON schema."""
 
     success: bool
-    version_from: str
-    version_to: str
-    changes_made: int
-    error_message: str = ""
+    from_version: str
+    to_version: str
+    changes_made: int = 0
+    error: str = ""
+    message: str = ""
+
+
+@dataclass
+class VerificationResult:
+    """Result of a verification operation that matches the JSON schema."""
+
+    success: bool
+    error: str = ""
+    message: str = ""
+    found_old_schemas: Optional[List[str]] = None
 
 
 # JSON output format validation
@@ -154,7 +165,15 @@ class ScriptMigrator:
                 changes_made = json_output.get("changes_made", 0)
                 success = json_output.get("success", True)
                 error_msg = json_output.get("error", "") if not success else ""
-                return MigrationResult(success, self.from_version, self.to_version, changes_made, error_msg)
+                message = json_output.get("message", "")
+                return MigrationResult(
+                    success=success,
+                    from_version=self.from_version,
+                    to_version=self.to_version,
+                    changes_made=changes_made,
+                    error=error_msg,
+                    message=message,
+                )
             else:
                 # Fallback to text parsing for backward compatibility
                 if verbose and json_output:
@@ -163,14 +182,26 @@ class ScriptMigrator:
                         file=sys.stderr,
                     )
                 changes_made = 1 if result.stdout and "changes made" in result.stdout else 0
-                return MigrationResult(True, self.from_version, self.to_version, changes_made)
+                return MigrationResult(
+                    success=True,
+                    from_version=self.from_version,
+                    to_version=self.to_version,
+                    changes_made=changes_made,
+                    message="Migration completed",
+                )
 
         # Handle error case (non-zero return code)
         if json_output and validate_migration_output(json_output, verbose=verbose):
             # Valid JSON error output - use structured error information
             error_msg = json_output.get("error", "Migration failed")
             changes_made = json_output.get("changes_made", 0)
-            return MigrationResult(False, self.from_version, self.to_version, changes_made, error_msg)
+            return MigrationResult(
+                success=False,
+                from_version=self.from_version,
+                to_version=self.to_version,
+                changes_made=changes_made,
+                error=error_msg,
+            )
         else:
             # Fallback to stderr/stdout for error message
             if verbose and json_output:
@@ -185,9 +216,17 @@ class ScriptMigrator:
                 if result.stdout
                 else f"Migration failed with exit code {result.returncode}"
             )
-            return MigrationResult(False, self.from_version, self.to_version, 0, error_msg)
+            return MigrationResult(
+                success=False,
+                from_version=self.from_version,
+                to_version=self.to_version,
+                changes_made=0,
+                error=error_msg,
+            )
 
-    def verify_migration(self, file_path: Path, backup_path: Optional[Path], verbose: bool = False) -> bool:
+    def verify_migration(
+        self, file_path: Path, backup_path: Optional[Path], verbose: bool = False
+    ) -> VerificationResult:
         """Verify migration by running the script with verify command."""
         cmd = ["uv", "run", str(self.script_path), "verify", str(file_path), "--output-format", "json"]
         if backup_path:
@@ -206,18 +245,44 @@ class ScriptMigrator:
                         f"Warning: Failed to parse JSON output from verifier {self.script_path.name}", file=sys.stderr
                     )
 
-        # If we have valid JSON output, use it to determine success
-        # TODO: output handling and printing the cause of failure as migrate
-        if json_output and validate_verification_output(json_output, verbose=verbose):
-            return json_output.get("success", False)
+        # Handle successful execution (return code 0)
+        if result.returncode == 0:
+            if json_output and validate_verification_output(json_output, verbose=verbose):
+                # Valid JSON output - use it
+                success = json_output.get("success", True)
+                error_msg = json_output.get("error", "") if not success else ""
+                message = json_output.get("message", "")
+                return VerificationResult(success=success, error=error_msg, message=message)
+            else:
+                # Fallback for backward compatibility
+                if verbose and json_output:
+                    print(
+                        f"Warning: Invalid JSON output from verifier {self.script_path.name}, falling back to return code",
+                        file=sys.stderr,
+                    )
+                return VerificationResult(success=True, message="Verification completed")
 
-        # Fallback to return code for backward compatibility
-        if verbose and json_output:
-            print(
-                f"Warning: Invalid JSON verification output from {self.script_path.name}, using return code",
-                file=sys.stderr,
+        # Handle error case (non-zero return code)
+        if json_output and validate_verification_output(json_output, verbose=verbose):
+            # Valid JSON error output - use structured error information
+            error_msg = json_output.get("error", "Verification failed")
+            found_schemas = json_output.get("found_old_schemas")
+            return VerificationResult(success=False, error=error_msg, found_old_schemas=found_schemas)
+        else:
+            # Fallback to stderr/stdout for error message
+            if verbose and json_output:
+                print(
+                    f"Warning: Invalid JSON error output from verifier {self.script_path.name}, using fallback error message",
+                    file=sys.stderr,
+                )
+            error_msg = (
+                result.stderr.strip()
+                if result.stderr
+                else result.stdout.strip()
+                if result.stdout
+                else f"Verification failed with exit code {result.returncode}"
             )
-        return result.returncode == 0
+            return VerificationResult(success=False, error=error_msg)
 
 
 @dataclass
@@ -425,17 +490,18 @@ class MigrationOrchestrator:
                 results.append(result)
 
                 if not result.success:
-                    console.print(f"[red]Migration failed: {result.error_message}[/red]")
+                    console.print(f"[red]Migration failed: {result.error}[/red]")
                     # BackupContext will automatically rollback on exception
-                    raise RuntimeError(f"Migration failed: {result.error_message}")
+                    raise RuntimeError(f"Migration failed: {result.error}")
 
                 # Verify migration
-                if not migrator.verify_migration(file_path, backup_ctx.backup_path, verbose):
-                    console.print("[red]Migration verification failed[/red]")
+                verification_result = migrator.verify_migration(file_path, backup_ctx.backup_path, verbose)
+                if not verification_result.success:
+                    console.print(f"[red]Migration verification failed: {verification_result.error}[/red]")
                     result.success = False
-                    result.error_message = "Verification failed"
+                    result.error = f"Verification failed: {verification_result.error}"
                     # BackupContext will automatically rollback on exception
-                    raise RuntimeError("Migration verification failed")
+                    raise RuntimeError(f"Migration verification failed: {verification_result.error}")
 
                 console.print(f"[green]Migration successful ({result.changes_made} changes)[/green]")
 

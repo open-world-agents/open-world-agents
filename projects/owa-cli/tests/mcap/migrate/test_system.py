@@ -275,22 +275,24 @@ def test_multi_step_migration_with_script_migrators(mock_reader_class, temp_dir)
     mock_migrator_1.to_version = "0.3.2"
     mock_migrator_1.migrate.return_value = MigrationResult(
         success=True,
-        version_from="0.3.0",
-        version_to="0.3.2",
+        from_version="0.3.0",
+        to_version="0.3.2",
         changes_made=1,
     )
-    mock_migrator_1.verify_migration.return_value = True
+    from owa.cli.mcap.migrate.migrate import VerificationResult
+
+    mock_migrator_1.verify_migration.return_value = VerificationResult(success=True)
 
     mock_migrator_2 = MagicMock(spec=ScriptMigrator)
     mock_migrator_2.from_version = "0.3.2"
     mock_migrator_2.to_version = "0.4.2"
     mock_migrator_2.migrate.return_value = MigrationResult(
         success=True,
-        version_from="0.3.2",
-        version_to="0.4.2",
+        from_version="0.3.2",
+        to_version="0.4.2",
         changes_made=1,
     )
-    mock_migrator_2.verify_migration.return_value = True
+    mock_migrator_2.verify_migration.return_value = VerificationResult(success=True)
 
     # Replace orchestrator's script migrators with our mocks
     orchestrator.script_migrators = [mock_migrator_1, mock_migrator_2]
@@ -338,8 +340,8 @@ class TestScriptMigratorErrorHandling:
         assert not result.success
         assert result.error_message == "Test migration error"
         assert result.changes_made == 0
-        assert result.version_from == "0.3.0"
-        assert result.version_to == "0.4.0"
+        assert result.from_version == "0.3.0"
+        assert result.to_version == "0.4.0"
 
     def test_migrate_with_invalid_json_error_fallback(self, temp_dir):
         """Test fallback to stderr/stdout when JSON is invalid."""
@@ -399,7 +401,8 @@ class TestScriptMigratorErrorHandling:
         with patch("subprocess.run", return_value=mock_result):
             result = migrator.verify_migration(temp_dir / "test.mcap", None, verbose=False)
 
-        assert not result
+        assert not result.success
+        assert result.error == "Legacy structures found"
 
     def test_verify_migration_with_json_success_output(self, temp_dir):
         """Test that verification JSON success output is properly handled."""
@@ -418,7 +421,8 @@ class TestScriptMigratorErrorHandling:
         with patch("subprocess.run", return_value=mock_result):
             result = migrator.verify_migration(temp_dir / "test.mcap", None, verbose=False)
 
-        assert result
+        assert result.success
+        assert result.error == ""
 
 
 class TestOutputValidation:

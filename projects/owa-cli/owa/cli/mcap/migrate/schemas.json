@@ -36,13 +36,6 @@
         "message": {
           "type": "string",
           "description": "Success or informational message"
-        },
-        "schema_conversions": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          },
-          "description": "Mapping of old schema names to new schema names"
         }
       },
       "allOf": [
@@ -148,10 +141,7 @@
         "changes_made": 5,
         "from_version": "0.2.0",
         "to_version": "0.3.0",
-        "schema_conversions": {
-          "owa_env_desktop.KeyboardEvent": "owa.env.desktop.KeyboardEvent",
-          "owa_env_desktop.MouseEvent": "owa.env.desktop.MouseEvent"
-        }
+        "message": "Migration completed successfully"
       }
     },
     {
