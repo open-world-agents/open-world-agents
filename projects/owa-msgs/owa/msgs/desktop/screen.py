@@ -52,6 +52,14 @@ class MediaRef(BaseModel):
             return False
         return not Path(self.uri).is_absolute()
 
+    def validate_uri(self) -> bool:
+        """Validate that the URI exists (local files only)."""
+        if self.is_remote:
+            raise NotImplementedError("Remote URI validation not implemented")
+        if self.is_embedded:
+            return True  # Embedded data is always "valid"
+        return Path(self.uri).exists()
+
     def resolve_relative_path(self, base_path: str) -> "MediaRef":
         """
         Resolve relative path against a base path.
@@ -65,10 +73,11 @@ class MediaRef(BaseModel):
         if not self.is_relative_path:
             return self  # Already absolute or not a local path
 
-        # Determine if base_path is a file or directory
-        # If it has an extension or doesn't end with '/', treat as file
+        # Determine if base_path is a file or directory (must be MCAP file)
         base_path_obj = Path(base_path)
-        if base_path_obj.suffix or not base_path.endswith("/"):
+        if base_path_obj.is_file():
+            if base_path_obj.suffix != ".mcap":
+                raise ValueError(f"Base path must be an MCAP file: {base_path}")
             # Treat as file path, use parent directory
             base = base_path_obj.parent
         else:
