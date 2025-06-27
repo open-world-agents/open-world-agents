@@ -18,7 +18,7 @@
     
     
       
-        <title>Introducing OWAMcap - Open World Agents</title>
+        <title>Redirected - Open World Agents</title>
       
     
     
@@ -74,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#introducing-owamcap" class="md-skip">
+        <a href="#redirected" class="md-skip">
           Skip to content
         </a>
       
@@ -109,7 +109,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Introducing OWAMcap
+              Redirected
             
           </span>
         </div>
@@ -746,12 +746,12 @@
   
   
     <li class="md-nav__item">
-      <a href="../owa_data_pipeline/" class="md-nav__link">
+      <a href="../infographic.html" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    🚀 Data Pipeline (MCAP → VLA Training)
+    OWAMcap Infographic
     
   </span>
   
@@ -769,12 +769,35 @@
   
   
     <li class="md-nav__item">
-      <a href="../infographic.html" class="md-nav__link">
+      <a href="../data_format/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    Introducing OWAMcap
+    OWAMcap Format
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../owa_data_pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🚀 Data Pipeline (MCAP → VLA Training)
     
   </span>
   
@@ -1069,137 +1092,6 @@
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
-    <span class="md-ellipsis">
-      Overview
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#usage-example-of-owamcap-desktop-recorder" class="md-nav__link">
-    <span class="md-ellipsis">
-      Usage Example of OWAMcap - Desktop Recorder
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Usage Example of OWAMcap - Desktop Recorder">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#exploring-example-data" class="md-nav__link">
-    <span class="md-ellipsis">
-      Exploring Example Data
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Exploring Example Data">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#file-summary-with-owl-mcap-info" class="md-nav__link">
-    <span class="md-ellipsis">
-      File Summary with owl mcap info
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#detailed-message-inspection-with-owl-mcap-cat" class="md-nav__link">
-    <span class="md-ellipsis">
-      Detailed Message Inspection with owl mcap cat
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#using-this-data" class="md-nav__link">
-    <span class="md-ellipsis">
-      Using This Data
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#internals-owamcap-format-specification" class="md-nav__link">
-    <span class="md-ellipsis">
-      Internals - OWAMcap Format Specification
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Internals - OWAMcap Format Specification">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#technical-specifications" class="md-nav__link">
-    <span class="md-ellipsis">
-      Technical Specifications
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#implementation-guide" class="md-nav__link">
-    <span class="md-ellipsis">
-      Implementation Guide
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#file-format-considerations" class="md-nav__link">
-    <span class="md-ellipsis">
-      File Format Considerations
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="File Format Considerations">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#why-use-mcap" class="md-nav__link">
-    <span class="md-ellipsis">
-      Why Use .mcap?
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -1217,230 +1109,14 @@
   
 
 
-<h1 id="introducing-owamcap">Introducing OWAMcap<a class="headerlink" href="#introducing-owamcap" title="Permanent link">&para;</a></h1>
-<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>OWAMcap is a high-performance, self-contained, flexible container file format for multimodal desktop log data, powered by the open-source container file format <a href="https://mcap.dev/">mcap</a>. This format is designed for efficiently recording and processing message data in Open World Agents (OWA) applications.</p>
-<div class="admonition tip">
-<p class="admonition-title">So, what exactly is mcap?</p>
-<p>Simply put, mcap is a format that allows you to record various types of events such as keyboard events, mouse events, and screen captures along with their timestamps. For more detailed information, please refer to the <a href="#internals-owamcap-format-specification">OWAMcap Format Specification</a> section.</p>
-</div>
-<h2 id="usage-example-of-owamcap-desktop-recorder">Usage Example of OWAMcap - Desktop Recorder<a class="headerlink" href="#usage-example-of-owamcap-desktop-recorder" title="Permanent link">&para;</a></h2>
-<p>What exactly does the OWAMcap format contain? Let's demonstrate with an example of recorded desktop data. Below are sample datasets that you can download and explore yourself:</p>
-<ul>
-<li><code>example.mcap</code> <a href="https://github.com/open-world-agents/open-world-agents/blob/main/docs/data/example.mcap">[Download]</a></li>
-<li><code>example.mkv</code> <a href="https://github.com/open-world-agents/open-world-agents/blob/main/docs/data/example.mkv">[Download]</a></li>
-</ul>
-<details class="demo">
-<summary>Click here to see <code>example.mkv</code>!</summary>
-<p><video controls>
-<source src="../example.mkv" type="video/mp4">
-</video></p>
-</details>
-<h3 id="exploring-example-data">Exploring Example Data<a class="headerlink" href="#exploring-example-data" title="Permanent link">&para;</a></h3>
-<p>Let's examine the contents of an OWAMcap file using the <code>owl</code> command-line tool (Open World agents cLi).</p>
-<h4 id="file-summary-with-owl-mcap-info">File Summary with <code>owl mcap info</code><a class="headerlink" href="#file-summary-with-owl-mcap-info" title="Permanent link">&para;</a></h4>
-<p>First, we can get an overview of the file structure:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>$ owl mcap info example.mcap
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>library:   mcap-owa-support 0.1.0; mcap 1.2.2
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>profile:   owa
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>messages:  518
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>duration:  6.8558623s
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>start:     2025-03-21T17:06:30.7029335+09:00 (1742544390.702933500)
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>end:       2025-03-21T17:06:37.5587958+09:00 (1742544397.558795800)
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>compression:
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>        zstd: [1/1 chunks] [48.19 KiB/9.42 KiB (80.44%)] [1.37 KiB/sec]
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>channels:
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        (1) window            7 msgs (1.02 Hz)    : desktop/WindowInfo [jsonschema]
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>        (2) keyboard/state    7 msgs (1.02 Hz)    : desktop/KeyboardState [jsonschema]
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>        (3) mouse/state       7 msgs (1.02 Hz)    : desktop/MouseState [jsonschema]
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>        (4) mouse           115 msgs (16.77 Hz)   : desktop/MouseEvent [jsonschema]
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>        (5) screen          362 msgs (52.80 Hz)   : desktop/ScreenCaptured [jsonschema]
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>        (6) keyboard         20 msgs (2.92 Hz)    : desktop/KeyboardEvent [jsonschema]
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>channels: 6
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>attachments: 0
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>metadata: 0
-</code></pre></div>
-<p><strong>Key observations from this output:</strong></p>
-<ol>
-<li>
-<p><strong>File Overview</strong>:</p>
-<ul>
-<li>Contains 518 messages recorded over 6.86 seconds</li>
-<li>Records from March 21, 2025, with precise start and end timestamps</li>
-</ul>
-</li>
-<li>
-<p><strong>Compression</strong>:</p>
-<ul>
-<li>Uses zstd compression, reducing file size by 80.44%</li>
-</ul>
-</li>
-<li>
-<p><strong>Channels (Topics)</strong>:</p>
-<ul>
-<li>The file contains 6 different channels (or topics), each tracking a specific type of event:</li>
-</ul>
-</li>
-</ol>
-<table>
-<thead>
-<tr>
-<th>Channel #</th>
-<th>Name</th>
-<th>Message Count</th>
-<th>Frequency</th>
-<th>Message Type</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>1</td>
-<td>window</td>
-<td>7 msgs</td>
-<td>1.02 Hz</td>
-<td>WindowInfo</td>
-</tr>
-<tr>
-<td>2</td>
-<td>keyboard/state</td>
-<td>7 msgs</td>
-<td>1.02 Hz</td>
-<td>KeyboardState</td>
-</tr>
-<tr>
-<td>3</td>
-<td>mouse/state</td>
-<td>7 msgs</td>
-<td>1.02 Hz</td>
-<td>MouseState</td>
-</tr>
-<tr>
-<td>4</td>
-<td>mouse</td>
-<td>115 msgs</td>
-<td>16.77 Hz</td>
-<td>MouseEvent</td>
-</tr>
-<tr>
-<td>5</td>
-<td>screen</td>
-<td>362 msgs</td>
-<td>52.80 Hz</td>
-<td>ScreenCaptured</td>
-</tr>
-<tr>
-<td>6</td>
-<td>keyboard</td>
-<td>20 msgs</td>
-<td>2.92 Hz</td>
-<td>KeyboardEvent</td>
-</tr>
-</tbody>
-</table>
-<p>For example, looking at channel #5 (screen), we can see:</p>
-<ul>
-<li>The topic name is "screen"</li>
-<li>It contains 362 messages</li>
-<li>Recording frequency is 52.80 Hz (slightly lower than the intended 60 Hz, likely due to the short recording time)</li>
-<li>Messages are of type <code>desktop/ScreenCaptured</code></li>
-</ul>
-<h4 id="detailed-message-inspection-with-owl-mcap-cat">Detailed Message Inspection with <code>owl mcap cat</code><a class="headerlink" href="#detailed-message-inspection-with-owl-mcap-cat" title="Permanent link">&para;</a></h4>
-<p>To examine individual messages, we can use the <code>cat</code> command:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>$ owl mcap cat example.mcap --n 8 --no-pretty
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>Topic: window, Timestamp: 1741628814049712700, Message: {&#39;title&#39;: &#39;ZType – Typing Game - Type to Shoot - Chromium&#39;, &#39;rect&#39;: [389, 10, 955, 1022], &#39;hWnd&#39;: 7540094}
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>Topic: keyboard/state, Timestamp: 1741628814049712700, Message: {&#39;buttons&#39;: []}
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>Topic: mouse/state, Timestamp: 1742544390703436600, Message: {&#39;x&#39;: 1594, &#39;y&#39;: 1112, &#39;buttons&#39;: []}
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>Topic: mouse, Timestamp: 1742544390707441200, Message: {&#39;event_type&#39;: &#39;move&#39;, &#39;x&#39;: 1597, &#39;y&#39;: 1112}
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>Topic: screen, Timestamp: 1741628814057575300, Message: {&#39;path&#39;: &#39;example.mkv&#39;, &#39;pts&#39;: 14866666666, &#39;utc_ns&#39;: 1741628814056571100}
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>Topic: screen, Timestamp: 1741628814073392700, Message: {&#39;path&#39;: &#39;example.mkv&#39;, &#39;pts&#39;: 14883333333, &#39;utc_ns&#39;: 1741628814072476900}
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>Topic: keyboard, Timestamp: 1741628815015522100, Message: {&#39;event_type&#39;: &#39;release&#39;, &#39;vk&#39;: 162}
-</code></pre></div>
-<p><strong>What we can learn from these messages:</strong></p>
-<ol>
-<li>
-<p><strong>Window messages</strong> - Track active windows</p>
-<ul>
-<li>Example: <code>{'title': 'ZType – Typing Game - Type to Shoot - Chromium', 'rect': [389, 10, 955, 1022], 'hWnd': 7540094}</code></li>
-<li>Shows which window was active, its title, position and size</li>
-</ul>
-</li>
-<li>
-<p><strong>Mouse messages</strong> - Track cursor position and button states</p>
-<ul>
-<li>Position tracking: <code>{'x': 1597, 'y': 1112}</code></li>
-<li>Event types include: "move", "click", etc.</li>
-</ul>
-</li>
-<li>
-<p><strong>Keyboard messages</strong> - Track key presses and releases</p>
-<ul>
-<li>Example: <code>{'event_type': 'release', 'vk': 162}</code></li>
-<li>Records which virtual key was pressed or released</li>
-</ul>
-</li>
-<li>
-<p><strong>Screen messages</strong> - Link to video frames in the MKV file</p>
-<ul>
-<li>Contains paths, presentation timestamps, and UTC timestamps</li>
-</ul>
-</li>
-</ol>
-<h4 id="using-this-data">Using This Data<a class="headerlink" href="#using-this-data" title="Permanent link">&para;</a></h4>
-<p>This structured data allows for powerful analysis and use cases:</p>
-<ul>
-<li>You can filter data based on which window was active at a particular time</li>
-<li>You can synchronize keyboard/mouse events with screen captures</li>
-<li>The timestamps allow for precise reconstruction of user interactions</li>
-</ul>
-<div class="admonition tip">
-<p class="admonition-title">What's VK(Virtual Key Code)?</p>
-<p>Operating systems don't directly use the physical keyboard input values (scan codes) but instead use virtualized keys called VKs. OWA's recorder uses VKs to record keyboard-agnostic data. If you're interested in more details, you can refer to the following resources:</p>
-<ul>
-<li><a href="https://learn.microsoft.com/en-us/windows/win32/inputdev/about-keyboard-input">Keyboard Input Overview, Microsoft</a></li>
-<li><a href="https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes">Virtual-Key Codes, Microsoft</a></li>
-</ul>
-</div>
-<h2 id="internals-owamcap-format-specification">Internals - OWAMcap Format Specification<a class="headerlink" href="#internals-owamcap-format-specification" title="Permanent link">&para;</a></h2>
-<div class="admonition note">
-<p class="admonition-title">Note for Users</p>
-<p>This part is intended for developers who want to utilize the OWAMcap file format for their own applications. <strong>Regular users of the library may not need this information.</strong></p>
-</div>
-<h3 id="technical-specifications">Technical Specifications<a class="headerlink" href="#technical-specifications" title="Permanent link">&para;</a></h3>
-<ul>
-<li>OWAMcap uses the standard <code>mcap</code> format with <code>json</code> schema</li>
-<li>The <a href="https://github.com/open-world-agents/open-world-agents/tree/main/projects/mcap-owa-support"><code>mcap-owa-support</code></a> Python package, which is within the open-world-agents repository, provides decoders, writers, and readers for this format</li>
-<li>All messages must inherit from or implement the <a href="https://github.com/open-world-agents/open-world-agents/blob/main/projects/owa-core/owa/core/message.py#L7"><code>BaseMessage</code></a> class from <code>owa.core.message</code></li>
-</ul>
-<div class="admonition mcap">
-<p class="admonition-title">What's MCAP?</p>
-<p>MCAP (pronounced "em-cap") is an open-source container file format designed for multimodal log data. It supports multiple channels of timestamped pre-serialized data and is ideal for pub/sub or robotics applications.</p>
-<p>Key advantages of MCAP:</p>
-<ul>
-<li><strong>High Performance</strong>: Efficient storage and retrieval of large event data streams</li>
-<li><strong>Flexible &amp; Open</strong>: Works with diverse data types beyond robotics</li>
-<li><strong>Self-Describing</strong>: Encodes schema information to ensure compatibility</li>
-</ul>
-<p><strong><a href="https://mcap.dev/">Learn more about MCAP</a></strong></p>
-</div>
-<h3 id="implementation-guide">Implementation Guide<a class="headerlink" href="#implementation-guide" title="Permanent link">&para;</a></h3>
-<p>Any message that implements <a href="https://github.com/open-world-agents/open-world-agents/blob/main/projects/owa-core/owa/core/message.py#L7"><code>BaseMessage</code></a> can be recorded in the OWAMcap format. This provides flexibility while maintaining a consistent interface. Following block describes the interface of <code>BaseMessage</code>.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">BaseMessage</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="n">_type</span><span class="p">:</span> <span class="nb">str</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="nd">@abstractmethod</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">buffer</span><span class="p">:</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">):</span> <span class="o">...</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="nd">@classmethod</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="nd">@abstractmethod</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">deserialize</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">buffer</span><span class="p">:</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span> <span class="o">...</span>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>    <span class="nd">@classmethod</span>
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    <span class="nd">@abstractmethod</span>
-<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_schema</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span> <span class="o">...</span>
-</code></pre></div>
-<h3 id="file-format-considerations">File Format Considerations<a class="headerlink" href="#file-format-considerations" title="Permanent link">&para;</a></h3>
-<h4 id="why-use-mcap">Why Use <code>.mcap</code>?<a class="headerlink" href="#why-use-mcap" title="Permanent link">&para;</a></h4>
-<p>There are very few open-source formats available for heterogeneous timestamped data. ROS's bagfile format is one option, but it heavily depends on the ROS ecosystem and often requires installation of ROS1/2. In comparison, <code>mcap</code> is self-contained and efficient, especially for random read (or seeking) operations, which is critical for training VLA (Vision-Language-Action) models.</p>
+<h1 id="redirected">Redirected<a class="headerlink" href="#redirected" title="Permanent link">&para;</a></h1>
+<p>This page has moved to <a href="../infographic.html">data/infographic.html</a>.</p>
+<p>You will be automatically redirected in a few seconds.</p>
+<script>
+window.location.href = "../infographic.html";
+</script>
+
+<p><meta http-equiv="refresh" content="1;url=../infographic.html"></p>
 
 
 
@@ -1461,7 +1137,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="June 19, 2025 13:46:01 UTC">June 19, 2025 13:46:01</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="June 27, 2025 10:32:03 UTC">June 27, 2025 10:32:03</span>
   </span>
 
     
