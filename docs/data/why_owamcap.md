@@ -1,116 +1,64 @@
-# Why OWAMcap? The Universal Standard for Desktop Interaction Data
+# Why OWAMcap?
 
-## The Problem: Data Fragmentation
+**The Problem**: Desktop AI datasets are fragmented. Every research group uses different formats, making it impossible to combine datasets or build large-scale foundation models.
 
-The primary obstacle to advancing desktop automation with foundation models is **data fragmentation**. Research groups often collect data in proprietary formats with varying internal structures, making dataset combination nearly impossible and mirroring costly inefficiencies seen in the robotics community.
+**The Solution**: OWAMcap provides a universal standard that treats all desktop interaction datasets equally.
 
-### The Open-X Embodiment Lesson
+## The Robotics Lesson
 
-The [Open-X Embodiment](https://robotics-transformer-x.github.io/) project highlights this issue. Researchers had to:
+The [Open-X Embodiment](https://robotics-transformer-x.github.io/) project had to manually convert **22 different robotics datasets** - months of work just to combine data. Desktop automation is heading down the same path.
 
-- Manually convert **22 different datasets**
-- Spend **months** writing custom parsers  
-- Standardize action spaces, observations, and metadata across diverse configurations
-- Validate data integrity across varied sources
-- Maintain numerous complex conversion scripts
+## OWAMcap Changes This
 
-This massive undertaking underscores the critical need for a unified data standard in desktop automation.
-
-## The Solution: OWAMcap as the Standard
-
-OWAMcap establishes a unified foundation, enabling seamless data integration and accelerating foundation model development for desktop automation.
-
-### Before OWAMcap: Fragmented Silos
+### Before: Data Silos
 ```
-Dataset A (Proprietary Format) ──┐
-Dataset B (Proprietary Format) ──┼── Costly, Complex Conversions ──→ Limited Data
-Dataset C (Proprietary Format) ──┘
+Dataset A (Custom Format) ──┐
+Dataset B (Custom Format) ──┼── Manual Conversion ──→ Limited Training Data
+Dataset C (Custom Format) ──┘
 ```
 
-### After OWAMcap: Unified Ecosystem  
+### After: Universal Standard
 ```
 Dataset A (OWAMcap) ──┐
 Dataset B (OWAMcap) ──┼── Direct Combination ──→ Large-Scale Foundation Models
 Dataset C (OWAMcap) ──┘
 ```
 
-## What Makes OWAMcap Special?
+## From Recording to Training in 3 Commands
 
-### 1. Built on Proven Technology
-- **MCAP Container**: Self-contained, supports heterogeneous timestamped data, optimized for random access
-- **JSON Schema**: Standard message encoding for interoperability
-- **Minimal Dependencies**: Avoids heavy frameworks like ROS
+OWAMcap integrates with the complete [OWA Data Pipeline](owa_data_pipeline.md):
 
-### 2. Hybrid Storage Innovation
-OWAMcap's key innovation is separating video data from metadata:
+```bash
+# 1. Record desktop interaction
+ocap my-session.mcap
 
-- **MCAP File (.mcap)**: Lightweight metadata, timestamps, frame references
-- **External Video (.mkv)**: Efficiently encoded video data using hardware-accelerated codecs
+# 2. Process to training format
+python scripts/01_raw_events_to_event_dataset.py --train-dir ./
 
-**Result**: 91.7× compression ratio while maintaining frame-accurate synchronization
+# 3. Train your model
+python train.py --dataset ./event-dataset
+```
 
-### 3. Desktop-Optimized Message Types
-Standardized message schemas for complete desktop interaction capture:
+**Result**: Any OWAMcap dataset works with any OWA-compatible training pipeline.
 
-| Message Type | Purpose |
-|--------------|---------|
-| `desktop/ScreenCaptured` | Screen frames with precise timestamps |
-| `desktop/MouseEvent` | Mouse movements, clicks, scrolls |
-| `desktop/KeyboardEvent` | Key press/release events |
-| `desktop/WindowInfo` | Active window context |
-| `desktop/MouseState` | Current mouse position and buttons |
-| `desktop/KeyboardState` | Currently pressed keys |
+## Technical Advantages
 
-## Key Benefits
-
-### 🔗 Seamless Data Integration
-Directly combine datasets from different sources without costly custom conversions.
-
-### 🚀 Foundation Model Enablement  
-Provide aggregated, diverse data in a unified format for efficient model training.
-
-### 💾 Storage Efficiency
-- **22 KiB** MCAP file for 10+ seconds of rich interaction data
-- **85.74%** compression with zstd
+- **91.7× compression** through hybrid storage (metadata + external video)
+- **Nanosecond precision** for perfect event synchronization
+- **Standard tools** work with video files (VLC, FFmpeg, etc.)
 - **Lazy loading** for memory-efficient processing
 
-### 🛠️ Tool Ecosystem
-- **CLI tools** (`owl mcap`) for file management and analysis
-- **Python libraries** for reading/writing
-- **Standard video tools** work with external media files
-
-## Real-World Example
-
-A typical OWAMcap recording contains:
+## Real Impact
 
 ```bash
 $ owl mcap info example.mcap
-library:   mcap-owa-support 0.5.1; mcap 1.3.0
-profile:   owa
-messages:  864
-duration:  10.36s
-channels:
-  (1) window           11 msgs (1.06 Hz): WindowInfo      
-  (2) keyboard/state   11 msgs (1.06 Hz): KeyboardState   
-  (3) mouse/state      11 msgs (1.06 Hz): MouseState      
-  (4) screen          590 msgs (56.96 Hz): ScreenCaptured   
-  (5) mouse           209 msgs (20.18 Hz): MouseEvent       
-  (6) keyboard         32 msgs (3.09 Hz): KeyboardEvent
+messages:  864 (10.36s of interaction data)
+file size: 22 KiB (vs 1+ GB raw)
+channels:  screen, mouse, keyboard, window
 ```
 
-This structured, timestamped data enables precise reconstruction of user interactions synchronized with screen captures, and crucially, allows for direct combination with datasets from other sources using the OWAMcap standard.
-
-## Why This Matters
-
-### Breaking Down Data Silos
-Without a standard like OWAMcap, the desktop automation field risks repeating robotics' costly mistakes: fragmented datasets, wasted conversion efforts, and limited foundation model potential.
-
-### Enabling Collaborative Progress
-By establishing OWAMcap, resources shift from data wrangling to actual research and model development.
-
-### Future-Proof Architecture
-Built on proven standards (MCAP, JSON Schema) with extensible message types for evolving research needs.
+**Bottom Line**: OWAMcap transforms desktop interaction data from isolated collections into a unified resource for building the next generation of foundation models.
 
 ---
 
-**Ready to get started?** Continue to the [OWAMcap Format Guide](owamcap_format_guide.md) for technical details and implementation examples.
+**Ready to get started?** Continue to the [OWAMcap Format Guide](owamcap_format_guide.md) for technical details.
