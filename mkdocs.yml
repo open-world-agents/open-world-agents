@@ -109,9 +109,9 @@ nav:
       - Gstreamer Environment: env/plugins/gst.md
   - Data in OWA:
     - data/index.md
+    - OWAMcap Infographic: data/infographic.html
     - OWAMcap Format: data/data_format.md
     - 🚀 Data Pipeline (MCAP → VLA Training): data/owa_data_pipeline.md
-    - OWAMcap Infographic: data/infographic.html
     - Comparison with LeRobot: data/comparison_with_lerobot.md
     - data/ocap.md
     - data/how_to_explorer_and_edit.md
