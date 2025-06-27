@@ -109,14 +109,17 @@ nav:
       - Desktop Environment: env/plugins/desktop.md
       - Gstreamer Environment: env/plugins/gst.md
   - Data in OWA:
-    - data/index.md
-    - Why OWAMcap?: data/why_owamcap.md
-    - OWAMcap Format Guide: data/owamcap_format_guide.md
-    - 🚀 Data Pipeline (MCAP → VLA Training): data/owa_data_pipeline.md
-    - Comparison with LeRobot: data/comparison_with_lerobot.md
-    - data/ocap.md
-    - data/how_to_explorer_and_edit.md
-    - data/viewer.md
+    - Overview: data/index.md
+    - Getting Started:
+      - Why OWAMcap?: data/why_owamcap.md
+      - Recording Data: data/ocap.md
+      - Exploring Data: data/how_to_explorer_and_edit.md
+    - Technical Reference:
+      - OWAMcap Format Guide: data/owamcap_format_guide.md
+      - 🚀 Data Pipeline (MCAP → VLA Training): data/owa_data_pipeline.md
+    - Tools & Comparison:
+      - Data Viewer: data/viewer.md
+      - Comparison with LeRobot: data/comparison_with_lerobot.md
   - CLI Tools:
     - OWL CLI Reference: owl_cli_reference.md
   - 🚀 Awesome Examples (WIP):

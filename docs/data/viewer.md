@@ -1,25 +1,48 @@
-# Viewer for OWAMcap
+# OWAMcap Data Viewer
+
+Interactive web-based visualization tool for exploring OWAMcap datasets with synchronized playback of screen recordings and interaction events.
 
 <div align="center">
   <img src="../viewer.png" alt="OWA Dataset Visualizer"/>
 </div>
 
-We provide a web-based viewer for users to easily visualize and check OWAMcap datasets.
+## 🌐 Public Hosted Viewer
 
-## Public hosted
+**Quick Start**: [https://huggingface.co/spaces/open-world-agents/visualize_dataset](https://huggingface.co/spaces/open-world-agents/visualize_dataset)
 
-We offer a public hosted viewer at [https://huggingface.co/spaces/open-world-agents/visualize_dataset](https://huggingface.co/spaces/open-world-agents/visualize_dataset).
+### Features
+- **Upload Files**: Drag & drop your `.mcap` files (up to 100MB)
+- **HuggingFace Integration**: Enter any `repo_id` to view public datasets
+- **Synchronized Playback**: Video + events timeline
+- **Interactive Controls**: Pause, seek, frame-by-frame navigation
 
-You can provide a huggingface repo id, or you can also upload your own OWAMcap dataset file via the viewer.
-Note that this public hosted viewer has a 100MB upload file size limit. If you need to upload larger files, you may self-host the viewer.
+### Usage
+1. Visit the viewer URL
+2. Either upload your files or enter a HuggingFace dataset ID
+3. Explore your data with synchronized video and event timeline
 
-## Self hosted
+## 🏠 Self-Hosted Setup
 
-0. Go to `projects/owa-mcap-viewer` directory.
-1. Setup `EXPORT_PATH` environment variable. You may setup `.env` or use `export` command.
-    ```
-    export EXPORT_PATH=(path-to-your-folder-containing-mcap-and-mkvs)
-    ```
-2. Run `vuv install` for installing dependencies.
-3. Run the server with `uvicorn owa_viewer:app --host 0.0.0.0 --port 7860 --reload`
-4. Access `http://localhost:7860` in your browser.
+For larger files or private datasets, run the viewer locally:
+
+```bash
+# Navigate to viewer directory
+cd projects/owa-mcap-viewer
+
+# Set data path
+export EXPORT_PATH=/path/to/your/mcap-files
+
+# Install dependencies
+vuv install
+
+# Start server
+uvicorn owa_viewer:app --host 0.0.0.0 --port 7860 --reload
+```
+
+Access at `http://localhost:7860`
+
+### Benefits of Self-Hosting
+- **No file size limits**
+- **Private data stays local**
+- **Faster loading for large datasets**
+- **Customizable interface**
