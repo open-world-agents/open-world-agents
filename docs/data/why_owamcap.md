@@ -113,4 +113,4 @@ Built on proven standards (MCAP, JSON Schema) with extensible message types for 
 
 ---
 
-**Ready to get started?** Continue to the [OWAMcap Format Guide](data_format.md) for technical details and implementation examples.
+**Ready to get started?** Continue to the [OWAMcap Format Guide](owamcap_format_guide.md) for technical details and implementation examples.

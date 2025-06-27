@@ -4,7 +4,7 @@
     OWAMcap is a specification for using the open-source [MCAP](https://mcap.dev/) container format with Open World Agents (OWA) message definitions. It provides an efficient way to store and process multimodal desktop interaction data including screen captures, mouse events, keyboard events, and window information.
 
 !!! tip "New to OWAMcap?"
-    Start with **[Why OWAMcap?](owamcap_introduction.md)** to understand the problem it solves and why you should use it.
+    Start with **[Why OWAMcap?](why_owamcap.md)** to understand the problem it solves and why you should use it.
 
 ## Table of Contents
 
@@ -29,7 +29,7 @@
     **2. Explore an example file with the `owl` CLI:**
 
     !!! info "What is `owl`?"
-        `owl` is the command-line interface for OWA tools, installed with `owa-cli`. See the [CLI documentation](../cli.md) for complete usage.
+        `owl` is the command-line interface for OWA tools, installed with `owa-cli`. See the [CLI documentation](../owl_cli_reference.md) for complete usage.
 
     ```bash
     # Download example file
