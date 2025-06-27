@@ -1,32 +1,38 @@
-# Exploring & Editing OWAMcap
+# Exploring OWAMcap Data
 
-## Sample Datasets
+Learn how to view, analyze, and work with OWAMcap recordings using various tools and methods.
 
-Below are sample datasets you can download and explore:
+## 📁 Sample Dataset
 
-- `example.mcap` [[Download]](https://github.com/open-world-agents/open-world-agents/blob/main/docs/data/example.mcap)
-- `example.mkv` [[Download]](https://github.com/open-world-agents/open-world-agents/blob/main/docs/data/example.mkv)
+Download and explore our example dataset:
 
-??? demo "Click here to see `example.mkv`!"
+- `example.mcap` [[Download]](https://github.com/open-world-agents/open-world-agents/blob/main/docs/data/example.mcap) - 22 KiB metadata file
+- `example.mkv` [[Download]](https://github.com/open-world-agents/open-world-agents/blob/main/docs/data/example.mkv) - Video recording
+
+??? demo "Preview: example.mkv"
     <video controls>
     <source src="../example.mkv" type="video/mp4">
     </video>
 
-## How to Explore the Dataset
+## 🔍 Exploration Methods
 
-There are multiple ways to explore OWAMcap files. Here are three methods:
+Choose the method that best fits your needs:
 
-### 1. [OWA Dataset Visualizer](https://huggingface.co/spaces/open-world-agents/visualize_dataset)
+### 🌐 Web Visualizer (Recommended for Beginners)
+
+**[OWA Dataset Visualizer](https://huggingface.co/spaces/open-world-agents/visualize_dataset)** - Interactive web-based viewer
 
 <div align="center">
   <img src="../viewer.png" alt="OWA Dataset Visualizer"/>
 </div>
 
-Click `Choose File` at `Upload Files`. Note that uploading file is inappropriate for large file. To visualize large file, self-host dataset visualizer by your own. [Learn more...](viewer.md)
+- **Quick Start**: Upload files or enter HuggingFace dataset ID
+- **File Limit**: 100MB for public hosting
+- **Self-Hosting**: Available for larger files → [Setup Guide](viewer.md)
 
-### 2. Using the `owl` Command Line Tool
+### 💻 Command Line Interface
 
-The `owl` (Open World agents cLi) tool provides a convenient way to inspect MCAP files.
+**`owl` CLI** - Powerful command-line analysis tools
 
 #### Getting a Summary
 
@@ -64,8 +70,8 @@ Topic: window, Timestamp: 1741628814049712700, Message: {'title': 'ZType – Typ
 Topic: keyboard/state, Timestamp: 1741628814049712700, Message: {'buttons': []}
 Topic: mouse/state, Timestamp: 1742544390703436600, Message: {'x': 1594, 'y': 1112, 'buttons': []}
 Topic: mouse, Timestamp: 1742544390707441200, Message: {'event_type': 'move', 'x': 1597, 'y': 1112}
-Topic: screen, Timestamp: 1741628814057575300, Message: {'path': 'example.mkv', 'pts': 14866666666, 'utc_ns': 1741628814056571100}
-Topic: screen, Timestamp: 1741628814073392700, Message: {'path': 'example.mkv', 'pts': 14883333333, 'utc_ns': 1741628814072476900}
+Topic: screen, Timestamp: 1741628814057575300, Message: {'utc_ns': 1741628814056571100, 'shape': [1080, 1920], 'media_ref': {'uri': 'example.mkv', 'pts_ns': 14866666666}}
+Topic: screen, Timestamp: 1741628814073392700, Message: {'utc_ns': 1741628814072476900, 'shape': [1080, 1920], 'media_ref': {'uri': 'example.mkv', 'pts_ns': 14883333333}}
 Topic: keyboard, Timestamp: 1741628815015522100, Message: {'event_type': 'release', 'vk': 162}
 ```
 
