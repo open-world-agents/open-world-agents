@@ -3,6 +3,9 @@
 !!! info "What is OWAMcap?"
     OWAMcap is a specification for using the open-source [MCAP](https://mcap.dev/) container format with Open World Agents (OWA) message definitions. It provides an efficient way to store and process multimodal desktop interaction data including screen captures, mouse events, keyboard events, and window information.
 
+!!! tip "New to OWAMcap?"
+    Start with **[Why OWAMcap?](why_owamcap.md)** to understand the problem it solves and why you should use it.
+
 ## Table of Contents
 
 - [Quick Start](#quick-start) - Get started in 3 steps
@@ -23,7 +26,11 @@
     pip install mcap-owa-support owa-msgs
     ```
 
-    **2. Explore an example file:**
+    **2. Explore an example file with the `owl` CLI:**
+
+    !!! info "What is `owl`?"
+        `owl` is the command-line interface for OWA tools, installed with `owa-cli`. See the [CLI documentation](../owl_cli_reference.md) for complete usage.
+
     ```bash
     # Download example file
     wget https://github.com/open-world-agents/open-world-agents/raw/main/docs/data/example.mcap
@@ -50,6 +57,13 @@
 
 OWAMcap combines the robustness of the MCAP container format with OWA's specialized message types for desktop environments, creating a powerful format for recording, analyzing, and training on human-computer interaction data.
 
+### Key Terms
+
+!!! info "Essential Terminology"
+    - **MCAP**: A modular container file format for heterogeneous, timestamped data (like a ZIP file for time-series data)
+    - **Topic**: A named channel in MCAP files (e.g., "screen", "mouse") that groups related messages
+    - **Lazy Loading**: Loading data only when needed, crucial for memory efficiency with large datasets
+
 ### What Makes a File "OWAMcap"
 
 === "Technical Definition"
@@ -60,6 +74,30 @@ OWAMcap combines the robustness of the MCAP container format with OWA's speciali
     - **Standard Messages**: Core message types from `owa-msgs` package
 
     **Why MCAP?** Efficient storage and retrieval for heterogeneous timestamped data with minimal dependencies. This is format after ROSBag, but designed for modern use cases and optimized for random access.
+
+=== "Architecture Overview"
+    ```
+    ┌─────────────────────────────────────────────────────────────┐
+    │                    OWAMcap File (.mcap)                     │
+    │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐  │
+    │  │   Metadata      │  │   Timestamps    │  │  Messages   │  │
+    │  │   - Profile     │  │   - Nanosecond  │  │  - Mouse    │  │
+    │  │   - Topics      │  │     precision   │  │  - Keyboard │  │
+    │  │   - Schemas     │  │   - Event sync  │  │  - Window   │  │
+    │  └─────────────────┘  └─────────────────┘  └─────────────┘  │
+    └─────────────────────────────────────────────────────────────┘
+                                    │
+                                    │ References
+                                    ▼
+    ┌─────────────────────────────────────────────────────────────┐
+    │                External Media Files (.mkv, .png)           │
+    │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐  │
+    │  │  Video Frames   │  │  Screenshots    │  │   Audio     │  │
+    │  │  - H.265 codec  │  │  - PNG/JPEG     │  │  - Optional │  │
+    │  │  - Hardware acc │  │  - Lossless     │  │  - Sync'd   │  │
+    │  └─────────────────┘  └─────────────────┘  └─────────────┘  │
+    └─────────────────────────────────────────────────────────────┘
+    ```
 
 === "Practical Example"
     ```bash
@@ -210,8 +248,10 @@ OWAMcap's key advantage is efficient media handling through external media refer
     MediaRef supports: `URI(data:image/png;base64,... | file:///path | http[s]://...) or file path(/absolute/path | relative/path)` for both images and videos.
 
     ```python
-    from owa.msgs.desktop import ScreenCaptured
+    from owa.core import MESSAGES
     import numpy as np
+
+    ScreenCaptured = MESSAGES['desktop/ScreenCaptured']
 
     # File paths (absolute/relative) - works for images and videos
     screen_msg = ScreenCaptured(media_ref={"uri": "/absolute/path/image.png"})
@@ -241,6 +281,7 @@ OWAMcap's key advantage is efficient media handling through external media refer
     ```python
     # IMPORTANT: For MCAP files, resolve relative paths first
     # The OWA recorder saves media paths relative to the MCAP file location
+    ScreenCaptured = MESSAGES['desktop/ScreenCaptured']
     screen_msg = ScreenCaptured(
         media_ref={"uri": "relative/video.mkv", "pts_ns": 123456789}
     )
@@ -281,6 +322,7 @@ OWAMcap's key advantage is efficient media handling through external media refer
             # Only load frame data when actually needed
             if some_condition:  # e.g., every 10th frame
                 frame = screen_data.to_rgb_array()  # Now frame is loaded
+                break  # Just show first frame
     ```
 
 === "Writing"
@@ -327,7 +369,7 @@ OWAMcap's key advantage is efficient media handling through external media refer
     owl mcap info session.mcap
 
     # List messages
-    owl mcap cat session.mcap --n 10 --topics screen mouse
+    owl mcap cat session.mcap --n 10 --topics screen --topics mouse
 
     # Migrate between versions
     owl mcap migrate run session.mcap
@@ -342,6 +384,9 @@ OWAMcap's key advantage is efficient media handling through external media refer
 OWAMcap achieves remarkable storage efficiency through external video references and intelligent compression:
 
 ### Compression Benefits
+
+!!! info "Understanding the Baseline"
+    Raw screen capture data is enormous: a single 1920×1080 frame in BGRA format is 8.3 MB. At 60 FPS, this means 498 MB per second of recording. OWAMcap's hybrid storage makes this manageable.
 
 Desktop screen capture at 600 × 800 resolution, 13 s @ 60 Hz:
 
@@ -529,12 +574,26 @@ owl mcap cat sensor_data.mcap --topics temperature
 ### Best Practices
 
 === "Storage Strategy"
-    | Use Case | Strategy | Benefits |
-    |----------|----------|----------|
-    | **Long recordings** | External video | Minimal MCAP size |
-    | **Short sessions** | Embedded data | Self-contained |
-    | **High-quality** | External images | Lossless compression |
-    | **Remote datasets** | Video + URLs | Bandwidth efficient |
+    **Decision Tree: Choose Your Storage Approach**
+
+    ```
+    Recording Length?
+    ├─ < 30 seconds
+    │  └─ Use embedded data URIs (self-contained)
+    └─ > 30 seconds
+       └─ File Size Priority?
+          ├─ Minimize MCAP size
+          │  └─ Use external video (.mkv)
+          └─ Maximize quality
+             └─ Use external images (.png)
+    ```
+
+    | Use Case | Strategy | Benefits | Trade-offs |
+    |----------|----------|----------|------------|
+    | **Long recordings** | External video | Minimal MCAP size, efficient | Requires external files |
+    | **Short sessions** | Embedded data | Self-contained | Larger MCAP files |
+    | **High-quality** | External images | Lossless compression | Many files to manage |
+    | **Remote datasets** | Video + URLs | Bandwidth efficient | Network dependency |
 
 === "Performance"
     ```python

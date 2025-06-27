@@ -23,6 +23,7 @@ docs = [
     "mkdocs-mermaid2-plugin>=1.1.1",
     "mkdocs-redirects>=1.2.2",
     "mkdocstrings-owa>=1.16.12",
+    "mkdocs-click>=0.8.0",
     "termynal>=0.13.0"
 ]
 viewer = [

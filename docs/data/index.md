@@ -1,21 +1,46 @@
-# Open-sourcing Dataset for Multimodal Desktop Agent
+# Data in OWA: Complete Desktop Agent Data Pipeline
 
-As of now (March 22, 2025), there are few datasets available for building multimodal desktop agents.
+Desktop AI needs high-quality, synchronized multimodal data: screen captures, mouse/keyboard events, and window context. OWA provides the **complete pipeline** from recording to training.
 
-Even more scarce are datasets that (1) contain high-frequency screen data, (2) have keyboard/mouse information timestamp-aligned with other modalities like screen recordings, and (3) include human demonstrations.
+## 🚀 Quick Start: Record → Train in 3 Steps
 
-To address this gap, open-world-agents provides the following three solutions:
+```bash
+# 1. Record desktop interaction
+ocap my-session.mcap
 
-1. **File Format - `OWAMcap`**: A high-performance, self-contained, flexible container file format for multimodal desktop log data, powered by the open-source container file format [mcap](https://mcap.dev/). [Learn more...](data_format.md)
+# 2. Process to training format
+python scripts/01_raw_events_to_event_dataset.py --train-dir ./
 
-2. **Desktop Recorder - `ocap your-filename.mcap`**: A powerful, efficient, and easy-to-use desktop recorder that captures keyboard/mouse and high-frequency screen data.
-    - Powered by [`owa-env-gst`](../env/plugins/gst.md), ensuring superior performance compared to alternatives. [Learn more...](ocap.md)
+# 3. Train your model
+python train.py --dataset ./event-dataset
+```
 
-3. **🤗 [Hugging Face](https://huggingface.co/) Integration & Community Ecosystem**: The largest collection of open-source desktop interaction datasets in OWAMcap format.
-    - **Growing Dataset Collection**: Hundreds of community-contributed datasets covering diverse workflows, applications, and interaction patterns
-    - **Easy Upload & Sharing**: Upload your `ocap` recordings directly to HuggingFace with one command
-    - **Standardized Format**: All datasets use the unified OWAMcap format for seamless integration
-    - **Interactive Visualization**: Preview any dataset at [Hugging Face Spaces](https://huggingface.co/spaces/open-world-agents/visualize_dataset)
-    - **Browse Available Datasets**: [🤗 datasets?other=OWA](https://huggingface.co/datasets?other=OWA)
+## The OWA Data Ecosystem
 
-> 🚀 **Community Impact**: With OWA's streamlined recording and sharing pipeline, the open-source desktop agent community has rapidly grown from zero to hundreds of publicly available multimodal datasets, democratizing access to high-quality training data.
+### 🎯 **Getting Started**
+New to OWA data? Start here:
+
+- **[Why OWAMcap?](why_owamcap.md)** - Understand the problem and solution
+- **[Recording Data](ocap.md)** - Capture desktop interactions with `ocap`
+- **[Exploring Data](how_to_explorer_and_edit.md)** - View and analyze your recordings
+
+### 📚 **Technical Reference**
+Deep dive into the format and pipeline:
+
+- **[OWAMcap Format Guide](owamcap_format_guide.md)** - Complete technical specification
+- **[Data Pipeline](owa_data_pipeline.md)** - Transform recordings to training-ready datasets
+
+### 🛠️ **Tools & Ecosystem**
+- **[Data Viewer](viewer.md)** - Web-based visualization tool
+- **[Comparison with LeRobot](comparison_with_lerobot.md)** - Technical comparison with alternatives
+
+## 🤗 Community Datasets
+
+**Browse Available Datasets**: [🤗 datasets?other=OWA](https://huggingface.co/datasets?other=OWA)
+
+- **Growing Collection**: Hundreds of community-contributed datasets
+- **Standardized Format**: All use OWAMcap for seamless integration
+- **Interactive Preview**: [Hugging Face Spaces Visualizer](https://huggingface.co/spaces/open-world-agents/visualize_dataset)
+- **Easy Sharing**: Upload recordings directly with one command
+
+> 🚀 **Impact**: OWA has democratized desktop agent data, growing from zero to hundreds of public datasets in the unified OWAMcap format.
