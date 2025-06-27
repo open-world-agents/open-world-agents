@@ -34,21 +34,21 @@ View a summary of the MCAP file:
 
 ```bash
 $ owl mcap info example.mcap
-library:   mcap-owa-support 0.1.0; mcap 1.2.2
+library:   mcap-owa-support 0.5.1; mcap 1.3.0
 profile:   owa
-messages:  518
-duration:  6.8558623s
-start:     2025-03-21T17:06:30.7029335+09:00 (1742544390.702933500)
-end:       2025-03-21T17:06:37.5587958+09:00 (1742544397.558795800)
+messages:  864
+duration:  10.3574349s
+start:     2025-06-27T18:49:52.129876+09:00 (1751017792.129876000)   
+end:       2025-06-27T18:50:02.4873109+09:00 (1751017802.487310900)  
 compression:
-        zstd: [1/1 chunks] [48.19 KiB/9.42 KiB (80.44%)] [1.37 KiB/sec]
+        zstd: [1/1 chunks] [116.46 KiB/16.61 KiB (85.74%)] [1.60 KiB/sec] 
 channels:
-        (1) window            7 msgs (1.02 Hz)    : desktop/WindowInfo [jsonschema]
-        (2) keyboard/state    7 msgs (1.02 Hz)    : desktop/KeyboardState [jsonschema]
-        (3) mouse/state       7 msgs (1.02 Hz)    : desktop/MouseState [jsonschema]
-        (4) mouse           115 msgs (16.77 Hz)   : desktop/MouseEvent [jsonschema]
-        (5) screen          362 msgs (52.80 Hz)   : desktop/ScreenCaptured [jsonschema]
-        (6) keyboard         20 msgs (2.92 Hz)    : desktop/KeyboardEvent [jsonschema]
+        (1) window           11 msgs (1.06 Hz)    : desktop/WindowInfo [jsonschema]      
+        (2) keyboard/state   11 msgs (1.06 Hz)    : desktop/KeyboardState [jsonschema]   
+        (3) mouse/state      11 msgs (1.06 Hz)    : desktop/MouseState [jsonschema]      
+        (4) screen          590 msgs (56.96 Hz)   : desktop/ScreenCaptured [jsonschema]
+        (5) mouse           209 msgs (20.18 Hz)   : desktop/MouseEvent [jsonschema]
+        (6) keyboard         32 msgs (3.09 Hz)    : desktop/KeyboardEvent [jsonschema]
 channels: 6
 attachments: 0
 metadata: 0
