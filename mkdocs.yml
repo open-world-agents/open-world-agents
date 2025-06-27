@@ -109,13 +109,15 @@ nav:
       - Gstreamer Environment: env/plugins/gst.md
   - Data in OWA:
     - data/index.md
-    - OWAMcap Infographic: data/infographic.html
+    - Why OWAMcap?: data/owamcap_introduction.md
     - OWAMcap Format: data/data_format.md
     - 🚀 Data Pipeline (MCAP → VLA Training): data/owa_data_pipeline.md
     - Comparison with LeRobot: data/comparison_with_lerobot.md
     - data/ocap.md
     - data/how_to_explorer_and_edit.md
     - data/viewer.md
+  - CLI Tools:
+    - cli.md
   - 🚀 Awesome Examples (WIP):
     - Multimodal Game Agent: examples/multimodal_game_agent.md
     - Omniparse + InternLM GUI Agent: examples/gui_agent.md

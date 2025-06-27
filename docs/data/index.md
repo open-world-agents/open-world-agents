@@ -6,7 +6,7 @@ Even more scarce are datasets that (1) contain high-frequency screen data, (2) h
 
 To address this gap, open-world-agents provides the following three solutions:
 
-1. **File Format - `OWAMcap`**: A high-performance, self-contained, flexible container file format for multimodal desktop log data, powered by the open-source container file format [mcap](https://mcap.dev/). [Learn more...](data_format.md)
+1. **File Format - `OWAMcap`**: A high-performance, self-contained, flexible container file format for multimodal desktop log data, powered by the open-source container file format [mcap](https://mcap.dev/). [Why OWAMcap?](owamcap_introduction.md) | [Technical Guide](data_format.md)
 
 2. **Desktop Recorder - `ocap your-filename.mcap`**: A powerful, efficient, and easy-to-use desktop recorder that captures keyboard/mouse and high-frequency screen data.
     - Powered by [`owa-env-gst`](../env/plugins/gst.md), ensuring superior performance compared to alternatives. [Learn more...](ocap.md)

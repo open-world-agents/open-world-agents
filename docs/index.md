@@ -42,6 +42,7 @@ Capture, store, and analyze multimodal desktop interaction data.
 | **[Data Overview](data/index.md)** | Complete data pipeline for desktop agents |
 | **[OWAMcap Format](data/data_format.md)** | Specialized format capturing complete desktop interactions (screen + events) with nanosecond precision |
 | **[Desktop Recorder (ocap)](data/ocap.md)** | High-performance desktop recording tool |
+| **[CLI Tools (owl)](cli.md)** | Command-line interface for data analysis and management |
 | **[Data Viewer](data/viewer.md)** | Visualize and analyze recorded sessions |
 | **[Data Explorer](data/how_to_explorer_and_edit.md)** | Tools for data exploration and editing |
 
