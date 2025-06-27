@@ -1,6 +1,6 @@
 # Data in OWA: Complete Desktop Agent Data Pipeline
 
-Desktop AI needs high-quality, synchronized multimodal data: screen captures, mouse/keyboard events, and window context. OWA provides the complete pipeline from recording to training.
+Desktop AI needs high-quality, synchronized multimodal data: screen captures, mouse/keyboard events, and window context. OWA provides the **complete pipeline** from recording to training.
 
 ## 🚀 Quick Start: Record → Train in 3 Steps
 

@@ -369,7 +369,7 @@ OWAMcap's key advantage is efficient media handling through external media refer
     owl mcap info session.mcap
 
     # List messages
-    owl mcap cat session.mcap --n 10 --topics screen mouse
+    owl mcap cat session.mcap --n 10 --topics screen --topics mouse
 
     # Migrate between versions
     owl mcap migrate run session.mcap
