@@ -4,7 +4,7 @@
     OWAMcap is a specification for using the open-source [MCAP](https://mcap.dev/) container format with Open World Agents (OWA) message definitions. It provides an efficient way to store and process multimodal desktop interaction data including screen captures, mouse events, keyboard events, and window information.
 
 !!! tip "New to OWAMcap?"
-    Start with **[Why OWAMcap?](why_owamcap.md)** to understand the problem it solves and why you should use it.
+    Start with **[Why OWAMcap?](../getting-started/why-owamcap.md)** to understand the problem it solves and why you should use it.
 
 ## Table of Contents
 
@@ -12,9 +12,9 @@
 - [Core Concepts](#core-concepts) - Essential message types and features
 - [Working with OWAMcap](#working-with-owamcap) - Reading, writing, and media handling
 - [Storage & Performance](#storage--performance) - Efficiency characteristics
-- [Custom Message Types](#custom-message-types) - Extend OWAMcap with your own message types
-- [Advanced Usage](#advanced-usage) - Integrations and best practices
-- [Migration & Troubleshooting](#migration--troubleshooting) - Practical help
+- [Extending OWAMcap](#extending-owamcap) - Custom message types and extensibility
+- [Advanced Usage](#advanced-usage) - Real-world integrations and best practices
+- [Migration & Troubleshooting](#migration--troubleshooting) - Practical help and common issues
 - [Technical Reference](#technical-reference) - Specifications and standards
 
 ## Quick Start
@@ -33,7 +33,7 @@
 
     ```bash
     # Download example file
-    wget https://github.com/open-world-agents/open-world-agents/raw/main/docs/data/example.mcap
+    wget https://github.com/open-world-agents/open-world-agents/raw/main/docs/data/examples/example.mcap
 
     # View file info
     owl mcap info example.mcap
@@ -60,20 +60,11 @@ OWAMcap combines the robustness of the MCAP container format with OWA's speciali
 ### Key Terms
 
 !!! info "Essential Terminology"
-    - **MCAP**: A modular container file format for heterogeneous, timestamped data (like a ZIP file for time-series data)
+    - **MCAP**: A modular container file format for heterogeneous, timestamped data (like a ZIP file for time-series data). Developed by [Foxglove](https://mcap.dev/), MCAP provides efficient random access, compression, and self-describing schemas. Widely adopted in robotics (ROS ecosystem), autonomous vehicles, and IoT applications for its performance and interoperability.
     - **Topic**: A named channel in MCAP files (e.g., "screen", "mouse") that groups related messages
     - **Lazy Loading**: Loading data only when needed, crucial for memory efficiency with large datasets
 
 ### What Makes a File "OWAMcap"
-
-=== "Technical Definition"
-    - **Base Format**: Standard MCAP container format
-    - **Profile**: `owa` designation in MCAP metadata
-    - **Schema Encoding**: JSON Schema
-    - **Message Interface**: All messages implement `BaseMessage` from `owa.core.message`
-    - **Standard Messages**: Core message types from `owa-msgs` package
-
-    **Why MCAP?** Efficient storage and retrieval for heterogeneous timestamped data with minimal dependencies. This is format after ROSBag, but designed for modern use cases and optimized for random access.
 
 === "Architecture Overview"
     ```
@@ -90,7 +81,7 @@ OWAMcap combines the robustness of the MCAP container format with OWA's speciali
                                     │ References
                                     ▼
     ┌─────────────────────────────────────────────────────────────┐
-    │                External Media Files (.mkv, .png)           │
+    │                External Media Files (.mkv, .png)            │
     │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐  │
     │  │  Video Frames   │  │  Screenshots    │  │   Audio     │  │
     │  │  - H.265 codec  │  │  - PNG/JPEG     │  │  - Optional │  │
@@ -99,6 +90,16 @@ OWAMcap combines the robustness of the MCAP container format with OWA's speciali
     └─────────────────────────────────────────────────────────────┘
     ```
 
+=== "Technical Definition"
+    - **Base Format**: Standard [MCAP](https://mcap.dev/) container format
+    - **Profile**: `owa` designation in MCAP metadata
+    - **Schema Encoding**: JSON Schema
+    - **Message Interface**: All messages implement `BaseMessage` from `owa.core.message`
+    - **Standard Messages**: Core message types from `owa-msgs` package
+
+    **Why MCAP?** Built as the successor to ROSBag, MCAP offers efficient storage and retrieval for heterogeneous timestamped data with minimal dependencies. It's designed for modern use cases with optimized random access, built-in compression, and language-agnostic schemas. The format has gained significant adoption across the robotics community, autonomous vehicle companies (Cruise, Waymo), and IoT platforms due to its performance advantages and excellent tooling ecosystem.
+
+
 === "Practical Example"
     ```bash
     $ owl mcap info example.mcap
@@ -106,14 +107,14 @@ OWAMcap combines the robustness of the MCAP container format with OWA's speciali
     profile:   owa
     messages:  864
     duration:  10.3574349s
-    start:     2025-06-27T18:49:52.129876+09:00 (1751017792.129876000)   
-    end:       2025-06-27T18:50:02.4873109+09:00 (1751017802.487310900)  
+    start:     2025-06-27T18:49:52.129876+09:00 (1751017792.129876000)
+    end:       2025-06-27T18:50:02.4873109+09:00 (1751017802.487310900)
     compression:
-            zstd: [1/1 chunks] [116.46 KiB/16.61 KiB (85.74%)] [1.60 KiB/sec] 
+            zstd: [1/1 chunks] [116.46 KiB/16.61 KiB (85.74%)] [1.60 KiB/sec]
     channels:
-            (1) window           11 msgs (1.06 Hz)    : desktop/WindowInfo [jsonschema]      
-            (2) keyboard/state   11 msgs (1.06 Hz)    : desktop/KeyboardState [jsonschema]   
-            (3) mouse/state      11 msgs (1.06 Hz)    : desktop/MouseState [jsonschema]      
+            (1) window           11 msgs (1.06 Hz)    : desktop/WindowInfo [jsonschema]
+            (2) keyboard/state   11 msgs (1.06 Hz)    : desktop/KeyboardState [jsonschema]
+            (3) mouse/state      11 msgs (1.06 Hz)    : desktop/MouseState [jsonschema]
             (4) screen          590 msgs (56.96 Hz)   : desktop/ScreenCaptured [jsonschema]
             (5) mouse           209 msgs (20.18 Hz)   : desktop/MouseEvent [jsonschema]
             (6) keyboard         32 msgs (3.09 Hz)    : desktop/KeyboardEvent [jsonschema]
@@ -131,6 +132,8 @@ OWAMcap combines the robustness of the MCAP container format with OWA's speciali
 - **Extensible**: Support for custom message types through entry points
 
 ### Core Message Types
+
+OWA provides standardized message types through the `owa-msgs` package for consistent desktop interaction recording:
 
 | Message Type | Description |
 |--------------|-------------|
@@ -160,6 +163,17 @@ OWAMcap combines the robustness of the MCAP container format with OWA's speciali
         - [Keyboard Input Overview, Microsoft](https://learn.microsoft.com/en-us/windows/win32/inputdev/about-keyboard-input)
         - [Virtual-Key Codes, Microsoft](https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes)
 
+=== "KeyboardState"
+    ```python
+    class KeyboardState(OWAMessage):
+        _type = "desktop/KeyboardState"
+
+        buttons: List[int]  # List of currently pressed virtual key codes
+
+    # Example: No keys currently pressed
+    KeyboardState(buttons=[])
+    ```
+
 === "MouseEvent"
     ```python
     class MouseEvent(OWAMessage):
@@ -174,17 +188,6 @@ OWAMcap combines the robustness of the MCAP container format with OWA's speciali
     MouseEvent(event_type="click", x=100, y=200, button="left")
     ```
 
-=== "KeyboardState"
-    ```python
-    class KeyboardState(OWAMessage):
-        _type = "desktop/KeyboardState"
-
-        buttons: List[int]  # List of currently pressed virtual key codes
-
-    # Example: No keys currently pressed
-    KeyboardState(buttons=[])
-    ```
-
 === "MouseState"
     ```python
     class MouseState(OWAMessage):
@@ -197,6 +200,21 @@ OWAMcap combines the robustness of the MCAP container format with OWA's speciali
     # Example: Mouse at position with no buttons pressed
     MouseState(x=1594, y=1112, buttons=[])
     ```
+
+=== "ScreenCaptured"
+    ```python
+    class ScreenCaptured(OWAMessage):
+        _type = "desktop/ScreenCaptured"
+
+        utc_ns: Optional[int] = None                    # System timestamp (nanoseconds)
+        source_shape: Optional[Tuple[int, int]] = None  # Original (width, height)
+        shape: Optional[Tuple[int, int]] = None         # Current (width, height)
+        media_ref: Optional[MediaRef] = None            # URI or file path reference
+        frame_arr: Optional[np.ndarray] = None          # In-memory BGRA array (excluded from JSON)
+    ```
+
+    !!! tip "Working with ScreenCaptured Messages"
+        For detailed information on creating, loading, and working with ScreenCaptured messages, see the **[Media Handling](#media-handling)** section below. It covers MediaRef formats, lazy loading, and practical usage patterns.
 
 === "WindowInfo"
     ```python
@@ -214,37 +232,25 @@ OWAMcap combines the robustness of the MCAP container format with OWA's speciali
     )
     ```
 
-=== "ScreenCaptured ⭐"
-    ```python
-    class ScreenCaptured(OWAMessage):
-        _type = "desktop/ScreenCaptured"
-
-        utc_ns: Optional[int] = None                    # System timestamp (nanoseconds)
-        source_shape: Optional[Tuple[int, int]] = None  # Original (width, height)
-        shape: Optional[Tuple[int, int]] = None         # Current (width, height)
-        media_ref: Optional[MediaRef] = None            # URI or file path reference
-        frame_arr: Optional[np.ndarray] = None          # In-memory BGRA array (excluded from JSON)
-
-    # MediaRef supports: URI(data:image/png;base64,... | file:///path | http[s]://...)
-    # or file path(/absolute/path | relative/path) for both images and videos
-
-    # Creation patterns:
-    # - From raw image: ScreenCaptured(frame_arr=bgra_array).embed_as_data_uri()
-    # - From image file: ScreenCaptured(media_ref={"uri": "/path/to/image.png"})
-    # - From video frame: ScreenCaptured(media_ref={"uri": "/path/video.mkv", "pts_ns": 123456})
-    # - From file URI: ScreenCaptured(media_ref={"uri": "file:///path/to/video.mp4", "pts_ns": 123456})
-    # - From URL: ScreenCaptured(media_ref={"uri": "https://example.com/image.png"})
-    # - From data URI: ScreenCaptured(media_ref={"uri": "data:image/png;base64,..."})
-    ```
-
 ## Working with OWAMcap
+
+This section covers the essential operations for working with OWAMcap files in your applications. Whether you're processing recorded desktop sessions or creating new datasets, these patterns will help you work efficiently with the format.
 
 ### Media Handling
 
-OWAMcap's key advantage is efficient media handling through external media references:
+OWAMcap's key advantage is efficient media handling through external media references. Instead of storing large image/video data directly in the MCAP file, OWAMcap stores lightweight references to external media files, keeping the MCAP file small and fast to process.
 
 === "Creating ScreenCaptured Messages"
-    MediaRef supports: `URI(data:image/png;base64,... | file:///path | http[s]://...) or file path(/absolute/path | relative/path)` for both images and videos.
+
+    !!! tip "Understanding MediaRef"
+        MediaRef is OWAMcap's way of referencing media content. It supports multiple formats:
+
+        - **File paths**: `/absolute/path` or `relative/path`
+        - **File URIs**: `file:///path/to/file`
+        - **HTTP URLs**: `https://example.com/image.png`
+        - **Data URIs**: `data:image/png;base64,...` (embedded content)
+
+        For videos, add `pts_ns` (presentation timestamp) to specify which frame.
 
     ```python
     from owa.core import MESSAGES
@@ -275,7 +281,15 @@ OWAMcap's key advantage is efficient media handling through external media refer
     ```
 
 === "Loading and Accessing Frame Data"
-    **Lazy Loading**: Frame data is not loaded until explicitly requested, providing enormous advantages when working with external references - you can iterate through thousands of messages without loading actual frame data.
+
+    !!! info "Why Lazy Loading Matters"
+        **Lazy Loading** means frame data is only loaded when you explicitly request it. This is crucial for performance:
+
+        - ✅ **Fast**: Iterate through thousands of messages instantly
+        - ✅ **Memory efficient**: Only load frames you actually need
+        - ✅ **Scalable**: Work with datasets larger than your RAM
+
+        Without lazy loading, opening a 1-hour recording would try to load ~200GB of frame data into memory!
 
     ```python
     # IMPORTANT: For MCAP files, resolve relative paths first
@@ -397,7 +411,7 @@ Desktop screen capture at 600 × 800 resolution, 13 s @ 60 Hz:
 | H.265 (keyframe 0.5s, nvd3d11h265enc)| 14.5 KB avg    | 11.3 MB    | 91.7×               |
 
 !!! note "H.265 Configuration"
-    The H.265 settings shown above (keyframe 0.5s, nvd3d11h265enc) are the same as those used by [ocap](ocap.md) for efficient desktop recording.
+    The H.265 settings shown above (keyframe 0.5s, nvd3d11h265enc) are the same as those used by [ocap](../getting-started/recording-data.md) for efficient desktop recording.
 
 **Key advantages:**
 
@@ -407,168 +421,67 @@ Desktop screen capture at 600 × 800 resolution, 13 s @ 60 Hz:
 - **Standard Tools:** preview in any video player and edit with off-the-shelf software  
 
 
-## Custom Message Types
+## Extending OWAMcap
 
-OWAMcap's extensible design allows you to define and register custom message types for domain-specific data while maintaining compatibility with the standard OWAMcap ecosystem.
+### Custom Message Types
 
-### Creating Custom Messages
+Need to store domain-specific data beyond standard desktop interactions? OWAMcap supports custom message types for sensors, gaming, robotics, and more.
 
-All custom messages must inherit from `OWAMessage` and follow the domain/MessageType naming convention:
+!!! info "Custom Messages Documentation"
+    **[📖 Custom Message Types Guide](custom-messages.md)** - Complete guide to creating, registering, and using custom message types in OWAMcap.
 
-```python
-from owa.core.message import OWAMessage
-from typing import Optional, List
-from pydantic import Field, validator
-import time
-
-class TemperatureReading(OWAMessage):
-    _type = "sensors/TemperatureReading"
-
-    temperature: float          # Temperature in Celsius
-    humidity: float = Field(..., ge=0, le=100)  # Relative humidity (0-100%)
-    location: str              # Sensor location identifier
-    timestamp: Optional[int] = Field(default_factory=time.time_ns)  # Unix timestamp in nanoseconds
-
-    @validator('temperature')
-    def validate_temperature(cls, v):
-        if v < -273.15:  # Absolute zero check
-            raise ValueError('Temperature cannot be below absolute zero')
-        return v
-
-class GameEvent(OWAMessage):
-    _type = "gaming/PlayerAction"
-
-    action_type: str           # "move", "attack", "interact"
-    player_id: str            # Unique player identifier
-    coordinates: List[float] = Field(..., min_items=3, max_items=3)  # [x, y, z] world coordinates
-    metadata: dict = {}        # Additional action-specific data
-
-    @validator('action_type')
-    def validate_action_type(cls, v):
-        allowed_actions = {'move', 'attack', 'interact', 'idle'}
-        if v not in allowed_actions:
-            raise ValueError(f'action_type must be one of {allowed_actions}')
-        return v
-```
-
-### Package Registration
-
-Custom messages are registered through Python entry points in your package's `pyproject.toml`:
-
-```toml
-[project.entry-points."owa.msgs"]
-"sensors/TemperatureReading" = "my_sensors.messages:TemperatureReading"
-"gaming/PlayerAction" = "my_game.events:GameEvent"
-"custom/MyMessage" = "my_package.messages:MyMessage"
-```
-
-**Important**: The package containing your custom messages must be installed in the same environment where you're using OWAMcap for the entry points to be discovered:
-
-```bash
-# Install your custom message package
-pip install my-custom-messages
-
-# Or install in development mode
-pip install -e /path/to/my-custom-messages
-
-# Now custom messages are available in the registry
-python -c "from owa.core import MESSAGES; print('sensors/TemperatureReading' in MESSAGES)"
-```
-
-### Usage with OWAMcap
-
-Once registered, custom messages work seamlessly with OWAMcap tools:
-
-```python
-from mcap_owa.highlevel import OWAMcapWriter, OWAMcapReader
-from owa.core import MESSAGES
-
-# Access your custom message through the registry
-TemperatureReading = MESSAGES['sensors/TemperatureReading']
-
-# Write custom messages to MCAP
-with OWAMcapWriter("sensor_data.mcap") as writer:
-    reading = TemperatureReading(
-        temperature=23.5,
-        humidity=65.2,
-        location="office_desk"
-    )
-    writer.write_message(reading, topic="temperature", timestamp=reading.timestamp)
-
-# Read custom messages from MCAP
-with OWAMcapReader("sensor_data.mcap") as reader:
-    for msg in reader.iter_messages(topics=["temperature"]):
-        temp_data = msg.decoded
-        print(f"Temperature: {temp_data.temperature}°C at {temp_data.location}")
-```
-
-### Best Practices
-
-=== "Naming Conventions"
-    - **Domain**: Use descriptive domain names (`sensors`, `gaming`, `robotics`)
-    - **MessageType**: Use PascalCase (`TemperatureReading`, `PlayerAction`)
-    - **Avoid conflicts**: Check existing message types before naming
-    - **Be specific**: `sensors/TemperatureReading` vs generic `sensors/Reading`
-
-=== "Schema Design"
-    - **Use type hints**: Enable automatic JSON schema generation
-    - **Leverage pydantic features**: See [Pydantic documentation](https://docs.pydantic.dev/) for validation, field constraints, and defaults
-    - **Documentation**: Include docstrings for complex message types
-
-=== "Package Structure"
-    ```
-    my_custom_package/
-    ├── pyproject.toml              # Entry point registration
-    ├── my_package/
-    │   ├── __init__.py
-    │   └── messages.py             # Message definitions
-    └── tests/
-        └── test_messages.py        # Message validation tests
-    ```
-
-### CLI Integration
-
-Custom messages automatically work with OWA CLI tools:
-
-```bash
-# List all available message types (including custom)
-owl messages list
-
-# View custom message schema
-owl messages show sensors/TemperatureReading
-
-# View custom messages in MCAP files
-owl mcap cat sensor_data.mcap --topics temperature
-```
+    Covers: message creation, package registration, best practices, and CLI integration.
 
 ## Advanced Usage
 
-### Integration Examples
+### OWA Data Pipeline Integration
 
-=== "Computer Vision"
-    ```python
-    from mcap_owa.highlevel import OWAMcapReader
+The most important integration for OWAMcap is the **OWA Data Pipeline** - a streamlined 2-stage processing system that transforms raw MCAP recordings into training-ready datasets for Vision-Language-Action (VLA) models:
 
-    def detect_objects(mcap_path):
-        with OWAMcapReader(mcap_path) as reader:
-            for msg in reader.iter_messages(topics=["screen"]):
-                frame = msg.decoded.to_rgb_array()
-                results = model.detect(frame)
-                yield msg.timestamp, results
-    ```
+```bash
+# Stage 1: Raw MCAP → Event Dataset
+python scripts/01_raw_events_to_event_dataset.py --train-dir ./mcaps --output-dir ./event-dataset
 
-=== "Behavior Analysis"
-    ```python
-    def analyze_user_behavior(mcap_path):
-        events = {"mouse": [], "keyboard": [], "screen": []}
-        with OWAMcapReader(mcap_path) as reader:
-            for msg in reader.iter_messages():
-                events[msg.topic].append({
-                    "timestamp": msg.timestamp,
-                    "data": msg.decoded
-                })
-        return compute_interaction_patterns(events)
-    ```
+# Stage 2: Event Dataset → Binned Dataset (optional)
+python scripts/02_event_dataset_to_binned_dataset.py --input-dir ./event-dataset --output-dir ./binned-dataset
+
+# Stage 3: Load and train
+python train.py --dataset ./binned-dataset
+```
+
+#### 3-Stage Pipeline Architecture
+
+**Stage 1: Raw MCAP → Event Dataset**
+
+- **Purpose**: Extract and downsample raw events from MCAP files while preserving temporal precision
+- **Output**: Flat structure optimized for temporal queries with configurable rate limiting
+- **Schema**: `{file_path, topic, timestamp_ns, message_type, mcap_message}`
+- **Use case**: High-frequency training, custom binning, event-level analysis
+
+**Stage 2: Event Dataset → Binned Dataset**
+
+- **Purpose**: Aggregate events into fixed-rate time bins for uniform temporal sampling
+- **Output**: State-action separation with configurable FPS and filtering
+- **Schema**: `{file_path, bin_idx, timestamp_ns, state, actions}`
+- **Use case**: Traditional VLA training, fixed-rate processing, efficient filtering
+
+**Stage 3: Dataset Transforms**
+
+- **Purpose**: On-demand processing during training (not preprocessing)
+- **Features**: Lazy image loading, configurable encoding, HuggingFace compatibility
+- **Integration**: Direct compatibility with `datasets.Dataset.set_transform()`
+
+#### Pipeline Benefits
+
+**Key Design Principles:**
+
+- **🔄 Flexible Pipeline**: Skip binning and use Event Dataset directly, or use traditional Binned Dataset approach
+- **🚀 On-the-fly Processing**: Dataset transforms apply encoding and image loading during training, not preprocessing
+- **🤗 HuggingFace Integration**: Direct compatibility with `datasets.Dataset.set_transform()`
+- **⚡ Performance Optimized**: Efficient data loading with lazy image loading and configurable encoding
+
+!!! tip "Complete Pipeline Documentation"
+    See **[🚀 Data Pipeline](data-pipeline.md)** for detailed documentation on each stage, configuration options, performance optimization, and integration with training frameworks.
 
 ### Best Practices
 
@@ -626,24 +539,46 @@ owl mcap cat sensor_data.mcap --topics temperature
         └── test/
     ```
 
-    See [OWA Data Pipeline](owa_data_pipeline.md) for complete pipeline details.
+    See [OWA Data Pipeline](data-pipeline.md) for complete pipeline details.
 
 ## Migration & Troubleshooting
 
 ### File Migration
 
-The `owl mcap migrate` command handles version upgrades automatically:
+OWAMcap format evolves over time. When you encounter older files that need updating, use the migration tool:
+
+!!! info "When Do You Need Migration?"
+    - **Error messages** about unsupported schema versions
+    - **Missing fields** when loading older recordings
+    - **Compatibility warnings** from OWA tools
+    - **Performance issues** with legacy file formats
+
+**Migration Commands:**
 
 ```bash
-# Migrate to latest version
+# Check if migration is needed
+owl mcap info old_file.mcap  # Look for version warnings
+
+# Preview what will change (safe, no modifications)
+owl mcap migrate run old_file.mcap --dry-run
+
+# Migrate single file (creates backup automatically)
 owl mcap migrate run old_file.mcap
 
-# Migrate multiple files
-owl mcap migrate run file1.mcap file2.mcap
+# Migrate multiple files in batch
+owl mcap migrate run *.mcap
 
-# Dry run to see what would be migrated
-owl mcap migrate run old_file.mcap --dry-run
+# Migrate with custom output location
+owl mcap migrate run old_file.mcap --output new_file.mcap
 ```
+
+!!! tip "Migration Safety"
+    - **Automatic backups**: Original files are preserved as `.backup`
+    - **Validation**: Migrated files are automatically validated
+    - **Rollback**: Use backup files if migration causes issues
+
+!!! info "Complete Migration Reference"
+    For detailed information about all migration commands and options, see the [OWL CLI Reference - MCAP Migrate](http://localhost:7869/owl_cli_reference/#owl-mcap-migrate) documentation.
 
 ### Common Issues
 
@@ -684,16 +619,16 @@ For detailed technical specifications, see:
 
 **Standard Topics:**
 
-- `screen` → `desktop/ScreenCaptured`
-- `mouse` → `desktop/MouseEvent`
 - `keyboard` → `desktop/KeyboardEvent`
 - `keyboard/state` → `desktop/KeyboardState`
+- `mouse` → `desktop/MouseEvent`
 - `mouse/state` → `desktop/MouseState`
+- `screen` → `desktop/ScreenCaptured`
 - `window` → `desktop/WindowInfo`
 
 ## Next Steps
 
-- **[Explore and Edit](how_to_explorer_and_edit.md)**: Learn to work with OWAMcap files
-- **[Data Pipeline](owa_data_pipeline.md)**: Process OWAMcap for ML training
-- **[Viewer](viewer.md)**: Visualize OWAMcap data interactively
-- **[Comparison with LeRobot](comparison_with_lerobot.md)**: See how OWAMcap differs from other formats
+- **[Explore and Edit](../getting-started/exploring-data.md)**: Learn to work with OWAMcap files
+- **[Data Pipeline](data-pipeline.md)**: Process OWAMcap for ML training
+- **[Viewer](../tools/viewer.md)**: Visualize OWAMcap data interactively
+- **[Comparison with LeRobot](../tools/comparison-with-lerobot.md)**: See how OWAMcap differs from other formats
