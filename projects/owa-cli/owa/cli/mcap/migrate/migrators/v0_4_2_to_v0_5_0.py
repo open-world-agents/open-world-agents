@@ -24,6 +24,8 @@ structured media reference system. Key changes:
 - `pts` → `pts_ns` (in ExternalVideoRef)
 - Simple path/pts fields → structured MediaRef system (EmbeddedRef, ExternalImageRef, ExternalVideoRef)
 - Enhanced media reference types with proper type discrimination
+
+NOTE: These migrators are locked, separate script with separate dependency sets. DO NOT change the contents unless you know what you are doing.
 """
 
 from pathlib import Path

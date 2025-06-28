@@ -1,13 +1,11 @@
 """Quick access commands for common operations."""
 
 import typer
-from rich.console import Console
 
+from ..console import console
 from . import list as list_module
 from . import search as search_module
 from . import show as show_module
-
-console = Console()
 
 
 def ls(
@@ -18,7 +16,7 @@ def ls(
         # Show specific namespace with components
         show_module.show_plugin(
             namespace=namespace,
-            show_components=True,
+            components=True,
             component_type=None,
             search=None,
             details=False,
@@ -49,8 +47,9 @@ def find(
 
 def namespaces():
     """List all available namespaces."""
-    from owa.core import list_components
     from collections import Counter
+
+    from owa.core import list_components
 
     # Collect all namespaces
     all_namespaces = set()

@@ -19,6 +19,8 @@
 MCAP Migrator: v0.3.2 → v0.4.2
 
 Migrates schema format from module-based to domain-based. See OEP-0006.
+
+NOTE: These migrators are locked, separate script with separate dependency sets. DO NOT change the contents unless you know what you are doing.
 """
 
 from pathlib import Path
