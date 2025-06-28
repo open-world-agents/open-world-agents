@@ -111,15 +111,16 @@ nav:
   - Data in OWA:
     - Overview: data/index.md
     - Getting Started:
-      - Why OWAMcap?: data/why_owamcap.md
-      - Recording Data: data/ocap.md
-      - Exploring Data: data/how_to_explorer_and_edit.md
+      - Why OWAMcap?: data/getting-started/why-owamcap.md
+      - Recording Data: data/getting-started/recording-data.md
+      - Exploring Data: data/getting-started/exploring-data.md
     - Technical Reference:
-      - OWAMcap Format Guide: data/owamcap_format_guide.md
-      - 🚀 Data Pipeline (MCAP → VLA Training): data/owa_data_pipeline.md
+      - OWAMcap Format Guide: data/technical-reference/format-guide.md
+      - Custom Message Types: data/technical-reference/custom-messages.md
+      - 🚀 Data Pipeline (MCAP → VLA Training): data/technical-reference/data-pipeline.md
     - Tools & Comparison:
-      - Data Viewer: data/viewer.md
-      - Comparison with LeRobot: data/comparison_with_lerobot.md
+      - Data Viewer: data/tools/viewer.md
+      - Comparison with LeRobot: data/tools/comparison-with-lerobot.md
   - CLI Tools:
     - OWL CLI Reference: owl_cli_reference.md
   - 🚀 Awesome Examples (WIP):

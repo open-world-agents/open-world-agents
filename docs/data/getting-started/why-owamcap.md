@@ -26,7 +26,7 @@ Dataset C (OWAMcap) ──┘
 
 ## From Recording to Training in 3 Commands
 
-OWAMcap integrates with the complete [OWA Data Pipeline](owa_data_pipeline.md):
+OWAMcap integrates with the complete [OWA Data Pipeline](../technical-reference/data-pipeline.md):
 
 ```bash
 # 1. Record desktop interaction
@@ -61,4 +61,4 @@ channels:  screen, mouse, keyboard, window
 
 ---
 
-**Ready to get started?** Continue to the [OWAMcap Format Guide](owamcap_format_guide.md) for technical details.
+**Ready to get started?** Continue to the [OWAMcap Format Guide](../technical-reference/format-guide.md) for technical details.

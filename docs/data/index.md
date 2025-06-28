@@ -20,19 +20,19 @@ python train.py --dataset ./event-dataset
 ### 🎯 **Getting Started**
 New to OWA data? Start here:
 
-- **[Why OWAMcap?](why_owamcap.md)** - Understand the problem and solution
-- **[Recording Data](ocap.md)** - Capture desktop interactions with `ocap`
-- **[Exploring Data](how_to_explorer_and_edit.md)** - View and analyze your recordings
+- **[Why OWAMcap?](getting-started/why-owamcap.md)** - Understand the problem and solution
+- **[Recording Data](getting-started/recording-data.md)** - Capture desktop interactions with `ocap`
+- **[Exploring Data](getting-started/exploring-data.md)** - View and analyze your recordings
 
 ### 📚 **Technical Reference**
 Deep dive into the format and pipeline:
 
-- **[OWAMcap Format Guide](owamcap_format_guide.md)** - Complete technical specification
-- **[Data Pipeline](owa_data_pipeline.md)** - Transform recordings to training-ready datasets
+- **[OWAMcap Format Guide](technical-reference/format-guide.md)** - Complete technical specification
+- **[Data Pipeline](technical-reference/data-pipeline.md)** - Transform recordings to training-ready datasets
 
 ### 🛠️ **Tools & Ecosystem**
-- **[Data Viewer](viewer.md)** - Web-based visualization tool
-- **[Comparison with LeRobot](comparison_with_lerobot.md)** - Technical comparison with alternatives
+- **[Data Viewer](tools/viewer.md)** - Web-based visualization tool
+- **[Comparison with LeRobot](tools/comparison-with-lerobot.md)** - Technical comparison with alternatives
 
 ## 🤗 Community Datasets
 

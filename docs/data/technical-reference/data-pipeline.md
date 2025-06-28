@@ -443,6 +443,6 @@ Ready to start processing your MCAP data? Here's your action plan:
 
 For more details on specific components:
 
-- [OWAMcap Format Overview](index.md) - Understanding the underlying data format
-- [Desktop Recording with ocap](ocap.md) - Creating your own MCAP datasets
-- [Data Exploration Tools](how_to_explorer_and_edit.md) - Analyzing your processed datasets
+- [OWAMcap Format Overview](../index.md) - Understanding the underlying data format
+- [Desktop Recording with ocap](../getting-started/recording-data.md) - Creating your own MCAP datasets
+- [Data Exploration Tools](../getting-started/exploring-data.md) - Analyzing your processed datasets
