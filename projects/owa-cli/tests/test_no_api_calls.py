@@ -35,11 +35,11 @@ def test_no_github_api_calls_during_version_check():
 
 def test_main_cli_entry_point_no_api_calls():
     """Test that the main CLI entry point doesn't make API calls."""
-    from owa.cli import main
+    from owa.cli import callback
 
     with patch("requests.get") as mock_get:
         # This should not make API calls due to environment variable
-        main()
+        callback()
 
         # Verify no API calls were made
         mock_get.assert_not_called()

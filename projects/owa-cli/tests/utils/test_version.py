@@ -187,31 +187,3 @@ class TestVersionUtilityFunctions:
             # Restore original value
             if original_value is not None:
                 os.environ["OWA_DISABLE_VERSION_CHECK"] = original_value
-
-
-class TestVersionCheckingIntegration:
-    """Test integration of version checking with CLI entry point."""
-
-    def test_main_cli_respects_env_var(self):
-        """Test that main CLI entry point respects the environment variable."""
-        # Save original value
-        original_value = os.environ.get("OWA_DISABLE_VERSION_CHECK")
-
-        try:
-            # Set environment variable to disable version check
-            os.environ["OWA_DISABLE_VERSION_CHECK"] = "1"
-
-            # Import and test the main function
-            from owa.cli import main
-
-            with patch("owa.cli.utils.requests.get") as mock_get:
-                # Should not raise any exceptions and not make API calls
-                main()
-                mock_get.assert_not_called()
-
-        finally:
-            # Restore original value
-            if original_value is None:
-                os.environ.pop("OWA_DISABLE_VERSION_CHECK", None)
-            else:
-                os.environ["OWA_DISABLE_VERSION_CHECK"] = original_value

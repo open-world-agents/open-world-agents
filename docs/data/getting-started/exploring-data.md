@@ -34,7 +34,7 @@ Choose the approach that fits your use case:
 2. Upload your `.mcap` file or enter a HuggingFace dataset ID
 3. Use timeline controls to explore synchronized data
 
-**Limitations**: 100MB file limit for public hosting → [Self-hosting guide](viewer.md)
+**Limitations**: 100MB file limit for public hosting → [Self-hosting guide](../tools/viewer.md)
 
 ### 💻 Command Line Analysis
 
@@ -85,7 +85,7 @@ channels:  screen(590), mouse(209), keyboard(32), window(11)
 
 **Best for**: Custom analysis, data processing, integration
 
-For programmatic access, see the [OWAMcap Format Guide](owamcap_format_guide.md#working-with-owamcap) which covers:
+For programmatic access, see the [OWAMcap Format Guide](../technical-reference/format-guide.md#working-with-owamcap) which covers:
 
 - Reading and writing MCAP files
 - Working with media references
@@ -126,7 +126,7 @@ owl mcap cat session.mcap --topics screen --n 100
 
 ## 🛠️ Creating and Modifying Files
 
-For programmatic creation and editing of OWAMcap files, see the comprehensive guide in [OWAMcap Format Guide](owamcap_format_guide.md#working-with-owamcap), which covers:
+For programmatic creation and editing of OWAMcap files, see the comprehensive guide in [OWAMcap Format Guide](../technical-reference/format-guide.md#working-with-owamcap), which covers:
 
 - **Writing MCAP files** with Python API
 - **Custom message types** and registration
@@ -135,6 +135,6 @@ For programmatic creation and editing of OWAMcap files, see the comprehensive gu
 
 ## 📊 Next Steps
 
-- **[Data Pipeline](owa_data_pipeline.md)** - Transform recordings for ML training
-- **[Format Guide](owamcap_format_guide.md)** - Complete technical reference
-- **[Viewer Setup](viewer.md)** - Self-host for large datasets
+- **[Data Pipeline](../technical-reference/data-pipeline.md)** - Transform recordings for ML training
+- **[Format Guide](../technical-reference/format-guide.md)** - Complete technical reference
+- **[Viewer Setup](../tools/viewer.md)** - Self-host for large datasets
