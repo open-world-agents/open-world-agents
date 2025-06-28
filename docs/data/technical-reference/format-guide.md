@@ -647,7 +647,7 @@ owl mcap migrate run old_file.mcap --output new_file.mcap
 
 For detailed technical specifications, see:
 
-- **[OEP-0006: OWAMcap Profile Specification](../../oeps/oep-0006.md)** - Authoritative format specification
+- **[OEP-0006: OWAMcap Profile Specification](https://github.com/open-world-agents/open-world-agents/blob/main/oeps/oep-0006.md)** - Authoritative format specification
 - **[MCAP Format](https://mcap.dev/)** - Base container format documentation
 - **Message Registry** - See `projects/owa-core/owa/core/messages.py` for implementation
 

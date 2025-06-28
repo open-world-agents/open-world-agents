@@ -194,4 +194,4 @@ def test_plugin_documentation():
 
 - [Full Documentation Guide](documentation_validation.md)
 - [Custom Plugin Development](custom_plugins.md)
-- [OEP-0004 Specification](../../oeps/oep-0004.md)
+- [OEP-0004 Specification](https://github.com/open-world-agents/open-world-agents/blob/main/oeps/oep-0004.md)
