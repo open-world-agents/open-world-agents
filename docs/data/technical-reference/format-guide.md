@@ -8,16 +8,24 @@
 
 ## Table of Contents
 
-- [Quick Start](#quick-start) - Get started in 3 steps
-- [Core Concepts](#core-concepts) - Essential message types and features
-- [Working with OWAMcap](#working-with-owamcap) - Reading, writing, and media handling
-- [Storage & Performance](#storage--performance) - Efficiency characteristics
-- [Extending OWAMcap](#extending-owamcap) - Custom message types and extensibility
-- [Advanced Usage](#advanced-usage) - Real-world integrations and best practices
-- [Migration & Troubleshooting](#migration--troubleshooting) - Practical help and common issues
-- [Technical Reference](#technical-reference) - Specifications and standards
+- [Getting Started](#getting-started)
+    - [Quick Start](#quick-start) - Get started in 3 steps
+    - [Core Concepts](#core-concepts) - Essential message types and features
+- [Working with OWAMcap](#working-with-owamcap)
+    - [Media Handling](#media-handling) - External references and lazy loading
+    - [Reading and Writing](#reading-and-writing) - File operations and CLI tools
+    - [Storage & Performance](#storage-performance) - Efficiency characteristics
+- [Advanced Topics](#advanced-topics)
+    - [Extending OWAMcap](#extending-owamcap) - Custom message types and extensibility
+    - [Data Pipeline Integration](#data-pipeline-integration) - Real-world integrations
+    - [Best Practices](#best-practices) - Performance and organization guidelines
+- [Reference](#reference)
+    - [Migration & Troubleshooting](#migration-troubleshooting) - Practical help and common issues
+    - [Technical Reference](#technical-reference) - Specifications and standards
 
-## Quick Start
+## Getting Started
+
+### Quick Start
 
 !!! example "Try OWAMcap in 3 Steps"
 
@@ -53,18 +61,18 @@
             break  # Just show first frame
     ```
 
-## Core Concepts
+### Core Concepts
 
 OWAMcap combines the robustness of the MCAP container format with OWA's specialized message types for desktop environments, creating a powerful format for recording, analyzing, and training on human-computer interaction data.
 
-### Key Terms
+#### Key Terms
 
 !!! info "Essential Terminology"
     - **MCAP**: A modular container file format for heterogeneous, timestamped data (like a ZIP file for time-series data). Developed by [Foxglove](https://mcap.dev/), MCAP provides efficient random access, compression, and self-describing schemas. Widely adopted in robotics (ROS ecosystem), autonomous vehicles, and IoT applications for its performance and interoperability.
     - **Topic**: A named channel in MCAP files (e.g., "screen", "mouse") that groups related messages
     - **Lazy Loading**: Loading data only when needed, crucial for memory efficiency with large datasets
 
-### What Makes a File "OWAMcap"
+#### What Makes a File "OWAMcap"
 
 === "Architecture Overview"
     ```
@@ -123,7 +131,7 @@ OWAMcap combines the robustness of the MCAP container format with OWA's speciali
     metadata: 0
     ```
 
-### Key Features
+#### Key Features
 
 - **Efficient Storage**: External video file references keep MCAP files lightweight
 - **Precise Synchronization**: Nanosecond-precision timestamps for perfect event alignment
@@ -131,7 +139,7 @@ OWAMcap combines the robustness of the MCAP container format with OWA's speciali
 - **Standard Format**: Built on the proven MCAP container format
 - **Extensible**: Support for custom message types through entry points
 
-### Core Message Types
+#### Core Message Types
 
 OWA provides standardized message types through the `owa-msgs` package for consistent desktop interaction recording:
 
@@ -392,11 +400,11 @@ OWAMcap's key advantage is efficient media handling through external media refer
     ```
 
 
-## Storage & Performance
+### Storage & Performance
 
 OWAMcap achieves remarkable storage efficiency through external video references and intelligent compression:
 
-### Compression Benefits
+#### Compression Benefits
 
 !!! info "Understanding the Baseline"
     Raw screen capture data is enormous: a single 1920×1080 frame in BGRA format is 8.3 MB. At 60 FPS, this means 498 MB per second of recording. OWAMcap's hybrid storage makes this manageable.
@@ -421,9 +429,11 @@ Desktop screen capture at 600 × 800 resolution, 13 s @ 60 Hz:
 - **Standard Tools:** preview in any video player and edit with off-the-shelf software  
 
 
-## Extending OWAMcap
+## Advanced Topics
 
-### Custom Message Types
+### Extending OWAMcap
+
+#### Custom Message Types
 
 Need to store domain-specific data beyond standard desktop interactions? OWAMcap supports custom message types for sensors, gaming, robotics, and more.
 
@@ -432,9 +442,7 @@ Need to store domain-specific data beyond standard desktop interactions? OWAMcap
 
     Covers: message creation, package registration, best practices, and CLI integration.
 
-## Advanced Usage
-
-### OWA Data Pipeline Integration
+### Data Pipeline Integration
 
 <!-- termynal -->
 
@@ -465,10 +473,51 @@ $ python train.py --dataset ./event-dataset
 
 **Pipeline Benefits:**
 
+
+<!-- NOTE: here is copied from data-pipeline.md -->
+
 - **🔄 Flexible**: Skip binning and use Event Dataset directly, or use traditional Binned Dataset approach
-- **🚀 On-the-fly Processing**: Dataset transforms apply encoding during training, not preprocessing
-- **🤗 HuggingFace Integration**: Direct compatibility with `datasets.Dataset.set_transform()`
-- **⚡ Performance Optimized**: Efficient data loading with lazy image loading and configurable encoding
+- **💾 Storage Optimized**: Since event/binned dataset saves only reference to media, the entire pipeline is designed to be **space-efficient**.
+```sh
+/data/
+├── mcaps/           # Raw recordings (400MB)
+├── event-dataset/   # References only (20MB)
+└── binned-dataset/  # Aggregated refs (2MB)
+```
+- **🤗 Native HuggingFace**: Event/binned dataset is a true HuggingFace `datasets.Dataset` with `set_transform()`, not wrappers.
+```py
+# Since event/binned datasets are true HuggingFace datasets,
+# they can be loaded directly into training pipelines
+from datasets import load_from_disk
+dataset = load_from_disk("/data/event-dataset")
+
+# Transform to VLA training format is applied on-the-fly during training
+from owa.data import create_event_dataset_transform
+transform = create_event_dataset_transform(
+    encoder_type="hierarchical",
+    load_images=True,
+    encode_actions=True,
+)
+dataset.set_transform(transform)
+
+# Use in training
+for sample in dataset["train"].take(1):
+    print(f"Images: {len(sample['images'])} frames")
+    print(f"Actions: {sample['encoded_events'][:3]}...")
+    print(f"Instruction: {sample['instruction']}")
+```
+- **⚡ Compute-optimized, On-the-Fly Processing**: During preprocess stage, media is not loaded. During training, only the required media is loaded on-demand.
+```sh
+$ python scripts/01_raw_events_to_event_dataset.py
+🔄 Raw Events to Event Dataset
+📁 Loading from: /data/mcaps/game-session
+📊 Found 3 train, 1 test files
+---> 100%
+✓ Created 24,907 train, 20,471 test examples
+💾 Saving to /data/event-dataset
+✓ Saved successfully
+🎉 Completed in 3.9s (0.1min)
+```
 
 !!! tip "Complete Pipeline Documentation"
     See **[🚀 Data Pipeline](data-pipeline.md)** for detailed documentation on each stage, configuration options, and integration with training frameworks.
@@ -531,9 +580,11 @@ $ python train.py --dataset ./event-dataset
 
     See [OWA Data Pipeline](data-pipeline.md) for complete pipeline details.
 
-## Migration & Troubleshooting
+## Reference
 
-### File Migration
+### Migration & Troubleshooting
+
+#### File Migration
 
 OWAMcap format evolves over time. When you encounter older files that need updating, use the migration tool:
 
@@ -568,9 +619,9 @@ owl mcap migrate run old_file.mcap --output new_file.mcap
     - **Rollback**: Use backup files if migration causes issues
 
 !!! info "Complete Migration Reference"
-    For detailed information about all migration commands and options, see the [OWL CLI Reference - MCAP Migrate](http://localhost:7869/owl_cli_reference/#owl-mcap-migrate) documentation.
+    For detailed information about all migration commands and options, see the [OWL CLI Reference - MCAP Migrate](../../../owl_cli_reference/#owl-mcap-migrate) documentation.
 
-### Common Issues
+#### Common Issues
 
 !!! warning "File Not Found Errors"
     When video files are missing:
@@ -590,7 +641,7 @@ owl mcap migrate run old_file.mcap --output new_file.mcap
             frame = msg.decoded.load_frame_array()  # Only when needed
     ```
 
-## Technical Reference
+### Technical Reference
 
 For detailed technical specifications, see:
 
@@ -598,7 +649,7 @@ For detailed technical specifications, see:
 - **[MCAP Format](https://mcap.dev/)** - Base container format documentation
 - **Message Registry** - See `projects/owa-core/owa/core/messages.py` for implementation
 
-### Quick Reference
+#### Quick Reference
 
 **OWAMcap Definition:**
 

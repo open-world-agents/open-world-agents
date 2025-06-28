@@ -142,7 +142,7 @@ owl mcap cat sensor_data.mcap --topics temperature
 ```
 
 !!! info "Complete CLI Reference"
-    For detailed information about all `owl messages` commands and options, see the [OWL CLI Reference - Messages](http://localhost:7869/owl_cli_reference/#owl-messages) documentation.
+    For detailed information about all `owl messages` commands and options, see the [OWL CLI Reference - Messages](../../../owl_cli_reference/#owl-messages) documentation.
 
 ## Next Steps
 
