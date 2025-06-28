@@ -12,6 +12,7 @@ from .registry import CALLABLES, LISTENERS, RUNNABLES, LazyImportRegistry, Regis
 from .runnable import Runnable
 
 # Disable logger by default for library usage (following loguru best practices)
+# Reference: https://loguru.readthedocs.io/en/stable/resources/recipes.html#configuring-loguru-to-be-used-by-a-library-or-an-application
 logger.disable("owa.core")
 
 # Automatically discover and register plugins on import

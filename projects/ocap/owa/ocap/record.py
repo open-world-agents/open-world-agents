@@ -15,7 +15,6 @@ from owa.cli.utils import check_for_update
 from owa.core import LISTENERS, get_plugin_discovery
 from owa.core.time import TimeUnits
 
-# TODO: apply https://loguru.readthedocs.io/en/stable/resources/recipes.html#configuring-loguru-to-be-used-by-a-library-or-an-application
 logger.remove()
 # how to use loguru with tqdm: https://github.com/Delgan/loguru/issues/135
 logger.add(lambda msg: tqdm.write(msg, end=""), filter={"owa.ocap": "DEBUG", "owa.env.gst": "INFO"}, colorize=True)

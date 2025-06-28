@@ -19,6 +19,7 @@ from .console import console
 from .utils import check_for_update
 
 # Disable logger by default for library usage (following loguru best practices)
+# Reference: https://loguru.readthedocs.io/en/stable/resources/recipes.html#configuring-loguru-to-be-used-by-a-library-or-an-application
 logger.disable("owa.cli")
 
 # Store warnings to show later
