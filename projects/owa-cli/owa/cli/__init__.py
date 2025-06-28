@@ -6,22 +6,20 @@ including MCAP file management, video processing, and system utilities.
 """
 
 import importlib
+import importlib.util
 import platform
 import shutil
 
 # TODO?: replace to https://github.com/BrianPugh/cyclopts
 import typer
 from loguru import logger
-from rich.console import Console
 
 from . import env, mcap, messages, video
+from .console import console
 from .utils import check_for_update
 
 # Disable logger by default for library usage (following loguru best practices)
 logger.disable("owa.cli")
-
-# Console for user-facing messages
-console = Console()
 
 # Store warnings to show later
 _dependency_warnings = []

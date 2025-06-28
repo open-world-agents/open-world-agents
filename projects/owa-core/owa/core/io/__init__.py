@@ -1,5 +1,3 @@
-from loguru import logger
-
 from .image import load_image
 from .media import (
     bgra_array_to_pil,
@@ -10,8 +8,6 @@ from .media import (
     validate_media_path,
 )
 from .video import VideoReader, VideoWriter
-
-logger.disable("owa.core.io")
 
 __all__ = [
     "load_image",

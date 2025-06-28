@@ -16,9 +16,6 @@ if sys.version_info < (3, 10):
 else:
     from importlib.metadata import entry_points
 
-if not os.getenv("OWA_ENABLE_PLUGIN_DISCOVERY_LOGS", "false").lower() == "true":
-    logger.disable("owa.core.plugin_discovery")
-
 
 class PluginDiscovery:
     """

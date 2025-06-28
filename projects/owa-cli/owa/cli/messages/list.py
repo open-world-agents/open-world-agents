@@ -8,6 +8,8 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
+from ..console import console
+
 try:
     from owa.core import MESSAGES
 except ImportError:
@@ -28,8 +30,6 @@ def list_messages(
     if MESSAGES is None:
         typer.echo("Error: owa.core not available. Please install owa-core package.", err=True)
         raise typer.Exit(1)
-
-    console = Console()
 
     # Get all message types
     try:

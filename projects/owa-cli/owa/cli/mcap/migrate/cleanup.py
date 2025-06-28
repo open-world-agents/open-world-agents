@@ -23,6 +23,8 @@ from owa.cli.mcap.migrate.file_utils import (
     format_file_size,
 )
 
+from ...console import console
+
 
 @dataclass
 class BackupFileInfo:
@@ -225,8 +227,6 @@ def cleanup(
         owl mcap migrate cleanup /path/to/backups  # Clean backup files in specific directory
         owl mcap migrate cleanup file.mcap         # Clean backup for specific MCAP file
     """
-    console = Console()
-
     # Set default patterns if none provided
     if patterns is None:
         patterns = ["**/*.mcap.backup"]

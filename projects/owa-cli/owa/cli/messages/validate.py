@@ -3,8 +3,9 @@ Validate command for message registry.
 """
 
 import typer
-from rich.console import Console
 from rich.table import Table
+
+from ..console import console
 
 try:
     from owa.core import MESSAGES
@@ -28,7 +29,6 @@ def validate_messages(
         typer.echo("Error: owa.core not available. Please install owa-core package.", err=True)
         raise typer.Exit(1)
 
-    console = Console()
     console.print("[bold blue]Validating Message Registry...[/bold blue]\n")
 
     # Validation results
