@@ -237,7 +237,7 @@ def record(
 def main():
     # Check for updates on startup (skip in CI environments)
     if not os.getenv("GITHUB_ACTIONS"):
-        check_for_update("ocap")
+        check_for_update("ocap", silent=False)
     typer.run(record)
 
 
