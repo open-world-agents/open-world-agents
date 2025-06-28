@@ -26,7 +26,7 @@ def test_no_github_api_calls_during_version_check():
 
     with patch("requests.get") as mock_get:
         # These should not make API calls due to environment variable
-        check_for_update()
+        check_for_update(silent=True)
         get_latest_mcap_cli_version()
 
         # Verify no API calls were made

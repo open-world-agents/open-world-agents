@@ -20,6 +20,8 @@ from typing_extensions import Annotated
 from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
 from owa.cli.mcap.backup_utils import BackupContext
 
+from ..console import console
+
 
 @contextmanager
 def safe_temp_file(mode="wb", suffix=".mcap"):
@@ -237,7 +239,6 @@ def sanitize(
         owl mcap sanitize data.mcap --keep-window "Browser" --dry-run
         owl mcap sanitize data.mcap --keep-window "App" --max-removal-ratio 0.95
     """
-    console = Console()
 
     # Validate inputs
     if not files:

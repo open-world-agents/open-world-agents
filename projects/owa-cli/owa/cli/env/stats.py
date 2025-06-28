@@ -2,13 +2,12 @@ from collections import Counter
 from typing import Dict, List
 
 import typer
-from rich.console import Console
 from rich.table import Table
 from rich.tree import Tree
 
 from owa.core import get_component_info, list_components
 
-console = Console()
+from ..console import console
 
 
 def show_stats(

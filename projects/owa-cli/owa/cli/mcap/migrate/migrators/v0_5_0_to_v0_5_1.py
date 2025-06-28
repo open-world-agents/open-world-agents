@@ -24,6 +24,8 @@ Key changes:
 - ExternalImageRef → MediaRef with path URI
 - ExternalVideoRef → MediaRef with path URI + pts_ns
 - Unified MediaRef class with computed properties
+
+NOTE: These migrators are locked, separate script with separate dependency sets. DO NOT change the contents unless you know what you are doing.
 """
 
 import shutil

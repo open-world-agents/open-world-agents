@@ -1,3 +1,5 @@
+from loguru import logger
+
 from .auto_discovery import auto_discover_plugins
 from .callable import Callable
 from .component_access import get_component, get_component_info, list_components
@@ -8,6 +10,9 @@ from .plugin_discovery import discover_and_register_plugins, get_plugin_discover
 from .plugin_spec import PluginSpec
 from .registry import CALLABLES, LISTENERS, RUNNABLES, LazyImportRegistry, Registry
 from .runnable import Runnable
+
+# Disable logger by default for library usage (following loguru best practices)
+logger.disable("owa.core")
 
 # Automatically discover and register plugins on import
 auto_discover_plugins()

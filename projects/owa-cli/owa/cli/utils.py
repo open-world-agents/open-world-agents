@@ -31,9 +31,13 @@ def get_latest_release() -> str:
     return tag.lstrip("v")  # Remove leading "v" if present
 
 
-def check_for_update(package_name: str = "owa.cli") -> bool:
+def check_for_update(package_name: str = "owa.cli", *, silent: bool = False) -> bool:
     """
     Check for updates and print a message if a new version is available.
+
+    Args:
+        package_name: Name of the package to check
+        silent: If True, suppress all output
 
     Returns:
         bool: True if the local version is up to date, False otherwise.
@@ -46,19 +50,24 @@ def check_for_update(package_name: str = "owa.cli") -> bool:
         local_version = get_local_version(package_name)
         latest_version = get_latest_release()
         if parse_version(latest_version) > parse_version(local_version):
-            print(f"""
+            if not silent:
+                print(f"""
 [bold red]******************************************************[/bold red]
 [bold yellow]   An update is available for Open World Agents![/bold yellow]
 [bold red]******************************************************[/bold red]
 [bold]  Your version:[/bold] [red]{local_version}[/red]    [bold]Latest:[/bold] [green]{latest_version}[/green]
   Get it here: [bold cyan]https://github.com/open-world-agents/open-world-agents/releases[/bold cyan]
 """)
+            return False
         else:
             return True
     except requests.Timeout as e:
-        print(f"[bold red]Error:[/bold red] Unable to check for updates. Timeout occurred: {e}")
+        if not silent:
+            print(f"[bold red]⚠ Error:[/bold red] Unable to check for updates. Timeout occurred: {e}")
     except requests.RequestException as e:
-        print(f"[bold red]Error:[/bold red] Unable to check for updates. Request failed: {e}")
+        if not silent:
+            print(f"[bold red]⚠ Error:[/bold red] Unable to check for updates. Request failed: {e}")
     except Exception as e:
-        print(f"[bold red]Error:[/bold red] Unable to check for updates. An unexpected error occurred: {e}")
+        if not silent:
+            print(f"[bold red]⚠ Error:[/bold red] Unable to check for updates. An unexpected error occurred: {e}")
     return False

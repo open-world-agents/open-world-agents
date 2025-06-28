@@ -3,13 +3,12 @@ import sys
 from typing import Optional
 
 import typer
-from rich.console import Console
 from rich.table import Table
 from rich.tree import Tree
 
 from owa.core import get_component_info, list_components
 
-console = Console()
+from ..console import console
 
 
 def search_components(

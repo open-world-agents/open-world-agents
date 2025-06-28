@@ -1,7 +1,6 @@
 # ================ Entry Points-Based Plugin Discovery ================================
 # Implements automatic plugin discovery and registration using Python entry points
 
-import os
 import sys
 from typing import Dict, Optional, Union
 
@@ -15,9 +14,6 @@ if sys.version_info < (3, 10):
     from importlib_metadata import entry_points
 else:
     from importlib.metadata import entry_points
-
-if not os.getenv("OWA_ENABLE_PLUGIN_DISCOVERY_LOGS", "false").lower() == "true":
-    logger.disable("owa.core.plugin_discovery")
 
 
 class PluginDiscovery:
