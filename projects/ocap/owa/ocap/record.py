@@ -163,7 +163,7 @@ def record(
     record_video: Annotated[bool, typer.Option(help="Whether to record video")] = True,
     record_timestamp: Annotated[bool, typer.Option(help="Whether to record timestamp")] = True,
     show_cursor: Annotated[bool, typer.Option(help="Whether to show the cursor in the capture")] = True,
-    fps: Annotated[Optional[float], typer.Option(help="The frame rate of the video. Default is 60 fps.")] = 60.0,
+    fps: Annotated[float, typer.Option(help="The frame rate of the video. Default is 60 fps.")] = 60.0,
     window_name: Annotated[
         Optional[str], typer.Option(help="The name of the window to capture, substring of window name is supported")
     ] = None,

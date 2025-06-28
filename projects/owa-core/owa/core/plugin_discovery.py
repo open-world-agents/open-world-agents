@@ -1,7 +1,6 @@
 # ================ Entry Points-Based Plugin Discovery ================================
 # Implements automatic plugin discovery and registration using Python entry points
 
-import os
 import sys
 from typing import Dict, Optional, Union
 

@@ -5,7 +5,7 @@
 
 import importlib
 from enum import StrEnum
-from typing import Dict, Generic, Optional, TypeVar
+from typing import Dict, Generic, Optional, Type, TypeVar, cast
 
 from .callable import Callable as CallableCls
 from .listener import Listener as ListenerCls
@@ -75,10 +75,10 @@ class LazyImportRegistry(Registry[T]):
         """
         if is_instance:
             # Register pre-loaded instance using base registry method
-            super().register(name, obj_or_import_path)
+            super().register(name, cast(T, obj_or_import_path))
         else:
             # Register for lazy loading
-            self._import_paths[name] = obj_or_import_path
+            self._import_paths[name] = cast(str, obj_or_import_path)
             if eager_load:
                 # Load immediately and store using base registry method
                 component = self._load_component(name)
@@ -141,6 +141,6 @@ class LazyImportRegistry(Registry[T]):
 
 
 # Now specify the types of the registries
-CALLABLES: LazyImportRegistry[CallableCls] = LazyImportRegistry(registry_type=RegistryType.CALLABLES)
-LISTENERS: LazyImportRegistry[ListenerCls] = LazyImportRegistry(registry_type=RegistryType.LISTENERS)
-RUNNABLES: LazyImportRegistry[Runnable] = LazyImportRegistry(registry_type=RegistryType.RUNNABLES)
+CALLABLES: LazyImportRegistry[Type[CallableCls]] = LazyImportRegistry(registry_type=RegistryType.CALLABLES)
+LISTENERS: LazyImportRegistry[Type[ListenerCls]] = LazyImportRegistry(registry_type=RegistryType.LISTENERS)
+RUNNABLES: LazyImportRegistry[Type[Runnable]] = LazyImportRegistry(registry_type=RegistryType.RUNNABLES)
