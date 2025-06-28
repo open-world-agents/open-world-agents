@@ -436,52 +436,42 @@ Need to store domain-specific data beyond standard desktop interactions? OWAMcap
 
 ### OWA Data Pipeline Integration
 
-The most important integration for OWAMcap is the **OWA Data Pipeline** - a streamlined 2-stage processing system that transforms raw MCAP recordings into training-ready datasets for Vision-Language-Action (VLA) models:
+<!-- termynal -->
 
-```bash
-# Stage 1: Raw MCAP → Event Dataset
-python scripts/01_raw_events_to_event_dataset.py --train-dir ./mcaps --output-dir ./event-dataset
+```
+$ # 1. Record desktop interaction
+$ ocap my-session.mcap
+🎥 Recording desktop interaction...
+✓ Saved 1,247 events to my-session.mcap
 
-# Stage 2: Event Dataset → Binned Dataset (optional)
-python scripts/02_event_dataset_to_binned_dataset.py --input-dir ./event-dataset --output-dir ./binned-dataset
 
-# Stage 3: Load and train
-python train.py --dataset ./binned-dataset
+$ # 2. Process to training format
+$ python scripts/01_raw_events_to_event_dataset.py --train-dir ./
+🔄 Raw Events to Event Dataset
+📁 Loading from: ./
+📊 Found 1 train files
+---> 100%
+✓ Created 1,247 train examples
+💾 Saving to ./event-dataset
+✓ Saved successfully
+
+
+$ # 3. Train your model
+$ python train.py --dataset ./event-dataset
+🚀 Loading dataset...
+🏋️ Training desktop agent...
+📈 Epoch 1/10: loss=0.234
 ```
 
-#### 3-Stage Pipeline Architecture
+**Pipeline Benefits:**
 
-**Stage 1: Raw MCAP → Event Dataset**
-
-- **Purpose**: Extract and downsample raw events from MCAP files while preserving temporal precision
-- **Output**: Flat structure optimized for temporal queries with configurable rate limiting
-- **Schema**: `{file_path, topic, timestamp_ns, message_type, mcap_message}`
-- **Use case**: High-frequency training, custom binning, event-level analysis
-
-**Stage 2: Event Dataset → Binned Dataset**
-
-- **Purpose**: Aggregate events into fixed-rate time bins for uniform temporal sampling
-- **Output**: State-action separation with configurable FPS and filtering
-- **Schema**: `{file_path, bin_idx, timestamp_ns, state, actions}`
-- **Use case**: Traditional VLA training, fixed-rate processing, efficient filtering
-
-**Stage 3: Dataset Transforms**
-
-- **Purpose**: On-demand processing during training (not preprocessing)
-- **Features**: Lazy image loading, configurable encoding, HuggingFace compatibility
-- **Integration**: Direct compatibility with `datasets.Dataset.set_transform()`
-
-#### Pipeline Benefits
-
-**Key Design Principles:**
-
-- **🔄 Flexible Pipeline**: Skip binning and use Event Dataset directly, or use traditional Binned Dataset approach
-- **🚀 On-the-fly Processing**: Dataset transforms apply encoding and image loading during training, not preprocessing
+- **🔄 Flexible**: Skip binning and use Event Dataset directly, or use traditional Binned Dataset approach
+- **🚀 On-the-fly Processing**: Dataset transforms apply encoding during training, not preprocessing
 - **🤗 HuggingFace Integration**: Direct compatibility with `datasets.Dataset.set_transform()`
 - **⚡ Performance Optimized**: Efficient data loading with lazy image loading and configurable encoding
 
 !!! tip "Complete Pipeline Documentation"
-    See **[🚀 Data Pipeline](data-pipeline.md)** for detailed documentation on each stage, configuration options, performance optimization, and integration with training frameworks.
+    See **[🚀 Data Pipeline](data-pipeline.md)** for detailed documentation on each stage, configuration options, and integration with training frameworks.
 
 ### Best Practices
 
