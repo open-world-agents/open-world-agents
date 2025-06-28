@@ -105,7 +105,9 @@ OWAMcap combines the robustness of the MCAP container format with OWA's speciali
     - **Message Interface**: All messages implement `BaseMessage` from `owa.core.message`
     - **Standard Messages**: Core message types from `owa-msgs` package
 
-    **Why MCAP?** Built as the successor to ROSBag, MCAP offers efficient storage and retrieval for heterogeneous timestamped data with minimal dependencies. It's designed for modern use cases with optimized random access, built-in compression, and language-agnostic schemas. The format has gained significant adoption across the robotics community, autonomous vehicle companies (Cruise, Waymo), and IoT platforms due to its performance advantages and excellent tooling ecosystem.
+    !!! info "Why MCAP?"
+    
+        Built as the successor to ROSBag, MCAP offers efficient storage and retrieval for heterogeneous timestamped data with minimal dependencies. It's designed for modern use cases with optimized random access, built-in compression, and language-agnostic schemas. The format has gained significant adoption across the robotics community, autonomous vehicle companies (Cruise, Waymo), and IoT platforms due to its performance advantages and excellent tooling ecosystem.
 
 
 === "Practical Example"
