@@ -1,4 +1,6 @@
-#1
+This file contains a prompt I queried to Augment Code, to fully automate the conversion process.
+
+# Query 1
 
 I want to convert dataset from "Counter-Strike Deathmatch with Large-Scale Behavioural Cloning" into OWAMcap format.
 
@@ -10,10 +12,67 @@ write a complete conversion script, creating OWAMcap dataset, verifying the outp
 
 for your file access permission, refer to @/workspace/.devcontainer/devcontainer.json . you are currently in devcontainer.
 
-#2 
+# Query 2
 
 - for the topic name, use `keyboard/state` instead of `keyboard_state`. same for mouse/state.
 - use `owa.core.io.video` to read/write video, instead of cv2.
 - make convert script's feature configurable: I want to following option configurable. (1) save frames as embedded image (see @/workspace/docs/data/technical-reference/format-guide.md ) or (2) mkv(use owacore.io.video)
 - original data's framerate seem to be 20Hz. consider this.(or, if it is not, explain me why. I'm not sure on this.)
 - it seems that you converted mouse position as int from -8, 8. (1) is it your design, right? (2) do you think your design is right?
+
+# Query 3
+
+```
+import numpy as np
+import os
+import time
+import pickle
+
+# this file stores parameters that are used across many other files
+# also stores some key functions used in several places
+
+loop_fps=16 # 16 is main one, but can try to run at 24
+
+# dimensions of image to reduce to
+# used when grabbing screen and also building NN
+csgo_img_dimension = (150,280) # offset_height_top = 135, offset_height_bottom = 135, offset_sides = 100
+csgo_game_res = (1024,768) # this is 4x3, windowed and down sized slightly
+# btw mouse we use is 2.54 sensitivity, w raw input off
+
+N_TIMESTEPS = 96 # number of time steps for lstm
+IS_MIRROR = False # whether to double data with flipped image
+GAMMA = 0.995 # reward decay for RL setting, val
+
+input_shape = (N_TIMESTEPS,csgo_img_dimension[0],csgo_img_dimension[1],3)
+input_shape_lstm_pred = (1,csgo_img_dimension[0],csgo_img_dimension[1],3) # need to say only one frame when predicting
+
+# params for discretising mouse
+mouse_x_possibles = [-1000.0,-500.0, -300.0, -200.0, -100.0, -60.0, -30.0, -20.0, -10.0, -4.0, -2.0, -0.0, 2.0, 4.0, 10.0, 20.0, 30.0, 60.0, 100.0, 200.0, 300.0, 500.0,1000.0]
+mouse_y_possibles = [-200.0, -100.0, -50.0, -20.0, -10.0, -4.0, -2.0, -0.0, 2.0, 4.0, 10.0, 20.0, 50.0, 100.0, 200.0]
+mouse_x_lim = (mouse_x_possibles[0],mouse_x_possibles[-1])
+mouse_y_lim = (mouse_y_possibles[0],mouse_y_possibles[-1])
+
+# below options are no longer used, are here due to previous agent iterations
+IS_CONTRAST = False # whether to add contrast to image, REDUNDANT
+FRAMES_STACK = 3 # how many frames to use as input, REDUNDANT
+FRAMES_SKIP = 4 # how many frames to skip in between each of the frames stacked together, REDUNDANT
+ACTIONS_PREV = 3 # how many previous actions (and rewards?) to use as aux input, REDUNDANT
+AUX_INPUT_ON = False # whether to use aux input at all, REDUNDANT
+DATA_STEP = 1 # whether to skip through training data (=1), only use every x steps, REDUNDANT
+
+def mouse_preprocess(mouse_x, mouse_y):
+    # clip and distcretise mouse
+    mouse_x = np.clip(mouse_x, mouse_x_lim[0],mouse_x_lim[1])
+    mouse_y = np.clip(mouse_y, mouse_y_lim[0],mouse_y_lim[1])
+
+    # find closest in list
+    mouse_x = min(mouse_x_possibles, key=lambda x_:abs(x_-mouse_x))
+    mouse_y = min(mouse_y_possibles, key=lambda x_:abs(x_-mouse_y))
+
+    return mouse_x, mouse_y
+```
+
+above is mouse tokenization logic used in original repo. you can see this in following:
+
+- https://github.com/TeaPearce/Counter-Strike_Behavioural_Cloning/blob/a663f4ea7b20aebde884fbfa9d189fa8ba841454/dm_pretrain_process.py#L59: contains a line calling `mouse_preprocess`
+- https://github.com/TeaPearce/Counter-Strike_Behavioural_Cloning/blob/main/config.py#L38: contains `mouse_preprocess`

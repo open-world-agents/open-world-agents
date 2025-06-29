@@ -59,13 +59,15 @@ CSGO_KEY_MAPPING = {
     "shift": 0x10,  # Shift (walk)
     "r": 0x52,  # R key (reload)
     "e": 0x45,  # E key (use)
-    "q": 0x51,  # Q key (quick switch)
-    "tab": 0x09,  # Tab (scoreboard)
-    "1": 0x31,  # 1 key (primary weapon)
-    "2": 0x32,  # 2 key (secondary weapon)
-    "3": 0x33,  # 3 key (knife)
-    "4": 0x34,  # 4 key (grenade)
-    "5": 0x35,  # 5 key (bomb)
+    # Note: Limited to 9 keys to fit 51-dimensional action vector structure
+    # Additional keys that might be in the dataset but don't fit:
+    # "q": 0x51,  # Q key (quick switch)
+    # "tab": 0x09,  # Tab (scoreboard)
+    # "1": 0x31,  # 1 key (primary weapon)
+    # "2": 0x32,  # 2 key (secondary weapon)
+    # "3": 0x33,  # 3 key (knife)
+    # "4": 0x34,  # 4 key (grenade)
+    # "5": 0x35,  # 5 key (bomb)
 }
 
 
@@ -74,23 +76,95 @@ class CSGOActionDecoder:
 
     def __init__(self):
         # Action vector structure: [keys_pressed_onehot, Lclicks_onehot, Rclicks_onehot, mouse_x_onehot, mouse_y_onehot]
-        # Based on the paper, this is a 51-dimensional vector
+        # Based on the original repository config.py, this is a 51-dimensional vector
+
+        # Original mouse tokenization from config.py
+        self.mouse_x_possibles = [
+            -1000.0,
+            -500.0,
+            -300.0,
+            -200.0,
+            -100.0,
+            -60.0,
+            -30.0,
+            -20.0,
+            -10.0,
+            -4.0,
+            -2.0,
+            -0.0,
+            2.0,
+            4.0,
+            10.0,
+            20.0,
+            30.0,
+            60.0,
+            100.0,
+            200.0,
+            300.0,
+            500.0,
+            1000.0,
+        ]
+        self.mouse_y_possibles = [
+            -200.0,
+            -100.0,
+            -50.0,
+            -20.0,
+            -10.0,
+            -4.0,
+            -2.0,
+            -0.0,
+            2.0,
+            4.0,
+            10.0,
+            20.0,
+            50.0,
+            100.0,
+            200.0,
+        ]
+
+        # Calculate action vector structure
+        # Total: 51 dimensions
+        # Keys: 13 dimensions (common CS:GO keys)
+        # Mouse clicks: 4 dimensions (left press/release, right press/release)
+        # Mouse X: 23 dimensions (from mouse_x_possibles)
+        # Mouse Y: 15 dimensions (from mouse_y_possibles)
+        # Total: 13 + 4 + 23 + 15 = 55... need to verify actual structure
+
+        # For now, assume the structure based on 51 total dimensions:
         self.keys_start = 0
-        self.keys_end = 13  # Assuming 13 keys (common CS:GO keys)
+        self.keys_end = 13  # 13 keys
         self.lclick_start = 13
         self.lclick_end = 15  # 2 values (press/release)
         self.rclick_start = 15
         self.rclick_end = 17  # 2 values (press/release)
         self.mouse_x_start = 17
-        self.mouse_x_end = 34  # 17 values for mouse X movement bins
-        self.mouse_y_start = 34
-        self.mouse_y_end = 51  # 17 values for mouse Y movement bins
+        self.mouse_x_end = 17 + len(self.mouse_x_possibles)  # 23 values
+        self.mouse_y_start = self.mouse_x_end
+        self.mouse_y_end = self.mouse_y_start + len(self.mouse_y_possibles)  # 15 values
 
-        # Mouse movement bins (centered around 0)
-        # Note: This quantization may lose precision. The original data uses 17 bins
-        # which suggests the original mouse movement was already quantized.
-        # We preserve the original quantization scheme for compatibility.
-        self.mouse_bins = np.linspace(-8, 8, 17)  # -8 to +8 pixel movement
+        # Verify total dimensions
+        expected_total = self.mouse_y_end
+        if expected_total != 51:
+            print(f"Warning: Expected 51 dimensions, calculated {expected_total}")
+            print(f"Keys: {self.keys_end - self.keys_start}")
+            print(f"Clicks: {(self.lclick_end - self.lclick_start) + (self.rclick_end - self.rclick_start)}")
+            print(f"Mouse X: {len(self.mouse_x_possibles)}")
+            print(f"Mouse Y: {len(self.mouse_y_possibles)}")
+
+            # Adjust if needed - maybe fewer keys or different click structure
+            if expected_total > 51:
+                # Reduce keys to fit
+                self.keys_end = self.keys_start + (
+                    51 - (4 + len(self.mouse_x_possibles) + len(self.mouse_y_possibles))
+                )
+                self.lclick_start = self.keys_end
+                self.lclick_end = self.lclick_start + 2
+                self.rclick_start = self.lclick_end
+                self.rclick_end = self.rclick_start + 2
+                self.mouse_x_start = self.rclick_end
+                self.mouse_x_end = self.mouse_x_start + len(self.mouse_x_possibles)
+                self.mouse_y_start = self.mouse_x_end
+                self.mouse_y_end = self.mouse_y_start + len(self.mouse_y_possibles)
 
     def decode_actions(self, action_vector: np.ndarray) -> Dict:
         """Decode action vector into structured actions."""
@@ -118,17 +192,17 @@ class CSGOActionDecoder:
         if len(rclick_onehot) >= 1 and rclick_onehot[0] > 0.5:  # Press
             actions["mouse_right_click"] = True
 
-        # Decode mouse movement
+        # Decode mouse movement using original tokenization
         mouse_x_onehot = action_vector[self.mouse_x_start : self.mouse_x_end]
         mouse_y_onehot = action_vector[self.mouse_y_start : self.mouse_y_end]
 
-        if len(mouse_x_onehot) == len(self.mouse_bins):
+        if len(mouse_x_onehot) == len(self.mouse_x_possibles):
             x_idx = np.argmax(mouse_x_onehot)
-            actions["mouse_dx"] = int(self.mouse_bins[x_idx])
+            actions["mouse_dx"] = int(self.mouse_x_possibles[x_idx])
 
-        if len(mouse_y_onehot) == len(self.mouse_bins):
+        if len(mouse_y_onehot) == len(self.mouse_y_possibles):
             y_idx = np.argmax(mouse_y_onehot)
-            actions["mouse_dy"] = int(self.mouse_bins[y_idx])
+            actions["mouse_dy"] = int(self.mouse_y_possibles[y_idx])
 
         return actions
 

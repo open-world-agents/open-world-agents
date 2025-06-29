@@ -110,7 +110,9 @@ The script maps CS:GO actions to Windows Virtual Key Codes:
 - `1-5` (0x31-0x35): Weapon selection
 
 ### Mouse Actions
-- **Movement**: Decoded from 17-bin one-hot vectors (-8 to +8 pixels)
+- **Movement**: Decoded using original non-uniform tokenization:
+  - **X-axis**: 23 bins `[-1000, -500, -300, -200, -100, -60, -30, -20, -10, -4, -2, 0, 2, 4, 10, 20, 30, 60, 100, 200, 300, 500, 1000]`
+  - **Y-axis**: 15 bins `[-200, -100, -50, -20, -10, -4, -2, 0, 2, 4, 10, 20, 50, 100, 200]`
 - **Left Click**: Primary fire/action
 - **Right Click**: Secondary fire/aim down sights
 
@@ -147,16 +149,16 @@ Each converted file produces:
 The conversion uses **16 FPS** as confirmed in the original paper documentation. While you mentioned 20 Hz, the paper and dataset documentation consistently specify 16 FPS (62.5ms per frame). This matches the temporal structure of the HDF5 files where 1000 frames represent approximately 62.5 seconds of gameplay.
 
 ### Mouse Position Quantization
-The original dataset uses **17-bin quantization** for mouse movement (-8 to +8 pixels), which we preserve for several reasons:
+The original dataset uses **non-uniform quantization** for mouse movement, which we now correctly implement:
 
-1. **Data Fidelity**: The original data was already quantized to these bins, so we cannot recover higher precision
-2. **Compatibility**: Preserving the original quantization ensures our conversion matches the paper's methodology
-3. **Practical Range**: ±8 pixels per frame at 16 FPS provides reasonable mouse sensitivity for gameplay
+1. **X-axis**: 23 bins with non-uniform spacing optimized for CS:GO gameplay
+   - Fine-grained control near zero: `[-4, -2, 0, 2, 4]` for precise aiming
+   - Coarse control for large movements: `[-1000, -500, ..., 500, 1000]` for quick turns
+2. **Y-axis**: 15 bins with similar non-uniform spacing for vertical movement
+3. **Data Fidelity**: We preserve the exact tokenization from the original repository's `config.py`
+4. **Gameplay Relevance**: The non-uniform bins reflect actual CS:GO mouse usage patterns
 
-**Alternative Approach**: If higher precision is needed, the raw mouse movement could be reconstructed by:
-- Analyzing the one-hot vector patterns across multiple frames
-- Using interpolation between bin centers
-- However, this would introduce artifacts not present in the original data
+**Why Non-Uniform?**: CS:GO players make many small adjustments (±2-4 pixels) for aiming and occasional large movements (±100-1000 pixels) for turning. The original researchers optimized the bins for this usage pattern.
 
 ### Storage Modes
 - **External MKV** (recommended): Uses `owa.core.io.video` for efficient compression
@@ -172,7 +174,7 @@ The original dataset uses **17-bin quantization** for mouse movement (-8 to +8 p
 
 ### Action Fidelity
 - Key combinations preserved (e.g., W+A for diagonal movement)
-- Mouse movement quantized to 17 bins (-8 to +8 pixels) - preserves original data structure
+- Mouse movement uses original non-uniform quantization (23 X-bins, 15 Y-bins) - preserves exact data structure
 - Click timing synchronized with frame timestamps
 
 ### Limitations

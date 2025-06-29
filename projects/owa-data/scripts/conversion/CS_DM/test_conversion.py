@@ -33,12 +33,12 @@ def test_action_decoder():
     action_vector[1] = 1  # A key
     action_vector[3] = 1  # D key
 
-    # Set left mouse click
-    action_vector[13] = 1  # Left click press
+    # Set left mouse click (adjusted for new structure)
+    action_vector[9] = 1  # Left click press (now at index 9)
 
-    # Set mouse movement (positive X, negative Y)
-    action_vector[25] = 1  # Mouse X movement (middle-right)
-    action_vector[40] = 1  # Mouse Y movement (middle-up)
+    # Set mouse movement (using new structure)
+    action_vector[13 + 12] = 1  # Mouse X = 2 (index 12 in mouse_x_possibles)
+    action_vector[36 + 8] = 1  # Mouse Y = 2 (index 8 in mouse_y_possibles)
 
     # Decode actions
     actions = decoder.decode_actions(action_vector)
@@ -83,14 +83,14 @@ def test_conversion_with_sample_data():
                 # Create sample action vector (51,)
                 action_vector = np.zeros(51, dtype=np.float64)
 
-                # Add some random actions
+                # Add some random actions (adjusted for new structure)
                 if i % 3 == 0:  # Every 3rd frame, press W key
                     action_vector[0] = 1.0
                 if i % 4 == 0:  # Every 4th frame, left click
-                    action_vector[13] = 1.0
+                    action_vector[9] = 1.0  # Left click at index 9
                 if i % 2 == 0:  # Every 2nd frame, mouse movement
-                    action_vector[20 + (i % 10)] = 1.0  # Random mouse X
-                    action_vector[35 + (i % 10)] = 1.0  # Random mouse Y
+                    action_vector[13 + (i % 23)] = 1.0  # Random mouse X (23 bins)
+                    action_vector[36 + (i % 15)] = 1.0  # Random mouse Y (15 bins)
 
                 f[f"frame_{i}_y"] = action_vector
 
