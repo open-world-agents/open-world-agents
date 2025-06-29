@@ -47,36 +47,34 @@ CSGO_WINDOW_TITLE = "Counter-Strike: Global Offensive"
 FRAME_RATE = 16  # Hz (from paper - confirmed in documentation)
 FRAME_DURATION_NS = int(1e9 / FRAME_RATE)  # Nanoseconds per frame
 
-# CS:GO key mappings (common keys used in the dataset)
-# Based on Windows Virtual Key Codes
-CSGO_KEY_MAPPING = {
-    "w": 0x57,  # W key (forward)
-    "a": 0x41,  # A key (left)
-    "s": 0x53,  # S key (backward)
-    "d": 0x44,  # D key (right)
-    "space": 0x20,  # Space (jump)
-    "ctrl": 0x11,  # Ctrl (crouch)
-    "shift": 0x10,  # Shift (walk)
-    "r": 0x52,  # R key (reload)
-    "e": 0x45,  # E key (use)
-    # Note: Limited to 9 keys to fit 51-dimensional action vector structure
-    # Additional keys that might be in the dataset but don't fit:
-    # "q": 0x51,  # Q key (quick switch)
-    # "tab": 0x09,  # Tab (scoreboard)
-    # "1": 0x31,  # 1 key (primary weapon)
-    # "2": 0x32,  # 2 key (secondary weapon)
-    # "3": 0x33,  # 3 key (knife)
-    # "4": 0x34,  # 4 key (grenade)
-    # "5": 0x35,  # 5 key (bomb)
-}
+# CS:GO key mappings based on the original actions_to_onehot function
+# Exact mapping from the original repository's config.py
+CSGO_KEY_MAPPING = [
+    ("w", 0x57),  # Index 0: W key (forward)
+    ("a", 0x41),  # Index 1: A key (left)
+    ("s", 0x53),  # Index 2: S key (backward)
+    ("d", 0x44),  # Index 3: D key (right)
+    ("space", 0x20),  # Index 4: Space (jump)
+    ("ctrl", 0x11),  # Index 5: Ctrl (crouch)
+    ("shift", 0x10),  # Index 6: Shift (walk)
+    ("1", 0x31),  # Index 7: 1 key (primary weapon)
+    ("2", 0x32),  # Index 8: 2 key (secondary weapon)
+    ("3", 0x33),  # Index 9: 3 key (knife)
+    ("r", 0x52),  # Index 10: R key (reload)
+]
+
+# Convert to dict for easy lookup
+CSGO_KEY_DICT = {key: vk for key, vk in CSGO_KEY_MAPPING}
 
 
 class CSGOActionDecoder:
     """Decode CS:GO action vectors into individual actions."""
 
     def __init__(self):
-        # Action vector structure: [keys_pressed_onehot, Lclicks_onehot, Rclicks_onehot, mouse_x_onehot, mouse_y_onehot]
-        # Based on the original repository config.py, this is a 51-dimensional vector
+        # DEFINITIVE action vector structure from original actions_to_onehot function
+        # 51 dimensions total: 11 + 1 + 1 + 23 + 15 = 51
+        # [keys_pressed_onehot, Lclicks_onehot, Rclicks_onehot, mouse_x_onehot, mouse_y_onehot]
+        # reference: https://github.com/TeaPearce/Counter-Strike_Behavioural_Cloning/blob/main/config.py#L25C1-L55
 
         # Original mouse tokenization from config.py
         self.mouse_x_possibles = [
@@ -122,44 +120,26 @@ class CSGOActionDecoder:
             200.0,
         ]
 
-        # DEFINITIVE action vector structure based on comprehensive empirical analysis
-        # Analyzed 500 frames of real data, found 38 active indices out of 51:
-        # - Indices 0-10: COMPLETELY UNUSED (all zeros)
-        # - Index 11: Single binary action (active in 53% of frames) - likely mouse click
-        # - Index 12: UNUSED (gap)
-        # - Indices 13-34: Mouse X movement (22 dimensions, one-hot encoded)
-        # - Index 35: UNUSED (gap)
-        # - Indices 36-50: Mouse Y movement (15 dimensions, one-hot encoded)
-
-        # All values are binary (0.0 or 1.0) indicating one-hot encoding
-        # This matches the original config.py mouse tokenization structure
-
+        # Action vector structure from actions_to_onehot function
         self.keys_start = 0
-        self.keys_end = 11  # All unused in this dataset
-        self.click_index = 11  # Single click action (could be left or right)
+        self.keys_end = 11  # 11 keyboard keys (indices 0-10)
+        self.lclick_index = 11  # Left click (index 11)
+        self.rclick_index = 12  # Right click (index 12)
         self.mouse_x_start = 13
-        self.mouse_x_end = 35  # 22 dimensions (missing first dimension from original 23)
+        self.mouse_x_end = 36  # 23 dimensions (indices 13-35)
         self.mouse_y_start = 36
-        self.mouse_y_end = 51  # 15 dimensions (matches original exactly)
+        self.mouse_y_end = 51  # 15 dimensions (indices 36-50)
 
-        # Adjust mouse tokenization to match empirical structure
-        # Mouse X: Use 22 out of 23 original values (skip first extreme value)
-        self.mouse_x_subset = self.mouse_x_possibles[1:]  # Skip first value (-1000), use remaining 22
-        # Mouse Y: Use all 15 original values
-        self.mouse_y_subset = self.mouse_y_possibles  # Use all 15 values
-
-        print(f"DEFINITIVE action vector structure (from real data analysis):")
-        print(f"Keys: {self.keys_start}-{self.keys_end} ({self.keys_end - self.keys_start} dims) - UNUSED")
-        print(f"Click: index {self.click_index} (1 dim)")
+        print("DEFINITIVE action vector structure (from actions_to_onehot function):")
+        print(f"Keys: {self.keys_start}-{self.keys_end} ({self.keys_end - self.keys_start} dims)")
+        print(f"Left click: index {self.lclick_index} (1 dim)")
+        print(f"Right click: index {self.rclick_index} (1 dim)")
         print(f"Mouse X: {self.mouse_x_start}-{self.mouse_x_end} ({self.mouse_x_end - self.mouse_x_start} dims)")
         print(f"Mouse Y: {self.mouse_y_start}-{self.mouse_y_end} ({self.mouse_y_end - self.mouse_y_start} dims)")
         print(f"Total: {self.mouse_y_end} dimensions")
-        print(
-            f"Active dimensions: 1 + {len(self.mouse_x_subset)} + {len(self.mouse_y_subset)} = {1 + len(self.mouse_x_subset) + len(self.mouse_y_subset)}"
-        )
 
     def decode_actions(self, action_vector: np.ndarray) -> Dict:
-        """Decode action vector into structured actions using definitive structure."""
+        """Decode action vector using the definitive structure from actions_to_onehot."""
         actions = {
             "keys_pressed": [],
             "mouse_left_click": False,
@@ -168,27 +148,32 @@ class CSGOActionDecoder:
             "mouse_dy": 0,
         }
 
-        # Keyboard keys are completely unused in this dataset (indices 0-10)
-        # No need to decode them as they're all zeros
+        # Decode keyboard keys (indices 0-10)
+        keys_onehot = action_vector[self.keys_start : self.keys_end]
+        for i, pressed in enumerate(keys_onehot):
+            if pressed > 0.5 and i < len(CSGO_KEY_MAPPING):
+                key_name, _ = CSGO_KEY_MAPPING[i]
+                actions["keys_pressed"].append(key_name)
 
-        # Decode single click action (index 11)
-        # Since we don't know if it's left or right click, assume left click
-        if action_vector[self.click_index] > 0.5:
+        # Decode mouse clicks
+        if action_vector[self.lclick_index] > 0.5:
             actions["mouse_left_click"] = True
+        if action_vector[self.rclick_index] > 0.5:
+            actions["mouse_right_click"] = True
 
-        # Decode mouse X movement (indices 13-34, 22 dimensions)
+        # Decode mouse X movement (indices 13-35, 23 dimensions)
         mouse_x_onehot = action_vector[self.mouse_x_start : self.mouse_x_end]
-        if len(mouse_x_onehot) == len(self.mouse_x_subset):
+        if len(mouse_x_onehot) == len(self.mouse_x_possibles):
             x_idx = np.argmax(mouse_x_onehot)
             if mouse_x_onehot[x_idx] > 0.5:  # Only if actually active
-                actions["mouse_dx"] = int(self.mouse_x_subset[x_idx])
+                actions["mouse_dx"] = int(self.mouse_x_possibles[x_idx])
 
         # Decode mouse Y movement (indices 36-50, 15 dimensions)
         mouse_y_onehot = action_vector[self.mouse_y_start : self.mouse_y_end]
-        if len(mouse_y_onehot) == len(self.mouse_y_subset):
+        if len(mouse_y_onehot) == len(self.mouse_y_possibles):
             y_idx = np.argmax(mouse_y_onehot)
             if mouse_y_onehot[y_idx] > 0.5:  # Only if actually active
-                actions["mouse_dy"] = int(self.mouse_y_subset[y_idx])
+                actions["mouse_dy"] = int(self.mouse_y_possibles[y_idx])
 
         return actions
 
@@ -330,21 +315,21 @@ def convert_hdf5_to_owamcap(
 
             # Key releases
             for key in pressed_keys - current_keys:
-                if key in CSGO_KEY_MAPPING:
-                    kb_event = KeyboardEvent(event_type="release", vk=CSGO_KEY_MAPPING[key], timestamp=timestamp_ns)
+                if key in CSGO_KEY_DICT:
+                    kb_event = KeyboardEvent(event_type="release", vk=CSGO_KEY_DICT[key], timestamp=timestamp_ns)
                     writer.write_message(kb_event, topic="keyboard", timestamp=timestamp_ns)
 
             # Key presses
             for key in current_keys - pressed_keys:
-                if key in CSGO_KEY_MAPPING:
-                    kb_event = KeyboardEvent(event_type="press", vk=CSGO_KEY_MAPPING[key], timestamp=timestamp_ns)
+                if key in CSGO_KEY_DICT:
+                    kb_event = KeyboardEvent(event_type="press", vk=CSGO_KEY_DICT[key], timestamp=timestamp_ns)
                     writer.write_message(kb_event, topic="keyboard", timestamp=timestamp_ns)
 
             pressed_keys = current_keys
 
             # Write keyboard state
             kb_state = KeyboardState(
-                buttons={CSGO_KEY_MAPPING[key] for key in pressed_keys if key in CSGO_KEY_MAPPING},
+                buttons={CSGO_KEY_DICT[key] for key in pressed_keys if key in CSGO_KEY_DICT},
                 timestamp=timestamp_ns,
             )
             writer.write_message(kb_state, topic="keyboard/state", timestamp=timestamp_ns)
