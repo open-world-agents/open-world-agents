@@ -28,29 +28,25 @@ def test_action_decoder():
 
     action_vector = np.zeros(51)
 
-    # Set some keys pressed (W, A, D keys)
-    action_vector[0] = 1  # W key
-    action_vector[1] = 1  # A key
-    action_vector[3] = 1  # D key
+    # Based on real data analysis, keyboard keys (indices 0-10) are unused
+    # Only test mouse actions which are actually present in the dataset
 
-    # Set left mouse click (adjusted for new structure)
-    action_vector[9] = 1  # Left click press (now at index 9)
+    # Set mouse click (index 11)
+    action_vector[11] = 1  # Click action
 
-    # Set mouse movement (using new structure)
-    action_vector[13 + 12] = 1  # Mouse X = 2 (index 12 in mouse_x_possibles)
-    action_vector[36 + 8] = 1  # Mouse Y = 2 (index 8 in mouse_y_possibles)
+    # Set mouse movement (using definitive structure)
+    action_vector[13 + 11] = 1  # Mouse X = 2 (index 11 in mouse_x_subset)
+    action_vector[36 + 8] = 1  # Mouse Y = 2 (index 8 in mouse_y_subset)
 
     # Decode actions
     actions = decoder.decode_actions(action_vector)
 
     print(f"  Decoded actions: {actions}")
 
-    # Validate results
-    assert "w" in actions["keys_pressed"], "W key should be pressed"
-    assert "a" in actions["keys_pressed"], "A key should be pressed"
-    assert "d" in actions["keys_pressed"], "D key should be pressed"
-    assert actions["mouse_left_click"], "Left mouse click should be detected"
+    # Validate results (only test what's actually in the dataset)
+    assert actions["mouse_left_click"], "Mouse click should be detected"
     assert actions["mouse_dx"] != 0 or actions["mouse_dy"] != 0, "Mouse movement should be detected"
+    assert len(actions["keys_pressed"]) == 0, "No keyboard keys should be detected (unused in dataset)"
 
     print("  ✓ Action decoder test passed")
     return True
@@ -83,13 +79,12 @@ def test_conversion_with_sample_data():
                 # Create sample action vector (51,)
                 action_vector = np.zeros(51, dtype=np.float64)
 
-                # Add some random actions (adjusted for new structure)
-                if i % 3 == 0:  # Every 3rd frame, press W key
-                    action_vector[0] = 1.0
-                if i % 4 == 0:  # Every 4th frame, left click
-                    action_vector[9] = 1.0  # Left click at index 9
+                # Add some random actions (based on definitive structure)
+                # No keyboard keys since they're unused in the dataset
+                if i % 4 == 0:  # Every 4th frame, mouse click
+                    action_vector[11] = 1.0  # Click at index 11
                 if i % 2 == 0:  # Every 2nd frame, mouse movement
-                    action_vector[13 + (i % 23)] = 1.0  # Random mouse X (23 bins)
+                    action_vector[13 + (i % 22)] = 1.0  # Random mouse X (22 bins)
                     action_vector[36 + (i % 15)] = 1.0  # Random mouse Y (15 bins)
 
                 f[f"frame_{i}_y"] = action_vector
@@ -128,9 +123,9 @@ def test_conversion_with_sample_data():
             assert stats["frame_count"] == num_frames, f"Expected {num_frames} frames, got {stats['frame_count']}"
             assert "screen" in stats["topics"], "Screen topic should be present"
             assert "mouse" in stats["topics"], "Mouse topic should be present"
-            assert "keyboard" in stats["topics"], "Keyboard topic should be present"
             assert "mouse/state" in stats["topics"], "Mouse state topic should be present"
             assert "keyboard/state" in stats["topics"], "Keyboard state topic should be present"
+            # Note: "keyboard" topic may not be present if no key press/release events occur
 
             print("  ✓ Conversion test passed")
             return True
