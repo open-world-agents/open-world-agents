@@ -5,7 +5,7 @@ Tests for the simplified recording features: health monitoring, delayed start, a
 import time
 from unittest.mock import MagicMock, patch
 
-from owa.ocap.record import check_resources_health, countdown_delay
+from owa.ocap.recorder import check_resources_health, countdown_delay
 
 
 class TestHealthCheck:
@@ -62,7 +62,7 @@ class TestCountdownDelay:
 
     def test_countdown_delay_short_duration(self):
         """Test countdown for short duration (< 3 seconds)."""
-        with patch("owa.ocap.record.logger") as mock_logger, patch("time.sleep") as mock_sleep:
+        with patch("owa.ocap.recorder.logger") as mock_logger, patch("time.sleep") as mock_sleep:
             countdown_delay(1.5)
 
             # Should log start message and call sleep once
@@ -71,7 +71,7 @@ class TestCountdownDelay:
 
     def test_countdown_delay_long_duration(self):
         """Test countdown for long duration (>= 3 seconds)."""
-        with patch("owa.ocap.record.logger") as mock_logger, patch("time.sleep") as mock_sleep:  # noqa: F841
+        with patch("owa.ocap.recorder.logger") as mock_logger, patch("time.sleep") as mock_sleep:  # noqa: F841
             countdown_delay(3.5)
 
             # Should log start message and countdown messages

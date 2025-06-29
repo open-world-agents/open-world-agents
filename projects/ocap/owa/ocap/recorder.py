@@ -11,7 +11,6 @@ from tqdm import tqdm
 from typing_extensions import Annotated
 
 from mcap_owa.highlevel import OWAMcapWriter
-from owa.cli.utils import check_for_update
 from owa.core import LISTENERS, get_plugin_discovery
 from owa.core.time import TimeUnits
 
@@ -319,6 +318,8 @@ def record(
 def main():
     # Check for updates on startup (skip in CI environments)
     if not os.getenv("GITHUB_ACTIONS"):
+        from owa.cli.utils import check_for_update
+
         check_for_update("ocap", silent=False)
     typer.run(record)
 

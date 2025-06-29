@@ -30,7 +30,7 @@ description = "Simple wrapper to restore ocap command"
 
 [project.scripts]
 owl = "owa.cli:app"
-ocap = "owa.ocap.record:main"
+ocap = "owa.ocap.recorder:main"
 """)
 
         try:

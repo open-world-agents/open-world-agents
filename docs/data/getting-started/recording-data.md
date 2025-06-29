@@ -22,7 +22,7 @@ High-performance desktop recorder for Windows. Captures screen, audio, keyboard,
 - **High performance**: Hardware-accelerated with Windows APIs and [GStreamer](https://gstreamer.freedesktop.org/)
 - **Efficient encoding**: [H265/HEVC](https://en.wikipedia.org/wiki/High_Efficiency_Video_Coding) for high quality and small file size
 - **Simple operation**: `ocap FILE_LOCATION` (stop with Ctrl+C)
-- **Clean architecture**: Core logic in [single 320-line Python file](https://github.com/open-world-agents/open-world-agents/blob/main/projects/ocap/owa/ocap/record.py)
+- **Clean architecture**: Core logic in [single 320-line Python file](https://github.com/open-world-agents/open-world-agents/blob/main/projects/ocap/owa/ocap/recorder.py)
 - **Modern formats**: MKV with embedded timestamps, [MCAP format](https://mcap.dev/) for events
 
 ## System Requirements
@@ -133,7 +133,7 @@ flowchart TD
     style M fill:#e8f5e8
 ```
 
-- **Easy to verify**: Extensive [OWA's Env](../env/index.md) design enables customizable [`record.py`](https://github.com/open-world-agents/open-world-agents/blob/main/projects/ocap/owa/ocap/record.py)
+- **Easy to verify**: Extensive [OWA's Env](../env/index.md) design enables customizable [`recorder.py`](https://github.com/open-world-agents/open-world-agents/blob/main/projects/ocap/owa/ocap/recorder.py)
 - **Native performance**: Direct Windows API integration ([DXGI](https://learn.microsoft.com/en-us/windows/win32/direct3ddxgi/d3d10-graphics-programming-guide-dxgi)/[WGC](https://learn.microsoft.com/en-us/uwp/api/windows.graphics.capture?view=winrt-26100), [WASAPI](https://learn.microsoft.com/en-us/windows/win32/coreaudio/wasapi))
 
 ## Troubleshooting
@@ -147,9 +147,9 @@ flowchart TD
 ## FAQ
 
 - **How much disk space do recordings use?** ~100MB per minute for 1080p H265 recording.
-- **Can I customize recorded events?** Yes. Enable/disable audio, keyboard, mouse, and window events individually. Since [record.py](https://github.com/open-world-agents/open-world-agents/blob/main/projects/ocap/owa/ocap/record.py) is just a 320-line single python script, you may customize it easily.
+- **Can I customize recorded events?** Yes. Enable/disable audio, keyboard, mouse, and window events individually. Since [recorder.py](https://github.com/open-world-agents/open-world-agents/blob/main/projects/ocap/owa/ocap/recorder.py) is just a 320-line single python script, you may customize it easily.
 - **Will ocap slow down my computer?** Minimal impact with hardware acceleration. Designed for low overhead.
-- **What formats are supported?** MKV with H265/HEVC encoding for video and MCAP format for events for efficient storage and querying is supported, but you may customize it easily. (e.g. saving `jsonl` instead of `mcap` file takes minimal effort by editing [record.py](https://github.com/open-world-agents/open-world-agents/blob/main/projects/ocap/owa/ocap/record.py))
+- **What formats are supported?** MKV with H265/HEVC encoding for video and MCAP format for events for efficient storage and querying is supported, but you may customize it easily. (e.g. saving `jsonl` instead of `mcap` file takes minimal effort by editing [recorder.py](https://github.com/open-world-agents/open-world-agents/blob/main/projects/ocap/owa/ocap/recorder.py))
 
 ## When to Use ocap
 
