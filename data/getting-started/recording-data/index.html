@@ -756,7 +756,7 @@
 <li><strong>High performance</strong>: Hardware-accelerated with Windows APIs and <a href="https://gstreamer.freedesktop.org/">GStreamer</a></li>
 <li><strong>Efficient encoding</strong>: <a href="https://en.wikipedia.org/wiki/High_Efficiency_Video_Coding">H265/HEVC</a> for high quality and small file size</li>
 <li><strong>Simple operation</strong>: <code>ocap FILE_LOCATION</code> (stop with Ctrl+C)</li>
-<li><strong>Clean architecture</strong>: Core logic in <a href="https://github.com/open-world-agents/open-world-agents/blob/main/projects/ocap/owa/ocap/record.py">single 250-line Python file</a></li>
+<li><strong>Clean architecture</strong>: Core logic in <a href="https://github.com/open-world-agents/open-world-agents/blob/main/projects/ocap/owa/ocap/recorder.py">single 320-line Python file</a></li>
 <li><strong>Modern formats</strong>: MKV with embedded timestamps, <a href="https://mcap.dev/">MCAP format</a> for events</li>
 </ul>
 <h2 id="system-requirements">System Requirements<a class="headerlink" href="#system-requirements" title="Permanent link">¶</a></h2>
@@ -938,7 +938,7 @@
     style L fill:#e8f5e8
     style M fill:#e8f5e8</code></pre>
 <ul>
-<li><strong>Easy to verify</strong>: Extensive <a href="../env/index.md">OWA's Env</a> design enables customizable <a href="https://github.com/open-world-agents/open-world-agents/blob/main/projects/ocap/owa/ocap/record.py"><code>record.py</code></a></li>
+<li><strong>Easy to verify</strong>: Extensive <a href="../env/index.md">OWA's Env</a> design enables customizable <a href="https://github.com/open-world-agents/open-world-agents/blob/main/projects/ocap/owa/ocap/recorder.py"><code>recorder.py</code></a></li>
 <li><strong>Native performance</strong>: Direct Windows API integration (<a href="https://learn.microsoft.com/en-us/windows/win32/direct3ddxgi/d3d10-graphics-programming-guide-dxgi">DXGI</a>/<a href="https://learn.microsoft.com/en-us/uwp/api/windows.graphics.capture?view=winrt-26100">WGC</a>, <a href="https://learn.microsoft.com/en-us/windows/win32/coreaudio/wasapi">WASAPI</a>)</li>
 </ul>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">¶</a></h2>
@@ -952,9 +952,9 @@
 <h2 id="faq">FAQ<a class="headerlink" href="#faq" title="Permanent link">¶</a></h2>
 <ul>
 <li><strong>How much disk space do recordings use?</strong> ~100MB per minute for 1080p H265 recording.</li>
-<li><strong>Can I customize recorded events?</strong> Yes. Enable/disable audio, keyboard, mouse, and window events individually. Since <a href="https://github.com/open-world-agents/open-world-agents/blob/main/projects/ocap/owa/ocap/record.py">record.py</a> is just a 250-line single python script, you may customize it easily.</li>
+<li><strong>Can I customize recorded events?</strong> Yes. Enable/disable audio, keyboard, mouse, and window events individually. Since <a href="https://github.com/open-world-agents/open-world-agents/blob/main/projects/ocap/owa/ocap/recorder.py">recorder.py</a> is just a 320-line single python script, you may customize it easily.</li>
 <li><strong>Will ocap slow down my computer?</strong> Minimal impact with hardware acceleration. Designed for low overhead.</li>
-<li><strong>What formats are supported?</strong> MKV with H265/HEVC encoding for video and MCAP format for events for efficient storage and querying is supported, but you may customize it easily. (e.g. saving <code>jsonl</code> instead of <code>mcap</code> file takes minimal effort by editing <a href="https://github.com/open-world-agents/open-world-agents/blob/main/projects/ocap/owa/ocap/record.py">record.py</a>)</li>
+<li><strong>What formats are supported?</strong> MKV with H265/HEVC encoding for video and MCAP format for events for efficient storage and querying is supported, but you may customize it easily. (e.g. saving <code>jsonl</code> instead of <code>mcap</code> file takes minimal effort by editing <a href="https://github.com/open-world-agents/open-world-agents/blob/main/projects/ocap/owa/ocap/recorder.py">recorder.py</a>)</li>
 </ul>
 <h2 id="when-to-use-ocap">When to Use ocap<a class="headerlink" href="#when-to-use-ocap" title="Permanent link">¶</a></h2>
 <ul>
@@ -968,7 +968,7 @@
 <span class="md-icon" title="Last update">
 <svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"></path></svg>
 </span>
-<span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="June 28, 2025 18:49:29 UTC">June 28, 2025 18:49:29</span>
+<span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="June 29, 2025 15:42:56 UTC">June 29, 2025 15:42:56</span>
 </span>
 </aside>
 </article>
