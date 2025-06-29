@@ -10,6 +10,8 @@ from mcap_owa.highlevel import OWAMcapReader
 from owa.core.io.video import VideoWriter
 from owa.core.time import TimeUnits
 
+# TODO: this script run too slow, must figure out why
+
 
 def main(
     mcap_path: Annotated[Path, typer.Argument(help="Path to the input .mcap file")],
