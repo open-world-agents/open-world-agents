@@ -58,7 +58,13 @@ Convert with options:
 python convert_to_owamcap.py /mnt/raid12/datasets/CounterStrike_Deathmatch ./output \
     --max-files 5 \
     --max-frames 100 \
-    --no-video
+    --storage-mode embedded
+```
+
+Convert to MKV format (recommended):
+```bash
+python convert_to_owamcap.py /mnt/raid12/datasets/CounterStrike_Deathmatch ./output \
+    --storage-mode external_mkv
 ```
 
 ### Testing
@@ -81,7 +87,10 @@ python convert_to_owamcap.py verify ./output
 - `output_dir`: Output directory for OWAMcap files
 - `--max-files N`: Limit conversion to N files
 - `--max-frames N`: Limit each file to N frames
-- `--no-video`: Don't create external video files (embed frames directly)
+- `--storage-mode {external_mkv,external_mp4,embedded}`: How to store screen frames
+  - `external_mkv`: Create external MKV video files (recommended, smaller files)
+  - `external_mp4`: Create external MP4 video files (compatible but larger)
+  - `embedded`: Embed frames as PNG data URIs in MCAP (largest files, no external dependencies)
 - `--subset {aim_expert,dm_expert_othermaps}`: Convert specific subset only
 
 ## Action Mapping
@@ -115,38 +124,61 @@ Each converted file produces:
 - `window`: Window information (CS:GO context)
 - `screen`: Screen capture frames
 - `mouse`: Mouse events (movement, clicks)
-- `mouse_state`: Current mouse state
+- `mouse/state`: Current mouse state
 - `keyboard`: Keyboard events (press/release)
-- `keyboard_state`: Current keyboard state
+- `keyboard/state`: Current keyboard state
 
 ## Performance Considerations
 
 ### File Sizes
 - Original HDF5: ~130MB per file (1000 frames)
-- OWAMcap with external video: ~5-10MB MCAP + ~20-30MB MP4
-- OWAMcap with embedded frames: ~100-150MB MCAP
+- OWAMcap with external MKV: ~5-10MB MCAP + ~15-25MB MKV (recommended)
+- OWAMcap with external MP4: ~5-10MB MCAP + ~20-30MB MP4
+- OWAMcap with embedded frames: ~100-150MB MCAP (no external files)
 
 ### Processing Speed
 - ~1-2 minutes per file on modern hardware
 - Memory usage: ~500MB-1GB per file during conversion
 - Parallel processing not implemented (can run multiple instances)
 
+## Design Decisions
+
+### Frame Rate: 16 FPS (Not 20 Hz)
+The conversion uses **16 FPS** as confirmed in the original paper documentation. While you mentioned 20 Hz, the paper and dataset documentation consistently specify 16 FPS (62.5ms per frame). This matches the temporal structure of the HDF5 files where 1000 frames represent approximately 62.5 seconds of gameplay.
+
+### Mouse Position Quantization
+The original dataset uses **17-bin quantization** for mouse movement (-8 to +8 pixels), which we preserve for several reasons:
+
+1. **Data Fidelity**: The original data was already quantized to these bins, so we cannot recover higher precision
+2. **Compatibility**: Preserving the original quantization ensures our conversion matches the paper's methodology
+3. **Practical Range**: ±8 pixels per frame at 16 FPS provides reasonable mouse sensitivity for gameplay
+
+**Alternative Approach**: If higher precision is needed, the raw mouse movement could be reconstructed by:
+- Analyzing the one-hot vector patterns across multiple frames
+- Using interpolation between bin centers
+- However, this would introduce artifacts not present in the original data
+
+### Storage Modes
+- **External MKV** (recommended): Uses `owa.core.io.video` for efficient compression
+- **External MP4**: Compatible format but larger file sizes
+- **Embedded**: PNG data URIs for self-contained files (largest but no external dependencies)
+
 ## Data Quality Notes
 
 ### Temporal Consistency
-- Original dataset: 16 FPS (62.5ms per frame)
+- Original dataset: 16 FPS (62.5ms per frame) - confirmed from paper documentation
 - Timestamps in nanoseconds for precise timing
-- Mouse position tracking maintains continuity
+- Mouse position tracking maintains continuity across frames
 
 ### Action Fidelity
 - Key combinations preserved (e.g., W+A for diagonal movement)
-- Mouse movement quantized to 17 bins (-8 to +8 pixels)
+- Mouse movement quantized to 17 bins (-8 to +8 pixels) - preserves original data structure
 - Click timing synchronized with frame timestamps
 
 ### Limitations
 - No audio data in original dataset
-- Mouse sensitivity/acceleration not preserved
-- Some metadata (xaux) not converted
+- Mouse sensitivity/acceleration not preserved (original data was pre-quantized)
+- Some metadata (xaux) not converted (contains previous actions, not needed for replay)
 
 ## Troubleshooting
 

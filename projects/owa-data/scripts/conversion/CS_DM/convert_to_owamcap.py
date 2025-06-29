@@ -26,12 +26,12 @@ import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-import cv2
 import h5py
 import numpy as np
 
 from mcap_owa.highlevel import OWAMcapWriter
 from owa.core import MESSAGES
+from owa.core.io.video import VideoWriter
 
 # Import OWA message types
 ScreenCaptured = MESSAGES["desktop/ScreenCaptured"]
@@ -44,7 +44,7 @@ WindowInfo = MESSAGES["desktop/WindowInfo"]
 # Constants for CS:GO dataset
 CSGO_RESOLUTION = (280, 150)  # Width, Height (from dataset)
 CSGO_WINDOW_TITLE = "Counter-Strike: Global Offensive"
-FRAME_RATE = 16  # Hz (from paper)
+FRAME_RATE = 16  # Hz (from paper - confirmed in documentation)
 FRAME_DURATION_NS = int(1e9 / FRAME_RATE)  # Nanoseconds per frame
 
 # CS:GO key mappings (common keys used in the dataset)
@@ -87,6 +87,9 @@ class CSGOActionDecoder:
         self.mouse_y_end = 51  # 17 values for mouse Y movement bins
 
         # Mouse movement bins (centered around 0)
+        # Note: This quantization may lose precision. The original data uses 17 bins
+        # which suggests the original mouse movement was already quantized.
+        # We preserve the original quantization scheme for compatibility.
         self.mouse_bins = np.linspace(-8, 8, 17)  # -8 to +8 pixel movement
 
     def decode_actions(self, action_vector: np.ndarray) -> Dict:
@@ -130,34 +133,60 @@ class CSGOActionDecoder:
         return actions
 
 
-def create_video_from_frames(frames: List[np.ndarray], output_path: Path, fps: int = FRAME_RATE) -> None:
-    """Create MP4 video from frame array."""
+def create_video_from_frames(
+    frames: List[np.ndarray], output_path: Path, fps: int = FRAME_RATE, format: str = "mkv"
+) -> None:
+    """Create video file from frame array using owa.core.io.video.
+
+    Args:
+        frames: List of RGB frames (H, W, 3)
+        output_path: Output video file path
+        fps: Frames per second
+        format: Video format ("mkv" or "mp4")
+    """
     if not frames:
         return
 
-    height, width = frames[0].shape[:2]
-    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+    # Ensure output has correct extension
+    if format == "mkv" and not output_path.suffix == ".mkv":
+        output_path = output_path.with_suffix(".mkv")
+    elif format == "mp4" and not output_path.suffix == ".mp4":
+        output_path = output_path.with_suffix(".mp4")
 
-    writer = cv2.VideoWriter(str(output_path), fourcc, fps, (width, height))
-    try:
+    with VideoWriter(output_path, fps=float(fps), vfr=False) as writer:
         for frame in frames:
-            # Convert RGB to BGR for OpenCV
-            frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-            writer.write(frame_bgr)
-    finally:
-        writer.release()
+            # VideoWriter expects RGB format (which is what we have)
+            writer.write_frame(frame)
 
 
 def convert_hdf5_to_owamcap(
-    hdf5_path: Path, output_dir: Path, create_video: bool = True, max_frames: Optional[int] = None
+    hdf5_path: Path,
+    output_dir: Path,
+    storage_mode: str = "external_mkv",  # "external_mkv", "external_mp4", "embedded"
+    max_frames: Optional[int] = None,
 ) -> Path:
-    """Convert a single HDF5 file to OWAMcap format."""
+    """Convert a single HDF5 file to OWAMcap format.
+
+    Args:
+        hdf5_path: Input HDF5 file path
+        output_dir: Output directory for converted files
+        storage_mode: How to store screen frames:
+            - "external_mkv": Create external MKV video file (recommended)
+            - "external_mp4": Create external MP4 video file
+            - "embedded": Embed frames as data URIs in MCAP (larger files)
+        max_frames: Maximum number of frames to convert (None for all)
+    """
 
     print(f"Converting {hdf5_path.name}...")
 
     # Create output paths
     mcap_path = output_dir / f"{hdf5_path.stem}.mcap"
-    video_path = output_dir / f"{hdf5_path.stem}.mp4" if create_video else None
+
+    # Determine video path based on storage mode
+    video_path = None
+    if storage_mode.startswith("external_"):
+        video_format = storage_mode.split("_")[1]  # "mkv" or "mp4"
+        video_path = output_dir / f"{hdf5_path.stem}.{video_format}"
 
     # Initialize decoder
     decoder = CSGOActionDecoder()
@@ -192,10 +221,11 @@ def convert_hdf5_to_owamcap(
                 actions.append(decoder.decode_actions(action_vector))
                 helper_arrays.append(helper_arr)
 
-    # Create video if requested
-    if create_video and video_path:
-        print(f"  Creating video: {video_path.name}")
-        create_video_from_frames(frames, video_path)
+    # Create video if using external storage
+    if video_path:
+        video_format = storage_mode.split("_")[1]  # "mkv" or "mp4"
+        print(f"  Creating {video_format.upper()} video: {video_path.name}")
+        create_video_from_frames(frames, video_path, format=video_format)
 
     # Create OWAMcap file
     print(f"  Creating OWAMcap: {mcap_path.name}")
@@ -212,8 +242,8 @@ def convert_hdf5_to_owamcap(
         for frame_idx, (frame, action, helper) in enumerate(zip(frames, actions, helper_arrays)):
             timestamp_ns = frame_idx * FRAME_DURATION_NS
 
-            # Write screen capture
-            if create_video and video_path:
+            # Write screen capture based on storage mode
+            if storage_mode.startswith("external_"):
                 # Reference external video
                 screen_msg = ScreenCaptured(
                     utc_ns=timestamp_ns,
@@ -221,15 +251,17 @@ def convert_hdf5_to_owamcap(
                     shape=CSGO_RESOLUTION,
                     media_ref={"uri": str(video_path.name), "pts_ns": timestamp_ns},
                 )
-            else:
-                # Embed frame directly (for testing/small datasets)
+            else:  # embedded mode
+                # Embed frame directly as data URI
                 # Convert RGB to BGRA format as required by ScreenCaptured
+                import cv2
+
                 frame_bgra = cv2.cvtColor(frame, cv2.COLOR_RGB2BGRA)
                 screen_msg = ScreenCaptured(
                     utc_ns=timestamp_ns, source_shape=CSGO_RESOLUTION, shape=CSGO_RESOLUTION, frame_arr=frame_bgra
                 )
                 # Embed as data URI for serialization
-                screen_msg.embed_as_data_uri()
+                screen_msg.embed_as_data_uri(format="png")
 
             writer.write_message(screen_msg, topic="screen", timestamp=timestamp_ns)
 
@@ -255,7 +287,7 @@ def convert_hdf5_to_owamcap(
                 buttons={CSGO_KEY_MAPPING[key] for key in pressed_keys if key in CSGO_KEY_MAPPING},
                 timestamp=timestamp_ns,
             )
-            writer.write_message(kb_state, topic="keyboard_state", timestamp=timestamp_ns)
+            writer.write_message(kb_state, topic="keyboard/state", timestamp=timestamp_ns)
 
             # Process mouse movement
             if action["mouse_dx"] != 0 or action["mouse_dy"] != 0:
@@ -290,7 +322,7 @@ def convert_hdf5_to_owamcap(
                 mouse_buttons.add("right")
 
             mouse_state = MouseState(x=mouse_x, y=mouse_y, buttons=mouse_buttons, timestamp=timestamp_ns)
-            writer.write_message(mouse_state, topic="mouse_state", timestamp=timestamp_ns)
+            writer.write_message(mouse_state, topic="mouse/state", timestamp=timestamp_ns)
 
     print(f"  Conversion complete: {mcap_path}")
     return mcap_path
@@ -302,7 +334,12 @@ def main():
     parser.add_argument("output_dir", type=Path, help="Output directory for OWAMcap files")
     parser.add_argument("--max-files", type=int, help="Maximum number of files to convert")
     parser.add_argument("--max-frames", type=int, help="Maximum frames per file to convert")
-    parser.add_argument("--no-video", action="store_true", help="Don't create external video files")
+    parser.add_argument(
+        "--storage-mode",
+        choices=["external_mkv", "external_mp4", "embedded"],
+        default="external_mkv",
+        help="How to store screen frames: external_mkv (default), external_mp4, or embedded",
+    )
     parser.add_argument("--subset", choices=["aim_expert", "dm_expert_othermaps"], help="Convert specific subset only")
 
     args = parser.parse_args()
@@ -344,7 +381,7 @@ def main():
 
         try:
             mcap_path = convert_hdf5_to_owamcap(
-                hdf5_file, args.output_dir, create_video=not args.no_video, max_frames=args.max_frames
+                hdf5_file, args.output_dir, storage_mode=args.storage_mode, max_frames=args.max_frames
             )
             converted_files.append(mcap_path)
 

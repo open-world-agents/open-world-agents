@@ -105,7 +105,7 @@ def test_conversion_with_sample_data():
         # Test conversion
         print("  Converting to OWAMcap...")
         try:
-            mcap_path = convert_hdf5_to_owamcap(input_file, output_dir, create_video=True, max_frames=None)
+            mcap_path = convert_hdf5_to_owamcap(input_file, output_dir, storage_mode="external_mkv", max_frames=None)
             print(f"  ✓ Conversion successful: {mcap_path}")
 
             # Verify the output
@@ -129,6 +129,8 @@ def test_conversion_with_sample_data():
             assert "screen" in stats["topics"], "Screen topic should be present"
             assert "mouse" in stats["topics"], "Mouse topic should be present"
             assert "keyboard" in stats["topics"], "Keyboard topic should be present"
+            assert "mouse/state" in stats["topics"], "Mouse state topic should be present"
+            assert "keyboard/state" in stats["topics"], "Keyboard state topic should be present"
 
             print("  ✓ Conversion test passed")
             return True
@@ -174,7 +176,7 @@ def test_real_dataset_sample():
             mcap_path = convert_hdf5_to_owamcap(
                 sample_file,
                 output_dir,
-                create_video=False,  # Skip video for faster testing
+                storage_mode="embedded",  # Skip video for faster testing
                 max_frames=50,  # Limit to 50 frames for testing
             )
 
