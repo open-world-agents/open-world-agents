@@ -1,0 +1,194 @@
+# Counter-Strike Deathmatch to OWAMcap Conversion
+
+This directory contains scripts to convert the Counter-Strike Deathmatch dataset from the paper ["Counter-Strike Deathmatch with Large-Scale Behavioural Cloning"](https://arxiv.org/abs/2104.04258) by Tim Pearce and Jun Zhu into OWAMcap format for use with Open World Agents.
+
+## Dataset Overview
+
+The original dataset contains:
+- **5,500+ HDF5 files** with gameplay recordings
+- **700+ GB** of data across multiple subsets
+- **1000 frames per file** (~1 minute of gameplay at 16 FPS)
+- **Screenshots** (150×280 RGB images)
+- **Action vectors** (51-dimensional) with keyboard/mouse inputs
+- **Metadata** including kill/death flags
+
+### Dataset Subsets
+
+- `dataset_aim_expert/`: 45 files, 6GB - Expert aim training data
+- `dataset_dm_expert_othermaps/`: 30 files, 3.6GB - Expert deathmatch on various maps
+- `dataset_dm_expert_dust2/`: 190 files, 24GB - Expert deathmatch on dust2 (not available in current mount)
+- `dataset_metadata/`: 61 files, 5.5GB - Metadata files corresponding to HDF5 data
+
+## Conversion Process
+
+The conversion script (`convert_to_owamcap.py`) transforms the dataset into OWAMcap format:
+
+### Input Format (HDF5)
+- `frame_i_x`: Screenshots (150, 280, 3) RGB images
+- `frame_i_y`: Action vectors (51,) containing [keys_pressed_onehot, Lclicks_onehot, Rclicks_onehot, mouse_x_onehot, mouse_y_onehot]
+- `frame_i_xaux`: Previous actions + metadata (54,) - not used in conversion
+- `frame_i_helperarr`: [kill_flag, death_flag] (2,) - preserved as metadata
+
+### Output Format (OWAMcap)
+- **ScreenCaptured** messages with external video references or embedded frames
+- **MouseEvent** messages for mouse movements and clicks
+- **MouseState** messages for current mouse position and button states
+- **KeyboardEvent** messages for key presses and releases
+- **KeyboardState** messages for current pressed keys
+- **WindowInfo** messages for CS:GO window context
+
+## Usage
+
+### Prerequisites
+
+Ensure you have the required packages installed:
+```bash
+pip install mcap-owa-support owa-msgs opencv-python h5py numpy
+```
+
+### Basic Conversion
+
+Convert a specific subset:
+```bash
+python convert_to_owamcap.py /mnt/raid12/datasets/CounterStrike_Deathmatch ./output --subset aim_expert
+```
+
+Convert with options:
+```bash
+python convert_to_owamcap.py /mnt/raid12/datasets/CounterStrike_Deathmatch ./output \
+    --max-files 5 \
+    --max-frames 100 \
+    --no-video
+```
+
+### Testing
+
+Run tests to validate the conversion:
+```bash
+python test_conversion.py
+```
+
+### Verification
+
+Verify converted files:
+```bash
+python convert_to_owamcap.py verify ./output
+```
+
+## Command Line Options
+
+- `input_dir`: Input directory containing HDF5 files
+- `output_dir`: Output directory for OWAMcap files
+- `--max-files N`: Limit conversion to N files
+- `--max-frames N`: Limit each file to N frames
+- `--no-video`: Don't create external video files (embed frames directly)
+- `--subset {aim_expert,dm_expert_othermaps}`: Convert specific subset only
+
+## Action Mapping
+
+### Keyboard Keys
+The script maps CS:GO actions to Windows Virtual Key Codes:
+- `W` (0x57): Forward movement
+- `A` (0x41): Left strafe
+- `S` (0x53): Backward movement
+- `D` (0x44): Right strafe
+- `Space` (0x20): Jump
+- `Ctrl` (0x11): Crouch
+- `Shift` (0x10): Walk
+- `R` (0x52): Reload
+- `E` (0x45): Use/interact
+- `Q` (0x51): Quick weapon switch
+- `1-5` (0x31-0x35): Weapon selection
+
+### Mouse Actions
+- **Movement**: Decoded from 17-bin one-hot vectors (-8 to +8 pixels)
+- **Left Click**: Primary fire/action
+- **Right Click**: Secondary fire/aim down sights
+
+## Output Structure
+
+Each converted file produces:
+- `filename.mcap`: OWAMcap file with all messages
+- `filename.mp4`: External video file (if `--no-video` not used)
+
+### Topics in OWAMcap Files
+- `window`: Window information (CS:GO context)
+- `screen`: Screen capture frames
+- `mouse`: Mouse events (movement, clicks)
+- `mouse_state`: Current mouse state
+- `keyboard`: Keyboard events (press/release)
+- `keyboard_state`: Current keyboard state
+
+## Performance Considerations
+
+### File Sizes
+- Original HDF5: ~130MB per file (1000 frames)
+- OWAMcap with external video: ~5-10MB MCAP + ~20-30MB MP4
+- OWAMcap with embedded frames: ~100-150MB MCAP
+
+### Processing Speed
+- ~1-2 minutes per file on modern hardware
+- Memory usage: ~500MB-1GB per file during conversion
+- Parallel processing not implemented (can run multiple instances)
+
+## Data Quality Notes
+
+### Temporal Consistency
+- Original dataset: 16 FPS (62.5ms per frame)
+- Timestamps in nanoseconds for precise timing
+- Mouse position tracking maintains continuity
+
+### Action Fidelity
+- Key combinations preserved (e.g., W+A for diagonal movement)
+- Mouse movement quantized to 17 bins (-8 to +8 pixels)
+- Click timing synchronized with frame timestamps
+
+### Limitations
+- No audio data in original dataset
+- Mouse sensitivity/acceleration not preserved
+- Some metadata (xaux) not converted
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Import errors**: Ensure all OWA packages are installed
+2. **Memory errors**: Use `--max-frames` to limit memory usage
+3. **Disk space**: Each file produces ~30-50MB output
+4. **Permission errors**: Check dataset mount permissions
+
+### Validation
+
+The verification script checks:
+- File integrity and readability
+- Message type validation
+- Topic consistency
+- Timestamp ordering
+- Frame count accuracy
+
+## Example Output
+
+```
+=== Conversion Summary ===
+Converted 45/45 files
+Total time: 127.3 seconds
+Output directory: ./output
+
+=== Verification Results ===
+Found 45 OWAMcap files
+
+Verifying hdf5_aim_july2021_expert_1.mcap:
+  File size: 8.2 MB
+  Duration: 62.4 seconds
+  Messages: 15847
+  Frames: 1000
+  Topics: ['window', 'screen', 'mouse', 'mouse_state', 'keyboard', 'keyboard_state']
+  ✓ No errors found
+```
+
+## References
+
+- [Original Paper](https://arxiv.org/abs/2104.04258)
+- [Dataset on HuggingFace](https://huggingface.co/datasets/TeaPearce/CounterStrike_Deathmatch)
+- [OWAMcap Documentation](../../../docs/data/technical-reference/format-guide.md)
+- [OWA Project](https://github.com/open-world-agents/open-world-agents)

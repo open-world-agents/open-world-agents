@@ -1,0 +1,19 @@
+#1
+
+I want to convert dataset from "Counter-Strike Deathmatch with Large-Scale Behavioural Cloning" into OWAMcap format.
+
+you can check the detail of "Counter-Strike Deathmatch with Large-Scale Behavioural Cloning" from @/workspace/projects/owa-data/scripts/conversion/CS_DM/ .
+
+you can check the detail of OWAMcap from @/workspace/docs/data/technical-reference/format-guide.md and @/workspace/docs/data/ .
+
+write a complete conversion script, creating OWAMcap dataset, verifying the output.
+
+for your file access permission, refer to @/workspace/.devcontainer/devcontainer.json . you are currently in devcontainer.
+
+#2 
+
+- for the topic name, use `keyboard/state` instead of `keyboard_state`. same for mouse/state.
+- use `owa.core.io.video` to read/write video, instead of cv2.
+- make convert script's feature configurable: I want to following option configurable. (1) save frames as embedded image (see @/workspace/docs/data/technical-reference/format-guide.md ) or (2) mkv(use owacore.io.video)
+- original data's framerate seem to be 20Hz. consider this.(or, if it is not, explain me why. I'm not sure on this.)
+- it seems that you converted mouse position as int from -8, 8. (1) is it your design, right? (2) do you think your design is right?

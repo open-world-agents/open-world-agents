@@ -32,6 +32,7 @@ viewer = [
 
 [dependency-groups]
 dev = [
+    "ipykernel>=6.29.5",
     "ipython>=9.0.1",
     "pytest>=8.3.5",
     "pytest-cov>=6.0.0",
