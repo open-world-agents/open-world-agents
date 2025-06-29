@@ -1,3 +1,3 @@
-from .record import record
+from .recorder import record
 
 __all__ = ["record"]

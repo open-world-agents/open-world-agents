@@ -24,4 +24,4 @@ build-backend = "hatchling.build"
 packages = ["owa"]
 
 [project.scripts]
-ocap = "owa.ocap.record:main"
+ocap = "owa.ocap.recorder:main"
