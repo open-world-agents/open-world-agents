@@ -76,3 +76,8 @@ above is mouse tokenization logic used in original repo. you can see this in fol
 
 - https://github.com/TeaPearce/Counter-Strike_Behavioural_Cloning/blob/a663f4ea7b20aebde884fbfa9d189fa8ba841454/dm_pretrain_process.py#L59: contains a line calling `mouse_preprocess`
 - https://github.com/TeaPearce/Counter-Strike_Behavioural_Cloning/blob/main/config.py#L38: contains `mouse_preprocess`
+
+# Query 4
+
+1. why selected keys(q,tab,1~5) are commented out here?
+2. note that `Warning: Expected 51 dimensions, calculated 55` is printing out in terminal.

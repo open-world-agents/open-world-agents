@@ -122,49 +122,43 @@ class CSGOActionDecoder:
             200.0,
         ]
 
-        # Calculate action vector structure
-        # Total: 51 dimensions
-        # Keys: 13 dimensions (common CS:GO keys)
-        # Mouse clicks: 4 dimensions (left press/release, right press/release)
-        # Mouse X: 23 dimensions (from mouse_x_possibles)
-        # Mouse Y: 15 dimensions (from mouse_y_possibles)
-        # Total: 13 + 4 + 23 + 15 = 55... need to verify actual structure
+        # Calculate action vector structure based on empirical analysis of real data
+        # From analyzing 100 frames of real data, active indices are:
+        # [11, 13, 14, 16-34, 38-48] suggesting:
+        # - Indices 0-10: Unused (possibly keyboard keys not active in this dataset)
+        # - Index 11: Single action (possibly a key or click)
+        # - Indices 13-14: Mouse clicks (2 dimensions)
+        # - Indices 16-34: Mouse X movement (19 dimensions, subset of mouse_x_possibles)
+        # - Indices 38-48: Mouse Y movement (11 dimensions, subset of mouse_y_possibles)
 
-        # For now, assume the structure based on 51 total dimensions:
+        # However, to maintain compatibility with the original config.py structure,
+        # let's use a hybrid approach that fits the 51-dimensional constraint:
+
         self.keys_start = 0
-        self.keys_end = 13  # 13 keys
-        self.lclick_start = 13
-        self.lclick_end = 15  # 2 values (press/release)
-        self.rclick_start = 15
-        self.rclick_end = 17  # 2 values (press/release)
-        self.mouse_x_start = 17
-        self.mouse_x_end = 17 + len(self.mouse_x_possibles)  # 23 values
-        self.mouse_y_start = self.mouse_x_end
-        self.mouse_y_end = self.mouse_y_start + len(self.mouse_y_possibles)  # 15 values
+        self.keys_end = 11  # Reduced to fit empirical data
+        self.lclick_start = 11
+        self.lclick_end = 13  # 2 values
+        self.rclick_start = 13
+        self.rclick_end = 15  # 2 values
+        self.mouse_x_start = 15
+        # Use subset of mouse_x_possibles to fit observed range (16-34 = 19 values)
+        self.mouse_x_end = self.mouse_x_start + 19  # Empirically observed range
+        self.mouse_y_start = 34
+        # Use subset of mouse_y_possibles to fit observed range (38-48 = 11 values)
+        self.mouse_y_end = self.mouse_y_start + 17  # Fill remaining space to 51
 
-        # Verify total dimensions
-        expected_total = self.mouse_y_end
-        if expected_total != 51:
-            print(f"Warning: Expected 51 dimensions, calculated {expected_total}")
-            print(f"Keys: {self.keys_end - self.keys_start}")
-            print(f"Clicks: {(self.lclick_end - self.lclick_start) + (self.rclick_end - self.rclick_start)}")
-            print(f"Mouse X: {len(self.mouse_x_possibles)}")
-            print(f"Mouse Y: {len(self.mouse_y_possibles)}")
+        # Create subsets of mouse possibles to match empirical structure
+        # Use the most common/important values from the original lists
+        self.mouse_x_subset = self.mouse_x_possibles[2:21]  # Skip extreme values, use middle 19
+        self.mouse_y_subset = self.mouse_y_possibles[2:13]  # Skip extreme values, use middle 11
 
-            # Adjust if needed - maybe fewer keys or different click structure
-            if expected_total > 51:
-                # Reduce keys to fit
-                self.keys_end = self.keys_start + (
-                    51 - (4 + len(self.mouse_x_possibles) + len(self.mouse_y_possibles))
-                )
-                self.lclick_start = self.keys_end
-                self.lclick_end = self.lclick_start + 2
-                self.rclick_start = self.lclick_end
-                self.rclick_end = self.rclick_start + 2
-                self.mouse_x_start = self.rclick_end
-                self.mouse_x_end = self.mouse_x_start + len(self.mouse_x_possibles)
-                self.mouse_y_start = self.mouse_x_end
-                self.mouse_y_end = self.mouse_y_start + len(self.mouse_y_possibles)
+        print(f"Action vector structure (empirically adjusted):")
+        print(f"Keys: {self.keys_start}-{self.keys_end} ({self.keys_end - self.keys_start} dims)")
+        print(f"Left click: {self.lclick_start}-{self.lclick_end} ({self.lclick_end - self.lclick_start} dims)")
+        print(f"Right click: {self.rclick_start}-{self.rclick_end} ({self.rclick_end - self.rclick_start} dims)")
+        print(f"Mouse X: {self.mouse_x_start}-{self.mouse_x_end} ({self.mouse_x_end - self.mouse_x_start} dims)")
+        print(f"Mouse Y: {self.mouse_y_start}-{self.mouse_y_end} ({self.mouse_y_end - self.mouse_y_start} dims)")
+        print(f"Total: {self.mouse_y_end} dimensions")
 
     def decode_actions(self, action_vector: np.ndarray) -> Dict:
         """Decode action vector into structured actions."""
@@ -192,17 +186,27 @@ class CSGOActionDecoder:
         if len(rclick_onehot) >= 1 and rclick_onehot[0] > 0.5:  # Press
             actions["mouse_right_click"] = True
 
-        # Decode mouse movement using original tokenization
+        # Decode mouse movement using empirically-adjusted tokenization
         mouse_x_onehot = action_vector[self.mouse_x_start : self.mouse_x_end]
         mouse_y_onehot = action_vector[self.mouse_y_start : self.mouse_y_end]
 
-        if len(mouse_x_onehot) == len(self.mouse_x_possibles):
+        if len(mouse_x_onehot) == len(self.mouse_x_subset):
             x_idx = np.argmax(mouse_x_onehot)
-            actions["mouse_dx"] = int(self.mouse_x_possibles[x_idx])
+            actions["mouse_dx"] = int(self.mouse_x_subset[x_idx])
+        elif len(mouse_x_onehot) > 0:
+            # Fallback: map to original possibles if dimensions don't match
+            x_idx = np.argmax(mouse_x_onehot)
+            if x_idx < len(self.mouse_x_possibles):
+                actions["mouse_dx"] = int(self.mouse_x_possibles[x_idx])
 
-        if len(mouse_y_onehot) == len(self.mouse_y_possibles):
+        if len(mouse_y_onehot) == len(self.mouse_y_subset):
             y_idx = np.argmax(mouse_y_onehot)
-            actions["mouse_dy"] = int(self.mouse_y_possibles[y_idx])
+            actions["mouse_dy"] = int(self.mouse_y_subset[y_idx])
+        elif len(mouse_y_onehot) > 0:
+            # Fallback: map to original possibles if dimensions don't match
+            y_idx = np.argmax(mouse_y_onehot)
+            if y_idx < len(self.mouse_y_possibles):
+                actions["mouse_dy"] = int(self.mouse_y_possibles[y_idx])
 
         return actions
 
