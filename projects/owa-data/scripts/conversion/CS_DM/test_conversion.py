@@ -129,8 +129,7 @@ def test_conversion_with_sample_data():
             assert stats["frame_count"] == num_frames, f"Expected {num_frames} frames, got {stats['frame_count']}"
             assert "screen" in stats["topics"], "Screen topic should be present"
             assert "mouse" in stats["topics"], "Mouse topic should be present"
-            assert "mouse/state" in stats["topics"], "Mouse state topic should be present"
-            assert "keyboard/state" in stats["topics"], "Keyboard state topic should be present"
+            assert "window" in stats["topics"], "Window topic should be present"
             # Note: "keyboard" topic may not be present if no key press/release events occur
 
             print("  ✓ Conversion test passed")

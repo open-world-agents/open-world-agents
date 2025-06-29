@@ -470,3 +470,9 @@ def actions_to_onehot(keys_pressed, mouse_x, mouse_y, Lclicks, Rclicks):
 
 I think it's how the 51-dim vector created. it's from config.py in original repo.
 keyboard 11+ mouse 1+1(left/right) + mouse position 23+15(x/y) = 51.
+
+# Query 7
+
+- cleanup unnecessary prints and files. (e.g. printing `DEFINITIVE action vector structure` seems not to be needed) (e.g. is demo.py needed?)
+- I don't think `mouse/state` is needed, in data only `mouse` is present and we can't know `mouse/state`. same for `keyboard/state`.
+- repeat window event every 1Hz.

@@ -130,14 +130,6 @@ class CSGOActionDecoder:
         self.mouse_y_start = 36
         self.mouse_y_end = 51  # 15 dimensions (indices 36-50)
 
-        print("DEFINITIVE action vector structure (from actions_to_onehot function):")
-        print(f"Keys: {self.keys_start}-{self.keys_end} ({self.keys_end - self.keys_start} dims)")
-        print(f"Left click: index {self.lclick_index} (1 dim)")
-        print(f"Right click: index {self.rclick_index} (1 dim)")
-        print(f"Mouse X: {self.mouse_x_start}-{self.mouse_x_end} ({self.mouse_x_end - self.mouse_x_start} dims)")
-        print(f"Mouse Y: {self.mouse_y_start}-{self.mouse_y_end} ({self.mouse_y_end - self.mouse_y_start} dims)")
-        print(f"Total: {self.mouse_y_end} dimensions")
-
     def decode_actions(self, action_vector: np.ndarray) -> Dict:
         """Decode action vector using the definitive structure from actions_to_onehot."""
         actions = {
@@ -276,16 +268,22 @@ def convert_hdf5_to_owamcap(
     print(f"  Creating OWAMcap: {mcap_path.name}")
 
     with OWAMcapWriter(str(mcap_path)) as writer:
-        # Write window info
-        window_msg = WindowInfo(title=CSGO_WINDOW_TITLE, rect=(0, 0, CSGO_RESOLUTION[0], CSGO_RESOLUTION[1]), hWnd=1)
-        writer.write_message(window_msg, topic="window", timestamp=0)
-
-        # Track mouse state
+        # Track mouse position and keyboard state
         mouse_x, mouse_y = CSGO_RESOLUTION[0] // 2, CSGO_RESOLUTION[1] // 2  # Start at center
         pressed_keys = set()
+        last_window_time = -1
 
         for frame_idx, (frame, action, helper) in enumerate(zip(frames, actions, helper_arrays)):
             timestamp_ns = frame_idx * FRAME_DURATION_NS
+
+            # Write window info every 1Hz (every 16 frames at 16 FPS)
+            current_time_seconds = timestamp_ns // 1_000_000_000
+            if current_time_seconds > last_window_time:
+                window_msg = WindowInfo(
+                    title=CSGO_WINDOW_TITLE, rect=(0, 0, CSGO_RESOLUTION[0], CSGO_RESOLUTION[1]), hWnd=1
+                )
+                writer.write_message(window_msg, topic="window", timestamp=timestamp_ns)
+                last_window_time = current_time_seconds
 
             # Write screen capture based on storage mode
             if storage_mode.startswith("external_"):
@@ -327,13 +325,6 @@ def convert_hdf5_to_owamcap(
 
             pressed_keys = current_keys
 
-            # Write keyboard state
-            kb_state = KeyboardState(
-                buttons={CSGO_KEY_DICT[key] for key in pressed_keys if key in CSGO_KEY_DICT},
-                timestamp=timestamp_ns,
-            )
-            writer.write_message(kb_state, topic="keyboard/state", timestamp=timestamp_ns)
-
             # Process mouse movement
             if action["mouse_dx"] != 0 or action["mouse_dy"] != 0:
                 mouse_x += action["mouse_dx"]
@@ -358,16 +349,6 @@ def convert_hdf5_to_owamcap(
                     event_type="click", x=mouse_x, y=mouse_y, button="right", pressed=True, timestamp=timestamp_ns
                 )
                 writer.write_message(mouse_event, topic="mouse", timestamp=timestamp_ns)
-
-            # Write mouse state
-            mouse_buttons = set()
-            if action["mouse_left_click"]:
-                mouse_buttons.add("left")
-            if action["mouse_right_click"]:
-                mouse_buttons.add("right")
-
-            mouse_state = MouseState(x=mouse_x, y=mouse_y, buttons=mouse_buttons, timestamp=timestamp_ns)
-            writer.write_message(mouse_state, topic="mouse/state", timestamp=timestamp_ns)
 
     print(f"  Conversion complete: {mcap_path}")
     return mcap_path
@@ -436,7 +417,7 @@ def main():
 
     # Summary
     elapsed_time = time.time() - start_time
-    print(f"\n=== Conversion Summary ===")
+    print("\n=== Conversion Summary ===")
     print(f"Converted {len(converted_files)}/{len(hdf5_files)} files")
     print(f"Total time: {elapsed_time:.1f} seconds")
     print(f"Output directory: {args.output_dir}")
@@ -512,7 +493,7 @@ def verify_conversion(output_dir: Path, sample_size: int = 3) -> None:
         print("No OWAMcap files found for verification")
         return
 
-    print(f"\n=== Verification Results ===")
+    print("\n=== Verification Results ===")
     print(f"Found {len(mcap_files)} OWAMcap files")
 
     # Sample files for detailed verification
