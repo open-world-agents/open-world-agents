@@ -2,7 +2,7 @@ import os
 import time
 from contextlib import contextmanager
 from pathlib import Path
-from queue import Queue
+from queue import Empty, Queue
 from typing import Optional
 
 import typer
@@ -21,6 +21,37 @@ logger.add(lambda msg: tqdm.write(msg, end=""), filter={"owa.ocap": "DEBUG", "ow
 
 event_queue = Queue()
 MCAP_LOCATION = None
+
+
+def check_resources_health(resources):
+    """Check if all resources are healthy. Returns list of unhealthy resource names."""
+    unhealthy = []
+    for resource, name in resources:
+        if not resource.is_alive():
+            unhealthy.append(name)
+    return unhealthy
+
+
+def countdown_delay(seconds: float):
+    """Display a countdown before starting recording."""
+    if seconds <= 0:
+        return
+
+    logger.info(f"⏱️ Recording will start in {seconds} seconds...")
+
+    # Show countdown for delays >= 3 seconds
+    if seconds >= 3:
+        for i in range(int(seconds), 0, -1):
+            logger.info(f"Starting in {i}...")
+            time.sleep(1)
+        # Handle fractional part
+        remaining = seconds - int(seconds)
+        if remaining > 0:
+            time.sleep(remaining)
+    else:
+        time.sleep(seconds)
+
+    logger.info("🎬 Recording started!")
 
 
 def enqueue_event(event, *, topic):
@@ -109,12 +140,16 @@ def setup_resources(
         (keyboard_state_listener, "keyboard state listener"),
         (mouse_state_listener, "mouse state listener"),
     ]
+
+    # Start all resources
     for resource, name in resources:
         resource.start()
         logger.debug(f"Started {name}")
+
     try:
-        yield
+        yield resources
     finally:
+        # Stop all resources
         for resource, name in reversed(resources):
             try:
                 resource.stop()
@@ -181,6 +216,18 @@ def record(
             help="Additional arguments to pass to the pipeline. For detail, see https://gstreamer.freedesktop.org/documentation/d3d11/d3d11screencapturesrc.html"
         ),
     ] = None,
+    start_after: Annotated[
+        Optional[float],
+        typer.Option(help="Delay recording start by this many seconds. Shows countdown during delay."),
+    ] = None,
+    stop_after: Annotated[
+        Optional[float],
+        typer.Option(help="Automatically stop recording after this many seconds from start."),
+    ] = None,
+    health_check_interval: Annotated[
+        float,
+        typer.Option(help="Interval in seconds for checking resource health. Set to 0 to disable."),
+    ] = 5.0,
 ):
     """Record screen, keyboard, mouse, and window events to an `.mcap` and `.mkv` file."""
     global MCAP_LOCATION
@@ -201,6 +248,10 @@ def record(
 
     logger.info(USER_INSTRUCTION)
 
+    # Handle delayed start
+    if start_after:
+        countdown_delay(start_after)
+
     with setup_resources(
         file_location=output_file,
         record_audio=record_audio,
@@ -213,11 +264,36 @@ def record(
         width=width,
         height=height,
         additional_properties=additional_properties,
-    ):
+    ) as resources:
+        recording_start_time = time.time()
+        last_health_check = time.time()
+
+        if stop_after:
+            logger.info(f"⏰ Recording will automatically stop after {stop_after} seconds")
+
         with OWAMcapWriter(output_file) as writer, tqdm(desc="Recording", unit="event", dynamic_ncols=True) as pbar:
             try:
                 while True:
-                    topic, event, publish_time = event_queue.get()
+                    # Check if auto-stop time has been reached
+                    if stop_after and (time.time() - recording_start_time) >= stop_after:
+                        logger.info("⏰ Auto-stop time reached - stopping recording...")
+                        break
+
+                    # Periodic health check
+                    if health_check_interval > 0 and (time.time() - last_health_check) >= health_check_interval:
+                        unhealthy = check_resources_health(resources)
+                        if unhealthy:
+                            logger.error(f"⚠️ HEALTH CHECK FAILED: Unhealthy resources: {', '.join(unhealthy)}")
+                            logger.error("🛑 Terminating recording due to unhealthy resources!")
+                            break
+                        last_health_check = time.time()
+
+                    # Get event with timeout to allow periodic checks
+                    try:
+                        topic, event, publish_time = event_queue.get(timeout=0.1)
+                    except Empty:
+                        continue
+
                     pbar.update()
                     latency = time.time_ns() - publish_time
                     # warn if latency is too high, i.e., > 100ms
@@ -226,6 +302,13 @@ def record(
                             f"High latency: {latency / TimeUnits.MSECOND:.2f}ms while processing {topic} event."
                         )
                     writer.write_message(event, topic=topic, timestamp=publish_time)
+
+                    # Update progress bar with remaining time
+                    if stop_after:
+                        elapsed = time.time() - recording_start_time
+                        remaining = max(0, stop_after - elapsed)
+                        pbar.set_description(f"Recording (remaining: {remaining:.1f}s)")
+
             except KeyboardInterrupt:
                 logger.info("Recording stopped by user.")
             finally:
