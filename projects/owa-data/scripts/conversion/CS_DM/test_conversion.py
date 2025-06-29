@@ -6,7 +6,6 @@ This script tests the conversion process on a small sample of the dataset
 to ensure everything works correctly before running on the full dataset.
 """
 
-import os
 import sys
 import tempfile
 from pathlib import Path
@@ -237,7 +236,7 @@ def main():
             traceback.print_exc()
             failed += 1
 
-    print(f"\n=== Test Results ===")
+    print("\n=== Test Results ===")
     print(f"Passed: {passed}")
     print(f"Failed: {failed}")
     print(f"Total: {passed + failed}")

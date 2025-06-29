@@ -21,10 +21,9 @@ OWAMcap output:
 """
 
 import argparse
-import os
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import h5py
 import numpy as np
