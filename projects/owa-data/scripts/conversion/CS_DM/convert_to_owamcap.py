@@ -268,10 +268,14 @@ def convert_hdf5_to_owamcap(
     print(f"  Creating OWAMcap: {mcap_path.name}")
 
     with OWAMcapWriter(str(mcap_path)) as writer:
-        # Track mouse position and keyboard state
-        mouse_x, mouse_y = CSGO_RESOLUTION[0] // 2, CSGO_RESOLUTION[1] // 2  # Start at center
-        pressed_keys = set()
+        # Track mouse position (infinite coordinate space for 3D games)
+        mouse_x, mouse_y = 0, 0  # Start at origin
         last_window_time = -1
+
+        # Track previous frame state for releases in next frame
+        prev_keys = set()
+        prev_left_click = False
+        prev_right_click = False
 
         for frame_idx, (frame, action, helper) in enumerate(zip(frames, actions, helper_arrays)):
             timestamp_ns = frame_idx * FRAME_DURATION_NS
@@ -308,47 +312,63 @@ def convert_hdf5_to_owamcap(
 
             writer.write_message(screen_msg, topic="screen", timestamp=timestamp_ns)
 
-            # Process keyboard events
+            # Process keyboard events - release previous frame keys, press current frame keys
             current_keys = set(action["keys_pressed"])
 
-            # Key releases
-            for key in pressed_keys - current_keys:
+            # Release all keys from previous frame
+            for key in prev_keys:
                 if key in CSGO_KEY_DICT:
                     kb_event = KeyboardEvent(event_type="release", vk=CSGO_KEY_DICT[key], timestamp=timestamp_ns)
                     writer.write_message(kb_event, topic="keyboard", timestamp=timestamp_ns)
 
-            # Key presses
-            for key in current_keys - pressed_keys:
+            # Press all keys in current frame
+            for key in current_keys:
                 if key in CSGO_KEY_DICT:
                     kb_event = KeyboardEvent(event_type="press", vk=CSGO_KEY_DICT[key], timestamp=timestamp_ns)
                     writer.write_message(kb_event, topic="keyboard", timestamp=timestamp_ns)
 
-            pressed_keys = current_keys
+            prev_keys = current_keys
 
-            # Process mouse movement
+            # Process mouse movement (infinite coordinate space for 3D games)
             if action["mouse_dx"] != 0 or action["mouse_dy"] != 0:
                 mouse_x += action["mouse_dx"]
                 mouse_y += action["mouse_dy"]
 
-                # Clamp to screen bounds
-                mouse_x = max(0, min(CSGO_RESOLUTION[0] - 1, mouse_x))
-                mouse_y = max(0, min(CSGO_RESOLUTION[1] - 1, mouse_y))
-
                 mouse_event = MouseEvent(event_type="move", x=mouse_x, y=mouse_y, timestamp=timestamp_ns)
                 writer.write_message(mouse_event, topic="mouse", timestamp=timestamp_ns)
 
-            # Process mouse clicks
-            if action["mouse_left_click"]:
+            # Process mouse clicks - release previous frame clicks, press current frame clicks
+            current_left_click = action["mouse_left_click"]
+            current_right_click = action["mouse_right_click"]
+
+            # Release previous frame clicks
+            if prev_left_click:
+                mouse_event = MouseEvent(
+                    event_type="click", x=mouse_x, y=mouse_y, button="left", pressed=False, timestamp=timestamp_ns
+                )
+                writer.write_message(mouse_event, topic="mouse", timestamp=timestamp_ns)
+
+            if prev_right_click:
+                mouse_event = MouseEvent(
+                    event_type="click", x=mouse_x, y=mouse_y, button="right", pressed=False, timestamp=timestamp_ns
+                )
+                writer.write_message(mouse_event, topic="mouse", timestamp=timestamp_ns)
+
+            # Press current frame clicks
+            if current_left_click:
                 mouse_event = MouseEvent(
                     event_type="click", x=mouse_x, y=mouse_y, button="left", pressed=True, timestamp=timestamp_ns
                 )
                 writer.write_message(mouse_event, topic="mouse", timestamp=timestamp_ns)
 
-            if action["mouse_right_click"]:
+            if current_right_click:
                 mouse_event = MouseEvent(
                     event_type="click", x=mouse_x, y=mouse_y, button="right", pressed=True, timestamp=timestamp_ns
                 )
                 writer.write_message(mouse_event, topic="mouse", timestamp=timestamp_ns)
+
+            prev_left_click = current_left_click
+            prev_right_click = current_right_click
 
     print(f"  Conversion complete: {mcap_path}")
     return mcap_path

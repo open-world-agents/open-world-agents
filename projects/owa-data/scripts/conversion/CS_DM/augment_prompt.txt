@@ -476,3 +476,28 @@ keyboard 11+ mouse 1+1(left/right) + mouse position 23+15(x/y) = 51.
 - cleanup unnecessary prints and files. (e.g. printing `DEFINITIVE action vector structure` seems not to be needed) (e.g. is demo.py needed?)
 - I don't think `mouse/state` is needed, in data only `mouse` is present and we can't know `mouse/state`. same for `keyboard/state`.
 - repeat window event every 1Hz.
+
+# Query 8
+
+for mouse position update, do not clamp to screen bound, use infinite coordinate. think mouse movement in 3d game. it's same for both mouse and mouse/state.
+
+for mouse click, track only that time's info.
+for keyboard, track only that times' info. in other words, do not track presssed_keys. just for all current_keys, consider this keys are pressed until "next tick". (considering all current state as valid until next tick is same for all info.)
+
+# Query 9
+
+where's the mouse/keyboard key release gone?
+
+# Query 10
+
+I said you already to Option 1
+
+# Query 11
+
+I SAID YOU TO PRESS ALL KEYS in state REGARDLESS OF PAST
+
+if [a], [a] for frame 0,1 then press a,a for two frame, release for 1,2 frame
+
+# Query 12
+
+IF KEY IS PRESSED IN FRAME i RELEASE in i+1, I SAID SEVERAL TIMES
