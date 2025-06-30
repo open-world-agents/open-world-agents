@@ -129,4 +129,5 @@ nav:
     - Interactve World Model: examples/interactive_world_model.md
     - Usage with transformers: examples/usage_with_transformers.md
     - Usage with LLM Inference Engines(ollama, ...): examples/usage_with_llm.md
+    - VPT dataset to OWAMcap: examples/vpt_to_owamcap.md
   # - API Reference: api_reference.md # Later
