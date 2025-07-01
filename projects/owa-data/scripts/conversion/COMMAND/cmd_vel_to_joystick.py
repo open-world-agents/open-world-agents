@@ -19,106 +19,200 @@ except ImportError:
 
 
 @dataclass
-class JoystickConfig:
-    """Configuration for joystick conversion."""
-    # Maximum velocities (Isaac_Houndbot configuration)
-    max_linear_vel: float = 15.0  # m/s (from Isaac_Houndbot.yml)
-    max_angular_vel: float = 10.0 # rad/s (from Isaac_Houndbot.yml)
-    
-    # Joystick axis ranges (typical gamepad: -1.0 to 1.0)
+class IsaacHoundbotJoystickConfig:
+    """Configuration for Isaac_Houndbot joystick conversion based on actual teleop implementation."""
+    # Isaac_Houndbot parameters from issac_sim_teleop_node.py
+    max_forward_lin_vel: float = 2.5      # m/s
+    max_backward_lin_vel: float = 0.625   # m/s (2.5 * 0.25)
+    max_ang_vel: float = 1.4              # rad/s
+    max_ang_correction: float = 1.8 / 1.4 # Angular correction factor when running
+    backward_vel_reduction_rate: float = 0.5
+
+    # Standard gamepad layout (simplified to 4 axes)
+    # [left_stick_x, left_stick_y, right_stick_x, right_stick_y]
+    linear_axis: int = 3   # Right stick Y-axis (forward/backward) - index 3 in 4-axis layout
+    angular_axis: int = 0  # Left stick X-axis (left/right turn) - index 0 in 4-axis layout
+
+    # Joystick axis ranges (gamepad: -1.0 to 1.0)
     axis_min: float = -1.0
     axis_max: float = 1.0
-    
-    # Deadzone for joystick (values below this are considered zero)
-    # Reduced for Isaac_Houndbot's high velocity range
-    deadzone: float = 0.02
-    
-    # Axis mapping (typical gamepad layout)
-    linear_axis: int = 1   # Left stick Y-axis (forward/backward)
-    angular_axis: int = 0  # Left stick X-axis (left/right turn)
-    
-    # Invert axes if needed (depends on joystick orientation)
-    invert_linear: bool = False  # True if up on stick should be negative
-    invert_angular: bool = False # True if right on stick should be negative
+
+    # Deadzone for joystick (small for precise control)
+    deadzone: float = 0.01
+
+    # Status tracking (matches Isaac_Houndbot.Status)
+    # STOP = 0, ROTATION = 1, RUN = 2
 
 
-class CmdVelToJoystick:
-    """Convert CMD_VEL commands back to joystick input format."""
-    
-    def __init__(self, config: Optional[JoystickConfig] = None):
-        self.config = config or JoystickConfig()
-    
+class IsaacHoundbotCmdVelToJoystick:
+    """
+    Convert CMD_VEL commands back to joystick input format for Isaac_Houndbot.
+
+    Based on the actual implementation in issac_sim_teleop_node.py
+    """
+
+    def __init__(self, config: Optional[IsaacHoundbotJoystickConfig] = None):
+        self.config = config or IsaacHoundbotJoystickConfig()
+        # Track robot status for proper conversion
+        self.current_status = "STOP"  # STOP, ROTATION, RUN
+
     def convert_single(self, linear_x: float, angular_z: float) -> Dict[str, float]:
         """
-        Convert a single CMD_VEL command to joystick axes.
-        
+        Convert a single CMD_VEL command to joystick axes using Isaac_Houndbot logic.
+
         Args:
             linear_x: Linear velocity in m/s
             angular_z: Angular velocity in rad/s
-        
+
         Returns:
             Dictionary with joystick axis values
         """
-        # Normalize velocities to joystick range
-        linear_normalized = self._normalize_velocity(
-            linear_x, self.config.max_linear_vel
-        )
-        angular_normalized = self._normalize_velocity(
-            angular_z, self.config.max_angular_vel
-        )
-        
-        # Apply inversions if configured
-        if self.config.invert_linear:
-            linear_normalized = -linear_normalized
-        if self.config.invert_angular:
-            angular_normalized = -angular_normalized
-        
+        # Determine robot status based on velocities
+        self._update_status(linear_x, angular_z)
+
+        # Convert based on Isaac_Houndbot's compute_cmd_vel logic (reverse)
+        linear_rate, angular_rate = self._cmd_vel_to_rates(linear_x, angular_z)
+
         # Apply deadzone
-        linear_normalized = self._apply_deadzone(linear_normalized)
-        angular_normalized = self._apply_deadzone(angular_normalized)
-        
-        # Create joystick message format (typical 4-axis gamepad)
-        axes = [0.0, 0.0, 0.0, 0.0]  # [left_x, left_y, right_x, right_y]
-        axes[self.config.angular_axis] = angular_normalized
-        axes[self.config.linear_axis] = linear_normalized
-        
+        linear_rate = self._apply_deadzone(linear_rate)
+        angular_rate = self._apply_deadzone(angular_rate)
+
+        # Create simplified joystick message format (just 4 axes for main sticks)
+        # [left_stick_x, left_stick_y, right_stick_x, right_stick_y]
+        axes = [0.0] * 4
+
+        # Map to standard gamepad layout (regardless of which axis is used in teleop)
+        axes[0] = angular_rate  # Left stick X (for turning)
+        axes[3] = linear_rate   # Right stick Y (for forward/backward)
+
         return {
-            'axes': axes,
-            'buttons': [0] * 8,  # Typical gamepad has 8 buttons
-            'linear_axis_value': linear_normalized,
-            'angular_axis_value': angular_normalized,
+            'axes': axes,  # Just 4 axes for the main sticks
+            # No buttons since they're not used
+            'linear_axis_value': linear_rate,
+            'angular_axis_value': angular_rate,
             'original_linear_x': linear_x,
-            'original_angular_z': angular_z
+            'original_angular_z': angular_z,
+            'robot_status': self.current_status
         }
+
+    def _update_status(self, linear_x: float, angular_z: float):
+        """Update robot status based on velocities (matches Isaac_Houndbot logic)."""
+        err = 0.01
+        is_stop = abs(linear_x) < err and abs(angular_z) < err
+
+        if self.current_status == "STOP":
+            if linear_x != 0:
+                self.current_status = "RUN"
+            elif angular_z != 0:
+                self.current_status = "ROTATION"
+        elif self.current_status == "ROTATION":
+            if is_stop and angular_z == 0:
+                self.current_status = "STOP"
+        elif self.current_status == "RUN":
+            if is_stop and linear_x == 0:
+                self.current_status = "STOP"
+
+    def _cmd_vel_to_rates(self, linear_x: float, angular_z: float) -> Tuple[float, float]:
+        """
+        Convert CMD_VEL back to joystick rates (reverse of Isaac_Houndbot.compute_cmd_vel).
+
+        This reverses the logic from lines 427-434 in the teleop node.
+        """
+        linear_rate = 0.0
+        angular_rate = 0.0
+
+        if self.current_status == "ROTATION":
+            # In rotation mode: linear_vel = 0, angular_vel = max_ang_vel * angular_rate
+            if angular_z != 0:
+                angular_rate = angular_z / self.config.max_ang_vel
+        else:
+            # In RUN mode: need to account for angular correction
+            if linear_x != 0:
+                # Reverse: linear_vel = max_linear_vel * linear_rate
+                if linear_x > 0:
+                    linear_rate = linear_x / self.config.max_forward_lin_vel
+                else:
+                    # Handle backward velocity with reduction rate
+                    # linear_vel = max(backward_vel_reduction_rate * linear_vel, -max_backward_lin_vel)
+                    # So: linear_rate = linear_vel / (max_forward_lin_vel * backward_vel_reduction_rate)
+                    linear_rate = linear_x / (self.config.max_forward_lin_vel * self.config.backward_vel_reduction_rate)
+                    linear_rate = max(linear_rate, -self.config.max_backward_lin_vel / self.config.max_forward_lin_vel)
+
+            if angular_z != 0:
+                # Reverse: angular_vel *= abs(current_twist.linear.x) / max_forward_lin_vel * max_ang_correction
+                # So: angular_rate = angular_z / (max_ang_vel * correction_factor)
+                if abs(linear_x) > 0.01:  # When running
+                    correction_factor = abs(linear_x) / self.config.max_forward_lin_vel * self.config.max_ang_correction
+                    angular_rate = angular_z / (self.config.max_ang_vel * correction_factor)
+                else:  # When not moving much
+                    angular_rate = angular_z / self.config.max_ang_vel
+
+        # Clamp to joystick range
+        linear_rate = np.clip(linear_rate, -1.0, 1.0)
+        angular_rate = np.clip(angular_rate, -1.0, 1.0)
+
+        return linear_rate, angular_rate
     
-    def convert_batch(self, cmd_vel_data: List[Tuple[int, float, float]]) -> List[Dict]:
+    def convert_batch(self, cmd_vel_data: List[Tuple[int, float, float]],
+                     remove_duplicates: bool = True) -> List[Dict]:
         """
         Convert a batch of CMD_VEL commands to joystick format.
-        
+
         Args:
             cmd_vel_data: List of (timestamp, linear_x, angular_z) tuples
-        
+            remove_duplicates: If True, remove entries with duplicate timestamps
+
         Returns:
             List of joystick data dictionaries
         """
         joystick_data = []
-        
+        seen_timestamps = set()
+
         for timestamp, linear_x, angular_z in cmd_vel_data:
+            # Skip duplicates if requested
+            if remove_duplicates and timestamp in seen_timestamps:
+                continue
+
             joy_msg = self.convert_single(linear_x, angular_z)
             joy_msg['timestamp'] = timestamp
             joystick_data.append(joy_msg)
-        
+
+            if remove_duplicates:
+                seen_timestamps.add(timestamp)
+
         return joystick_data
-    
-    def _normalize_velocity(self, velocity: float, max_velocity: float) -> float:
-        """Normalize velocity to joystick axis range."""
-        if max_velocity == 0:
-            return 0.0
-        
-        normalized = velocity / max_velocity
-        # Clamp to joystick range
-        return np.clip(normalized, self.config.axis_min, self.config.axis_max)
-    
+
+    def convert_batch_with_rate_limit(self, cmd_vel_data: List[Tuple[int, float, float]],
+                                    target_hz: float = 20.0) -> List[Dict]:
+        """
+        Convert CMD_VEL commands to joystick format with rate limiting.
+
+        Args:
+            cmd_vel_data: List of (timestamp, linear_x, angular_z) tuples
+            target_hz: Target frequency in Hz (default: 20 Hz)
+
+        Returns:
+            List of joystick data dictionaries at specified rate
+        """
+        if not cmd_vel_data:
+            return []
+
+        joystick_data = []
+        target_interval_ns = int(1e9 / target_hz)  # Convert Hz to nanoseconds
+        last_timestamp = 0
+
+        for timestamp, linear_x, angular_z in cmd_vel_data:
+            # Skip if not enough time has passed
+            if timestamp - last_timestamp < target_interval_ns:
+                continue
+
+            joy_msg = self.convert_single(linear_x, angular_z)
+            joy_msg['timestamp'] = timestamp
+            joystick_data.append(joy_msg)
+            last_timestamp = timestamp
+
+        return joystick_data
+
     def _apply_deadzone(self, value: float) -> float:
         """Apply deadzone to joystick value."""
         if abs(value) < self.config.deadzone:
@@ -199,51 +293,9 @@ class CmdVelToJoystick:
         return patterns
 
 
-def create_joystick_config_from_robot_params(max_v: float = 15.0, max_w: float = 10.0) -> JoystickConfig:
-    """Create joystick config based on Isaac_Houndbot parameters."""
-    return JoystickConfig(
-        max_linear_vel=max_v,
-        max_angular_vel=max_w,
-        # Standard gamepad configuration
-        linear_axis=1,    # Left stick Y
-        angular_axis=0,   # Left stick X
-        invert_linear=False,  # Adjust based on your setup
-        invert_angular=False,
-        deadzone=0.02
-    )
-
-
-def create_isaac_houndbot_config() -> JoystickConfig:
-    """Create joystick config specifically for Isaac_Houndbot from YAML file."""
-    config_path = Path("/mnt/home/jyjung/sketchdrive/projects/drive_evaluation/src/drive_evaluation/agent/pd_controller/Isaac_Houndbot.yml")
-
-    # Default values from the YAML file
-    max_v = 15.0  # m/s
-    max_w = 10.0  # rad/s
-
-    # Try to load from YAML if available
-    if HAS_YAML and config_path.exists():
-        try:
-            with open(config_path, 'r') as f:
-                config_data = yaml.safe_load(f)
-                max_v = float(config_data.get('max_v', 15.0))
-                max_w = float(config_data.get('max_w', 10.0))
-                print(f"Loaded Isaac_Houndbot config: max_v={max_v}, max_w={max_w}")
-        except Exception as e:
-            print(f"Warning: Could not load Isaac_Houndbot config: {e}")
-            print(f"Using default values: max_v={max_v}, max_w={max_w}")
-    else:
-        print(f"Using hardcoded Isaac_Houndbot values: max_v={max_v}, max_w={max_w}")
-
-    return JoystickConfig(
-        max_linear_vel=max_v,
-        max_angular_vel=max_w,
-        linear_axis=1,    # Left stick Y (forward/backward)
-        angular_axis=0,   # Left stick X (left/right)
-        invert_linear=False,
-        invert_angular=False,
-        deadzone=0.02
-    )
+def create_isaac_houndbot_config() -> IsaacHoundbotJoystickConfig:
+    """Create Isaac_Houndbot joystick config based on actual teleop implementation."""
+    return IsaacHoundbotJoystickConfig()
 
 
 def demo_conversion():
@@ -263,7 +315,7 @@ def demo_conversion():
     
     # Create converter with Isaac_Houndbot configuration
     config = create_isaac_houndbot_config()
-    converter = CmdVelToJoystick(config)
+    converter = IsaacHoundbotCmdVelToJoystick(config)
     
     print("CMD_VEL to Joystick Conversion Demo")
     print("=" * 50)
@@ -274,10 +326,12 @@ def demo_conversion():
     # Show conversions
     print("Conversions:")
     for i, (original, converted) in enumerate(zip(sample_data, joystick_data)):
-        timestamp, linear_x, angular_z = original
-        axes = converted['axes']
+        _, linear_x, angular_z = original
+        linear_axis = converted['linear_axis_value']
+        angular_axis = converted['angular_axis_value']
+        status = converted['robot_status']
         print(f"{i+1}. CMD_VEL({linear_x:5.1f}, {angular_z:5.1f}) -> "
-              f"Joy axes[{axes[0]:5.2f}, {axes[1]:5.2f}, {axes[2]:5.2f}, {axes[3]:5.2f}]")
+              f"Joy L/R={angular_axis:6.2f}, F/B={linear_axis:6.2f} [{status}]")
     
     # Show statistics
     stats = converter.get_statistics(joystick_data)

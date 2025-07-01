@@ -37,7 +37,7 @@ from tqdm import tqdm
 
 # Import joystick conversion
 try:
-    from cmd_vel_to_joystick import CmdVelToJoystick, create_isaac_houndbot_config
+    from cmd_vel_to_joystick import IsaacHoundbotCmdVelToJoystick, create_isaac_houndbot_config
     HAS_JOYSTICK_CONVERSION = True
 except ImportError:
     HAS_JOYSTICK_CONVERSION = False
@@ -357,10 +357,10 @@ def process_single_bagfile(bagfile: Path, output_dir: Path,
                 try:
                     # Create joystick converter with Isaac_Houndbot configuration
                     joystick_config = create_isaac_houndbot_config()
-                    converter = CmdVelToJoystick(joystick_config)
+                    converter = IsaacHoundbotCmdVelToJoystick(joystick_config)
 
-                    # Convert actions to joystick format
-                    joystick_data = converter.convert_batch(actions)
+                    # Convert actions to joystick format (with duplicate removal)
+                    joystick_data = converter.convert_batch(actions, remove_duplicates=True)
 
                     # Save joystick data
                     joystick_path = bagfile_output_dir / "joystick.json"
