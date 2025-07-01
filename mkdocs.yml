@@ -93,41 +93,40 @@ markdown_extensions:
 
 nav:
   - Get Started:
-    - Welcome to OWA: index.md
-    - Help with OWA: help_with_owa.md
-    - Installation: install.md
-    - Contributing: contributing.md 
+      - Welcome to OWA: index.md
+      - Help with OWA: help_with_owa.md
+      - Installation: install.md
+      - Contributing: contributing.md
     # - Changelog: changelog.md # Later
   - Env in OWA:
-    - env/index.md
-    - env/guide.md
-    - Custom EnvPlugins: env/custom_plugins.md
-    - Documentation Validation: env/documentation_validation.md
-    - Documentation Quick Reference: env/documentation_quick_reference.md
-    - Lists of EnvPlugins:
-      - Standard Environment: env/plugins/std.md
-      - Desktop Environment: env/plugins/desktop.md
-      - Gstreamer Environment: env/plugins/gst.md
+      - env/index.md
+      - env/guide.md
+      - Custom EnvPlugins: env/custom_plugins.md
+      - Documentation Validation: env/documentation_validation.md
+      - Lists of EnvPlugins:
+          - Standard Environment: env/plugins/std.md
+          - Desktop Environment: env/plugins/desktop.md
+          - Gstreamer Environment: env/plugins/gst.md
   - Data in OWA:
-    - Overview: data/index.md
-    - Getting Started:
-      - Why OWAMcap?: data/getting-started/why-owamcap.md
-      - Recording Data: data/getting-started/recording-data.md
-      - Exploring Data: data/getting-started/exploring-data.md
-    - Technical Reference:
-      - OWAMcap Format Guide: data/technical-reference/format-guide.md
-      - Custom Message Types: data/technical-reference/custom-messages.md
-      - 🚀 Data Pipeline (MCAP → VLA Training): data/technical-reference/data-pipeline.md
-    - Tools & Comparison:
-      - Data Viewer: data/tools/viewer.md
-      - Comparison with LeRobot: data/tools/comparison-with-lerobot.md
+      - Overview: data/index.md
+      - Getting Started:
+          - Why OWAMcap?: data/getting-started/why-owamcap.md
+          - Recording Data: data/getting-started/recording-data.md
+          - Exploring Data: data/getting-started/exploring-data.md
+      - Technical Reference:
+          - OWAMcap Format Guide: data/technical-reference/format-guide.md
+          - Custom Message Types: data/technical-reference/custom-messages.md
+          - 🚀 Data Pipeline (MCAP → VLA Training): data/technical-reference/data-pipeline.md
+      - Tools & Comparison:
+          - Data Viewer: data/tools/viewer.md
+          - Comparison with LeRobot: data/tools/comparison-with-lerobot.md
   - CLI Tools:
-    - OWL CLI Reference: owl_cli_reference.md
+      - OWL CLI Reference: owl_cli_reference.md
   - 🚀 Awesome Examples (WIP):
-    - Multimodal Game Agent: examples/multimodal_game_agent.md
-    - Omniparse + InternLM GUI Agent: examples/gui_agent.md
-    - Interactve World Model: examples/interactive_world_model.md
-    - Usage with transformers: examples/usage_with_transformers.md
-    - Usage with LLM Inference Engines(ollama, ...): examples/usage_with_llm.md
-    - VPT dataset to OWAMcap: examples/vpt_to_owamcap.md
+      - Multimodal Game Agent: examples/multimodal_game_agent.md
+      - Omniparse + InternLM GUI Agent: examples/gui_agent.md
+      - Interactve World Model: examples/interactive_world_model.md
+      - Usage with transformers: examples/usage_with_transformers.md
+      - Usage with LLM Inference Engines(ollama, ...): examples/usage_with_llm.md
+      - VPT dataset to OWAMcap: examples/vpt_to_owamcap.md
   # - API Reference: api_reference.md # Later
