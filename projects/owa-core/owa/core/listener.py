@@ -14,7 +14,7 @@ import inspect
 import threading
 from abc import abstractmethod
 from multiprocessing.synchronize import Event as mpEvent
-from typing import Self
+from typing import Self, TypeAlias
 
 from .callable import Callable
 from .runnable import RunnableMixin, RunnableProcess, RunnableThread
@@ -203,7 +203,7 @@ class ListenerProcess(ListenerMixin, RunnableProcess):
 
 
 # Default implementation is thread-based for better compatibility and easier use
-Listener = ListenerThread
+Listener: TypeAlias = ListenerThread
 
 # TODO: Implement synchronous event listening design, similar to:
 # https://pynput.readthedocs.io/en/latest/keyboard.html#synchronous-event-listening-for-the-keyboard-listener

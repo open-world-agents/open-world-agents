@@ -141,6 +141,6 @@ class LazyImportRegistry(Registry[T]):
 
 
 # Now specify the types of the registries
-CALLABLES: LazyImportRegistry[Type[CallableCls]] = LazyImportRegistry(registry_type=RegistryType.CALLABLES)
+CALLABLES: LazyImportRegistry[CallableCls] = LazyImportRegistry(registry_type=RegistryType.CALLABLES)
 LISTENERS: LazyImportRegistry[Type[ListenerCls]] = LazyImportRegistry(registry_type=RegistryType.LISTENERS)
 RUNNABLES: LazyImportRegistry[Type[Runnable]] = LazyImportRegistry(registry_type=RegistryType.RUNNABLES)
