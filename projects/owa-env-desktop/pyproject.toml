@@ -14,6 +14,7 @@ dependencies = [
     "pynput>=1.8.0",
     "opencv-python>=4.11.0",
     "pywin32>=307 ; sys_platform == 'win32'",
+    "inputs>=0.5",
     "owa-msgs==0.4.2",
 ]
 
