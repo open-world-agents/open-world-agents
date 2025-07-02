@@ -9,13 +9,6 @@ was controlled via joystick during data collection.
 import numpy as np
 from typing import List, Tuple, Dict, Optional
 from dataclasses import dataclass
-from pathlib import Path
-
-try:
-    import yaml
-    HAS_YAML = True
-except ImportError:
-    HAS_YAML = False
 
 
 @dataclass
@@ -335,12 +328,12 @@ def demo_conversion():
     
     # Show statistics
     stats = converter.get_statistics(joystick_data)
-    print(f"\nStatistics:")
+    print("\nStatistics:")
     print(f"Total commands: {stats['total_commands']}")
     print(f"Linear axis range: {stats['linear_stats']['min']:.2f} to {stats['linear_stats']['max']:.2f}")
     print(f"Angular axis range: {stats['angular_stats']['min']:.2f} to {stats['angular_stats']['max']:.2f}")
-    
-    print(f"\nMovement patterns:")
+
+    print("\nMovement patterns:")
     for pattern, count in stats['movement_patterns'].items():
         if count > 0:
             print(f"  {pattern}: {count}")

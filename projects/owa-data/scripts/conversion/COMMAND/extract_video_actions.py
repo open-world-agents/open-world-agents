@@ -17,7 +17,7 @@ Features:
 import argparse
 import json
 from pathlib import Path
-from typing import List, Tuple, Optional, Dict, Any
+from typing import List, Tuple, Dict, Any
 
 import av
 import cv2
@@ -165,12 +165,12 @@ def extract_rgb_front_images(bagfile: Path, topics_config: Dict,
         rgb_front_topic = None
 
         # Priority order for RGB front topics
-        candidate_topics = [
-            topics_config["RGB_FRONT"].topic_name,  # From config
-            "/rgb_front/compressed",                 # Common simulation
-            "/usb_cam_front/image_raw/compressed",   # Common real robot
-            "/rgb_front/image_raw/compressed",       # Alternative
-        ]
+        # candidate_topics = [
+        #     topics_config["RGB_FRONT"].topic_name,  # From config
+        #     "/rgb_front/compressed",                 # Common simulation
+        #     "/usb_cam_front/image_raw/compressed",   # Common real robot
+        #     "/rgb_front/image_raw/compressed",       # Alternative
+        # ]
 
         # Also check what's actually available in the bagfile
         available_topics = list(reader.topics.keys())
@@ -468,7 +468,7 @@ def main():
         failed = [r for r in results if r["status"] == "failed"]
         skipped = [r for r in results if r["status"] == "skipped"]
 
-        print(f"Processing complete:")
+        print("Processing complete:")
         print(f"  Successful: {len(successful)}")
         print(f"  Failed: {len(failed)}")
         print(f"  Skipped: {len(skipped)}")

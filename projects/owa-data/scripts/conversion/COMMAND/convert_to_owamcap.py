@@ -275,7 +275,7 @@ def main():
         else:
             failed += 1
 
-    print(f"\nConversion complete:")
+    print("\nConversion complete:")
     print(f"  Successful: {successful}")
     print(f"  Failed: {failed}")
 
