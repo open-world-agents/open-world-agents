@@ -37,7 +37,7 @@ def load_joystick_data(joystick_path: Path) -> List[Dict[str, Any]]:
     Returns:
         List of joystick data dictionaries
     """
-    with open(joystick_path, 'r') as f:
+    with open(joystick_path, "r") as f:
         return json.load(f)
 
 
@@ -51,7 +51,7 @@ def load_metadata(metadata_path: Path) -> Dict[str, Any]:
     Returns:
         Metadata dictionary
     """
-    with open(metadata_path, 'r') as f:
+    with open(metadata_path, "r") as f:
         return json.load(f)
 
 
@@ -93,15 +93,15 @@ def joystick_to_gamepad_events(joystick_data: List[Dict[str, Any]]) -> List[tupl
     prev_axes = [0.0, 0.0, 0.0, 0.0]  # [left_x, left_y, right_x, right_y]
 
     for joy_data in joystick_data:
-        timestamp = joy_data['timestamp']
-        axes = joy_data['axes']
+        timestamp = joy_data["timestamp"]
+        axes = joy_data["axes"]
 
         # Generate axis events for changes
         axis_names = [
-            "GAMEPAD_AXIS_LEFT_X",    # Index 0: Left stick X (angular control)
-            "GAMEPAD_AXIS_LEFT_Y",    # Index 1: Left stick Y (unused)
-            "GAMEPAD_AXIS_RIGHT_X",   # Index 2: Right stick X (unused)
-            "GAMEPAD_AXIS_RIGHT_Y"    # Index 3: Right stick Y (linear control)
+            "GAMEPAD_AXIS_LEFT_X",  # Index 0: Left stick X (angular control)
+            "GAMEPAD_AXIS_LEFT_Y",  # Index 1: Left stick Y (unused)
+            "GAMEPAD_AXIS_RIGHT_X",  # Index 2: Right stick X (unused)
+            "GAMEPAD_AXIS_RIGHT_Y",  # Index 3: Right stick Y (linear control)
         ]
 
         for i, (current_value, prev_value) in enumerate(zip(axes, prev_axes)):
@@ -112,7 +112,7 @@ def joystick_to_gamepad_events(joystick_data: List[Dict[str, Any]]) -> List[tupl
                     gamepad_type="GAMEPAD_TYPE_STANDARD",
                     axis=axis_names[i],
                     value=current_value,
-                    timestamp=timestamp
+                    timestamp=timestamp,
                 )
                 events.append((timestamp, event))
 
@@ -184,7 +184,7 @@ def convert_single_dataset(input_dir: Path, output_dir: Path, dataset_name: str)
         with OWAMcapWriter(mcap_path) as writer:
             # Use first timestamp as base time
             if joystick_data:
-                base_timestamp = joystick_data[0]['timestamp']
+                base_timestamp = joystick_data[0]["timestamp"]
             else:
                 base_timestamp = int(time.time() * 1e9)  # Current time in nanoseconds
 
@@ -258,7 +258,7 @@ def main():
         return
 
     if args.max_datasets:
-        dataset_dirs = dataset_dirs[:args.max_datasets]
+        dataset_dirs = dataset_dirs[: args.max_datasets]
 
     print(f"Found {len(dataset_dirs)} datasets to convert")
 

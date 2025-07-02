@@ -29,47 +29,47 @@ GamepadType: TypeAlias = Literal[
 
 # https://wiki.libsdl.org/SDL3/SDL_GamepadButton
 GamepadButton: TypeAlias = Literal[
-    "GAMEPAD_BUTTON_INVALID",    # Invalid button (no button)
-    "GAMEPAD_BUTTON_SOUTH",      # Bottom face button (e.g. Xbox A or PlayStation Cross)
-    "GAMEPAD_BUTTON_EAST",       # Right face button (e.g. Xbox B or PlayStation Circle)
-    "GAMEPAD_BUTTON_WEST",       # Left face button (e.g. Xbox X or PlayStation Square)
-    "GAMEPAD_BUTTON_NORTH",      # Top face button (e.g. Xbox Y or PlayStation Triangle)
-    "GAMEPAD_BUTTON_BACK",       # Back/select button (secondary menu)
-    "GAMEPAD_BUTTON_GUIDE",      # Guide/PS/Home button
-    "GAMEPAD_BUTTON_START",      # Start button (primary menu)
-    "GAMEPAD_BUTTON_LEFT_STICK", # Pressing the left analog stick
-    "GAMEPAD_BUTTON_RIGHT_STICK",# Pressing the right analog stick
-    "GAMEPAD_BUTTON_LEFT_SHOULDER", # Left shoulder button (LB/L1)
-    "GAMEPAD_BUTTON_RIGHT_SHOULDER",# Right shoulder button (RB/R1)
-    "GAMEPAD_BUTTON_DPAD_UP",     # D-pad up
-    "GAMEPAD_BUTTON_DPAD_DOWN",   # D-pad down
-    "GAMEPAD_BUTTON_DPAD_LEFT",   # D-pad left
+    "GAMEPAD_BUTTON_INVALID",  # Invalid button (no button)
+    "GAMEPAD_BUTTON_SOUTH",  # Bottom face button (e.g. Xbox A or PlayStation Cross)
+    "GAMEPAD_BUTTON_EAST",  # Right face button (e.g. Xbox B or PlayStation Circle)
+    "GAMEPAD_BUTTON_WEST",  # Left face button (e.g. Xbox X or PlayStation Square)
+    "GAMEPAD_BUTTON_NORTH",  # Top face button (e.g. Xbox Y or PlayStation Triangle)
+    "GAMEPAD_BUTTON_BACK",  # Back/select button (secondary menu)
+    "GAMEPAD_BUTTON_GUIDE",  # Guide/PS/Home button
+    "GAMEPAD_BUTTON_START",  # Start button (primary menu)
+    "GAMEPAD_BUTTON_LEFT_STICK",  # Pressing the left analog stick
+    "GAMEPAD_BUTTON_RIGHT_STICK",  # Pressing the right analog stick
+    "GAMEPAD_BUTTON_LEFT_SHOULDER",  # Left shoulder button (LB/L1)
+    "GAMEPAD_BUTTON_RIGHT_SHOULDER",  # Right shoulder button (RB/R1)
+    "GAMEPAD_BUTTON_DPAD_UP",  # D-pad up
+    "GAMEPAD_BUTTON_DPAD_DOWN",  # D-pad down
+    "GAMEPAD_BUTTON_DPAD_LEFT",  # D-pad left
     "GAMEPAD_BUTTON_DPAD_RIGHT",  # D-pad right
-    "GAMEPAD_BUTTON_MISC1",       # Additional misc button (e.g. Xbox share)
-    "GAMEPAD_BUTTON_RIGHT_PADDLE1", # First right paddle (e.g. Elite P1)
+    "GAMEPAD_BUTTON_MISC1",  # Additional misc button (e.g. Xbox share)
+    "GAMEPAD_BUTTON_RIGHT_PADDLE1",  # First right paddle (e.g. Elite P1)
     "GAMEPAD_BUTTON_LEFT_PADDLE1",  # First left paddle (e.g. Elite P3)
-    "GAMEPAD_BUTTON_RIGHT_PADDLE2", # Second right paddle (e.g. Elite P2)
+    "GAMEPAD_BUTTON_RIGHT_PADDLE2",  # Second right paddle (e.g. Elite P2)
     "GAMEPAD_BUTTON_LEFT_PADDLE2",  # Second left paddle (e.g. Elite P4)
-    "GAMEPAD_BUTTON_TOUCHPAD",    # Touchpad button (PS4/PS5)
-    "GAMEPAD_BUTTON_MISC2",       # Additional misc button 2
-    "GAMEPAD_BUTTON_MISC3",       # Additional misc button 3
-    "GAMEPAD_BUTTON_MISC4",       # Additional misc button 4
-    "GAMEPAD_BUTTON_MISC5",       # Additional misc button 5
-    "GAMEPAD_BUTTON_MISC6",       # Additional misc button 6
-    "GAMEPAD_BUTTON_COUNT",       # Count of buttons (not a button)
+    "GAMEPAD_BUTTON_TOUCHPAD",  # Touchpad button (PS4/PS5)
+    "GAMEPAD_BUTTON_MISC2",  # Additional misc button 2
+    "GAMEPAD_BUTTON_MISC3",  # Additional misc button 3
+    "GAMEPAD_BUTTON_MISC4",  # Additional misc button 4
+    "GAMEPAD_BUTTON_MISC5",  # Additional misc button 5
+    "GAMEPAD_BUTTON_MISC6",  # Additional misc button 6
+    "GAMEPAD_BUTTON_COUNT",  # Count of buttons (not a button)
 ]
 
 
 # https://wiki.libsdl.org/SDL3/SDL_GamepadAxis
 GamepadAxis: TypeAlias = Literal[
-    "GAMEPAD_AXIS_INVALID",        # Invalid axis (no axis)
-    "GAMEPAD_AXIS_LEFT_X",         # Left stick X-axis
-    "GAMEPAD_AXIS_LEFT_Y",         # Left stick Y-axis
-    "GAMEPAD_AXIS_RIGHT_X",        # Right stick X-axis
-    "GAMEPAD_AXIS_RIGHT_Y",        # Right stick Y-axis
-    "GAMEPAD_AXIS_LEFT_TRIGGER",   # Left trigger axis
+    "GAMEPAD_AXIS_INVALID",  # Invalid axis (no axis)
+    "GAMEPAD_AXIS_LEFT_X",  # Left stick X-axis
+    "GAMEPAD_AXIS_LEFT_Y",  # Left stick Y-axis
+    "GAMEPAD_AXIS_RIGHT_X",  # Right stick X-axis
+    "GAMEPAD_AXIS_RIGHT_Y",  # Right stick Y-axis
+    "GAMEPAD_AXIS_LEFT_TRIGGER",  # Left trigger axis
     "GAMEPAD_AXIS_RIGHT_TRIGGER",  # Right trigger axis
-    "GAMEPAD_AXIS_COUNT",          # Count of axes (not an axis)
+    "GAMEPAD_AXIS_COUNT",  # Count of axes (not an axis)
 ]
 
 
