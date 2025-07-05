@@ -1501,17 +1501,157 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../owl_cli_reference/" class="md-nav__link">
+      <a href="../../../cli/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    OWL CLI Reference
+    OWA CLI (owl) - Command Line Tools
     
   </span>
   
 
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Command Groups
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_2">
+            <span class="md-nav__icon md-icon"></span>
+            Command Groups
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../cli/mcap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    MCAP Commands
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../cli/env/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Environment Commands
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../cli/messages/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Message Commands
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../cli/video/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Video Commands
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -1666,35 +1806,12 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/usage_with_llm/" class="md-nav__link">
+      <a href="../../../examples/usage_with_llm.mkdocstrings" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     Usage with LLM Inference Engines(ollama, ...)
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../examples/vpt_to_owamcap.md" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    VPT dataset to OWAMcap
     
   </span>
   
@@ -2080,7 +2197,7 @@
 <p><strong>2. Explore an example file with the <code>owl</code> CLI:</strong></p>
 <div class="admonition info">
 <p class="admonition-title">What is <code>owl</code>?</p>
-<p><code>owl</code> is the command-line interface for OWA tools, installed with <code>owa-cli</code>. See the <a href="../owl_cli_reference.md">CLI documentation</a> for complete usage.</p>
+<p><code>owl</code> is the command-line interface for OWA tools, installed with <code>owa-cli</code>. See the <a href="../../../cli/">CLI documentation</a> for complete usage.</p>
 </div>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Download example file</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>wget<span class="w"> </span>https://github.com/open-world-agents/open-world-agents/raw/main/docs/data/examples/example.mcap
@@ -2722,7 +2839,7 @@
 </div>
 <div class="admonition info">
 <p class="admonition-title">Complete Migration Reference</p>
-<p>For detailed information about all migration commands and options, see the <a href="../../../owl_cli_reference/#owl-mcap-migrate">OWL CLI Reference - MCAP Migrate</a> documentation.</p>
+<p>For detailed information about all migration commands and options, see the <a href="../../../cli/mcap/">OWA CLI - MCAP Commands</a> documentation.</p>
 </div>
 <h4 id="common-issues">Common Issues<a class="headerlink" href="#common-issues" title="Permanent link">&para;</a></h4>
 <div class="admonition warning">
@@ -2794,7 +2911,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="July 5, 2025 16:09:38 UTC">July 5, 2025 16:09:38</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="July 5, 2025 17:34:15 UTC">July 5, 2025 17:34:15</span>
   </span>
 
     
