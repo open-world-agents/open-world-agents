@@ -37,7 +37,7 @@
     **2. Explore an example file with the `owl` CLI:**
 
     !!! info "What is `owl`?"
-        `owl` is the command-line interface for OWA tools, installed with `owa-cli`. See the [CLI documentation](../owl_cli_reference.md) for complete usage.
+        `owl` is the command-line interface for OWA tools, installed with `owa-cli`. See the [CLI documentation](../../cli/index.md) for complete usage.
 
     ```bash
     # Download example file
@@ -638,7 +638,7 @@ owl mcap migrate run old_file.mcap --output new_file.mcap
     - **Rollback**: Use backup files if migration causes issues
 
 !!! info "Complete Migration Reference"
-    For detailed information about all migration commands and options, see the [OWL CLI Reference - MCAP Migrate](../../../owl_cli_reference/#owl-mcap-migrate) documentation.
+    For detailed information about all migration commands and options, see the [OWA CLI - MCAP Commands](../../cli/mcap.md) documentation.
 
 #### Common Issues
 

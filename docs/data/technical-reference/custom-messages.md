@@ -142,10 +142,14 @@ owl mcap cat sensor_data.mcap --topics temperature
 ```
 
 !!! info "Complete CLI Reference"
-    For detailed information about all `owl messages` commands and options, see the [OWL CLI Reference - Messages](../../../owl_cli_reference/#owl-messages) documentation.
+    For detailed information about all CLI commands and options:
+
+    - **[CLI Tools](../../cli/index.md)** - Complete command overview
+    - **[Message Commands](../../cli/messages.md)** - Detailed `owl messages` documentation
+    - **[MCAP Commands](../../cli/mcap.md)** - Working with custom messages in MCAP files
 
 ## Next Steps
 
 - **[OWAMcap Format Guide](format-guide.md)**: Return to the main format documentation
 - **[Data Pipeline](data-pipeline.md)**: Learn how custom messages work in the training pipeline
-- **[CLI Reference](../../owl_cli_reference.md)**: Complete CLI documentation for working with custom messages
+- **[CLI Reference](../../cli/index.md)**: Complete CLI documentation for working with custom messages

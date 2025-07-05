@@ -378,6 +378,33 @@ Third-party packages can register custom message types through entry points:
 "sensors/HumidityReading" = "custom_sensors.messages:HumidityReading"
 ```
 
+## CLI Tools for Environment Management
+
+The `owl env` command group provides comprehensive tools for managing environment plugins:
+
+```bash
+# Plugin discovery and management
+owl env list                    # List all available plugins
+owl env show desktop            # Show detailed plugin information
+owl env validate desktop        # Validate plugin installation
+owl env search keyboard         # Search for specific components
+
+# Plugin health and statistics
+owl env health                  # Health check for all plugins
+owl env stats                   # Show plugin statistics
+owl env docs-stats              # Documentation coverage stats
+
+# Quick access commands
+owl env ls                      # Quick plugin overview
+owl env find mouse              # Find components by name
+owl env namespaces              # Show available namespaces
+```
+
+For complete CLI documentation, see:
+
+- **[Environment Commands](../cli/env.md)** - Detailed `owl env` documentation
+- **[CLI Tools](../cli/index.md)** - Complete command overview
+
 ## Additional Resources
 
 - For standard module details: [owa-env-std](plugins/std.md)
