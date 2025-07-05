@@ -224,11 +224,8 @@ OWA provides standardized message types through the `owa-msgs` package for consi
         device_handle: int = None # Optional device handle
         timestamp: int = None     # Optional timestamp
 
-    # Example: Raw mouse movement with left button press
-    RawMouseEvent(dx=15, dy=-10, button_flags=0x0001, button_data=0)
-
-    # Example: Mouse wheel event
-    RawMouseEvent(dx=0, dy=0, button_flags=0x0400, button_data=120)
+    # Example: Raw mouse movement
+    RawMouseEvent(dx=15, dy=-10, button_flags=0x0000, button_data=0)
     ```
 
 === "ScreenCaptured"
