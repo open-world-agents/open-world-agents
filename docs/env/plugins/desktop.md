@@ -30,6 +30,57 @@ This module is essential for applications that require integration with desktop 
 
 To see detailed implementation, skim over [owa-env-desktop](https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-env-desktop). API documentation is currently being developed.
 
+## Raw Mouse Input (High-Definition)
+
+The desktop environment now supports raw mouse input capture for high-definition mouse data, essential for gaming applications and precision mouse tracking.
+
+### Features
+
+- **High-Definition Data**: Access to full mouse resolution (800+ DPI) vs standard 400 DPI
+- **Unfiltered Input**: Direct access from HID stack without Windows pointer acceleration
+- **Sub-pixel Precision**: Movement data not limited to screen resolution
+- **Windows Support**: Uses Windows WM_INPUT messages for optimal performance
+
+### Usage Example
+
+```python
+from owa.core import LISTENERS, MESSAGES
+
+# Get the raw mouse event message type
+RawMouseEvent = MESSAGES["desktop/RawMouseEvent"]
+
+def on_raw_mouse_event(event):
+    print(f"Raw movement: dx={event.dx}, dy={event.dy}")
+
+    # Check for button events
+    if event.button_flags & 0x0001:  # Left button down
+        print("Left button pressed")
+    if event.button_flags & 0x0400:  # Mouse wheel
+        print(f"Wheel delta: {event.button_data}")
+
+# Create and start the raw mouse listener
+raw_mouse_listener = LISTENERS["desktop/raw_mouse"]()
+raw_mouse_listener.configure(callback=on_raw_mouse_event)
+raw_mouse_listener.start()
+
+# Stop when done
+raw_mouse_listener.stop()
+```
+
+### Platform Support
+
+- **Windows**: Full support using WM_INPUT API
+- **Linux/macOS**: Graceful degradation (returns False on start)
+
+### Message Format
+
+The `RawMouseEvent` message contains:
+- `dx`, `dy`: Raw movement deltas (not limited by screen resolution)
+- `button_flags`: Raw button state flags from Windows RAWMOUSE structure
+- `button_data`: Additional data (wheel delta, x-button info)
+- `device_handle`: Optional raw input device handle
+- `timestamp`: Optional timestamp in nanoseconds
+
 ## Available Functions
 
 ### Mouse Functions
@@ -39,6 +90,11 @@ To see detailed implementation, skim over [owa-env-desktop](https://github.com/o
 - `desktop/mouse.press` - Simulate pressing a mouse button
 - `desktop/mouse.release` - Simulate releasing a mouse button
 - `desktop/mouse.scroll` - Simulate mouse wheel scrolling
+
+### Mouse Listeners
+- `desktop/mouse` - Standard mouse event listener (movement, clicks, scroll)
+- `desktop/raw_mouse` - **NEW**: Raw mouse input listener for high-definition mouse data
+- `desktop/mouse_state` - Periodic mouse state reporting
 
 ### Keyboard Functions
 - `desktop/keyboard.press` - Simulate pressing a keyboard key

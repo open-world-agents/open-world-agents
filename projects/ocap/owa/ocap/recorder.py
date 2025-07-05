@@ -115,6 +115,9 @@ def setup_resources(
     mouse_state_listener = LISTENERS["desktop/mouse_state"]().configure(
         callback=lambda event: enqueue_event(event, topic="mouse/state")
     )
+    raw_mouse_listener = LISTENERS["desktop/raw_mouse"]().configure(
+        callback=lambda event: enqueue_event(event, topic="mouse/raw")
+    )
     # Configure recorder
     recorder.configure(
         filesink_location=file_location.with_suffix(".mkv"),
@@ -135,6 +138,7 @@ def setup_resources(
         (recorder, "recorder"),
         (keyboard_listener, "keyboard listener"),
         (mouse_listener, "mouse listener"),
+        (raw_mouse_listener, "raw mouse listener"),
         (window_listener, "window listener"),
         (keyboard_state_listener, "keyboard state listener"),
         (mouse_state_listener, "mouse state listener"),

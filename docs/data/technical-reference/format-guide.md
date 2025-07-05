@@ -151,6 +151,7 @@ OWA provides standardized message types through the `owa-msgs` package for consi
 | `desktop/KeyboardState` | Current keyboard state |
 | `desktop/MouseEvent` | Mouse movement, clicks, scrolls |
 | `desktop/MouseState` | Current mouse position and buttons |
+| `desktop/RawMouseEvent` | High-definition raw mouse input data |
 | `desktop/ScreenCaptured` | Screen capture frames with timestamps |
 | `desktop/WindowInfo` | Active window information |
 
@@ -209,6 +210,25 @@ OWA provides standardized message types through the `owa-msgs` package for consi
 
     # Example: Mouse at position with no buttons pressed
     MouseState(x=1594, y=1112, buttons=[])
+    ```
+
+=== "RawMouseEvent"
+    ```python
+    class RawMouseEvent(OWAMessage):
+        _type = "desktop/RawMouseEvent"
+
+        dx: int                   # Raw horizontal movement delta
+        dy: int                   # Raw vertical movement delta
+        button_flags: int         # Raw button state flags
+        button_data: int          # Additional button data (wheel, etc.)
+        device_handle: int = None # Optional device handle
+        timestamp: int = None     # Optional timestamp
+
+    # Example: Raw mouse movement with left button press
+    RawMouseEvent(dx=15, dy=-10, button_flags=0x0001, button_data=0)
+
+    # Example: Mouse wheel event
+    RawMouseEvent(dx=0, dy=0, button_flags=0x0400, button_data=120)
     ```
 
 === "ScreenCaptured"
@@ -355,6 +375,7 @@ OWAMcap's key advantage is efficient media handling through external media refer
 
     ScreenCaptured = MESSAGES['desktop/ScreenCaptured']
     MouseEvent = MESSAGES['desktop/MouseEvent']
+    RawMouseEvent = MESSAGES['desktop/RawMouseEvent']
 
     with OWAMcapWriter("output.mcap") as writer:
         # Write screen capture
@@ -365,9 +386,13 @@ OWAMcap's key advantage is efficient media handling through external media refer
         )
         writer.write_message(screen_msg, topic="screen", timestamp=1234567890)
 
-        # Write mouse event
+        # Write standard mouse event
         mouse_msg = MouseEvent(event_type="click", x=100, y=200)
         writer.write_message(mouse_msg, topic="mouse", timestamp=1234567891)
+
+        # Write raw mouse event
+        raw_mouse_msg = RawMouseEvent(dx=15, dy=-10, button_flags=0x0001, button_data=0)
+        writer.write_message(raw_mouse_msg, topic="mouse/raw", timestamp=1234567892)
     ```
 
 === "Advanced"

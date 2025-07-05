@@ -41,6 +41,7 @@ Documentation = "https://open-world-agents.github.io/open-world-agents/"
 "desktop/KeyboardState" = "owa.msgs.desktop.keyboard:KeyboardState"
 "desktop/MouseEvent" = "owa.msgs.desktop.mouse:MouseEvent"
 "desktop/MouseState" = "owa.msgs.desktop.mouse:MouseState"
+"desktop/RawMouseEvent" = "owa.msgs.desktop.mouse:RawMouseEvent"
 "desktop/WindowInfo" = "owa.msgs.desktop.window:WindowInfo"
 "desktop/ScreenCaptured" = "owa.msgs.desktop.screen:ScreenCaptured"
 
