@@ -43,6 +43,7 @@ plugin_spec = PluginSpec(
             # Input listeners
             "keyboard": "owa.env.desktop.keyboard_mouse.listeners:KeyboardListenerWrapper",
             "mouse": "owa.env.desktop.keyboard_mouse.listeners:MouseListenerWrapper",
+            "raw_mouse": "owa.env.desktop.keyboard_mouse.listeners:RawMouseListener",
             "keyboard_state": "owa.env.desktop.keyboard_mouse.listeners:KeyboardStateListener",
             "mouse_state": "owa.env.desktop.keyboard_mouse.listeners:MouseStateListener",
             # Window listener

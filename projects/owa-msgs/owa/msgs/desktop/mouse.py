@@ -63,3 +63,37 @@ class MouseState(OWAMessage):
     y: int
     buttons: set[MouseButton]
     timestamp: int | None = None
+
+
+class RawMouseEvent(OWAMessage):
+    """
+    Represents raw mouse input data from Windows WM_INPUT messages.
+
+    This message captures high-definition mouse movement data directly from the HID stack,
+    bypassing Windows pointer acceleration and screen resolution limits. Provides sub-pixel
+    precision and unfiltered input data essential for gaming and precision applications.
+
+    Attributes:
+        dx: Raw horizontal movement delta from HID device
+        dy: Raw vertical movement delta from HID device
+        button_flags: Raw button state flags from RAWMOUSE structure
+        button_data: Additional button data (wheel delta, etc.)
+        device_handle: Raw input device handle (optional)
+        timestamp: Optional timestamp in nanoseconds since epoch
+    """
+
+    _type = "desktop/RawMouseEvent"
+
+    # Raw movement deltas (not limited by screen resolution)
+    dx: int
+    dy: int
+
+    # Raw button information from Windows RAWMOUSE structure
+    button_flags: int  # RI_MOUSE_* flags (button press/release, wheel)
+    button_data: int  # Additional data (wheel delta, x-button info)
+
+    # Device information
+    device_handle: int | None = None  # HANDLE to raw input device
+
+    # Timing
+    timestamp: int | None = None

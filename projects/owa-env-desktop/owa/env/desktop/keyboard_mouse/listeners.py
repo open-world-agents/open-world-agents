@@ -6,10 +6,11 @@ from pynput.mouse import Listener as MouseListener
 
 from owa.core.listener import Listener
 from owa.msgs.desktop.keyboard import KeyboardEvent
-from owa.msgs.desktop.mouse import MouseEvent
+from owa.msgs.desktop.mouse import MouseEvent, RawMouseEvent
 
 from ..utils import key_to_vk
 from .callables import get_keyboard_state, get_mouse_state
+from .raw_input import RawInputCapture
 
 
 class KeyboardListenerWrapper(Listener):
@@ -122,3 +123,46 @@ class MouseStateListener(Listener):
             state = get_mouse_state()
             self.callback(state)
             time.sleep(1)
+
+
+class RawMouseListener(Listener):
+    """
+    Raw mouse input listener using Windows WM_INPUT messages.
+
+    This listener captures high-definition mouse movement data directly from the HID stack,
+    bypassing Windows pointer acceleration and screen resolution limits. Provides sub-pixel
+    precision and unfiltered input data essential for gaming and precision applications.
+
+    Examples:
+        >>> def on_raw_mouse_event(event):
+        ...     print(f"Raw mouse: dx={event.dx}, dy={event.dy}, flags={event.button_flags}")
+        >>> listener = RawMouseListener().configure(callback=on_raw_mouse_event)
+        >>> listener.start()
+    """
+
+    def on_configure(self):
+        """Initialize the raw input capture system."""
+        self.raw_input_capture = RawInputCapture()
+        self.raw_input_capture.register_callback(self._on_raw_mouse_event)
+
+    def _on_raw_mouse_event(self, event: RawMouseEvent) -> None:
+        """Internal callback to forward raw mouse events to the registered callback."""
+        if hasattr(self, "_current_callback") and self._current_callback:
+            self._current_callback(event)
+
+    def loop(self, stop_event, callback):
+        """Start the raw input capture loop."""
+        # Store the callback for use in the raw input callback
+        self._current_callback = callback
+
+        if not self.raw_input_capture.start():
+            raise RuntimeError("Failed to start raw input capture")
+
+        # Keep the loop running while the capture is active
+        try:
+            # The Windows message loop in raw_input_capture handles events efficiently
+            # We just need to wait for the stop event without artificial delays
+            stop_event.wait()
+        finally:
+            self.raw_input_capture.stop()
+            self._current_callback = None

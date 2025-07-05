@@ -2,13 +2,7 @@
 
 The Desktop Environment module (owa.env.desktop) extends Open World Agents by providing functionalities that interact with the operating system's desktop. It focuses on user interface interactions and input simulation.
 
-## Features
-
-- **Screen Capture:** Capture the current screen using CALLABLES["desktop/screen.capture"].
-- **Window Management:** Retrieve information about active windows and search for windows by title using functions like CALLABLES["desktop/window.get_active_window"] and CALLABLES["desktop/window.get_window_by_title"].
-- **Input Simulation:** Simulate mouse actions (e.g., CALLABLES["desktop/mouse.click"]) and set up keyboard listeners to handle input events.
-
-## Usage
+## Installation & Usage
 
 The Desktop Environment module is automatically available when you install `owa-env-desktop`. No manual activation needed!
 
@@ -26,11 +20,7 @@ print(CALLABLES["desktop/window.get_active_window"]())  # Retrieve the active wi
 
 This module is essential for applications that require integration with desktop UI elements and user input simulation.
 
-## Implementation Details
-
-To see detailed implementation, skim over [owa-env-desktop](https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-env-desktop). API documentation is currently being developed.
-
-## Available Functions
+## Available Components
 
 ### Mouse Functions
 - `desktop/mouse.click` - Simulate a mouse click
@@ -46,6 +36,14 @@ To see detailed implementation, skim over [owa-env-desktop](https://github.com/o
 - `desktop/keyboard.type` - Type a string of characters
 - `desktop/keyboard.press_repeat` - Simulate repeat-press when pressing key long time
 
+For simulating key auto-repeat behavior, use the dedicated function:
+
+```python
+CALLABLES["desktop/keyboard.press_repeat"](key, press_time: float, initial_delay: float = 0.5, repeat_delay: float = 0.033)
+```
+
+This function handles the complexity of simulating hardware auto-repeat, with configurable initial delay before repeating starts and the interval between repeated keypresses.
+
 ### Screen Functions
 - `desktop/screen.capture` - Capture the current screen (Note: This module utilizes `bettercam`. For better performance and extensibility, use `owa-env-gst`'s functions instead)
 
@@ -54,13 +52,19 @@ To see detailed implementation, skim over [owa-env-desktop](https://github.com/o
 - `desktop/window.get_window_by_title` - Find a window by its title
 - `desktop/window.when_active` - Run a function when a specific window becomes active
 
-## Available Listeners
-
+### Listeners
 - `desktop/keyboard` - Listen for keyboard events
-- `desktop/mouse` - Listen for mouse events
+- `desktop/mouse` - Standard mouse event listener (movement, clicks, scroll)
+- `desktop/raw_mouse` - Raw mouse input listener for unfiltered mouse data
+- `desktop/mouse_state` - Periodic mouse state reporting
 
+## Raw Mouse Input
 
-## Misc
+Raw mouse input capture is available to separate mouse position movement from game's center-locking and from user interactions. This enables access to unfiltered mouse movement data directly from the hardware, bypassing Windows pointer acceleration and game cursor manipulation.
+
+## Implementation Details
+
+To see detailed implementation, skim over [owa-env-desktop](https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-env-desktop). API documentation is currently being developed.
 
 ### Library Selection Rationale
 This module utilizes `pynput` for input simulation after evaluating several alternatives:
@@ -70,15 +74,6 @@ This module utilizes `pynput` for input simulation after evaluating several alte
 - **Alternative Solutions:** Libraries like [pydirectinput](https://github.com/learncodebygaming/pydirectinput) and [pydirectinput_rgx](https://github.com/ReggX/pydirectinput_rgx) address the Windows API issue by using `SendInput`, but they lack input capturing capabilities which are essential for our use case.
 
 - **Other Options:** We also evaluated [keyboard](https://github.com/boppreh/keyboard) and [mouse](https://github.com/boppreh/mouse) libraries but found them inadequately maintained with several unresolved bugs that could impact reliability.
-
-### Input Auto-Repeat Functionality
-For simulating key auto-repeat behavior, use the dedicated function:
-
-```python
-CALLABLES["desktop/keyboard.press_repeat"](key, press_time: float, initial_delay: float = 0.5, repeat_delay: float = 0.033)
-```
-
-This function handles the complexity of simulating hardware auto-repeat, with configurable initial delay before repeating starts and the interval between repeated keypresses.
 
 ## Auto-generated documentation
 
