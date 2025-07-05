@@ -15,10 +15,19 @@ from owa.core import LISTENERS
 stats_lock = Lock()
 stats = {"raw_count": 0, "std_count": 0, "raw_move_count": 0, "std_move_count": 0, "start_time": time.time()}
 
-# Print control
-print_events = False
-print_start = 0
-PRINT_DURATION = 3.0
+# Verbose mode - print all events
+verbose_mode = False
+
+# Summary mode - periodic dx/dy totals
+summary_mode = False
+summary_start_time = 0
+summary_start_raw = {"dx": 0, "dy": 0}
+summary_start_std = {"x": 0, "y": 0}
+SUMMARY_INTERVAL = 2.0  # Print summary every 2 seconds
+
+# Running totals
+raw_total = {"dx": 0, "dy": 0}
+std_total = {"x": 0, "y": 0}
 
 # Control flags
 should_quit = False
@@ -26,44 +35,104 @@ should_quit = False
 
 def on_raw_mouse(event):
     """Raw mouse event handler."""
-    global print_events, print_start
-    current_time = time.time()
+    global verbose_mode, raw_total
 
     with stats_lock:
         stats["raw_count"] += 1
 
-    # Print during print periods (all events for debugging)
-    if print_events and (current_time - print_start) < PRINT_DURATION:
+    # Update running totals
+    raw_total["dx"] += event.dx
+    raw_total["dy"] += event.dy
+
+    # Verbose mode - print all events
+    if verbose_mode:
         tqdm.write(f"RAW: dx={event.dx:4d} dy={event.dy:4d} flags=0x{event.button_flags:04x}")
-    elif print_events:
-        print_events = False
-        tqdm.write("--- Print ended ---")
 
 
 def on_std_mouse(event):
     """Standard mouse event handler."""
+    global verbose_mode, std_total
+
     with stats_lock:
         stats["std_count"] += 1
 
-    # Print during print periods (only moves)
-    if print_events and (time.time() - print_start) < PRINT_DURATION:
-        if event.event_type == "move":
-            tqdm.write(f"STD: x={event.x:4d} y={event.y:4d}")
+    # Update running totals for move events
+    if event.event_type == "move":
+        std_total["x"] = event.x  # Absolute position, not delta
+        std_total["y"] = event.y
+
+        # Verbose mode - print all events
+        if verbose_mode:
+            tqdm.write(f"STD: x={event.x:4d} y={event.y:4d} type={event.event_type}")
+    elif verbose_mode:
+        # Print non-move events too
+        tqdm.write(f"STD: {event.event_type} button={event.button} pressed={event.pressed}")
 
 
-def enable_print():
-    """Enable printing for PRINT_DURATION seconds."""
-    global print_events, print_start
-    print_events = True
-    print_start = time.time()
-    tqdm.write(f"--- Printing for {PRINT_DURATION}s ---")
+def toggle_verbose():
+    """Toggle verbose mode - print all events."""
+    global verbose_mode
+    verbose_mode = not verbose_mode
+    if verbose_mode:
+        tqdm.write("--- Verbose mode ON (all events) ---")
+    else:
+        tqdm.write("--- Verbose mode OFF ---")
+
+
+def toggle_summary():
+    """Toggle summary mode - periodic dx/dy totals."""
+    global summary_mode, summary_start_time, summary_start_raw, summary_start_std, raw_total, std_total
+
+    summary_mode = not summary_mode
+    if summary_mode:
+        # Start summary mode
+        summary_start_time = time.time()
+        summary_start_raw["dx"] = raw_total["dx"]
+        summary_start_raw["dy"] = raw_total["dy"]
+        summary_start_std["x"] = std_total["x"]
+        summary_start_std["y"] = std_total["y"]
+        tqdm.write(f"--- Summary mode ON (every {SUMMARY_INTERVAL}s) ---")
+
+        # Start summary timer thread
+        import threading
+
+        def summary_timer():
+            # Keep track of last interval values for periodic reset
+            last_raw = {"dx": summary_start_raw["dx"], "dy": summary_start_raw["dy"]}
+            last_std = {"x": summary_start_std["x"], "y": summary_start_std["y"]}
+
+            while summary_mode:
+                time.sleep(SUMMARY_INTERVAL)
+                if summary_mode:  # Check again in case it was turned off
+                    # Calculate movement since last interval
+                    current_raw_dx = raw_total["dx"] - last_raw["dx"]
+                    current_raw_dy = raw_total["dy"] - last_raw["dy"]
+                    current_std_dx = std_total["x"] - last_std["x"]
+                    current_std_dy = std_total["y"] - last_std["y"]
+
+                    elapsed = time.time() - summary_start_time
+                    tqdm.write(
+                        f"SUMMARY ({elapsed:.1f}s): RAW dx={current_raw_dx:6d} dy={current_raw_dy:6d} | STD dx={current_std_dx:6d} dy={current_std_dy:6d}"
+                    )
+
+                    # Update last values for next interval
+                    last_raw["dx"] = raw_total["dx"]
+                    last_raw["dy"] = raw_total["dy"]
+                    last_std["x"] = std_total["x"]
+                    last_std["y"] = std_total["y"]
+
+        timer_thread = threading.Thread(target=summary_timer, daemon=True)
+        timer_thread.start()
+    else:
+        tqdm.write("--- Summary mode OFF ---")
 
 
 def main():
     """Main function."""
     print("Simple Mouse Monitor")
     print("===================")
-    print("Type 'p' + Enter to print events for 3 seconds")
+    print("Type 'v' + Enter to toggle verbose mode (all events)")
+    print("Type 's' + Enter to toggle summary mode (periodic dx/dy totals)")
     print("Type 'q' + Enter to quit")
     print()
 
@@ -94,8 +163,10 @@ def main():
             while not should_quit:
                 try:
                     cmd = input().strip().lower()
-                    if cmd == "p":
-                        enable_print()
+                    if cmd == "v":
+                        toggle_verbose()
+                    elif cmd == "s":
+                        toggle_summary()
                     elif cmd == "q":
                         should_quit = True
                         break
