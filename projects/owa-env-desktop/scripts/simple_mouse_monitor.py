@@ -46,7 +46,7 @@ def on_raw_mouse(event):
 
     # Verbose mode - print all events
     if verbose_mode:
-        tqdm.write(f"RAW: dx={event.dx:4d} dy={event.dy:4d} flags=0x{event.button_flags:04x}")
+        tqdm.write(f"RAW: {event}")
 
 
 def on_std_mouse(event):
