@@ -41,7 +41,7 @@ $ owl env validate-docs example
 | `owl env validate-docs` | Validate all plugins | `owl env validate-docs` |
 | `owl env validate-docs PLUGIN` | Validate specific plugin | `owl env validate-docs example` |
 | `owl env validate-docs --strict` | Enforce 100% coverage | `owl env validate-docs --strict` |
-| `owl env validate-docs --format json` | JSON output | `owl env validate-docs --format json` |
+| `owl env validate-docs --output-format json` | JSON output | `owl env validate-docs --output-format json` |
 | `owl env validate-docs --check-quality` | Detailed quality checks | `owl env validate-docs --check-quality` |
 | `owl env docs-stats` | Show statistics | `owl env docs-stats` |
 | `owl env docs-stats --by-type` | Group by component type | `owl env docs-stats --by-type` |
@@ -72,7 +72,7 @@ $ owl env validate-docs --strict
 For tooling integration, use JSON output format:
 
 ```bash
-$ owl env validate-docs --format json
+$ owl env validate-docs --output-format json
 {
   "overall_coverage": 0.88,
   "plugins": {
@@ -281,7 +281,7 @@ import json
 def test_plugin_documentation():
     """Test that all plugins have adequate documentation."""
     result = subprocess.run(
-        ["owl", "env", "validate-docs", "--format", "json"],
+        ["owl", "env", "validate-docs", "--output-format", "json"],
         capture_output=True, text=True
     )
     

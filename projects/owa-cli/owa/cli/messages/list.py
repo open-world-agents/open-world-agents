@@ -18,7 +18,7 @@ except ImportError:
 
 def list_messages(
     domain: Optional[str] = typer.Option(None, "--domain", "-d", help="Filter by domain (e.g., 'desktop')"),
-    format: str = typer.Option("table", "--format", "-f", help="Output format: table, json, yaml"),
+    format: str = typer.Option("table", "--output-format", help="Output format: table, json, yaml"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed information"),
 ) -> None:
     """

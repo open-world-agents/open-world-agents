@@ -1,3 +1,4 @@
+import sys
 import time
 
 from pynput.keyboard import Controller as KeyboardController
@@ -5,7 +6,7 @@ from pynput.mouse import Button
 from pynput.mouse import Controller as MouseController
 
 from owa.msgs.desktop.keyboard import KeyboardState
-from owa.msgs.desktop.mouse import MouseState
+from owa.msgs.desktop.mouse import MouseState, PointerBallisticsConfig
 
 from ..utils import get_vk_state, vk_to_keycode
 
@@ -220,3 +221,65 @@ def release_all_keys() -> None:
     keyboard_state: KeyboardState = get_keyboard_state()
     for key in keyboard_state.buttons:
         release(key)
+
+
+def get_pointer_ballistics_config() -> PointerBallisticsConfig:
+    """Get Windows pointer ballistics configuration for WM_MOUSEMOVE reconstruction.
+
+    Examples:
+        >>> config = get_pointer_ballistics_config()
+    """
+    defaults = {
+        "MouseThreshold1": 6,
+        "MouseThreshold2": 10,
+        "MouseSpeed": 1,
+        "MouseSensitivity": 10,
+    }
+
+    if sys.platform != "win32":
+        return PointerBallisticsConfig(**defaults)
+
+    try:
+        config = _get_mouse_registry_values()
+        return PointerBallisticsConfig(**config)
+    except Exception:
+        return PointerBallisticsConfig(**defaults)
+
+
+def _get_mouse_registry_values() -> dict:
+    """Get all mouse settings from Windows registry using exact registry variable names."""
+    import base64
+    import winreg
+    from typing import Any
+
+    defaults = {
+        "MouseThreshold1": 6,
+        "MouseThreshold2": 10,
+        "MouseSpeed": 1,
+        "MouseSensitivity": 10,
+    }
+
+    try:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Control Panel\Mouse") as key:
+            values: dict[str, Any] = {}
+
+            # Get integer values using exact registry names
+            for reg_name in ["MouseThreshold1", "MouseThreshold2", "MouseSpeed", "MouseSensitivity"]:
+                try:
+                    reg_value, _ = winreg.QueryValueEx(key, reg_name)
+                    values[reg_name] = int(reg_value)
+                except (FileNotFoundError, ValueError):
+                    values[reg_name] = defaults[reg_name]
+
+            # Get binary curve data using exact registry names
+            for curve_name in ["SmoothMouseXCurve", "SmoothMouseYCurve"]:
+                try:
+                    curve_bytes, _ = winreg.QueryValueEx(key, curve_name)
+                    values[curve_name] = base64.b64encode(curve_bytes).decode("ascii")
+                except FileNotFoundError:
+                    values[curve_name] = None
+
+            return values
+
+    except Exception:
+        return defaults
