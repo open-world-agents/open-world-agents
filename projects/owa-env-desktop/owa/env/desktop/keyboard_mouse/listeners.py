@@ -39,6 +39,8 @@ class KeyboardListenerWrapper(Listener):
 
     def loop(self):
         self.listener.start()
+        # this line must be present to ensure is_alive is True while the listener is running
+        self.listener.join()
 
     def stop(self):
         self.listener.stop()
@@ -72,6 +74,8 @@ class MouseListenerWrapper(Listener):
 
     def loop(self):
         self.listener.start()
+        # this line must be present to ensure is_alive is True while the listener is running
+        self.listener.join()
 
     def stop(self):
         self.listener.stop()

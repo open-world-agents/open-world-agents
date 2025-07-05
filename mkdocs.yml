@@ -96,14 +96,13 @@ nav:
     - Welcome to OWA: index.md
     - Help with OWA: help_with_owa.md
     - Installation: install.md
-    - Contributing: contributing.md 
+    - Contributing: contributing.md
     # - Changelog: changelog.md # Later
   - Env in OWA:
     - env/index.md
     - env/guide.md
     - Custom EnvPlugins: env/custom_plugins.md
     - Documentation Validation: env/documentation_validation.md
-    - Documentation Quick Reference: env/documentation_quick_reference.md
     - Lists of EnvPlugins:
       - Standard Environment: env/plugins/std.md
       - Desktop Environment: env/plugins/desktop.md
@@ -131,4 +130,5 @@ nav:
     - Interactve World Model: examples/interactive_world_model.md
     - Usage with transformers: examples/usage_with_transformers.md
     - Usage with LLM Inference Engines(ollama, ...): examples/usage_with_llm.md
+    - VPT dataset to OWAMcap: examples/vpt_to_owamcap.md
   # - API Reference: api_reference.md # Later
