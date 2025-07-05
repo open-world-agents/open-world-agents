@@ -121,6 +121,8 @@ nav:
     - Tools & Comparison:
       - Data Viewer: data/tools/viewer.md
       - Comparison with LeRobot: data/tools/comparison-with-lerobot.md
+    - Examples:
+      - Data Conversions: data/examples/conversions.md
   - CLI Tools:
     - OWL CLI Reference: owl_cli_reference.md
   - 🚀 Awesome Examples (WIP):

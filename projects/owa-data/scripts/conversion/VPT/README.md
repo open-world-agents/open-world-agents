@@ -1,8 +1,8 @@
-# Data Conversion Guide : VPT to OWAMcap
+# VPT to OWAMcap Conversion
 
 This document explains how to convert [Video PreTraining (VPT)](https://github.com/openai/Video-Pre-Training) data format to the Open World Agents MCAP format (OWAMcap).
 
-The full example script can be found [here](https://github.com/open-world-agents/open-world-agents/blob/main/projects/owa-data/scripts/00_vpt_to_owamcap.py).
+The conversion script is located in this directory as `vpt_to_owamcap.py`.
 The converted dataset is uploaded [in the OWA huggingface repo](https://huggingface.co/datasets/open-world-agents/vpt-owamcap).
 
 ## Overview
@@ -61,8 +61,8 @@ VPT_TARGET_LIST_FILE = "./vpt_target_files.txt"
 ## Example Command
 
 ```bash
-cd projects/owa-data
-python scripts/00_vpt_to_owamcap.py
+cd projects/owa-data/scripts/conversion/VPT
+python vpt_to_owamcap.py
 ```
 
 ## Output
@@ -93,7 +93,7 @@ The VPT dataset uses 1280x720 resolution, which is maintained in the conversion.
 
 ## Implementation Details
 
-The conversion script (`00_vpt_to_owamcap.py`) performs the following steps:
+The conversion script (`vpt_to_owamcap.py`) performs the following steps:
 
 1. Generates a list of valid target VPT files that have both MP4 and JSONL components
 2. For each file pair, creates an OWAMcap file with proper event timing
