@@ -2210,6 +2210,10 @@
 <td>Current mouse position and buttons</td>
 </tr>
 <tr>
+<td><code>desktop/RawMouseEvent</code></td>
+<td>High-definition raw mouse input data</td>
+</tr>
+<tr>
 <td><code>desktop/ScreenCaptured</code></td>
 <td>Screen capture frames with timestamps</td>
 </tr>
@@ -2219,7 +2223,7 @@
 </tr>
 </tbody>
 </table>
-<div class="tabbed-set tabbed-alternate" data-tabs="2:6"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><input id="__tabbed_2_3" name="__tabbed_2" type="radio" /><input id="__tabbed_2_4" name="__tabbed_2" type="radio" /><input id="__tabbed_2_5" name="__tabbed_2" type="radio" /><input id="__tabbed_2_6" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">KeyboardEvent</label><label for="__tabbed_2_2">KeyboardState</label><label for="__tabbed_2_3">MouseEvent</label><label for="__tabbed_2_4">MouseState</label><label for="__tabbed_2_5">ScreenCaptured</label><label for="__tabbed_2_6">WindowInfo</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:7"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><input id="__tabbed_2_3" name="__tabbed_2" type="radio" /><input id="__tabbed_2_4" name="__tabbed_2" type="radio" /><input id="__tabbed_2_5" name="__tabbed_2" type="radio" /><input id="__tabbed_2_6" name="__tabbed_2" type="radio" /><input id="__tabbed_2_7" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">KeyboardEvent</label><label for="__tabbed_2_2">KeyboardState</label><label for="__tabbed_2_3">MouseEvent</label><label for="__tabbed_2_4">MouseState</label><label for="__tabbed_2_5">RawMouseEvent</label><label for="__tabbed_2_6">ScreenCaptured</label><label for="__tabbed_2_7">WindowInfo</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">KeyboardEvent</span><span class="p">(</span><span class="n">OWAMessage</span><span class="p">):</span>
@@ -2277,14 +2281,29 @@
 </code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ScreenCaptured</span><span class="p">(</span><span class="n">OWAMessage</span><span class="p">):</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>    <span class="n">_type</span> <span class="o">=</span> <span class="s2">&quot;desktop/ScreenCaptured&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">RawMouseEvent</span><span class="p">(</span><span class="n">OWAMessage</span><span class="p">):</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>    <span class="n">_type</span> <span class="o">=</span> <span class="s2">&quot;desktop/RawMouseEvent&quot;</span>
 <a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    <span class="n">utc_ns</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>                    <span class="c1"># System timestamp (nanoseconds)</span>
-<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="n">source_shape</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># Original (width, height)</span>
-<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>    <span class="n">shape</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>         <span class="c1"># Current (width, height)</span>
-<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>    <span class="n">media_ref</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">MediaRef</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>            <span class="c1"># URI or file path reference</span>
-<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>    <span class="n">frame_arr</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>          <span class="c1"># In-memory BGRA array (excluded from JSON)</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    <span class="n">dx</span><span class="p">:</span> <span class="nb">int</span>                   <span class="c1"># Raw horizontal movement delta</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="n">dy</span><span class="p">:</span> <span class="nb">int</span>                   <span class="c1"># Raw vertical movement delta</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>    <span class="n">button_flags</span><span class="p">:</span> <span class="nb">int</span>         <span class="c1"># Raw button state flags</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>    <span class="n">button_data</span><span class="p">:</span> <span class="nb">int</span>          <span class="c1"># Additional button data (wheel, etc.)</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>    <span class="n">device_handle</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span> <span class="c1"># Optional device handle</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>    <span class="n">timestamp</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>     <span class="c1"># Optional timestamp</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="c1"># Example: Raw mouse movement</span>
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="n">RawMouseEvent</span><span class="p">(</span><span class="n">dx</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">dy</span><span class="o">=-</span><span class="mi">10</span><span class="p">,</span> <span class="n">button_flags</span><span class="o">=</span><span class="mh">0x0000</span><span class="p">,</span> <span class="n">button_data</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ScreenCaptured</span><span class="p">(</span><span class="n">OWAMessage</span><span class="p">):</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>    <span class="n">_type</span> <span class="o">=</span> <span class="s2">&quot;desktop/ScreenCaptured&quot;</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>    <span class="n">utc_ns</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>                    <span class="c1"># System timestamp (nanoseconds)</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>    <span class="n">source_shape</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># Original (width, height)</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>    <span class="n">shape</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>         <span class="c1"># Current (width, height)</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>    <span class="n">media_ref</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">MediaRef</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>            <span class="c1"># URI or file path reference</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>    <span class="n">frame_arr</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>          <span class="c1"># In-memory BGRA array (excluded from JSON)</span>
 </code></pre></div>
 <div class="admonition tip">
 <p class="admonition-title">Working with ScreenCaptured Messages</p>
@@ -2292,18 +2311,18 @@
 </div>
 </div>
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">WindowInfo</span><span class="p">(</span><span class="n">OWAMessage</span><span class="p">):</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>    <span class="n">_type</span> <span class="o">=</span> <span class="s2">&quot;desktop/WindowInfo&quot;</span>
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
-<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>              <span class="c1"># Window title text</span>
-<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>    <span class="n">rect</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>         <span class="c1"># [x, y, width, height]</span>
-<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>    <span class="n">hWnd</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>     <span class="c1"># Windows handle (platform-specific)</span>
-<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>
-<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="c1"># Example: Browser window</span>
-<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="n">WindowInfo</span><span class="p">(</span>
-<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>    <span class="n">title</span><span class="o">=</span><span class="s2">&quot;GitHub - Open World Agents - Chrome&quot;</span><span class="p">,</span>
-<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>    <span class="n">rect</span><span class="o">=</span><span class="p">[</span><span class="mi">100</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">1200</span><span class="p">,</span> <span class="mi">800</span><span class="p">]</span>
-<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">WindowInfo</span><span class="p">(</span><span class="n">OWAMessage</span><span class="p">):</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>    <span class="n">_type</span> <span class="o">=</span> <span class="s2">&quot;desktop/WindowInfo&quot;</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>              <span class="c1"># Window title text</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>    <span class="n">rect</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>         <span class="c1"># [x, y, width, height]</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>    <span class="n">hWnd</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>     <span class="c1"># Windows handle (platform-specific)</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="c1"># Example: Browser window</span>
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="n">WindowInfo</span><span class="p">(</span>
+<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>    <span class="n">title</span><span class="o">=</span><span class="s2">&quot;GitHub - Open World Agents - Chrome&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>    <span class="n">rect</span><span class="o">=</span><span class="p">[</span><span class="mi">100</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">1200</span><span class="p">,</span> <span class="mi">800</span><span class="p">]</span>
+<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="p">)</span>
 </code></pre></div>
 </div>
 </div>
@@ -2326,31 +2345,31 @@
 </ul>
 <p>For videos, add <code>pts_ns</code> (presentation timestamp) to specify which frame.</p>
 </div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">MESSAGES</span>
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
-<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="n">ScreenCaptured</span> <span class="o">=</span> <span class="n">MESSAGES</span><span class="p">[</span><span class="s1">&#39;desktop/ScreenCaptured&#39;</span><span class="p">]</span>
-<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>
-<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="c1"># File paths (absolute/relative) - works for images and videos</span>
-<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="n">screen_msg</span> <span class="o">=</span> <span class="n">ScreenCaptured</span><span class="p">(</span><span class="n">media_ref</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;/absolute/path/image.png&quot;</span><span class="p">})</span>
-<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="n">screen_msg</span> <span class="o">=</span> <span class="n">ScreenCaptured</span><span class="p">(</span><span class="n">media_ref</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;relative/video.mkv&quot;</span><span class="p">,</span> <span class="s2">&quot;pts_ns&quot;</span><span class="p">:</span> <span class="mi">123456</span><span class="p">})</span>
-<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>
-<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="c1"># File URIs - works for images and videos</span>
-<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="n">screen_msg</span> <span class="o">=</span> <span class="n">ScreenCaptured</span><span class="p">(</span><span class="n">media_ref</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;file:///path/to/image.jpg&quot;</span><span class="p">})</span>
-<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="n">screen_msg</span> <span class="o">=</span> <span class="n">ScreenCaptured</span><span class="p">(</span><span class="n">media_ref</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;file:///path/to/video.mp4&quot;</span><span class="p">,</span> <span class="s2">&quot;pts_ns&quot;</span><span class="p">:</span> <span class="mi">123456</span><span class="p">})</span>
-<a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a>
-<a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a><span class="c1"># HTTP/HTTPS URLs - works for images and videos</span>
-<a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a><span class="n">screen_msg</span> <span class="o">=</span> <span class="n">ScreenCaptured</span><span class="p">(</span><span class="n">media_ref</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;https://example.com/image.png&quot;</span><span class="p">})</span>
-<a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a><span class="n">screen_msg</span> <span class="o">=</span> <span class="n">ScreenCaptured</span><span class="p">(</span><span class="n">media_ref</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;https://example.com/video.mp4&quot;</span><span class="p">,</span> <span class="s2">&quot;pts_ns&quot;</span><span class="p">:</span> <span class="mi">123456</span><span class="p">})</span>
-<a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a>
-<a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a><span class="c1"># Data URIs (embedded base64) - typically for images</span>
-<a id="__codelineno-11-19" name="__codelineno-11-19" href="#__codelineno-11-19"></a><span class="n">screen_msg</span> <span class="o">=</span> <span class="n">ScreenCaptured</span><span class="p">(</span><span class="n">media_ref</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;data:image/png;base64,iVBORw0KGgo...&quot;</span><span class="p">})</span>
-<a id="__codelineno-11-20" name="__codelineno-11-20" href="#__codelineno-11-20"></a>
-<a id="__codelineno-11-21" name="__codelineno-11-21" href="#__codelineno-11-21"></a><span class="c1"># From raw image array (BGRA format required)</span>
-<a id="__codelineno-11-22" name="__codelineno-11-22" href="#__codelineno-11-22"></a><span class="n">bgra_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="p">(</span><span class="mi">1080</span><span class="p">,</span> <span class="mi">1920</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
-<a id="__codelineno-11-23" name="__codelineno-11-23" href="#__codelineno-11-23"></a><span class="n">screen_msg</span> <span class="o">=</span> <span class="n">ScreenCaptured</span><span class="p">(</span><span class="n">frame_arr</span><span class="o">=</span><span class="n">bgra_array</span><span class="p">)</span>
-<a id="__codelineno-11-24" name="__codelineno-11-24" href="#__codelineno-11-24"></a><span class="n">screen_msg</span><span class="o">.</span><span class="n">embed_as_data_uri</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="s2">&quot;png&quot;</span><span class="p">)</span>  <span class="c1"># Required for serialization</span>
-<a id="__codelineno-11-25" name="__codelineno-11-25" href="#__codelineno-11-25"></a><span class="c1"># Now screen_msg.media_ref contains: {&quot;uri&quot;: &quot;data:image/png;base64,...&quot;}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">MESSAGES</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="n">ScreenCaptured</span> <span class="o">=</span> <span class="n">MESSAGES</span><span class="p">[</span><span class="s1">&#39;desktop/ScreenCaptured&#39;</span><span class="p">]</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="c1"># File paths (absolute/relative) - works for images and videos</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="n">screen_msg</span> <span class="o">=</span> <span class="n">ScreenCaptured</span><span class="p">(</span><span class="n">media_ref</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;/absolute/path/image.png&quot;</span><span class="p">})</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="n">screen_msg</span> <span class="o">=</span> <span class="n">ScreenCaptured</span><span class="p">(</span><span class="n">media_ref</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;relative/video.mkv&quot;</span><span class="p">,</span> <span class="s2">&quot;pts_ns&quot;</span><span class="p">:</span> <span class="mi">123456</span><span class="p">})</span>
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>
+<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="c1"># File URIs - works for images and videos</span>
+<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a><span class="n">screen_msg</span> <span class="o">=</span> <span class="n">ScreenCaptured</span><span class="p">(</span><span class="n">media_ref</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;file:///path/to/image.jpg&quot;</span><span class="p">})</span>
+<a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a><span class="n">screen_msg</span> <span class="o">=</span> <span class="n">ScreenCaptured</span><span class="p">(</span><span class="n">media_ref</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;file:///path/to/video.mp4&quot;</span><span class="p">,</span> <span class="s2">&quot;pts_ns&quot;</span><span class="p">:</span> <span class="mi">123456</span><span class="p">})</span>
+<a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a>
+<a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a><span class="c1"># HTTP/HTTPS URLs - works for images and videos</span>
+<a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a><span class="n">screen_msg</span> <span class="o">=</span> <span class="n">ScreenCaptured</span><span class="p">(</span><span class="n">media_ref</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;https://example.com/image.png&quot;</span><span class="p">})</span>
+<a id="__codelineno-12-16" name="__codelineno-12-16" href="#__codelineno-12-16"></a><span class="n">screen_msg</span> <span class="o">=</span> <span class="n">ScreenCaptured</span><span class="p">(</span><span class="n">media_ref</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;https://example.com/video.mp4&quot;</span><span class="p">,</span> <span class="s2">&quot;pts_ns&quot;</span><span class="p">:</span> <span class="mi">123456</span><span class="p">})</span>
+<a id="__codelineno-12-17" name="__codelineno-12-17" href="#__codelineno-12-17"></a>
+<a id="__codelineno-12-18" name="__codelineno-12-18" href="#__codelineno-12-18"></a><span class="c1"># Data URIs (embedded base64) - typically for images</span>
+<a id="__codelineno-12-19" name="__codelineno-12-19" href="#__codelineno-12-19"></a><span class="n">screen_msg</span> <span class="o">=</span> <span class="n">ScreenCaptured</span><span class="p">(</span><span class="n">media_ref</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;data:image/png;base64,iVBORw0KGgo...&quot;</span><span class="p">})</span>
+<a id="__codelineno-12-20" name="__codelineno-12-20" href="#__codelineno-12-20"></a>
+<a id="__codelineno-12-21" name="__codelineno-12-21" href="#__codelineno-12-21"></a><span class="c1"># From raw image array (BGRA format required)</span>
+<a id="__codelineno-12-22" name="__codelineno-12-22" href="#__codelineno-12-22"></a><span class="n">bgra_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="p">(</span><span class="mi">1080</span><span class="p">,</span> <span class="mi">1920</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+<a id="__codelineno-12-23" name="__codelineno-12-23" href="#__codelineno-12-23"></a><span class="n">screen_msg</span> <span class="o">=</span> <span class="n">ScreenCaptured</span><span class="p">(</span><span class="n">frame_arr</span><span class="o">=</span><span class="n">bgra_array</span><span class="p">)</span>
+<a id="__codelineno-12-24" name="__codelineno-12-24" href="#__codelineno-12-24"></a><span class="n">screen_msg</span><span class="o">.</span><span class="n">embed_as_data_uri</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="s2">&quot;png&quot;</span><span class="p">)</span>  <span class="c1"># Required for serialization</span>
+<a id="__codelineno-12-25" name="__codelineno-12-25" href="#__codelineno-12-25"></a><span class="c1"># Now screen_msg.media_ref contains: {&quot;uri&quot;: &quot;data:image/png;base64,...&quot;}</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
@@ -2364,27 +2383,27 @@
 </ul>
 <p>Without lazy loading, opening a 1-hour recording would try to load ~200GB of frame data into memory!</p>
 </div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c1"># IMPORTANT: For MCAP files, resolve relative paths first</span>
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="c1"># The OWA recorder saves media paths relative to the MCAP file location</span>
-<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="n">ScreenCaptured</span> <span class="o">=</span> <span class="n">MESSAGES</span><span class="p">[</span><span class="s1">&#39;desktop/ScreenCaptured&#39;</span><span class="p">]</span>
-<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="n">screen_msg</span> <span class="o">=</span> <span class="n">ScreenCaptured</span><span class="p">(</span>
-<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>    <span class="n">media_ref</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;relative/video.mkv&quot;</span><span class="p">,</span> <span class="s2">&quot;pts_ns&quot;</span><span class="p">:</span> <span class="mi">123456789</span><span class="p">}</span>
-<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="p">)</span>
-<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>
-<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="c1"># Must resolve external paths before loading from MCAP files</span>
-<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="n">screen_msg</span><span class="o">.</span><span class="n">resolve_external_path</span><span class="p">(</span><span class="s2">&quot;/path/to/data.mcap&quot;</span><span class="p">)</span>
-<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a>
-<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a><span class="c1"># Lazy loading: Frame data is loaded on-demand when these methods are called</span>
-<a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a><span class="n">rgb_array</span> <span class="o">=</span> <span class="n">screen_msg</span><span class="o">.</span><span class="n">to_rgb_array</span><span class="p">()</span>        <span class="c1"># RGB numpy array (most common)</span>
-<a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a><span class="n">pil_image</span> <span class="o">=</span> <span class="n">screen_msg</span><span class="o">.</span><span class="n">to_pil_image</span><span class="p">()</span>        <span class="c1"># PIL Image object</span>
-<a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a><span class="n">bgra_array</span> <span class="o">=</span> <span class="n">screen_msg</span><span class="o">.</span><span class="n">load_frame_array</span><span class="p">()</span>   <span class="c1"># Raw BGRA array (native format)</span>
-<a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a>
-<a id="__codelineno-12-16" name="__codelineno-12-16" href="#__codelineno-12-16"></a><span class="c1"># Check if frame data is loaded (lazy loading means it starts as None)</span>
-<a id="__codelineno-12-17" name="__codelineno-12-17" href="#__codelineno-12-17"></a><span class="k">if</span> <span class="n">screen_msg</span><span class="o">.</span><span class="n">frame_arr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-12-18" name="__codelineno-12-18" href="#__codelineno-12-18"></a>    <span class="n">height</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">channels</span> <span class="o">=</span> <span class="n">screen_msg</span><span class="o">.</span><span class="n">frame_arr</span><span class="o">.</span><span class="n">shape</span>
-<a id="__codelineno-12-19" name="__codelineno-12-19" href="#__codelineno-12-19"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Frame: </span><span class="si">{</span><span class="n">width</span><span class="si">}</span><span class="s2">x</span><span class="si">{</span><span class="n">height</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">channels</span><span class="si">}</span><span class="s2"> channels&quot;</span><span class="p">)</span>
-<a id="__codelineno-12-20" name="__codelineno-12-20" href="#__codelineno-12-20"></a><span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-12-21" name="__codelineno-12-21" href="#__codelineno-12-21"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Frame data not loaded - use load_frame_array() first&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># IMPORTANT: For MCAP files, resolve relative paths first</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="c1"># The OWA recorder saves media paths relative to the MCAP file location</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="n">ScreenCaptured</span> <span class="o">=</span> <span class="n">MESSAGES</span><span class="p">[</span><span class="s1">&#39;desktop/ScreenCaptured&#39;</span><span class="p">]</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="n">screen_msg</span> <span class="o">=</span> <span class="n">ScreenCaptured</span><span class="p">(</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>    <span class="n">media_ref</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;relative/video.mkv&quot;</span><span class="p">,</span> <span class="s2">&quot;pts_ns&quot;</span><span class="p">:</span> <span class="mi">123456789</span><span class="p">}</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="p">)</span>
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="c1"># Must resolve external paths before loading from MCAP files</span>
+<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="n">screen_msg</span><span class="o">.</span><span class="n">resolve_external_path</span><span class="p">(</span><span class="s2">&quot;/path/to/data.mcap&quot;</span><span class="p">)</span>
+<a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>
+<a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a><span class="c1"># Lazy loading: Frame data is loaded on-demand when these methods are called</span>
+<a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a><span class="n">rgb_array</span> <span class="o">=</span> <span class="n">screen_msg</span><span class="o">.</span><span class="n">to_rgb_array</span><span class="p">()</span>        <span class="c1"># RGB numpy array (most common)</span>
+<a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a><span class="n">pil_image</span> <span class="o">=</span> <span class="n">screen_msg</span><span class="o">.</span><span class="n">to_pil_image</span><span class="p">()</span>        <span class="c1"># PIL Image object</span>
+<a id="__codelineno-13-14" name="__codelineno-13-14" href="#__codelineno-13-14"></a><span class="n">bgra_array</span> <span class="o">=</span> <span class="n">screen_msg</span><span class="o">.</span><span class="n">load_frame_array</span><span class="p">()</span>   <span class="c1"># Raw BGRA array (native format)</span>
+<a id="__codelineno-13-15" name="__codelineno-13-15" href="#__codelineno-13-15"></a>
+<a id="__codelineno-13-16" name="__codelineno-13-16" href="#__codelineno-13-16"></a><span class="c1"># Check if frame data is loaded (lazy loading means it starts as None)</span>
+<a id="__codelineno-13-17" name="__codelineno-13-17" href="#__codelineno-13-17"></a><span class="k">if</span> <span class="n">screen_msg</span><span class="o">.</span><span class="n">frame_arr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-13-18" name="__codelineno-13-18" href="#__codelineno-13-18"></a>    <span class="n">height</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">channels</span> <span class="o">=</span> <span class="n">screen_msg</span><span class="o">.</span><span class="n">frame_arr</span><span class="o">.</span><span class="n">shape</span>
+<a id="__codelineno-13-19" name="__codelineno-13-19" href="#__codelineno-13-19"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Frame: </span><span class="si">{</span><span class="n">width</span><span class="si">}</span><span class="s2">x</span><span class="si">{</span><span class="n">height</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">channels</span><span class="si">}</span><span class="s2"> channels&quot;</span><span class="p">)</span>
+<a id="__codelineno-13-20" name="__codelineno-13-20" href="#__codelineno-13-20"></a><span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-13-21" name="__codelineno-13-21" href="#__codelineno-13-21"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Frame data not loaded - use load_frame_array() first&quot;</span><span class="p">)</span>
 </code></pre></div>
 </div>
 </div>
@@ -2393,73 +2412,73 @@
 <div class="tabbed-set tabbed-alternate" data-tabs="4:4"><input checked="checked" id="__tabbed_4_1" name="__tabbed_4" type="radio" /><input id="__tabbed_4_2" name="__tabbed_4" type="radio" /><input id="__tabbed_4_3" name="__tabbed_4" type="radio" /><input id="__tabbed_4_4" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="__tabbed_4_1">Reading</label><label for="__tabbed_4_2">Writing</label><label for="__tabbed_4_3">Advanced</label><label for="__tabbed_4_4">CLI Tools</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mcap_owa.highlevel</span><span class="w"> </span><span class="kn">import</span> <span class="n">OWAMcapReader</span>
-<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>
-<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="k">with</span> <span class="n">OWAMcapReader</span><span class="p">(</span><span class="s2">&quot;session.mcap&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">reader</span><span class="p">:</span>
-<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>    <span class="c1"># File metadata</span>
-<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Topics: </span><span class="si">{</span><span class="n">reader</span><span class="o">.</span><span class="n">topics</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Duration: </span><span class="si">{</span><span class="p">(</span><span class="n">reader</span><span class="o">.</span><span class="n">end_time</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">reader</span><span class="o">.</span><span class="n">start_time</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mf">1e9</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">s&quot;</span><span class="p">)</span>
-<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>
-<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>    <span class="c1"># Lazy loading advantage: Fast iteration without loading frame data</span>
-<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>    <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">reader</span><span class="o">.</span><span class="n">iter_messages</span><span class="p">(</span><span class="n">topics</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;screen&quot;</span><span class="p">]):</span>
-<a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>        <span class="n">screen_data</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">decoded</span>
-<a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Frame metadata: </span><span class="si">{</span><span class="n">screen_data</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> at </span><span class="si">{</span><span class="n">screen_data</span><span class="o">.</span><span class="n">utc_ns</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a>        <span class="c1"># No frame data loaded yet - extremely fast for large datasets</span>
-<a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a>
-<a id="__codelineno-13-14" name="__codelineno-13-14" href="#__codelineno-13-14"></a>        <span class="c1"># Only load frame data when actually needed</span>
-<a id="__codelineno-13-15" name="__codelineno-13-15" href="#__codelineno-13-15"></a>        <span class="k">if</span> <span class="n">some_condition</span><span class="p">:</span>  <span class="c1"># e.g., every 10th frame</span>
-<a id="__codelineno-13-16" name="__codelineno-13-16" href="#__codelineno-13-16"></a>            <span class="n">frame</span> <span class="o">=</span> <span class="n">screen_data</span><span class="o">.</span><span class="n">to_rgb_array</span><span class="p">()</span>  <span class="c1"># Now frame is loaded</span>
-<a id="__codelineno-13-17" name="__codelineno-13-17" href="#__codelineno-13-17"></a>            <span class="k">break</span>  <span class="c1"># Just show first frame</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mcap_owa.highlevel</span><span class="w"> </span><span class="kn">import</span> <span class="n">OWAMcapReader</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="k">with</span> <span class="n">OWAMcapReader</span><span class="p">(</span><span class="s2">&quot;session.mcap&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">reader</span><span class="p">:</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>    <span class="c1"># File metadata</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Topics: </span><span class="si">{</span><span class="n">reader</span><span class="o">.</span><span class="n">topics</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Duration: </span><span class="si">{</span><span class="p">(</span><span class="n">reader</span><span class="o">.</span><span class="n">end_time</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">reader</span><span class="o">.</span><span class="n">start_time</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mf">1e9</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">s&quot;</span><span class="p">)</span>
+<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>
+<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>    <span class="c1"># Lazy loading advantage: Fast iteration without loading frame data</span>
+<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>    <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">reader</span><span class="o">.</span><span class="n">iter_messages</span><span class="p">(</span><span class="n">topics</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;screen&quot;</span><span class="p">]):</span>
+<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a>        <span class="n">screen_data</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">decoded</span>
+<a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Frame metadata: </span><span class="si">{</span><span class="n">screen_data</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> at </span><span class="si">{</span><span class="n">screen_data</span><span class="o">.</span><span class="n">utc_ns</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a>        <span class="c1"># No frame data loaded yet - extremely fast for large datasets</span>
+<a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a>
+<a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a>        <span class="c1"># Only load frame data when actually needed</span>
+<a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a>        <span class="k">if</span> <span class="n">some_condition</span><span class="p">:</span>  <span class="c1"># e.g., every 10th frame</span>
+<a id="__codelineno-14-16" name="__codelineno-14-16" href="#__codelineno-14-16"></a>            <span class="n">frame</span> <span class="o">=</span> <span class="n">screen_data</span><span class="o">.</span><span class="n">to_rgb_array</span><span class="p">()</span>  <span class="c1"># Now frame is loaded</span>
+<a id="__codelineno-14-17" name="__codelineno-14-17" href="#__codelineno-14-17"></a>            <span class="k">break</span>  <span class="c1"># Just show first frame</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mcap_owa.highlevel</span><span class="w"> </span><span class="kn">import</span> <span class="n">OWAMcapWriter</span>
-<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">MESSAGES</span>
-<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>
-<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="n">ScreenCaptured</span> <span class="o">=</span> <span class="n">MESSAGES</span><span class="p">[</span><span class="s1">&#39;desktop/ScreenCaptured&#39;</span><span class="p">]</span>
-<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="n">MouseEvent</span> <span class="o">=</span> <span class="n">MESSAGES</span><span class="p">[</span><span class="s1">&#39;desktop/MouseEvent&#39;</span><span class="p">]</span>
-<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>
-<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="k">with</span> <span class="n">OWAMcapWriter</span><span class="p">(</span><span class="s2">&quot;output.mcap&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">writer</span><span class="p">:</span>
-<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>    <span class="c1"># Write screen capture</span>
-<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>    <span class="n">screen_msg</span> <span class="o">=</span> <span class="n">ScreenCaptured</span><span class="p">(</span>
-<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a>        <span class="n">utc_ns</span><span class="o">=</span><span class="mi">1234567890</span><span class="p">,</span>
-<a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a>        <span class="n">media_ref</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;video.mkv&quot;</span><span class="p">,</span> <span class="s2">&quot;pts_ns&quot;</span><span class="p">:</span> <span class="mi">1234567890</span><span class="p">},</span>
-<a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a>        <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">1920</span><span class="p">,</span> <span class="mi">1080</span><span class="p">)</span>
-<a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a>    <span class="p">)</span>
-<a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a>    <span class="n">writer</span><span class="o">.</span><span class="n">write_message</span><span class="p">(</span><span class="n">screen_msg</span><span class="p">,</span> <span class="n">topic</span><span class="o">=</span><span class="s2">&quot;screen&quot;</span><span class="p">,</span> <span class="n">timestamp</span><span class="o">=</span><span class="mi">1234567890</span><span class="p">)</span>
-<a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a>
-<a id="__codelineno-14-16" name="__codelineno-14-16" href="#__codelineno-14-16"></a>    <span class="c1"># Write mouse event</span>
-<a id="__codelineno-14-17" name="__codelineno-14-17" href="#__codelineno-14-17"></a>    <span class="n">mouse_msg</span> <span class="o">=</span> <span class="n">MouseEvent</span><span class="p">(</span><span class="n">event_type</span><span class="o">=</span><span class="s2">&quot;click&quot;</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
-<a id="__codelineno-14-18" name="__codelineno-14-18" href="#__codelineno-14-18"></a>    <span class="n">writer</span><span class="o">.</span><span class="n">write_message</span><span class="p">(</span><span class="n">mouse_msg</span><span class="p">,</span> <span class="n">topic</span><span class="o">=</span><span class="s2">&quot;mouse&quot;</span><span class="p">,</span> <span class="n">timestamp</span><span class="o">=</span><span class="mi">1234567891</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">mcap_owa.highlevel</span><span class="w"> </span><span class="kn">import</span> <span class="n">OWAMcapWriter</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">MESSAGES</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="n">ScreenCaptured</span> <span class="o">=</span> <span class="n">MESSAGES</span><span class="p">[</span><span class="s1">&#39;desktop/ScreenCaptured&#39;</span><span class="p">]</span>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="n">MouseEvent</span> <span class="o">=</span> <span class="n">MESSAGES</span><span class="p">[</span><span class="s1">&#39;desktop/MouseEvent&#39;</span><span class="p">]</span>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="k">with</span> <span class="n">OWAMcapWriter</span><span class="p">(</span><span class="s2">&quot;output.mcap&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">writer</span><span class="p">:</span>
+<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>    <span class="c1"># Write screen capture</span>
+<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>    <span class="n">screen_msg</span> <span class="o">=</span> <span class="n">ScreenCaptured</span><span class="p">(</span>
+<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a>        <span class="n">utc_ns</span><span class="o">=</span><span class="mi">1234567890</span><span class="p">,</span>
+<a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a>        <span class="n">media_ref</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;video.mkv&quot;</span><span class="p">,</span> <span class="s2">&quot;pts_ns&quot;</span><span class="p">:</span> <span class="mi">1234567890</span><span class="p">},</span>
+<a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a>        <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">1920</span><span class="p">,</span> <span class="mi">1080</span><span class="p">)</span>
+<a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a>    <span class="p">)</span>
+<a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a>    <span class="n">writer</span><span class="o">.</span><span class="n">write_message</span><span class="p">(</span><span class="n">screen_msg</span><span class="p">,</span> <span class="n">topic</span><span class="o">=</span><span class="s2">&quot;screen&quot;</span><span class="p">,</span> <span class="n">timestamp</span><span class="o">=</span><span class="mi">1234567890</span><span class="p">)</span>
+<a id="__codelineno-15-15" name="__codelineno-15-15" href="#__codelineno-15-15"></a>
+<a id="__codelineno-15-16" name="__codelineno-15-16" href="#__codelineno-15-16"></a>    <span class="c1"># Write standard mouse event</span>
+<a id="__codelineno-15-17" name="__codelineno-15-17" href="#__codelineno-15-17"></a>    <span class="n">mouse_msg</span> <span class="o">=</span> <span class="n">MouseEvent</span><span class="p">(</span><span class="n">event_type</span><span class="o">=</span><span class="s2">&quot;click&quot;</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+<a id="__codelineno-15-18" name="__codelineno-15-18" href="#__codelineno-15-18"></a>    <span class="n">writer</span><span class="o">.</span><span class="n">write_message</span><span class="p">(</span><span class="n">mouse_msg</span><span class="p">,</span> <span class="n">topic</span><span class="o">=</span><span class="s2">&quot;mouse&quot;</span><span class="p">,</span> <span class="n">timestamp</span><span class="o">=</span><span class="mi">1234567891</span><span class="p">)</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># Time range filtering</span>
-<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="k">with</span> <span class="n">OWAMcapReader</span><span class="p">(</span><span class="s2">&quot;session.mcap&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">reader</span><span class="p">:</span>
-<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>    <span class="n">start_time</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">start_time</span> <span class="o">+</span> <span class="mi">1_000_000_000</span>  <span class="c1"># Skip first second</span>
-<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>    <span class="n">end_time</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">start_time</span> <span class="o">+</span> <span class="mi">10_000_000_000</span>   <span class="c1"># First 10 seconds</span>
-<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>
-<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>    <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">reader</span><span class="o">.</span><span class="n">iter_messages</span><span class="p">(</span><span class="n">start_time</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span> <span class="n">end_time</span><span class="o">=</span><span class="n">end_time</span><span class="p">):</span>
-<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Message in range: </span><span class="si">{</span><span class="n">msg</span><span class="o">.</span><span class="n">topic</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>
-<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="c1"># Remote files</span>
-<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a><span class="k">with</span> <span class="n">OWAMcapReader</span><span class="p">(</span><span class="s2">&quot;https://example.com/data.mcap&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">reader</span><span class="p">:</span>
-<a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a>    <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">reader</span><span class="o">.</span><span class="n">iter_messages</span><span class="p">(</span><span class="n">topics</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;screen&quot;</span><span class="p">]):</span>
-<a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Remote frame: </span><span class="si">{</span><span class="n">msg</span><span class="o">.</span><span class="n">decoded</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1"># Time range filtering</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="k">with</span> <span class="n">OWAMcapReader</span><span class="p">(</span><span class="s2">&quot;session.mcap&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">reader</span><span class="p">:</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>    <span class="n">start_time</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">start_time</span> <span class="o">+</span> <span class="mi">1_000_000_000</span>  <span class="c1"># Skip first second</span>
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>    <span class="n">end_time</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">start_time</span> <span class="o">+</span> <span class="mi">10_000_000_000</span>   <span class="c1"># First 10 seconds</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>
+<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>    <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">reader</span><span class="o">.</span><span class="n">iter_messages</span><span class="p">(</span><span class="n">start_time</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span> <span class="n">end_time</span><span class="o">=</span><span class="n">end_time</span><span class="p">):</span>
+<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Message in range: </span><span class="si">{</span><span class="n">msg</span><span class="o">.</span><span class="n">topic</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>
+<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a><span class="c1"># Remote files</span>
+<a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a><span class="k">with</span> <span class="n">OWAMcapReader</span><span class="p">(</span><span class="s2">&quot;https://example.com/data.mcap&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">reader</span><span class="p">:</span>
+<a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a>    <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">reader</span><span class="o">.</span><span class="n">iter_messages</span><span class="p">(</span><span class="n">topics</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;screen&quot;</span><span class="p">]):</span>
+<a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Remote frame: </span><span class="si">{</span><span class="n">msg</span><span class="o">.</span><span class="n">decoded</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1"># File information</span>
-<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>owl<span class="w"> </span>mcap<span class="w"> </span>info<span class="w"> </span>session.mcap
-<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>
-<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="c1"># List messages</span>
-<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>owl<span class="w"> </span>mcap<span class="w"> </span>cat<span class="w"> </span>session.mcap<span class="w"> </span>--n<span class="w"> </span><span class="m">10</span><span class="w"> </span>--topics<span class="w"> </span>screen<span class="w"> </span>--topics<span class="w"> </span>mouse
-<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>
-<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="c1"># Migrate between versions</span>
-<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>owl<span class="w"> </span>mcap<span class="w"> </span>migrate<span class="w"> </span>run<span class="w"> </span>session.mcap
-<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>
-<a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a><span class="c1"># Extract frames</span>
-<a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a>owl<span class="w"> </span>mcap<span class="w"> </span>extract-frames<span class="w"> </span>session.mcap<span class="w"> </span>--output<span class="w"> </span>frames/
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1"># File information</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>owl<span class="w"> </span>mcap<span class="w"> </span>info<span class="w"> </span>session.mcap
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="c1"># List messages</span>
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>owl<span class="w"> </span>mcap<span class="w"> </span>cat<span class="w"> </span>session.mcap<span class="w"> </span>--n<span class="w"> </span><span class="m">10</span><span class="w"> </span>--topics<span class="w"> </span>screen<span class="w"> </span>--topics<span class="w"> </span>mouse
+<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>
+<a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="c1"># Migrate between versions</span>
+<a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>owl<span class="w"> </span>mcap<span class="w"> </span>migrate<span class="w"> </span>run<span class="w"> </span>session.mcap
+<a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>
+<a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a><span class="c1"># Extract frames</span>
+<a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a>owl<span class="w"> </span>mcap<span class="w"> </span>extract-frames<span class="w"> </span>session.mcap<span class="w"> </span>--output<span class="w"> </span>frames/
 </code></pre></div>
 </div>
 </div>
@@ -2537,42 +2556,42 @@
 <ul>
 <li><strong>🔄 Flexible</strong>: Skip binning and use Event Dataset directly, or use traditional Binned Dataset approach</li>
 <li><strong>💾 Storage Optimized</strong>: Since event/binned dataset saves only reference to media, the entire pipeline is designed to be <strong>space-efficient</strong>.
-<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>/data/
-<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>├──<span class="w"> </span>mcaps/<span class="w">           </span><span class="c1"># Raw recordings (400MB)</span>
-<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>├──<span class="w"> </span>event-dataset/<span class="w">   </span><span class="c1"># References only (20MB)</span>
-<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>└──<span class="w"> </span>binned-dataset/<span class="w">  </span><span class="c1"># Aggregated refs (2MB)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>/data/
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>├──<span class="w"> </span>mcaps/<span class="w">           </span><span class="c1"># Raw recordings (400MB)</span>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>├──<span class="w"> </span>event-dataset/<span class="w">   </span><span class="c1"># References only (20MB)</span>
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>└──<span class="w"> </span>binned-dataset/<span class="w">  </span><span class="c1"># Aggregated refs (2MB)</span>
 </code></pre></div></li>
 <li><strong>🤗 Native HuggingFace</strong>: Event/binned dataset is a true HuggingFace <code>datasets.Dataset</code> with <code>set_transform()</code>, not wrappers.
-<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="c1"># Since event/binned datasets are true HuggingFace datasets,</span>
-<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="c1"># they can be loaded directly into training pipelines</span>
-<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_from_disk</span>
-<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="n">dataset</span> <span class="o">=</span> <span class="n">load_from_disk</span><span class="p">(</span><span class="s2">&quot;/data/event-dataset&quot;</span><span class="p">)</span>
-<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>
-<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a><span class="c1"># Transform to VLA training format is applied on-the-fly during training</span>
-<a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_event_dataset_transform</span>
-<a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a><span class="n">transform</span> <span class="o">=</span> <span class="n">create_event_dataset_transform</span><span class="p">(</span>
-<a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a>    <span class="n">encoder_type</span><span class="o">=</span><span class="s2">&quot;hierarchical&quot;</span><span class="p">,</span>
-<a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a>    <span class="n">load_images</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a>    <span class="n">encode_actions</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<a id="__codelineno-18-12" name="__codelineno-18-12" href="#__codelineno-18-12"></a><span class="p">)</span>
-<a id="__codelineno-18-13" name="__codelineno-18-13" href="#__codelineno-18-13"></a><span class="n">dataset</span><span class="o">.</span><span class="n">set_transform</span><span class="p">(</span><span class="n">transform</span><span class="p">)</span>
-<a id="__codelineno-18-14" name="__codelineno-18-14" href="#__codelineno-18-14"></a>
-<a id="__codelineno-18-15" name="__codelineno-18-15" href="#__codelineno-18-15"></a><span class="c1"># Use in training</span>
-<a id="__codelineno-18-16" name="__codelineno-18-16" href="#__codelineno-18-16"></a><span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;train&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="mi">1</span><span class="p">):</span>
-<a id="__codelineno-18-17" name="__codelineno-18-17" href="#__codelineno-18-17"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Images: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s1">&#39;images&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2"> frames&quot;</span><span class="p">)</span>
-<a id="__codelineno-18-18" name="__codelineno-18-18" href="#__codelineno-18-18"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Actions: </span><span class="si">{</span><span class="n">sample</span><span class="p">[</span><span class="s1">&#39;encoded_events&#39;</span><span class="p">][:</span><span class="mi">3</span><span class="p">]</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
-<a id="__codelineno-18-19" name="__codelineno-18-19" href="#__codelineno-18-19"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Instruction: </span><span class="si">{</span><span class="n">sample</span><span class="p">[</span><span class="s1">&#39;instruction&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="c1"># Since event/binned datasets are true HuggingFace datasets,</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="c1"># they can be loaded directly into training pipelines</span>
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_from_disk</span>
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="n">dataset</span> <span class="o">=</span> <span class="n">load_from_disk</span><span class="p">(</span><span class="s2">&quot;/data/event-dataset&quot;</span><span class="p">)</span>
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>
+<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="c1"># Transform to VLA training format is applied on-the-fly during training</span>
+<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_event_dataset_transform</span>
+<a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a><span class="n">transform</span> <span class="o">=</span> <span class="n">create_event_dataset_transform</span><span class="p">(</span>
+<a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a>    <span class="n">encoder_type</span><span class="o">=</span><span class="s2">&quot;hierarchical&quot;</span><span class="p">,</span>
+<a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a>    <span class="n">load_images</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a>    <span class="n">encode_actions</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a><span class="p">)</span>
+<a id="__codelineno-19-13" name="__codelineno-19-13" href="#__codelineno-19-13"></a><span class="n">dataset</span><span class="o">.</span><span class="n">set_transform</span><span class="p">(</span><span class="n">transform</span><span class="p">)</span>
+<a id="__codelineno-19-14" name="__codelineno-19-14" href="#__codelineno-19-14"></a>
+<a id="__codelineno-19-15" name="__codelineno-19-15" href="#__codelineno-19-15"></a><span class="c1"># Use in training</span>
+<a id="__codelineno-19-16" name="__codelineno-19-16" href="#__codelineno-19-16"></a><span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;train&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="mi">1</span><span class="p">):</span>
+<a id="__codelineno-19-17" name="__codelineno-19-17" href="#__codelineno-19-17"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Images: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s1">&#39;images&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2"> frames&quot;</span><span class="p">)</span>
+<a id="__codelineno-19-18" name="__codelineno-19-18" href="#__codelineno-19-18"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Actions: </span><span class="si">{</span><span class="n">sample</span><span class="p">[</span><span class="s1">&#39;encoded_events&#39;</span><span class="p">][:</span><span class="mi">3</span><span class="p">]</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+<a id="__codelineno-19-19" name="__codelineno-19-19" href="#__codelineno-19-19"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Instruction: </span><span class="si">{</span><span class="n">sample</span><span class="p">[</span><span class="s1">&#39;instruction&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </code></pre></div></li>
 <li><strong>⚡ Compute-optimized, On-the-Fly Processing</strong>: During preprocess stage, media is not loaded. During training, only the required media is loaded on-demand.
-<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>$<span class="w"> </span>python<span class="w"> </span>scripts/01_raw_events_to_event_dataset.py
-<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>🔄<span class="w"> </span>Raw<span class="w"> </span>Events<span class="w"> </span>to<span class="w"> </span>Event<span class="w"> </span>Dataset
-<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>📁<span class="w"> </span>Loading<span class="w"> </span>from:<span class="w"> </span>/data/mcaps/game-session
-<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>📊<span class="w"> </span>Found<span class="w"> </span><span class="m">3</span><span class="w"> </span>train,<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="nb">test</span><span class="w"> </span>files
-<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>---&gt;<span class="w"> </span><span class="m">100</span>%
-<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>✓<span class="w"> </span>Created<span class="w"> </span><span class="m">24</span>,907<span class="w"> </span>train,<span class="w"> </span><span class="m">20</span>,471<span class="w"> </span><span class="nb">test</span><span class="w"> </span>examples
-<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a>💾<span class="w"> </span>Saving<span class="w"> </span>to<span class="w"> </span>/data/event-dataset
-<a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a>✓<span class="w"> </span>Saved<span class="w"> </span>successfully
-<a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a>🎉<span class="w"> </span>Completed<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">3</span>.9s<span class="w"> </span><span class="o">(</span><span class="m">0</span>.1min<span class="o">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>$<span class="w"> </span>python<span class="w"> </span>scripts/01_raw_events_to_event_dataset.py
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>🔄<span class="w"> </span>Raw<span class="w"> </span>Events<span class="w"> </span>to<span class="w"> </span>Event<span class="w"> </span>Dataset
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>📁<span class="w"> </span>Loading<span class="w"> </span>from:<span class="w"> </span>/data/mcaps/game-session
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>📊<span class="w"> </span>Found<span class="w"> </span><span class="m">3</span><span class="w"> </span>train,<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="nb">test</span><span class="w"> </span>files
+<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>---&gt;<span class="w"> </span><span class="m">100</span>%
+<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>✓<span class="w"> </span>Created<span class="w"> </span><span class="m">24</span>,907<span class="w"> </span>train,<span class="w"> </span><span class="m">20</span>,471<span class="w"> </span><span class="nb">test</span><span class="w"> </span>examples
+<a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a>💾<span class="w"> </span>Saving<span class="w"> </span>to<span class="w"> </span>/data/event-dataset
+<a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>✓<span class="w"> </span>Saved<span class="w"> </span>successfully
+<a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a>🎉<span class="w"> </span>Completed<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">3</span>.9s<span class="w"> </span><span class="o">(</span><span class="m">0</span>.1min<span class="o">)</span>
 </code></pre></div></li>
 </ul>
 <div class="admonition tip">
@@ -2584,15 +2603,15 @@
 <div class="tabbed-content">
 <div class="tabbed-block">
 <p><strong>Decision Tree: Choose Your Storage Approach</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>Recording Length?
-<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>├─ &lt; 30 seconds
-<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>│  └─ Use embedded data URIs (self-contained)
-<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>└─ &gt; 30 seconds
-<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>   └─ File Size Priority?
-<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>      ├─ Minimize MCAP size
-<a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a>      │  └─ Use external video (.mkv)
-<a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>      └─ Maximize quality
-<a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a>         └─ Use external images (.png)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>Recording Length?
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>├─ &lt; 30 seconds
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>│  └─ Use embedded data URIs (self-contained)
+<a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a>└─ &gt; 30 seconds
+<a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a>   └─ File Size Priority?
+<a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a>      ├─ Minimize MCAP size
+<a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a>      │  └─ Use external video (.mkv)
+<a id="__codelineno-21-8" name="__codelineno-21-8" href="#__codelineno-21-8"></a>      └─ Maximize quality
+<a id="__codelineno-21-9" name="__codelineno-21-9" href="#__codelineno-21-9"></a>         └─ Use external images (.png)
 </code></pre></div>
 <table>
 <thead>
@@ -2632,33 +2651,33 @@
 </table>
 </div>
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="c1"># ✅ Good: Filter topics early</span>
-<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="k">with</span> <span class="n">OWAMcapReader</span><span class="p">(</span><span class="s2">&quot;file.mcap&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">reader</span><span class="p">:</span>
-<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>    <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">reader</span><span class="o">.</span><span class="n">iter_messages</span><span class="p">(</span><span class="n">topics</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;screen&quot;</span><span class="p">]):</span>
-<a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a>        <span class="n">process_frame</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">decoded</span><span class="p">)</span>
-<a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a>
-<a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a><span class="c1"># ✅ Good: Lazy loading</span>
-<a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a><span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">reader</span><span class="o">.</span><span class="n">iter_messages</span><span class="p">(</span><span class="n">topics</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;screen&quot;</span><span class="p">]):</span>
-<a id="__codelineno-21-8" name="__codelineno-21-8" href="#__codelineno-21-8"></a>    <span class="k">if</span> <span class="n">should_process_frame</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">timestamp</span><span class="p">):</span>
-<a id="__codelineno-21-9" name="__codelineno-21-9" href="#__codelineno-21-9"></a>        <span class="n">frame</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">decoded</span><span class="o">.</span><span class="n">load_frame_array</span><span class="p">()</span>  <span class="c1"># Only when needed</span>
-<a id="__codelineno-21-10" name="__codelineno-21-10" href="#__codelineno-21-10"></a>
-<a id="__codelineno-21-11" name="__codelineno-21-11" href="#__codelineno-21-11"></a><span class="c1"># ❌ Avoid: Loading all frames</span>
-<a id="__codelineno-21-12" name="__codelineno-21-12" href="#__codelineno-21-12"></a><span class="n">frames</span> <span class="o">=</span> <span class="p">[</span><span class="n">msg</span><span class="o">.</span><span class="n">decoded</span><span class="o">.</span><span class="n">load_frame_array</span><span class="p">()</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">reader</span><span class="o">.</span><span class="n">iter_messages</span><span class="p">()]</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="c1"># ✅ Good: Filter topics early</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="k">with</span> <span class="n">OWAMcapReader</span><span class="p">(</span><span class="s2">&quot;file.mcap&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">reader</span><span class="p">:</span>
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>    <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">reader</span><span class="o">.</span><span class="n">iter_messages</span><span class="p">(</span><span class="n">topics</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;screen&quot;</span><span class="p">]):</span>
+<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>        <span class="n">process_frame</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">decoded</span><span class="p">)</span>
+<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a>
+<a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a><span class="c1"># ✅ Good: Lazy loading</span>
+<a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a><span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">reader</span><span class="o">.</span><span class="n">iter_messages</span><span class="p">(</span><span class="n">topics</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;screen&quot;</span><span class="p">]):</span>
+<a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a>    <span class="k">if</span> <span class="n">should_process_frame</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">timestamp</span><span class="p">):</span>
+<a id="__codelineno-22-9" name="__codelineno-22-9" href="#__codelineno-22-9"></a>        <span class="n">frame</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">decoded</span><span class="o">.</span><span class="n">load_frame_array</span><span class="p">()</span>  <span class="c1"># Only when needed</span>
+<a id="__codelineno-22-10" name="__codelineno-22-10" href="#__codelineno-22-10"></a>
+<a id="__codelineno-22-11" name="__codelineno-22-11" href="#__codelineno-22-11"></a><span class="c1"># ❌ Avoid: Loading all frames</span>
+<a id="__codelineno-22-12" name="__codelineno-22-12" href="#__codelineno-22-12"></a><span class="n">frames</span> <span class="o">=</span> <span class="p">[</span><span class="n">msg</span><span class="o">.</span><span class="n">decoded</span><span class="o">.</span><span class="n">load_frame_array</span><span class="p">()</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">reader</span><span class="o">.</span><span class="n">iter_messages</span><span class="p">()]</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
 <p><strong>Recommended structure:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>/data/
-<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>├── mcaps/                          # Raw MCAP recordings
-<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>│   ├── session_001.mcap
-<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>│   ├── session_001.mkv             # External video files
-<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a>│   └── session_002.mcap
-<a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a>├── event-dataset/                  # Stage 1: Event Dataset
-<a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a>│   ├── train/
-<a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a>│   └── test/
-<a id="__codelineno-22-9" name="__codelineno-22-9" href="#__codelineno-22-9"></a>└── binned-dataset/                 # Stage 2: Binned Dataset
-<a id="__codelineno-22-10" name="__codelineno-22-10" href="#__codelineno-22-10"></a>    ├── train/
-<a id="__codelineno-22-11" name="__codelineno-22-11" href="#__codelineno-22-11"></a>    └── test/
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>/data/
+<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>├── mcaps/                          # Raw MCAP recordings
+<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>│   ├── session_001.mcap
+<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a>│   ├── session_001.mkv             # External video files
+<a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a>│   └── session_002.mcap
+<a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a>├── event-dataset/                  # Stage 1: Event Dataset
+<a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a>│   ├── train/
+<a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a>│   └── test/
+<a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a>└── binned-dataset/                 # Stage 2: Binned Dataset
+<a id="__codelineno-23-10" name="__codelineno-23-10" href="#__codelineno-23-10"></a>    ├── train/
+<a id="__codelineno-23-11" name="__codelineno-23-11" href="#__codelineno-23-11"></a>    └── test/
 </code></pre></div></p>
 <p>See <a href="../data-pipeline/">OWA Data Pipeline</a> for complete pipeline details.</p>
 </div>
@@ -2678,20 +2697,20 @@
 </ul>
 </div>
 <p><strong>Migration Commands:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="c1"># Check if migration is needed</span>
-<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>owl<span class="w"> </span>mcap<span class="w"> </span>info<span class="w"> </span>old_file.mcap<span class="w">  </span><span class="c1"># Look for version warnings</span>
-<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>
-<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="c1"># Preview what will change (safe, no modifications)</span>
-<a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a>owl<span class="w"> </span>mcap<span class="w"> </span>migrate<span class="w"> </span>run<span class="w"> </span>old_file.mcap<span class="w"> </span>--dry-run
-<a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a>
-<a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a><span class="c1"># Migrate single file (creates backup automatically)</span>
-<a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a>owl<span class="w"> </span>mcap<span class="w"> </span>migrate<span class="w"> </span>run<span class="w"> </span>old_file.mcap
-<a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a>
-<a id="__codelineno-23-10" name="__codelineno-23-10" href="#__codelineno-23-10"></a><span class="c1"># Migrate multiple files in batch</span>
-<a id="__codelineno-23-11" name="__codelineno-23-11" href="#__codelineno-23-11"></a>owl<span class="w"> </span>mcap<span class="w"> </span>migrate<span class="w"> </span>run<span class="w"> </span>*.mcap
-<a id="__codelineno-23-12" name="__codelineno-23-12" href="#__codelineno-23-12"></a>
-<a id="__codelineno-23-13" name="__codelineno-23-13" href="#__codelineno-23-13"></a><span class="c1"># Migrate with custom output location</span>
-<a id="__codelineno-23-14" name="__codelineno-23-14" href="#__codelineno-23-14"></a>owl<span class="w"> </span>mcap<span class="w"> </span>migrate<span class="w"> </span>run<span class="w"> </span>old_file.mcap<span class="w"> </span>--output<span class="w"> </span>new_file.mcap
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="c1"># Check if migration is needed</span>
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>owl<span class="w"> </span>mcap<span class="w"> </span>info<span class="w"> </span>old_file.mcap<span class="w">  </span><span class="c1"># Look for version warnings</span>
+<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>
+<a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a><span class="c1"># Preview what will change (safe, no modifications)</span>
+<a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a>owl<span class="w"> </span>mcap<span class="w"> </span>migrate<span class="w"> </span>run<span class="w"> </span>old_file.mcap<span class="w"> </span>--dry-run
+<a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a>
+<a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a><span class="c1"># Migrate single file (creates backup automatically)</span>
+<a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a>owl<span class="w"> </span>mcap<span class="w"> </span>migrate<span class="w"> </span>run<span class="w"> </span>old_file.mcap
+<a id="__codelineno-24-9" name="__codelineno-24-9" href="#__codelineno-24-9"></a>
+<a id="__codelineno-24-10" name="__codelineno-24-10" href="#__codelineno-24-10"></a><span class="c1"># Migrate multiple files in batch</span>
+<a id="__codelineno-24-11" name="__codelineno-24-11" href="#__codelineno-24-11"></a>owl<span class="w"> </span>mcap<span class="w"> </span>migrate<span class="w"> </span>run<span class="w"> </span>*.mcap
+<a id="__codelineno-24-12" name="__codelineno-24-12" href="#__codelineno-24-12"></a>
+<a id="__codelineno-24-13" name="__codelineno-24-13" href="#__codelineno-24-13"></a><span class="c1"># Migrate with custom output location</span>
+<a id="__codelineno-24-14" name="__codelineno-24-14" href="#__codelineno-24-14"></a>owl<span class="w"> </span>mcap<span class="w"> </span>migrate<span class="w"> </span>run<span class="w"> </span>old_file.mcap<span class="w"> </span>--output<span class="w"> </span>new_file.mcap
 </code></pre></div>
 <div class="admonition tip">
 <p class="admonition-title">Migration Safety</p>
@@ -2709,19 +2728,19 @@
 <div class="admonition warning">
 <p class="admonition-title">File Not Found Errors</p>
 <p>When video files are missing:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="c1"># Resolve relative paths</span>
-<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="n">screen_msg</span><span class="o">.</span><span class="n">resolve_external_path</span><span class="p">(</span><span class="s2">&quot;/path/to/mcap/file.mcap&quot;</span><span class="p">)</span>
-<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a><span class="c1"># Check if external media exists</span>
-<a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a><span class="n">screen_msg</span><span class="o">.</span><span class="n">media_ref</span><span class="o">.</span><span class="n">validate_uri</span><span class="p">()</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="c1"># Resolve relative paths</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="n">screen_msg</span><span class="o">.</span><span class="n">resolve_external_path</span><span class="p">(</span><span class="s2">&quot;/path/to/mcap/file.mcap&quot;</span><span class="p">)</span>
+<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="c1"># Check if external media exists</span>
+<a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a><span class="n">screen_msg</span><span class="o">.</span><span class="n">media_ref</span><span class="o">.</span><span class="n">validate_uri</span><span class="p">()</span>
 </code></pre></div></p>
 </div>
 <div class="admonition warning">
 <p class="admonition-title">Memory Usage</p>
 <p>Large datasets can consume memory:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="c1"># Use lazy loading instead of loading all frames</span>
-<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">reader</span><span class="o">.</span><span class="n">iter_messages</span><span class="p">(</span><span class="n">topics</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;screen&quot;</span><span class="p">]):</span>
-<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a>    <span class="k">if</span> <span class="n">should_process_frame</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">timestamp</span><span class="p">):</span>
-<a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a>        <span class="n">frame</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">decoded</span><span class="o">.</span><span class="n">load_frame_array</span><span class="p">()</span>  <span class="c1"># Only when needed</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="c1"># Use lazy loading instead of loading all frames</span>
+<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">reader</span><span class="o">.</span><span class="n">iter_messages</span><span class="p">(</span><span class="n">topics</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;screen&quot;</span><span class="p">]):</span>
+<a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a>    <span class="k">if</span> <span class="n">should_process_frame</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">timestamp</span><span class="p">):</span>
+<a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a>        <span class="n">frame</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">decoded</span><span class="o">.</span><span class="n">load_frame_array</span><span class="p">()</span>  <span class="c1"># Only when needed</span>
 </code></pre></div></p>
 </div>
 <h3 id="technical-reference">Technical Reference<a class="headerlink" href="#technical-reference" title="Permanent link">&para;</a></h3>
@@ -2775,7 +2794,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="June 28, 2025 21:15:17 UTC">June 28, 2025 21:15:17</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="July 5, 2025 16:09:38 UTC">July 5, 2025 16:09:38</span>
   </span>
 
     
