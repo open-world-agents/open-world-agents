@@ -2,9 +2,6 @@
 ARG RUNTIME_IMAGE=owa/runtime:latest
 FROM ${RUNTIME_IMAGE}
 
-# Build arguments
-ARG CONDA_INSTALL_PATH=/opt/conda
-
 # Install ML packages using uv
 RUN --mount=type=cache,target=${HOME}/.cache/uv,sharing=locked \
     --mount=type=cache,target=${HOME}/.cache/pip,sharing=locked \
