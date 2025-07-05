@@ -302,5 +302,4 @@ Both Event Dataset and Binned Dataset support the same transform interface:
 
 - [Format Guide](format-guide.md) - OWAMcap details
 - [Recording Data](../getting-started/recording-data.md) - Create with `ocap`
-- [CLI Reference](../../../owl_cli_reference/#owl-messages) - `owl` commands
 - [HuggingFace Datasets](https://huggingface.co/docs/datasets/) - `datasets` library

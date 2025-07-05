@@ -123,12 +123,16 @@ nav:
     - Examples:
       - Data Conversions: data/examples/conversions.md
   - CLI Tools:
-    - OWL CLI Reference: owl_cli_reference.md
+    - cli/index.md
+    - Command Groups:
+      - MCAP Commands: cli/mcap.md
+      - Environment Commands: cli/env.md
+      - Message Commands: cli/messages.md
+      - Video Commands: cli/video.md
   - 🚀 Awesome Examples (WIP):
     - Multimodal Game Agent: examples/multimodal_game_agent.md
     - Omniparse + InternLM GUI Agent: examples/gui_agent.md
     - Interactve World Model: examples/interactive_world_model.md
     - Usage with transformers: examples/usage_with_transformers.md
-    - Usage with LLM Inference Engines(ollama, ...): examples/usage_with_llm.md
-    - VPT dataset to OWAMcap: examples/vpt_to_owamcap.md
+    - Usage with LLM Inference Engines(ollama, ...): examples/usage_with_llm.mkdocstrings
   # - API Reference: api_reference.md # Later
