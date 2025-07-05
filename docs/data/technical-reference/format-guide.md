@@ -372,7 +372,6 @@ OWAMcap's key advantage is efficient media handling through external media refer
 
     ScreenCaptured = MESSAGES['desktop/ScreenCaptured']
     MouseEvent = MESSAGES['desktop/MouseEvent']
-    RawMouseEvent = MESSAGES['desktop/RawMouseEvent']
 
     with OWAMcapWriter("output.mcap") as writer:
         # Write screen capture
@@ -386,10 +385,6 @@ OWAMcap's key advantage is efficient media handling through external media refer
         # Write standard mouse event
         mouse_msg = MouseEvent(event_type="click", x=100, y=200)
         writer.write_message(mouse_msg, topic="mouse", timestamp=1234567891)
-
-        # Write raw mouse event
-        raw_mouse_msg = RawMouseEvent(dx=15, dy=-10, button_flags=0x0001, button_data=0)
-        writer.write_message(raw_mouse_msg, topic="mouse/raw", timestamp=1234567892)
     ```
 
 === "Advanced"
