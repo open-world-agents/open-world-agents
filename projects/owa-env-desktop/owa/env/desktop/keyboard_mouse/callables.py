@@ -224,7 +224,11 @@ def release_all_keys() -> None:
 
 
 def get_pointer_ballistics_config() -> PointerBallisticsConfig:
-    """Get Windows pointer ballistics configuration for WM_MOUSEMOVE reconstruction."""
+    """Get Windows pointer ballistics configuration for WM_MOUSEMOVE reconstruction.
+
+    Examples:
+        >>> config = get_pointer_ballistics_config()
+    """
     defaults = {
         "MouseThreshold1": 6,
         "MouseThreshold2": 10,

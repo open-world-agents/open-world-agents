@@ -29,7 +29,7 @@ def validate_docs(
     min_quality_fail: float = typer.Option(
         0.0, "--min-quality-fail", help="Minimum good quality ratio to avoid FAIL status"
     ),
-    format: str = typer.Option("text", "--format", help="Output format: text or json"),
+    format: str = typer.Option("text", "--output-format", help="Output format: text or json"),
 ) -> None:
     """
     Validate plugin documentation with proper exit codes for CI/CD integration.

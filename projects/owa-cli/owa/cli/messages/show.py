@@ -20,7 +20,7 @@ except ImportError:
 
 def show_message(
     message_type: str = typer.Argument(..., help="Message type to show (e.g., 'desktop/KeyboardEvent')"),
-    format: str = typer.Option("rich", "--format", "-f", help="Output format: rich, json, schema"),
+    format: str = typer.Option("rich", "--output-format", help="Output format: rich, json, schema"),
     example: bool = typer.Option(False, "--example", "-e", help="Show usage example"),
 ) -> None:
     """
