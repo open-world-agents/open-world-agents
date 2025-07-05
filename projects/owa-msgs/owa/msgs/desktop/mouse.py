@@ -7,6 +7,8 @@ following the domain-based message naming convention for better organization.
 
 from typing import Literal, TypeAlias
 
+from pydantic import ConfigDict, Field
+
 from owa.core.message import OWAMessage
 
 # Matches definition of https://github.com/moses-palmer/pynput/blob/master/lib/pynput/mouse/_win32.py#L48
@@ -97,3 +99,17 @@ class RawMouseEvent(OWAMessage):
 
     # Timing
     timestamp: int | None = None
+
+
+class PointerBallisticsConfig(OWAMessage):
+    """Windows pointer ballistics configuration for WM_MOUSEMOVE reconstruction."""
+
+    model_config = ConfigDict(populate_by_name=True)
+    _type = "desktop/PointerBallisticsConfig"
+
+    mouse_threshold1: int = Field(alias="MouseThreshold1")
+    mouse_threshold2: int = Field(alias="MouseThreshold2")
+    mouse_speed: int = Field(alias="MouseSpeed")
+    mouse_sensitivity: int = Field(alias="MouseSensitivity")
+    smooth_mouse_x_curve: str | None = Field(default=None, alias="SmoothMouseXCurve")
+    smooth_mouse_y_curve: str | None = Field(default=None, alias="SmoothMouseYCurve")

@@ -24,6 +24,7 @@ plugin_spec = PluginSpec(
             "mouse.release": "owa.env.desktop.keyboard_mouse.callables:mouse_release",
             "mouse.scroll": "owa.env.desktop.keyboard_mouse.callables:mouse_scroll",
             "mouse.get_state": "owa.env.desktop.keyboard_mouse.callables:get_mouse_state",
+            "mouse.get_pointer_ballistics_config": "owa.env.desktop.keyboard_mouse.callables:get_pointer_ballistics_config",
             # Keyboard control
             "keyboard.press": "owa.env.desktop.keyboard_mouse.callables:press",
             "keyboard.release": "owa.env.desktop.keyboard_mouse.callables:release",

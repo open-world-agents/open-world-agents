@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Dict, Optional, Union
 
 from owa.core import OWAMessage
 
@@ -30,4 +30,18 @@ class OWAMcapWriter(_Writer):
             topic = message.topic
             timestamp = message.timestamp
             message = message.decoded
+
+        if topic is None:
+            raise ValueError("Topic is required when message is OWAMessage")
+
         super().write_message(topic=topic, message=message, log_time=timestamp)
+
+    def write_metadata(self, name: str, data: Dict[str, str]):
+        """
+        Write metadata to the MCAP stream.
+
+        Args:
+            name: Name/key for the metadata
+            data: Metadata as Dict[str, str]
+        """
+        self._Writer__writer.add_metadata(name=name, data=data)

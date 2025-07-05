@@ -163,3 +163,9 @@ class OWAMcapReader:
             reverse=reverse,
         ):
             yield McapMessage.from_mcap_primitives(schema, channel, message, decode_args=self.decode_args)
+
+    def iter_attachments(self):
+        yield from self.reader.iter_attachments()
+
+    def iter_metadata(self):
+        yield from self.reader.iter_metadata()

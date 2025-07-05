@@ -11,7 +11,7 @@ from tqdm import tqdm
 from typing_extensions import Annotated
 
 from mcap_owa.highlevel import OWAMcapWriter
-from owa.core import LISTENERS, get_plugin_discovery
+from owa.core import CALLABLES, LISTENERS, get_plugin_discovery
 from owa.core.time import TimeUnits
 
 logger.remove()
@@ -20,6 +20,36 @@ logger.add(lambda msg: tqdm.write(msg, end=""), filter={"owa.ocap": "DEBUG", "ow
 
 event_queue = Queue()
 MCAP_LOCATION = None
+
+
+def _record_environment_metadata(writer: OWAMcapWriter) -> None:
+    """Record environment configuration as MCAP metadata.
+
+    This function captures recording environment information that applies to the
+    entire session, such as system configuration, hardware settings, etc.
+
+    Args:
+        writer: The MCAP writer to store metadata in
+    """
+    # Record pointer ballistics configuration
+    try:
+        ballistics_config = CALLABLES["desktop/mouse.get_pointer_ballistics_config"]()
+
+        # Convert to Dict[str, str] as required by MCAP
+        metadata_dict = ballistics_config.model_dump(by_alias=True)
+        metadata_str_dict = {str(key): str(value) for key, value in metadata_dict.items()}
+
+        writer.write_metadata("pointer_ballistics_config", metadata_str_dict)
+        logger.debug("Recorded pointer ballistics configuration as metadata")
+    except Exception as e:
+        logger.warning(f"Failed to record pointer ballistics configuration: {e}")
+
+    # TODO: Add more environment metadata here:
+    # - System information (OS version, hardware specs)
+    # - Display configuration (resolution, DPI, multiple monitors)
+    # - Audio configuration (devices, sample rates)
+    # - Input device configuration (keyboard layout, mouse settings)
+    # - Game/application specific settings
 
 
 def check_resources_health(resources):
@@ -275,6 +305,9 @@ def record(
             logger.info(f"⏰ Recording will automatically stop after {stop_after} seconds")
 
         with OWAMcapWriter(output_file) as writer, tqdm(desc="Recording", unit="event", dynamic_ncols=True) as pbar:
+            # Record environment metadata
+            _record_environment_metadata(writer)
+
             try:
                 while True:
                     # Check if auto-stop time has been reached
