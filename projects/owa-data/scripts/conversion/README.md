@@ -45,5 +45,5 @@ To add a new dataset conversion:
 
 ## References
 
-- [OWAMcap Format Documentation](../../../docs/data/technical-reference/format-guide.md)
+- [OWAMcap Format Documentation](https://open-world-agents.github.io/open-world-agents/data/technical-reference/format-guide/)
 - [Open World Agents Project](https://github.com/open-world-agents/open-world-agents)
