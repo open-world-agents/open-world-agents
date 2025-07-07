@@ -255,17 +255,23 @@ $ owl env stats --namespaces                      # List all available namespace
 
 ### Message Management with CLI
 
-Explore and manage message types using the new `owl messages` command:
+Explore and manage message types using the `owl messages` command:
 
 ```bash
 # List all available message types
 $ owl messages list
 
-# Show detailed message schema
-$ owl messages show desktop/KeyboardEvent
+# Show specific message details
+$ owl messages list desktop/KeyboardEvent
 
-# Search for specific message types
-$ owl messages search keyboard
+# Search for message types by pattern
+$ owl messages list --search keyboard
+
+# Filter by domain
+$ owl messages list --domain desktop
+
+# Show detailed message schema with examples
+$ owl messages show desktop/KeyboardEvent --example
 
 # Validate message definitions
 $ owl messages validate

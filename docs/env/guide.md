@@ -361,7 +361,7 @@ $ owl messages list
 $ owl messages show desktop/KeyboardEvent
 
 # Search for specific message types
-$ owl messages search keyboard
+$ owl messages list --search keyboard
 
 # Validate message definitions
 $ owl messages validate
