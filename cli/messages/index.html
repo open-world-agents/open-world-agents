@@ -450,7 +450,7 @@
   
   
   <span class="md-ellipsis">
-    Introducing OWA's Env
+    Environment Framework
     
   </span>
   
@@ -473,7 +473,7 @@
   
   
   <span class="md-ellipsis">
-    Comprehensive Guide for Env
+    Environment Guide
     
   </span>
   
@@ -496,30 +496,7 @@
   
   
   <span class="md-ellipsis">
-    Custom EnvPlugins
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../env/documentation_validation/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Documentation Validation
+    Custom EnvPlugin Development
     
   </span>
   
@@ -547,10 +524,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4" >
         
           
-          <label class="md-nav__link" for="__nav_2_5" id="__nav_2_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2_4" id="__nav_2_4_label" tabindex="0">
             
   
   
@@ -563,8 +540,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_2_5">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4">
             <span class="md-nav__icon md-icon"></span>
             Lists of EnvPlugins
           </label>
@@ -1767,9 +1744,9 @@
 </tbody>
 </table>
 <h5 id="owl-messages-list">owl messages list<a class="headerlink" href="#owl-messages-list" title="Permanent link">&para;</a></h5>
-<p>List all available message types</p>
+<p>List and search message types</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>owl messages list [OPTIONS]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>owl messages list [OPTIONS] [MESSAGE_TYPES]...
 </code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -1789,6 +1766,12 @@
 <td>None</td>
 </tr>
 <tr>
+<td><code>--search</code>, <code>-s</code></td>
+<td>text</td>
+<td>Search message types by pattern</td>
+<td>None</td>
+</tr>
+<tr>
 <td><code>--output-format</code></td>
 <td>text</td>
 <td>Output format: table, json, yaml</td>
@@ -1801,6 +1784,18 @@
 <td><code>False</code></td>
 </tr>
 <tr>
+<td><code>--case-sensitive</code>, <code>-c</code></td>
+<td>boolean</td>
+<td>Case sensitive search</td>
+<td><code>False</code></td>
+</tr>
+<tr>
+<td><code>--limit</code>, <code>-l</code></td>
+<td>integer</td>
+<td>Limit number of results</td>
+<td><code>50</code></td>
+</tr>
+<tr>
 <td><code>--help</code></td>
 <td>boolean</td>
 <td>Show this message and exit.</td>
@@ -1809,7 +1804,7 @@
 </tbody>
 </table>
 <h5 id="owl-messages-show">owl messages show<a class="headerlink" href="#owl-messages-show" title="Permanent link">&para;</a></h5>
-<p>Show details about a specific message type</p>
+<p>Show detailed information about a specific message type</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>owl messages show [OPTIONS] MESSAGE_TYPE
 </code></pre></div>
@@ -1864,12 +1859,6 @@
 <td><code>--verbose</code>, <code>-v</code></td>
 <td>boolean</td>
 <td>Show detailed validation results</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--fix</code></td>
-<td>boolean</td>
-<td>Attempt to fix validation issues</td>
 <td><code>False</code></td>
 </tr>
 <tr>
