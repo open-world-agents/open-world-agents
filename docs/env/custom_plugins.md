@@ -2,6 +2,59 @@
 
 Create your own environment plugins using the Entry Points-based discovery system. Plugins are automatically discovered when installed, requiring zero configuration from users.
 
+## ⚡ Quick Start (5 minutes)
+
+!!! tip "TL;DR: Get a plugin running in 5 minutes"
+
+    ```bash
+    # 1. Copy the template
+    cp -r projects/owa-env-example my-awesome-plugin
+    cd my-awesome-plugin
+
+    # 2. Edit pyproject.toml - change the entry point name
+    # [project.entry-points."owa.env.plugins"]
+    # awesome = "owa.env.plugins.awesome:plugin_spec"
+
+    # 3. Edit owa/env/plugins/example.py - change namespace
+    # namespace="awesome"
+
+    # 4. Install and test
+    pip install -e .
+    owl env list awesome
+    python -c "from owa.core import CALLABLES; print(CALLABLES['awesome/add'](2, 3))"
+    ```
+
+    **Result**: Your plugin is live! Components are automatically available across the entire OWA ecosystem.
+
+### Visual Plugin Architecture
+
+```mermaid
+flowchart TD
+    A[Your Plugin Package] --> B[pyproject.toml]
+    B --> C[Entry Point Declaration]
+    C --> E[Plugin Specification]
+
+    E --> F[Component Definitions]
+
+    F --> G[Callables]
+    F --> H[Listeners]
+    F --> I[Runnables]
+
+    J[OWA Core Registry] -.->|Plugin Discovery| C
+    G -.-> J
+    H -.-> J
+    I -.-> J
+
+    J --> K[Available to Users]
+    K --> L["CALLABLES['namespace/name']"]
+    K --> M["LISTENERS['namespace/name']"]
+    K --> N["RUNNABLES['namespace/name']"]
+
+    style A fill:#e1f5fe
+    style J fill:#f3e5f5
+    style K fill:#e8f5e8
+```
+
 ## What are Entry Points?
 
 Entry Points are a standard Python packaging mechanism that allows packages to advertise components that can be discovered and loaded by other packages. They're defined in your `pyproject.toml` file and enable automatic plugin discovery.
@@ -155,6 +208,51 @@ When you install a plugin with entry points, OWA automatically discovers and reg
     python -c "from owa.core import CALLABLES; print(CALLABLES['myplugin/hello']())"
     ```
 
+## 🔄 Development Workflow
+
+### Complete Development Cycle
+
+```mermaid
+flowchart TD
+    A[💡 Plugin Idea] --> B[📋 Plan Components]
+    B --> C[🏗️ Choose Structure]
+    C --> D[📝 Write Plugin Spec]
+    D --> E[⚙️ Implement Components]
+    E --> F[🧪 Write Tests]
+    F --> G[📦 Install Locally]
+    G --> H{✅ Validation}
+    H -->|❌ Fails| I[🔧 Fix Issues]
+    I --> E
+    H -->|✅ Passes| J[📚 Document]
+    J --> K[🚀 Publish]
+    K --> L[🌍 Available to Users]
+
+    style A fill:#fff3e0
+    style H fill:#e8f5e8
+    style L fill:#e3f2fd
+```
+
+### Testing & Validation Commands
+
+```bash
+# Development cycle commands
+pip install -e .                           # Install in dev mode
+owl env list myplugin                       # Verify discovery
+owl env docs --validate myplugin --strict  # Validate plugin
+python -m pytest tests/                    # Run tests
+
+# Component testing
+python -c "
+from owa.core import CALLABLES
+result = CALLABLES['myplugin/hello']('World')
+print(f'Result: {result}')
+"
+
+# Advanced validation
+owl env docs --validate --output-format json  # JSON validation report
+owl env stats --namespaces                    # Check namespace conflicts
+```
+
 ## PluginSpec Reference
 
 The `PluginSpec` class is the core of your plugin definition. It tells OWA what components your plugin provides and where to find them.
@@ -289,6 +387,99 @@ from pathlib import Path
 plugin_spec = PluginSpec.from_yaml(Path(__file__).parent / "plugin.yaml")
 ```
 
+## 🔧 Troubleshooting Guide
+
+### Common Issues & Solutions
+
+!!! failure "Plugin Not Discovered"
+
+    **Symptoms**: `owl env list` doesn't show your plugin
+
+    ```bash
+    # Debug steps
+    pip list | grep your-plugin-name     # Verify installation
+    python -c "
+    try:
+        from importlib.metadata import entry_points
+    except ImportError:
+        from importlib_metadata import entry_points
+
+    eps = entry_points(group='owa.env.plugins')
+    for ep in eps:
+        print(f'{ep.name}: {ep.value}')
+    "
+    ```
+
+    **Common causes**:
+    - Entry point name conflicts with existing plugin
+    - Incorrect entry point path in `pyproject.toml`
+    - Plugin not installed (`pip install -e .`)
+
+!!! failure "Import Errors"
+
+    **Symptoms**: Validation fails with import errors
+
+    ```bash
+    # Detailed validation
+    owl env docs --validate myplugin --output-format text
+
+    # Test imports manually
+    python -c "
+    from your.module.path import your_function
+    print('Import successful!')
+    "
+    ```
+
+    **Common causes**:
+    - Missing dependencies in `pyproject.toml`
+    - Incorrect import paths in plugin spec
+    - Circular imports
+
+!!! failure "Component Not Callable"
+
+    **Symptoms**: `Object 'name' is not callable`
+
+    ```python
+    # ❌ Wrong - importing a module
+    "components": {
+        "callables": {
+            "bad": "mymodule.utils"  # Points to module, not function
+        }
+    }
+
+    # ✅ Correct - importing a function
+    "components": {
+        "callables": {
+            "good": "mymodule.utils:my_function"  # Points to function
+        }
+    }
+    ```
+
+### Debug Plugin Discovery
+
+```mermaid
+flowchart TD
+    A[Plugin Not Working] --> B{Installed?}
+    B -->|No| C[pip install -e .]
+    C --> D[Check owl env list]
+    B -->|Yes| E{Entry Point Correct?}
+    E -->|No| F[Fix pyproject.toml]
+    F --> D
+    E -->|Yes| G{Import Paths Valid?}
+    G -->|No| H[Fix plugin spec]
+    H --> D
+    G -->|Yes| I{Dependencies Met?}
+    I -->|No| J[Install dependencies]
+    J --> D
+    I -->|Yes| K[Check OWA logs]
+
+    style C fill:#ffebee
+    style F fill:#ffebee
+    style H fill:#ffebee
+    style J fill:#ffebee
+    style D fill:#e8f5e8
+```
+
 ## Component Types
 
 OWA plugins can provide three types of components:
@@ -302,16 +493,79 @@ OWA plugins can provide three types of components:
         - Can be functions or callable classes
         - Accessed via `CALLABLES["namespace/name"](args)`
 
-        ```python
-        def capture_screen() -> np.ndarray:
-            """Capture the current screen."""
-            # Implementation
-            return screenshot_array
+        !!! example "Real-world Callable Examples"
 
-        def click_mouse(x: int, y: int, button: str = "left"):
-            """Click mouse at coordinates."""
-            # Implementation
-        ```
+            === "🖱️ Mouse Control"
+                ```python
+                def click_mouse(x: int, y: int, button: str = "left") -> bool:
+                    """Click mouse at specific coordinates.
+
+                    Args:
+                        x: X coordinate on screen
+                        y: Y coordinate on screen
+                        button: Mouse button ('left', 'right', 'middle')
+
+                    Returns:
+                        True if click succeeded
+
+                    Example:
+                        >>> CALLABLES["desktop/click"](100, 200, "left")
+                        True
+                    """
+                    from pynput.mouse import Button, Listener as MouseListener
+                    from pynput import mouse
+
+                    try:
+                        # Map string to pynput Button
+                        button_map = {
+                            "left": Button.left,
+                            "right": Button.right,
+                            "middle": Button.middle
+                        }
+
+                        controller = mouse.Controller()
+                        controller.position = (x, y)
+                        controller.click(button_map.get(button, Button.left))
+                        return True
+                    except Exception:
+                        return False
+                ```
+
+            === "📸 Screen Capture"
+                ```python
+                import numpy as np
+                from PIL import ImageGrab
+
+                def capture_screen(region: tuple = None) -> np.ndarray:
+                    """Capture screen or region as numpy array.
+
+                    Args:
+                        region: (left, top, right, bottom) or None for full screen
+
+                    Returns:
+                        RGB image as numpy array (height, width, 3)
+
+                    Example:
+                        >>> img = CALLABLES["desktop/capture"]()
+                        >>> img.shape
+                        (1080, 1920, 3)
+                    """
+                    screenshot = ImageGrab.grab(bbox=region)
+                    return np.array(screenshot)
+                ```
+
+            === "🧮 Math Utilities"
+                ```python
+                def calculate_distance(point1: tuple, point2: tuple) -> float:
+                    """Calculate Euclidean distance between two points.
+
+                    Example:
+                        >>> CALLABLES["math/distance"]((0, 0), (3, 4))
+                        5.0
+                    """
+                    import math
+                    return math.sqrt((point2[0] - point1[0])**2 + (point2[1] - point1[1])**2)
+                ```
 
     === "Listeners"
         **Event-driven components that respond to system events**
@@ -363,55 +617,105 @@ OWA plugins can provide three types of components:
 
 ## Package Structure Examples
 
-You have complete freedom in organizing your plugin code. Here are common patterns:
+You have complete freedom in organizing your plugin code. Here are common patterns with visual examples:
 
-!!! example "Structure Options"
+### 🏗️ Structure Patterns Comparison
 
-    === "Recommended OWA Structure"
-        ```
-        owa/env/plugins/myplugin.py     # Plugin specification
-        owa/env/myplugin/               # Component implementations
-        ├── __init__.py
-        ├── callables.py                # Callable functions
-        ├── listeners.py                # Listener classes
-        └── runnables.py                # Runnable classes
-        ```
+=== "🎯 Recommended: OWA Structure"
 
-        **Entry point:** `owa.env.plugins.myplugin:plugin_spec`
+    **Best for**: Official plugins, following OWA conventions
 
-        This follows the same pattern as official OWA plugins.
+    ```
+    my-owa-plugin/
+    ├── 📄 pyproject.toml
+    ├── 📁 owa/env/
+    │   ├── 📁 myplugin/           # Implementation
+    │   │   ├── __init__.py
+    │   │   ├── callables.py       # Functions
+    │   │   ├── listeners.py       # Event handlers
+    │   │   └── runnables.py       # Background tasks
+    │   └── 📁 plugins/
+    │       └── myplugin.py        # 🔌 Plugin spec
+    ├── 📁 tests/
+    └── 📄 README.md
+    ```
 
-    === "Company Structure"
-        ```
-        my_company/
-        ├── tools/
-        │   ├── plugin_spec.py          # Plugin specification
-        │   ├── ai_processor.py         # AI-related components
-        │   ├── data_analyzer.py        # Data analysis components
-        │   └── utils.py                # Shared utilities
-        └── config/
-            └── settings.py
-        ```
+    ```toml title="pyproject.toml"
+    [project.entry-points."owa.env.plugins"]
+    myplugin = "owa.env.plugins.myplugin:plugin_spec"
+    ```
 
-        **Entry point:** `my_company.tools.plugin_spec:plugin_spec`
+=== "🏢 Company Structure"
 
-        Good for company-internal plugins with existing code organization.
+    **Best for**: Enterprise plugins, company-specific tools
 
-    === "Flat Structure"
-        ```
-        myplugin_package/
-        ├── __init__.py                 # Plugin spec can be here
-        ├── features.py                 # Main functionality
-        ├── utils.py                    # Helper functions
-        └── tests/
-            └── test_features.py
-        ```
+    ```
+    acme-automation-tools/
+    ├── 📄 pyproject.toml
+    ├── 📁 acme/
+    │   └── 📁 automation/
+    │       ├── 📁 core/           # Business logic
+    │       │   ├── __init__.py
+    │       │   ├── processors.py
+    │       │   └── monitors.py
+    │       ├── 📁 integrations/   # External APIs
+    │       │   ├── salesforce.py
+    │       │   └── slack.py
+    │       └── owa_plugin.py      # 🔌 Plugin spec
+    ├── 📁 tests/
+    └── 📄 README.md
+    ```
 
-        **Entry point:** `myplugin_package:plugin_spec`
+    ```toml title="pyproject.toml"
+    [project.entry-points."owa.env.plugins"]
+    acme_automation = "acme.automation.owa_plugin:plugin_spec"
+    ```
 
-        Simple structure for smaller plugins.
+=== "🎮 Gaming/Domain Structure"
 
+    **Best for**: Specialized domains, gaming, specific use cases
 
+    ```
+    minecraft-automation/
+    ├── 📄 pyproject.toml
+    ├── 📁 minecraft_bot/
+    │   ├── __init__.py            # 🔌 Plugin spec here
+    │   ├── 📁 actions/            # Game actions
+    │   │   ├── movement.py
+    │   │   ├── inventory.py
+    │   │   └── combat.py
+    │   ├── 📁 sensors/            # Game state detection
+    │   │   ├── screen_reader.py
+    │   │   └── audio_listener.py
+    │   └── 📁 ai/                 # Decision making
+    │       ├── pathfinding.py
+    │       └── strategy.py
+    ├── 📁 assets/                 # Game assets
+    └── 📄 README.md
+    ```
+
+    ```toml title="pyproject.toml"
+    [project.entry-points."owa.env.plugins"]
+    minecraft = "minecraft_bot:plugin_spec"
+    ```
+
+=== "⚡ Simple/Flat Structure"
+
+    **Best for**: Small plugins, prototypes, single-purpose tools
+
+    ```
+    quick-tools/
+    ├── 📄 pyproject.toml
+    ├── 📄 quick_tools.py          # Everything in one file
+    │   # Contains: plugin_spec + all implementations
+    ├── 📁 tests/
+    └── 📄 README.md
+    ```
+
+    ```toml title="pyproject.toml"
+    [project.entry-points."owa.env.plugins"]
+    quicktools = "quick_tools:plugin_spec"
+    ```
 
 ## Plugin Validation
 
