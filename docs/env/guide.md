@@ -1,137 +1,135 @@
-# Comprehensive Guide for Env
+# Environment Guide
 
-## Core Concepts
+## Component Types
 
-### Three Main Components:
+OWA's Environment provides three types of components for building real-time agents:
 
-Open World Agents (OWA)'s **Env** consists of three primary components that enable interaction with the environment in different ways.
+!!! info "Component Overview"
+    === "Callables"
+        **Direct function calls** - Invoke immediately for actions or state
+        ```python
+        CALLABLES["std/time_ns"]()  # Get current time
+        CALLABLES["desktop/mouse.click"]("left", 2)  # Double-click
+        ```
 
-1. **Callable** - Functions you actively call to perform actions or get state
-    - *These are like traditional function calls; you invoke them when you need to perform an action or retrieve some information from the environment.*
-    - Implements `__call__` function
-    - Example: `CALLABLES["std/time_ns"]()`
+    === "Listeners"
+        **Event monitoring** - Respond to events with callbacks
+        ```python
+        def on_event(data):
+            print(f"Event: {data}")
 
-2. **Listener** - Components that respond to events and execute your callbacks
-    - *Listeners wait for specific events and execute your callback functions when those events occur.*
-    - Takes a `callback` parameter in the `configure` method
-    - Example:
-```python
-listener = LISTENERS["keyboard"]().configure(callback=my_callback)
-with listener.session:
-    input("Type enter to exit.")
-```
-*This example sets up a keyboard listener that invokes `my_callback` whenever a keyboard event is detected.*
+        listener = LISTENERS["desktop/keyboard"]().configure(callback=on_event)
+        with listener.session:
+            input("Press Enter to stop...")
+        ```
 
-3. **Runnable** - Background processes that can be started and stopped
-    - *Runnables run in the background and can be managed with start and stop operations.*
-    - Parent class of `Listener`, the only difference is absence of `callback` argument in `configure`.
-    - Supports `start()`, `stop()`, and `join()` operations
+    === "Runnables"
+        **Background processes** - Long-running tasks with start/stop control
+        ```python
+        process = RUNNABLES["gst/screen_capture"]().configure(fps=60)
+        with process.session:
+            frame = process.grab()
+        ```
 
-!!! callable vs listener "What's the difference between **Callable** and **Listener**?"
-    The key difference between these two is who initiates the call:
+!!! question "Component Relationships"
+    **Who initiates the action:**
 
-    - In **Callable**, **caller** actively executes the Callable.
-    - In **Listener**, **callee** waits for events and then calls user-provided "callbacks".
+    - **Callable**: You actively call the function
+    - **Listener**: The system calls your callback when events occur (inherits from Runnable)
+    - **Runnable**: Base class for background processes
 
-    *In other words, Callables are synchronous functions you call directly, while Listeners are asynchronous and react to events.*
+    Traditional frameworks like [gymnasium.Env](https://gymnasium.farama.org/api/env/) only provide Callable-style interfaces.
 
-    Common environmental interfaces such as [gymnasium.Env](https://gymnasium.farama.org/api/env/) only provides object/method equivalent to **Callable**.
+## Registry System
 
-### Registry System
-
-*The OWA environment uses a registry system to manage and access the various components.*
-
-Components are managed through global registries:
-
-- `CALLABLES` - Dictionary of callable functions
-
-- `LISTENERS` - Dictionary of event listeners
-
-- `RUNNABLES` - Dictionary of background processes
-
-**Zero-Configuration Plugin Discovery**: Plugins are automatically discovered when installed via pip using Python's Entry Points system. No manual activation needed!
+Components are automatically discovered and registered when plugins are installed:
 
 ```python
-from owa.core.registry import CALLABLES, LISTENERS, RUNNABLES
-# Components automatically available after plugin installation
+from owa.core import CALLABLES, LISTENERS, RUNNABLES
+# All installed plugins automatically available
 ```
 
-*All components use unified `namespace/name` naming pattern for consistency.*
+**Key Features:**
 
-## Environment Usage Examples
+- **Zero Configuration**: Automatic discovery via Python Entry Points
+- **Unified Naming**: All components use `namespace/name` pattern
+- **Immediate Availability**: Components ready after `pip install`
 
-### Standard Environment (`owa.env.std`)
+## Usage Examples
 
-*Here is an example of how to use the standard environment to interact with clock functionalities.*
+### Basic Usage
+
+=== "Time & Scheduling"
+    ```python
+    from owa.core import CALLABLES, LISTENERS
+    import time
+
+    # Get current time
+    current_time = CALLABLES["std/time_ns"]()
+    print(f"Current time: {current_time}")
+
+    # Periodic callback using context manager
+    def on_tick():
+        print(f"Tick: {CALLABLES['std/time_ns']()}")
+
+    tick = LISTENERS["std/tick"]().configure(callback=on_tick, interval=1)
+    with tick.session:
+        time.sleep(3)  # Prints time every second for 3 seconds
+    ```
+
+=== "Desktop Automation"
+    ```python
+    from owa.core import CALLABLES, LISTENERS
+    from owa.msgs.desktop.keyboard import KeyboardEvent
+
+    # Screen capture and window management
+    screen = CALLABLES['desktop/screen.capture']()
+    print(f"Screen size: {screen.shape}")
+
+    active_window = CALLABLES['desktop/window.get_active_window']()
+    print(f"Active window: {active_window}")
+
+    # Mouse control
+    CALLABLES["desktop/mouse.click"]("left", 2)  # Double-click
+
+    # Keyboard monitoring
+    def on_key(event: KeyboardEvent):
+        print(f"Key {event.event_type}: {event.vk}")
+
+    with LISTENERS["desktop/keyboard"]().configure(callback=on_key).session:
+        input("Press Enter to stop monitoring...")
+    ```
+
+=== "High-Performance Capture"
+    ```python
+    from owa.core import RUNNABLES
+    import cv2
+
+    # Real-time screen capture with GStreamer
+    def process_frame(frame):
+        cv2.imshow("Screen", frame.frame_arr)
+        cv2.waitKey(1)
+
+    screen = LISTENERS["gst/screen"]().configure(
+        callback=process_frame,
+        fps=60,
+        show_cursor=True
+    )
+
+    with screen.session:
+        input("Press Enter to stop capture...")
+    ```
+
+### Custom Plugin Development
+
+Create your own plugins for automatic discovery:
 
 ```python
-import time
-from owa.core.registry import CALLABLES, LISTENERS
+# pyproject.toml
+[project.entry-points."owa.env.plugins"]
+myplugin = "owa.env.myplugin:plugin_spec"
 
-# Components automatically available - no activation needed!
-# Unified namespace/name pattern: std/time_ns, std/tick
-
-# Testing the std/tick listener
-tick = LISTENERS["std/tick"]().configure(callback=lambda: print(CALLABLES["std/time_ns"]()), interval=1)
-tick.start()
-
-time.sleep(2)  # The listener prints the current time in nanoseconds a few times
-
-tick.stop(), tick.join()
-```
-*Components are automatically discovered and available after installation. All components use the unified `namespace/name` pattern.*
-
-
-Instead of manual `start-stop-join` procedure, you may utilize context manager: `.session`! Following example shows how to abbreviate `start-stop-join` steps.
-
-```python
-with tick.session:
-    time.sleep(2)
-```
-
-### Desktop Environment (`owa.env.desktop`)
-
-*The desktop environment module provides capabilities for UI interaction and input handling.*
-
-```python
-from owa.core.registry import CALLABLES, LISTENERS
-from owa.msgs.desktop.keyboard import KeyboardEvent
-
-# Components automatically available - unified namespace/name pattern
-
-# Using screen capture and window management features
-print(f"{CALLABLES['desktop/screen.capture']().shape=}")  # Example output: (1080, 1920, 3)
-print(f"{CALLABLES['desktop/window.get_active_window']()=}")
-print(f"{CALLABLES['desktop/window.get_window_by_title']('open-world-agents')=}")
-
-# Simulating a mouse click (left button, double click)
-mouse_click = CALLABLES["desktop/mouse.click"]
-mouse_click("left", 2)
-
-
-# Configuring a keyboard listener
-def on_keyboard_event(keyboard_event: KeyboardEvent):
-    print(f"Keyboard event: {keyboard_event.event_type=}, {keyboard_event.vk=}")
-
-
-keyboard_listener = LISTENERS["desktop/keyboard"]().configure(callback=on_keyboard_event)
-with keyboard_listener.session:
-    input("Type enter to exit.\n")
-```
-*Components are automatically available with unified naming. This code demonstrates capturing the screen, retrieving window information, simulating mouse clicks, and listening to keyboard events.*
-
-### Custom EnvPlugin Example
-
-You can create your own plugins using Entry Points for automatic discovery. For more information, see [Custom EnvPlugin](custom_plugins.md).
-
-*Creating custom plugins allows you to extend the OWA environment with your own functionalities.*
-
-```python
-# In your plugin's pyproject.toml:
-# [project.entry-points."owa.env.plugins"]
-# myplugin = "owa.env.myplugin:plugin_spec"
-
-# In your plugin specification:
+# Plugin specification
 from owa.core.plugin_spec import PluginSpec
 
 plugin_spec = PluginSpec(
@@ -139,274 +137,149 @@ plugin_spec = PluginSpec(
     version="0.1.0",
     description="My custom plugin",
     components={
-        "callables": {
-            "add": "owa.env.myplugin:add_function",
-        },
-        "listeners": {
-            "events": "owa.env.myplugin:EventListener",
-        }
+        "callables": {"add": "owa.env.myplugin:add_function"},
+        "listeners": {"events": "owa.env.myplugin:EventListener"}
     }
 )
 
-# Using the custom plugin (automatically available after pip install)
-from owa.core.registry import CALLABLES, LISTENERS
+# Usage (automatically available after pip install)
 result = CALLABLES["myplugin/add"](5, 3)  # Returns 8
 ```
-*Plugins use Entry Points for automatic discovery and unified `namespace/name` pattern for all components.*
 
-## Architecture Summary
+!!! tip "Plugin Development"
+    See [Custom Plugins Guide](custom_plugins.md) for detailed plugin creation instructions.
 
-*The diagram below summarizes the architecture of the OWA environment and how components are registered and used.*
+## Architecture Overview
 
 ```mermaid
-graph LR;
-    EP[Entry Points] -->|Auto-discovers| SM["Standard Plugin(owa.env.std)"]
-    EP -->|Auto-discovers| DM["Desktop Plugin(owa.env.desktop)"]
-    EP -->|Auto-discovers| MP["Message Package(owa-msgs)"]
-    SM -->|Provides| C1[std/time_ns]
-    SM -->|Provides| L1[std/tick Listener]
-    DM -->|Provides| C2[desktop/screen.capture]
-    DM -->|Provides| C3[desktop/window.get_active_window]
-    DM -->|Provides| L2[desktop/keyboard Listener]
-    MP -->|Provides| M1[desktop/KeyboardEvent]
-    MP -->|Provides| M2[desktop/MouseEvent]
-    MP -->|Provides| M3[desktop/ScreenCaptured]
-    User -->|pip install| PI[Plugin Installation]
+graph TB
+    subgraph "Plugin Installation"
+        PI[pip install owa-env-*]
+        EP[Python Entry Points]
+    end
+
+    subgraph "Plugin Discovery"
+        STD[owa.env.std]
+        DESK[owa.env.desktop]
+        GST[owa.env.gst]
+        MSGS[owa-msgs]
+    end
+
+    subgraph "Component Registry"
+        CMPTS[CALLABLES, LISTENERS, RUNNABLES]
+        MSG[MESSAGES]
+    end
+
+    subgraph "User Application"
+        APP[Your Agent Code]
+    end
+
     PI --> EP
-    EP --> R[Component Registry]
-    EP --> MR[Message Registry]
+    EP --> STD
+    EP --> DESK
+    EP --> GST
+    EP --> MSGS
+
+    STD --> CMPTS
+    DESK --> CMPTS
+    GST --> CMPTS
+    MSGS --> MSG
+
+    CMPTS --> APP
+    MSG --> APP
 ```
 
-## CLI Tools for Plugin Management
+## CLI Tools
 
-The `owl env` command provides powerful tools for managing and exploring plugins with enhanced filtering, search, and analysis capabilities:
+Explore and manage plugins with the `owl env` command:
 
-### Plugin Discovery and Listing
+!!! example "Essential Commands"
+    === "Plugin Discovery"
+        ```bash
+        # List all plugins
+        owl env list
 
-```bash
-# List all discovered plugins
-$ owl env list
+        # Show specific plugin details
+        owl env list desktop
 
-# Enhanced filtering and display options
-$ owl env list --type callables                   # Filter by component type
-$ owl env list --search mouse                     # Search by pattern
-$ owl env list --details                          # Show import paths and load status
-$ owl env list --table                            # Display in table format
-```
+        # Search for components
+        owl env search mouse
+        ```
 
-### Plugin Information and Inspection
+    === "Plugin Development"
+        ```bash
+        # Validate plugin specification
+        owl env validate ./plugin.yaml
 
-```bash
-# Show specific plugin (auto-shows components)
-$ owl env list example
+        # Check documentation quality
+        owl env docs --validate
 
-# Enhanced plugin exploration
-$ owl env list example --details                  # Show import paths and load status
-$ owl env list example --inspect mouse.click      # Inspect specific component
-$ owl env list example --type callables           # Filter by component type
-$ owl env list example --search window            # Search within namespace
-$ owl env list example --table                    # Display in table format
+        # View ecosystem statistics
+        owl env stats --namespaces
+        ```
 
-# Multiple plugins at once
-$ owl env list desktop example                    # Show multiple plugins
-```
+    === "Example Output"
+        ```bash
+        $ owl env list
+        📦 Discovered Plugins (4)
+        ├── desktop (25 components)
+        ├── gst (4 components)
+        ├── std (2 components)
+        └── example (6 components)
 
-### Advanced Search and Discovery
+        $ owl env search mouse --table
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┓
+        ┃ Component               ┃ Type      ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━┩
+        │ desktop/mouse           │ listeners │
+        │ desktop/mouse.click     │ callables │
+        │ desktop/mouse.move      │ callables │
+        └─────────────────────────┴───────────┘
+        ```
 
-```bash
-# Search across all plugins
-$ owl env search "mouse.*click"                   # Regex pattern search
-$ owl env search window --details --table         # Detailed search results
-$ owl env search keyboard --type callables        # Search specific component type
-```
-
-### Ecosystem Analysis
-
-```bash
-# Statistics and ecosystem analysis
-$ owl env stats                                    # Show ecosystem statistics
-$ owl env stats --by-namespace                    # Group by namespace
-$ owl env stats --by-type                         # Group by component type
-$ owl env stats --namespaces                      # List all available namespaces
-```
-
-### Plugin Development
-
-```bash
-# Validate plugin specifications
-$ owl env validate owa.env.myplugin:plugin_spec    # Python entry point
-$ owl env validate ./plugin.yaml                   # YAML file
-$ owl env validate ./plugin.yaml --verbose         # Detailed validation
-$ owl env validate ./plugin.yaml --no-check-imports # Skip import validation
-
-# Documentation management
-$ owl env docs                                     # Show documentation statistics (default)
-$ owl env docs --validate                          # Validate documentation quality
-$ owl env docs example --validate --strict         # Strict validation for specific plugin
-```
-
-### Example CLI Output
-
-```bash
-$ owl env list
-📦 Discovered Plugins (4)
-├── desktop (25 components)
-│   ├── 📞 Callables: 20
-│   └── 👂 Listeners: 5
-├── example (7 components)
-│   ├── 📞 Callables: 3
-│   ├── 👂 Listeners: 2
-│   └── 🏃 Runnables: 2
-├── gst (4 components)
-│   ├── 👂 Listeners: 2
-│   └── 🏃 Runnables: 2
-└── std (2 components)
-    ├── 📞 Callables: 1
-    └── 👂 Listeners: 1
-
-$ owl env list example
-📦 Plugin: example (6 components)
-├── 📞 Callables: 2
-├── 👂 Listeners: 2
-└── 🏃 Runnables: 2
-📞 Callables (2)
-├── example/add
-└── example/print
-👂 Listeners (2)
-├── example/listener
-└── example/timer
-🏃 Runnables (2)
-├── example/counter
-└── example/runnable
-
-$ owl env search "mouse" --table
-               Search Results for 'mouse' (9 matches)
-┏━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┓
-┃ Component               ┃ Type      ┃ Namespace ┃ Name            ┃
-┡━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━┩
-│ desktop/mouse           │ listeners │ desktop   │ mouse           │
-│ desktop/mouse.click     │ callables │ desktop   │ mouse.click     │
-│ desktop/mouse.move      │ callables │ desktop   │ mouse.move      │
-│ desktop/mouse.press     │ callables │ desktop   │ mouse.press     │
-│ desktop/mouse.scroll    │ callables │ desktop   │ mouse.scroll    │
-└─────────────────────────┴───────────┴───────────┴─────────────────┘
-
-$ owl env stats --namespaces
-              Available Namespaces
-┏━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Namespace ┃ Components ┃ Quick Access         ┃
-┡━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩
-│ desktop   │         27 │ owl env list desktop │
-│ example   │          6 │ owl env list example │
-│ gst       │          4 │ owl env list gst     │
-│ std       │          2 │ owl env list std     │
-└───────────┴────────────┴──────────────────────┘
-```
+!!! info "Complete CLI Reference"
+    For detailed command options and examples, see **[CLI Environment Commands](../cli/env.md)**
 
 ## Message Registry
 
-OWA provides a centralized message registry system that automatically discovers and manages message definitions through Python entry points. This system separates message schemas from runtime components, providing better organization and extensibility.
-
-### Accessing Messages
+OWA provides centralized message definitions with automatic discovery:
 
 ```python
 from owa.core import MESSAGES
 
-# Access message classes by type name
+# Access message classes
 KeyboardEvent = MESSAGES['desktop/KeyboardEvent']
 MouseEvent = MESSAGES['desktop/MouseEvent']
-ScreenCaptured = MESSAGES['desktop/ScreenCaptured']
 
-# Check if a message type exists
-if 'desktop/KeyboardEvent' in MESSAGES:
-    print("KeyboardEvent is available")
-
-# List all available message types
-for message_type in MESSAGES.keys():
-    print(f"Available: {message_type}")
-
-# Create message instances
+# Create instances
 event = KeyboardEvent(event_type="press", vk=65, timestamp=1234567890)
 ```
 
-### Message Naming Convention
+**Message Naming**: `domain/MessageType` (e.g., `desktop/KeyboardEvent`)
 
-Messages follow a domain-based naming pattern:
+**Core Message Types**:
 
-- **Format**: `domain/MessageType`
-- **Domain**: Logical grouping (e.g., `desktop`, `sensors`, `system`)
-- **MessageType**: PascalCase message name
-- **Examples**: `desktop/KeyboardEvent`, `desktop/WindowInfo`, `sensors/TemperatureReading`
-
-### Core Message Types
-
-The `owa-msgs` package provides standard message definitions:
-
-| Message Type | Description |
-|--------------|-------------|
+| Type | Description |
+|------|-------------|
 | `desktop/KeyboardEvent` | Keyboard press/release events |
-| `desktop/KeyboardState` | Current keyboard state |
 | `desktop/MouseEvent` | Mouse movement, clicks, scrolls |
-| `desktop/MouseState` | Current mouse position and buttons |
-| `desktop/ScreenCaptured` | Screen capture frames with timestamps |
-| `desktop/WindowInfo` | Active window information |
+| `desktop/ScreenCaptured` | Screen capture frames |
+| `desktop/WindowInfo` | Window information |
 
-### CLI Tools for Message Management
-
-```bash
-# List all available message types
-$ owl messages list
-
-# Show detailed message schema
-$ owl messages show desktop/KeyboardEvent
-
-# Search for specific message types
-$ owl messages list --search keyboard
-
-# Validate message definitions
-$ owl messages validate
-```
-
-### Custom Message Registration
-
-Third-party packages can register custom message types through entry points:
-
+**Custom Messages**: Register via entry points in `pyproject.toml`:
 ```toml
-# pyproject.toml
 [project.entry-points."owa.msgs"]
 "sensors/TemperatureReading" = "custom_sensors.messages:TemperatureReading"
-"sensors/HumidityReading" = "custom_sensors.messages:HumidityReading"
 ```
 
-## CLI Tools for Environment Management
+!!! info "Message Tools & Development"
+    - **CLI Tools**: Use `owl messages` commands for message management. See **[CLI Reference](../cli/messages.md)**
+    - **Custom Messages**: For detailed guidance on creating custom message types, see **[Custom Messages Guide](../data/technical-reference/custom-messages.md)**
 
-The `owl env` command group provides comprehensive tools for managing environment plugins:
+## Next Steps
 
-```bash
-# Plugin discovery and management
-owl env list                    # List all available plugins
-owl env list desktop            # Show detailed plugin information
-owl env validate desktop        # Validate plugin installation
-owl env search keyboard         # Search for specific components
-
-# Plugin statistics and analysis
-owl env stats                   # Show plugin statistics
-owl env stats --namespaces      # Show available namespaces
-
-# Documentation management
-owl env docs                    # Show documentation statistics (default)
-owl env docs --validate         # Validate documentation quality
-```
-
-!!! info "Complete CLI Reference"
-    For detailed information about all CLI commands and options:
-
-    - **[CLI Tools](../cli/index.md)** - Complete command overview
-    - **[Environment Commands](../cli/env.md)** - Detailed `owl env` documentation
-
-## Additional Resources
-
-- For standard module details: [owa-env-std](plugins/std.md)
-- For desktop features: [owa-env-desktop](plugins/desktop.md)
-- For multimedia support: [owa-env-gst](plugins/gst.md)
-- For custom EnvPlugin development: [custom_plugins.md](custom_plugins.md)
+| Topic | Description |
+|-------|-------------|
+| **[Plugin Development](custom_plugins.md)** | Create your own environment extensions |
+| **[Built-in Plugins](plugins/std.md)** | Explore standard, desktop, and GStreamer plugins |
+| **[CLI Tools](../cli/env.md)** | Complete command reference |

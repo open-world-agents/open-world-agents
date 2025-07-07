@@ -1,8 +1,13 @@
-# Custom Plugin Development
+# Custom EnvPlugin Development
 
-Create plugins that extend OWA with your own functionality - from game automation to business integrations.
+Create plugins that extend OWA with your own functionality.
 
-## How It Works
+!!! info "OWA's Env: MCP for Desktop Agents"
+    Just as [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) is the "USB-C of LLMs", **OWA's Env is the "USB-C of desktop agents"** - a universal interface for native desktop automation.
+
+## Plugin Discovery
+
+### How It Works
 
 OWA automatically discovers plugins using Python's Entry Points system:
 
@@ -33,14 +38,14 @@ flowchart TD
     style K fill:#e8f5e8
 ```
 
-1. You declare an entry point in `pyproject.toml`
-2. OWA scans installed packages for these entry points
-3. Your components become available immediately after `pip install`
+### Discovery Process
 
-## ⚡ Quick Start: Your First Plugin in 5 Minutes
+1. **Entry Point Scanning** - OWA scans all installed packages for `"owa.env.plugins"` entry points
+2. **Plugin Spec Loading** - Loads and validates each `PluginSpec` object
+3. **Lazy Registration** - Registers component metadata without importing actual code
+4. **On-Demand Loading** - Components are imported only when first accessed
 
-!!! tip "Follow Along"
-    Open a terminal and follow these steps. You'll have a working plugin in minutes!
+## Quick Start: Your First Plugin in 5 Minutes
 
 ### Step 1: Copy the Template
 
@@ -49,8 +54,6 @@ flowchart TD
 cp -r projects/owa-env-example my-first-plugin
 cd my-first-plugin
 ```
-
-The template gives you a complete, working plugin that you can modify.
 
 ### Step 2: Make It Yours
 
@@ -88,194 +91,116 @@ python -c "from owa.core import CALLABLES; print(CALLABLES['myfirst/add'](2, 3))
 !!! success "🎉 Congratulations!"
     You just created your first OWA plugin. Your components are now available to any OWA user or application.
 
-    **What Just Happened?**
-
-    - **Entry Point Registration**: Your `pyproject.toml` told Python about your plugin
-    - **Automatic Discovery**: OWA found your plugin when it scanned entry points
-    - **Component Registration**: Your functions became available as `myfirst/add`, `myfirst/print`, etc.
-    - **Zero Configuration**: Users don't need to do anything - your plugin just works
-
 ## Component Types
 
-OWA plugins provide three types of components:
-
-### Callables: Direct Function Calls
-
-Functions users invoke for immediate results. Perfect for screenshots, mouse clicks, file processing, calculations.
+### Callables
+Functions for immediate results:
 
 ```python
-def click_mouse(x: int, y: int, button: str = "left") -> bool:
-    """Click mouse at coordinates."""
-    from pynput import mouse
-    controller = mouse.Controller()
-    controller.position = (x, y)
-    controller.click(getattr(mouse.Button, button))
-    return True
+def get_weather(city: str) -> dict:
+    return {"city": city, "temp": 25, "condition": "sunny"}
 
-# Usage: CALLABLES["yourplugin/click"](100, 200)
+# Usage: CALLABLES["myplugin/weather"]("New York")
 ```
 
-### Listeners: Event Monitoring
-
-Watch for events and call user callbacks. Perfect for keyboard/mouse monitoring, file changes, system notifications.
+### Listeners
+Event monitoring with callbacks (inherits from Runnable):
 
 ```python
 from owa.core import Listener
 
-class KeyboardListener(Listener):
-    def on_configure(self, callback, **kwargs):
+class FileWatcher(Listener):
+    def on_configure(self, callback, watch_folder, **kwargs):
         self.callback = callback
+        self.watch_folder = watch_folder
 
     def start(self):
-        # Monitor keyboard, call self.callback(key_data) on events
+        # Monitor folder, call self.callback(event) on changes
         pass
 
     def stop(self):
-        # Stop monitoring and cleanup
+        # Stop and cleanup
         pass
-
-# Usage:
-# listener = LISTENERS["yourplugin/keyboard"]
-# listener.configure(callback=my_handler)
-# listener.start()
 ```
 
-### Runnables: Background Tasks
-
-Long-running processes that can be started/stopped. Perfect for data collection, file processing, monitoring.
+### Runnables
+Background processes with start/stop control:
 
 ```python
 from owa.core import Runnable
-import time
 
 class DataCollector(Runnable):
-    def on_configure(self, output_file: str, interval: float = 1.0):
+    def on_configure(self, output_file, interval=60, **kwargs):
         self.output_file = output_file
         self.interval = interval
 
-    def run(self):
-        while self.running:  # OWA manages this flag
+    def loop(self, *, stop_event):
+        while not stop_event.is_set():
             # Do work
-            with open(self.output_file, 'a') as f:
-                f.write(f"Data at {time.time()}\n")
-            time.sleep(self.interval)
-
-# Usage:
-# collector = RUNNABLES["yourplugin/collector"]
-# collector.configure(output_file="data.txt")
-# collector.start()  # Runs in background
+            stop_event.wait(self.interval)
 ```
 
-## Building from Scratch
+## Plugin Specification
 
-Let's create a simple "system monitor" plugin with all three component types.
+### Structure
 
-### Project Setup
-
-```bash
-mkdir owa-env-sysmon && cd owa-env-sysmon
-```
-
-Create `pyproject.toml`:
-```toml
-[project]
-name = "owa-env-sysmon"
-version = "0.1.0"
-dependencies = ["owa-core", "psutil"]
-
-[project.entry-points."owa.env.plugins"]
-sysmon = "sysmon_plugin:plugin_spec"
-```
-
-Create `sysmon_plugin.py`:
-
-```python
-import time
-import psutil
-from owa.core import Listener, Runnable
+```python title="owa/env/plugins/myplugin.py"
 from owa.core.plugin_spec import PluginSpec
 
-# Callables
-def get_cpu_percent() -> float:
-    return psutil.cpu_percent(interval=1)
-
-def get_memory_info() -> dict:
-    memory = psutil.virtual_memory()
-    return {'total': memory.total, 'available': memory.available, 'percent': memory.percent}
-
-# Listener
-class ThresholdMonitor(Listener):
-    def on_configure(self, callback, cpu_threshold=80.0, check_interval=5.0):
-        self.callback = callback
-        self.cpu_threshold = cpu_threshold
-        self.check_interval = check_interval
-        self.monitoring = False
-
-    def start(self):
-        self.monitoring = True
-        while self.monitoring:
-            cpu = psutil.cpu_percent(interval=1)
-            if cpu > self.cpu_threshold:
-                self.callback({'type': 'cpu_high', 'value': cpu})
-            time.sleep(self.check_interval)
-
-    def stop(self):
-        self.monitoring = False
-
-# Runnable
-class SystemLogger(Runnable):
-    def on_configure(self, log_file="system.log", interval=10.0):
-        self.log_file = log_file
-        self.interval = interval
-
-    def run(self):
-        with open(self.log_file, 'a') as f:
-            while self.running:
-                cpu = psutil.cpu_percent(interval=1)
-                memory = psutil.virtual_memory().percent
-                timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-                f.write(f"{timestamp}, CPU: {cpu:.1f}%, Memory: {memory:.1f}%\n")
-                f.flush()
-                time.sleep(self.interval)
-
-# Plugin specification
 plugin_spec = PluginSpec(
-    namespace="sysmon",
+    namespace="myplugin",
     version="0.1.0",
-    description="System monitoring plugin",
+    description="My custom plugin",
     components={
         "callables": {
-            "cpu": "sysmon_plugin:get_cpu_percent",
-            "memory": "sysmon_plugin:get_memory_info",
+            "weather": "owa.env.myplugin.api:get_weather",
+            "calculate": "owa.env.myplugin.math:add_numbers",
         },
         "listeners": {
-            "threshold": "sysmon_plugin:ThresholdMonitor",
+            "file_watcher": "owa.env.myplugin.watchers:FileWatcher",
         },
         "runnables": {
-            "logger": "sysmon_plugin:SystemLogger",
+            "data_collector": "owa.env.myplugin.workers:DataCollector",
         }
     }
 )
 ```
 
-### Install and Test
+### Key Elements
+
+- **namespace**: Unique identifier for your plugin
+- **components**: Maps component names to import paths
+- **Import format**: `"module.path:object_name"`
+
+## Reference Implementation
+
+Study the working example: [`projects/owa-env-example`](https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-env-example)
+
+### Getting Started
 
 ```bash
+cd projects/owa-env-example
 pip install -e .
-owl env list sysmon
+owl env list example
 
-# Test components
+# Test it works
 python -c "
-from owa.core import CALLABLES, LISTENERS, RUNNABLES
-print('CPU:', CALLABLES['sysmon/cpu']())
-print('Memory:', CALLABLES['sysmon/memory']())
+from owa.core import CALLABLES
+result = CALLABLES['example/add'](2, 3)
+print(f'2 + 3 = {result}')
 "
 ```
 
-## Plugin Structure Options
+### What It Shows
+
+- File organization and project structure
+- All three component types with working examples
+- Proper entry point configuration
+- Complete test suite
+
+## Project Structure Options
 
 !!! info "Choose based on your needs"
-
     === "Simple/Flat"
         Everything in one file - good for prototypes:
         ```
@@ -322,136 +247,50 @@ print('Memory:', CALLABLES['sysmon/memory']())
         myplugin = "owa.env.plugins.myplugin:plugin_spec"
         ```
 
-## Testing and Validation
-
-### Writing Tests for Your Plugin
-
-Create `tests/test_sysmon.py`:
-
-```python
-import pytest
-from sysmon_plugin import get_cpu_percent, get_memory_info, plugin_spec
-
-def test_cpu_percent():
-    """Test CPU percentage function."""
-    cpu = get_cpu_percent()
-    assert isinstance(cpu, float)
-    assert 0 <= cpu <= 100
-
-def test_memory_info():
-    """Test memory info function."""
-    memory = get_memory_info()
-    assert isinstance(memory, dict)
-    assert 'total' in memory
-    assert 'available' in memory
-    assert 'percent' in memory
-
-def test_plugin_spec():
-    """Test plugin specification is valid."""
-    assert plugin_spec.namespace == "sysmon"
-    assert "callables" in plugin_spec.components
-    assert "cpu" in plugin_spec.components["callables"]
-```
-
-### Validation Commands
-
-```bash
-# Run your tests
-python -m pytest tests/ -v
-
-# Validate plugin specification
-owl env docs --validate sysmon --strict
-
-# Check for namespace conflicts
-owl env stats --namespaces
-
-# Test component loading
-python -c "
-from owa.core import CALLABLES, LISTENERS, RUNNABLES
-print('Callables:', list(CALLABLES.keys()))
-print('Listeners:', list(LISTENERS.keys()))
-print('Runnables:', list(RUNNABLES.keys()))
-"
-```
-
-
-
-## Common Patterns and Best Practices
+## Best Practices
 
 ### Naming Conventions
-
-- **Namespace**: Short, descriptive, lowercase with underscores: `desktop`, `my_company`, `game_bot`
-- **Component names**: Use dots for hierarchy: `mouse.click`, `file.read`, `ai.analyze`
-- **Package name**: Follow Python conventions: `owa-env-yourplugin`
+- **Namespace**: `desktop`, `my_company` (lowercase, underscores)
+- **Components**: `mouse.click`, `file.read` (dots for hierarchy)
+- **Package**: `owa-env-yourplugin`
 
 ### Error Handling
-
-Always handle errors gracefully in your components:
-
 ```python
-def safe_operation(param: str) -> dict:
-    """Example of proper error handling."""
+def safe_function(param: str) -> dict:
     try:
-        # Your operation here
-        result = perform_operation(param)
+        result = do_work(param)
         return {"success": True, "data": result}
-    except ValueError as e:
-        return {"success": False, "error": f"Invalid parameter: {e}"}
     except Exception as e:
-        return {"success": False, "error": f"Unexpected error: {e}"}
+        return {"success": False, "error": str(e)}
 ```
 
-### Documentation
-
-Document your components thoroughly:
-
+### Resource Management
 ```python
-def my_function(param1: int, param2: str = "default") -> bool:
-    """One-line summary of what this function does.
-
-    Longer description explaining the purpose, behavior, and any
-    important details users should know.
-
-    Args:
-        param1: Description of first parameter
-        param2: Description of second parameter with default
-
-    Returns:
-        Description of return value
-
-    Raises:
-        ValueError: When param1 is negative
-        ConnectionError: When network operation fails
-
-    Example:
-        >>> CALLABLES["myplugin/myfunction"](42, "test")
-        True
-    """
-    # Implementation here
+class MyRunnable(Runnable):
+    def loop(self, *, stop_event):
+        try:
+            resource = acquire_resource()
+            while not stop_event.is_set():
+                use_resource(resource)
+                stop_event.wait(0.1)  # Small delay
+        finally:
+            release_resource(resource)
 ```
 
-### Performance Considerations
+## Troubleshooting
 
-- **Lazy loading**: Components are loaded only when first used
-- **Resource cleanup**: Always clean up in Listener/Runnable's resources with `try-finally` pattern
-- **CPU usage**: Be mindful of CPU-intensive operations and busy-waiting in Listeners/Runnables
-- **Memory usage**: Be mindful of memory leaks in long-running Runnables
-
-## Troubleshooting Common Issues
-
-!!! failure "Having problems? Check these common solutions"
-
+!!! failure "Common Issues and Solutions"
     === "🔍 Plugin Not Discovered"
         **Symptoms**: `owl env list` doesn't show your plugin
 
-        **Debug steps:**
+        **Debug steps**:
 
-        1. **Verify installation:**
+        1. **Verify installation**:
            ```bash
            pip list | grep your-plugin-name
            ```
 
-        2. **Check entry points:**
+        2. **Check entry points**:
            ```bash
            python -c "
            try:
@@ -465,12 +304,12 @@ def my_function(param1: int, param2: str = "default") -> bool:
            "
            ```
 
-        3. **Test plugin spec import:**
+        3. **Test plugin spec import**:
            ```bash
            python -c "from your.module.path import plugin_spec; print(plugin_spec.namespace)"
            ```
 
-        **Common causes:**
+        **Common causes**:
 
         - Plugin not installed (`pip install -e .`)
         - Entry point name conflicts with existing plugin
@@ -479,12 +318,12 @@ def my_function(param1: int, param2: str = "default") -> bool:
     === "❌ Import Errors"
         **Symptoms**: Validation fails with import errors
 
-        **Debug command:**
+        **Debug command**:
         ```bash
         owl env docs --validate yourplugin --output-format text
         ```
 
-        **Common causes & solutions:**
+        **Common causes & solutions**:
 
         | Problem | Solution |
         |---------|----------|
@@ -494,7 +333,7 @@ def my_function(param1: int, param2: str = "default") -> bool:
         | Module not found | Ensure module is importable after installation |
 
     === "🚫 Component Issues"
-        **"Component not callable" errors:**
+        **"Component not callable" errors**:
 
         ```python
         # ❌ Wrong - points to module
@@ -508,7 +347,7 @@ def my_function(param1: int, param2: str = "default") -> bool:
         }
         ```
 
-        **Listener/Runnable doesn't work:**
+        **Listener/Runnable doesn't work**:
 
         ```python
         # ✅ Correct structure
@@ -520,14 +359,14 @@ def my_function(param1: int, param2: str = "default") -> bool:
                 # Your setup code
         ```
 
-        **Common issues:**
+        **Common issues**:
 
         - Not inheriting from `owa.core.Listener` or `owa.core.Runnable`
         - Missing `on_configure()` method
         - Not calling `super().__init__()` in custom `__init__`
 
     === "🔧 Quick Diagnostics"
-        **Run these commands to diagnose issues:**
+        **Run these commands to diagnose issues**:
 
         ```bash
         # Check if OWA can see your plugin
@@ -558,48 +397,26 @@ def my_function(param1: int, param2: str = "default") -> bool:
         - Ensure you're using compatible versions of dependencies
 
 
+## Publishing
 
-## Publishing Your Plugin
+**PyPI (Recommended)**:
+```bash
+uv build
+uv publish
+```
 
-!!! info "Distribution Options"
+**GitHub/Git**:
+```bash
+pip install git+https://github.com/user/owa-env-plugin.git
+```
 
-    === "Recommended: uv"
-        **Build and publish with uv (recommended):**
-        ```bash
-        # Build your plugin
-        uv build
-
-        # Publish to PyPI
-        uv publish
-        ```
-
-        For detailed guidance, see:
-
-        - [uv build documentation](https://docs.astral.sh/uv/guides/publish/#building-your-package)
-        - [uv publish documentation](https://docs.astral.sh/uv/guides/publish/#publishing-your-package)
-
-    === "Local/Team Use"
-        ```bash
-        # Install from local directory
-        pip install -e /path/to/your-plugin
-
-        # Install from git repository
-        pip install git+https://github.com/yourusername/your-plugin.git
-        ```
-
-    === "Alternative Tools"
-        ```bash
-        # Using build + twine
-        python -m build
-        python -m twine upload dist/*
-
-        # Using poetry
-        poetry build
-        poetry publish
-        ```
+**Local Development**:
+```bash
+pip install -e /path/to/plugin
+```
 
 ## Next Steps
 
-- **Explore existing plugins**: Look at `projects/owa-env-*` for real examples
-- **Join the community**: Share your plugins and get feedback
-- **Contribute**: Consider contributing your plugin to the OWA ecosystem
+- **Study Examples**: Explore `projects/owa-env-*` for reference implementations
+- **Join Community**: Share your plugins and get feedback
+- **Contribute**: Help build the "USB-C of desktop agents" ecosystem

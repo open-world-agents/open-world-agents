@@ -16,7 +16,7 @@
 
 Open World Agents is a comprehensive framework for building AI agents that interact with desktop applications through vision, keyboard, and mouse control. Complete toolkit from data capture to model training and evaluation:
 
-- **OWA Core & Environment**: Asynchronous, event-driven interface for real-time agents with dynamic plugin activation
+- **OWA Core & Environment**: Asynchronous, event-driven interface for real-time agents with zero-configuration plugin system
 - **Data Capture & Format**: High-performance desktop recording with `OWAMcap` format - a specialized file format that captures screen recordings, keyboard/mouse events, and window information with nanosecond precision, powered by [mcap](https://mcap.dev/)
 - **Environment Plugins**: Pre-built plugins for desktop automation, screen capture, and more
 - **CLI Tools**: Command-line utilities for recording, analyzing, and managing agent data
@@ -111,29 +111,28 @@ All OWA packages use namespace packaging and are installed in the `owa` namespac
 
 ## Quick Start
 
-### Basic Environment Usage
+### Environment Usage
 
 ```python
 import time
 from owa.core import CALLABLES, LISTENERS, MESSAGES
 
-# Components and messages automatically available - no activation needed!
+# Components automatically available - zero configuration!
 
-def callback():
-    time_ns = CALLABLES["std/time_ns"]()
-    print(f"Current time: {time_ns}")
+# Time and desktop automation
+current_time = CALLABLES["std/time_ns"]()
+screen = CALLABLES["desktop/screen.capture"]()
+CALLABLES["desktop/mouse.click"]("left", 2)  # Double-click
 
-# Access message types through the global registry
-KeyboardEvent = MESSAGES['desktop/KeyboardEvent']
-print(f"Available message: {KeyboardEvent}")
+# Event monitoring with context manager
+def on_tick():
+    print(f"Tick: {CALLABLES['std/time_ns']()}")
 
-# Create a listener for std/tick event (every 1 second)
-tick = LISTENERS["std/tick"]().configure(callback=callback, interval=1)
+with LISTENERS["std/tick"]().configure(callback=on_tick, interval=1).session:
+    time.sleep(3)  # Prints every second for 3 seconds
 
-# Start listening
-tick.start()
-time.sleep(2)
-tick.stop(), tick.join()
+# Message types
+KeyboardEvent = MESSAGES["desktop/KeyboardEvent"]
 ```
 
 ### High-Performance Screen Capture
@@ -319,9 +318,9 @@ For development or contributing to the project, you can install packages in edit
 ## Documentation
 
 - **Full Documentation**: https://open-world-agents.github.io/open-world-agents/
-- **Environment Guide**: [docs/env/](docs/env/)
-- **Data Format**: [docs/data/](docs/data/)
-- **Plugin Development**: [docs/env/custom_plugins.md](docs/env/custom_plugins.md)
+- **Environment Framework**: [docs/env/](docs/env/) - Core concepts, usage guide, and plugin development
+- **Data Infrastructure**: [docs/data/](docs/data/) - Recording, storage, and analysis
+- **CLI Tools**: [docs/cli/](docs/cli/) - Command-line utilities and reference
 
 ## Contributing
 
