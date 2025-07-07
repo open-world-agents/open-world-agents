@@ -68,12 +68,12 @@ def test_validate_yaml_file_success(runner, sample_yaml_file):
     assert "YAML file:" in result.stdout
 
 
-def test_validate_yaml_file_with_warnings(runner, invalid_yaml_file):
-    """Test validation of a YAML file with import warnings."""
+def test_validate_yaml_file_with_errors(runner, invalid_yaml_file):
+    """Test validation of a YAML file with import errors."""
     result = runner.invoke(env_app, ["validate", invalid_yaml_file])
-    assert result.exit_code == 0
-    assert "⚠️  Plugin Specification Valid (with warnings)" in result.stdout
-    assert "Import Validation Warnings" in result.stdout
+    assert result.exit_code == 1
+    assert "Plugin Specification Invalid" in result.stdout
+    assert "Import Validation Errors" in result.stdout
     assert "missing ':'" in result.stdout
 
 
