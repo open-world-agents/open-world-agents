@@ -227,7 +227,8 @@ def get_pointer_ballistics_config() -> PointerBallisticsConfig:
     """Get Windows pointer ballistics configuration for WM_MOUSEMOVE reconstruction.
 
     Examples:
-        >>> config = get_pointer_ballistics_config()
+        # Check whether Enhance pointer precision is enabled
+        >>> is_mouse_acceleration_enabled = get_pointer_ballistics_config().mouse_speed
     """
     defaults = {
         "MouseThreshold1": 6,

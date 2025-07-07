@@ -5,9 +5,9 @@ This module implements OEP-0004 functionality for validating plugin documentatio
 and providing mkdocstrings integration.
 """
 
-from .validator import DocumentationValidator, ValidationResult
+from .validator import ComponentValidationResult, DocumentationValidator
 
 __all__ = [
+    "ComponentValidationResult",
     "DocumentationValidator",
-    "ValidationResult",
 ]

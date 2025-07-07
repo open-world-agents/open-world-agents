@@ -45,7 +45,7 @@ jobs:
         run: owl env docs-stats
 
       - name: Validate all plugin documentation
-        run: owl env validate-docs --strict --output-format json
+        run: owl --silent env validate-docs --strict --output-format json
 
       - name: Validate individual plugins
         run: |

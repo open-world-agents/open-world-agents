@@ -9,19 +9,6 @@ No decorators needed - registration happens via plugin_spec.
 """
 
 
-class ExampleCallable:
-    """Example callable class that can be called like a function."""
-
-    def __call__(self) -> str:
-        """
-        Example callable implementation.
-
-        Returns:
-            A simple greeting message
-        """
-        return "Hello from ExampleCallable!"
-
-
 def example_print(message: str = "Hello, World!") -> str:
     """
     Example callable function that prints and returns a message.
