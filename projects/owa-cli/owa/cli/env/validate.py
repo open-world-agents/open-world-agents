@@ -59,14 +59,30 @@ def _validate_component_imports(spec: PluginSpec) -> list[str]:
                     errors.append(f"{component_type}/{name}: Invalid import path format '{import_path}' (missing ':')")
                     continue
 
-                module_path, _ = import_path.split(":", 1)
+                module_path, object_name = import_path.split(":", 1)
 
-                # Try to import the module (but don't load the object to avoid side effects)
-                import importlib.util
+                # Try to import the module and load the object
+                import importlib
 
-                spec_obj = importlib.util.find_spec(module_path)
-                if spec_obj is None:
-                    errors.append(f"{component_type}/{name}: Module '{module_path}' not found")
+                try:
+                    module = importlib.import_module(module_path)
+                    if not hasattr(module, object_name):
+                        errors.append(
+                            f"{component_type}/{name}: Object '{object_name}' not found in module '{module_path}'"
+                        )
+                        continue
+
+                    # Actually load the object to ensure it's valid
+                    obj = getattr(module, object_name)
+
+                    # Basic validation that the object is callable for callables
+                    if component_type == "callables" and not callable(obj):
+                        errors.append(f"{component_type}/{name}: Object '{object_name}' is not callable")
+
+                except ImportError as e:
+                    errors.append(f"{component_type}/{name}: Module '{module_path}' could not be imported - {str(e)}")
+                except AttributeError as e:
+                    errors.append(f"{component_type}/{name}: Object '{object_name}' not accessible - {str(e)}")
 
             except Exception as e:
                 errors.append(f"{component_type}/{name}: Import validation failed - {str(e)}")
@@ -85,8 +101,8 @@ def _create_validation_display(spec: PluginSpec, import_errors: list[str], sourc
     """
     # Main validation tree
     if import_errors:
-        tree = Tree("⚠️  Plugin Specification Valid (with warnings)")
-        tree.add(f"[yellow]Source: {source_info}[/yellow]")
+        tree = Tree("❌ Plugin Specification Invalid")
+        tree.add(f"[red]Source: {source_info}[/red]")
     else:
         tree = Tree("✅ Plugin Specification Valid")
         tree.add(f"[green]Source: {source_info}[/green]")
@@ -137,8 +153,8 @@ def _create_validation_display(spec: PluginSpec, import_errors: list[str], sourc
         console.print()
         error_panel = Panel(
             "\n".join(f"• {error}" for error in import_errors),
-            title="⚠️  Import Validation Warnings",
-            border_style="yellow",
+            title="❌ Import Validation Errors",
+            border_style="red",
         )
         console.print(error_panel)
 
@@ -195,8 +211,8 @@ def validate_plugin(
 
         # Exit with appropriate code
         if import_errors:
-            console.print(f"\n[yellow]Validation completed with {len(import_errors)} warnings.[/yellow]")
-            sys.exit(0)  # Warnings don't cause failure
+            console.print(f"\n[red]❌ Validation failed with {len(import_errors)} import errors.[/red]")
+            sys.exit(1)  # Import errors cause failure
         else:
             console.print("\n[green]✅ Validation successful![/green]")
             sys.exit(0)
