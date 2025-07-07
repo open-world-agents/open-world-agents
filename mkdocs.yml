@@ -94,6 +94,7 @@ markdown_extensions:
 nav:
   - Get Started:
     - Welcome to OWA: index.md
+    - 🚀 Quick Start Guide: quick-start.md
     - Help with OWA: help_with_owa.md
     - Installation: install.md
     - Contributing: contributing.md

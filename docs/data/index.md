@@ -4,16 +4,20 @@ Desktop AI needs high-quality, synchronized multimodal data: screen captures, mo
 
 ## 🚀 Quick Start: Record → Train in 3 Steps
 
+<!-- SYNC-ID: quick-start-3-steps -->
 ```bash
 # 1. Record desktop interaction
-ocap my-session.mcap
+$ ocap my-session.mcap
 
 # 2. Process to training format
-python scripts/01_raw_events_to_event_dataset.py --train-dir ./
+$ python scripts/01_raw_events_to_event_dataset.py --train-dir ./
 
 # 3. Train your model
-python train.py --dataset ./event-dataset
+$ python train.py --dataset ./event-dataset
 ```
+
+> 📖 **Detailed Guide**: [Complete Quick Start Tutorial](../quick-start.md) - Step-by-step walkthrough with examples and troubleshooting
+<!-- END-SYNC: quick-start-3-steps -->
 
 ## The OWA Data Ecosystem
 
@@ -36,6 +40,7 @@ Deep dive into the format and pipeline:
 
 ## 🤗 Community Datasets
 
+<!-- SYNC-ID: community-datasets -->
 **Browse Available Datasets**: [🤗 datasets?other=OWA](https://huggingface.co/datasets?other=OWA)
 
 - **Growing Collection**: Hundreds of community-contributed datasets
@@ -44,3 +49,4 @@ Deep dive into the format and pipeline:
 - **Easy Sharing**: Upload recordings directly with one command
 
 > 🚀 **Impact**: OWA has democratized desktop agent data, growing from zero to hundreds of public datasets in the unified OWAMcap format.
+<!-- END-SYNC: community-datasets -->

@@ -12,14 +12,43 @@
   
 </div>
 
+## 🚀 Quick Start: Record → Train in 3 Steps
+
+<!-- SYNC-ID: quick-start-3-steps -->
+```bash
+# 1. Record desktop interaction
+$ ocap my-session.mcap
+
+# 2. Process to training format
+$ python scripts/01_raw_events_to_event_dataset.py --train-dir ./
+
+# 3. Train your model
+$ python train.py --dataset ./event-dataset
+```
+
+> 📖 **Detailed Guide**: [Complete Quick Start Tutorial](https://open-world-agents.github.io/open-world-agents/quick-start/) - Step-by-step walkthrough with examples and troubleshooting
+<!-- END-SYNC: quick-start-3-steps -->
+
 ## Overview
 
 Open World Agents is a comprehensive framework for building AI agents that interact with desktop applications through vision, keyboard, and mouse control. Complete toolkit from data capture to model training and evaluation:
 
-- **OWA Core & Environment**: Asynchronous, event-driven interface for real-time agents with zero-configuration plugin system
-- **Data Capture & Format**: High-performance desktop recording with `OWAMcap` format - a [universal standard](https://open-world-agents.github.io/open-world-agents/data/getting-started/why-owamcap/) with flexible MediaRef system for efficient external media references, powered by [mcap](https://mcap.dev/)
-- **Environment Plugins**: Pre-built plugins for desktop automation, screen capture, and more
-- **CLI Tools**: Command-line utilities for recording, analyzing, and managing agent data
+<!-- SYNC-ID: core-components-list -->
+- **🌍 [Environment Framework](https://open-world-agents.github.io/open-world-agents/env/)**: "USB-C of desktop agents" - universal interface for native desktop automation with pre-built plugins for desktop control, high-performance screen capture (6x faster), and zero-configuration plugin system
+- **📊 [Data Infrastructure](https://open-world-agents.github.io/open-world-agents/data/)**: Complete desktop agent data pipeline from recording to training with `OWAMcap` format - a [universal standard](https://open-world-agents.github.io/open-world-agents/data/getting-started/why-owamcap/) powered by [mcap](https://mcap.dev/)
+- **🛠️ [CLI Tools](https://open-world-agents.github.io/open-world-agents/cli/)**: Command-line utilities (`owl`) for recording, analyzing, and managing agent data
+- **🤖 [Examples](https://open-world-agents.github.io/open-world-agents/examples/)**: Complete implementations and training pipelines for multimodal agents
+<!-- END-SYNC: core-components-list -->
+
+## Why OWA?
+
+**Fragmented tools make desktop AI development painful.** Most solutions force you to:
+- Stitch together incompatible recording tools
+- Build custom data pipelines from scratch
+- Handle real-time performance issues yourself
+- Start agent development with no examples
+
+**OWA solves this** with a unified framework: record with `ocap`, train with standardized datasets, deploy with real-time environment components, and learn from community examples.
 
 ## What Can You Build?
 
@@ -111,28 +140,59 @@ All OWA packages use namespace packaging and are installed in the `owa` namespac
 
 ## Quick Start
 
-### Environment Usage
+### Environment Usage: Three Types of Components
 
+OWA's Environment provides three types of components for real-time agent interaction:
+
+**Callables** - Direct function calls for immediate actions
 ```python
-import time
-from owa.core import CALLABLES, LISTENERS, MESSAGES
-
+from owa.core import CALLABLES
 # Components automatically available - zero configuration!
 
-# Time and desktop automation
+# Get current time, capture screen, click mouse
 current_time = CALLABLES["std/time_ns"]()
 screen = CALLABLES["desktop/screen.capture"]()
 CALLABLES["desktop/mouse.click"]("left", 2)  # Double-click
+```
 
-# Event monitoring with context manager
+**Listeners** - Event monitoring with user-defined callbacks
+```python
+from owa.core import LISTENERS
+import time
+
+# Monitor keyboard events
+def on_key(event):
+    print(f"Key pressed: {event.vk}")
+
+listener = LISTENERS["desktop/keyboard"]().configure(callback=on_key)
+with listener.session:
+    input("Press Enter to stop...")
+
+# Periodic tasks
 def on_tick():
     print(f"Tick: {CALLABLES['std/time_ns']()}")
 
 with LISTENERS["std/tick"]().configure(callback=on_tick, interval=1).session:
     time.sleep(3)  # Prints every second for 3 seconds
+```
 
-# Message types
+**Runnables** - Background processes that can be started/stopped
+```python
+from owa.core import RUNNABLES
+
+# Periodic screen capture
+capture = RUNNABLES["gst/screen_capture"]().configure(fps=60)
+with capture.session:
+    frame = capture.grab()
+```
+
+**Message Types** - Access structured message definitions
+```python
+from owa.core import MESSAGES
+
+# Message types automatically available
 KeyboardEvent = MESSAGES["desktop/KeyboardEvent"]
+ScreenCaptured = MESSAGES["desktop/ScreenCaptured"]
 ```
 
 ### High-Performance Screen Capture
@@ -161,6 +221,7 @@ with screen.session:
     time.sleep(5)
 ```
 
+<!-- SYNC-ID: gst-performance-benchmark -->
 Powered by the powerful Gstreamer and Windows API, our implementation is **6x** faster than comparatives.
 
 | **Library**        | **Avg. Time per Frame** | **Relative Speed**    |
@@ -172,6 +233,7 @@ Powered by the powerful Gstreamer and Windows API, our implementation is **6x** 
 | `PyQt5`           | 137 ms                  | 🐢 24× slower         |
 
 📌 **Tested on:** Intel i5-11400, GTX 1650
+<!-- END-SYNC: gst-performance-benchmark -->
 
 Not only does `owa.env.gst` **achieve higher FPS**, but it also maintains **lower CPU/GPU usage**, making it the ideal choice for screen recording. Same applies for `ocap`, since it internally imports `owa.env.gst`.
 
@@ -192,10 +254,20 @@ ocap my-session
 # Visit: https://huggingface.co/datasets?other=OWA
 ```
 
-### Access Community Datasets
+### 🤗 Community Datasets: Democratizing Desktop Agent Data
 
-Browse and load community-contributed OWAMcap datasets directly from HuggingFace:
+<!-- SYNC-ID: community-datasets -->
+**Browse Available Datasets**: [🤗 datasets?other=OWA](https://huggingface.co/datasets?other=OWA)
 
+- **Growing Collection**: Hundreds of community-contributed datasets
+- **Standardized Format**: All use OWAMcap for seamless integration
+- **Interactive Preview**: [Hugging Face Spaces Visualizer](https://huggingface.co/spaces/open-world-agents/visualize_dataset)
+- **Easy Sharing**: Upload recordings directly with one command
+
+> 🚀 **Impact**: OWA has democratized desktop agent data, growing from zero to hundreds of public datasets in the unified OWAMcap format.
+<!-- END-SYNC: community-datasets -->
+
+**Access Community Datasets**:
 ```python
 # Load datasets from HuggingFace
 from owa.data import load_dataset
@@ -207,17 +279,17 @@ datasets = load_dataset.list_available(format="OWA")
 data = load_dataset("open-world-agents/example_dataset")
 ```
 
-**Available Datasets**: [🤗 datasets?other=OWA](https://huggingface.co/datasets?other=OWA)
-
 ### Data Format Preview
 
 **OWAMcap** combines the robustness of [MCAP](https://mcap.dev/) with specialized desktop interaction schemas. Perfect synchronization of screen captures, input events, and window context with nanosecond precision.
 
+<!-- SYNC-ID: owamcap-key-features -->
 **Key Features**:
 - 🔄 **Universal Standard**: Unlike fragmented formats, enables seamless dataset combination for large-scale foundation models *(OWAMcap)*
 - 🎯 **High-Performance Multimodal Storage**: Lightweight [MCAP](https://mcap.dev/) container with nanosecond precision for synchronized data streams *(MCAP)*
 - 🔗 **Flexible MediaRef**: Smart references to both external and embedded media (file paths, URLs, data URIs, video frames) with lazy loading - keeps metadata files small while supporting rich media *(OWAMcap)* → [Learn more](https://open-world-agents.github.io/open-world-agents/data/technical-reference/format-guide/#media-handling)
 - 🤗 **Training Pipeline Ready**: Native HuggingFace integration, seamless dataset loading, and direct compatibility with ML frameworks *(Ecosystem)* → [Browse datasets](https://huggingface.co/datasets?other=OWA) | [Data pipeline](https://open-world-agents.github.io/open-world-agents/data/technical-reference/data-pipeline/)
+<!-- END-SYNC: owamcap-key-features -->
 
 > 📖 **Learn More**: [Why OWAMcap?](https://open-world-agents.github.io/open-world-agents/data/getting-started/why-owamcap/) | [Complete Format Guide](https://open-world-agents.github.io/open-world-agents/data/technical-reference/format-guide/) | [vs Other Formats](https://open-world-agents.github.io/open-world-agents/data/tools/comparison-with-lerobot/)
 
@@ -289,12 +361,29 @@ For development or contributing to the project, you can install packages in edit
 
 ## Features
 
-- **🔄 Asynchronous Framework**: Real-time event handling with Callables, Listeners, and Runnables
-- **🧩 Zero-Configuration Plugin System**: Automatic plugin discovery via Entry Points
-- **🎥 High-Performance Environment Plugins**: 6x faster screen capture via `owa.env.gst` GStreamer integration
-- **🗂️ Universal Data Format**: [OWAMcap standard](https://open-world-agents.github.io/open-world-agents/data/getting-started/why-owamcap/) with flexible MediaRef system for efficient external media references
-- **🤗 HuggingFace Ecosystem**: Growing collection of community datasets, plugins, and tools
-- **🛠️ Extensible Architecture**: Modular design for custom environments and message types
+### 🌍 Environment Framework: "USB-C of Desktop Agents"
+<!-- SYNC-ID: env-framework-features -->
+- **⚡ Real-time Performance**: Optimized for responsive agent interactions (GStreamer components achieve <30ms latency)
+- **🔌 Zero-Configuration**: Automatic plugin discovery via Python Entry Points
+- **🌐 Event-Driven**: Asynchronous processing that mirrors real-world dynamics
+- **🧩 Extensible**: Community-driven plugin ecosystem
+<!-- END-SYNC: env-framework-features -->
+
+### 📊 Data Infrastructure: Complete Pipeline
+<!-- SYNC-ID: owamcap-key-features -->
+- � **Universal Standard**: Unlike fragmented formats, enables seamless dataset combination for large-scale foundation models *(OWAMcap)*
+- 🎯 **High-Performance Multimodal Storage**: Lightweight [MCAP](https://mcap.dev/) container with nanosecond precision for synchronized data streams *(MCAP)*
+- 🔗 **Flexible MediaRef**: Smart references to both external and embedded media (file paths, URLs, data URIs, video frames) with lazy loading - keeps metadata files small while supporting rich media *(OWAMcap)* → [Learn more](https://open-world-agents.github.io/open-world-agents/data/technical-reference/format-guide/#media-handling)
+- 🤗 **Training Pipeline Ready**: Native HuggingFace integration, seamless dataset loading, and direct compatibility with ML frameworks *(Ecosystem)* → [Browse datasets](https://huggingface.co/datasets?other=OWA) | [Data pipeline](https://open-world-agents.github.io/open-world-agents/data/technical-reference/data-pipeline/)
+<!-- END-SYNC: owamcap-key-features -->
+
+### 🤗 Community & Ecosystem
+
+- **🌱 Growing Ecosystem**: Hundreds of community datasets in unified OWAMcap format
+- **🤗 HuggingFace Integration**: Native dataset loading, sharing, and interactive preview tools
+- **🧩 Extensible Architecture**: Modular design for custom environments, plugins, and message types
+- **💡 Community-Driven**: Plugin ecosystem spanning gaming, web automation, mobile control, and specialized domains
+
 
 ## Documentation
 

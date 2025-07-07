@@ -28,25 +28,31 @@ Dataset C (OWAMcap) ──┘
 
 OWAMcap integrates with the complete [OWA Data Pipeline](../technical-reference/data-pipeline.md):
 
+<!-- SYNC-ID: quick-start-3-steps -->
 ```bash
 # 1. Record desktop interaction
-ocap my-session.mcap
+$ ocap my-session.mcap
 
 # 2. Process to training format
-python scripts/01_raw_events_to_event_dataset.py --train-dir ./
+$ python scripts/01_raw_events_to_event_dataset.py --train-dir ./
 
 # 3. Train your model
-python train.py --dataset ./event-dataset
+$ python train.py --dataset ./event-dataset
 ```
+
+> 📖 **Detailed Guide**: [Complete Quick Start Tutorial](../../quick-start.md) - Step-by-step walkthrough with examples and troubleshooting
+<!-- END-SYNC: quick-start-3-steps -->
 
 **Result**: Any OWAMcap dataset works with any OWA-compatible training pipeline.
 
 ## Key Features
 
+<!-- SYNC-ID: owamcap-key-features -->
 - 🔄 **Universal Standard**: Unlike fragmented formats, enables seamless dataset combination for large-scale foundation models *(OWAMcap)*
 - 🎯 **High-Performance Multimodal Storage**: Lightweight [MCAP](https://mcap.dev/) container with nanosecond precision for synchronized data streams *(MCAP)*
 - 🔗 **Flexible MediaRef**: Smart references to both external and embedded media (file paths, URLs, data URIs, video frames) with lazy loading - keeps metadata files small while supporting rich media *(OWAMcap)* → [Learn more](https://open-world-agents.github.io/open-world-agents/data/technical-reference/format-guide/#media-handling)
 - 🤗 **Training Pipeline Ready**: Native HuggingFace integration, seamless dataset loading, and direct compatibility with ML frameworks *(Ecosystem)* → [Browse datasets](https://huggingface.co/datasets?other=OWA) | [Data pipeline](https://open-world-agents.github.io/open-world-agents/data/technical-reference/data-pipeline/)
+<!-- END-SYNC: owamcap-key-features -->
 
 ## Real Impact
 
