@@ -14,6 +14,7 @@ class LoadDataset:
     def __call__(self, repo_id: str, **kwargs):
         # Load the dataset from HuggingFace using datasets.load_dataset
         # kwargs can be used to pass split, streaming, etc.
+        raise NotImplementedError("Not implemented yet, stay tuned!")
         return datasets.load_dataset(repo_id, **kwargs)
 
 

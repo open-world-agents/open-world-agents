@@ -17,7 +17,7 @@
 Open World Agents is a comprehensive framework for building AI agents that interact with desktop applications through vision, keyboard, and mouse control. Complete toolkit from data capture to model training and evaluation:
 
 - **OWA Core & Environment**: Asynchronous, event-driven interface for real-time agents with zero-configuration plugin system
-- **Data Capture & Format**: High-performance desktop recording with `OWAMcap` format - a specialized file format that captures screen recordings, keyboard/mouse events, and window information with nanosecond precision, powered by [mcap](https://mcap.dev/)
+- **Data Capture & Format**: High-performance desktop recording with `OWAMcap` format - a [universal standard](https://open-world-agents.github.io/open-world-agents/data/getting-started/why-owamcap/) with flexible MediaRef system for efficient external media references, powered by [mcap](https://mcap.dev/)
 - **Environment Plugins**: Pre-built plugins for desktop automation, screen capture, and more
 - **CLI Tools**: Command-line utilities for recording, analyzing, and managing agent data
 
@@ -28,7 +28,7 @@ Open World Agents is a comprehensive framework for building AI agents that inter
 🤖 **Desktop Automation**: Navigate applications, automate workflows, interact with any software  
 🎮 **Game AI**: Master complex games through visual understanding and real-time decision making  
 📊 **Training Datasets**: Capture high-quality human-computer interaction data for foundation models  
-🤗 **Community Datasets**: Access and contribute to growing OWAMcap datasets on HuggingFace  
+🤗 **Community Datasets**: Access and contribute to growing [OWAMcap datasets](https://huggingface.co/datasets?other=OWA) on HuggingFace  
 📈 **Benchmarks**: Create and evaluate desktop agent performance across diverse tasks  
 
 ## Project Structure
@@ -94,7 +94,7 @@ All OWA packages use namespace packaging and are installed in the `owa` namespac
 | `owa.env.cad` | CAD software automation (AutoCAD, SolidWorks) |
 | `owa.env.trading` | Financial trading platform integration |
 
-> 💡 **Want to contribute?** Check our [Plugin Development Guide](docs/env/custom_plugins.md) to create your own `owa.env.*` package!
+> 💡 **Want to contribute?** Check our [Plugin Development Guide](https://open-world-agents.github.io/open-world-agents/env/custom_plugins/) to create your own `owa.env.*` package!
 > 
 > 💭 **These are just examples!** The community decides what plugins to build. Propose your own ideas or create plugins for any domain you're passionate about.
 
@@ -105,9 +105,9 @@ All OWA packages use namespace packaging and are installed in the `owa` namespac
 - **Complete recording**: Video + audio + keyboard/mouse + window events
 - **High performance**: Hardware-accelerated, ~100MB/min for 1080p
 - **Simple usage**: `ocap my-recording` (stop with Ctrl+C)
-- **Modern formats**: MKV for video, MCAP for events
+- **Modern formats**: [OWAMcap](https://open-world-agents.github.io/open-world-agents/data/getting-started/why-owamcap/) with flexible MediaRef system (supports MKV, images, URLs, embedded data)
 
-> 📖 **Detailed Documentation**: See [Desktop Recording Guide](docs/data/ocap.md) for complete setup, usage examples, and troubleshooting.
+> 📖 **Detailed Documentation**: See [Desktop Recording Guide](https://open-world-agents.github.io/open-world-agents/data/getting-started/recording-data/) for complete setup, usage examples, and troubleshooting.
 
 ## Quick Start
 
@@ -194,7 +194,7 @@ ocap my-session
 
 ### Access Community Datasets
 
-> 🚧 **TODO**: Community dataset access functionality is under development.
+Browse and load community-contributed OWAMcap datasets directly from HuggingFace:
 
 ```python
 # Load datasets from HuggingFace
@@ -207,75 +207,54 @@ datasets = load_dataset.list_available(format="OWA")
 data = load_dataset("open-world-agents/example_dataset")
 ```
 
+**Available Datasets**: [🤗 datasets?other=OWA](https://huggingface.co/datasets?other=OWA)
+
 ### Data Format Preview
 
-<!-- TODO: more awesome preview such as docs\data\technical-reference\format-guide.md -->
+**OWAMcap** combines the robustness of [MCAP](https://mcap.dev/) with specialized desktop interaction schemas. Perfect synchronization of screen captures, input events, and window context with nanosecond precision.
+
+**Key Features**:
+- 🔄 **Universal Standard**: Unlike fragmented formats, enables seamless dataset combination for large-scale foundation models *(OWAMcap)*
+- 🎯 **High-Performance Multimodal Storage**: Lightweight [MCAP](https://mcap.dev/) container with nanosecond precision for synchronized data streams *(MCAP)*
+- 🔗 **Flexible MediaRef**: Smart references to both external and embedded media (file paths, URLs, data URIs, video frames) with lazy loading - keeps metadata files small while supporting rich media *(OWAMcap)* → [Learn more](https://open-world-agents.github.io/open-world-agents/data/technical-reference/format-guide/#media-handling)
+- 🤗 **Training Pipeline Ready**: Native HuggingFace integration, seamless dataset loading, and direct compatibility with ML frameworks *(Ecosystem)* → [Browse datasets](https://huggingface.co/datasets?other=OWA) | [Data pipeline](https://open-world-agents.github.io/open-world-agents/data/technical-reference/data-pipeline/)
+
+> 📖 **Learn More**: [Why OWAMcap?](https://open-world-agents.github.io/open-world-agents/data/getting-started/why-owamcap/) | [Complete Format Guide](https://open-world-agents.github.io/open-world-agents/data/technical-reference/format-guide/) | [vs Other Formats](https://open-world-agents.github.io/open-world-agents/data/tools/comparison-with-lerobot/)
 
 ```bash
 $ owl mcap info example.mcap
-library:   mcap-owa-support 0.3.2; mcap 1.2.2
+library:   mcap-owa-support 0.5.1; mcap 1.3.0
 profile:   owa
-messages:  1062
-duration:  8.8121584s
-start:     2025-05-23T20:04:01.7269392+09:00 (1747998241.726939200)
-end:       2025-05-23T20:04:10.5390976+09:00 (1747998250.539097600)
+messages:  864
+duration:  10.3574349s
+start:     2025-06-27T18:49:52.129876+09:00 (1751017792.129876000)
+end:       2025-06-27T18:50:02.4873109+09:00 (1751017802.487310900)
 compression:
-        zstd: [1/1 chunks] [113.42 KiB/17.52 KiB (84.55%)] [1.99 KiB/sec]
+        zstd: [1/1 chunks] [116.46 KiB/16.61 KiB (85.74%)] [1.60 KiB/sec]
 channels:
-        (1) keyboard/state    9 msgs (1.02 Hz)    : desktop/KeyboardState [jsonschema]
-        (2) mouse/state       9 msgs (1.02 Hz)    : desktop/MouseState [jsonschema]
-        (3) window            9 msgs (1.02 Hz)    : desktop/WindowInfo [jsonschema]
-        (4) screen          523 msgs (59.35 Hz)   : desktop/ScreenCaptured [jsonschema]
-        (5) mouse           510 msgs (57.87 Hz)   : desktop/MouseEvent [jsonschema]
-        (6) keyboard          2 msgs (0.23 Hz)    : desktop/KeyboardEvent [jsonschema]
+        (1) window           11 msgs (1.06 Hz)    : desktop/WindowInfo [jsonschema]
+        (2) keyboard/state   11 msgs (1.06 Hz)    : desktop/KeyboardState [jsonschema]
+        (3) mouse/state      11 msgs (1.06 Hz)    : desktop/MouseState [jsonschema]
+        (4) screen          590 msgs (56.96 Hz)   : desktop/ScreenCaptured [jsonschema]
+        (5) mouse           209 msgs (20.18 Hz)   : desktop/MouseEvent [jsonschema]
+        (6) keyboard         32 msgs (3.09 Hz)    : desktop/KeyboardEvent [jsonschema]
 channels: 6
 attachments: 0
 metadata: 0
 ```
 
-<!-- TODO: minimal but intuitive, attracting descriptions for all CLI features -->
-
-### Plugin Management with CLI
-
-Explore and manage plugins using the enhanced `owl env` command:
+## 🛠️ CLI Tools (`owl`)
 
 ```bash
-# List all discovered plugins with enhanced display
-$ owl env list --details --table
+# Data analysis
+owl mcap info session.mcap              # File overview & statistics
+owl mcap cat session.mcap --n 10        # View messages
+owl video probe session.mkv             # Video analysis
 
-# Show detailed plugin information with component inspection
-$ owl env list example --inspect add
-
-# Search for components across all plugins
-$ owl env search "mouse.*click" --table
-
-# Ecosystem analysis and statistics
-$ owl env stats                                   # Show ecosystem statistics
-$ owl env stats --namespaces                      # List all available namespaces
-```
-
-### Message Management with CLI
-
-Explore and manage message types using the `owl messages` command:
-
-```bash
-# List all available message types
-$ owl messages list
-
-# Show specific message details
-$ owl messages list desktop/KeyboardEvent
-
-# Search for message types by pattern
-$ owl messages list --search keyboard
-
-# Filter by domain
-$ owl messages list --domain desktop
-
-# Show detailed message schema with examples
-$ owl messages show desktop/KeyboardEvent --example
-
-# Validate message definitions
-$ owl messages validate
+# Environment management
+owl env list                            # List plugins
+owl env search "mouse.*click"           # Search components
+owl messages show desktop/KeyboardEvent # View schemas
 ```
 
 > **💡 Complete CLI Reference**: For detailed information about all CLI commands and options, see the [CLI Tools documentation](https://open-world-agents.github.io/open-world-agents/cli).
@@ -305,24 +284,24 @@ pip install owa
 
 ### Editable Install (Development)
 
-For development or contributing to the project, you can install packages in editable mode. For detailed development setup instructions, see the [Installation Guide](docs/install.md).
+For development or contributing to the project, you can install packages in editable mode. For detailed development setup instructions, see the [Installation Guide](https://open-world-agents.github.io/open-world-agents/install/).
 
 
 ## Features
 
-- **🔄 Asynchronous Processing**: Real-time event handling with Callables, Listeners, and Runnables
+- **🔄 Asynchronous Framework**: Real-time event handling with Callables, Listeners, and Runnables
 - **🧩 Zero-Configuration Plugin System**: Automatic plugin discovery via Entry Points
-- **📊 High-Performance Data**: 6x faster screen capture with GStreamer integration
-- **🤗 HuggingFace Ecosystem**: Access growing collection of community OWAMcap datasets
-- **🗂️ OWAMcap Format**: Specialized file format capturing complete desktop interactions (screen + keyboard + mouse + windows) with perfect synchronization
-- **🛠️ Extensible**: Community-driven plugin ecosystem
+- **🎥 High-Performance Environment Plugins**: 6x faster screen capture via `owa.env.gst` GStreamer integration
+- **🗂️ Universal Data Format**: [OWAMcap standard](https://open-world-agents.github.io/open-world-agents/data/getting-started/why-owamcap/) with flexible MediaRef system for efficient external media references
+- **🤗 HuggingFace Ecosystem**: Growing collection of community datasets, plugins, and tools
+- **🛠️ Extensible Architecture**: Modular design for custom environments and message types
 
 ## Documentation
 
 - **Full Documentation**: https://open-world-agents.github.io/open-world-agents/
-- **Environment Framework**: [docs/env/](docs/env/) - Core concepts, usage guide, and plugin development
-- **Data Infrastructure**: [docs/data/](docs/data/) - Recording, storage, and analysis
-- **CLI Tools**: [docs/cli/](docs/cli/) - Command-line utilities and reference
+- **Environment Framework**: [Environment Guide](https://open-world-agents.github.io/open-world-agents/env/) - Core concepts, usage guide, and plugin development
+- **Data Infrastructure**: [Data Guide](https://open-world-agents.github.io/open-world-agents/data/) - Recording, storage, and analysis with [OWAMcap format](https://open-world-agents.github.io/open-world-agents/data/getting-started/why-owamcap/)
+- **CLI Tools**: [CLI Reference](https://open-world-agents.github.io/open-world-agents/cli/) - Command-line utilities and reference
 
 ## Contributing
 
@@ -332,12 +311,8 @@ We welcome contributions! Whether you're:
 - Adding documentation
 - Reporting bugs
 
-Please see our [Contributing Guide](docs/contributing.md) for details.
+Please see our [Contributing Guide](https://open-world-agents.github.io/open-world-agents/contributing/) for details.
 
 ## License
 
 This project is released under the MIT License. See the [LICENSE](LICENSE) file for details.
-
----
-
-**🚧 Work in Progress**: We're actively developing this framework. Stay tuned for more updates and examples!

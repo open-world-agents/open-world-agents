@@ -1,5 +1,7 @@
 # OWAMcap vs LeRobotDataset: A Technical Comparison
 
+<!-- TODO: LeRobotDataset does not fit well in comparison, must improve comparison document. -->
+
 ## Executive Summary
 
 Both OWAMcap and LeRobotDataset address the critical need for standardized multimodal data formats in embodied AI. However, they differ significantly in their architectural approach and target domains. This comparison analyzes three distinct layers: **container format**, **data schema**, and **library ecosystem**.

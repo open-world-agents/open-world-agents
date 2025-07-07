@@ -41,12 +41,12 @@ python train.py --dataset ./event-dataset
 
 **Result**: Any OWAMcap dataset works with any OWA-compatible training pipeline.
 
-## Technical Advantages
+## Key Features
 
-- **91.7× compression** through hybrid storage (metadata + external video)
-- **Nanosecond precision** for perfect event synchronization
-- **Standard tools** work with video files (VLC, FFmpeg, etc.)
-- **Lazy loading** for memory-efficient processing
+- 🔄 **Universal Standard**: Unlike fragmented formats, enables seamless dataset combination for large-scale foundation models *(OWAMcap)*
+- 🎯 **High-Performance Multimodal Storage**: Lightweight [MCAP](https://mcap.dev/) container with nanosecond precision for synchronized data streams *(MCAP)*
+- 🔗 **Flexible MediaRef**: Smart references to both external and embedded media (file paths, URLs, data URIs, video frames) with lazy loading - keeps metadata files small while supporting rich media *(OWAMcap)* → [Learn more](https://open-world-agents.github.io/open-world-agents/data/technical-reference/format-guide/#media-handling)
+- 🤗 **Training Pipeline Ready**: Native HuggingFace integration, seamless dataset loading, and direct compatibility with ML frameworks *(Ecosystem)* → [Browse datasets](https://huggingface.co/datasets?other=OWA) | [Data pipeline](https://open-world-agents.github.io/open-world-agents/data/technical-reference/data-pipeline/)
 
 ## Real Impact
 
