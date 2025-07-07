@@ -863,6 +863,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="mouse.get_pointer_ballistics_config">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#owa.env.desktop.keyboard_mouse.callables.get_pointer_ballistics_config--check-whether-enhance-pointer-precision-is-enabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      Check whether Enhance pointer precision is enabled
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -2209,6 +2224,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="mouse.get_pointer_ballistics_config">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#owa.env.desktop.keyboard_mouse.callables.get_pointer_ballistics_config--check-whether-enhance-pointer-precision-is-enabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      Check whether Enhance pointer precision is enabled
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -3313,7 +3343,8 @@ result = callable_func(your_arguments)</code></pre>
 
 
 <p><span class="doc-section-title">Examples:</span></p>
-    <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">config</span> <span class="o">=</span> <span class="n">get_pointer_ballistics_config</span><span class="p">()</span>
+    <h5 id="owa.env.desktop.keyboard_mouse.callables.get_pointer_ballistics_config--check-whether-enhance-pointer-precision-is-enabled">Check whether Enhance pointer precision is enabled<a class="headerlink" href="#owa.env.desktop.keyboard_mouse.callables.get_pointer_ballistics_config--check-whether-enhance-pointer-precision-is-enabled" title="Permanent link">&para;</a></h5>
+    <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">is_mouse_acceleration_enabled</span> <span class="o">=</span> <span class="n">get_pointer_ballistics_config</span><span class="p">()</span><span class="o">.</span><span class="n">mouse_speed</span>
 </code></pre></div>
 
 
@@ -3339,27 +3370,29 @@ result = callable_func(your_arguments)</code></pre>
 <span class="normal"><a href="#__codelineno-0-243">243</a></span>
 <span class="normal"><a href="#__codelineno-0-244">244</a></span>
 <span class="normal"><a href="#__codelineno-0-245">245</a></span>
-<span class="normal"><a href="#__codelineno-0-246">246</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-226" name="__codelineno-0-226"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_pointer_ballistics_config</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">PointerBallisticsConfig</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-246">246</a></span>
+<span class="normal"><a href="#__codelineno-0-247">247</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-226" name="__codelineno-0-226"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_pointer_ballistics_config</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">PointerBallisticsConfig</span><span class="p">:</span>
 <a id="__codelineno-0-227" name="__codelineno-0-227"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get Windows pointer ballistics configuration for WM_MOUSEMOVE reconstruction.</span>
 <a id="__codelineno-0-228" name="__codelineno-0-228"></a>
 <a id="__codelineno-0-229" name="__codelineno-0-229"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-230" name="__codelineno-0-230"></a><span class="sd">        &gt;&gt;&gt; config = get_pointer_ballistics_config()</span>
-<a id="__codelineno-0-231" name="__codelineno-0-231"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-232" name="__codelineno-0-232"></a>    <span class="n">defaults</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-0-233" name="__codelineno-0-233"></a>        <span class="s2">&quot;MouseThreshold1&quot;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>
-<a id="__codelineno-0-234" name="__codelineno-0-234"></a>        <span class="s2">&quot;MouseThreshold2&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
-<a id="__codelineno-0-235" name="__codelineno-0-235"></a>        <span class="s2">&quot;MouseSpeed&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-<a id="__codelineno-0-236" name="__codelineno-0-236"></a>        <span class="s2">&quot;MouseSensitivity&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
-<a id="__codelineno-0-237" name="__codelineno-0-237"></a>    <span class="p">}</span>
-<a id="__codelineno-0-238" name="__codelineno-0-238"></a>
-<a id="__codelineno-0-239" name="__codelineno-0-239"></a>    <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">!=</span> <span class="s2">&quot;win32&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-240" name="__codelineno-0-240"></a>        <span class="k">return</span> <span class="n">PointerBallisticsConfig</span><span class="p">(</span><span class="o">**</span><span class="n">defaults</span><span class="p">)</span>
-<a id="__codelineno-0-241" name="__codelineno-0-241"></a>
-<a id="__codelineno-0-242" name="__codelineno-0-242"></a>    <span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-0-243" name="__codelineno-0-243"></a>        <span class="n">config</span> <span class="o">=</span> <span class="n">_get_mouse_registry_values</span><span class="p">()</span>
-<a id="__codelineno-0-244" name="__codelineno-0-244"></a>        <span class="k">return</span> <span class="n">PointerBallisticsConfig</span><span class="p">(</span><span class="o">**</span><span class="n">config</span><span class="p">)</span>
-<a id="__codelineno-0-245" name="__codelineno-0-245"></a>    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-<a id="__codelineno-0-246" name="__codelineno-0-246"></a>        <span class="k">return</span> <span class="n">PointerBallisticsConfig</span><span class="p">(</span><span class="o">**</span><span class="n">defaults</span><span class="p">)</span>
+<a id="__codelineno-0-230" name="__codelineno-0-230"></a><span class="sd">        # Check whether Enhance pointer precision is enabled</span>
+<a id="__codelineno-0-231" name="__codelineno-0-231"></a><span class="sd">        &gt;&gt;&gt; is_mouse_acceleration_enabled = get_pointer_ballistics_config().mouse_speed</span>
+<a id="__codelineno-0-232" name="__codelineno-0-232"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-233" name="__codelineno-0-233"></a>    <span class="n">defaults</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-0-234" name="__codelineno-0-234"></a>        <span class="s2">&quot;MouseThreshold1&quot;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>
+<a id="__codelineno-0-235" name="__codelineno-0-235"></a>        <span class="s2">&quot;MouseThreshold2&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+<a id="__codelineno-0-236" name="__codelineno-0-236"></a>        <span class="s2">&quot;MouseSpeed&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-0-237" name="__codelineno-0-237"></a>        <span class="s2">&quot;MouseSensitivity&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+<a id="__codelineno-0-238" name="__codelineno-0-238"></a>    <span class="p">}</span>
+<a id="__codelineno-0-239" name="__codelineno-0-239"></a>
+<a id="__codelineno-0-240" name="__codelineno-0-240"></a>    <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">!=</span> <span class="s2">&quot;win32&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-241" name="__codelineno-0-241"></a>        <span class="k">return</span> <span class="n">PointerBallisticsConfig</span><span class="p">(</span><span class="o">**</span><span class="n">defaults</span><span class="p">)</span>
+<a id="__codelineno-0-242" name="__codelineno-0-242"></a>
+<a id="__codelineno-0-243" name="__codelineno-0-243"></a>    <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-0-244" name="__codelineno-0-244"></a>        <span class="n">config</span> <span class="o">=</span> <span class="n">_get_mouse_registry_values</span><span class="p">()</span>
+<a id="__codelineno-0-245" name="__codelineno-0-245"></a>        <span class="k">return</span> <span class="n">PointerBallisticsConfig</span><span class="p">(</span><span class="o">**</span><span class="n">config</span><span class="p">)</span>
+<a id="__codelineno-0-246" name="__codelineno-0-246"></a>    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+<a id="__codelineno-0-247" name="__codelineno-0-247"></a>        <span class="k">return</span> <span class="n">PointerBallisticsConfig</span><span class="p">(</span><span class="o">**</span><span class="n">defaults</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
