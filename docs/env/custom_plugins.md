@@ -67,15 +67,6 @@ Entry Points are a standard Python packaging mechanism that allows packages to a
 
 When you install a plugin with entry points, OWA automatically discovers and registers all components without any manual configuration. This is what makes the `pip install` → immediate availability workflow possible.
 
-!!! info "Module Structure Freedom"
-    You have complete freedom in organizing your plugin code. The `owa.env.*` pattern used in examples is just a recommendation, not a requirement.
-
-    **Valid entry point examples:**
-
-    - `my_company.tools:plugin_spec` - Company structure
-    - `custom_plugins:plugin_spec` - Simple structure
-    - `owa.env.plugins.myplugin:plugin_spec` - Recommended OWA structure
-
 !!! tip "Try the Example Plugin"
     If you want to test the example plugin that OWA provides:
 
