@@ -1,3 +1,5 @@
+# FAQ for Developers
+
 ## How to disable `typer`-specific traceback?
 
 set `_TYPER_STANDARD_TRACEBACK=1`

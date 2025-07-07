@@ -3,10 +3,12 @@
 **OWA's Env is the "USB-C of desktop agents"** - a universal interface for native desktop automation.
 
 !!! info "Think MCP for Desktop"
+    <!-- SYNC-ID: usb-c-analogy -->
     Just as [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) provides a standardized way for LLMs to connect to data sources and tools, **OWA's Env provides a standardized way for agents to connect to desktop environments**.
 
     - **MCP**: "USB-C of LLMs" - universal interface for AI tools
     - **OWA's Env**: "USB-C of desktop agents" - universal interface for native desktop automation
+    <!-- END-SYNC: usb-c-analogy -->
 
 !!! tip "Quick Start"
     ```bash
@@ -55,12 +57,14 @@ OWA's Environment provides three types of components for real-time agent interac
 
 Traditional frameworks like [gymnasium.Env](https://gymnasium.farama.org/api/env/) use synchronous `env.step()` calls that assume infinite processing time. **Real-world agents need real-time responses.**
 
+<!-- SYNC-ID: env-framework-features -->
 **OWA's Env delivers:**
 
 - **⚡ Real-time Performance**: Optimized for responsive agent interactions (GStreamer components achieve <30ms latency)
 - **🔌 Zero-Configuration**: Automatic plugin discovery via Python Entry Points
 - **🌐 Event-Driven**: Asynchronous processing that mirrors real-world dynamics
 - **🧩 Extensible**: Community-driven plugin ecosystem
+<!-- END-SYNC: env-framework-features -->
 
 ## Quick Navigation
 

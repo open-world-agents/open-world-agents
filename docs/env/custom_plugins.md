@@ -417,6 +417,8 @@ pip install -e /path/to/plugin
 
 ## Next Steps
 
-- **Study Examples**: Explore `projects/owa-env-*` for reference implementations
-- **Join Community**: Share your plugins and get feedback
-- **Contribute**: Help build the "USB-C of desktop agents" ecosystem
+| Topic | Description |
+|-------|-------------|
+| **[Environment Guide](guide.md)** | Complete system overview and advanced usage patterns |
+| **[Built-in Plugins](plugins/std.md)** | Learn from standard, desktop, and GStreamer implementations |
+| **[CLI Tools](../cli/env.md)** | Plugin management and exploration commands |

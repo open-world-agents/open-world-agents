@@ -21,6 +21,7 @@ High-performance screen capture and multimedia processing (**6x faster** than al
 
 ## Performance
 
+<!-- SYNC-ID: gst-performance-benchmark -->
 Powered by GStreamer and Windows API, our implementation is **6x faster** than alternatives:
 
 | **Library** | **Avg. Time per Frame** | **Relative Speed** |
@@ -32,6 +33,7 @@ Powered by GStreamer and Windows API, our implementation is **6x faster** than a
 | `PyQt5` | 137 ms | 🐢 24× slower |
 
 📌 **Tested on:** Intel i5-11400, GTX 1650
+<!-- END-SYNC: gst-performance-benchmark -->
 
 Not only does `owa.env.gst` **achieve higher FPS**, but it also maintains **lower CPU/GPU usage**, making it the ideal choice for screen recording. Same applies for `ocap`, since it internally imports `owa.env.gst`.
 
