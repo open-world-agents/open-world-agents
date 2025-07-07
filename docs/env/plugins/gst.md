@@ -21,14 +21,24 @@ High-performance screen capture and multimedia processing (**6x faster** than al
 
 ## Performance
 
-| Library | Avg. Time per Frame | Relative Speed |
-|---------|-------------------|----------------|
-| **owa.env.gst** | **5.7 ms** | ⚡ **1× (Fastest)** |
-| pyscreenshot | 33 ms | 🚶‍♂️ 5.8× slower |
-| PIL | 34 ms | 🚶‍♂️ 6.0× slower |
-| MSS | 37 ms | 🚶‍♂️ 6.5× slower |
+Powered by GStreamer and Windows API, our implementation is **6x faster** than alternatives:
 
-*Tested on Intel i5-11400, GTX 1650*
+| **Library** | **Avg. Time per Frame** | **Relative Speed** |
+|-------------|------------------------|--------------------|
+| **owa.env.gst** | **5.7 ms** | ⚡ **1× (Fastest)** |
+| `pyscreenshot` | 33 ms | 🚶‍♂️ 5.8× slower |
+| `PIL` | 34 ms | 🚶‍♂️ 6.0× slower |
+| `MSS` | 37 ms | 🚶‍♂️ 6.5× slower |
+| `PyQt5` | 137 ms | 🐢 24× slower |
+
+📌 **Tested on:** Intel i5-11400, GTX 1650
+
+Not only does `owa.env.gst` **achieve higher FPS**, but it also maintains **lower CPU/GPU usage**, making it the ideal choice for screen recording. Same applies for `ocap`, since it internally imports `owa.env.gst`.
+
+!!! info "Benchmark Details"
+    These performance measurements were generated using our comprehensive benchmark script: [`benchmark_screen_captures.py`](https://github.com/open-world-agents/open-world-agents/blob/main/projects/owa-env-gst/scripts/benchmark_screen_captures.py)
+
+    The script tests multiple screen capture libraries under identical conditions to ensure fair comparison. You can run it yourself to verify performance on your hardware.
 
 ## Usage Examples
 

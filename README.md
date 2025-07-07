@@ -171,9 +171,11 @@ Powered by the powerful Gstreamer and Windows API, our implementation is **6x** 
 | `MSS`             | 37 ms                   | 🚶‍♂️ 6.5× slower       |
 | `PyQt5`           | 137 ms                  | 🐢 24× slower         |
 
-📌 **Tested on:** Intel i5-11400, GTX 1650  
+📌 **Tested on:** Intel i5-11400, GTX 1650
 
 Not only does `owa.env.gst` **achieve higher FPS**, but it also maintains **lower CPU/GPU usage**, making it the ideal choice for screen recording. Same applies for `ocap`, since it internally imports `owa.env.gst`.
+
+📊 **[See detailed benchmarks and methodology →](https://open-world-agents.github.io/open-world-agents/env/plugins/gst#performance)**
 
 ### Desktop Recording & Dataset Sharing
 
