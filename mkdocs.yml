@@ -5,6 +5,8 @@ repo_name: open-world-agents
 
 theme:
   name: material
+  logo: images/owa-logo.jpg
+  favicon: images/owa-logo.jpg
   features:
     # - navigation.tabs # I think omitting this is better to show Awesome Examples
     - navigation.sections
@@ -31,19 +33,37 @@ theme:
 
 plugins:
   - search
+  - termynal:
+      prompt_literal_start:
+        - "$"
+        - ">"
   - mkdocstrings:
       handlers:
-        python:
-          paths: [projects]
+        owa:
+          # Current owa handler assumes packages to be installed, so path setting is not required (and not compatible with owa.core.plugin_discovery implementation)
+          # paths:
+          #   - projects/owa-core
+          #   - projects/owa-env-desktop
+          #   - projects/owa-env-gst
+          #   - projects/owa-env-example
           options:
-            docstring_style: google
-            show_source: true
+            members_order: source
+            separate_signature: true
+            docstring_options:
+              ignore_init_summary: true
+            merge_init_into_class: true
+            show_signature_annotations: true
+            signature_crossrefs: true
+          import:
+            - url: https://docs.python.org/3/objects.inv
+              domains: [py, std]
+            - url: https://typing-extensions.readthedocs.io/en/latest/objects.inv
   - git-revision-date-localized:
       type: datetime
   - mermaid2
   # - redirects:
   #     redirect_maps:
-  #       'data/index.md': 'data/data_format.md'
+  #       'data/index.md': 'data/owamcap_format_guide.md'
 
 markdown_extensions:
   - toc:
@@ -66,6 +86,7 @@ markdown_extensions:
   - pymdownx.tabbed:
       alternate_style: true
   - attr_list
+  - mkdocs-click
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
@@ -73,26 +94,41 @@ markdown_extensions:
 nav:
   - Get Started:
     - Welcome to OWA: index.md
+    - 🚀 Quick Start Guide: quick-start.md
     - Help with OWA: help_with_owa.md
     - Installation: install.md
-    - Contributing: contributing.md 
+    - Contributing: contributing.md
     # - Changelog: changelog.md # Later
-  - Project Overview: project_overview.md
   - Env in OWA:
     - env/index.md
     - env/guide.md
-    - Custom EnvPlugins: env/custom_plugins.md
+    - env/custom_plugins.md
     - Lists of EnvPlugins:
       - Standard Environment: env/plugins/std.md
-      - Desktop Environment: env/plugins/desktop_env.md
-      - Gstreamer Environment: env/plugins/gstreamer_env.md
+      - Desktop Environment: env/plugins/desktop.md
+      - Gstreamer Environment: env/plugins/gst.md
   - Data in OWA:
-    - data/index.md
-    - data/data_format.md
-    - data/how_to_explorer_and_edit.md
-    - data/viewer.md
-    # - Comparison with other data formats: data/comparison.md # Later
-    - data/ocap.md
+    - Overview: data/index.md
+    - Getting Started:
+      - Why OWAMcap?: data/getting-started/why-owamcap.md
+      - Recording Data: data/getting-started/recording-data.md
+      - Exploring Data: data/getting-started/exploring-data.md
+    - Technical Reference:
+      - OWAMcap Format Guide: data/technical-reference/format-guide.md
+      - Custom Message Types: data/technical-reference/custom-messages.md
+      - 🚀 Data Pipeline (MCAP → VLA Training): data/technical-reference/data-pipeline.md
+    - Tools & Comparison:
+      - Data Viewer: data/tools/viewer.md
+      - Comparison with LeRobot: data/tools/comparison-with-lerobot.md
+    - Examples:
+      - Data Conversions: data/examples/conversions.md
+  - CLI Tools:
+    - cli/index.md
+    - Command Groups:
+      - MCAP Commands: cli/mcap.md
+      - Environment Commands: cli/env.md
+      - Message Commands: cli/messages.md
+      - Video Commands: cli/video.md
   - 🚀 Awesome Examples (WIP):
     - Multimodal Game Agent: examples/multimodal_game_agent.md
     - Omniparse + InternLM GUI Agent: examples/gui_agent.md

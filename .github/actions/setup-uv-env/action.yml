@@ -1,0 +1,26 @@
+name: 'Setup uv Environment'
+description: 'Setup uv and virtual-uv (package installation should be done separately in workflow)'
+inputs:
+  show-uv-cache-info:
+    description: 'Whether to show uv cache hit information'
+    required: false
+    default: 'false'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install the latest version of uv
+      id: setup-uv
+      uses: astral-sh/setup-uv@v6
+      with:
+        version: "latest"
+        enable-cache: true
+
+    - name: Show uv cache information
+      if: inputs.show-uv-cache-info == 'true' && steps.setup-uv.outputs.cache-hit == 'true'
+      shell: bash
+      run: echo "uv cache was restored"
+
+    - name: Install virtual-uv
+      shell: bash -el {0}
+      run: pip install virtual-uv

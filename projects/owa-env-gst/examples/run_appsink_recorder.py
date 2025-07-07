@@ -1,7 +1,7 @@
 import time
 
-from owa.env.gst.msg import ScreenEmitted
 from owa.env.gst.omnimodal import AppsinkRecorder
+from owa.msgs.desktop.screen import ScreenCaptured
 
 
 def main():
@@ -9,9 +9,8 @@ def main():
     recorder = AppsinkRecorder()
 
     # Configure the recorder with a callback function
-    def callback(x: ScreenEmitted):
-        path, pts, frame_time_ns, before, after = x
-        print(f"Received frame with PTS {pts} at time {frame_time_ns} with shape {before} -> {after}")
+    def callback(msg: ScreenCaptured):
+        print(f"Video frame: PTS {msg.media_ref.pts_ns} at {msg.utc_ns} shape {msg.source_shape} -> {msg.shape}")
 
     recorder.configure("test.mkv", width=2560 // 2, height=1440 // 2, callback=callback)
 

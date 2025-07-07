@@ -1,0 +1,70 @@
+{
+	"name": "OWA Development Environment",
+	"image": "owa/dev:latest",
+	// "build": {
+	// 	"dockerfile": "Dockerfile",
+	// 	"context": "..",
+	// 	"args": {
+	// 		"BASE_IMAGE": "owa/train:latest",
+	// 		"USERNAME": "vscode",
+	// 		"USER_UID": "1000",
+	// 		"USER_GID": "1000"
+	// 	}
+	// },
+	"runArgs": [
+		"--gpus=all",
+		"--shm-size=8g"
+	],
+	"remoteUser": "vscode",
+	"updateRemoteUserUID": true,
+	"workspaceFolder": "/workspace",
+	"containerEnv": {
+		"HF_HOME": "/mnt/raid12/cache/huggingface"
+	},
+	"mounts": [
+		"source=${localWorkspaceFolder},target=/workspace,type=bind",
+		"source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind",
+		"source=/mnt/raid12/datasets,target=/mnt/raid12/datasets,type=bind,readonly",
+		"source=/mnt/raid12/datasets/owa/data,target=/mnt/raid12/datasets/owa/data,type=bind",
+		"source=/mnt/raid12/cache,target=/mnt/raid12/cache,type=bind",
+		"source=${localEnv:HOME}/.cache,target=/home/vscode/.cache,type=bind",
+		"source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,type=bind",
+		"source=${localEnv:HOME}/.gitconfig,target=/home/vscode/.gitconfig,type=bind,readonly"
+	],
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-python.python",
+				"ms-python.vscode-pylance",
+				"charliermarsh.ruff",
+				"ms-toolsai.jupyter",
+				"christian-kohler.path-intellisense",
+				"eamodio.gitlens",
+				"GitHub.copilot",
+				"GitHub.copilot-chat",
+				"GitHub.vscode-pull-request-github",
+				"oderwat.indent-rainbow",
+				"ms-azuretools.vscode-docker",
+				"ms-vscode.makefile-tools",
+				"mechatroner.rainbow-csv",
+				"Augment.vscode-augment"
+			],
+			"settings": {
+				"python.defaultInterpreterPath": "/opt/conda/envs/owa/bin/python",
+				"python.terminal.activateEnvironment": true,
+				"terminal.integrated.defaultProfile.linux": "zsh",
+				"terminal.integrated.profiles.linux": {
+					"zsh": {
+						"path": "/bin/zsh"
+					}
+				}
+			}
+		}
+	},
+	"postCreateCommand": "sudo chown -R vscode:vscode /opt/conda && echo 'OWA Development Environment Ready! 🚀' && conda info --envs",
+	"features": {
+		"ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
+		"ghcr.io/devcontainers/features/git:1": {},
+		"ghcr.io/devcontainers/features/github-cli:1": {}
+	}
+}

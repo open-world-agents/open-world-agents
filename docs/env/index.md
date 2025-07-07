@@ -1,31 +1,83 @@
-# Introducing OWA's Env
+# Environment Framework
 
-**Open World Agents (OWA)** introduces **Env**, a groundbreaking modular agent system designed for dynamic, real-time environments. Say goodbye to rigid frameworks with fixed interfaces—Env's flexible architecture lets you activate and customize components on the fly.
+**OWA's Env is the "USB-C of desktop agents"** - a universal interface for native desktop automation.
+
+!!! info "Think MCP for Desktop"
+    <!-- SYNC-ID: usb-c-analogy -->
+    Just as [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) provides a standardized way for LLMs to connect to data sources and tools, **OWA's Env provides a standardized way for agents to connect to desktop environments**.
+
+    - **MCP**: "USB-C of LLMs" - universal interface for AI tools
+    - **OWA's Env**: "USB-C of desktop agents" - universal interface for native desktop automation
+    <!-- END-SYNC: usb-c-analogy -->
+
+!!! tip "Quick Start"
+    ```bash
+    pip install owa
+    ```
+    ```python
+    from owa.core import CALLABLES, LISTENERS
+    # Components automatically available - no configuration needed!
+    ```
+
+## Core Concepts
+
+OWA's Environment provides three types of components for real-time agent interaction:
+
+=== "Callables"
+    **Direct function calls** for immediate actions
+    ```python
+    # Get current time, capture screen, click mouse
+    CALLABLES["std/time_ns"]()
+    CALLABLES["desktop/screen.capture"]()
+    CALLABLES["desktop/mouse.click"]("left", 2)
+    ```
+
+=== "Listeners"
+    **Event monitoring** with user-defined callbacks
+    ```python
+    # Monitor keyboard events
+    def on_key(event):
+        print(f"Key pressed: {event.vk}")
+
+    listener = LISTENERS["desktop/keyboard"]().configure(callback=on_key)
+    with listener.session:
+        input("Press Enter to stop...")
+    ```
+
+=== "Runnables"
+    **Background processes** that can be started/stopped
+    ```python
+    # Periodic screen capture
+    capture = RUNNABLES["gst/screen_capture"]().configure(fps=60)
+    with capture.session:
+        frame = capture.grab()
+    ```
 
 ## Why Choose OWA's Env?
 
-Traditional environmental interfaces like [gymnasium.Env](https://gymnasium.farama.org/api/env/) fall short when it comes to building **real-time, real-world agents**. They rely on synchronous steps (`env.step()`, `env.reset()`), which assume your agent has infinite time to process actions. That's not realistic for agents that need to react instantly in dynamic environments.
+Traditional frameworks like [gymnasium.Env](https://gymnasium.farama.org/api/env/) use synchronous `env.step()` calls that assume infinite processing time. **Real-world agents need real-time responses.**
 
-**Env** changes the game with an event-driven, asynchronous design that mirrors real-world interactions. Here's what sets it apart:
+<!-- SYNC-ID: env-framework-features -->
+**OWA's Env delivers:**
 
-- **Asynchronous Event Processing**: Leverage `Callables`, `Listeners`, and `Runnables` for real-time interaction. No more waiting for `env.step()`—the world doesn't stop, and neither should your agent.
-  
-- **Dynamic EnvPlugin Activation**: Seamlessly register and activate `EnvPlugins` at runtime to extend functionality, powered by registry pattern. [Learn how to create custom plugins.](custom_plugins.md)
-  
-- **Extensible, Open-Source Design**: Built for the community, by the community. Easily add custom plugins and extend the Env's functionality to suit your needs.
+- **⚡ Real-time Performance**: Optimized for responsive agent interactions (GStreamer components achieve <30ms latency)
+- **🔌 Zero-Configuration**: Automatic plugin discovery via Python Entry Points
+- **🌐 Event-Driven**: Asynchronous processing that mirrors real-world dynamics
+- **🧩 Extensible**: Community-driven plugin ecosystem
+<!-- END-SYNC: env-framework-features -->
 
-## The Future is Real-Time
+## Quick Navigation
 
-Time waits for no one—and neither do real-world agents. As we advance towards more responsive AI, agents must be capable of instantaneous reactions, just like humans. Env's architecture enables:
+| Section | Description |
+|---------|-------------|
+| **[Environment Guide](guide.md)** | Complete system overview and usage examples |
+| **[Custom Plugins](custom_plugins.md)** | Create your own environment extensions |
+| **[CLI Tools](../cli/env.md)** | Plugin management and exploration commands |
 
-- **True Concurrent Processing**: Handle multiple events simultaneously without bottlenecks.
+**Built-in Plugins:**
 
-- **Measured Reaction Times**: Agents operate within realistic timeframes, ensuring timely responses in dynamic settings.
-
-We prioritize minimizing latency within the framework, aiming for agent reaction times that match or surpass human capabilities. Throughout our codebase, we ensure latency doesn't exceed **30ms**. Check out how we achieve this in our [Screen Listeners](https://github.com/open-world-agents/open-world-agents/blob/main/projects/owa-env-gst/owa/env/gst/screen/listeners.py#L88), and [Test Screen Listener](https://github.com/open-world-agents/open-world-agents/blob/main/projects/owa-env-gst/tests/test_screen_listener.py#L31).
-
-## Get Started Today
-
-Don't let outdated frameworks hold you back. Embrace the future with OWA's Env and build agents that are ready for the real world.
-
-[Learn more about OWA's Env Design.](guide.md)
+| Plugin | Description | Key Features |
+|--------|-------------|--------------|
+| **[Standard](plugins/std.md)** | Core utilities | Time functions, periodic tasks |
+| **[Desktop](plugins/desktop.md)** | Desktop automation | Mouse/keyboard control, window management |
+| **[GStreamer](plugins/gst.md)** | High-performance capture | 6x faster screen recording |

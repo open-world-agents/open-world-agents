@@ -1,11 +1,8 @@
-# This module contains listeners and callables for desktop environment.
-# Components:
-#    - screen
-#    - keyboard_mouse
-#    - window
+"""
+Desktop environment plugin for Open World Agents.
 
-
-def activate():
-    from . import screen  # noqa
-    from . import keyboard_mouse  # noqa
-    from . import window  # noqa
+This plugin provides desktop interaction capabilities including:
+- Screen capture
+- Mouse and keyboard control
+- Window management
+"""

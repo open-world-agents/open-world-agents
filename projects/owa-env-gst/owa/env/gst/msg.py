@@ -1,129 +1,69 @@
-import gc
-import threading
+"""
+Legacy message definitions for backward compatibility.
+
+DEPRECATED: These message definitions have been moved to the owa-msgs package
+for better organization and centralized management. Please use the new imports:
+
+    from owa.msgs.desktop.screen import ScreenCaptured
+
+Or access via the message registry:
+
+    from owa.core import MESSAGES
+    ScreenCaptured = MESSAGES['desktop/ScreenCaptured']
+
+This module provides compatibility imports and will be removed in a future version.
+"""
+
+import warnings
+from fractions import Fraction
 from typing import Optional, Tuple
 
-import av
 import cv2
 import numpy as np
 from PIL import Image
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic.json_schema import SkipJsonSchema
 
+from owa.core.io.video import VideoReader
 from owa.core.message import OWAMessage
 from owa.core.time import TimeUnits
 
-
-# BUG: PyAV has "corrupted size vs. prev_size" error when `frame.to_ndarray(format="bgra")` is called for video "expert-jy-1.mkv"
-#      This bug does not occur when format does not contain `alpha` channel, e.g. "bgr24"
-#      Guessed reason is mismatch of width/height=770/512 and codec_width/codec_height=800/512.
-class PyAVVideoReader:
-    """Class responsible for reading video files and extracting frames at specified timestamps."""
-
-    _GC_COLLECT_COUNT = 0
-    _GC_COLLECTION_INTERVAL = 10  # Run garbage collection every 10 video opens
-
-    _video_container_cache = {}
-    _cache_lock = threading.Lock()
-    _max_cache_size = 4  # Default maximum number of cached containers
-
-    def __init__(self, max_cache_size=None):
-        """Initialize VideoReader with an optional cache size."""
-        if max_cache_size is not None:
-            self._max_cache_size = max_cache_size
-
-    def get_frame_at_pts(self, video_path, pts_ns):
-        """
-        Extract a frame from a video at a specified PTS (in nanoseconds).
-
-        Args:
-            video_path (str): Path to the video file
-            pts_ns (int): Presentation timestamp in nanoseconds
-
-        Returns:
-            np.ndarray: The frame as a RGB array
-
-        Raises:
-            FileNotFoundError: If the video file does not exist
-            ValueError: If a frame at the specified PTS cannot be found
-        """
-        # Increment GC counter and occasionally run garbage collection
-        PyAVVideoReader._GC_COLLECT_COUNT += 1
-        if PyAVVideoReader._GC_COLLECT_COUNT % self._GC_COLLECTION_INTERVAL == 0:
-            # Mandatory to prevent memory leaks when processing many videos
-            gc.collect()
-
-        try:
-            # Get the video container from cache or open a new one
-            # container = self._get_video_container(video_path)
-            # TODO: lock per video file
-            with av.open(video_path) as container:
-                # Convert PTS from nanoseconds to seconds
-                target_time = pts_ns / TimeUnits.SECOND
-
-                # Select the first video stream
-                try:
-                    stream = next(s for s in container.streams if s.type == "video")
-                except StopIteration:
-                    raise ValueError("No video stream found in the file.")
-
-                # Calculate the seek position in terms of stream time base
-                seek_timestamp = int(target_time * av.time_base)
-
-                # Flush the decoder before seeking
-                # container.flush_buffers()
-
-                # Seek to the nearest keyframe before the target time
-                container.seek(seek_timestamp)
-
-                for frame in container.decode(stream):
-                    frame_time = frame.pts * stream.time_base
-                    if frame_time >= target_time:
-                        # Convert frame to RGB format (avoid alpha for safety)
-                        rgb_frame = frame.to_ndarray(format="rgb24")
-                        return rgb_frame
-
-                raise ValueError(f"No frame found at PTS: {pts_ns} ns")
-
-        except FileNotFoundError:
-            raise FileNotFoundError(f"Video file not found: {video_path}")
-        except av.FFmpegError as e:
-            raise ValueError(f"Error opening video file: {e}")
-
-    def _get_video_container(self, video_path):
-        """
-        Get a video container from cache or create a new one.
-        Thread-safe implementation with size limiting.
-        """
-        with self._cache_lock:
-            # Check if it's already cached
-            if video_path in self._video_container_cache:
-                return self._video_container_cache[video_path]
-
-            # If cache is full, remove the oldest entry
-            if len(self._video_container_cache) >= self._max_cache_size:
-                oldest_key = next(iter(self._video_container_cache))
-                oldest_container = self._video_container_cache.pop(oldest_key)
-                oldest_container.close()
-
-            # Open a new container and add it to the cache
-            container = av.open(video_path)
-            self._video_container_cache[video_path] = container
-            return container
-
-    def clear_cache(self):
-        """Close and clear all cached video containers."""
-        with self._cache_lock:
-            for container in self._video_container_cache.values():
-                container.close()
-            self._video_container_cache.clear()
-        gc.collect()
+# Import new message classes for compatibility
+try:
+    from owa.msgs.desktop.screen import ScreenCaptured as _NewScreenEmitted
+except ImportError:
+    # Fallback if owa-msgs is not installed
+    _NewScreenEmitted = None
 
 
-# Global video reader instance
-_video_reader = PyAVVideoReader()
+def _deprecation_warning(old_name: str, new_import: str) -> None:
+    """Issue deprecation warning for legacy message usage."""
+    warnings.warn(
+        f"Using {old_name} from owa.env.gst.msg is deprecated. Use: {new_import}", DeprecationWarning, stacklevel=3
+    )
 
 
-class ScreenEmitted(OWAMessage):
+class ScreenEmitted:
+    """Legacy ScreenEmitted - redirects to new implementation."""
+
+    def __new__(cls, *args, **kwargs):
+        _deprecation_warning("owa.env.gst.msg.ScreenEmitted", "from owa.msgs.desktop.screen import ScreenCaptured")
+        if _NewScreenEmitted is not None:
+            return _NewScreenEmitted(*args, **kwargs)
+        else:
+            return _LegacyScreenEmitted(*args, **kwargs)
+
+    @classmethod
+    def deserialize(cls, buffer):
+        """Deserialize method for legacy compatibility."""
+        if _NewScreenEmitted is not None:
+            return _NewScreenEmitted.deserialize(buffer)
+        else:
+            return _LegacyScreenEmitted.deserialize(buffer)
+
+
+# Fallback implementation for when owa-msgs is not available
+class _LegacyScreenEmitted(OWAMessage):
     _type = "owa.env.gst.msg.ScreenEmitted"
 
     model_config = {"arbitrary_types_allowed": True}
@@ -142,68 +82,172 @@ class ScreenEmitted(OWAMessage):
     # Time since stream start as nanoseconds.
     pts: int | None = None
 
-    def model_post_init(self, __context):
+    @model_validator(mode="after")
+    def validate_screen_emitted(self) -> "ScreenEmitted":
+        """Validate that either frame_arr or (path and pts) are provided."""
         # At least one of frame_arr or (path and pts) must be provided
         if self.frame_arr is None:
             if self.path is None or self.pts is None:
                 raise ValueError("ScreenEmitted requires either 'frame_arr' or both 'path' and 'pts' to be provided.")
 
-    def lazy_load(self) -> np.ndarray:
+        # Validate frame_arr if provided
+        if self.frame_arr is not None:
+            if len(self.frame_arr.shape) < 2:
+                raise ValueError("frame_arr must be at least 2-dimensional")
+
+            # Set shape based on frame dimensions (width, height)
+            h, w = self.frame_arr.shape[:2]
+            self.shape = (w, h)
+
+        # Validate pts if provided
+        if self.pts is not None and self.pts < 0:
+            raise ValueError("pts must be non-negative")
+
+        return self
+
+    def lazy_load(self, *, force_close: bool = False) -> np.ndarray:
         """
         Lazy load the frame data if not already set.
-        This is called when the object is created and frame_arr is None.
+
+        Args:
+            force_close: Force complete closure of video container instead of using cache
+
         Returns:
-            np.ndarray: the frame as a BGRA array.
+            np.ndarray: The frame as a BGRA array
+
+        Raises:
+            ValueError: If required parameters are missing or frame not found
         """
-        if self.frame_arr is None and self.path is not None and self.pts is not None:
-            # Always load as RGB for safety, then convert to BGRA for consumers.
-            rgb_array = _video_reader.get_frame_at_pts(self.path, self.pts)
+        if self.frame_arr is not None:
+            return self.frame_arr
+
+        if self.path is None or self.pts is None:
+            raise ValueError("Cannot lazy load: both 'path' and 'pts' must be provided")
+
+        # Convert PTS from nanoseconds to seconds for VideoReader
+        pts_seconds = Fraction(self.pts, TimeUnits.SECOND)
+
+        with VideoReader(self.path, force_close=force_close) as reader:
+            frame = reader.read_frame(pts=pts_seconds)
+
+            # Convert to RGB first, then to BGRA for consumers
+            rgb_array = frame.to_ndarray(format="rgb24")
             self.frame_arr = cv2.cvtColor(rgb_array, cv2.COLOR_RGB2BGRA)
+
             # Set shape based on the loaded frame (width, height)
-            # Note: OpenCV shape is (height, width, channels), but width/height tuple is (width, height).
             h, w = self.frame_arr.shape[:2]
             shape_tuple = (w, h)
             self.shape = shape_tuple
             self.original_shape = shape_tuple
+
         return self.frame_arr
+
+    def to_rgb_array(self) -> np.ndarray:
+        """
+        Return the frame as an RGB numpy array.
+
+        Returns:
+            np.ndarray: The frame as an RGB array with shape (height, width, 3)
+        """
+        # Ensure frame is loaded
+        bgra_array = self.lazy_load()
+
+        # Convert BGRA to RGB
+        rgb_array = cv2.cvtColor(bgra_array, cv2.COLOR_BGRA2RGB)
+        return rgb_array
 
     def to_pil_image(self) -> Image.Image:
         """
-        Convert the frame at the specified PTS to a PIL Image in RGB format.
+        Convert the frame to a PIL Image in RGB format.
 
         Returns:
-            PIL.Image.Image: The frame as a PIL Image.
+            PIL.Image.Image: The frame as a PIL Image in RGB mode
         """
         rgb_array = self.to_rgb_array()
         return Image.fromarray(rgb_array, mode="RGB")
 
-    def to_rgb_array(self) -> np.ndarray:
+    def is_loaded(self) -> bool:
         """
-        Return the frame as a RGB numpy array.
-        If frame_arr is not set, try to load from path and pts.
-        """
-        # If self.frame_arr is BGRA, convert to RGB.
-        bgra_array = self.lazy_load()
-        rgb_array = cv2.cvtColor(bgra_array, cv2.COLOR_BGRA2RGB)
-        return rgb_array
+        Check if frame data is already loaded in memory.
 
-    def __repr__(self):
-        # give concise summary
-        ks = ["utc_ns", "shape", "original_shape", "path", "pts"]
-        return f"{self.__class__.__name__}({', '.join(f'{k}={getattr(self, k)!r}' for k in ks)})"
+        Returns:
+            bool: True if frame_arr is loaded, False otherwise
+        """
+        return self.frame_arr is not None
+
+    def has_video_reference(self) -> bool:
+        """
+        Check if this instance has a valid video file reference.
+
+        Returns:
+            bool: True if both path and pts are provided, False otherwise
+        """
+        return self.path is not None and self.pts is not None
+
+    def get_memory_usage(self) -> int:
+        """
+        Estimate memory usage of the loaded frame in bytes.
+
+        Returns:
+            int: Estimated memory usage in bytes, 0 if not loaded
+        """
+        if self.frame_arr is None:
+            return 0
+        return self.frame_arr.nbytes
+
+    def __str__(self) -> str:
+        """Return a concise string representation of the ScreenEmitted instance."""
+        # Core attributes to display
+        attrs = ["utc_ns", "shape", "original_shape", "path", "pts"]
+        attr_strs = []
+
+        for attr in attrs:
+            value = getattr(self, attr)
+            if value is not None:
+                attr_strs.append(f"{attr}={value!r}")
+
+        # Add loading status
+        if self.is_loaded():
+            attr_strs.append("loaded=True")
+
+        return f"{self.__class__.__name__}({', '.join(attr_strs)})"
 
 
 def main():
-    d = {"path": "output.mkv", "pts": 2683333333, "utc_ns": 1741608540328534500}
-    d = {"path": "output.mkv", "pts": int(10**9 * (0.99)), "utc_ns": 1741608540328534500}
-    frame = ScreenEmitted(**d)
+    """Demonstration of ScreenEmitted functionality."""
 
-    print(frame)
-    print(frame.to_pil_image())
-    print(frame.shape)
+    # Example 1: Create with video reference
+    video_data = {
+        "path": "output.mkv",
+        "pts": int(10**9 * 0.99),  # 0.99 seconds in nanoseconds
+        "utc_ns": 1741608540328534500,
+    }
+    frame = ScreenEmitted(**video_data)
 
-    # Clean up at the end
-    _video_reader.clear_cache()
+    print("=== ScreenEmitted Demo ===")
+    print(f"Created frame: {frame}")
+    print(f"Is loaded: {frame.is_loaded()}")
+    print(f"Has video reference: {frame.has_video_reference()}")
+    print(f"Memory usage: {frame.get_memory_usage()} bytes")
+
+    # Note: The following would attempt to load from video file
+    # Uncomment if you have a valid video file:
+    # pil_image = frame.to_pil_image()
+    # print(f"PIL Image size: {pil_image.size}")
+    # print(f"Shape after loading: {frame.shape}")
+
+    # Example 2: Create with numpy array (if available)
+
+    # Create a small test frame (BGRA format)
+    test_frame = np.zeros((100, 200, 4), dtype=np.uint8)  # height=100, width=200
+    test_frame[:, :, 2] = 255  # Red channel
+    test_frame[:, :, 3] = 255  # Alpha channel
+
+    frame_with_array = ScreenEmitted(utc_ns=1741608540328534500, frame_arr=test_frame)
+
+    print(f"\nFrame with array: {frame_with_array}")
+    print(f"Shape: {frame_with_array.shape}")
+    print(f"Memory usage: {frame_with_array.get_memory_usage()} bytes")
 
 
 if __name__ == "__main__":

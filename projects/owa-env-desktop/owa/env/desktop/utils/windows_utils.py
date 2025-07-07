@@ -15,7 +15,7 @@ def get_vk_state() -> set[int]:
     _GetAsyncKeyState.argtypes = (c_int,)
 
     vks = [vk for vk in range(256) if _GetAsyncKeyState(vk) & 0x8000]
-    return vks
+    return set(vks)
 
 
 def vk_to_name(vk: int) -> str:

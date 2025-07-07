@@ -27,7 +27,14 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = os.environ.get("LOG_LEVEL", "INFO")
 
     # File patterns
-    FEATURED_DATASETS: list[str] = ["local", "open-world-agents/example_dataset", "open-world-agents/example_dataset2"]
+    FEATURED_DATASETS: list[str] = [
+        "local",
+        "open-world-agents/example_dataset",
+        "open-world-agents/example_dataset2",
+        "open-world-agents/example-djmax",
+        "open-world-agents/example-aimlab",
+        "open-world-agents/example-pubg-battleground",
+    ]
 
     class Config:
         env_file = ".env"

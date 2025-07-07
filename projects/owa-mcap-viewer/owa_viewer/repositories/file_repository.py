@@ -116,7 +116,6 @@ class FileRepository:
             Absolute path to the file
         """
         full_path = safe_join(self.export_path, file_path)
-        print(self.export_path, file_path, full_path)
         if not full_path or not full_path.exists():
             raise FileNotFoundError(file_path)
         return full_path

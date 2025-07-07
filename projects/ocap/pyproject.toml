@@ -1,13 +1,14 @@
 [project]
 name = "ocap"
-version = "0.3.9a4"
+version = "0.5.3"
 description = "High-performance, omnimodal desktop recorder for Windows"
 readme = "README.md"
+license = { text = "MIT" }
 requires-python = ">=3.11"
 dependencies = [
-    "owa-cli",
-    "owa-env-desktop",
-    "owa-env-gst",
+    "owa-cli==0.5.3",
+    "owa-env-desktop==0.5.3",
+    "owa-env-gst==0.5.3",
 ]
 
 [tool.uv.sources]
@@ -23,4 +24,4 @@ build-backend = "hatchling.build"
 packages = ["owa"]
 
 [project.scripts]
-ocap = "owa.ocap.record:main"
+ocap = "owa.ocap.recorder:main"

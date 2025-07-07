@@ -16,6 +16,15 @@ wheels/
 *.egg-info
 downloads/
 
+# Coverage reports
+htmlcov/
+.coverage
+coverage.xml
+
+# caches
+.pytest_cache/
+.ruff_cache/
+
 # Virtual environments
 .venv
 

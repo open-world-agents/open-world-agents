@@ -1,25 +1,23 @@
 import threading
 from collections import deque
+from typing import Any
 
-from owa.core.registry import RUNNABLES
+from owa.msgs.desktop.screen import ScreenCaptured
 
-from ..msg import ScreenEmitted
 from .listeners import ScreenListener
 
 
-@RUNNABLES.register("screen_capture")
 class ScreenCapture(ScreenListener):
     """
-    Screen capture thread using GStreamer pipeline.
+    High-performance screen capture runnable using GStreamer pipeline for continuous frame grabbing.
 
     Captures screen frames continuously and makes the latest frame
     available through a thread-safe interface.
 
     Example:
     ```python
-    from owa.core.registry import RUNNABLES, activate_module
+    from owa.core.registry import RUNNABLES
 
-    activate_module("owa.env.gst")
     screen_capture = RUNNABLES["screen_capture"]().configure(fps=60)
 
     with screen_capture.session:
@@ -29,14 +27,19 @@ class ScreenCapture(ScreenListener):
     ```
     """
 
-    def on_configure(self, *args, **kwargs):
+    def on_configure(self, *args: Any, **kwargs: Any) -> "ScreenCapture":
         """
         Configure and start the screen listener.
 
         Args:
+            *args: Additional positional arguments for screen capture configuration.
             fps (float): Frames per second for capture.
             window_name (str, optional): Window to capture. If None, captures entire screen.
             monitor_idx (int, optional): Monitor index to capture.
+            **kwargs: Additional keyword arguments for screen capture configuration.
+
+        Returns:
+            ScreenCapture: Configured screen capture instance.
         """
         self.queue = deque(maxlen=1)  # Holds the most recent frame
         self._event = threading.Event()
@@ -48,12 +51,12 @@ class ScreenCapture(ScreenListener):
         super().on_configure(callback=on_frame, *args, **kwargs)
         return self
 
-    def grab(self) -> ScreenEmitted:
+    def grab(self) -> ScreenCaptured:
         """
         Get the most recent frame (blocks until frame is available).
 
         Returns:
-            ScreenEmitted: Latest captured frame with timestamp.
+            ScreenCaptured: Latest captured frame with timestamp.
 
         Raises:
             TimeoutError: If no frame is received within 1 second.

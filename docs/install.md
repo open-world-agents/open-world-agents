@@ -1,146 +1,223 @@
 # Installation Guide
 
-## Installing from source
+## Quick Start (Recommended)
 
-!!! info
+For most users who want to use Open World Agents, installation is straightforward:
 
-    Instead of installing from source, you may try `pip install owa`, following [Install from PyPI](#install-from-pypi-conda-forge-experimental) guide, but note that this section is experimental.
+### Option 1: Full Installation with Video Processing
 
-### Minimal Installation Guide
+If you need **desktop recording, screen capture, or video processing capabilities**:
 
-If you **do not require** efficient screen capture with `owa-env-gst`, installation is simple as:
+```bash
+# Install GStreamer dependencies first
+conda install open-world-agents::gstreamer-bundle
 
-=== "uv"
+# Then install all OWA packages
+pip install owa
+```
+
+### Option 2: Headless Installation
+
+For **data processing, ML training, or headless servers** without video capture needs:
+
+```bash
+pip install owa
+```
+
+!!! tip "When to use GStreamer"
+    
+    **Install GStreamer if you need:**
+
+    - Desktop recording with `ocap`
+    - Real-time screen capture with `owa.env.gst`
+    - Video processing capabilities
+    - Complete multimodal data capture
+    
+    **Skip GStreamer if you only need:**
+
+    - Data processing and analysis
+    - ML training on existing datasets
+    - Headless server environments
+    - Working with pre-recorded MCAP files
+
+## Available Packages
+
+All OWA packages are pure Python and available on PyPI. Install via `pip install owa` for all components:
+
+| Name | PyPI | Description |
+|------|------|-------------|
+| [`owa`](https://github.com/open-world-agents/open-world-agents/blob/main/pyproject.toml) | [![owa](https://img.shields.io/pypi/v/owa?label=owa)](https://pypi.org/project/owa/) | **Meta-package** with all core components |
+| [`owa-core`](https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-core) | [![owa-core](https://img.shields.io/pypi/v/owa-core?label=owa-core)](https://pypi.org/project/owa-core/) | Framework foundation with registry system |
+| [`owa-cli`](https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-cli) | [![owa-cli](https://img.shields.io/pypi/v/owa-cli?label=owa-cli)](https://pypi.org/project/owa-cli/) | Command-line tools (`owl`) for data analysis |
+| [`mcap-owa-support`](https://github.com/open-world-agents/open-world-agents/tree/main/projects/mcap-owa-support) | [![mcap-owa-support](https://img.shields.io/pypi/v/mcap-owa-support?label=mcap-owa-support)](https://pypi.org/project/mcap-owa-support/) | OWAMcap format support and utilities |
+| [`ocap`](https://github.com/open-world-agents/open-world-agents/tree/main/projects/ocap) 🎥 | [![ocap](https://img.shields.io/pypi/v/ocap?label=ocap)](https://pypi.org/project/ocap/) | Desktop recorder for multimodal data capture |
+| [`owa-env-desktop`](https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-env-desktop) | [![owa-env-desktop](https://img.shields.io/pypi/v/owa-env-desktop?label=owa-env-desktop)](https://pypi.org/project/owa-env-desktop/) | Mouse, keyboard, window event handling |
+| [`owa-env-gst`](https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-env-gst) 🎥 | [![owa-env-gst](https://img.shields.io/pypi/v/owa-env-gst?label=owa-env-gst)](https://pypi.org/project/owa-env-gst/) | GStreamer-powered screen capture (**6x faster**) |
+
+> 🎥 **Video Processing Packages**: Packages marked with 🎥 require GStreamer dependencies. Install `conda install open-world-agents::gstreamer-bundle` first for full functionality.
+
+### GStreamer Bundle
+
+For video processing capabilities, install the GStreamer bundle separately:
+
+```bash
+conda install open-world-agents::gstreamer-bundle
+```
+
+This bundle includes all necessary GStreamer dependencies (pygobject, gst-python, gst-plugins, etc.) that are complex to install via pip.
+
+## Development Installation (Editable)
+
+!!! info "For Contributors and Developers"
+    
+    This section is for users who want to modify the source code, contribute to the project, or need the latest development features.
+
+### Prerequisites
+
+Before proceeding with development installation, ensure you have the necessary tools:
+
+1. **Git**: For cloning the repository
+2. **Python 3.11+**: Required for all OWA packages
+3. **Virtual Environment Tool**: We recommend conda/mamba for GStreamer support
+
+### Step 1: Setup Virtual Environment
+
+=== "conda/mamba (Recommended)"
+
+    1. Install miniforge following the [installation guide](https://github.com/conda-forge/miniforge?tab=readme-ov-file#install):
+        ```sh
+        # Download and install miniforge
+        # This provides both conda and mamba (faster conda)
+        ```
+
+    2. Create and activate your environment:
+        ```sh
+        conda create -n owa python=3.11 -y
+        conda activate owa
+        ```
+
+    3. **(Optional for video processing)** Install GStreamer dependencies:
+        ```sh
+        # Install GStreamer bundle for video processing
+        conda install open-world-agents::gstreamer-bundle
+        ```
+
+=== "Other Virtual Environments"
+
+    You can use other virtual environment tools (venv, virtualenv, poetry, etc.), but:
+    
+    - **GStreamer must be installed separately** for video processing functionality, which is not easy without `conda`
+    - **We recommend conda/mamba** for the best development experience
+
+### Step 2: Clone and Setup Development Tools
+
+```sh
+# Clone the repository
+git clone https://github.com/open-world-agents/open-world-agents
+cd open-world-agents
+
+# Install uv (fast Python package manager)
+pip install uv
+
+# Install virtual-uv for easier monorepo management
+pip install virtual-uv
+```
+
+### Step 3: Install in Editable Mode
+
+=== "uv + virtual-uv (Recommended)"
 
     ```sh
-    $ git clone https://github.com/open-world-agents/open-world-agents
-    $ cd open-world-agents # Ensure you're at project root
-
-    $ uv sync --inexact
-    ```
-
-=== "pip"
-
-    ```sh
-    $ git clone https://github.com/open-world-agents/open-world-agents
-    $ cd open-world-agents # Ensure you're at project root
-
-    # Install core first
-    $ pip install -e projects/owa-core
-
-    # Install supporting packages
-    $ pip install -e projects/mcap-owa-support
-    $ pip install -e projects/owa-desktop
-    $ pip install -e projects/owa-env-gst
-
-    # Install CLI
-    $ pip install -e projects/owa-cli
+    # Ensure you're in the project root and environment is activated
+    cd open-world-agents
+    conda activate owa  # or your environment name
+    
+    # Install all packages in editable mode
+    vuv install
     ```
 
     !!! tip
-        When using `pip` instead of `uv`, **the installation order matters** because `pip` can't recognize `[tool.uv.sources]` in `pyproject.toml`.
+        `vuv` (virtual-uv) handles the complex dependency resolution for our monorepo structure and installs all packages in the correct order.
 
-!!! tip 
+=== "uv (Simple)"
 
-    `open-world-agents` is a mono-repo which is composed with multiple sub-repository and most sub-repositories are `pip`-installable python package in itself.
+    ```sh
+    # Install with inexact dependency resolution
+    uv sync --inexact
+    ```
 
-    Only `owa-env-gst`, which utilizes GStreamer to efficiently capture screen deal with media processing, **requires installing `gstreamer` by `conda`.**
+=== "pip (Manual)"
 
-    If you are on **Windows OS** and **require screen capture** on the device, follow [Full Installation Guide](#full-installation-guide) instead.
+    ```sh
+    # Install in correct order (dependency order matters with pip)
+    pip install -e projects/owa-core
+    pip install -e projects/mcap-owa-support
+    pip install -e projects/owa-env-desktop
+    pip install -e projects/owa-env-gst  # Requires GStreamer
+    pip install -e projects/owa-cli
+    pip install -e projects/ocap
+    ```
 
----
+    !!! warning "Installation Order Matters"
+        When using `pip` instead of `uv`, the installation order is critical because `pip` cannot resolve the monorepo dependencies specified in `[tool.uv.sources]`.
 
-### Full Installation Guide
+### Step 4: Verify Installation
 
-If you **do require** efficient screen capture with `owa-env-gst`, follow this guide.
+```sh
+# Test core functionality
+python -c "from owa.core.registry import CALLABLES; print('✅ Core installed')"
 
-#### Setup Virtual Environment (1/3)
+# Test CLI tools
+owl --help
+owl env list  # List discovered plugins
+ocap --help
 
-Before installation, we recommend setting up a virtual environment.
+# Test GStreamer (if installed)
+python -c "import gi; gi.require_version('Gst', '1.0'); print('✅ GStreamer OK')"
+```
 
-=== "conda/mamba"
+## Troubleshooting
 
-    1. Follow the [miniforge installation guide](https://github.com/conda-forge/miniforge?tab=readme-ov-file#install) to install `conda` and `mamba`. `mamba` is just a faster `conda`. If you've already installed `conda`, you may skip this step.
+### GStreamer Issues
 
-    2. Create & activate your virtual environment:
-        ```sh
-        $ conda create -n owa python=3.11 -y
-        $ conda activate owa
-        ```
+If you encounter GStreamer-related errors:
 
-    3. (Optional) For Windows users who need desktop recorder:
-        ```sh
-        $ mamba env update --name owa --file projects/owa-env-gst/environment.yml
-        ```
-
-!!! tip
-
-    You can use other virtual environment tools, but to fully utilize `owa-env-gst`, you must install GStreamer with `conda/mamba`.
-    
-    Note: GStreamer is only needed if you plan to capture screens.
-
-#### Setup `uv` (2/3)
-
-We recommend setting up `uv` next:
-
-1. Follow the [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/) or simply run `pip install uv` in your activated environment.
-
-2. Install [`virtual-uv`](https://github.com/open-world-agents/vuv) package:
+1. **Install GStreamer bundle**:
    ```sh
-   $ pip install virtual-uv
+   conda install open-world-agents::gstreamer-bundle
    ```
+2. **Verify GStreamer installation**:
+   ```sh
+   python -c "import gi; gi.require_version('Gst', '1.0'); print('✅ GStreamer OK')"
+   ```
+3. **Restart your Python environment** after installing GStreamer dependencies
 
-!!! tip
+### Virtual Environment Issues
 
-    Always activate your virtual environment before running any `vuv` commands.
+- **Always activate your environment** before running `vuv` or installation commands
+- **Use absolute paths** if you encounter import issues
+- **Reinstall virtual-uv** if you encounter dependency resolution problems:
+  ```sh
+  pip uninstall virtual-uv
+  pip install virtual-uv
+  ```
 
-#### Installation (3/3)
+### Package Version Conflicts
 
-After all setup, installation is simple as:
+OWA uses lockstep versioning. If you encounter version conflicts:
 
-=== "vuv"
+```sh
+# Check installed versions
+pip list | grep owa
 
-    ```sh
-    $ git clone https://github.com/open-world-agents/open-world-agents
-    $ cd open-world-agents # Ensure you're at project root
+# Reinstall all packages with matching versions
+pip install --upgrade owa
+```
 
-    $ vuv install
-    ```
+### Import Errors
 
-!!! tip
+If you encounter import errors after installation:
 
-    Always activate your virtual environment before running any `vuv` commands.
-
-## Install from PyPI & conda-forge (experimental)
-
-Installation is simple as:
-
-=== "uv"
-
-    ```sh
-    $ uv pip install owa
-    ```
-
-=== "pip"
-
-    ```sh
-    $ pip install owa
-    ```
-
-
-
-There're several packages related to `open-world-agents`.
-
-- PyPI packages:
-    - `owa-core`: Contains only the core logic to manage OWA's EnvPlugin
-    - `owa`: Contains several base EnvPlugins along with `owa-core` (requires separate GStreamer installation)
-    - Note that we're adopting lockstep versioning, which provides same version for each first-party sub-projects. e.g. following version specification is valid:
-    ```sh
-    pip install owa-core==0.3.2 owa-cli==0.3.2 owa-env-desktop==0.3.2
-    ```
-
-- Conda packages (Coming soon):
-    - `owa`: Complete package including all dependencies (GStreamer bundled)
-    - The conda package will eliminate the need to install GStreamer separately
-    - In the future, users will be able to simply run `conda install -c conda-forge owa` to get a fully functional installation
-    - Note: This implementation is still in progress and not yet available
+1. **Ensure Python environment is activated**
+2. **Restart Python kernel/terminal** after installing packages
+3. **Verify installation**: `pip list | grep owa`

@@ -8,7 +8,6 @@ import orjson
 from mcap.well_known import SchemaEncoding
 from mcap.writer import CompressionType
 from mcap.writer import Writer as McapWriter
-from owa.core.message import BaseMessage
 
 from . import __version__
 
@@ -103,9 +102,10 @@ class Writer:
         :param sequence: An optional sequence number.
         """
         if message._type not in self.__schema_ids:
-            if isinstance(message, BaseMessage):
+            if hasattr(message, "get_schema"):
                 schema_data = orjson.dumps(message.get_schema())
             else:
+                # Fallback to class name as schema
                 schema_data = message.__class__.__name__.encode()
             schema_id = self.__writer.register_schema(
                 name=message._type,

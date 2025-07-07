@@ -1,119 +1,128 @@
-# Welcome to Open World Agents
+<div align="center">
+  <img src="images/owa-logo.jpg" alt="Open World Agents" width="300"/>
+</div>
 
-### Everything you need to build state-of-the-art foundation multimodal desktop agent, end-to-end.
+# Open World Agents Documentation
 
-Streamline your agent's lifecycle with Open World Agents. From data capture to model training and real-time evaluation, everything is designed for flexibility and performance.
+**A comprehensive framework for building AI agents that interact with desktop applications through vision, keyboard, and mouse control.**
 
-Here's what we've got in store for you!
+Open World Agents (OWA) is a monorepo containing the complete toolkit for multimodal desktop agent development. From high-performance data capture to model training and real-time evaluation, everything is designed for flexibility and performance.
 
----
+## 🚀 Quick Start: Record → Train in 3 Steps
 
-- **OWA's Env**: The asynchronous, event-driven environmental interface for real-time agent
-    - **Asynchronous, real-time event processing**: Compared to existing LLM-agent frameworks and [gymnasium.Env](https://gymnasium.farama.org/api/env/), OWA's Env features an asynchronous processing design leveraging `Callables`, `Listeners`, and `Runnables`. [Learn more...](env/index.md)
-    - **Dynamic EnvPlugin Activation**: Seamlessly register and activate EnvPlugins at runtime to customize and extend functionality, powered by registry pattern. [Learn more...](env/guide.md)
-    - **Extensible, Open-Source Design**: Built for the community, by the community. Easily add custom plugins and extend the Env's functionality to suit your needs. [Learn more...](env/custom_plugins.md)
+<!-- SYNC-ID: quick-start-3-steps -->
+```bash
+# 1. Record desktop interaction
+$ ocap my-session.mcap
 
-- **Predefined EnvPlugins**: We provide you some EnvPlugins which is suitable for constructing multimodal desktop agent.
-    - [`owa-env-desktop`](env/plugins/desktop_env.md): Provides basic `Callables/Listeners` for mouse/keyboard/window events. 
-    - [`owa-env-gst`](env/plugins/gstreamer_env.md): Powered by Windows APIs (`DXGI/WGC`) and the robust [GStreamer](https://gstreamer.freedesktop.org/) framework, provides high-performance and efficient screen capture/recording features. `owa-env-gst`'s screen capture is **6x faster** compared to alternatives. [Learn more...](data/recorder/why.md)
+# 2. Process to training format
+$ python scripts/01_raw_events_to_event_dataset.py --train-dir ./
 
----
-
-- **OWA's Data**: From high-performance, robust and open-source friendly data format to powerful, efficient and huggingface integration.
-    - **`OWAMcap` file format**: high-performance, self-contained, flexible container file format for multimodal desktop log data, powered by the open-source container file format [mcap](https://mcap.dev/). [Learn more...](data/data_format.md)
-    - **`ocap your-filename.mcap`**: powerful, efficient and easy-to-use desktop recorder. Contains keyboard/mouse and high-frequency screen data.
-        - Powered by [`owa-env-gst`](env/plugins/gstreamer_env.md), ensuring superior performance compared to alternatives. [Learn more...](data/recorder/why.md)
-    - **🤗 [Hugging Face](https://huggingface.co/) Integration**: Upload your own dataset created by simple `ocap` to huggingface and share with everyone! The era of open-source desktop data is **near and effortless**. Preview the dataset at [Hugging Face Spaces](https://huggingface.co/spaces/open-world-agents/visualize_dataset).
-
----
-
-- **Comprehensive Examples**: We provides various examples that demonstrates how to build foundation multimodal desktop agent. Since it's just a example, you may customize anything you want. **Examples are in progress; stay tuned!**
-
-
-<!-- - **Cross-Platform**: Works on Windows and macOS. -->
-
-
-## Quick Start
-
-- Simple example of using `Callables` and `Listeners`. [Learn more...](env/index.md)
-    ```python
-    import time
-
-    from owa.core.registry import CALLABLES, LISTENERS, activate_module
-
-    # Activate the standard environment module
-    activate_module("owa.env.std")
-
-    def callback():
-        # Get current time in nanoseconds
-        time_ns = CALLABLES["clock.time_ns"]()
-        print(f"Current time in nanoseconds: {time_ns}")
-
-    # Create a listener for clock/tick event, Set listener to trigger every 1 second
-    tick = LISTENERS["clock/tick"]().configure(callback=callback, interval=1)
-
-    # Start the listener
-    tick.start()
-
-    # Allow the listener to run for 2 seconds
-    time.sleep(2)
-
-    # Stop the listener and wait for it to finish
-    tick.stop(), tick.join()
-
-    ```
-
-- Record your own desktop usage data by just running `ocap your-filename.mcap`. [Learn more...](data/recorder/install_and_usage.md)
-
-
-- Curious about `OWAMCap` format? see following: (Note that `cat` output is a created example.)
-```
-$ owl mcap info example.mcap
-library:   mcap-owa-support 0.1.0; mcap 1.2.2
-profile:   owa
-messages:  2124
-duration:  17.6543448s
-start:     2025-03-11T02:46:39.0329786+09:00 (1741628799.032978600)
-end:       2025-03-11T02:46:56.6873234+09:00 (1741628816.687323400)
-compression:
-        zstd: [1/1 chunks] [173.83 KiB/28.29 KiB (83.73%)] [1.60 KiB/sec]
-channels:
-        (1) window            18 msgs (1.02 Hz)    : owa.env.desktop.msg.WindowInfo [jsonschema]
-        (2) keyboard/state    18 msgs (1.02 Hz)    : owa.env.desktop.msg.KeyboardState [jsonschema]
-        (3) mouse           1064 msgs (60.27 Hz)   : owa.env.desktop.msg.MouseEvent [jsonschema]
-        (4) screen           978 msgs (55.40 Hz)   : owa.env.gst.msg.ScreenEmitted [jsonschema]
-        (5) keyboard          46 msgs (2.61 Hz)    : owa.env.desktop.msg.KeyboardEvent [jsonschema]
-channels: 5
-attachments: 0
-metadata: 0
-
-$ owl mcap cat example.mcap --n 8 --no-pretty
-Topic: window, Timestamp: 1741628814049712700, Message: {'title': 'ZType – Typing Game - Type to Shoot - Chromium', 'rect': [389, 10, 955, 1022], 'hWnd': 7540094}
-Topic: keyboard/state, Timestamp: 1741628814049712700, Message: {'buttons': []}
-Topic: screen, Timestamp: 1741628814057575300, Message: {'path': 'example.mkv', 'pts': 14866666666,
-
-... (additional lines omitted for brevity) ...
-
-Topic: keyboard, Timestamp: 1741628814978561600, Message: {'event_type': 'press', 'vk': 162}
-Topic: keyboard, Timestamp: 1741628815015522100, Message: {'event_type': 'release', 'vk': 162}
-Topic: window, Timestamp: 1741628815050666400, Message: {'title': 'data_format.md - open-world-agents - Visual Studio Code', 'rect': [-8, -8, 1928, 1040], 'hWnd': 133438}
-
-... (additional lines omitted for brevity) ...
-
-Topic: mouse, Timestamp: 1741628816438561600, Message: {'event_type': 'move', 'x': 950, 'y': 891}
-Topic: mouse, Timestamp: 1741628816441655400, Message: {'event_type': 'click', 'x': 950, 'y': 891, 'button': 'left', 'pressed': true}
+# 3. Train your model
+$ python train.py --dataset ./event-dataset
 ```
 
-<!-- TODO: add agent training lifecycle example -->
+> 📖 **Detailed Guide**: [Complete Quick Start Tutorial](quick-start.md) - Step-by-step walkthrough with examples and troubleshooting
+<!-- END-SYNC: quick-start-3-steps -->
 
-## Contributing
+## Architecture Overview
 
-We welcome contributions! Please see our [Contributing Guide](contributing.md) for details on how to:
+OWA consists of the following core components:
 
-- Set up your development environment.
-- Submit bug reports.
-- Propose new features.
-- Create pull requests.
+<!-- SYNC-ID: core-components-list -->
+- 🌍 **[Environment Framework](env/index.md)** - Universal interface for native desktop automation ("USB-C of desktop agents") with pre-built plugins for desktop control, high-performance screen capture (6x faster), and zero-configuration plugin system
+- 📊 **[Data Infrastructure](data/index.md)** - Complete desktop agent data pipeline from recording to training with `OWAMcap` format - a [universal standard](data/getting-started/why-owamcap.md) powered by [mcap](https://mcap.dev/)
+- 🛠️ **[CLI Tools](cli/index.md)** - Command-line utilities (`owl`) for recording, analyzing, and managing agent data
+- 🤖 **[Examples](examples/)** - Complete implementations and training pipelines for multimodal agents
+<!-- END-SYNC: core-components-list -->
+
+---
+
+## 🌍 Environment Framework
+
+Universal interface for native desktop automation with real-time event handling and zero-configuration plugin discovery.
+
+### Environment Navigation
+
+| Section | Description |
+|---------|-------------|
+| **[Environment Overview](env/index.md)** | Core concepts and quick start guide |
+| **[Environment Guide](env/guide.md)** | Complete system overview and usage examples |
+| **[Custom Plugins](env/custom_plugins.md)** | Create your own environment extensions |
+| **[CLI Tools](cli/env.md)** | Plugin management and exploration commands |
+
+**Built-in Plugins:**
+
+| Plugin | Description | Key Features |
+|--------|-------------|--------------|
+| **[Standard](env/plugins/std.md)** | Core utilities | Time functions, periodic tasks |
+| **[Desktop](env/plugins/desktop.md)** | Desktop automation | Mouse/keyboard control, window management |
+| **[GStreamer](env/plugins/gst.md)** | High-performance capture | 6x faster screen recording |
+
+---
+
+## 📊 Data Infrastructure: Complete Desktop Agent Data Pipeline
+
+Desktop AI needs high-quality, synchronized multimodal data: screen captures, mouse/keyboard events, and window context. OWA provides the **complete pipeline** from recording to training.
+
+### The OWA Data Ecosystem
+
+**🎯 Getting Started**
+New to OWA data? Start here:
+
+- **[Why OWAMcap?](data/getting-started/why-owamcap.md)** - Understand the problem and solution
+- **[Recording Data](data/getting-started/recording-data.md)** - Capture desktop interactions with `ocap`
+- **[Exploring Data](data/getting-started/exploring-data.md)** - View and analyze your recordings
+
+**📚 Technical Reference**
+Deep dive into the format and pipeline:
+
+- **[OWAMcap Format Guide](data/technical-reference/format-guide.md)** - Complete technical specification
+- **[Data Pipeline](data/technical-reference/data-pipeline.md)** - Transform recordings to training-ready datasets
+
+**🛠️ Tools & Ecosystem**
+
+- **[Data Viewer](data/tools/viewer.md)** - Web-based visualization tool
+- **[Comparison with LeRobot](data/tools/comparison-with-lerobot.md)** - Technical comparison with alternatives
+- **[CLI Tools (owl)](cli/index.md)** - Command-line interface for data analysis and management
+
+### 🤗 Community Datasets
+
+<!-- SYNC-ID: community-datasets -->
+**Browse Available Datasets**: [🤗 datasets?other=OWA](https://huggingface.co/datasets?other=OWA)
+
+- **Growing Collection**: Hundreds of community-contributed datasets
+- **Standardized Format**: All use OWAMcap for seamless integration
+- **Interactive Preview**: [Hugging Face Spaces Visualizer](https://huggingface.co/spaces/open-world-agents/visualize_dataset)
+- **Easy Sharing**: Upload recordings directly with one command
+
+> 🚀 **Impact**: OWA has democratized desktop agent data, growing from zero to hundreds of public datasets in the unified OWAMcap format.
+<!-- END-SYNC: community-datasets -->
+
+---
+
+## 🤖 Awesome Examples
+Learn from complete implementations and training pipelines.
+
+| Example | Description | Status |
+|---------|-------------|---------|
+| **[Multimodal Game Agent](examples/multimodal_game_agent.md)** | Vision-based game playing agent | 🚧 In Progress |
+| **[GUI Agent](examples/gui_agent.md)** | General desktop application automation | 🚧 In Progress |
+| **[Interactive World Model](examples/interactive_world_model.md)** | Predictive modeling of desktop environments | 🚧 In Progress |
+| **[Usage with LLMs](examples/usage_with_llm.md)** | Integration with large language models | 🚧 In Progress |
+| **[Usage with Transformers](examples/usage_with_transformers.md)** | Vision transformer implementations | 🚧 In Progress |
+
+## Development Resources
+Learn how to contribute, report issues, and get help.
+
+| Resource | Description |
+|----------|-------------|
+| **[Help with OWA](help_with_owa.md)** | Community support resources |
+| **[Installation Guide](install.md)** | Detailed installation instructions |
+| **[Contributing Guide](contributing.md)** | Development setup, bug reports, feature proposals |
+| **[FAQ for Developers](faq_dev.md)** | Common questions and troubleshooting |
+
+---
 
 ## License
 

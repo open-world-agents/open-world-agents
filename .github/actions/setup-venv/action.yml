@@ -1,0 +1,25 @@
+name: 'Setup Virtual Environment'
+description: 'Setup Python virtual environment with lightweight configuration'
+inputs:
+  python-version:
+    description: 'Python version to use'
+    required: false
+    default: '3.11'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Create and Activate Virtual Environment
+      shell: bash
+      run: |
+        python -m venv .venv
+        source .venv/bin/activate
+        echo "VIRTUAL_ENV=$PWD/.venv" >> $GITHUB_ENV
+        echo "$PWD/.venv/bin" >> $GITHUB_PATH
+        echo "Virtual environment activated: $VIRTUAL_ENV"
+        which python

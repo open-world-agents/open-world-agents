@@ -2,7 +2,7 @@ import pygetwindow as gw
 import typer
 from typing_extensions import Annotated
 
-from owa.core.registry import CALLABLES, activate_module
+from owa.core.registry import CALLABLES
 
 app = typer.Typer(help="Window management commands.")
 
@@ -12,19 +12,25 @@ def find(window_name: str):
     """
     Find a window by its title.
     """
-    activate_module("owa.env.desktop")
-    window = CALLABLES["window.get_window_by_title"](window_name)
-    typer.echo(f"Found window: {window}")
-    typer.echo(f"Title: {window.title}")
-    typer.echo(f"Rect: {window.rect}")
-    typer.echo(f"hWnd: {window.hWnd}")
+    window = CALLABLES["desktop/window.get_window_by_title"](window_name)
+    height, width = window.rect[3] - window.rect[1], window.rect[2] - window.rect[0]
+
+    typer.echo(f"Window Found: '{typer.style(window.title, fg=typer.colors.GREEN, bold=True)}'")
+    typer.echo(f"├─ Dimensions: {typer.style(f'{width} × {height}', fg=typer.colors.YELLOW)} pixels")
+    typer.echo(
+        f"├─ Position: {typer.style(f'({window.rect[0]}, {window.rect[1]})', fg=typer.colors.CYAN)} to {typer.style(f'({window.rect[2]}, {window.rect[3]})', fg=typer.colors.CYAN)}"
+    )
+    typer.echo(f"├─ Handle (hWnd): {typer.style(str(window.hWnd), fg=typer.colors.MAGENTA)}")
 
     try:
         import win32process
 
-        typer.echo(f"PID: {win32process.GetWindowThreadProcessId(window.hWnd)[1]}")
+        pid = win32process.GetWindowThreadProcessId(window.hWnd)[1]
+        typer.echo(f"└─ Process ID: {typer.style(str(pid), fg=typer.colors.BLUE)}")
     except ImportError:
-        typer.echo("win32process module not available. PID information may not be accessible.")
+        typer.echo(
+            f"└─ Process ID: {typer.style('Not available (win32process module required)', fg=typer.colors.RED)}"
+        )
 
 
 @app.command()

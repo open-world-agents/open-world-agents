@@ -12,16 +12,16 @@ def main():
     with OWAMcapReader("tmp/clock.mcap") as reader:
         print(reader.topics)
         print(reader.start_time, reader.end_time)
-        for topic, timestamp, msg in reader.iter_decoded_messages(topics=["screen"]):
-            start_time = timestamp  # 1
-            # start_time = msg.utc_ns  # 2
+        for mcap_msg in reader.iter_messages(topics=["screen"]):
+            start_time = mcap_msg.timestamp  # 1
+            # start_time = mcap_msg.decoded.utc_ns  # 2
             break
 
-        for topic, timestamp, msg in reader.iter_decoded_messages(topics=["screen"]):
-            print(f"Topic: {topic}, Timestamp: {timestamp}, Message: {msg}")
-            diffs.append((timestamp - start_time) - msg.pts)  # 1
-            # diffs.append((msg.utc_ns - start_time) - msg.pts) # 2
-            pts_values.append(msg.pts)
+        for mcap_msg in reader.iter_messages(topics=["screen"]):
+            print(f"Topic: {mcap_msg.topic}, Timestamp: {mcap_msg.timestamp}, Message: {mcap_msg.decoded}")
+            diffs.append((mcap_msg.timestamp - start_time) - mcap_msg.decoded.pts)  # 1
+            # diffs.append((mcap_msg.decoded.utc_ns - start_time) - mcap_msg.decoded.pts) # 2
+            pts_values.append(mcap_msg.decoded.pts)
 
     # Convert to numpy arrays
     diffs = np.array(diffs) / TimeUnits.MSECOND  # Convert to milliseconds

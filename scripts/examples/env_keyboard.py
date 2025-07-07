@@ -1,8 +1,7 @@
-from owa.core.registry import CALLABLES, LISTENERS, activate_module
-from owa.env.desktop.msg import KeyboardEvent
+from owa.core import CALLABLES, LISTENERS, MESSAGES
 
-# Activate the desktop module to enable UI and input capabilities
-activate_module("owa.env.desktop")
+# Access message types through the global registry
+KeyboardEvent = MESSAGES["desktop/KeyboardEvent"]
 
 # Using screen capture and window management features
 print(f"{CALLABLES['screen.capture']().shape=}")  # Example output: (1080, 1920, 3)

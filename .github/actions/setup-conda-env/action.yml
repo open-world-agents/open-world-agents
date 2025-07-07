@@ -1,0 +1,97 @@
+name: 'Setup Conda Environment'
+description: 'Setup conda environment with caching for both Linux and Windows'
+inputs:
+  os:
+    description: 'Operating system (linux or windows)'
+    required: true
+  cache-number:
+    description: 'Cache number for invalidating cache'
+    required: false
+    default: '0'
+  cache-suffix:
+    description: 'Additional suffix for cache key to separate different workflows'
+    required: false
+    default: ''
+  environment-file:
+    description: 'Path to conda environment file'
+    required: false
+    default: 'projects/owa-env-gst/environment.yml'
+  enable-env-cache:
+    description: 'Whether to enable conda environment caching'
+    required: false
+    default: 'false'
+outputs:
+  cache-hit:
+    description: 'Whether conda environment cache was hit'
+    value: ${{ inputs.enable-env-cache == 'true' && steps.cache-env.outputs.cache-hit == 'true' }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Get Date
+      id: get-date
+      shell: bash
+      run: echo "today=$(/bin/date -u '+%Y%m%d')" >> $GITHUB_OUTPUT
+
+    - name: Cache conda packages (Linux)
+      if: inputs.os == 'linux'
+      uses: actions/cache@v4
+      env:
+        CACHE_NUMBER: ${{ inputs.cache-number }}
+      with:
+        path: ~/conda_pkgs_dir
+        key: ${{ runner.os }}-conda-pkgs-${{ env.CACHE_NUMBER }}-${{ hashFiles(inputs.environment-file) }}
+
+    - name: Cache conda packages (Windows)
+      if: inputs.os == 'windows'
+      uses: actions/cache@v4
+      env:
+        CACHE_NUMBER: ${{ inputs.cache-number }}
+      with:
+        enableCrossOsArchive: true
+        path: D:\conda_pkgs_dir
+        key: ${{ runner.os }}-conda-pkgs-${{ env.CACHE_NUMBER }}-${{ hashFiles(inputs.environment-file) }}
+
+    - name: Setup Miniforge (Linux)
+      if: inputs.os == 'linux'
+      uses: conda-incubator/setup-miniconda@v3
+      with:
+        miniforge-version: latest
+        mamba-version: "*"
+        channels: conda-forge
+        conda-remove-defaults: "true"
+        pkgs-dirs: ~/conda_pkgs_dir
+        activate-environment: owa
+        use-only-tar-bz2: true
+
+    - name: Setup Miniforge (Windows)
+      if: inputs.os == 'windows'
+      uses: conda-incubator/setup-miniconda@v3
+      with:
+        miniforge-version: latest
+        mamba-version: "*"
+        channels: conda-forge
+        conda-remove-defaults: "true"
+        pkgs-dirs: D:\conda_pkgs_dir
+        activate-environment: owa
+
+    - name: Cache conda environment
+      if: inputs.enable-env-cache == 'true'
+      uses: actions/cache@v4
+      with:
+        enableCrossOsArchive: ${{ inputs.os == 'windows' }}
+        path: ${{ env.CONDA }}/envs
+        key: conda-env-${{ runner.os }}--${{ runner.arch }}--${{ steps.get-date.outputs.today }}-${{ hashFiles(inputs.environment-file) }}-${{ inputs.cache-number }}${{ inputs.cache-suffix && format('-{0}', inputs.cache-suffix) || '' }}
+      env:
+        CACHE_NUMBER: ${{ inputs.cache-number }}
+      id: cache-env
+
+    - name: Update environment (Linux)
+      if: inputs.os == 'linux' && (inputs.enable-env-cache == 'false' || steps.cache-env.outputs.cache-hit != 'true')
+      shell: bash -el {0}
+      run: mamba env update -n owa -f ${{ inputs.environment-file }}
+
+    - name: Update environment (Windows)
+      if: inputs.os == 'windows' && (inputs.enable-env-cache == 'false' || steps.cache-env.outputs.cache-hit != 'true')
+      shell: pwsh
+      run: mamba env update -n owa -f ${{ inputs.environment-file }}
