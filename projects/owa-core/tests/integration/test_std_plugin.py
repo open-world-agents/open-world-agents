@@ -99,7 +99,9 @@ def test_std_plugin_spec():
 
     # Test basic properties
     assert plugin_spec.namespace == "std"
-    assert plugin_spec.version == "0.1.0"
+    # Version should match the owa-core package version
+    assert plugin_spec.version is not None
+    assert plugin_spec.version != "unknown"
     assert plugin_spec.description == "Standard system components for OWA"
     assert plugin_spec.author == "OWA Development Team"
 

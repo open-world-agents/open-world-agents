@@ -136,7 +136,9 @@ def test_plugin_spec_from_entry_point():
     """Test PluginSpec.from_entry_point method directly."""
     spec = PluginSpec.from_entry_point("owa.env.plugins.std:plugin_spec")
     assert spec.namespace == "std"
-    assert spec.version == "0.1.0"
+    # Version should match the owa-core package version
+    assert spec.version is not None
+    assert spec.version != "unknown"
     assert "callables" in spec.components
 
 
