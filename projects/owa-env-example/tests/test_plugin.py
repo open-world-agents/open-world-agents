@@ -16,7 +16,7 @@ def test_plugin_registration(example_registries):
     runnables = example_registries["runnables"]
 
     # Check expected components are registered
-    expected_callables = ["example/callable", "example/print", "example/add"]
+    expected_callables = ["example/print", "example/add"]
     expected_listeners = ["example/listener", "example/timer"]
     expected_runnables = ["example/runnable", "example/counter"]
 
@@ -33,12 +33,6 @@ def test_plugin_registration(example_registries):
 def test_callable_components(example_registries):
     """Test callable components."""
     callables = example_registries["callables"]
-
-    # Test example/callable
-    callable_cls = callables["example/callable"]
-    result = callable_cls()()
-    assert isinstance(result, str)
-    assert "Hello from ExampleCallable" in result
 
     # Test example/print
     print_func = callables["example/print"]

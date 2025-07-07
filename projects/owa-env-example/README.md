@@ -6,10 +6,9 @@ This is an example environment plugin for Open World Agents that demonstrates th
 
 This plugin provides example implementations of all three component types:
 
-- **Callables**: Functions and classes that can be called
+- **Callables**: Functions that can be called
   - `example/add`: Add two numbers
   - `example/print`: Print a message with formatting
-  - `example/callable`: A callable class example
 
 - **Listeners**: Event-driven components
   - `example/listener`: Periodic event generator

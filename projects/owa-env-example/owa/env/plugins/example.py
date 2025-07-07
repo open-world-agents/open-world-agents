@@ -14,7 +14,6 @@ plugin_spec = PluginSpec(
     author="OWA Development Team",
     components={
         "callables": {
-            "callable": "owa.env.example.example_callable:ExampleCallable",
             "print": "owa.env.example.example_callable:example_print",
             "add": "owa.env.example.example_callable:example_add",
         },
