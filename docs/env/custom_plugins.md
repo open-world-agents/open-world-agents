@@ -602,11 +602,4 @@ def my_function(param1: int, param2: str = "default") -> bool:
 
 - **Explore existing plugins**: Look at `projects/owa-env-*` for real examples
 - **Join the community**: Share your plugins and get feedback
-- **Read the API docs**: Dive deeper into `owa.core` capabilities
 - **Contribute**: Consider contributing your plugin to the OWA ecosystem
-
-
-
-
-
-
