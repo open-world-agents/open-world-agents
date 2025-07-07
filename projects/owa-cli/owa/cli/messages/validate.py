@@ -17,7 +17,6 @@ except ImportError:
 
 def validate_messages(
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed validation results"),
-    fix: bool = typer.Option(False, "--fix", help="Attempt to fix validation issues"),
 ) -> None:
     """
     Validate message registry and message definitions.

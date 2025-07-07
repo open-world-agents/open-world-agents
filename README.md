@@ -16,7 +16,7 @@
 
 Open World Agents is a comprehensive framework for building AI agents that interact with desktop applications through vision, keyboard, and mouse control. Complete toolkit from data capture to model training and evaluation:
 
-- **OWA Core & Environment**: Asynchronous, event-driven interface for real-time agents with dynamic plugin activation
+- **OWA Core & Environment**: Asynchronous, event-driven interface for real-time agents with zero-configuration plugin system
 - **Data Capture & Format**: High-performance desktop recording with `OWAMcap` format - a specialized file format that captures screen recordings, keyboard/mouse events, and window information with nanosecond precision, powered by [mcap](https://mcap.dev/)
 - **Environment Plugins**: Pre-built plugins for desktop automation, screen capture, and more
 - **CLI Tools**: Command-line utilities for recording, analyzing, and managing agent data
@@ -111,29 +111,28 @@ All OWA packages use namespace packaging and are installed in the `owa` namespac
 
 ## Quick Start
 
-### Basic Environment Usage
+### Environment Usage
 
 ```python
 import time
 from owa.core import CALLABLES, LISTENERS, MESSAGES
 
-# Components and messages automatically available - no activation needed!
+# Components automatically available - zero configuration!
 
-def callback():
-    time_ns = CALLABLES["std/time_ns"]()
-    print(f"Current time: {time_ns}")
+# Time and desktop automation
+current_time = CALLABLES["std/time_ns"]()
+screen = CALLABLES["desktop/screen.capture"]()
+CALLABLES["desktop/mouse.click"]("left", 2)  # Double-click
 
-# Access message types through the global registry
-KeyboardEvent = MESSAGES['desktop/KeyboardEvent']
-print(f"Available message: {KeyboardEvent}")
+# Event monitoring with context manager
+def on_tick():
+    print(f"Tick: {CALLABLES['std/time_ns']()}")
 
-# Create a listener for std/tick event (every 1 second)
-tick = LISTENERS["std/tick"]().configure(callback=callback, interval=1)
+with LISTENERS["std/tick"]().configure(callback=on_tick, interval=1).session:
+    time.sleep(3)  # Prints every second for 3 seconds
 
-# Start listening
-tick.start()
-time.sleep(2)
-tick.stop(), tick.join()
+# Message types
+KeyboardEvent = MESSAGES["desktop/KeyboardEvent"]
 ```
 
 ### High-Performance Screen Capture
@@ -162,48 +161,6 @@ with screen.session:
     time.sleep(5)
 ```
 
-### Plugin Management with CLI
-
-Explore and manage plugins using the enhanced `owl env` command:
-
-```bash
-# List all discovered plugins with enhanced display
-$ owl env list --details --table
-
-# Show detailed plugin information with component inspection
-$ owl env show example --components --inspect add
-
-# Search for components across all plugins
-$ owl env search "mouse.*click" --table
-
-# Quick exploration shortcuts
-$ owl env ls desktop                              # Quick namespace exploration
-$ owl env find keyboard                           # Quick component search
-$ owl env namespaces                              # List all available namespaces
-
-# Ecosystem analysis and health monitoring
-$ owl env stats                                   # Show ecosystem statistics
-$ owl env health                                  # Perform health check
-```
-
-### Message Management with CLI
-
-Explore and manage message types using the new `owl messages` command:
-
-```bash
-# List all available message types
-$ owl messages list
-
-# Show detailed message schema
-$ owl messages show desktop/KeyboardEvent
-
-# Search for specific message types
-$ owl messages search keyboard
-
-# Validate message definitions
-$ owl messages validate
-```
-
 Powered by the powerful Gstreamer and Windows API, our implementation is **6x** faster than comparatives.
 
 | **Library**        | **Avg. Time per Frame** | **Relative Speed**    |
@@ -214,9 +171,11 @@ Powered by the powerful Gstreamer and Windows API, our implementation is **6x** 
 | `MSS`             | 37 ms                   | 🚶‍♂️ 6.5× slower       |
 | `PyQt5`           | 137 ms                  | 🐢 24× slower         |
 
-📌 **Tested on:** Intel i5-11400, GTX 1650  
+📌 **Tested on:** Intel i5-11400, GTX 1650
 
 Not only does `owa.env.gst` **achieve higher FPS**, but it also maintains **lower CPU/GPU usage**, making it the ideal choice for screen recording. Same applies for `ocap`, since it internally imports `owa.env.gst`.
+
+📊 **[See detailed benchmarks and methodology →](https://open-world-agents.github.io/open-world-agents/env/plugins/gst#performance)**
 
 ### Desktop Recording & Dataset Sharing
 
@@ -250,6 +209,8 @@ data = load_dataset("open-world-agents/example_dataset")
 
 ### Data Format Preview
 
+<!-- TODO: more awesome preview such as docs\data\technical-reference\format-guide.md -->
+
 ```bash
 $ owl mcap info example.mcap
 library:   mcap-owa-support 0.3.2; mcap 1.2.2
@@ -271,6 +232,53 @@ channels: 6
 attachments: 0
 metadata: 0
 ```
+
+<!-- TODO: minimal but intuitive, attracting descriptions for all CLI features -->
+
+### Plugin Management with CLI
+
+Explore and manage plugins using the enhanced `owl env` command:
+
+```bash
+# List all discovered plugins with enhanced display
+$ owl env list --details --table
+
+# Show detailed plugin information with component inspection
+$ owl env list example --inspect add
+
+# Search for components across all plugins
+$ owl env search "mouse.*click" --table
+
+# Ecosystem analysis and statistics
+$ owl env stats                                   # Show ecosystem statistics
+$ owl env stats --namespaces                      # List all available namespaces
+```
+
+### Message Management with CLI
+
+Explore and manage message types using the `owl messages` command:
+
+```bash
+# List all available message types
+$ owl messages list
+
+# Show specific message details
+$ owl messages list desktop/KeyboardEvent
+
+# Search for message types by pattern
+$ owl messages list --search keyboard
+
+# Filter by domain
+$ owl messages list --domain desktop
+
+# Show detailed message schema with examples
+$ owl messages show desktop/KeyboardEvent --example
+
+# Validate message definitions
+$ owl messages validate
+```
+
+> **💡 Complete CLI Reference**: For detailed information about all CLI commands and options, see the [CLI Tools documentation](https://open-world-agents.github.io/open-world-agents/cli).
 
 ## Installation
 
@@ -312,9 +320,9 @@ For development or contributing to the project, you can install packages in edit
 ## Documentation
 
 - **Full Documentation**: https://open-world-agents.github.io/open-world-agents/
-- **Environment Guide**: [docs/env/](docs/env/)
-- **Data Format**: [docs/data/](docs/data/)
-- **Plugin Development**: [docs/env/custom_plugins.md](docs/env/custom_plugins.md)
+- **Environment Framework**: [docs/env/](docs/env/) - Core concepts, usage guide, and plugin development
+- **Data Infrastructure**: [docs/data/](docs/data/) - Recording, storage, and analysis
+- **CLI Tools**: [docs/cli/](docs/cli/) - Command-line utilities and reference
 
 ## Contributing
 

@@ -15,8 +15,8 @@ from .validate import validate_messages
 app = typer.Typer(help="Message registry management commands")
 
 # Add subcommands
-app.command("list", help="List all available message types")(list_messages)
-app.command("show", help="Show details about a specific message type")(show_message)
+app.command("list", help="List and search message types")(list_messages)
+app.command("show", help="Show detailed information about a specific message type")(show_message)
 app.command("validate", help="Validate message registry and definitions")(validate_messages)
 
 __all__ = ["app"]

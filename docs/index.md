@@ -24,15 +24,15 @@ Build reactive desktop agents with our asynchronous environment system.
 
 | Component | Description |
 |-----------|-------------|
-| **[Core Concepts](env/index.md)** | `Callables`, `Listeners`, and `Runnables` for real-time processing |
-| **[Environment Guide](env/guide.md)** | Zero-configuration plugin system and CLI tools |
+| **[Environment Overview](env/index.md)** | Core concepts and quick start guide |
+| **[Environment Guide](env/guide.md)** | Complete system overview and usage examples |
 | **[Custom Plugins](env/custom_plugins.md)** | Create your own environment extensions |
 
-**Built-in Plugins:**  
+**Built-in Plugins:**
 
-- **[Desktop Environment](env/plugins/desktop.md)** - Mouse, keyboard, and window event handling
-- **[GStreamer Environment](env/plugins/gst.md)** - High-performance screen capture (**6x faster** than alternatives)
-- **[Standard Environment](env/plugins/std.md)** - Basic utilities and timing functions
+- **[Desktop Environment](env/plugins/desktop.md)** - Mouse, keyboard, and window automation
+- **[GStreamer Environment](env/plugins/gst.md)** - High-performance screen capture (**6x faster**)
+- **[Standard Environment](env/plugins/std.md)** - Core utilities and timing functions
 
 ### 📊 Data Infrastructure
 Capture, store, and analyze multimodal desktop interaction data.

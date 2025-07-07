@@ -42,18 +42,18 @@ jobs:
         run: vuv pip install -e projects/owa-env-example
 
       - name: Generate documentation statistics
-        run: owl env docs-stats
+        run: owl env docs
 
       - name: Validate all plugin documentation
-        run: owl --silent env validate-docs --strict --output-format json
+        run: owl --silent env docs --validate --strict --output-format json
 
       - name: Validate individual plugins
         run: |
           echo "Validating individual plugins..."
-          owl env validate-docs example
-          owl env validate-docs std
-          owl env validate-docs desktop
-          owl env validate-docs gst
+          owl --silent env docs --validate --strict --output-format json example
+          owl --silent env docs --validate --strict --output-format json std
+          owl --silent env docs --validate --strict --output-format json desktop
+          owl --silent env docs --validate --strict --output-format json gst
 
   test-windows:
     runs-on: windows-latest

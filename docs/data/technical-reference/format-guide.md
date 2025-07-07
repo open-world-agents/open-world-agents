@@ -668,24 +668,6 @@ For detailed technical specifications, see:
 - **[MCAP Format](https://mcap.dev/)** - Base container format documentation
 - **Message Registry** - See `projects/owa-core/owa/core/messages.py` for implementation
 
-#### Quick Reference
-
-**OWAMcap Definition:**
-
-- Base format: Standard MCAP container
-- Profile: `owa` designation in MCAP metadata
-- Schema encoding: JSON Schema
-- Message interface: All messages implement `BaseMessage`
-
-**Standard Topics:**
-
-- `keyboard` → `desktop/KeyboardEvent`
-- `keyboard/state` → `desktop/KeyboardState`
-- `mouse` → `desktop/MouseEvent`
-- `mouse/state` → `desktop/MouseState`
-- `screen` → `desktop/ScreenCaptured`
-- `window` → `desktop/WindowInfo`
-
 ## Next Steps
 
 - **[Explore and Edit](../getting-started/exploring-data.md)**: Learn to work with OWAMcap files

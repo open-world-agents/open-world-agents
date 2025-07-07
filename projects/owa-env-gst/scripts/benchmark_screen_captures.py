@@ -188,7 +188,7 @@ def capture_owa_runnable():
     if not OWA_AVAILABLE:
         raise RuntimeError("OWA environment not available.")
 
-    screen_capture = RUNNABLES["screen_capture"]()
+    screen_capture = RUNNABLES["gst/screen_capture"]()
     screen_capture.configure(**owa_args)
     screen_capture.start()
 
@@ -225,7 +225,7 @@ def capture_owa_listener():
         nonlocal count
         count += 1
 
-    screen_capture = LISTENERS["screen"]()
+    screen_capture = LISTENERS["gst/screen"]()
     screen_capture.configure(**owa_args, callback=callback)
     screen_capture.start()
 

@@ -1,215 +1,422 @@
-# How to write your own EnvPlugin
+# Custom EnvPlugin Development
 
-You can write & contribute your own EnvPlugin using the Entry Points-based system for automatic discovery.
+Create plugins that extend OWA with your own functionality.
 
-> **🚨 CRITICAL: Module Structure is COMPLETELY FLEXIBLE**
->
-> **The `owa.env.*` structure shown in examples is just a RECOMMENDATION, NOT a requirement!**
->
-> - ✅ You can use ANY module structure: `my_company.tools`, `custom_plugins`, `anything.you.want`
-> - ✅ You can organize your code however makes sense for your project
-> - ✅ The ONLY requirement is that your entry point correctly points to your plugin specification
-> - ❌ You are NOT required to follow the `owa.env.*` pattern
->
-> **Examples of valid entry points:**
-> - `my_company.ai_tools.plugin_spec:plugin_spec`
-> - `custom_plugins:plugin_spec`
-> - `automation.workflows.owa_integration:plugin_spec`
-> - `owa.env.plugins.myplugin:plugin_spec` (recommended but not required)
+!!! info "OWA's Env: MCP for Desktop Agents"
+    Just as [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) is the "USB-C of LLMs", **OWA's Env is the "USB-C of desktop agents"** - a universal interface for native desktop automation.
 
-## Quick Start
+## Plugin Discovery
 
-1. **Copy the example template**: Copy & Paste [owa-env-example](https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-env-example) directory. This directory contains:
-    ```sh
-    owa-env-example
-    ├── owa/env/example
-    │   ├── __init__.py           # Main module (no plugin_spec)
-    │   ├── example_callable.py
-    │   ├── example_listener.py
-    │   └── example_runnable.py
-    ├── owa/env/plugins
-    │   └── example.py            # Plugin specification
-    ├── pyproject.toml            # Entry point declaration
-    ├── README.md
-    ├── tests
-    │   └── test_print.py
-    └── uv.lock
-    ```
+### How It Works
 
-2. **Rename and customize**: Rename `owa-env-example` to your plugin name (e.g., `owa-env-myplugin`).
+OWA automatically discovers plugins using Python's Entry Points system:
 
-3. **Update Entry Point Declaration**: In `pyproject.toml`, update the entry point (you can use ANY module path you prefer):
-    ```toml
-    [project.entry-points."owa.env.plugins"]
-    # Examples - choose ANY structure you like:
-    myplugin = "owa.env.plugins.myplugin:plugin_spec"     # Recommended OWA structure
-    # myplugin = "my_company.tools.myplugin:plugin_spec"  # Your own structure
-    # myplugin = "myplugin_spec:plugin_spec"              # Flat structure
-    # myplugin = "plugins.custom.myplugin:plugin_spec"    # Custom hierarchy
-    ```
+```mermaid
+flowchart TD
+    A[Your Plugin Package] --> B[pyproject.toml]
+    B --> C[Entry Point Declaration]
+    C --> E[Plugin Specification]
 
-4. **Create Plugin Specification**: Create your plugin specification file (location is flexible - this is just one example):
-    ```python
-    """
-    Plugin specification for the MyPlugin environment plugin.
+    E --> F[Component Definitions]
 
-    This module is kept separate to avoid circular imports during plugin discovery.
-    """
+    F --> G[Callables]
+    F --> H[Listeners]
+    F --> I[Runnables]
 
-    from owa.core.plugin_spec import PluginSpec
+    J[OWA Core Registry] -.->|Plugin Discovery| C
+    G -.-> J
+    H -.-> J
+    I -.-> J
 
-    plugin_spec = PluginSpec(
-        namespace="myplugin",
-        version="0.1.0",
-        description="My custom plugin",
-        author="Your Name",
-        components={
-            "callables": {
-                "hello": "owa.env.myplugin:say_hello",
-                "add": "owa.env.myplugin:add_numbers",
-            },
-            "listeners": {
-                "events": "owa.env.myplugin:EventListener",
-            },
-            "runnables": {
-                "processor": "owa.env.myplugin:DataProcessor",
-            }
-        }
-    )
-    ```
+    J --> K[Available to Users]
+    K --> L["CALLABLES['namespace/name']"]
+    K --> M["LISTENERS['namespace/name']"]
+    K --> N["RUNNABLES['namespace/name']"]
 
-    **📖 For detailed guidance on writing plugin specifications, see:**
-    - **[Plugin Specification Guide](plugin_specification_guide.md)** - Complete guide for Python and YAML formats
-    - **[YAML Plugin Guide](yaml_plugin_guide.md)** - Focused guide for YAML-based specifications
-
-5. **Implement Components**: Write your component implementations using the unified `namespace/name` pattern.
-
-6. **Package Structure**: **COMPLETE FREEDOM** - organize your plugin however you want!
-    - **Plugin Specification**: Can be located ANYWHERE in your module structure
-    - **Module Structure**: **ZERO limitations** - use any organization that makes sense for your project
-    - **Entry Point Registration**: The ONLY requirement is that your entry point correctly points to your plugin specification
-
-    **The `owa.env.*` structure is just a RECOMMENDATION used by official OWA plugins. You are NOT required to follow it!**
-
-    **Example structures (ALL completely valid - choose what works for you!)**:
-    ```
-    # Option 1: Recommended OWA structure (but not required!)
-    owa/env/plugins/myplugin.py     # Plugin specification
-    owa/env/myplugin/               # Your implementation
-    ├── __init__.py
-    └── components.py
-
-    # Option 2: Your own company structure
-    my_company/tools/
-    ├── plugin_spec.py              # Plugin specification
-    ├── ai_processor.py
-    └── data_analyzer.py
-    # Entry point: my_company.tools.plugin_spec:plugin_spec
-
-    # Option 3: Flat structure
-    myplugin_package/
-    ├── __init__.py                 # Plugin specification here
-    ├── features.py
-    └── utils.py
-    # Entry point: myplugin_package:plugin_spec
-
-    # Option 4: Domain-driven structure
-    automation/workflows/
-    ├── owa_integration.py          # Plugin specification
-    ├── core/
-    │   ├── engine.py
-    │   └── config.py
-    └── integrations/
-        ├── api.py
-        └── database.py
-    # Entry point: automation.workflows.owa_integration:plugin_spec
-
-    # Option 5: Organized by component type (within your own structure)
-    custom_plugins/myplugin/
-    ├── plugin_def.py               # Plugin specification
-    ├── callables/
-    │   ├── math.py
-    │   └── utils.py
-    ├── listeners/
-    │   └── events.py
-    └── runnables/
-        └── processors.py
-    # Entry point: custom_plugins.myplugin.plugin_def:plugin_spec
-    ```
-
-    **The ONLY requirement**:
-    - Your entry point in `pyproject.toml` must correctly point to your plugin specification
-    - That's it! No other structural requirements exist.
-
-7. **Install and Test**: Install your plugin with `pip install -e .` and test that components are automatically available.
-
-8. **Validate Plugin**: Use the CLI to validate your plugin specification (adjust the path to match YOUR structure):
-   ```bash
-   # Examples - use the path that matches YOUR entry point:
-   owl env validate owa.env.plugins.myplugin:plugin_spec        # OWA recommended structure
-   owl env validate my_company.tools.plugin_spec:plugin_spec   # Your own structure
-   owl env validate myplugin_package:plugin_spec               # Flat structure
-   owl env validate custom_plugins.myplugin.plugin_def:plugin_spec  # Custom structure
-
-   # Validate YAML specification (if using YAML format)
-   owl env validate ./plugin.yaml
-
-   # Validate with detailed output (use YOUR entry point path)
-   owl env validate your.module.path:plugin_spec --verbose
-
-   # List your plugin to verify it's discovered
-   owl env list --namespace myplugin
-
-   # Show detailed component information
-   owl env show myplugin --components
-   ```
-
-9. **Contribute**: Make a PR following the [Contributing Guide](../contributing.md).
-
-## CLI Tools for Plugin Development
-
-The `owl env` command provides comprehensive tools for plugin development and testing:
-
-```bash
-# Discover and list your plugin
-$ owl env list --namespace myplugin
-
-# Show detailed component information with import paths
-$ owl env show myplugin --components --details
-
-# Inspect specific components
-$ owl env show myplugin --inspect my_function
-
-# Search for components in your plugin
-$ owl env search "my.*function" --namespace myplugin
-
-# List specific component types with details
-$ owl env list --type callables --details --table
-
-# Check ecosystem health and your plugin's integration
-$ owl env health
-$ owl env stats --by-namespace
-
-# Quick exploration shortcuts
-$ owl env ls myplugin                              # Quick plugin overview
-$ owl env find my_function                         # Quick component search
-$ owl env namespaces                               # See all available namespaces
-
-# Validate plugin specifications (use YOUR entry point path)
-$ owl env validate owa.env.plugins.myplugin:plugin_spec    # OWA structure example
-$ owl env validate my_company.tools.plugin_spec:plugin_spec # Your structure example
-$ owl env validate ./plugin.yaml                           # YAML file
+    style A fill:#e1f5fe
+    style J fill:#f3e5f5
+    style K fill:#e8f5e8
 ```
 
-## Key Benefits of Entry Points System
+### Discovery Process
 
-- **Zero Configuration**: Users just `pip install` your plugin - no manual activation needed
-- **Automatic Discovery**: Components are immediately available after installation
-- **Unified Naming**: All components use `namespace/name` pattern for consistency
-- **Python Standards**: Follows official Python packaging guidelines
-- **Lazy Loading**: Components are imported only when accessed for better performance
-- **CLI Support**: Rich command-line tools for plugin management and validation
+1. **Entry Point Scanning** - OWA scans all installed packages for `"owa.env.plugins"` entry points
+2. **Plugin Spec Loading** - Loads and validates each `PluginSpec` object
+3. **Lazy Registration** - Registers component metadata without importing actual code
+4. **On-Demand Loading** - Components are imported only when first accessed
+
+## Quick Start: Your First Plugin in 5 Minutes
+
+### Step 1: Copy the Template
+
+```bash
+# Copy the example plugin as your starting point
+cp -r projects/owa-env-example my-first-plugin
+cd my-first-plugin
+```
+
+### Step 2: Make It Yours
+
+Edit `pyproject.toml` to change the plugin name:
+
+```toml
+[project.entry-points."owa.env.plugins"]
+myfirst = "owa.env.plugins.myfirst:plugin_spec"  # Changed from 'example'
+```
+
+Edit `owa/env/plugins/example.py` and change the namespace:
+
+```python
+plugin_spec = PluginSpec(
+    namespace="myfirst",  # Changed from 'example'
+    version="0.1.0",
+    description="My first OWA plugin",
+    # ... rest stays the same
+)
+```
+
+### Step 3: Install and Test
+
+```bash
+# Install your plugin
+pip install -e .
+
+# Verify OWA discovered it
+owl env list myfirst
+
+# Test a component
+python -c "from owa.core import CALLABLES; print(CALLABLES['myfirst/add'](2, 3))"
+```
+
+!!! success "🎉 Congratulations!"
+    You just created your first OWA plugin. Your components are now available to any OWA user or application.
+
+## Component Types
+
+### Callables
+Functions for immediate results:
+
+```python
+def get_weather(city: str) -> dict:
+    return {"city": city, "temp": 25, "condition": "sunny"}
+
+# Usage: CALLABLES["myplugin/weather"]("New York")
+```
+
+### Listeners
+Event monitoring with callbacks (inherits from Runnable):
+
+```python
+from owa.core import Listener
+
+class FileWatcher(Listener):
+    def on_configure(self, callback, watch_folder, **kwargs):
+        self.callback = callback
+        self.watch_folder = watch_folder
+
+    def start(self):
+        # Monitor folder, call self.callback(event) on changes
+        pass
+
+    def stop(self):
+        # Stop and cleanup
+        pass
+```
+
+### Runnables
+Background processes with start/stop control:
+
+```python
+from owa.core import Runnable
+
+class DataCollector(Runnable):
+    def on_configure(self, output_file, interval=60, **kwargs):
+        self.output_file = output_file
+        self.interval = interval
+
+    def loop(self, *, stop_event):
+        while not stop_event.is_set():
+            # Do work
+            stop_event.wait(self.interval)
+```
+
+## Plugin Specification
+
+### Structure
+
+```python title="owa/env/plugins/myplugin.py"
+from owa.core.plugin_spec import PluginSpec
+
+plugin_spec = PluginSpec(
+    namespace="myplugin",
+    version="0.1.0",
+    description="My custom plugin",
+    components={
+        "callables": {
+            "weather": "owa.env.myplugin.api:get_weather",
+            "calculate": "owa.env.myplugin.math:add_numbers",
+        },
+        "listeners": {
+            "file_watcher": "owa.env.myplugin.watchers:FileWatcher",
+        },
+        "runnables": {
+            "data_collector": "owa.env.myplugin.workers:DataCollector",
+        }
+    }
+)
+```
+
+### Key Elements
+
+- **namespace**: Unique identifier for your plugin
+- **components**: Maps component names to import paths
+- **Import format**: `"module.path:object_name"`
+
+## Reference Implementation
+
+Study the working example: [`projects/owa-env-example`](https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-env-example)
+
+### Getting Started
+
+```bash
+cd projects/owa-env-example
+pip install -e .
+owl env list example
+
+# Test it works
+python -c "
+from owa.core import CALLABLES
+result = CALLABLES['example/add'](2, 3)
+print(f'2 + 3 = {result}')
+"
+```
+
+### What It Shows
+
+- File organization and project structure
+- All three component types with working examples
+- Proper entry point configuration
+- Complete test suite
+
+## Project Structure Options
+
+!!! info "Choose based on your needs"
+    === "Simple/Flat"
+        Everything in one file - good for prototypes:
+        ```
+        my-plugin/
+        ├── pyproject.toml
+        ├── plugin.py              # All code here
+        └── tests/
+        ```
+
+        ```toml title="pyproject.toml"
+        [project.entry-points."owa.env.plugins"]
+        myplugin = "plugin:plugin_spec"
+        ```
+
+    === "Company/Domain"
+        Integrate with existing code:
+        ```
+        acme-tools/
+        ├── pyproject.toml
+        ├── acme/tools/
+        │   ├── core/
+        │   └── owa_plugin.py       # Plugin spec
+        └── tests/
+        ```
+
+        ```toml title="pyproject.toml"
+        [project.entry-points."owa.env.plugins"]
+        acme_tools = "acme.tools.owa_plugin:plugin_spec"
+        ```
+
+    === "OWA Recommended"
+        Follow OWA conventions:
+        ```
+        owa-env-myplugin/
+        ├── pyproject.toml
+        ├── owa/env/
+        │   ├── myplugin/           # Implementation
+        │   └── plugins/myplugin.py # Plugin spec
+        └── tests/
+        ```
+
+        ```toml title="pyproject.toml"
+        [project.entry-points."owa.env.plugins"]
+        myplugin = "owa.env.plugins.myplugin:plugin_spec"
+        ```
+
+## Best Practices
+
+### Naming Conventions
+- **Namespace**: `desktop`, `my_company` (lowercase, underscores)
+- **Components**: `mouse.click`, `file.read` (dots for hierarchy)
+- **Package**: `owa-env-yourplugin`
+
+### Error Handling
+```python
+def safe_function(param: str) -> dict:
+    try:
+        result = do_work(param)
+        return {"success": True, "data": result}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+```
+
+### Resource Management
+```python
+class MyRunnable(Runnable):
+    def loop(self, *, stop_event):
+        try:
+            resource = acquire_resource()
+            while not stop_event.is_set():
+                use_resource(resource)
+                stop_event.wait(0.1)  # Small delay
+        finally:
+            release_resource(resource)
+```
+
+## Troubleshooting
+
+!!! failure "Common Issues and Solutions"
+    === "🔍 Plugin Not Discovered"
+        **Symptoms**: `owl env list` doesn't show your plugin
+
+        **Debug steps**:
+
+        1. **Verify installation**:
+           ```bash
+           pip list | grep your-plugin-name
+           ```
+
+        2. **Check entry points**:
+           ```bash
+           python -c "
+           try:
+               from importlib.metadata import entry_points
+           except ImportError:
+               from importlib_metadata import entry_points
+
+           eps = entry_points(group='owa.env.plugins')
+           for ep in eps:
+               print(f'{ep.name}: {ep.value}')
+           "
+           ```
+
+        3. **Test plugin spec import**:
+           ```bash
+           python -c "from your.module.path import plugin_spec; print(plugin_spec.namespace)"
+           ```
+
+        **Common causes**:
+
+        - Plugin not installed (`pip install -e .`)
+        - Entry point name conflicts with existing plugin
+        - Incorrect entry point path in `pyproject.toml`
+
+    === "❌ Import Errors"
+        **Symptoms**: Validation fails with import errors
+
+        **Debug command**:
+        ```bash
+        owl env docs --validate yourplugin --output-format text
+        ```
+
+        **Common causes & solutions**:
+
+        | Problem | Solution |
+        |---------|----------|
+        | Missing dependencies | Add them to `pyproject.toml` dependencies |
+        | Wrong import paths | Check `module.path:object_name` format |
+        | Circular imports | Keep plugin spec separate from implementation |
+        | Module not found | Ensure module is importable after installation |
+
+    === "🚫 Component Issues"
+        **"Component not callable" errors**:
+
+        ```python
+        # ❌ Wrong - points to module
+        "callables": {
+            "bad": "mymodule.utils"
+        }
+
+        # ✅ Correct - points to function
+        "callables": {
+            "good": "mymodule.utils:my_function"
+        }
+        ```
+
+        **Listener/Runnable doesn't work**:
+
+        ```python
+        # ✅ Correct structure
+        from owa.core import Listener
+
+        class MyListener(Listener):  # Must inherit
+            def on_configure(self, callback, **kwargs):  # Must implement
+                self.callback = callback
+                # Your setup code
+        ```
+
+        **Common issues**:
+
+        - Not inheriting from `owa.core.Listener` or `owa.core.Runnable`
+        - Missing `on_configure()` method
+        - Not calling `super().__init__()` in custom `__init__`
+
+    === "🔧 Quick Diagnostics"
+        **Run these commands to diagnose issues**:
+
+        ```bash
+        # Check if OWA can see your plugin
+        owl env list yourplugin
+
+        # Validate plugin specification
+        owl env docs --validate yourplugin --strict
+
+        # Check for namespace conflicts
+        owl env stats --namespaces
+
+        # Test component loading manually
+        python -c "
+        from owa.core import CALLABLES, LISTENERS, RUNNABLES
+        print('Available namespaces:')
+        namespaces = set()
+        for key in list(CALLABLES.keys()) + list(LISTENERS.keys()) + list(RUNNABLES.keys()):
+            namespaces.add(key.split('/')[0])
+        for ns in sorted(namespaces):
+            print(f'  - {ns}')
+        "
+        ```
+
+        **Still having issues?**
+
+        - Check the [OWA GitHub Issues](https://github.com/open-world-agents/open-world-agents/issues)
+        - Look at working examples in `projects/owa-env-*`
+        - Ensure you're using compatible versions of dependencies
 
 
+## Publishing
 
+**PyPI (Recommended)**:
+```bash
+uv build
+uv publish
+```
 
+**GitHub/Git**:
+```bash
+pip install git+https://github.com/user/owa-env-plugin.git
+```
+
+**Local Development**:
+```bash
+pip install -e /path/to/plugin
+```
+
+## Next Steps
+
+- **Study Examples**: Explore `projects/owa-env-*` for reference implementations
+- **Join Community**: Share your plugins and get feedback
+- **Contribute**: Help build the "USB-C of desktop agents" ecosystem
