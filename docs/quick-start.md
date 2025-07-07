@@ -97,6 +97,9 @@ $ python train.py --dataset ./event-dataset
 
 ## Step 3: Train Your Model
 
+!!! warning "TODO: Training Implementation"
+    This section is under development. Training scripts and detailed examples are coming soon.
+
 !!! example "Train with Processed Data"
     Use the processed dataset to train your desktop agent model.
 
