@@ -10,30 +10,34 @@ from unittest.mock import Mock, patch
 import pytest
 
 from owa.core.documentation.validator import (
+    ComponentValidationResult,
     DocumentationValidator,
+    PluginStatus,
     PluginValidationResult,
-    ValidationResult,
 )
 
 
-class TestValidationResult:
-    """Test ValidationResult dataclass."""
+class TestComponentValidationResult:
+    """Test ComponentValidationResult dataclass."""
 
     def test_validation_result_creation(self):
-        """Test creating ValidationResult instances with and without skip reason."""
+        """Test creating ComponentValidationResult instances."""
         # Basic result
-        result = ValidationResult(component="test/component", quality_grade="good", issues=["issue1"])
+        result = ComponentValidationResult(
+            component="test/component",
+            quality_grade="good",
+            improvements=["Missing examples"],
+        )
         assert result.component == "test/component"
         assert result.quality_grade == "good"
-        assert result.issues == ["issue1"]
-        assert result.skip_reason == ""
+        assert result.improvements == ["Missing examples"]
 
-        # Result with skip reason
-        result_skipped = ValidationResult(
-            component="test/component", quality_grade="skipped", issues=[], skip_reason="legacy-code"
+        # Skipped result
+        result_skipped = ComponentValidationResult(
+            component="test/component", quality_grade="skipped", improvements=[]
         )
         assert result_skipped.quality_grade == "skipped"
-        assert result_skipped.skip_reason == "legacy-code"
+        assert result_skipped.improvements == []
 
 
 class TestPluginValidationResult:
@@ -42,8 +46,8 @@ class TestPluginValidationResult:
     def test_plugin_validation_result_creation_and_calculations(self):
         """Test creating PluginValidationResult and property calculations."""
         components = [
-            ValidationResult("test/comp1", "good", []),
-            ValidationResult("test/comp2", "acceptable", ["minor issue"]),
+            ComponentValidationResult("test/comp1", "good", []),
+            ComponentValidationResult("test/comp2", "acceptable", ["missing examples"]),
         ]
         result = PluginValidationResult(
             plugin_name="test_plugin", documented=8, total=10, good_quality=6, skipped=2, components=components
@@ -74,27 +78,27 @@ class TestPluginValidationResult:
         pass_result = PluginValidationResult(
             plugin_name="test", documented=9, total=10, good_quality=7, skipped=0, components=[]
         )
-        assert pass_result.get_status() == "pass"
-        assert pass_result.status == "pass"  # Test property too
+        assert pass_result.get_status() == PluginStatus.PASS
+        assert pass_result.status == PluginStatus.PASS  # Test property too
 
         # Fail: low coverage
         fail_result = PluginValidationResult(
             plugin_name="test", documented=5, total=10, good_quality=7, skipped=0, components=[]
         )
-        assert fail_result.get_status() == "fail"
+        assert fail_result.get_status() == PluginStatus.FAIL
 
         # Warning: medium coverage/quality
         warning_result = PluginValidationResult(
             plugin_name="test", documented=7, total=10, good_quality=5, skipped=0, components=[]
         )
-        assert warning_result.get_status() == "warning"
+        assert warning_result.get_status() == PluginStatus.WARNING
 
         # Custom thresholds
         assert (
             warning_result.get_status(
                 min_coverage_pass=0.7, min_coverage_fail=0.5, min_quality_pass=0.5, min_quality_fail=0.3
             )
-            == "pass"
+            == PluginStatus.PASS
         )
 
 
@@ -155,7 +159,9 @@ class TestDocumentationValidator:
 
         # Mock component loading and validation
         mock_component = Mock()
-        mock_validation_result = ValidationResult(component="test/test_func", quality_grade="good", issues=[])
+        mock_validation_result = ComponentValidationResult(
+            component="test/test_func", quality_grade="good", improvements=[]
+        )
 
         with (
             patch.object(validator, "_load_component", return_value=mock_component),
@@ -191,7 +197,7 @@ class TestDocumentationValidator:
             assert result.skipped == 0
             assert len(result.components) == 1
             assert result.components[0].quality_grade == "poor"
-            assert "Failed to load component: Module not found" in result.components[0].issues
+            assert "Failed to load component: Module not found" in result.components[0].improvements
 
     def test_validate_plugin_mixed_results(self, validator, mock_plugin_discovery):
         """Test validate_plugin with mixed component results."""
@@ -210,9 +216,9 @@ class TestDocumentationValidator:
 
         # Mock different validation results
         validation_results = [
-            ValidationResult("test/good_func", "good", []),
-            ValidationResult("test/poor_func", "poor", ["Missing docstring"]),
-            ValidationResult("test/skipped_func", "skipped", [], "legacy-code"),
+            ComponentValidationResult("test/good_func", "good", []),
+            ComponentValidationResult("test/poor_func", "poor", ["Missing docstring"]),
+            ComponentValidationResult("test/skipped_func", "skipped", []),
         ]
 
         with (
@@ -243,69 +249,60 @@ class TestDocumentationValidatorComponentMethods:
         mock_component = Mock()
 
         with patch.object(validator, "_get_docstring", return_value=""):
-            result = validator.validate_component(mock_component, "test/component")
+            result = validator.validate_component(mock_component, "test/component", "callables")
 
             assert result.component == "test/component"
             assert result.quality_grade == "poor"
-            assert result.issues == ["Missing docstring"]
-            assert result.skip_reason == ""
+            assert result.improvements == ["Missing docstring"]
 
     def test_validate_component_skipped(self, validator):
         """Test validate_component with skip directive."""
         mock_component = Mock()
         docstring = "Test docstring\n@skip-quality-check: legacy-code"
 
-        with (
-            patch.object(validator, "_get_docstring", return_value=docstring),
-            patch.object(validator, "_check_skip_directive", return_value="legacy-code"),
-        ):
-            result = validator.validate_component(mock_component, "test/component")
+        with patch.object(validator, "_get_docstring", return_value=docstring):
+            result = validator.validate_component(mock_component, "test/component", "callables")
 
             assert result.component == "test/component"
             assert result.quality_grade == "skipped"
-            assert result.issues == []
-            assert result.skip_reason == "legacy-code"
+            assert result.improvements == []
 
     def test_validate_component_function_good_quality(self, validator):
         """Test validate_component for function with good quality."""
         mock_component = Mock()
+        mock_component.parameters = {}
+        mock_component.returns = Mock()
+        mock_component.returns.annotation = Mock()
         docstring = "Comprehensive function description with examples.\n\nExample:\n    >>> func()\n    'result'"
 
         with (
             patch.object(validator, "_get_docstring", return_value=docstring),
-            patch.object(validator, "_check_skip_directive", return_value=""),
-            patch.object(validator, "_validate_docstring_quality", return_value=[]),
-            patch.object(validator, "_is_function_or_method", return_value=True),
-            patch.object(validator, "_validate_type_hints", return_value=[]),
-            patch.object(validator, "_determine_quality_grade", return_value="good"),
+            patch.object(validator, "_has_complete_type_hints", return_value=True),
         ):
-            result = validator.validate_component(mock_component, "test/component")
+            result = validator.validate_component(mock_component, "test/component", "callables")
 
             assert result.component == "test/component"
             assert result.quality_grade == "good"
-            assert result.issues == []
+            assert result.improvements == []
 
     def test_validate_component_class_with_issues(self, validator):
         """Test validate_component for class with documentation issues."""
         mock_component = Mock()
+        mock_component.members = {"on_configure": Mock()}
+        mock_component.members["on_configure"].parameters = {}
+        mock_component.members["on_configure"].returns = None
         docstring = "Short description"
-        quality_issues = ["Missing usage examples"]
-        class_issues = ["on_configure Missing return type hint"]
 
         with (
             patch.object(validator, "_get_docstring", return_value=docstring),
-            patch.object(validator, "_check_skip_directive", return_value=""),
-            patch.object(validator, "_validate_docstring_quality", return_value=quality_issues),
-            patch.object(validator, "_is_function_or_method", return_value=False),
-            patch.object(validator, "_is_class", return_value=True),
-            patch.object(validator, "_validate_class_documentation", return_value=class_issues),
-            patch.object(validator, "_determine_quality_grade", return_value="acceptable"),
+            patch.object(validator, "_has_complete_type_hints", return_value=False),
         ):
-            result = validator.validate_component(mock_component, "test/component")
+            result = validator.validate_component(mock_component, "test/component", "listeners")
 
             assert result.component == "test/component"
             assert result.quality_grade == "acceptable"
-            assert result.issues == quality_issues + class_issues
+            assert "Missing usage examples" in result.improvements
+            assert "Missing comprehensive description" in result.improvements
 
     def test_load_component_invalid_format(self, validator):
         """Test _load_component with invalid import path format."""
@@ -374,68 +371,30 @@ class TestDocumentationValidatorHelperMethods:
         with patch("owa.core.documentation.validator.get_plugin_discovery"):
             return DocumentationValidator()
 
-    def test_check_skip_directive(self, validator):
-        """Test _check_skip_directive with various scenarios."""
-        # Valid reason
-        docstring = "Test docstring\n@skip-quality-check: legacy-code\nMore content"
-        assert validator._check_skip_directive(docstring) == "legacy-code"
+    def test_has_complete_type_hints(self, validator):
+        """Test _has_complete_type_hints method."""
+        # Mock function with complete type hints
+        mock_func = Mock()
+        param1 = Mock()
+        param1.name = "param1"
+        param1.annotation = Mock()
+        param2 = Mock()
+        param2.name = "param2"
+        param2.annotation = Mock()
+        mock_func.parameters = [param1, param2]
+        mock_func.annotation = Mock()  # Return type annotation
 
-        # Invalid reason
-        docstring = "Test docstring\n@skip-quality-check: invalid-reason\nMore content"
-        assert validator._check_skip_directive(docstring) == ""
+        assert validator._has_complete_type_hints(mock_func) is True
 
-        # No directive
-        docstring = "Test docstring without skip directive"
-        assert validator._check_skip_directive(docstring) == ""
+        # Mock function without return type hint
+        mock_func_no_return = Mock()
+        param3 = Mock()
+        param3.name = "param3"
+        param3.annotation = Mock()
+        mock_func_no_return.parameters = [param3]
+        mock_func_no_return.annotation = None
 
-        # Test all valid reasons
-        valid_reasons = ["legacy-code", "internal-api", "experimental", "deprecated", "third-party"]
-        for reason in valid_reasons:
-            docstring = f"Test docstring\n@skip-quality-check: {reason}\nMore content"
-            assert validator._check_skip_directive(docstring) == reason
+        assert validator._has_complete_type_hints(mock_func_no_return) is False
 
-    def test_validate_docstring_quality(self, validator):
-        """Test _validate_docstring_quality with various docstring scenarios."""
-        # Comprehensive docstring - should have no issues
-        comprehensive = """
-        Comprehensive function description that is long enough to be descriptive.
-
-        Args:
-            param1: Description of parameter 1
-            param2: Description of parameter 2
-
-        Returns:
-            Description of return value
-
-        Example:
-            >>> func(1, 2)
-            3
-        """
-        assert validator._validate_docstring_quality(comprehensive) == []
-
-        # Empty docstring
-        assert "Missing summary in docstring" in validator._validate_docstring_quality("")
-
-        # Short summary
-        assert "Summary too short (should be descriptive)" in validator._validate_docstring_quality("Short")
-
-        # Missing examples
-        no_examples = "Good description that is long enough to be descriptive."
-        assert "Missing usage examples" in validator._validate_docstring_quality(no_examples)
-
-        # Missing return docs
-        no_returns = "Good description that mentions return value but has no Returns section."
-        assert "Missing return value documentation" in validator._validate_docstring_quality(no_returns)
-
-    def test_determine_quality_grade(self, validator):
-        """Test _determine_quality_grade with various scenarios."""
-        # Good quality: comprehensive with examples
-        comprehensive = "Comprehensive description with examples.\n\nExample:\n    >>> func()\n    'result'"
-        assert validator._determine_quality_grade(comprehensive, []) == "good"
-
-        # Acceptable: has issues or missing examples
-        short = "Short description"
-        assert validator._determine_quality_grade(short, ["Parameter 'x' missing type hint"]) == "acceptable"
-
-        long_no_examples = "Comprehensive description that is long enough but has no examples."
-        assert validator._determine_quality_grade(long_no_examples, []) == "acceptable"
+        # Test without validating return type
+        assert validator._has_complete_type_hints(mock_func_no_return, validate_return=False) is True
