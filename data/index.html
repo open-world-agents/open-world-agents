@@ -326,6 +326,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🚀 Quick Start Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../help_with_owa/" class="md-nav__link">
         
   
@@ -1693,15 +1716,21 @@
 <h1 id="data-in-owa-complete-desktop-agent-data-pipeline">Data in OWA: Complete Desktop Agent Data Pipeline<a class="headerlink" href="#data-in-owa-complete-desktop-agent-data-pipeline" title="Permanent link">&para;</a></h1>
 <p>Desktop AI needs high-quality, synchronized multimodal data: screen captures, mouse/keyboard events, and window context. OWA provides the <strong>complete pipeline</strong> from recording to training.</p>
 <h2 id="quick-start-record-train-in-3-steps">🚀 Quick Start: Record → Train in 3 Steps<a class="headerlink" href="#quick-start-record-train-in-3-steps" title="Permanent link">&para;</a></h2>
+<!-- SYNC-ID: quick-start-3-steps -->
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># 1. Record desktop interaction</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>ocap<span class="w"> </span>my-session.mcap
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>$<span class="w"> </span>ocap<span class="w"> </span>my-session.mcap
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># 2. Process to training format</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>python<span class="w"> </span>scripts/01_raw_events_to_event_dataset.py<span class="w"> </span>--train-dir<span class="w"> </span>./
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>$<span class="w"> </span>python<span class="w"> </span>scripts/01_raw_events_to_event_dataset.py<span class="w"> </span>--train-dir<span class="w"> </span>./
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c1"># 3. Train your model</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>python<span class="w"> </span>train.py<span class="w"> </span>--dataset<span class="w"> </span>./event-dataset
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>$<span class="w"> </span>python<span class="w"> </span>train.py<span class="w"> </span>--dataset<span class="w"> </span>./event-dataset
 </code></pre></div>
+<blockquote>
+<p>📖 <strong>Detailed Guide</strong>: <a href="../quick-start/">Complete Quick Start Tutorial</a> - Step-by-step walkthrough with examples and troubleshooting</p>
+</blockquote>
+<!-- END-SYNC: quick-start-3-steps -->
+
 <h2 id="the-owa-data-ecosystem">The OWA Data Ecosystem<a class="headerlink" href="#the-owa-data-ecosystem" title="Permanent link">&para;</a></h2>
 <h3 id="getting-started">🎯 <strong>Getting Started</strong><a class="headerlink" href="#getting-started" title="Permanent link">&para;</a></h3>
 <p>New to OWA data? Start here:</p>
@@ -1722,6 +1751,7 @@
 <li><strong><a href="tools/comparison-with-lerobot/">Comparison with LeRobot</a></strong> - Technical comparison with alternatives</li>
 </ul>
 <h2 id="community-datasets">🤗 Community Datasets<a class="headerlink" href="#community-datasets" title="Permanent link">&para;</a></h2>
+<!-- SYNC-ID: community-datasets -->
 <p><strong>Browse Available Datasets</strong>: <a href="https://huggingface.co/datasets?other=OWA">🤗 datasets?other=OWA</a></p>
 <ul>
 <li><strong>Growing Collection</strong>: Hundreds of community-contributed datasets</li>
@@ -1732,6 +1762,7 @@
 <blockquote>
 <p>🚀 <strong>Impact</strong>: OWA has democratized desktop agent data, growing from zero to hundreds of public datasets in the unified OWAMcap format.</p>
 </blockquote>
+<!-- END-SYNC: community-datasets -->
 
 
 
@@ -1752,7 +1783,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="June 28, 2025 18:49:29 UTC">June 28, 2025 18:49:29</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="July 7, 2025 15:05:33 UTC">July 7, 2025 15:05:33</span>
   </span>
 
     
