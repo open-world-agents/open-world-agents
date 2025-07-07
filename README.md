@@ -369,6 +369,8 @@ For development or contributing to the project, you can install packages in edit
 - **🧩 Extensible**: Community-driven plugin ecosystem
 <!-- END-SYNC: env-framework-features -->
 
+[**→ View Environment Framework Guide**](https://open-world-agents.github.io/open-world-agents/env/)
+
 ### 📊 Data Infrastructure: Complete Pipeline
 <!-- SYNC-ID: owamcap-key-features -->
 - � **Universal Standard**: Unlike fragmented formats, enables seamless dataset combination for large-scale foundation models *(OWAMcap)*
@@ -377,12 +379,16 @@ For development or contributing to the project, you can install packages in edit
 - 🤗 **Training Pipeline Ready**: Native HuggingFace integration, seamless dataset loading, and direct compatibility with ML frameworks *(Ecosystem)* → [Browse datasets](https://huggingface.co/datasets?other=OWA) | [Data pipeline](https://open-world-agents.github.io/open-world-agents/data/technical-reference/data-pipeline/)
 <!-- END-SYNC: owamcap-key-features -->
 
+[**→ View Data Infrastructure Guide**](https://open-world-agents.github.io/open-world-agents/data/)
+
 ### 🤗 Community & Ecosystem
 
 - **🌱 Growing Ecosystem**: Hundreds of community datasets in unified OWAMcap format
 - **🤗 HuggingFace Integration**: Native dataset loading, sharing, and interactive preview tools
 - **🧩 Extensible Architecture**: Modular design for custom environments, plugins, and message types
 - **💡 Community-Driven**: Plugin ecosystem spanning gaming, web automation, mobile control, and specialized domains
+
+[**→ View Community Datasets**](https://huggingface.co/datasets?other=OWA)
 
 
 ## Documentation
