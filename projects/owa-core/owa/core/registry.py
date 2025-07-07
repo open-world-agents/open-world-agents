@@ -43,6 +43,9 @@ class Registry(Generic[T]):
     def get(self, name: str, default: Optional[T] = None) -> Optional[T]:
         return self._registry.get(name, default)
 
+    def keys(self):
+        return self._registry.keys()
+
     def __repr__(self) -> str:
         return repr(self._registry)
 
@@ -128,16 +131,15 @@ class LazyImportRegistry(Registry[T]):
         except KeyError:
             return default
 
+    def keys(self):
+        return self._import_paths.keys()
+
     def __contains__(self, name: str) -> bool:
         """Check if a component is registered."""
         return name in self._registry or name in self._import_paths
 
     def __repr__(self) -> str:
-        """Show both loaded and unloaded components."""
-        loaded = list(self._registry.keys())
-        unloaded = list(self._import_paths.keys())
-        all_components = sorted(set(loaded + unloaded))
-        return f"LazyImportRegistry({all_components})"
+        return f"LazyImportRegistry({[*self._import_paths.keys()]})"
 
 
 # Now specify the types of the registries

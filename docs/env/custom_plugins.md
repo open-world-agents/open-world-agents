@@ -1,32 +1,10 @@
-# Custom EnvPlugin Development
+# Custom Plugin Development
 
-Create your own environment plugins using the Entry Points-based discovery system. Plugins are automatically discovered when installed, requiring zero configuration from users.
+Create plugins that extend OWA with your own functionality - from game automation to business integrations.
 
-## ⚡ Quick Start (5 minutes)
+## How It Works
 
-!!! tip "TL;DR: Get a plugin running in 5 minutes"
-
-    ```bash
-    # 1. Copy the template
-    cp -r projects/owa-env-example my-awesome-plugin
-    cd my-awesome-plugin
-
-    # 2. Edit pyproject.toml - change the entry point name
-    # [project.entry-points."owa.env.plugins"]
-    # awesome = "owa.env.plugins.awesome:plugin_spec"
-
-    # 3. Edit owa/env/plugins/example.py - change namespace
-    # namespace="awesome"
-
-    # 4. Install and test
-    pip install -e .
-    owl env list awesome
-    python -c "from owa.core import CALLABLES; print(CALLABLES['awesome/add'](2, 3))"
-    ```
-
-    **Result**: Your plugin is live! Components are automatically available across the entire OWA ecosystem.
-
-### Visual Plugin Architecture
+OWA automatically discovers plugins using Python's Entry Points system:
 
 ```mermaid
 flowchart TD
@@ -55,780 +33,579 @@ flowchart TD
     style K fill:#e8f5e8
 ```
 
-## What are Entry Points?
+1. You declare an entry point in `pyproject.toml`
+2. OWA scans installed packages for these entry points
+3. Your components become available immediately after `pip install`
 
-Entry Points are a standard Python packaging mechanism that allows packages to advertise components that can be discovered and loaded by other packages. They're defined in your `pyproject.toml` file and enable automatic plugin discovery.
+## ⚡ Quick Start: Your First Plugin in 5 Minutes
 
-!!! info "Entry Points Documentation"
-    For detailed information about Entry Points and plugin development, see:
+!!! tip "Follow Along"
+    Open a terminal and follow these steps. You'll have a working plugin in minutes!
 
-    - [Entry Points Specification](https://packaging.python.org/en/latest/specifications/entry-points/)
-    - [Creating and Discovering Plugins](https://packaging.python.org/en/latest/guides/creating-and-discovering-plugins/)
-
-When you install a plugin with entry points, OWA automatically discovers and registers all components without any manual configuration. This is what makes the `pip install` → immediate availability workflow possible.
-
-!!! tip "Try the Example Plugin"
-    If you want to test the example plugin that OWA provides:
-
-    ```bash
-    pip install -e projects/owa-env-example
-    owl env list example
-    ```
-
-## Quick Start
-
-=== "1. Copy Template"
-
-    Start by copying the [owa-env-example](https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-env-example) directory as your template:
-
-    ```bash
-    cp -r owa-env-example owa-env-myplugin
-    cd owa-env-myplugin
-    ```
-
-    The template contains:
-    ```
-    owa-env-example/
-    ├── owa/env/example/          # Component implementations
-    ├── owa/env/plugins/example.py # Plugin specification
-    ├── pyproject.toml            # Entry point declaration
-    ├── tests/                    # Test files
-    └── README.md
-    ```
-
-=== "2. Entry Point"
-
-    Update `pyproject.toml` to declare your plugin entry point:
-
-    ```toml
-    [project.entry-points."owa.env.plugins"]
-    myplugin = "your.module.path:plugin_spec"
-    ```
-
-    **Examples of valid entry points:**
-    ```toml
-    # Recommended OWA structure
-    myplugin = "owa.env.plugins.myplugin:plugin_spec"
-
-    # Your own company structure
-    myplugin = "my_company.tools.myplugin:plugin_spec"
-
-    # Flat structure
-    myplugin = "myplugin_package:plugin_spec"
-    ```
-
-=== "3. Plugin Spec"
-
-    Create your plugin specification file. This defines what components your plugin provides:
-
-    ```python
-    """
-    Plugin specification for MyPlugin.
-
-    Keep this separate to avoid circular imports during discovery.
-    """
-    from owa.core.plugin_spec import PluginSpec
-
-    plugin_spec = PluginSpec(
-        namespace="myplugin",           # Unique namespace for your plugin
-        version="0.1.0",
-        description="My custom plugin",
-        author="Your Name",             # Optional
-        components={
-            "callables": {
-                "hello": "your.module:say_hello",
-                "add": "your.module:add_numbers",
-            },
-            "listeners": {
-                "events": "your.module:EventListener",
-            },
-            "runnables": {
-                "processor": "your.module:DataProcessor",
-            }
-        }
-    )
-    ```
-
-=== "4. Implement Components"
-
-    Write your component implementations:
-
-    ```python
-    # Callable function
-    def say_hello(name: str = "World") -> str:
-        """Say hello to someone."""
-        return f"Hello, {name}!"
-
-    def add_numbers(a: int, b: int) -> int:
-        """Add two numbers."""
-        return a + b
-
-    # Listener class
-    from owa.core import Listener
-
-    class EventListener(Listener):
-        def on_configure(self, callback, **kwargs):
-            # Setup event handling logic
-            self.callback = callback
-            # Implementation details...
-
-    # Runnable class
-    from owa.core import Runnable
-
-    class DataProcessor(Runnable):
-        def on_configure(self, **kwargs):
-            # Setup background processing
-            # Implementation details...
-    ```
-
-=== "5. Install & Test"
-
-    Install your plugin in development mode and test:
-
-    ```bash
-    # Install in development mode (if you're in the plugin directory)
-    pip install -e .
-
-    # Or from project root (adjust path to your plugin)
-    pip install -e path/to/your-plugin
-
-    # Verify plugin is discovered
-    owl env list myplugin
-
-    # Test components are available
-    python -c "from owa.core import CALLABLES; print(CALLABLES['myplugin/hello']())"
-    ```
-
-## 🔄 Development Workflow
-
-### Complete Development Cycle
-
-```mermaid
-flowchart TD
-    A[💡 Plugin Idea] --> B[📋 Plan Components]
-    B --> C[🏗️ Choose Structure]
-    C --> D[📝 Write Plugin Spec]
-    D --> E[⚙️ Implement Components]
-    E --> F[🧪 Write Tests]
-    F --> G[📦 Install Locally]
-    G --> H{✅ Validation}
-    H -->|❌ Fails| I[🔧 Fix Issues]
-    I --> E
-    H -->|✅ Passes| J[📚 Document]
-    J --> K[🚀 Publish]
-    K --> L[🌍 Available to Users]
-
-    style A fill:#fff3e0
-    style H fill:#e8f5e8
-    style L fill:#e3f2fd
-```
-
-### Testing & Validation Commands
+### Step 1: Copy the Template
 
 ```bash
-# Development cycle commands
-pip install -e .                           # Install in dev mode
-owl env list myplugin                       # Verify discovery
-owl env docs --validate myplugin --strict  # Validate plugin
-python -m pytest tests/                    # Run tests
-
-# Component testing
-python -c "
-from owa.core import CALLABLES
-result = CALLABLES['myplugin/hello']('World')
-print(f'Result: {result}')
-"
-
-# Advanced validation
-owl env docs --validate --output-format json  # JSON validation report
-owl env stats --namespaces                    # Check namespace conflicts
+# Copy the example plugin as your starting point
+cp -r projects/owa-env-example my-first-plugin
+cd my-first-plugin
 ```
 
-## PluginSpec Reference
+The template gives you a complete, working plugin that you can modify.
 
-The `PluginSpec` class is the core of your plugin definition. It tells OWA what components your plugin provides and where to find them.
+### Step 2: Make It Yours
 
-### Required Fields
+Edit `pyproject.toml` to change the plugin name:
 
-!!! info "PluginSpec Fields"
+```toml
+[project.entry-points."owa.env.plugins"]
+myfirst = "owa.env.plugins.myfirst:plugin_spec"  # Changed from 'example'
+```
 
-    === "namespace"
-        **Unique identifier for your plugin**
-
-        - Must contain only letters, numbers, underscores, and hyphens
-        - Should be short and descriptive
-        - Examples: `desktop`, `gst`, `mycompany_tools`
-
-        ```python
-        namespace="myplugin"  # Components will be accessible as "myplugin/component_name"
-        ```
-
-    === "version"
-        **Plugin version following semantic versioning**
-
-        - Format: `MAJOR.MINOR.PATCH`
-        - Update when making changes
-        - Document breaking changes in major versions
-
-        ```python
-        version="1.2.3"
-        ```
-
-    === "description"
-        **Brief description of plugin functionality**
-
-        - Should clearly explain what the plugin does
-        - Used in CLI tools and documentation
-
-        ```python
-        description="Desktop automation tools for screen capture and input"
-        ```
-
-    === "components"
-        **Dictionary defining all plugin components**
-
-        - Keys are component types: `callables`, `listeners`, `runnables`
-        - Values are dictionaries mapping component names to import paths
-        - Import paths use format: `"module.path:object_name"`
-
-        ```python
-        components={
-            "callables": {
-                "hello": "your.module:say_hello",
-                "math.add": "your.module.math:add_numbers"
-            },
-            "listeners": {
-                "events": "your.module:EventListener"
-            },
-            "runnables": {
-                "processor": "your.module:DataProcessor"
-            }
-        }
-        ```
-
-### Optional Fields
-
-- **author**: Plugin author name (string)
-
-### Complete PluginSpec Example
+Edit `owa/env/plugins/example.py` and change the namespace:
 
 ```python
+plugin_spec = PluginSpec(
+    namespace="myfirst",  # Changed from 'example'
+    version="0.1.0",
+    description="My first OWA plugin",
+    # ... rest stays the same
+)
+```
+
+### Step 3: Install and Test
+
+```bash
+# Install your plugin
+pip install -e .
+
+# Verify OWA discovered it
+owl env list myfirst
+
+# Test a component
+python -c "from owa.core import CALLABLES; print(CALLABLES['myfirst/add'](2, 3))"
+```
+
+!!! success "🎉 Congratulations!"
+    You just created your first OWA plugin. Your components are now available to any OWA user or application.
+
+    **What Just Happened?**
+
+    - **Entry Point Registration**: Your `pyproject.toml` told Python about your plugin
+    - **Automatic Discovery**: OWA found your plugin when it scanned entry points
+    - **Component Registration**: Your functions became available as `myfirst/add`, `myfirst/print`, etc.
+    - **Zero Configuration**: Users don't need to do anything - your plugin just works
+
+## Component Types
+
+OWA plugins provide three types of components:
+
+### Callables: Direct Function Calls
+
+Functions users invoke for immediate results. Perfect for screenshots, mouse clicks, file processing, calculations.
+
+```python
+def click_mouse(x: int, y: int, button: str = "left") -> bool:
+    """Click mouse at coordinates."""
+    from pynput import mouse
+    controller = mouse.Controller()
+    controller.position = (x, y)
+    controller.click(getattr(mouse.Button, button))
+    return True
+
+# Usage: CALLABLES["yourplugin/click"](100, 200)
+```
+
+### Listeners: Event Monitoring
+
+Watch for events and call user callbacks. Perfect for keyboard/mouse monitoring, file changes, system notifications.
+
+```python
+from owa.core import Listener
+
+class KeyboardListener(Listener):
+    def on_configure(self, callback, **kwargs):
+        self.callback = callback
+
+    def start(self):
+        # Monitor keyboard, call self.callback(key_data) on events
+        pass
+
+    def stop(self):
+        # Stop monitoring and cleanup
+        pass
+
+# Usage:
+# listener = LISTENERS["yourplugin/keyboard"]
+# listener.configure(callback=my_handler)
+# listener.start()
+```
+
+### Runnables: Background Tasks
+
+Long-running processes that can be started/stopped. Perfect for data collection, file processing, monitoring.
+
+```python
+from owa.core import Runnable
+import time
+
+class DataCollector(Runnable):
+    def on_configure(self, output_file: str, interval: float = 1.0):
+        self.output_file = output_file
+        self.interval = interval
+
+    def run(self):
+        while self.running:  # OWA manages this flag
+            # Do work
+            with open(self.output_file, 'a') as f:
+                f.write(f"Data at {time.time()}\n")
+            time.sleep(self.interval)
+
+# Usage:
+# collector = RUNNABLES["yourplugin/collector"]
+# collector.configure(output_file="data.txt")
+# collector.start()  # Runs in background
+```
+
+## Building from Scratch
+
+Let's create a simple "system monitor" plugin with all three component types.
+
+### Project Setup
+
+```bash
+mkdir owa-env-sysmon && cd owa-env-sysmon
+```
+
+Create `pyproject.toml`:
+```toml
+[project]
+name = "owa-env-sysmon"
+version = "0.1.0"
+dependencies = ["owa-core", "psutil"]
+
+[project.entry-points."owa.env.plugins"]
+sysmon = "sysmon_plugin:plugin_spec"
+```
+
+Create `sysmon_plugin.py`:
+
+```python
+import time
+import psutil
+from owa.core import Listener, Runnable
 from owa.core.plugin_spec import PluginSpec
 
+# Callables
+def get_cpu_percent() -> float:
+    return psutil.cpu_percent(interval=1)
+
+def get_memory_info() -> dict:
+    memory = psutil.virtual_memory()
+    return {'total': memory.total, 'available': memory.available, 'percent': memory.percent}
+
+# Listener
+class ThresholdMonitor(Listener):
+    def on_configure(self, callback, cpu_threshold=80.0, check_interval=5.0):
+        self.callback = callback
+        self.cpu_threshold = cpu_threshold
+        self.check_interval = check_interval
+        self.monitoring = False
+
+    def start(self):
+        self.monitoring = True
+        while self.monitoring:
+            cpu = psutil.cpu_percent(interval=1)
+            if cpu > self.cpu_threshold:
+                self.callback({'type': 'cpu_high', 'value': cpu})
+            time.sleep(self.check_interval)
+
+    def stop(self):
+        self.monitoring = False
+
+# Runnable
+class SystemLogger(Runnable):
+    def on_configure(self, log_file="system.log", interval=10.0):
+        self.log_file = log_file
+        self.interval = interval
+
+    def run(self):
+        with open(self.log_file, 'a') as f:
+            while self.running:
+                cpu = psutil.cpu_percent(interval=1)
+                memory = psutil.virtual_memory().percent
+                timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+                f.write(f"{timestamp}, CPU: {cpu:.1f}%, Memory: {memory:.1f}%\n")
+                f.flush()
+                time.sleep(self.interval)
+
+# Plugin specification
 plugin_spec = PluginSpec(
-    namespace="mycompany_tools",
-    version="2.1.0",
-    description="Custom tools for automation and monitoring",
-    author="MyCompany Development Team",
+    namespace="sysmon",
+    version="0.1.0",
+    description="System monitoring plugin",
     components={
         "callables": {
-            # Math utilities
-            "math.add": "owa.env.mycompany_tools.math:add_numbers",
-            "math.multiply": "owa.env.mycompany_tools.math:multiply_numbers",
-
-            # File operations
-            "file.read": "owa.env.mycompany_tools.files:read_file",
-            "file.write": "owa.env.mycompany_tools.files:write_file",
-
-            # System utilities
-            "system.info": "owa.env.mycompany_tools.system:get_system_info",
+            "cpu": "sysmon_plugin:get_cpu_percent",
+            "memory": "sysmon_plugin:get_memory_info",
         },
         "listeners": {
-            # Event monitoring
-            "file.changes": "owa.env.mycompany_tools.monitoring:FileChangeListener",
-            "system.alerts": "owa.env.mycompany_tools.monitoring:SystemAlertListener",
+            "threshold": "sysmon_plugin:ThresholdMonitor",
         },
         "runnables": {
-            # Background services
-            "log.processor": "owa.env.mycompany_tools.services:LogProcessor",
-            "health.checker": "owa.env.mycompany_tools.services:HealthChecker",
+            "logger": "sysmon_plugin:SystemLogger",
         }
     }
 )
 ```
 
-
-
-### YAML Format Alternative
-
-You can also define your plugin specification in YAML format:
-
-```yaml
-namespace: mycompany_tools
-version: "2.1.0"
-description: "Custom tools for automation and monitoring"
-author: "MyCompany Development Team"
-components:
-  callables:
-    math.add: "owa.env.mycompany_tools.math:add_numbers"
-    file.read: "owa.env.mycompany_tools.files:read_file"
-  listeners:
-    file.changes: "owa.env.mycompany_tools.monitoring:FileChangeListener"
-  runnables:
-    log.processor: "owa.env.mycompany_tools.services:LogProcessor"
-```
-
-Then load it in Python:
-
-```python
-from owa.core.plugin_spec import PluginSpec
-from pathlib import Path
-
-# Load from YAML file
-plugin_spec = PluginSpec.from_yaml(Path(__file__).parent / "plugin.yaml")
-```
-
-## 🔧 Troubleshooting Guide
-
-### Common Issues & Solutions
-
-!!! failure "Plugin Not Discovered"
-
-    **Symptoms**: `owl env list` doesn't show your plugin
-
-    ```bash
-    # Debug steps
-    pip list | grep your-plugin-name     # Verify installation
-    python -c "
-    try:
-        from importlib.metadata import entry_points
-    except ImportError:
-        from importlib_metadata import entry_points
-
-    eps = entry_points(group='owa.env.plugins')
-    for ep in eps:
-        print(f'{ep.name}: {ep.value}')
-    "
-    ```
-
-    **Common causes**:
-    - Entry point name conflicts with existing plugin
-    - Incorrect entry point path in `pyproject.toml`
-    - Plugin not installed (`pip install -e .`)
-
-!!! failure "Import Errors"
-
-    **Symptoms**: Validation fails with import errors
-
-    ```bash
-    # Detailed validation
-    owl env docs --validate myplugin --output-format text
-
-    # Test imports manually
-    python -c "
-    from your.module.path import your_function
-    print('Import successful!')
-    "
-    ```
-
-    **Common causes**:
-    - Missing dependencies in `pyproject.toml`
-    - Incorrect import paths in plugin spec
-    - Circular imports
-
-!!! failure "Component Not Callable"
-
-    **Symptoms**: `Object 'name' is not callable`
-
-    ```python
-    # ❌ Wrong - importing a module
-    "components": {
-        "callables": {
-            "bad": "mymodule.utils"  # Points to module, not function
-        }
-    }
-
-    # ✅ Correct - importing a function
-    "components": {
-        "callables": {
-            "good": "mymodule.utils:my_function"  # Points to function
-        }
-    }
-    ```
-
-### Debug Plugin Discovery
-
-```mermaid
-flowchart TD
-    A[Plugin Not Working] --> B{Installed?}
-    B -->|No| C[pip install -e .]
-    C --> D[Check owl env list]
-    B -->|Yes| E{Entry Point Correct?}
-    E -->|No| F[Fix pyproject.toml]
-    F --> D
-    E -->|Yes| G{Import Paths Valid?}
-    G -->|No| H[Fix plugin spec]
-    H --> D
-    G -->|Yes| I{Dependencies Met?}
-    I -->|No| J[Install dependencies]
-    J --> D
-    I -->|Yes| K[Check OWA logs]
-
-    style C fill:#ffebee
-    style F fill:#ffebee
-    style H fill:#ffebee
-    style J fill:#ffebee
-    style D fill:#e8f5e8
-```
-
-## Component Types
-
-OWA plugins can provide three types of components:
-
-!!! tip "Component Types Overview"
-
-    === "Callables"
-        **Functions that users invoke directly**
-
-        - Synchronous operations that return immediate results
-        - Can be functions or callable classes
-        - Accessed via `CALLABLES["namespace/name"](args)`
-
-        !!! example "Real-world Callable Examples"
-
-            === "🖱️ Mouse Control"
-                ```python
-                def click_mouse(x: int, y: int, button: str = "left") -> bool:
-                    """Click mouse at specific coordinates.
-
-                    Args:
-                        x: X coordinate on screen
-                        y: Y coordinate on screen
-                        button: Mouse button ('left', 'right', 'middle')
-
-                    Returns:
-                        True if click succeeded
-
-                    Example:
-                        >>> CALLABLES["desktop/click"](100, 200, "left")
-                        True
-                    """
-                    from pynput.mouse import Button, Listener as MouseListener
-                    from pynput import mouse
-
-                    try:
-                        # Map string to pynput Button
-                        button_map = {
-                            "left": Button.left,
-                            "right": Button.right,
-                            "middle": Button.middle
-                        }
-
-                        controller = mouse.Controller()
-                        controller.position = (x, y)
-                        controller.click(button_map.get(button, Button.left))
-                        return True
-                    except Exception:
-                        return False
-                ```
-
-            === "📸 Screen Capture"
-                ```python
-                import numpy as np
-                from PIL import ImageGrab
-
-                def capture_screen(region: tuple = None) -> np.ndarray:
-                    """Capture screen or region as numpy array.
-
-                    Args:
-                        region: (left, top, right, bottom) or None for full screen
-
-                    Returns:
-                        RGB image as numpy array (height, width, 3)
-
-                    Example:
-                        >>> img = CALLABLES["desktop/capture"]()
-                        >>> img.shape
-                        (1080, 1920, 3)
-                    """
-                    screenshot = ImageGrab.grab(bbox=region)
-                    return np.array(screenshot)
-                ```
-
-            === "🧮 Math Utilities"
-                ```python
-                def calculate_distance(point1: tuple, point2: tuple) -> float:
-                    """Calculate Euclidean distance between two points.
-
-                    Example:
-                        >>> CALLABLES["math/distance"]((0, 0), (3, 4))
-                        5.0
-                    """
-                    import math
-                    return math.sqrt((point2[0] - point1[0])**2 + (point2[1] - point1[1])**2)
-                ```
-
-    === "Listeners"
-        **Event-driven components that respond to system events**
-
-        - React to external events (keyboard, mouse, file changes, etc.)
-        - Run user-provided callbacks when events occur
-        - Must implement `on_configure()` method
-
-        ```python
-        from owa.core import Listener
-
-        class KeyboardListener(Listener):
-            def on_configure(self, callback, **kwargs):
-                """Configure the listener with user callback."""
-                self.callback = callback
-                # Setup keyboard event monitoring
-
-            def start(self):
-                """Start listening for events."""
-                # Begin event monitoring
-
-            def stop(self):
-                """Stop listening for events."""
-                # Cleanup and stop monitoring
-        ```
-
-    === "Runnables"
-        **Background tasks that can be started and stopped**
-
-        - Long-running background processes
-        - Can be started, stopped, and monitored
-        - Must implement `on_configure()` method
-
-        ```python
-        from owa.core import Runnable
-
-        class DataCollector(Runnable):
-            def on_configure(self, output_file: str, interval: float = 1.0):
-                """Configure the runnable with parameters."""
-                self.output_file = output_file
-                self.interval = interval
-
-            def run(self):
-                """Main background task logic."""
-                while self.running:
-                    # Collect and save data
-                    time.sleep(self.interval)
-        ```
-
-## Package Structure Examples
-
-You have complete freedom in organizing your plugin code. Here are common patterns with visual examples:
-
-### 🏗️ Structure Patterns Comparison
-
-=== "🎯 Recommended: OWA Structure"
-
-    **Best for**: Official plugins, following OWA conventions
-
-    ```
-    my-owa-plugin/
-    ├── 📄 pyproject.toml
-    ├── 📁 owa/env/
-    │   ├── 📁 myplugin/           # Implementation
-    │   │   ├── __init__.py
-    │   │   ├── callables.py       # Functions
-    │   │   ├── listeners.py       # Event handlers
-    │   │   └── runnables.py       # Background tasks
-    │   └── 📁 plugins/
-    │       └── myplugin.py        # 🔌 Plugin spec
-    ├── 📁 tests/
-    └── 📄 README.md
-    ```
-
-    ```toml title="pyproject.toml"
-    [project.entry-points."owa.env.plugins"]
-    myplugin = "owa.env.plugins.myplugin:plugin_spec"
-    ```
-
-=== "🏢 Company Structure"
-
-    **Best for**: Enterprise plugins, company-specific tools
-
-    ```
-    acme-automation-tools/
-    ├── 📄 pyproject.toml
-    ├── 📁 acme/
-    │   └── 📁 automation/
-    │       ├── 📁 core/           # Business logic
-    │       │   ├── __init__.py
-    │       │   ├── processors.py
-    │       │   └── monitors.py
-    │       ├── 📁 integrations/   # External APIs
-    │       │   ├── salesforce.py
-    │       │   └── slack.py
-    │       └── owa_plugin.py      # 🔌 Plugin spec
-    ├── 📁 tests/
-    └── 📄 README.md
-    ```
-
-    ```toml title="pyproject.toml"
-    [project.entry-points."owa.env.plugins"]
-    acme_automation = "acme.automation.owa_plugin:plugin_spec"
-    ```
-
-=== "🎮 Gaming/Domain Structure"
-
-    **Best for**: Specialized domains, gaming, specific use cases
-
-    ```
-    minecraft-automation/
-    ├── 📄 pyproject.toml
-    ├── 📁 minecraft_bot/
-    │   ├── __init__.py            # 🔌 Plugin spec here
-    │   ├── 📁 actions/            # Game actions
-    │   │   ├── movement.py
-    │   │   ├── inventory.py
-    │   │   └── combat.py
-    │   ├── 📁 sensors/            # Game state detection
-    │   │   ├── screen_reader.py
-    │   │   └── audio_listener.py
-    │   └── 📁 ai/                 # Decision making
-    │       ├── pathfinding.py
-    │       └── strategy.py
-    ├── 📁 assets/                 # Game assets
-    └── 📄 README.md
-    ```
-
-    ```toml title="pyproject.toml"
-    [project.entry-points."owa.env.plugins"]
-    minecraft = "minecraft_bot:plugin_spec"
-    ```
-
-=== "⚡ Simple/Flat Structure"
-
-    **Best for**: Small plugins, prototypes, single-purpose tools
-
-    ```
-    quick-tools/
-    ├── 📄 pyproject.toml
-    ├── 📄 quick_tools.py          # Everything in one file
-    │   # Contains: plugin_spec + all implementations
-    ├── 📁 tests/
-    └── 📄 README.md
-    ```
-
-    ```toml title="pyproject.toml"
-    [project.entry-points."owa.env.plugins"]
-    quicktools = "quick_tools:plugin_spec"
-    ```
-
-## Plugin Validation
-
-Use the CLI to validate your plugin during development:
+### Install and Test
 
 ```bash
-# Validate plugin specification (adjust path to match your structure)
-owl env validate owa.env.plugins.myplugin:plugin_spec        # OWA structure
-owl env validate my_company.tools.plugin_spec:plugin_spec   # Company structure
-owl env validate myplugin_package:plugin_spec               # Flat structure
+pip install -e .
+owl env list sysmon
 
-# Example with the example plugin
-$ owl env validate owa.env.plugins.example:plugin_spec
-✅ Plugin Specification Valid
-├── Source: Entry point: owa.env.plugins.example:plugin_spec
-├── 📋 Plugin Metadata
-│   ├── ├── Namespace: example
-│   ├── ├── Version: 0.1.0
-│   ├── ├── Author: OWA Development Team
-│   └── └── Description: Example environment plugin demonstrating the plugin system
-└── 🔧 Components Summary
-    ├── ├── Total Components: 6
-    ├── ├── 📞 Callables: 2
-    ├── ├── 👂 Listeners: 2
-    └── └── 🏃 Runnables: 2
-
-✅ Validation successful!
-
-# Validate with detailed output
-owl env validate your.module.path:plugin_spec --verbose
-
-# Validate YAML specification (if using YAML format)
-owl env validate ./plugin.yaml
+# Test components
+python -c "
+from owa.core import CALLABLES, LISTENERS, RUNNABLES
+print('CPU:', CALLABLES['sysmon/cpu']())
+print('Memory:', CALLABLES['sysmon/memory']())
+"
 ```
 
-## CLI Tools for Development
+## Plugin Structure Options
 
-The `owl env` command provides comprehensive tools for plugin development:
+!!! info "Choose based on your needs"
 
-!!! tip "Essential Commands"
+    === "Simple/Flat"
+        Everything in one file - good for prototypes:
+        ```
+        my-plugin/
+        ├── pyproject.toml
+        ├── plugin.py              # All code here
+        └── tests/
+        ```
 
-    ```bash
-    # Discovery and listing
-    owl env list myplugin                          # List your plugin components (auto-shows details)
-    owl env namespaces                             # See all available namespaces
+        ```toml title="pyproject.toml"
+        [project.entry-points."owa.env.plugins"]
+        myplugin = "plugin:plugin_spec"
+        ```
 
-    # Example with the example plugin
-    $ owl env list example
-    📦 Plugin: example (6 components)
-    ├── 📞 Callables: 2
-    ├── 👂 Listeners: 2
-    └── 🏃 Runnables: 2
-    📞 Callables (2)
-    ├── example/add
-    └── example/print
-    👂 Listeners (2)
-    ├── example/listener
-    └── example/timer
-    🏃 Runnables (2)
-    ├── example/counter
-    └── example/runnable
+    === "Company/Domain"
+        Integrate with existing code:
+        ```
+        acme-tools/
+        ├── pyproject.toml
+        ├── acme/tools/
+        │   ├── core/
+        │   └── owa_plugin.py       # Plugin spec
+        └── tests/
+        ```
 
-    # Component inspection
-    owl env list myplugin --inspect my_function    # Inspect specific component
-    owl env list myplugin --search my_function     # Search within your plugin
+        ```toml title="pyproject.toml"
+        [project.entry-points."owa.env.plugins"]
+        acme_tools = "acme.tools.owa_plugin:plugin_spec"
+        ```
 
-    # Ecosystem analysis
-    owl env stats --by-namespace                   # Statistics by namespace
-    owl env stats --namespaces                     # Show available namespaces
-    ```
+    === "OWA Recommended"
+        Follow OWA conventions:
+        ```
+        owa-env-myplugin/
+        ├── pyproject.toml
+        ├── owa/env/
+        │   ├── myplugin/           # Implementation
+        │   └── plugins/myplugin.py # Plugin spec
+        └── tests/
+        ```
 
-!!! info "Complete CLI Reference"
-    For detailed information about all CLI commands and options:
+        ```toml title="pyproject.toml"
+        [project.entry-points."owa.env.plugins"]
+        myplugin = "owa.env.plugins.myplugin:plugin_spec"
+        ```
 
-    - **[CLI Tools](../cli/index.md)** - Complete command overview
-    - **[Environment Commands](../cli/env.md)** - Detailed `owl env` documentation
+## Testing and Validation
+
+### Writing Tests for Your Plugin
+
+Create `tests/test_sysmon.py`:
+
+```python
+import pytest
+from sysmon_plugin import get_cpu_percent, get_memory_info, plugin_spec
+
+def test_cpu_percent():
+    """Test CPU percentage function."""
+    cpu = get_cpu_percent()
+    assert isinstance(cpu, float)
+    assert 0 <= cpu <= 100
+
+def test_memory_info():
+    """Test memory info function."""
+    memory = get_memory_info()
+    assert isinstance(memory, dict)
+    assert 'total' in memory
+    assert 'available' in memory
+    assert 'percent' in memory
+
+def test_plugin_spec():
+    """Test plugin specification is valid."""
+    assert plugin_spec.namespace == "sysmon"
+    assert "callables" in plugin_spec.components
+    assert "cpu" in plugin_spec.components["callables"]
+```
+
+### Validation Commands
+
+```bash
+# Run your tests
+python -m pytest tests/ -v
+
+# Validate plugin specification
+owl env docs --validate sysmon --strict
+
+# Check for namespace conflicts
+owl env stats --namespaces
+
+# Test component loading
+python -c "
+from owa.core import CALLABLES, LISTENERS, RUNNABLES
+print('Callables:', list(CALLABLES.keys()))
+print('Listeners:', list(LISTENERS.keys()))
+print('Runnables:', list(RUNNABLES.keys()))
+"
+```
+
+
+
+## Common Patterns and Best Practices
+
+### Naming Conventions
+
+- **Namespace**: Short, descriptive, lowercase with underscores: `desktop`, `my_company`, `game_bot`
+- **Component names**: Use dots for hierarchy: `mouse.click`, `file.read`, `ai.analyze`
+- **Package name**: Follow Python conventions: `owa-env-yourplugin`
+
+### Error Handling
+
+Always handle errors gracefully in your components:
+
+```python
+def safe_operation(param: str) -> dict:
+    """Example of proper error handling."""
+    try:
+        # Your operation here
+        result = perform_operation(param)
+        return {"success": True, "data": result}
+    except ValueError as e:
+        return {"success": False, "error": f"Invalid parameter: {e}"}
+    except Exception as e:
+        return {"success": False, "error": f"Unexpected error: {e}"}
+```
+
+### Documentation
+
+Document your components thoroughly:
+
+```python
+def my_function(param1: int, param2: str = "default") -> bool:
+    """One-line summary of what this function does.
+
+    Longer description explaining the purpose, behavior, and any
+    important details users should know.
+
+    Args:
+        param1: Description of first parameter
+        param2: Description of second parameter with default
+
+    Returns:
+        Description of return value
+
+    Raises:
+        ValueError: When param1 is negative
+        ConnectionError: When network operation fails
+
+    Example:
+        >>> CALLABLES["myplugin/myfunction"](42, "test")
+        True
+    """
+    # Implementation here
+```
+
+### Performance Considerations
+
+- **Lazy loading**: Components are loaded only when first used
+- **Resource cleanup**: Always clean up in Listener/Runnable's resources with `try-finally` pattern
+- **CPU usage**: Be mindful of CPU-intensive operations and busy-waiting in Listeners/Runnables
+- **Memory usage**: Be mindful of memory leaks in long-running Runnables
+
+## Troubleshooting Common Issues
+
+!!! failure "Having problems? Check these common solutions"
+
+    === "🔍 Plugin Not Discovered"
+        **Symptoms**: `owl env list` doesn't show your plugin
+
+        **Debug steps:**
+
+        1. **Verify installation:**
+           ```bash
+           pip list | grep your-plugin-name
+           ```
+
+        2. **Check entry points:**
+           ```bash
+           python -c "
+           try:
+               from importlib.metadata import entry_points
+           except ImportError:
+               from importlib_metadata import entry_points
+
+           eps = entry_points(group='owa.env.plugins')
+           for ep in eps:
+               print(f'{ep.name}: {ep.value}')
+           "
+           ```
+
+        3. **Test plugin spec import:**
+           ```bash
+           python -c "from your.module.path import plugin_spec; print(plugin_spec.namespace)"
+           ```
+
+        **Common causes:**
+
+        - Plugin not installed (`pip install -e .`)
+        - Entry point name conflicts with existing plugin
+        - Incorrect entry point path in `pyproject.toml`
+
+    === "❌ Import Errors"
+        **Symptoms**: Validation fails with import errors
+
+        **Debug command:**
+        ```bash
+        owl env docs --validate yourplugin --output-format text
+        ```
+
+        **Common causes & solutions:**
+
+        | Problem | Solution |
+        |---------|----------|
+        | Missing dependencies | Add them to `pyproject.toml` dependencies |
+        | Wrong import paths | Check `module.path:object_name` format |
+        | Circular imports | Keep plugin spec separate from implementation |
+        | Module not found | Ensure module is importable after installation |
+
+    === "🚫 Component Issues"
+        **"Component not callable" errors:**
+
+        ```python
+        # ❌ Wrong - points to module
+        "callables": {
+            "bad": "mymodule.utils"
+        }
+
+        # ✅ Correct - points to function
+        "callables": {
+            "good": "mymodule.utils:my_function"
+        }
+        ```
+
+        **Listener/Runnable doesn't work:**
+
+        ```python
+        # ✅ Correct structure
+        from owa.core import Listener
+
+        class MyListener(Listener):  # Must inherit
+            def on_configure(self, callback, **kwargs):  # Must implement
+                self.callback = callback
+                # Your setup code
+        ```
+
+        **Common issues:**
+
+        - Not inheriting from `owa.core.Listener` or `owa.core.Runnable`
+        - Missing `on_configure()` method
+        - Not calling `super().__init__()` in custom `__init__`
+
+    === "🔧 Quick Diagnostics"
+        **Run these commands to diagnose issues:**
+
+        ```bash
+        # Check if OWA can see your plugin
+        owl env list yourplugin
+
+        # Validate plugin specification
+        owl env docs --validate yourplugin --strict
+
+        # Check for namespace conflicts
+        owl env stats --namespaces
+
+        # Test component loading manually
+        python -c "
+        from owa.core import CALLABLES, LISTENERS, RUNNABLES
+        print('Available namespaces:')
+        namespaces = set()
+        for key in list(CALLABLES.keys()) + list(LISTENERS.keys()) + list(RUNNABLES.keys()):
+            namespaces.add(key.split('/')[0])
+        for ns in sorted(namespaces):
+            print(f'  - {ns}')
+        "
+        ```
+
+        **Still having issues?**
+
+        - Check the [OWA GitHub Issues](https://github.com/open-world-agents/open-world-agents/issues)
+        - Look at working examples in `projects/owa-env-*`
+        - Ensure you're using compatible versions of dependencies
+
+
 
 ## Publishing Your Plugin
 
-Once your plugin is ready, you can use any Python packaging tool to build and publish it. OWA doesn't impose any restrictions on build backends or publishing methods.
+!!! info "Distribution Options"
 
-**Recommended approach using uv:**
+    === "Recommended: uv"
+        **Build and publish with uv (recommended):**
+        ```bash
+        # Build your plugin
+        uv build
 
-```bash
-# Build your plugin
-uv build
+        # Publish to PyPI
+        uv publish
+        ```
 
-# Publish to PyPI
-uv publish
-```
+        For detailed guidance, see:
 
-**Alternative approaches:**
+        - [uv build documentation](https://docs.astral.sh/uv/guides/publish/#building-your-package)
+        - [uv publish documentation](https://docs.astral.sh/uv/guides/publish/#publishing-your-package)
 
-```bash
-# Using build + twine
-python -m build
-python -m twine upload dist/*
+    === "Local/Team Use"
+        ```bash
+        # Install from local directory
+        pip install -e /path/to/your-plugin
 
-# Using poetry
-poetry build
-poetry publish
+        # Install from git repository
+        pip install git+https://github.com/yourusername/your-plugin.git
+        ```
 
-# Using setuptools directly
-python setup.py sdist bdist_wheel
-twine upload dist/*
-```
+    === "Alternative Tools"
+        ```bash
+        # Using build + twine
+        python -m build
+        python -m twine upload dist/*
 
-For detailed information on the recommended approach, see:
+        # Using poetry
+        poetry build
+        poetry publish
+        ```
 
-- [uv build documentation](https://docs.astral.sh/uv/guides/publish/#building-your-package)
-- [uv publish documentation](https://docs.astral.sh/uv/guides/publish/#publishing-your-package)
+## Next Steps
 
-Users can then install your plugin and components are automatically available:
+- **Explore existing plugins**: Look at `projects/owa-env-*` for real examples
+- **Join the community**: Share your plugins and get feedback
+- **Read the API docs**: Dive deeper into `owa.core` capabilities
+- **Contribute**: Consider contributing your plugin to the OWA ecosystem
 
-```bash
-pip install your-plugin-name
-```
 
-```python
-from owa.core import CALLABLES
-result = CALLABLES["myplugin/hello"]("World")
-```
 
 
 
