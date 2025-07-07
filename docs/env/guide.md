@@ -332,6 +332,7 @@ event = KeyboardEvent(event_type="press", vk=65, timestamp=1234567890)
 ### Message Naming Convention
 
 Messages follow a domain-based naming pattern:
+
 - **Format**: `domain/MessageType`
 - **Domain**: Logical grouping (e.g., `desktop`, `sensors`, `system`)
 - **MessageType**: PascalCase message name
