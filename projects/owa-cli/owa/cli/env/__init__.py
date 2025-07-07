@@ -1,12 +1,11 @@
 import typer
 
-from . import docs, list, quick, search, show, stats, validate
+from . import docs, list, quick, search, stats, validate
 
 app = typer.Typer(help="Environment plugin management commands.")
 
 # Core commands
-app.command("list")(list.list_plugins)
-app.command("show")(show.show_plugin)
+app.command("list")(list.list_env)
 app.command("validate")(validate.validate_plugin)
 
 # Documentation commands (OEP-0004)

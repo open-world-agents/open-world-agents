@@ -101,8 +101,7 @@ nav:
   - Env in OWA:
     - env/index.md
     - env/guide.md
-    - Custom EnvPlugins: env/custom_plugins.md
-    - Documentation Validation: env/documentation_validation.md
+    - env/custom_plugins.md
     - Lists of EnvPlugins:
       - Standard Environment: env/plugins/std.md
       - Desktop Environment: env/plugins/desktop.md

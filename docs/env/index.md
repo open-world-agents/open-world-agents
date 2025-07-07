@@ -32,9 +32,6 @@ Don't let outdated frameworks hold you back. Embrace the future with OWA's Env a
 
 - **[Comprehensive Guide](guide.md)** - Complete overview of OWA's Env system
 - **[Custom Plugins](custom_plugins.md)** - How to create your own plugins
-- **[Plugin Specification Guide](plugin_specification_guide.md)** - Detailed guide for writing PluginSpec in Python and YAML
-- **[YAML Plugin Guide](yaml_plugin_guide.md)** - Focused guide for YAML-based plugin specifications
-- **[Documentation Validation](documentation_validation.md)** - Tools for validating plugin documentation
 
 ### Available Plugins
 

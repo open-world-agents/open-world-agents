@@ -162,48 +162,6 @@ with screen.session:
     time.sleep(5)
 ```
 
-### Plugin Management with CLI
-
-Explore and manage plugins using the enhanced `owl env` command:
-
-```bash
-# List all discovered plugins with enhanced display
-$ owl env list --details --table
-
-# Show detailed plugin information with component inspection
-$ owl env show example --components --inspect add
-
-# Search for components across all plugins
-$ owl env search "mouse.*click" --table
-
-# Quick exploration shortcuts
-$ owl env ls desktop                              # Quick namespace exploration
-$ owl env find keyboard                           # Quick component search
-$ owl env namespaces                              # List all available namespaces
-
-# Ecosystem analysis and health monitoring
-$ owl env stats                                   # Show ecosystem statistics
-$ owl env health                                  # Perform health check
-```
-
-### Message Management with CLI
-
-Explore and manage message types using the new `owl messages` command:
-
-```bash
-# List all available message types
-$ owl messages list
-
-# Show detailed message schema
-$ owl messages show desktop/KeyboardEvent
-
-# Search for specific message types
-$ owl messages search keyboard
-
-# Validate message definitions
-$ owl messages validate
-```
-
 Powered by the powerful Gstreamer and Windows API, our implementation is **6x** faster than comparatives.
 
 | **Library**        | **Avg. Time per Frame** | **Relative Speed**    |
@@ -250,6 +208,8 @@ data = load_dataset("open-world-agents/example_dataset")
 
 ### Data Format Preview
 
+<!-- TODO: more awesome preview such as docs\data\technical-reference\format-guide.md -->
+
 ```bash
 $ owl mcap info example.mcap
 library:   mcap-owa-support 0.3.2; mcap 1.2.2
@@ -271,6 +231,52 @@ channels: 6
 attachments: 0
 metadata: 0
 ```
+
+<!-- TODO: minimal but intuitive, attracting descriptions for all CLI features -->
+
+### Plugin Management with CLI
+
+Explore and manage plugins using the enhanced `owl env` command:
+
+```bash
+# List all discovered plugins with enhanced display
+$ owl env list --details --table
+
+# Show detailed plugin information with component inspection
+$ owl env list example --inspect add
+
+# Search for components across all plugins
+$ owl env search "mouse.*click" --table
+
+# Quick exploration shortcuts
+$ owl env ls desktop                              # Quick namespace exploration
+$ owl env find keyboard                           # Quick component search
+$ owl env namespaces                              # List all available namespaces
+
+# Ecosystem analysis and health monitoring
+$ owl env stats                                   # Show ecosystem statistics
+$ owl env health                                  # Perform health check
+```
+
+### Message Management with CLI
+
+Explore and manage message types using the new `owl messages` command:
+
+```bash
+# List all available message types
+$ owl messages list
+
+# Show detailed message schema
+$ owl messages show desktop/KeyboardEvent
+
+# Search for specific message types
+$ owl messages search keyboard
+
+# Validate message definitions
+$ owl messages validate
+```
+
+> **💡 Complete CLI Reference**: For detailed information about all CLI commands and options, see the [CLI Tools documentation](https://open-world-agents.github.io/open-world-agents/cli).
 
 ## Installation
 

@@ -1,4 +1,4 @@
-# Custom Plugin Development
+# Custom EnvPlugin Development
 
 Create your own environment plugins using the Entry Points-based discovery system. Plugins are automatically discovered when installed, requiring zero configuration from users.
 
@@ -28,7 +28,7 @@ When you install a plugin with entry points, OWA automatically discovers and reg
 
     ```bash
     pip install -e projects/owa-env-example
-    owl env list --namespace example
+    owl env list example
     ```
 
 ## Quick Start
@@ -149,7 +149,7 @@ When you install a plugin with entry points, OWA automatically discovers and reg
     pip install -e path/to/your-plugin
 
     # Verify plugin is discovered
-    owl env list --namespace myplugin
+    owl env list myplugin
 
     # Test components are available
     python -c "from owa.core import CALLABLES; print(CALLABLES['myplugin/hello']())"
@@ -455,12 +455,11 @@ The `owl env` command provides comprehensive tools for plugin development:
 
     ```bash
     # Discovery and listing
-    owl env list --namespace myplugin              # List your plugin components
-    owl env show myplugin --components             # Show detailed component info
+    owl env list myplugin                          # List your plugin components (auto-shows details)
     owl env namespaces                             # See all available namespaces
 
     # Example with the example plugin
-    $ owl env show example --components
+    $ owl env list example
     📦 Plugin: example (6 components)
     ├── 📞 Callables: 2
     ├── 👂 Listeners: 2
@@ -476,8 +475,8 @@ The `owl env` command provides comprehensive tools for plugin development:
     └── example/runnable
 
     # Component inspection
-    owl env show myplugin --inspect my_function    # Inspect specific component
-    owl env search "my.*function" --namespace myplugin  # Search within your plugin
+    owl env list myplugin --inspect my_function    # Inspect specific component
+    owl env list myplugin --search my_function     # Search within your plugin
 
     # Quick exploration shortcuts
     owl env ls myplugin                            # Quick plugin overview
@@ -487,6 +486,12 @@ The `owl env` command provides comprehensive tools for plugin development:
     owl env health                                 # Check overall system health
     owl env stats --by-namespace                   # Statistics by namespace
     ```
+
+!!! info "Complete CLI Reference"
+    For detailed information about all CLI commands and options:
+
+    - **[CLI Tools](../cli/index.md)** - Complete command overview
+    - **[Environment Commands](../cli/env.md)** - Detailed `owl env` documentation
 
 ## Publishing Your Plugin
 

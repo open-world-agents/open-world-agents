@@ -5,7 +5,6 @@ import typer
 from ..console import console
 from . import list as list_module
 from . import search as search_module
-from . import show as show_module
 
 
 def ls(
@@ -13,20 +12,26 @@ def ls(
 ):
     """Quick list - show plugins or components in a namespace (alias for 'list')."""
     if namespace:
-        # Show specific namespace with components
-        show_module.show_plugin(
-            namespace=namespace,
-            components=True,
-            component_type=None,
-            search=None,
+        # Show specific namespace with components (auto-enabled)
+        list_module.list_env(
+            namespaces=[namespace],
+            components=False,  # Will be auto-enabled by smart defaults
             details=False,
-            table_format=False,
+            table=False,
+            type_filter=None,
+            search=None,
             inspect=None,
         )
     else:
         # Show all plugins
-        list_module.list_plugins(
-            namespace=None, component_type=None, search=None, details=False, table_format=False, sort_by="namespace"
+        list_module.list_env(
+            namespaces=None,
+            components=False,
+            details=False,
+            table=False,
+            type_filter=None,
+            search=None,
+            inspect=None,
         )
 
 

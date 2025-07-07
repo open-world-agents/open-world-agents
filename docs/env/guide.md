@@ -188,26 +188,27 @@ The `owl env` command provides powerful tools for managing and exploring plugins
 $ owl env list
 
 # Enhanced filtering and display options
-$ owl env list --namespace example                # Filter by namespace
 $ owl env list --type callables                   # Filter by component type
 $ owl env list --search mouse                     # Search by pattern
 $ owl env list --details                          # Show import paths and load status
 $ owl env list --table                            # Display in table format
-$ owl env list --sort name                        # Sort by name, namespace, or type
 ```
 
 ### Plugin Information and Inspection
 
 ```bash
-# Show plugin summary
-$ owl env show example
+# Show specific plugin (auto-shows components)
+$ owl env list example
 
 # Enhanced plugin exploration
-$ owl env show example --components               # Show detailed component list
-$ owl env show example --inspect mouse.click      # Inspect specific component
-$ owl env show example --type callables           # Filter by component type
-$ owl env show example --search window            # Search within namespace
-$ owl env show example --table                    # Display in table format
+$ owl env list example --details                  # Show import paths and load status
+$ owl env list example --inspect mouse.click      # Inspect specific component
+$ owl env list example --type callables           # Filter by component type
+$ owl env list example --search window            # Search within namespace
+$ owl env list example --table                    # Display in table format
+
+# Multiple plugins at once
+$ owl env list desktop example                    # Show multiple plugins
 ```
 
 ### Advanced Search and Discovery
@@ -264,14 +265,13 @@ $ owl env list
     ├── 📞 Callables: 1
     └── 👂 Listeners: 1
 
-$ owl env show example --components
-📦 Plugin: example (7 components)
-├── 📞 Callables: 3
+$ owl env list example
+📦 Plugin: example (6 components)
+├── 📞 Callables: 2
 ├── 👂 Listeners: 2
 └── 🏃 Runnables: 2
-📞 Callables (3)
+📞 Callables (2)
 ├── example/add
-├── example/callable
 └── example/print
 👂 Listeners (2)
 ├── example/listener
@@ -385,7 +385,7 @@ The `owl env` command group provides comprehensive tools for managing environmen
 ```bash
 # Plugin discovery and management
 owl env list                    # List all available plugins
-owl env show desktop            # Show detailed plugin information
+owl env list desktop            # Show detailed plugin information
 owl env validate desktop        # Validate plugin installation
 owl env search keyboard         # Search for specific components
 
@@ -400,10 +400,11 @@ owl env find mouse              # Find components by name
 owl env namespaces              # Show available namespaces
 ```
 
-For complete CLI documentation, see:
+!!! info "Complete CLI Reference"
+    For detailed information about all CLI commands and options:
 
-- **[Environment Commands](../cli/env.md)** - Detailed `owl env` documentation
-- **[CLI Tools](../cli/index.md)** - Complete command overview
+    - **[CLI Tools](../cli/index.md)** - Complete command overview
+    - **[Environment Commands](../cli/env.md)** - Detailed `owl env` documentation
 
 ## Additional Resources
 
