@@ -1,23 +1,17 @@
 import typer
 
-from . import docs, list, quick, search, stats, validate
+from . import docs, list, search, stats, validate
 
 app = typer.Typer(help="Environment plugin management commands.")
 
-# Core commands
+# Core commands (minimal, intuitive design)
 app.command("list")(list.list_env)
-app.command("validate")(validate.validate_plugin)
-
-# Documentation commands (OEP-0004)
-app.command("validate-docs")(docs.validate_docs)
-app.command("docs-stats")(docs.docs_stats)
-
-# Enhanced commands
 app.command("search")(search.search_components)
+app.command("validate")(validate.validate_plugin)
 app.command("stats")(stats.show_stats)
-app.command("health")(stats.health_check)
+app.command("docs")(docs.docs)
 
-# Quick access commands (essential shortcuts only)
-app.command("ls")(quick.ls)
-app.command("find")(quick.find)
-app.command("namespaces")(quick.namespaces)
+# Backward compatibility (deprecated - will be removed)
+app.command("validate-docs", deprecated=True)(docs.validate_docs)
+app.command("docs-stats", deprecated=True)(docs.docs_stats)
+app.command("health", deprecated=True)(stats.health_check)

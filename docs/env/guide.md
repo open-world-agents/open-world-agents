@@ -218,12 +218,6 @@ $ owl env list desktop example                    # Show multiple plugins
 $ owl env search "mouse.*click"                   # Regex pattern search
 $ owl env search window --details --table         # Detailed search results
 $ owl env search keyboard --type callables        # Search specific component type
-
-# Quick access shortcuts
-$ owl env ls                                       # Quick plugin list
-$ owl env ls desktop                              # Quick namespace exploration
-$ owl env find mouse                              # Quick component search
-$ owl env namespaces                              # List all available namespaces
 ```
 
 ### Ecosystem Analysis
@@ -233,7 +227,8 @@ $ owl env namespaces                              # List all available namespace
 $ owl env stats                                    # Show ecosystem statistics
 $ owl env stats --by-namespace                    # Group by namespace
 $ owl env stats --by-type                         # Group by component type
-$ owl env health                                   # Perform health check
+$ owl env stats --health                          # Perform health check
+$ owl env stats --namespaces                      # List all available namespaces
 ```
 
 ### Plugin Development
@@ -244,6 +239,11 @@ $ owl env validate owa.env.myplugin:plugin_spec    # Python entry point
 $ owl env validate ./plugin.yaml                   # YAML file
 $ owl env validate ./plugin.yaml --verbose         # Detailed validation
 $ owl env validate ./plugin.yaml --no-check-imports # Skip import validation
+
+# Documentation management
+$ owl env docs                                     # Show documentation statistics
+$ owl env docs --validate                          # Validate documentation quality
+$ owl env docs example --validate --strict         # Strict validation for specific plugin
 ```
 
 ### Example CLI Output
@@ -292,16 +292,16 @@ $ owl env search "mouse" --table
 │ desktop/mouse.scroll    │ callables │ desktop   │ mouse.scroll    │
 └─────────────────────────┴───────────┴───────────┴─────────────────┘
 
-$ owl env namespaces
-             Available Namespaces
-┏━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┓
-┃ Namespace ┃ Components ┃ Quick Access       ┃
-┡━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━┩
-│ desktop   │        25 │ owl env ls desktop │
-│ example   │         7 │ owl env ls example │
-│ gst       │         4 │ owl env ls gst     │
-│ std       │         2 │ owl env ls std     │
-└───────────┴────────────┴────────────────────┘
+$ owl env stats --namespaces
+              Available Namespaces
+┏━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Namespace ┃ Components ┃ Quick Access         ┃
+┡━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩
+│ desktop   │         27 │ owl env list desktop │
+│ example   │          6 │ owl env list example │
+│ gst       │          4 │ owl env list gst     │
+│ std       │          2 │ owl env list std     │
+└───────────┴────────────┴──────────────────────┘
 ```
 
 ## Message Registry
@@ -390,14 +390,13 @@ owl env validate desktop        # Validate plugin installation
 owl env search keyboard         # Search for specific components
 
 # Plugin health and statistics
-owl env health                  # Health check for all plugins
 owl env stats                   # Show plugin statistics
-owl env docs-stats              # Documentation coverage stats
+owl env stats --health          # Health check for all plugins
+owl env stats --namespaces      # Show available namespaces
 
-# Quick access commands
-owl env ls                      # Quick plugin overview
-owl env find mouse              # Find components by name
-owl env namespaces              # Show available namespaces
+# Documentation management
+owl env docs                    # Show documentation statistics
+owl env docs --validate         # Validate documentation quality
 ```
 
 !!! info "Complete CLI Reference"

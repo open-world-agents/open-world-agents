@@ -248,14 +248,10 @@ $ owl env list example --inspect add
 # Search for components across all plugins
 $ owl env search "mouse.*click" --table
 
-# Quick exploration shortcuts
-$ owl env ls desktop                              # Quick namespace exploration
-$ owl env find keyboard                           # Quick component search
-$ owl env namespaces                              # List all available namespaces
-
 # Ecosystem analysis and health monitoring
 $ owl env stats                                   # Show ecosystem statistics
-$ owl env health                                  # Perform health check
+$ owl env stats --health                          # Perform health check
+$ owl env stats --namespaces                      # List all available namespaces
 ```
 
 ### Message Management with CLI

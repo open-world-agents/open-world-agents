@@ -19,8 +19,10 @@ from owa.core.documentation.validator import PluginStatus
 console = Console()
 
 
-def validate_docs(
-    plugin_namespace: Optional[str] = typer.Argument(None, help="Specific plugin namespace to validate (optional)"),
+def docs(
+    plugin_namespace: Optional[str] = typer.Argument(None, help="Specific plugin namespace (optional)"),
+    validate: bool = typer.Option(False, "--validate", help="Validate plugin documentation"),
+    stats: bool = typer.Option(False, "--stats", help="Show documentation statistics"),
     strict: bool = typer.Option(False, "--strict", help="Enable strict mode (100% coverage + 100% quality)"),
     min_coverage_pass: float = typer.Option(0.8, "--min-coverage-pass", help="Minimum coverage for PASS status"),
     min_coverage_fail: float = typer.Option(0.6, "--min-coverage-fail", help="Minimum coverage to avoid FAIL status"),
@@ -31,6 +33,35 @@ def validate_docs(
         0.0, "--min-quality-fail", help="Minimum good quality ratio to avoid FAIL status"
     ),
     format: str = typer.Option("text", "--output-format", help="Output format: text or json"),
+    by_type: bool = typer.Option(False, "--by-type", help="Group statistics by component type"),
+) -> None:
+    """
+    Manage plugin documentation - validate quality and show statistics.
+
+    This command provides comprehensive documentation management for plugins,
+    including validation for CI/CD integration and statistics for development.
+    """
+
+    # Default to stats if no specific action is requested
+    if not validate and not stats:
+        stats = True
+
+    if validate:
+        _validate_docs(
+            plugin_namespace, strict, min_coverage_pass, min_coverage_fail, min_quality_pass, min_quality_fail, format
+        )
+    elif stats:
+        _docs_stats(plugin_namespace, by_type)
+
+
+def _validate_docs(
+    plugin_namespace: Optional[str],
+    strict: bool,
+    min_coverage_pass: float,
+    min_coverage_fail: float,
+    min_quality_pass: float,
+    min_quality_fail: float,
+    format: str,
 ) -> None:
     """
     Validate plugin documentation with proper exit codes for CI/CD integration.
@@ -146,11 +177,7 @@ def _output_text(results, all_pass):
         console.print()  # Empty line between plugins
 
 
-# Additional helper command for development
-def docs_stats(
-    plugin_namespace: Optional[str] = typer.Argument(None, help="Specific plugin namespace (optional)"),
-    by_type: bool = typer.Option(False, "--by-type", help="Group statistics by component type"),
-) -> None:
+def _docs_stats(plugin_namespace: Optional[str], by_type: bool) -> None:
     """
     Show documentation statistics for plugins.
 
@@ -228,3 +255,31 @@ def docs_stats(
     except Exception as e:
         console.print(f"[red]❌ ERROR: {e}[/red]")
         sys.exit(1)
+
+
+# Backward compatibility functions (will be removed later)
+def validate_docs(
+    plugin_namespace: Optional[str] = typer.Argument(None, help="Specific plugin namespace to validate (optional)"),
+    strict: bool = typer.Option(False, "--strict", help="Enable strict mode (100% coverage + 100% quality)"),
+    min_coverage_pass: float = typer.Option(0.8, "--min-coverage-pass", help="Minimum coverage for PASS status"),
+    min_coverage_fail: float = typer.Option(0.6, "--min-coverage-fail", help="Minimum coverage to avoid FAIL status"),
+    min_quality_pass: float = typer.Option(
+        0.6, "--min-quality-pass", help="Minimum good quality ratio for PASS status"
+    ),
+    min_quality_fail: float = typer.Option(
+        0.0, "--min-quality-fail", help="Minimum good quality ratio to avoid FAIL status"
+    ),
+    format: str = typer.Option("text", "--output-format", help="Output format: text or json"),
+) -> None:
+    """Validate plugin documentation with proper exit codes for CI/CD integration."""
+    _validate_docs(
+        plugin_namespace, strict, min_coverage_pass, min_coverage_fail, min_quality_pass, min_quality_fail, format
+    )
+
+
+def docs_stats(
+    plugin_namespace: Optional[str] = typer.Argument(None, help="Specific plugin namespace (optional)"),
+    by_type: bool = typer.Option(False, "--by-type", help="Group statistics by component type"),
+) -> None:
+    """Show documentation statistics for plugins."""
+    _docs_stats(plugin_namespace, by_type)

@@ -44,12 +44,13 @@ owl mcap convert session.mcap           # Convert to subtitles
 ### 🔌 [Environment Commands](env.md) (`owl env`)
 Manage environment plugins that capture desktop data and provide system integration.
 
-**Key commands**: `list`, `validate`, `search`, `stats`
+**Key commands**: `list`, `search`, `validate`, `stats`, `docs`
 
 ```bash
 owl env list                            # List all plugins
 owl env list desktop                    # Plugin details
 owl env search keyboard                 # Find components
+owl env stats --health                  # Health check
 ```
 
 ### 📋 [Message Commands](messages.md) (`owl messages`)

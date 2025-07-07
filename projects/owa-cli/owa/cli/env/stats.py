@@ -15,8 +15,19 @@ def show_stats(
     by_namespace: bool = typer.Option(False, "--by-namespace", "-n", help="Group statistics by namespace"),
     by_type: bool = typer.Option(False, "--by-type", "-t", help="Group statistics by component type"),
     loaded_only: bool = typer.Option(False, "--loaded-only", "-l", help="Show statistics for loaded components only"),
+    health: bool = typer.Option(False, "--health", help="Perform health check on the ecosystem"),
+    namespaces: bool = typer.Option(False, "--namespaces", help="Show available namespaces"),
 ):
     """Show comprehensive statistics about the plugin ecosystem."""
+
+    # Handle specific modes
+    if health:
+        _perform_health_check()
+        return
+
+    if namespaces:
+        _show_namespaces()
+        return
 
     # Collect all component data
     all_data = _collect_component_data()
@@ -249,7 +260,7 @@ def _show_detailed_tables(all_data: List[Dict]):
         console.print(table)
 
 
-def health_check():
+def _perform_health_check():
     """Perform a health check on the plugin ecosystem."""
     console.print("🏥 [bold]Plugin Ecosystem Health Check[/bold]\n")
 
@@ -298,3 +309,38 @@ def health_check():
     console.print(f"  • Loaded components: {loaded_components}")
     console.print(f"  • Namespaces: {len(namespace_counts)}")
     console.print(f"  • Load ratio: {(loaded_components / total_components) * 100:.1f}%")
+
+
+def _show_namespaces():
+    """Show available namespaces with component counts."""
+    all_data = _collect_component_data()
+
+    if not all_data:
+        console.print("[yellow]No namespaces found[/yellow]")
+        return
+
+    # Count components by namespace
+    namespace_counts = Counter(item["namespace"] for item in all_data)
+
+    # Create table
+    table = Table(title="Available Namespaces")
+    table.add_column("Namespace", style="cyan")
+    table.add_column("Components", justify="right", style="green")
+    table.add_column("Quick Access", style="blue")
+
+    for namespace in sorted(namespace_counts.keys()):
+        count = namespace_counts[namespace]
+        quick_access = f"owl env list {namespace}"
+        table.add_row(namespace, str(count), quick_access)
+
+    console.print(table)
+
+    total_components = len(all_data)
+    total_namespaces = len(namespace_counts)
+    console.print(f"\n💡 Found {total_namespaces} namespaces with {total_components} total components")
+
+
+# Keep the old function for backward compatibility (will be removed later)
+def health_check():
+    """Perform a health check on the plugin ecosystem."""
+    _perform_health_check()
