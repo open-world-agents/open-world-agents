@@ -50,7 +50,7 @@ Manage environment plugins that capture desktop data and provide system integrat
 owl env list                            # List all plugins
 owl env list desktop                    # Plugin details
 owl env search keyboard                 # Find components
-owl env stats --health                  # Health check
+owl env stats --namespaces              # Show namespaces
 ```
 
 ### 📋 [Message Commands](messages.md) (`owl messages`)

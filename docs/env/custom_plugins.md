@@ -478,8 +478,7 @@ The `owl env` command provides comprehensive tools for plugin development:
     owl env list myplugin --inspect my_function    # Inspect specific component
     owl env list myplugin --search my_function     # Search within your plugin
 
-    # Ecosystem health and analysis
-    owl env stats --health                         # Check overall system health
+    # Ecosystem analysis
     owl env stats --by-namespace                   # Statistics by namespace
     owl env stats --namespaces                     # Show available namespaces
     ```

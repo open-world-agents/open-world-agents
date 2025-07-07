@@ -15,15 +15,9 @@ def show_stats(
     by_namespace: bool = typer.Option(False, "--by-namespace", "-n", help="Group statistics by namespace"),
     by_type: bool = typer.Option(False, "--by-type", "-t", help="Group statistics by component type"),
     loaded_only: bool = typer.Option(False, "--loaded-only", "-l", help="Show statistics for loaded components only"),
-    health: bool = typer.Option(False, "--health", help="Perform health check on the ecosystem"),
     namespaces: bool = typer.Option(False, "--namespaces", help="Show available namespaces"),
 ):
     """Show comprehensive statistics about the plugin ecosystem."""
-
-    # Handle specific modes
-    if health:
-        _perform_health_check()
-        return
 
     if namespaces:
         _show_namespaces()
@@ -258,57 +252,6 @@ def _show_detailed_tables(all_data: List[Dict]):
             table.add_row(package, str(count), f"{percentage:.1f}%")
 
         console.print(table)
-
-
-def _perform_health_check():
-    """Perform a health check on the plugin ecosystem."""
-    console.print("🏥 [bold]Plugin Ecosystem Health Check[/bold]\n")
-
-    all_data = _collect_component_data()
-    issues = []
-    warnings = []
-
-    if not all_data:
-        issues.append("No components found - plugin discovery may not be working")
-        console.print("[red]❌ Critical: No components discovered[/red]")
-        return
-
-    # Check for basic health indicators
-    total_components = len(all_data)
-    loaded_components = sum(1 for item in all_data if item["loaded"])
-    unknown_imports = sum(1 for item in all_data if item["import_path"] == "unknown")
-
-    # Health checks
-    if loaded_components == 0:
-        warnings.append("No components are currently loaded")
-
-    if unknown_imports > total_components * 0.1:  # More than 10% unknown
-        warnings.append(f"{unknown_imports} components have unknown import paths")
-
-    namespace_counts = Counter(item["namespace"] for item in all_data)
-    if len(namespace_counts) == 1:
-        warnings.append("Only one namespace found - consider organizing into multiple namespaces")
-
-    # Display results
-    if not issues and not warnings:
-        console.print("✅ [green]All health checks passed![/green]")
-    else:
-        if issues:
-            console.print("[red]❌ Issues found:[/red]")
-            for issue in issues:
-                console.print(f"  • {issue}")
-
-        if warnings:
-            console.print("[yellow]⚠️  Warnings:[/yellow]")
-            for warning in warnings:
-                console.print(f"  • {warning}")
-
-    # Summary
-    console.print("\n📊 [bold]Summary:[/bold]")
-    console.print(f"  • Total components: {total_components}")
-    console.print(f"  • Loaded components: {loaded_components}")
-    console.print(f"  • Namespaces: {len(namespace_counts)}")
-    console.print(f"  • Load ratio: {(loaded_components / total_components) * 100:.1f}%")
 
 
 def _show_namespaces():

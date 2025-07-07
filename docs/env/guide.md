@@ -223,11 +223,10 @@ $ owl env search keyboard --type callables        # Search specific component ty
 ### Ecosystem Analysis
 
 ```bash
-# Statistics and health monitoring
+# Statistics and ecosystem analysis
 $ owl env stats                                    # Show ecosystem statistics
 $ owl env stats --by-namespace                    # Group by namespace
 $ owl env stats --by-type                         # Group by component type
-$ owl env stats --health                          # Perform health check
 $ owl env stats --namespaces                      # List all available namespaces
 ```
 
@@ -241,7 +240,7 @@ $ owl env validate ./plugin.yaml --verbose         # Detailed validation
 $ owl env validate ./plugin.yaml --no-check-imports # Skip import validation
 
 # Documentation management
-$ owl env docs                                     # Show documentation statistics
+$ owl env docs                                     # Show documentation statistics (default)
 $ owl env docs --validate                          # Validate documentation quality
 $ owl env docs example --validate --strict         # Strict validation for specific plugin
 ```
@@ -389,13 +388,12 @@ owl env list desktop            # Show detailed plugin information
 owl env validate desktop        # Validate plugin installation
 owl env search keyboard         # Search for specific components
 
-# Plugin health and statistics
+# Plugin statistics and analysis
 owl env stats                   # Show plugin statistics
-owl env stats --health          # Health check for all plugins
 owl env stats --namespaces      # Show available namespaces
 
 # Documentation management
-owl env docs                    # Show documentation statistics
+owl env docs                    # Show documentation statistics (default)
 owl env docs --validate         # Validate documentation quality
 ```
 

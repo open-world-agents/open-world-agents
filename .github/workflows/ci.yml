@@ -42,7 +42,7 @@ jobs:
         run: vuv pip install -e projects/owa-env-example
 
       - name: Generate documentation statistics
-        run: owl env docs --stats
+        run: owl env docs
 
       - name: Validate all plugin documentation
         run: owl --silent env docs --validate --strict --output-format json

@@ -22,7 +22,6 @@ console = Console()
 def docs(
     plugin_namespace: Optional[str] = typer.Argument(None, help="Specific plugin namespace (optional)"),
     validate: bool = typer.Option(False, "--validate", help="Validate plugin documentation"),
-    stats: bool = typer.Option(False, "--stats", help="Show documentation statistics"),
     strict: bool = typer.Option(False, "--strict", help="Enable strict mode (100% coverage + 100% quality)"),
     min_coverage_pass: float = typer.Option(0.8, "--min-coverage-pass", help="Minimum coverage for PASS status"),
     min_coverage_fail: float = typer.Option(0.6, "--min-coverage-fail", help="Minimum coverage to avoid FAIL status"),
@@ -42,15 +41,12 @@ def docs(
     including validation for CI/CD integration and statistics for development.
     """
 
-    # Default to stats if no specific action is requested
-    if not validate and not stats:
-        stats = True
-
     if validate:
         _validate_docs(
             plugin_namespace, strict, min_coverage_pass, min_coverage_fail, min_quality_pass, min_quality_fail, format
         )
-    elif stats:
+    else:
+        # Default behavior: show statistics
         _docs_stats(plugin_namespace, by_type)
 
 

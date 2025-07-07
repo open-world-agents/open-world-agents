@@ -248,9 +248,8 @@ $ owl env list example --inspect add
 # Search for components across all plugins
 $ owl env search "mouse.*click" --table
 
-# Ecosystem analysis and health monitoring
+# Ecosystem analysis and statistics
 $ owl env stats                                   # Show ecosystem statistics
-$ owl env stats --health                          # Perform health check
 $ owl env stats --namespaces                      # List all available namespaces
 ```
 
