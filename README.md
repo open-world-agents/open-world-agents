@@ -140,7 +140,8 @@ All OWA packages use namespace packaging and are installed in the `owa` namespac
 
 ## Quick Start
 
-### Environment Usage: Three Types of Components
+<details>
+<summary><strong>Environment Usage: Three Types of Components</strong></summary>
 
 OWA's Environment provides three types of components for real-time agent interaction:
 
@@ -194,6 +195,8 @@ from owa.core import MESSAGES
 KeyboardEvent = MESSAGES["desktop/KeyboardEvent"]
 ScreenCaptured = MESSAGES["desktop/ScreenCaptured"]
 ```
+
+</details>
 
 ### High-Performance Screen Capture
 
