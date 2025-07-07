@@ -10,8 +10,3 @@ app.command("search")(search.search_components)
 app.command("validate")(validate.validate_plugin)
 app.command("stats")(stats.show_stats)
 app.command("docs")(docs.docs)
-
-# Backward compatibility (deprecated - will be removed)
-app.command("validate-docs", deprecated=True)(docs.validate_docs)
-app.command("docs-stats", deprecated=True)(docs.docs_stats)
-app.command("health", deprecated=True)(stats.health_check)

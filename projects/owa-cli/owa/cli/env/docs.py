@@ -1,7 +1,7 @@
 """
-Documentation validation commands for OWA plugins.
+Documentation management commands for OWA plugins.
 
-This module implements the `owl env validate-docs` command specified in OEP-0004,
+This module implements the `owl env docs` command with validation and statistics,
 providing comprehensive documentation quality checks with CI/CD integration.
 """
 
@@ -255,31 +255,3 @@ def _docs_stats(plugin_namespace: Optional[str], by_type: bool) -> None:
     except Exception as e:
         console.print(f"[red]❌ ERROR: {e}[/red]")
         sys.exit(1)
-
-
-# Backward compatibility functions (will be removed later)
-def validate_docs(
-    plugin_namespace: Optional[str] = typer.Argument(None, help="Specific plugin namespace to validate (optional)"),
-    strict: bool = typer.Option(False, "--strict", help="Enable strict mode (100% coverage + 100% quality)"),
-    min_coverage_pass: float = typer.Option(0.8, "--min-coverage-pass", help="Minimum coverage for PASS status"),
-    min_coverage_fail: float = typer.Option(0.6, "--min-coverage-fail", help="Minimum coverage to avoid FAIL status"),
-    min_quality_pass: float = typer.Option(
-        0.6, "--min-quality-pass", help="Minimum good quality ratio for PASS status"
-    ),
-    min_quality_fail: float = typer.Option(
-        0.0, "--min-quality-fail", help="Minimum good quality ratio to avoid FAIL status"
-    ),
-    format: str = typer.Option("text", "--output-format", help="Output format: text or json"),
-) -> None:
-    """Validate plugin documentation with proper exit codes for CI/CD integration."""
-    _validate_docs(
-        plugin_namespace, strict, min_coverage_pass, min_coverage_fail, min_quality_pass, min_quality_fail, format
-    )
-
-
-def docs_stats(
-    plugin_namespace: Optional[str] = typer.Argument(None, help="Specific plugin namespace (optional)"),
-    by_type: bool = typer.Option(False, "--by-type", help="Group statistics by component type"),
-) -> None:
-    """Show documentation statistics for plugins."""
-    _docs_stats(plugin_namespace, by_type)

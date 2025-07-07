@@ -338,9 +338,3 @@ def _show_namespaces():
     total_components = len(all_data)
     total_namespaces = len(namespace_counts)
     console.print(f"\n💡 Found {total_namespaces} namespaces with {total_components} total components")
-
-
-# Keep the old function for backward compatibility (will be removed later)
-def health_check():
-    """Perform a health check on the plugin ecosystem."""
-    _perform_health_check()
