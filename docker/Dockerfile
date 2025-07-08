@@ -1,7 +1,7 @@
-# Base Image - CUDA + Miniforge
+# Base Image - CUDA(nvidia/cuda) + Miniforge + uv/vuv
 # if devel needed: 12.6.3-devel-ubuntu22.04 (e.g. compiling flash-attn)
 # if cudnn needed: 12.6.3-cudnn-devel-ubuntu22.04
-FROM nvidia/cuda:12.6.3-runtime-ubuntu22.04
+FROM nvidia/cuda:12.6.3-runtime-ubuntu24.04
 
 # Build arguments
 ARG MINIFORGE_VERSION=latest
