@@ -223,8 +223,8 @@ def _transform_binned_single(
     """Transform a single Binned Dataset example."""
     result = {
         "instruction": instruction,
-        "images": [],
-        "encoded_events": [],
+        "state": [],
+        "actions": [],
     }
 
     # Keep original fields if requested
@@ -235,13 +235,13 @@ def _transform_binned_single(
         # Load images from state sequence
         state_sequence = example.get("state", [])
         images = _load_images_from_state(state_sequence, example)
-        result["images"] = images
+        result["state"] = images
 
     if encode_actions:
         # Encode actions from actions sequence
         actions_sequence = example.get("actions", [])
         encoded_events = _encode_actions(actions_sequence, encoder)
-        result["encoded_events"] = encoded_events
+        result["actions"] = encoded_events
 
     return result
 
@@ -263,16 +263,16 @@ def _transform_binned_batch(
     else:
         result = {}
     result["instruction"] = [instruction] * batch_size
-    result["images"] = []
-    result["encoded_events"] = []
+    result["state"] = []
+    result["actions"] = []
 
     for i in range(batch_size):
         single_example = {key: values[i] for key, values in examples.items()}
         transformed = _transform_binned_single(
             single_example, instruction, encoder, load_images, encode_actions, keep_original
         )
-        result["images"].append(transformed["images"])
-        result["encoded_events"].append(transformed["encoded_events"])
+        result["state"].append(transformed["state"])
+        result["actions"].append(transformed["actions"])
 
     return result
 
