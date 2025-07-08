@@ -6,7 +6,7 @@ ensuring consistency across different encoding strategies.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from mcap_owa.highlevel.reader import McapMessage
 from owa.msgs.desktop.screen import ScreenCaptured
@@ -88,7 +88,7 @@ class BaseEventEncoder(ABC):
         pass
 
     @abstractmethod
-    def get_vocab(self) -> List[str]:
+    def get_vocab(self) -> Set[str]:
         """Get all tokens in the vocabulary."""
         pass
 

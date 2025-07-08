@@ -166,12 +166,10 @@ def _transform_event_single(
     try:
         # Deserialize McapMessage
         mcap_msg = McapMessage.model_validate_json(mcap_message_bytes.decode("utf-8"))
+        encoded_text, screen_captured = encoder.encode(mcap_msg)
         if topic == "screen":
-            # Load image for screen events
-            screen_captured = ScreenCaptured.model_validate_json(mcap_msg.message)
-
             # Resolve path and load image
-            screen_captured = _resolve_video_path(screen_captured, example)
+            screen_captured = _resolve_video_path(screen_captured[0], example)
             if load_images:
                 image = screen_captured.to_pil_image()
             else:
@@ -179,10 +177,7 @@ def _transform_event_single(
 
             result["image"] = image
 
-        elif topic in ["keyboard", "mouse"] and encode_actions:
-            # Encode action events
-            encoded_text, _ = encoder.encode(mcap_msg)
-            result["encoded_event"] = encoded_text
+        result["encoded_event"] = encoded_text
 
     except Exception as e:
         print(f"Warning: Could not process {topic} event: {e}")
