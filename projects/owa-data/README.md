@@ -166,7 +166,7 @@ from torch.utils.data import DataLoader
 from owa.data import create_binned_dataset_transform
 
 # Transform and use with DataLoader
-dataset = load_from_disk("/mnt/raid12/datasets/owa/data/super-hexagon-binned")["train"]
+dataset = load_from_disk("/mnt/raid12/datasets/owa/data/super-hexagon-bin")["train"]
 transform = create_binned_dataset_transform()
 dataset.set_transform(transform)
 
@@ -183,6 +183,10 @@ for batch in dataloader:
     images = batch['images']        # List of List[PIL.Image]
     actions = batch['encoded_events']  # List of List[str]
     instructions = batch['instruction']  # List[str]
+    print(f"{images=}")
+    print(f"{actions=}")
+    print(f"{instructions=}")
+    break
 ```
 
 ## EventEncoder

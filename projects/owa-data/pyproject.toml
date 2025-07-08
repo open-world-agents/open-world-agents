@@ -1,6 +1,6 @@
 [project]
 name = "owa-data"
-version = "0.4.2"
+version = "0.1.0"
 description = "Data handling and dataset utilities for Open World Agents"
 readme = "README.md"
 license = { text = "MIT" }
