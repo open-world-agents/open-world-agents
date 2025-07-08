@@ -210,11 +210,6 @@ class JSONEventEncoder(BaseEventEncoder):
 
         return messages
 
-    def get_encoder_info(self) -> Dict[str, Any]:
-        """Get information about this encoder."""
-        return {
-            "encoder_type": "JSONEventEncoder",
-            "format": "json_string",
-            "vocab_size": None,
-            "drop_file_path": self.drop_file_path,
-        }
+    def get_vocab(self) -> List[str]:
+        """Get all tokens in the vocabulary."""
+        return []

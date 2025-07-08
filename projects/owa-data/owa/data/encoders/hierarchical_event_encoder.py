@@ -14,7 +14,7 @@ This approach reduces vocabulary size by ~95% while maintaining full expressiven
 
 import json
 import re
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from mcap_owa.highlevel.reader import McapMessage
 from owa.core.time import TimeUnits
@@ -30,68 +30,46 @@ class HierarchicalVocabulary:
 
     def __init__(self):
         # Base event type tokens
-        self.base_tokens = {
-            "<EVENT_START>": 0,
-            "<EVENT_END>": 1,
-            "<TIMESTAMP>": 2,
-            "<KEYBOARD>": 3,
-            "<MOUSE>": 4,
-            "<SCREEN>": 5,
-            "<PAD>": 6,
-            "<UNK>": 7,
-        }
+        self.base_tokens = [
+            "<EVENT_START>",
+            "<EVENT_END>",
+            "<TIMESTAMP>",
+            "<KEYBOARD>",
+            "<MOUSE>",
+            "<SCREEN>",
+            "<PAD>",
+            "<UNK>",
+        ]
 
         # Parameter tokens (shared across event types)
-        self.param_tokens = {}
+        self.param_tokens = []
         offset = len(self.base_tokens)
 
         # Numbers 0-255 for various parameters (vk codes, coordinates, etc.)
         for i in range(256):
-            self.param_tokens[f"<{i}>"] = offset + i
+            self.param_tokens.append(f"<{i}>")
         offset += 256
 
         # Action types
         action_tokens = ["<press>", "<release>", "<move>", "<click>", "<scroll>"]
         for i, token in enumerate(action_tokens):
-            self.param_tokens[token] = offset + i
+            self.param_tokens.append(token)
         offset += len(action_tokens)
 
         # Mouse buttons
         button_tokens = ["<left>", "<right>", "<middle>", "<unknown>"]
         for i, token in enumerate(button_tokens):
-            self.param_tokens[token] = offset + i
+            self.param_tokens.append(token)
         offset += len(button_tokens)
 
         # Special tokens for negative numbers (scroll deltas)
         for i in range(-10, 11):  # -10 to +10 for scroll deltas
-            self.param_tokens[f"<{i}>"] = offset
+            self.param_tokens.append(f"<{i}>")
             offset += 1
 
-        self.vocab_size = offset
-
-        # Create reverse mapping
-        self.id_to_token = {}
-        for token, token_id in self.base_tokens.items():
-            self.id_to_token[token_id] = token
-        for token, token_id in self.param_tokens.items():
-            self.id_to_token[token_id] = token
-
-    def encode_token(self, token: str) -> int:
-        """Convert token string to token ID."""
-        if token in self.base_tokens:
-            return self.base_tokens[token]
-        elif token in self.param_tokens:
-            return self.param_tokens[token]
-        else:
-            return self.base_tokens["<UNK>"]
-
-    def decode_token(self, token_id: int) -> str:
-        """Convert token ID to token string."""
-        return self.id_to_token.get(token_id, "<UNK>")
-
-    def get_vocab_size(self) -> int:
-        """Get total vocabulary size."""
-        return self.vocab_size
+    def get_vocab(self) -> List[str]:
+        """Get all tokens in the vocabulary."""
+        return self.base_tokens + self.param_tokens
 
 
 class HierarchicalEventEncoderConfig:
@@ -102,14 +80,14 @@ class HierarchicalEventEncoderConfig:
         timestamp_min_ns: int = -2 * TimeUnits.SECOND,
         timestamp_max_ns: int = 2 * TimeUnits.SECOND,
         timestamp_interval_ns: int = 20 * TimeUnits.MSECOND,  # 50fps
-        mouse_move_bins: List[int] = None,
+        mouse_move_bins: List[int] = [16, 16, 16],  # 3-level residual quantization
         screen_size: Tuple[int, int] = (1920, 1080),
         drop_file_path: bool = True,
     ):
         self.timestamp_min_ns = timestamp_min_ns
         self.timestamp_max_ns = timestamp_max_ns
         self.timestamp_interval_ns = timestamp_interval_ns
-        self.mouse_move_bins = mouse_move_bins or [16, 16, 16]  # 3-level residual quantization
+        self.mouse_move_bins = mouse_move_bins
         self.screen_size = screen_size
         self.drop_file_path = drop_file_path
 
@@ -564,14 +542,6 @@ class HierarchicalEventEncoder(BaseEventEncoder):
             events.append(event)
         return events
 
-    def get_vocab_size(self) -> int:
-        """Get the total vocabulary size."""
-        return self.config.vocabulary.get_vocab_size()
-
-    def get_token_ids(self, tokens: List[str]) -> List[int]:
-        """Convert token strings to token IDs."""
-        return [self.config.vocabulary.encode_token(token) for token in tokens]
-
-    def get_tokens_from_ids(self, token_ids: List[int]) -> List[str]:
-        """Convert token IDs to token strings."""
-        return [self.config.vocabulary.decode_token(token_id) for token_id in token_ids]
+    def get_vocab(self) -> List[str]:
+        """Get all tokens in the vocabulary."""
+        return self.config.vocabulary.get_vocab()

@@ -31,7 +31,7 @@ class FlatEventEncoderConfig:
         timestamp_max_ns: int = 2 * TimeUnits.SECOND,
         timestamp_interval_ns: int = 20 * TimeUnits.MSECOND,  # 50fps
         keyboard_vk_count: int = 256,
-        mouse_move_bins: List[int] = None,
+        mouse_move_bins: List[int] = [16, 16, 16],  # 3-level residual quantization
         screen_size: Tuple[int, int] = (1920, 1080),
         drop_file_path: bool = True,
     ):
@@ -39,7 +39,7 @@ class FlatEventEncoderConfig:
         self.timestamp_max_ns = timestamp_max_ns
         self.timestamp_interval_ns = timestamp_interval_ns
         self.keyboard_vk_count = keyboard_vk_count
-        self.mouse_move_bins = mouse_move_bins or [16, 16, 16]  # 3-level residual quantization
+        self.mouse_move_bins = mouse_move_bins
         self.screen_size = screen_size
         self.drop_file_path = drop_file_path
 
@@ -117,10 +117,6 @@ class FlatEventEncoderConfig:
             + self.screen_tokens
             + ["<UNKNOWN>"]
         )
-
-    def get_vocab_size(self) -> int:
-        """Get total vocabulary size."""
-        return len(self.all_tokens)
 
 
 class FlatMouseProcessor:
@@ -219,11 +215,6 @@ class FlatEventEncoder(BaseEventEncoder):
         """Initialize the flat event encoder."""
         self.config = config or FlatEventEncoderConfig()
         self.mouse_processor = FlatMouseProcessor(self.config)
-
-        # Create token to ID mapping
-        all_tokens = self.config.all_tokens
-        self.token_to_id = {token: i for i, token in enumerate(all_tokens)}
-        self.id_to_token = {i: token for token, i in self.token_to_id.items()}
 
     def _encode_timestamp(self, timestamp_ns: int) -> str:
         """Encode timestamp to flat token: <TIMESTAMP_index>"""
@@ -554,25 +545,6 @@ class FlatEventEncoder(BaseEventEncoder):
 
         return events
 
-    def get_vocab_size(self) -> int:
-        """Get the total vocabulary size."""
-        return self.config.get_vocab_size()
-
-    def get_token_ids(self, tokens: List[str]) -> List[int]:
-        """Convert token strings to token IDs."""
-        return [self.token_to_id.get(token, self.token_to_id.get("<UNKNOWN>", 0)) for token in tokens]
-
-    def get_tokens_from_ids(self, token_ids: List[int]) -> List[str]:
-        """Convert token IDs to token strings."""
-        return [self.id_to_token.get(token_id, "<UNKNOWN>") for token_id in token_ids]
-
-    def get_encoder_info(self) -> Dict[str, Any]:
-        """Get information about this encoder."""
-        return {
-            "encoder_type": "FlatEventEncoder",
-            "format": "flat_tokens",
-            "vocab_size": self.get_vocab_size(),
-            "drop_file_path": self.config.drop_file_path,
-            "mouse_move_bins": self.config.mouse_move_bins,
-            "screen_size": self.config.screen_size,
-        }
+    def get_vocab(self) -> List[str]:
+        """Get all tokens in the vocabulary."""
+        return self.config.all_tokens

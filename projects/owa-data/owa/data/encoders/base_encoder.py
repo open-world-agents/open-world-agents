@@ -87,23 +87,31 @@ class BaseEventEncoder(ABC):
         """
         pass
 
-    def get_vocab_size(self) -> Optional[int]:
-        """
-        Get the vocabulary size for token-based encoders.
+    @abstractmethod
+    def get_vocab(self) -> List[str]:
+        """Get all tokens in the vocabulary."""
+        pass
 
-        Returns:
-            Optional[int]: Vocabulary size if applicable, None for string-based encoders
+    def extend_vocab_from_tokenizer(self, tokenizer, model=None):
         """
-        return None
+        Extend tokenizer and model vocabulary with encoder tokens.
+
+        Args:
+            tokenizer: HuggingFace tokenizer to extend
+            model: Optional model to resize embeddings
+        """
+        tokenizer.add_tokens(self.get_vocab())
+        if model is not None:
+            model.resize_token_embeddings(len(tokenizer))
 
     def get_encoder_info(self) -> Dict[str, Any]:
         """
         Get information about this encoder.
 
         Returns:
-            Dict containing encoder metadata like type, vocab size, etc.
+            Dict containing encoder metadata like type, added tokens, etc.
         """
         return {
             "encoder_type": self.__class__.__name__,
-            "vocab_size": self.get_vocab_size(),
+            "added_tokens": self.get_vocab(),
         }
