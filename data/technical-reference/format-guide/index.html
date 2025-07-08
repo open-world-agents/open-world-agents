@@ -2640,8 +2640,7 @@
 <div class="termy" data-termynal data-ty-macos data-ty-title="bash"><span data-ty="input" data-ty-prompt="$"># 1. Record desktop interaction</span><span data-ty="input" data-ty-prompt="$">ocap my-session.mcap</span><span data-ty>🎥 Recording desktop interaction...<br>✓ Saved 1,247 events to my-session.mcap<br><br></span><span data-ty="input" data-ty-prompt="$"># 2. Process to training format</span><span data-ty="input" data-ty-prompt="$">python scripts/01_raw_events_to_event_dataset.py --train-dir ./</span><span data-ty>🔄 Raw Events to Event Dataset<br>📁 Loading from: ./<br>📊 Found 1 train files</span><span data-ty="progress"></span><span data-ty>✓ Created 1,247 train examples<br>💾 Saving to ./event-dataset<br>✓ Saved successfully<br><br></span><span data-ty="input" data-ty-prompt="$"># 3. Train your model</span><span data-ty="input" data-ty-prompt="$">python train.py --dataset ./event-dataset</span><span data-ty>🚀 Loading dataset...<br>🏋️ Training desktop agent...<br>📈 Epoch 1/10: loss=0.234<br></span></div>
 
 <p><strong>Pipeline Benefits:</strong></p>
-<!-- NOTE: here is copied from data-pipeline.md -->
-
+<!-- SYNC-ID: data-pipeline-benefits -->
 <ul>
 <li><strong>🔄 Flexible</strong>: Skip binning and use Event Dataset directly, or use traditional Binned Dataset approach</li>
 <li><strong>💾 Storage Optimized</strong>: Since event/binned dataset saves only reference to media, the entire pipeline is designed to be <strong>space-efficient</strong>.
@@ -2683,6 +2682,8 @@
 <a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a>🎉<span class="w"> </span>Completed<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">3</span>.9s<span class="w"> </span><span class="o">(</span><span class="m">0</span>.1min<span class="o">)</span>
 </code></pre></div></li>
 </ul>
+<!-- END-SYNC: data-pipeline-benefits -->
+
 <div class="admonition tip">
 <p class="admonition-title">Complete Pipeline Documentation</p>
 <p>See <strong><a href="../data-pipeline/">🚀 Data Pipeline</a></strong> for detailed documentation on each stage, configuration options, and integration with training frameworks.</p>
@@ -2866,7 +2867,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="July 7, 2025 15:05:33 UTC">July 7, 2025 15:05:33</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="July 8, 2025 15:42:03 UTC">July 8, 2025 15:42:03</span>
   </span>
 
     
