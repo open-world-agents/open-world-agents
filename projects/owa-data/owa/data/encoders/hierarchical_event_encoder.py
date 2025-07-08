@@ -489,19 +489,13 @@ class HierarchicalEventEncoder(BaseEventEncoder):
                 raise ValueError("Screen event requires image data but none provided")
 
             image_data = images[0]
-            if isinstance(image_data, ScreenCaptured):
-                # Convert ScreenCaptured back to JSON
-                msg_dict = image_data.model_dump(exclude={"frame_arr"})
-                msg = json.dumps(msg_dict)
-            else:
-                # Fallback for unexpected data types
-                msg = json.dumps(image_data) if image_data else "{}"
+            msg = image_data.model_dump_json(exclude={"frame_arr"})
 
             return McapMessage(
                 topic="screen",
                 timestamp=timestamp_ns,
                 message_type="desktop/ScreenCaptured",
-                message=msg.encode("utf-8") if isinstance(msg, str) else msg,
+                message=msg.encode("utf-8"),
             )
 
         else:

@@ -11,12 +11,18 @@ The encoder supports:
 """
 
 import json
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
 from mcap_owa.highlevel.reader import McapMessage
 from owa.msgs.desktop.screen import ScreenCaptured
 
 from .base_encoder import BaseEventEncoder
+
+
+@dataclass
+class JSONEventEncoderConfig:
+    image_token: str = "<IMAGE>"
 
 
 class JSONEventEncoder(BaseEventEncoder):
@@ -43,15 +49,9 @@ class JSONEventEncoder(BaseEventEncoder):
         <EVENT_START>{'topic': 'keyboard', 'timestamp_ns': 1745362786814673800, ...}<EVENT_END>
     """
 
-    def __init__(self, drop_file_path: bool = True):
-        """
-        Initialize the JSONEventEncoder.
-
-        Args:
-            drop_file_path: Whether to drop the file_path field from encoded events.
-                          Defaults to True to reduce token usage for training.
-        """
-        self.drop_file_path = drop_file_path
+    def __init__(self, config: JSONEventEncoderConfig = JSONEventEncoderConfig(), **kwargs):
+        config = JSONEventEncoderConfig(**(config.__dict__ | kwargs))
+        self.config = config
 
     def encode(self, mcap_message: McapMessage) -> Tuple[str, List[ScreenCaptured]]:
         """
@@ -74,14 +74,6 @@ class JSONEventEncoder(BaseEventEncoder):
         # Handle screen events with image data
         images = []
 
-        # Create event dictionary for serialization
-        event_dict = {
-            "topic": mcap_message.topic,
-            "timestamp_ns": mcap_message.timestamp,
-            "message_type": mcap_message.message_type,
-            "msg": mcap_message.message,
-        }
-
         if mcap_message.topic == "screen" and mcap_message.message_type == "desktop/ScreenCaptured":
             # Parse the message to create ScreenCaptured object
             try:
@@ -93,14 +85,12 @@ class JSONEventEncoder(BaseEventEncoder):
                 # Store the ScreenCaptured object directly
                 images.append(screen_event)
 
-                # Replace message content with <IMAGE> placeholder in serialized text
-                # Keep as bytes since McapMessage.message is bytes
-                event_dict["msg"] = b"<IMAGE>"
+                mcap_message.message = self.config.image_token.encode("utf-8")
             except Exception as e:
                 raise ValueError(f"Failed to parse screen event message: {e}")
 
         # Create the serialized text format
-        serialized_text = f"<EVENT_START>{event_dict}<EVENT_END>"
+        serialized_text = f"<EVENT_START>{mcap_message.model_dump_json()}<EVENT_END>"
 
         return serialized_text, images
 
@@ -140,26 +130,23 @@ class JSONEventEncoder(BaseEventEncoder):
         if (
             event_dict.get("topic") == "screen"
             and event_dict.get("message_type") == "desktop/ScreenCaptured"
-            and event_dict.get("msg") in (b"<IMAGE>", "<IMAGE>")  # Handle both bytes and string
+            and event_dict.get("message") == self.config.image_token
         ):
             if not images:
                 raise ValueError("Screen event requires image data but none provided")
 
             # Restore the original message content
             image_data = images[0]
-            if isinstance(image_data, ScreenCaptured):
-                # Convert ScreenCaptured back to JSON format
-                msg_dict = image_data.model_dump(exclude={"frame_arr"})
-                event_dict["msg"] = json.dumps(msg_dict)
-            else:
-                # Fallback for unexpected data types
-                event_dict["msg"] = json.dumps(image_data) if image_data else "{}"
+            msg = image_data.model_dump_json(exclude={"frame_arr"})
+            event_dict["message"] = msg
 
         return McapMessage(
             topic=event_dict["topic"],
             timestamp=event_dict["timestamp_ns"],
             message_type=event_dict["message_type"],
-            message=event_dict["msg"] if isinstance(event_dict["msg"], bytes) else event_dict["msg"].encode("utf-8"),
+            message=event_dict["message"]
+            if isinstance(event_dict["message"], bytes)
+            else event_dict["message"].encode("utf-8"),
         )
 
     def encode_batch(self, mcap_messages: List[McapMessage]) -> Tuple[List[str], List[List[ScreenCaptured]]]:
