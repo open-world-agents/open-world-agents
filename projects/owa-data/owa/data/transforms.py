@@ -65,7 +65,7 @@ def create_event_dataset_transform(
         Handles both single examples and batches of examples.
         """
         # Check if this is a batch (lists) or single example
-        is_batch = isinstance(examples.get("file_path", ""), list)
+        is_batch = isinstance(examples.get("episode_path", ""), list)
 
         if is_batch:
             return _transform_event_batch(examples, event_encoder, load_images, encode_actions, keep_original)
@@ -129,7 +129,7 @@ def create_binned_dataset_transform(
         Handles both single examples and batches of examples.
         """
         # Check if this is a batch (lists) or single example
-        is_batch = isinstance(examples.get("file_path", ""), list)
+        is_batch = isinstance(examples.get("episode_path", ""), list)
 
         if is_batch:
             return _transform_binned_batch(
@@ -166,19 +166,18 @@ def _transform_event_single(
     try:
         # Deserialize McapMessage
         mcap_msg = McapMessage.model_validate_json(mcap_message_bytes.decode("utf-8"))
-        if topic == "screen" and load_images:
-            # Load image for screen events
-            screen_captured = ScreenCaptured.model_validate_json(mcap_msg.message)
-
+        encoded_text, screen_captured = encoder.encode(mcap_msg)
+        if topic == "screen":
             # Resolve path and load image
-            screen_captured = _resolve_video_path(screen_captured, example)
-            image = screen_captured.to_pil_image()
+            screen_captured = _resolve_video_path(screen_captured[0], example)
+            if load_images:
+                image = screen_captured.to_pil_image()
+            else:
+                image = screen_captured
+
             result["image"] = image
 
-        elif topic in ["keyboard", "mouse"] and encode_actions:
-            # Encode action events
-            encoded_text, _ = encoder.encode(mcap_msg)
-            result["encoded_event"] = encoded_text
+        result["encoded_event"] = encoded_text
 
     except Exception as e:
         print(f"Warning: Could not process {topic} event: {e}")
@@ -194,7 +193,7 @@ def _transform_event_batch(
     keep_original: bool,
 ) -> Dict[str, Any]:
     """Transform a batch of Event Dataset examples."""
-    batch_size = len(examples["file_path"])
+    batch_size = len(examples["episode_path"])
 
     # Initialize result with original data
     if keep_original:
@@ -224,8 +223,8 @@ def _transform_binned_single(
     """Transform a single Binned Dataset example."""
     result = {
         "instruction": instruction,
-        "images": [],
-        "encoded_events": [],
+        "state": [],
+        "actions": [],
     }
 
     # Keep original fields if requested
@@ -236,13 +235,13 @@ def _transform_binned_single(
         # Load images from state sequence
         state_sequence = example.get("state", [])
         images = _load_images_from_state(state_sequence, example)
-        result["images"] = images
+        result["state"] = images
 
     if encode_actions:
         # Encode actions from actions sequence
         actions_sequence = example.get("actions", [])
         encoded_events = _encode_actions(actions_sequence, encoder)
-        result["encoded_events"] = encoded_events
+        result["actions"] = encoded_events
 
     return result
 
@@ -256,7 +255,7 @@ def _transform_binned_batch(
     keep_original: bool,
 ) -> Dict[str, Any]:
     """Transform a batch of Binned Dataset examples."""
-    batch_size = len(examples["file_path"])
+    batch_size = len(examples["episode_path"])
 
     # Initialize result
     if keep_original:
@@ -264,16 +263,16 @@ def _transform_binned_batch(
     else:
         result = {}
     result["instruction"] = [instruction] * batch_size
-    result["images"] = []
-    result["encoded_events"] = []
+    result["state"] = []
+    result["actions"] = []
 
     for i in range(batch_size):
         single_example = {key: values[i] for key, values in examples.items()}
         transformed = _transform_binned_single(
             single_example, instruction, encoder, load_images, encode_actions, keep_original
         )
-        result["images"].append(transformed["images"])
-        result["encoded_events"].append(transformed["encoded_events"])
+        result["state"].append(transformed["state"])
+        result["actions"].append(transformed["actions"])
 
     return result
 
@@ -332,16 +331,16 @@ def _resolve_video_path(screen_captured: ScreenCaptured, metadata: Dict[str, Any
 
     Args:
         screen_captured: ScreenCaptured object with potentially relative path
-        metadata: Sample metadata containing file_path
+        metadata: Sample metadata containing episode_path
 
     Returns:
         ScreenCaptured object with resolved absolute path
     """
     if screen_captured.media_ref is not None:
         if screen_captured.media_ref.is_video:
-            file_path = metadata.get("file_path")
-            if file_path:
-                screen_captured.resolve_external_path(file_path)
+            episode_path = metadata.get("episode_path")
+            if episode_path:
+                screen_captured.resolve_external_path(episode_path)
 
-    # For other media_ref types or if no file_path, return as-is
+    # For other media_ref types or if no episode_path, return as-is
     return screen_captured

@@ -1,8 +1,6 @@
 # Import encoders from the encoders module
 from .encoders import (
     BaseEventEncoder,
-    FlatEventEncoder,
-    FlatEventEncoderConfig,
     HierarchicalEventEncoder,
     HierarchicalEventEncoderConfig,
     JSONEventEncoder,
@@ -17,8 +15,6 @@ from .transforms import (
 __all__ = [
     "BaseEventEncoder",
     "JSONEventEncoder",
-    "FlatEventEncoder",
-    "FlatEventEncoderConfig",
     "HierarchicalEventEncoder",
     "HierarchicalEventEncoderConfig",
     "load_dataset",

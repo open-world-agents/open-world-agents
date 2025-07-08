@@ -11,7 +11,7 @@ Usage (CLI):
         [--fps 10]
 
 - Bins events into fixed-rate time intervals at the specified FPS.
-- Each output row contains: file_path, bin_idx, timestamp_ns, state, actions.
+- Each output row contains: episode_path, bin_idx, timestamp_ns, state, actions.
 """
 
 import time
@@ -80,7 +80,7 @@ def aggregate_events_to_bins(
 
         # Compose bin
         bin_data = {
-            "file_path": events[0]["file_path"],
+            "episode_path": events[0]["episode_path"],
             "bin_idx": bin_idx,
             "timestamp_ns": bin_start,
             "state": [last_screen["mcap_message"]]
@@ -162,20 +162,20 @@ def main(
             ds = ds_dict[split]
         else:
             ds = ds_dict
-        # Group by file_path more efficiently
+        # Group by episode_path more efficiently
         console.print(f"[cyan]🔍[/cyan] Analyzing [bold]{len(ds):,}[/bold] events to group by file...")
-        file_paths = sorted(set(ds["file_path"]))  # Sort for consistent ordering
+        episode_paths = sorted(set(ds["episode_path"]))  # Sort for consistent ordering
         all_binned_data = []
 
-        console.print(f"[green]📊[/green] Found [bold]{len(file_paths)}[/bold] files to process")
+        console.print(f"[green]📊[/green] Found [bold]{len(episode_paths)}[/bold] files to process")
 
         # Create a progress bar for files
-        file_pbar = tqdm(file_paths, desc=f"Processing {split or 'dataset'} files")
+        file_pbar = tqdm(episode_paths, desc=f"Processing {split or 'dataset'} files")
         for fp in file_pbar:
             file_pbar.set_postfix({"current_file": Path(fp).name})
 
             # Get all events for this file
-            file_ds = ds.filter(lambda example: example["file_path"] == fp)
+            file_ds = ds.filter(lambda example: example["episode_path"] == fp)
 
             # Convert to list of dicts
             events = []
@@ -193,7 +193,7 @@ def main(
         # Define features
         features = Features(
             {
-                "file_path": Value("string"),
+                "episode_path": Value("string"),
                 "bin_idx": Value("int32"),
                 "timestamp_ns": Value("int64"),
                 "state": Sequence(feature=Value("binary"), length=-1),  # Sequence of serialized McapMessage bytes

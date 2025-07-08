@@ -38,7 +38,7 @@ def test_event_dataset_transform_single():
 
         # Test action event
         action_example = {
-            "file_path": "/test/file.mcap",
+            "episode_path": "/test/file.mcap",
             "topic": "keyboard",
             "timestamp_ns": 123456789,
             "message_type": "KeyboardEvent",
@@ -81,7 +81,7 @@ def test_binned_dataset_transform_single():
 
         # Test binned example
         binned_example = {
-            "file_path": "/test/file.mcap",
+            "episode_path": "/test/file.mcap",
             "bin_idx": 0,
             "timestamp_ns": 123456789,
             "state": [b'{"screen": "data"}'],
@@ -138,7 +138,7 @@ def test_batch_processing():
 
         # Test batch of action events
         batch_examples = {
-            "file_path": ["/test/file1.mcap", "/test/file2.mcap"],
+            "episode_path": ["/test/file1.mcap", "/test/file2.mcap"],
             "topic": ["keyboard", "mouse"],
             "timestamp_ns": [123456789, 123456790],
             "message_type": ["KeyboardEvent", "MouseEvent"],

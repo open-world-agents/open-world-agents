@@ -40,7 +40,7 @@ python scripts/01_raw_events_to_event_dataset.py \
 **Output Schema**:
 ```python
 {
-    "file_path": Value("string"),      # Source MCAP file path
+    "episode_path": Value("string"),      # Source MCAP file path
     "topic": Value("string"),          # Event topic (keyboard, mouse, screen)
     "timestamp_ns": Value("int64"),    # Timestamp in nanoseconds
     "message_type": Value("string"),   # Full message type identifier
@@ -72,7 +72,7 @@ python scripts/02_event_dataset_to_binned_dataset.py \
 **Output Schema**:
 ```python
 {
-    "file_path": Value("string"),      # Source MCAP file path
+    "episode_path": Value("string"),      # Source MCAP file path
     "bin_idx": Value("int32"),         # Time bin index
     "timestamp_ns": Value("int64"),    # Bin start timestamp
     "state": Sequence(feature=Value("binary"), length=-1),    # Sequence of serialized McapMessage bytes (screen events)
@@ -100,7 +100,7 @@ Dataset transforms provide a unified interface for both Event Dataset and Binned
 - **Flexible Pipeline**: Choose your preferred dataset format
 - **Better Integration**: Direct HuggingFace datasets integration with training pipelines
 - **Efficient**: On-demand image loading and action encoding
-- **Configurable**: Support for multiple encoder types (hierarchical, JSON, flat)
+- **Configurable**: Support for multiple encoder types (hierarchical, JSON)
 
 ### Event Dataset Transform
 
@@ -166,7 +166,7 @@ from torch.utils.data import DataLoader
 from owa.data import create_binned_dataset_transform
 
 # Transform and use with DataLoader
-dataset = load_from_disk("/mnt/raid12/datasets/owa/data/super-hexagon-binned")["train"]
+dataset = load_from_disk("/mnt/raid12/datasets/owa/data/super-hexagon-bin")["train"]
 transform = create_binned_dataset_transform()
 dataset.set_transform(transform)
 
@@ -183,6 +183,10 @@ for batch in dataloader:
     images = batch['images']        # List of List[PIL.Image]
     actions = batch['encoded_events']  # List of List[str]
     instructions = batch['instruction']  # List[str]
+    print(f"{images=}")
+    print(f"{actions=}")
+    print(f"{instructions=}")
+    break
 ```
 
 ## EventEncoder
@@ -192,5 +196,3 @@ Converts raw events to text representations for LLM training using `<EVENT_START
 **Encoder Types**:
 - `hierarchical`: Compositional token structure (default, most efficient)
 - `json`: JSON string format with event tokens
-- `flat`: Traditional flat token-based encoding
-

@@ -33,30 +33,7 @@ def test_transform_creation():
     print("✓ Binned dataset transform created successfully")
 
     # Test different encoder types
-    for encoder_type in ["hierarchical", "json", "flat"]:
+    for encoder_type in ["hierarchical", "json"]:
         transform = create_event_dataset_transform(encoder_type=encoder_type)
         assert callable(transform), f"{encoder_type} transform should be callable"
         print(f"✓ {encoder_type} encoder transform created successfully")
-
-
-if __name__ == "__main__":
-    print("Running simple transforms test...")
-    print("=" * 50)
-
-    try:
-        test_transform_creation()
-
-        print("=" * 50)
-        print("✅ Simple test passed! Transforms are working correctly.")
-        print()
-        print("Key features implemented:")
-        print("- create_event_dataset_transform() function")
-        print("- create_binned_dataset_transform() function")
-        print("- Support for hierarchical, json, and flat encoders")
-        print("- Functions return callable transforms for dataset.set_transform()")
-
-    except Exception as e:
-        print(f"❌ Test failed: {e}")
-        import traceback
-
-        traceback.print_exc()

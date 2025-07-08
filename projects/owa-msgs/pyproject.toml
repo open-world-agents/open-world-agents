@@ -56,3 +56,6 @@ include = [
 
 [tool.ruff]
 extend = "../../ruff.toml"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

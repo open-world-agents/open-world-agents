@@ -79,7 +79,7 @@ def parse_rate_argument(rate_args: List[str]) -> Dict[str, float]:
 
 
 def process_raw_events_file(
-    file_path: str,
+    episode_path: str,
     rate_settings: Dict[str, float],
     keep_topics: Optional[List[str]] = None,
 ) -> List[Dict]:
@@ -88,28 +88,28 @@ def process_raw_events_file(
     (drop-only) per topic and optional topic filtering.
 
     Args:
-        file_path: Path to the MCAP file (string).
+        episode_path: Path to the MCAP file (string).
         rate_settings: Mapping from topic name to desired rate in Hz.
         keep_topics: Optional list of topics to keep. If None, all topics are kept.
 
     Returns:
-        List of event dictionaries with keys: file_path, topic, timestamp_ns, message_type, mcap_message.
+        List of event dictionaries with keys: episode_path, topic, timestamp_ns, message_type, mcap_message.
         Messages are returned as McapMessage objects for binary storage.
     """
     events: List[Dict] = []
     interval_extractor = All()  # Select all intervals
     try:
-        valid_intervals: Intervals = interval_extractor.extract_intervals(Path(file_path))
+        valid_intervals: Intervals = interval_extractor.extract_intervals(Path(episode_path))
     except Exception as e:
         # Use print instead of console to avoid pickling issues in multiprocessing
-        print(f"⚠ Failed to extract intervals from {Path(file_path).name}: {e}")
+        print(f"⚠ Failed to extract intervals from {Path(episode_path).name}: {e}")
         return events
 
     # Prepare per-topic tracking for last-kept timestamp in nanoseconds
     last_kept_ts: Dict[str, int] = {topic: 0 for topic in rate_settings.keys()}
 
     try:
-        with OWAMcapReader(Path(file_path)) as reader:
+        with OWAMcapReader(Path(episode_path)) as reader:
             for interval in valid_intervals:
                 for mcap_msg in reader.iter_messages(start_time=interval.start, end_time=interval.end):
                     topic, timestamp_ns, msg = mcap_msg.topic, mcap_msg.timestamp, mcap_msg.message
@@ -135,7 +135,7 @@ def process_raw_events_file(
 
                     events.append(
                         {
-                            "file_path": file_path,
+                            "episode_path": episode_path,
                             "topic": topic,
                             "timestamp_ns": timestamp_ns,
                             "message_type": message_type,
@@ -144,13 +144,13 @@ def process_raw_events_file(
                     )
     except Exception as e:
         # Use print instead of console to avoid pickling issues in multiprocessing
-        print(f"⚠ Error reading file {Path(file_path).name}: {e}")
+        print(f"⚠ Error reading file {Path(episode_path).name}: {e}")
 
     return events
 
 
 def generate_event_examples(
-    file_paths: List[str],
+    episode_paths: List[str],
     rate_settings: Dict[str, float],
     keep_topics: Optional[List[str]] = None,
     num_workers: int = 4,
@@ -160,7 +160,7 @@ def generate_event_examples(
     in parallel using multiple processes.
 
     Args:
-        file_paths: List of MCAP file paths (strings).
+        episode_paths: List of MCAP file paths (strings).
         rate_settings: Mapping from topic to desired rate (Hz).
         keep_topics: Optional list of topics to keep. If None, all topics are kept.
         num_workers: Number of parallel worker processes.
@@ -168,10 +168,10 @@ def generate_event_examples(
     Yields:
         Individual event dictionaries suitable for Hugging Face Dataset.
     """
-    total_files = len(file_paths)
+    total_files = len(episode_paths)
     with ProcessPoolExecutor(max_workers=num_workers) as executor:
         future_to_path = {
-            executor.submit(process_raw_events_file, fp, rate_settings, keep_topics): fp for fp in file_paths
+            executor.submit(process_raw_events_file, fp, rate_settings, keep_topics): fp for fp in episode_paths
         }
         with tqdm(total=total_files, desc="Processing files", unit="file") as pbar:
             for future in as_completed(future_to_path):
@@ -188,7 +188,7 @@ def generate_event_examples(
 
 
 def create_event_dataset(
-    file_paths: List[Path],
+    episode_paths: List[Path],
     rate_settings: Dict[str, float],
     keep_topics: Optional[List[str]] = None,
     num_workers: int = 4,
@@ -199,7 +199,7 @@ def create_event_dataset(
     examples from a generator.
 
     Args:
-        file_paths: List of pathlib.Path objects pointing to MCAP files.
+        episode_paths: List of pathlib.Path objects pointing to MCAP files.
         rate_settings: Mapping from topic to rate (Hz) to apply drop-only downsampling.
         keep_topics: Optional list of topics to keep. If None, all topics are kept.
         num_workers: Number of worker processes for parallel file processing.
@@ -207,11 +207,11 @@ def create_event_dataset(
     Returns:
         A Hugging Face Dataset containing the combined events.
     """
-    file_path_strs = [str(fp) for fp in file_paths]
+    episode_path_strs = [str(fp) for fp in episode_paths]
 
     features = Features(
         {
-            "file_path": Value("string"),
+            "episode_path": Value("string"),
             "topic": Value("string"),
             "timestamp_ns": Value("int64"),
             "message_type": Value("string"),
@@ -222,7 +222,7 @@ def create_event_dataset(
     event_dataset = HFDataset.from_generator(
         generate_event_examples,
         gen_kwargs={
-            "file_paths": file_path_strs,
+            "episode_paths": episode_path_strs,
             "rate_settings": rate_settings,
             "keep_topics": keep_topics,
             "num_workers": num_workers,

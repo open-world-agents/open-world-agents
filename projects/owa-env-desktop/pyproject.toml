@@ -31,3 +31,6 @@ packages = ["owa"]
 # Entry point for plugin discovery
 [project.entry-points."owa.env.plugins"]
 desktop = "owa.env.plugins.desktop:plugin_spec"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

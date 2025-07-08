@@ -5,7 +5,7 @@ FROM ${RUNTIME_IMAGE}
 # Install ML packages using uv
 RUN --mount=type=cache,target=${HOME}/.cache/uv,sharing=locked \
     --mount=type=cache,target=${HOME}/.cache/pip,sharing=locked \
-    . activate owa && vuv pip install torch numpy torchvision pillow datasets huggingface-hub transformers wandb
+    . activate owa && vuv pip install torch torchvision numpy pillow datasets huggingface-hub transformers wandb
 
 # Clone and checkout open-world-agents with optimizations
 RUN --mount=type=cache,target=${HOME}/.cache/git,sharing=locked \

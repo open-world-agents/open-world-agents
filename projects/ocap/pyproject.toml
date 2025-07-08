@@ -25,3 +25,6 @@ packages = ["owa"]
 
 [project.scripts]
 ocap = "owa.ocap.recorder:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
