@@ -115,7 +115,6 @@ class FlatEventEncoderConfig:
             + self.mouse_click_tokens
             + self.mouse_scroll_tokens
             + self.screen_tokens
-            + ["<UNKNOWN>"]
         )
 
 
@@ -185,7 +184,7 @@ class FlatMouseProcessor:
         elif event.event_type == "scroll":
             return tokens + [self.encode_scroll(event)]
         else:
-            return tokens + ["<MOUSE_unknown>"]
+            raise ValueError(f"Unsupported mouse event type: {event.event_type}")
 
 
 class FlatEventEncoder(BaseEventEncoder):
@@ -279,7 +278,7 @@ class FlatEventEncoder(BaseEventEncoder):
             images.append(screen_event)
 
         else:
-            tokens.append("<UNKNOWN>")
+            raise ValueError(f"Unsupported event type: {mcap_message.topic}")
 
         # Wrap with EVENT_START and EVENT_END tokens for consistent parsing
         tokens_str = "".join(tokens)
@@ -326,15 +325,9 @@ class FlatEventEncoder(BaseEventEncoder):
         idx = int(timestamp_match.group(1))
         timestamp_ns = self.config.timestamp_min_ns + idx * self.config.timestamp_interval_ns
 
-        # Determine event type and decode accordingly
+        # Only timestamp, create unknown event
         if len(tokens) < 2:
-            # Only timestamp, create unknown event
-            return McapMessage(
-                topic="unknown",
-                timestamp=timestamp_ns,
-                message_type="unknown",
-                message="{}".encode("utf-8"),
-            )
+            raise ValueError("Token sequence too short")
 
         event_token = tokens[1]
 
@@ -382,13 +375,7 @@ class FlatEventEncoder(BaseEventEncoder):
             )
 
         else:
-            # Unknown event type
-            return McapMessage(
-                topic="unknown",
-                timestamp=timestamp_ns,
-                message_type="unknown",
-                message="{}".encode("utf-8"),
-            )
+            raise ValueError(f"Unknown event token: {event_token}")
 
     def _decode_mouse_event(
         self, mouse_tokens: List[str], timestamp_ns: int, screen_size: Optional[Tuple[int, int]] = None
@@ -479,12 +466,7 @@ class FlatEventEncoder(BaseEventEncoder):
                 "dy": dy,
             }
         else:
-            # Unknown mouse event
-            msg_data = {
-                "event_type": "unknown",
-                "x": pix_x,
-                "y": pix_y,
-            }
+            raise ValueError(f"Unknown mouse event token: {other_tokens[0]}")
 
         return McapMessage(
             topic="mouse",

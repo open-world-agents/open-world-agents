@@ -37,8 +37,6 @@ class HierarchicalVocabulary:
             "<KEYBOARD>",
             "<MOUSE>",
             "<SCREEN>",
-            "<PAD>",
-            "<UNK>",
         ]
 
         # Parameter tokens (shared across event types)
@@ -208,7 +206,7 @@ class HierarchicalMouseProcessor:
         elif event.event_type == "scroll":
             return tokens + self.encode_scroll(event)[2:]  # Skip <MOUSE>, <scroll> prefix
         else:
-            return tokens + ["<UNK>"]
+            raise ValueError(f"Unsupported mouse event type: {event.event_type}")
 
 
 class HierarchicalEventEncoder(BaseEventEncoder):
@@ -396,7 +394,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
             images.append(screen_event)
 
         else:
-            tokens.append("<UNK>")
+            raise ValueError(f"Unsupported event type: {mcap_message.topic}")
 
         # Wrap with EVENT_START and EVENT_END tokens for consistent parsing
         tokens_str = "".join(tokens)
@@ -437,15 +435,9 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         # Decode timestamp (first 2 tokens)
         timestamp_ns = self._decode_timestamp(tokens[:2])
 
-        # Determine event type and decode accordingly
+        # Only timestamp, create unknown event
         if len(tokens) < 3:
-            # Only timestamp, create unknown event
-            return McapMessage(
-                topic="unknown",
-                timestamp=timestamp_ns,
-                message_type="unknown",
-                message="{}".encode("utf-8"),
-            )
+            raise ValueError("Token sequence too short")
 
         event_type_token = tokens[2]
 
