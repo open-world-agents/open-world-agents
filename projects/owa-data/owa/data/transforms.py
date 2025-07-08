@@ -65,7 +65,7 @@ def create_event_dataset_transform(
         Handles both single examples and batches of examples.
         """
         # Check if this is a batch (lists) or single example
-        is_batch = isinstance(examples.get("file_path", ""), list)
+        is_batch = isinstance(examples.get("episode_path", ""), list)
 
         if is_batch:
             return _transform_event_batch(examples, event_encoder, load_images, encode_actions, keep_original)
@@ -129,7 +129,7 @@ def create_binned_dataset_transform(
         Handles both single examples and batches of examples.
         """
         # Check if this is a batch (lists) or single example
-        is_batch = isinstance(examples.get("file_path", ""), list)
+        is_batch = isinstance(examples.get("episode_path", ""), list)
 
         if is_batch:
             return _transform_binned_batch(
@@ -193,7 +193,7 @@ def _transform_event_batch(
     keep_original: bool,
 ) -> Dict[str, Any]:
     """Transform a batch of Event Dataset examples."""
-    batch_size = len(examples["file_path"])
+    batch_size = len(examples["episode_path"])
 
     # Initialize result with original data
     if keep_original:
@@ -255,7 +255,7 @@ def _transform_binned_batch(
     keep_original: bool,
 ) -> Dict[str, Any]:
     """Transform a batch of Binned Dataset examples."""
-    batch_size = len(examples["file_path"])
+    batch_size = len(examples["episode_path"])
 
     # Initialize result
     if keep_original:
@@ -331,16 +331,16 @@ def _resolve_video_path(screen_captured: ScreenCaptured, metadata: Dict[str, Any
 
     Args:
         screen_captured: ScreenCaptured object with potentially relative path
-        metadata: Sample metadata containing file_path
+        metadata: Sample metadata containing episode_path
 
     Returns:
         ScreenCaptured object with resolved absolute path
     """
     if screen_captured.media_ref is not None:
         if screen_captured.media_ref.is_video:
-            file_path = metadata.get("file_path")
-            if file_path:
-                screen_captured.resolve_external_path(file_path)
+            episode_path = metadata.get("episode_path")
+            if episode_path:
+                screen_captured.resolve_external_path(episode_path)
 
-    # For other media_ref types or if no file_path, return as-is
+    # For other media_ref types or if no episode_path, return as-is
     return screen_captured

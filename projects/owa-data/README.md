@@ -40,7 +40,7 @@ python scripts/01_raw_events_to_event_dataset.py \
 **Output Schema**:
 ```python
 {
-    "file_path": Value("string"),      # Source MCAP file path
+    "episode_path": Value("string"),      # Source MCAP file path
     "topic": Value("string"),          # Event topic (keyboard, mouse, screen)
     "timestamp_ns": Value("int64"),    # Timestamp in nanoseconds
     "message_type": Value("string"),   # Full message type identifier
@@ -72,7 +72,7 @@ python scripts/02_event_dataset_to_binned_dataset.py \
 **Output Schema**:
 ```python
 {
-    "file_path": Value("string"),      # Source MCAP file path
+    "episode_path": Value("string"),      # Source MCAP file path
     "bin_idx": Value("int32"),         # Time bin index
     "timestamp_ns": Value("int64"),    # Bin start timestamp
     "state": Sequence(feature=Value("binary"), length=-1),    # Sequence of serialized McapMessage bytes (screen events)

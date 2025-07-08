@@ -16,7 +16,7 @@ class IntervalExtractor(ABC):
     """
 
     @abstractmethod
-    def extract_intervals(self, file_path: Path) -> Intervals:
+    def extract_intervals(self, episode_path: Path) -> Intervals:
         """
         Given a Path to an MCAP file, return an Intervals object containing
         valid (start, end) timestamp pairs according to this extractor's logic.
@@ -57,11 +57,11 @@ class All(IntervalExtractor):
     then returns an Intervals containing exactly one pair: (min_timestamp, max_timestamp).
     """
 
-    def extract_intervals(self, file_path: Path) -> Intervals:
+    def extract_intervals(self, episode_path: Path) -> Intervals:
         min_ts = None
         max_ts = None
 
-        with OWAMcapReader(file_path) as reader:
+        with OWAMcapReader(episode_path) as reader:
             min_ts = reader.start_time
             max_ts = reader.end_time
 
@@ -78,7 +78,7 @@ class Empty(IntervalExtractor):
     Acts as the identity element for union operations.
     """
 
-    def extract_intervals(self, file_path: Path) -> Intervals:
+    def extract_intervals(self, episode_path: Path) -> Intervals:
         return Intervals()  # Always empty
 
 
@@ -99,14 +99,14 @@ class StartStopKeyPress(IntervalExtractor):
         self.start_stop_key = start_stop_key
         self.pause_key = pause_key
 
-    def extract_intervals(self, file_path: Path) -> Intervals:
+    def extract_intervals(self, episode_path: Path) -> Intervals:
         """
         Iterate over keyboard messages; whenever the specified start_stop_key is
         released, record its timestamp. Then pair off even and odd indices into
         (start, end) timestamp intervals.
         """
         timestamps: list[int] = []
-        with OWAMcapReader(file_path) as reader:
+        with OWAMcapReader(episode_path) as reader:
             for mcap_msg in reader.iter_messages(topics=["keyboard"]):
                 # Record on key release of start_stop_key
                 if mcap_msg.decoded.event_type == "release" and mcap_msg.decoded.vk == self.start_stop_key:
@@ -136,7 +136,7 @@ class InactivityFilter(IntervalExtractor):
         """
         self.inactivity_threshold = inactivity_threshold
 
-    def extract_intervals(self, file_path: Path) -> Intervals:
+    def extract_intervals(self, episode_path: Path) -> Intervals:
         """
         Walk through keyboard and mouse messages in the MCAP file. Whenever the
         time difference between the current event and the last recorded activity
@@ -146,7 +146,7 @@ class InactivityFilter(IntervalExtractor):
         current_interval_start = None
         last_activity_time = None
 
-        with OWAMcapReader(file_path) as reader:
+        with OWAMcapReader(episode_path) as reader:
             for mcap_msg in reader.iter_messages(topics=["keyboard", "mouse"]):
                 # If this is the first event, mark the start of the first interval
                 if current_interval_start is None:
@@ -179,9 +179,9 @@ class IntervalAnd(IntervalExtractor):
         self.left = left
         self.right = right
 
-    def extract_intervals(self, file_path: Path) -> Intervals:
-        left_intervals = self.left.extract_intervals(file_path)
-        right_intervals = self.right.extract_intervals(file_path)
+    def extract_intervals(self, episode_path: Path) -> Intervals:
+        left_intervals = self.left.extract_intervals(episode_path)
+        right_intervals = self.right.extract_intervals(episode_path)
         return left_intervals & right_intervals
 
 
@@ -192,9 +192,9 @@ class IntervalOr(IntervalExtractor):
         self.left = left
         self.right = right
 
-    def extract_intervals(self, file_path: Path) -> Intervals:
-        left_intervals = self.left.extract_intervals(file_path)
-        right_intervals = self.right.extract_intervals(file_path)
+    def extract_intervals(self, episode_path: Path) -> Intervals:
+        left_intervals = self.left.extract_intervals(episode_path)
+        right_intervals = self.right.extract_intervals(episode_path)
         return left_intervals | right_intervals
 
 
@@ -205,7 +205,7 @@ class IntervalSubtract(IntervalExtractor):
         self.left = left
         self.right = right
 
-    def extract_intervals(self, file_path: Path) -> Intervals:
-        left_intervals = self.left.extract_intervals(file_path)
-        right_intervals = self.right.extract_intervals(file_path)
+    def extract_intervals(self, episode_path: Path) -> Intervals:
+        left_intervals = self.left.extract_intervals(episode_path)
+        right_intervals = self.right.extract_intervals(episode_path)
         return left_intervals - right_intervals
