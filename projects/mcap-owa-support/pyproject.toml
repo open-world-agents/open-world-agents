@@ -27,3 +27,6 @@ packages = ["mcap_owa"]
 
 [tool.hatch.version]
 path = "mcap_owa/__init__.py"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

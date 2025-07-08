@@ -33,3 +33,6 @@ packages = ["owa"]
 
 [project.scripts]
 owl = "owa.cli:app"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

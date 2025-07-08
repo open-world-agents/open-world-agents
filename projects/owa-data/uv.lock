@@ -537,7 +537,7 @@ wheels = [
 
 [[package]]
 name = "owa-data"
-version = "0.4.2"
+version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "datasets" },
