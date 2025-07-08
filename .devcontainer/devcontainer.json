@@ -34,20 +34,21 @@
 	"customizations": {
 		"vscode": {
 			"extensions": [
-				"ms-python.python",
-				"ms-python.vscode-pylance",
+				"Augment.vscode-augment",
 				"charliermarsh.ruff",
-				"ms-toolsai.jupyter",
 				"christian-kohler.path-intellisense",
 				"eamodio.gitlens",
 				"GitHub.copilot",
 				"GitHub.copilot-chat",
 				"GitHub.vscode-pull-request-github",
-				"oderwat.indent-rainbow",
-				"ms-azuretools.vscode-docker",
-				"ms-vscode.makefile-tools",
 				"mechatroner.rainbow-csv",
-				"Augment.vscode-augment"
+				"ms-azuretools.vscode-docker",
+				"ms-python.vscode-pylance",
+				"ms-toolsai.jupyter",
+				"ms-vscode.makefile-tools",
+				"ms-vsliveshare.vsliveshare",
+				"oderwat.indent-rainbow",
+				"RooVeterinaryInc.roo-cline"
 			],
 			"settings": {
 				"python.defaultInterpreterPath": "/opt/conda/envs/owa/bin/python",
