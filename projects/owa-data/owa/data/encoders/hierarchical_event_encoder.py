@@ -1,17 +1,3 @@
-"""
-HierarchicalEventEncoder for converting raw events to hierarchical token format.
-
-This module implements the HierarchicalEventEncoder class that converts raw event data
-from the Event Dataset into hierarchical token sequences optimized for VLA training.
-
-The encoder uses a compositional token structure:
-- <TIMESTAMP><index> instead of <TIMESTAMP_index>
-- <KEYBOARD><vk><action> instead of <KEYBOARD_vk_action>
-- <MOUSE><action><params...> instead of <MOUSE_action_params>
-
-This approach reduces vocabulary size by ~95% while maintaining full expressiveness.
-"""
-
 import json
 import re
 from dataclasses import dataclass, field
@@ -30,17 +16,67 @@ from .base_encoder import BaseEventEncoder
 class HierarchicalEventEncoderConfig:
     """Configuration for HierarchicalEventEncoder."""
 
-    timestamp_min_ns: int = -2 * TimeUnits.SECOND
-    timestamp_max_ns: int = 2 * TimeUnits.SECOND
-    timestamp_interval_ns: int = 20 * TimeUnits.MSECOND  # 50fps
-    mouse_move_bins: List[int] = field(default_factory=lambda: [16, 16, 16])  # 3-level residual quantization
+    # ±2 seconds
+    timestamp_range_ns: int = 4 * TimeUnits.SECOND
+    # 4 seconds in 10ms intervals
+    timestamp_bases: List[int] = field(default_factory=lambda: [4, 10, 10])
+    # coordinate quantization bases (like hex: base-16)
+    mouse_coord_bases: List[int] = field(default_factory=lambda: [16, 16, 16])
     screen_size: Tuple[int, int] = (1920, 1080)
     image_token: str = "<IMAGE>"
 
-    @property
-    def timestamp_count(self) -> int:
-        """Number of timestamp bins."""
-        return ((self.timestamp_max_ns - self.timestamp_min_ns) // self.timestamp_interval_ns) + 1
+
+def quantize_to_digits(value: float, bases: List[int]) -> List[int]:
+    """
+    Quantize a normalized value (0.0-1.0) to multi-level digits.
+
+    Args:
+        value: Normalized value between 0.0 and 1.0
+        bases: List of bases for each quantization level (e.g., [16, 16, 16] for 3-level hex)
+
+    Returns:
+        List of digits for each level
+
+    Example:
+        >>> quantize_to_digits(0.6875, [16, 16, 16])
+        [11, 0, 0]  # 0xB00 in hex = 0.6875
+    """
+    digits = []
+    remaining = max(0.0, min(1.0, value))  # Clamp to [0, 1]
+
+    for base in bases:
+        digit = int(remaining * base)
+        digits.append(digit)
+        remaining = remaining * base - digit
+
+    return digits
+
+
+def digits_to_value(digits: List[int], bases: List[int]) -> float:
+    """
+    Reconstruct normalized value from multi-level digits.
+
+    Args:
+        digits: List of digits for each level
+        bases: List of bases for each quantization level
+
+    Returns:
+        Reconstructed normalized value between 0.0 and 1.0
+
+    Example:
+        >>> digits_to_value([11, 0, 0], [16, 16, 16])
+        0.6875  # 0xB00 in hex
+    """
+    if len(digits) != len(bases):
+        raise ValueError(f"Digits length {len(digits)} must match bases length {len(bases)}")
+
+    value = 0.0
+    for i in reversed(range(len(digits))):
+        digit = digits[i]
+        base = bases[i]
+        value = (value + digit) / base
+
+    return value
 
 
 def _generate_vocab(image_token: str = "<IMAGE>") -> Set[str]:
@@ -73,29 +109,37 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         self.config = HierarchicalEventEncoderConfig(**(config.__dict__ | kwargs))
 
     def _encode_timestamp(self, timestamp_ns: int) -> List[str]:
-        """Encode timestamp to hierarchical tokens: [<TIMESTAMP>, <index>]"""
-        mod = timestamp_ns % (self.config.timestamp_max_ns - self.config.timestamp_min_ns)
-        idx = min(self.config.timestamp_count - 1, max(0, mod // self.config.timestamp_interval_ns))
-        return ["<TIMESTAMP>", f"<{idx}>"]
+        """Encode timestamp with multi-level quantization: [<TIMESTAMP>, <digit1>, <digit2>, ...]"""
+        # Normalize timestamp to [0, 1] range within the configured range
+        mod_timestamp = timestamp_ns % self.config.timestamp_range_ns
+        norm_timestamp = mod_timestamp / self.config.timestamp_range_ns
+
+        # Quantize to digits
+        digits = quantize_to_digits(norm_timestamp, self.config.timestamp_bases)
+
+        # Create tokens
+        tokens = ["<TIMESTAMP>"] + [f"<{digit}>" for digit in digits]
+        return tokens
 
     def _encode_keyboard(self, event: KeyboardEvent) -> List[str]:
         """Encode keyboard event: [<KEYBOARD>, <vk>, <action>]"""
         return ["<KEYBOARD>", f"<{event.vk}>", f"<{event.event_type}>"]
 
     def _encode_mouse(self, event: MouseEvent) -> List[str]:
-        """Encode mouse event with hierarchical residual quantization."""
+        """Encode mouse event with multi-level coordinate quantization."""
         x, y = event.x, event.y
-        fx = max(0.0, min(1.0, x / self.config.screen_size[0]))
-        fy = max(0.0, min(1.0, y / self.config.screen_size[1]))
+        norm_x = x / self.config.screen_size[0]
+        norm_y = y / self.config.screen_size[1]
 
         tokens = ["<MOUSE>", "<move>"]
 
-        # Hierarchical residual quantization
-        vx, vy = fx, fy
-        for nbins in self.config.mouse_move_bins:
-            idx_x, idx_y = int(vx * nbins), int(vy * nbins)
-            tokens.extend([f"<{idx_x}>", f"<{idx_y}>"])
-            vx, vy = vx * nbins - idx_x, vy * nbins - idx_y
+        # Quantize coordinates to digits
+        digits_x = quantize_to_digits(norm_x, self.config.mouse_coord_bases)
+        digits_y = quantize_to_digits(norm_y, self.config.mouse_coord_bases)
+
+        # Interleave x,y digit pairs
+        for digit_x, digit_y in zip(digits_x, digits_y):
+            tokens.extend([f"<{digit_x}>", f"<{digit_y}>"])
 
         # Add action-specific tokens
         if event.event_type == "click":
@@ -112,31 +156,33 @@ class HierarchicalEventEncoder(BaseEventEncoder):
     def _decode_mouse_coords(
         self, tokens: List[str], screen_size: Optional[Tuple[int, int]] = None
     ) -> Tuple[int, int]:
-        """Decode hierarchical mouse coordinates."""
+        """Decode quantized mouse coordinates."""
         if screen_size is None:
             screen_size = self.config.screen_size
 
         coord_tokens = tokens[2:]  # Skip <MOUSE> and <move>
-        if len(coord_tokens) != len(self.config.mouse_move_bins) * 2:
-            raise ValueError(f"Expected {len(self.config.mouse_move_bins) * 2} coordinate tokens")
+        if len(coord_tokens) != len(self.config.mouse_coord_bases) * 2:
+            raise ValueError(f"Expected {len(self.config.mouse_coord_bases) * 2} coordinate tokens")
 
-        # Parse coordinate pairs and reconstruct using residual quantization
-        fx = fy = 0.0
-        for i in reversed(range(len(self.config.mouse_move_bins))):
-            x_token = coord_tokens[i * 2]
-            y_token = coord_tokens[i * 2 + 1]
+        # Parse digit pairs from tokens
+        digits_x, digits_y = [], []
+        for i in range(0, len(coord_tokens), 2):
+            x_token = coord_tokens[i]
+            y_token = coord_tokens[i + 1]
 
             x_match = re.match(r"<(\d+)>", x_token)
             y_match = re.match(r"<(\d+)>", y_token)
             if not x_match or not y_match:
                 raise ValueError(f"Invalid coordinate tokens: {x_token}, {y_token}")
 
-            idx_x, idx_y = int(x_match.group(1)), int(y_match.group(1))
-            nbins = self.config.mouse_move_bins[i]
-            fx = (fx + idx_x) / nbins
-            fy = (fy + idx_y) / nbins
+            digits_x.append(int(x_match.group(1)))
+            digits_y.append(int(y_match.group(1)))
 
-        return int(round(fx * (screen_size[0] - 1))), int(round(fy * (screen_size[1] - 1)))
+        # Reconstruct normalized coordinates from digits
+        norm_x = digits_to_value(digits_x, self.config.mouse_coord_bases)
+        norm_y = digits_to_value(digits_y, self.config.mouse_coord_bases)
+
+        return int(round(norm_x * (screen_size[0] - 1))), int(round(norm_y * (screen_size[1] - 1)))
 
     def encode(self, mcap_message: McapMessage) -> Tuple[str, List[ScreenCaptured]]:
         """Encode a single McapMessage object to hierarchical token format."""
@@ -173,13 +219,22 @@ class HierarchicalEventEncoder(BaseEventEncoder):
 
     def _decode_timestamp(self, tokens: List[str]) -> int:
         """Decode timestamp tokens back to nanoseconds."""
-        if len(tokens) != 2 or tokens[0] != "<TIMESTAMP>":
+        if len(tokens) != len(self.config.timestamp_bases) + 1 or tokens[0] != "<TIMESTAMP>":
             raise ValueError(f"Invalid timestamp tokens: {tokens}")
-        idx_match = re.match(r"<(\d+)>", tokens[1])
-        if not idx_match:
-            raise ValueError(f"Invalid timestamp index token: {tokens[1]}")
-        idx = int(idx_match.group(1))
-        return self.config.timestamp_min_ns + idx * self.config.timestamp_interval_ns
+
+        # Parse digits from tokens
+        digits = []
+        for i in range(1, len(tokens)):
+            digit_match = re.match(r"<(\d+)>", tokens[i])
+            if not digit_match:
+                raise ValueError(f"Invalid timestamp digit token: {tokens[i]}")
+            digits.append(int(digit_match.group(1)))
+
+        # Reconstruct normalized timestamp
+        norm_timestamp = digits_to_value(digits, self.config.timestamp_bases)
+
+        # Convert back to nanoseconds
+        return int(norm_timestamp * self.config.timestamp_range_ns)
 
     def _decode_keyboard(self, tokens: List[str]) -> KeyboardEvent:
         """Decode keyboard tokens back to KeyboardEvent."""
@@ -197,7 +252,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
             raise ValueError(f"Invalid mouse tokens: {tokens}")
 
         # Decode coordinates
-        move_end_idx = 2 + len(self.config.mouse_move_bins) * 2
+        move_end_idx = 2 + len(self.config.mouse_coord_bases) * 2
         x, y = self._decode_mouse_coords(tokens[:move_end_idx], screen_size)
 
         # Determine event type and additional parameters
@@ -242,14 +297,15 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         token_content = encoded_data[len("<EVENT_START>") : -len("<EVENT_END>")].strip()
         tokens = re.findall(r"<[^>]*>", token_content) if token_content else []
 
-        if len(tokens) < 3:
+        timestamp_token_count = len(self.config.timestamp_bases) + 1
+        if len(tokens) < timestamp_token_count + 1:
             raise ValueError("Token sequence too short")
 
-        timestamp_ns = self._decode_timestamp(tokens[:2])
-        event_type_token = tokens[2]
+        timestamp_ns = self._decode_timestamp(tokens[:timestamp_token_count])
+        event_type_token = tokens[timestamp_token_count]
 
         if event_type_token == "<KEYBOARD>":
-            keyboard_event = self._decode_keyboard(tokens[2:5])
+            keyboard_event = self._decode_keyboard(tokens[timestamp_token_count : timestamp_token_count + 3])
             msg_data = {"event_type": keyboard_event.event_type, "vk": keyboard_event.vk}
             return McapMessage(
                 topic="keyboard",
@@ -258,7 +314,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
                 message=json.dumps(msg_data).encode("utf-8"),
             )
         elif event_type_token == "<MOUSE>":
-            mouse_event = self._decode_mouse(tokens[2:], screen_size)
+            mouse_event = self._decode_mouse(tokens[timestamp_token_count:], screen_size)
             msg_data = {"event_type": mouse_event.event_type, "x": mouse_event.x, "y": mouse_event.y}
             if mouse_event.button:
                 msg_data["button"] = mouse_event.button
