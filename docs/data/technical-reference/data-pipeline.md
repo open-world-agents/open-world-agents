@@ -292,7 +292,7 @@ Both Event Dataset and Binned Dataset support the same transform interface:
 
 | Parameter | Description | Options | Default |
 |-----------|-------------|---------|---------|
-| `encoder_type` | Event encoding strategy | `hierarchical`, `json`, `flat` | `hierarchical` |
+| `encoder_type` | Event encoding strategy | `hierarchical`, `json` | `hierarchical` |
 | `load_images` | Load screen images | `True`, `False` | `True` |
 | `encode_actions` | Encode action events | `True`, `False` | `True` |
 | `instruction` | Task instruction (Binned only) | Any string | `"Complete the task"` |

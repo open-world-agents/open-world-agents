@@ -100,7 +100,7 @@ Dataset transforms provide a unified interface for both Event Dataset and Binned
 - **Flexible Pipeline**: Choose your preferred dataset format
 - **Better Integration**: Direct HuggingFace datasets integration with training pipelines
 - **Efficient**: On-demand image loading and action encoding
-- **Configurable**: Support for multiple encoder types (hierarchical, JSON, flat)
+- **Configurable**: Support for multiple encoder types (hierarchical, JSON)
 
 ### Event Dataset Transform
 
@@ -196,5 +196,3 @@ Converts raw events to text representations for LLM training using `<EVENT_START
 **Encoder Types**:
 - `hierarchical`: Compositional token structure (default, most efficient)
 - `json`: JSON string format with event tokens
-- `flat`: Traditional flat token-based encoding
-

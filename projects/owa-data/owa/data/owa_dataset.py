@@ -10,7 +10,7 @@ from owa.data.encoders import BaseEventEncoder
 
 def create_encoder(encoder_type: str) -> BaseEventEncoder:
     """Create an encoder instance based on the specified type."""
-    from owa.data.encoders import FlatEventEncoder, HierarchicalEventEncoder, JSONEventEncoder
+    from owa.data.encoders import HierarchicalEventEncoder, JSONEventEncoder
 
     encoder_type = encoder_type.lower()
 
@@ -18,7 +18,5 @@ def create_encoder(encoder_type: str) -> BaseEventEncoder:
         return HierarchicalEventEncoder()
     elif encoder_type == "json":
         return JSONEventEncoder()
-    elif encoder_type == "flat":
-        return FlatEventEncoder()
     else:
-        raise ValueError(f"Unsupported encoder type: {encoder_type}. Supported types: hierarchical, json, flat")
+        raise ValueError(f"Unsupported encoder type: {encoder_type}.")
