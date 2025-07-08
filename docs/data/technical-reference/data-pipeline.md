@@ -95,6 +95,7 @@ graph LR
 
 **Key Features:**
 
+<!-- SYNC-ID: data-pipeline-benefits -->
 - **🔄 Flexible**: Skip binning and use Event Dataset directly, or use traditional Binned Dataset approach
 - **💾 Storage Optimized**: Since event/binned dataset saves only reference to media, the entire pipeline is designed to be **space-efficient**.
 ```sh
@@ -138,6 +139,7 @@ $ python scripts/01_raw_events_to_event_dataset.py
 ✓ Saved successfully
 🎉 Completed in **3.9s** (0.1min)
 ```
+<!-- END-SYNC: data-pipeline-benefits -->
 
 ## Stage 1: Raw MCAP → Event Dataset
 
