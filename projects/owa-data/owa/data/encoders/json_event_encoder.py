@@ -11,11 +11,11 @@ from typing import List, Optional, Tuple
 from mcap_owa.highlevel.reader import McapMessage
 from owa.msgs.desktop.screen import ScreenCaptured
 
-from .base_encoder import BaseEventEncoder
+from .base_encoder import BaseEventEncoder, BaseEventEncoderConfig
 
 
 @dataclass
-class JSONEventEncoderConfig:
+class JSONEventEncoderConfig(BaseEventEncoderConfig):
     image_token: str = "<IMAGE>"
 
 

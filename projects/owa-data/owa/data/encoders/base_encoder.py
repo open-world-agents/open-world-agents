@@ -6,10 +6,16 @@ ensuring consistency across different encoding strategies.
 """
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from mcap_owa.highlevel.reader import McapMessage
 from owa.msgs.desktop.screen import ScreenCaptured
+
+
+@dataclass
+class BaseEventEncoderConfig:
+    image_token: str = "<IMAGE>"
 
 
 class BaseEventEncoder(ABC):

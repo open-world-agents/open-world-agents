@@ -13,6 +13,11 @@ from owa.data.encoders import BaseEventEncoder, create_encoder
 from owa.msgs.desktop.screen import ScreenCaptured
 
 
+def decode_map(example):
+    example["mcap_message"] = list(map(McapMessage.model_validate_json, example["mcap_message"]))
+    return example
+
+
 def create_event_dataset_transform(
     encoder: Optional[BaseEventEncoder] = None,
     encoder_type: str = "hierarchical",
