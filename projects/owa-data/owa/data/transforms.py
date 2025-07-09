@@ -9,8 +9,7 @@ These transforms extract the core functionality from VLADataset for broader reus
 from typing import Any, Dict, List, Optional, Union
 
 from mcap_owa.highlevel import McapMessage
-from owa.data.encoders import BaseEventEncoder
-from owa.data.owa_dataset import create_encoder
+from owa.data.encoders import BaseEventEncoder, create_encoder
 from owa.msgs.desktop.screen import ScreenCaptured
 
 
