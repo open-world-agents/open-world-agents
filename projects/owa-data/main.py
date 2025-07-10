@@ -1,4 +1,5 @@
 from datasets import load_from_disk
+from tqdm import tqdm
 from transformers import AutoTokenizer
 
 from owa.data.episode_tokenizer import EpisodeTokenizer
@@ -8,6 +9,7 @@ from owa.data.fsl_dataset import FSLDataset
 event_dataset = load_from_disk("/mnt/raid12/datasets/owa/data/super-hexagon-event")
 tokenizer = AutoTokenizer.from_pretrained("HuggingFaceTB/SmolVLM2-2.2B-Base")
 
+print("[!] Printing raw event dataset...")
 for sample in event_dataset["train"].take(5):
     print(f"{sample=}")
 
@@ -18,17 +20,15 @@ for split, dataset in event_dataset.items():
     tokenized = event_tokenizer.tokenize_event_dataset(dataset)
     event_dataset[split] = tokenized
 
-
+print("[!] Printing tokenized event dataset...")
 for sample in event_dataset["train"].take(5):
     print(f"{sample=}")
 
 
-from tqdm import tqdm
-
-print(tokenizer.pad_token_id)
 dataset = FSLDataset(event_dataset["train"], pad_token_id=tokenizer.pad_token_id, max_sequence_length=1024)
 dataset.prepare()
 
+print("[!] Printing FSL dataset...")
 for sample in dataset.take(1):
     print(f"{sample=}")
 
