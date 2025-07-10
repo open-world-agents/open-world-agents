@@ -19,6 +19,7 @@ class EpisodeTokenizerConfig:
 
 
 class TokenizedEvent(TypedDict):
+    text: str
     token_ids: list[int]
     images: list[ScreenCaptured]
     total_token_count: int
@@ -56,6 +57,7 @@ class EpisodeTokenizer:
         token_ids = self.tokenizer.encode(encoded_text, add_special_tokens=False)
 
         return TokenizedEvent(
+            text=encoded_text,
             token_ids=token_ids,
             images=images,
             total_token_count=len(token_ids),
@@ -63,23 +65,28 @@ class EpisodeTokenizer:
 
     def tokenize_event_dataset(self, event_dataset: HFDataset, map_kwargs: dict = {"num_proc": 16}) -> HFDataset:
         def process_event(event, idx):
-            prefix, suffix = [], []
+            prefix_text = suffix_text = ""
             # Add episode start token
             if idx == 0 or (idx > 0 and event["episode_path"] != event_dataset[idx - 1]["episode_path"]):
-                prefix = self.tokenizer.encode(self.config.episode_start_token, add_special_tokens=False)
+                prefix_text = self.config.episode_start_token
             # Add episode end token
             if idx < len(event_dataset) - 1 and event["episode_path"] != event_dataset[idx + 1]["episode_path"]:
-                suffix = self.tokenizer.encode(self.config.episode_end_token, add_special_tokens=False)
+                suffix_text = self.config.episode_end_token
+
+            prefix_ids = self.tokenizer.encode(prefix_text, add_special_tokens=False)
+            suffix_ids = self.tokenizer.encode(suffix_text, add_special_tokens=False)
 
             episode_path = event["episode_path"]
             mcap_message = McapMessage.model_validate_json(event["mcap_message"])
             tokenized_event = self.tokenize(mcap_message)
 
-            tokenized_event["token_ids"] = prefix + tokenized_event["token_ids"] + suffix
-            tokenized_event["total_token_count"] += len(prefix) + len(suffix)
+            tokenized_event["text"] = f"{prefix_text}{tokenized_event['text']}{suffix_text}"
+            tokenized_event["token_ids"] = prefix_ids + tokenized_event["token_ids"] + suffix_ids
+            tokenized_event["total_token_count"] += len(prefix_ids) + len(suffix_ids)
 
             return {
                 "episode_path": episode_path,
+                "text": tokenized_event["text"],
                 "token_ids": tokenized_event["token_ids"],
                 "images": [image.model_dump_json() for image in tokenized_event["images"]],
                 "total_token_count": tokenized_event["total_token_count"],
