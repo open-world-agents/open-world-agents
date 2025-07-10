@@ -4,6 +4,7 @@ Desktop screen capture message definitions.
 Minimal, clean design focused on essential functionality.
 """
 
+import warnings
 from pathlib import Path
 from typing import Optional, Self, Tuple
 
@@ -70,6 +71,10 @@ class MediaRef(BaseModel):
         Returns:
             New MediaRef with resolved absolute path
         """
+        if not self.is_local:
+            warnings.warn(f"Cannot resolve non-local path: {self.uri}")
+            return self  # Nothing to resolve for non-local paths
+
         if not self.is_relative_path:
             return self  # Already absolute or not a local path
 

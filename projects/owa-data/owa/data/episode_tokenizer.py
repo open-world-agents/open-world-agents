@@ -1,7 +1,8 @@
 from dataclasses import dataclass
-from typing import Iterator, TypedDict
+from typing import TypedDict
 
-from transformers import AutoTokenizer, PreTrainedTokenizer
+from datasets import Dataset as HFDataset
+from transformers import PreTrainedTokenizer
 
 from mcap_owa.highlevel import McapMessage
 from owa.data.encoders import create_encoder
@@ -17,7 +18,7 @@ class EpisodeTokenizerConfig:
     episode_end_token: str = "<EPISODE_END>"
 
 
-class TokenizedEpisode(TypedDict):
+class TokenizedEvent(TypedDict):
     token_ids: list[int]
     images: list[ScreenCaptured]
     total_token_count: int
@@ -37,22 +38,59 @@ class EpisodeTokenizer:
         }
 
     def prepare_model(self, *, tokenizer: PreTrainedTokenizer, model=None):
-        tokenizer.add_tokens(list(self.get_vocab()))
+        tokenizer.add_tokens(sorted(self.get_vocab()))  # note: set is unordered in python
         if model is not None:
             model.resize_token_embeddings(len(tokenizer))
         self.tokenizer = tokenizer
         self.is_prepared = True
 
-    def tokenize(self, episode_iterator: Iterator[McapMessage]) -> Iterator[TokenizedEpisode]:
+    def tokenize(self, mcap_msg: McapMessage) -> TokenizedEvent:
         if not self.is_prepared:
             raise RuntimeError("EpisodeTokenizer must be prepared by `prepare_model` before tokenizing")
 
-        for mcap_msg in episode_iterator:
-            encoded_text, images = self.encoder.encode(mcap_msg)
-            token_ids = self.tokenizer.encode(encoded_text, add_special_tokens=False)
+        encoded_text, images = self.encoder.encode(mcap_msg)
+        # Repeat image_token by image_token_length
+        encoded_text = encoded_text.replace(
+            self.config.image_token, self.config.image_token * self.config.image_token_length
+        )
+        token_ids = self.tokenizer.encode(encoded_text, add_special_tokens=False)
 
-            yield TokenizedEpisode(
-                token_ids=token_ids,
-                images=images,
-                total_token_count=len(token_ids) + (self.config.image_token_length - 1) * len(images),
-            )
+        return TokenizedEvent(
+            token_ids=token_ids,
+            images=images,
+            total_token_count=len(token_ids),
+        )
+
+    def tokenize_event_dataset(self, event_dataset: HFDataset, map_kwargs: dict = {"num_proc": 16}) -> HFDataset:
+        def process_event(event, idx):
+            prefix, suffix = [], []
+            # Add episode start token
+            if idx == 0 or (idx > 0 and event["episode_path"] != event_dataset[idx - 1]["episode_path"]):
+                prefix = self.tokenizer.encode(self.config.episode_start_token, add_special_tokens=False)
+            # Add episode end token
+            if idx < len(event_dataset) - 1 and event["episode_path"] != event_dataset[idx + 1]["episode_path"]:
+                suffix = self.tokenizer.encode(self.config.episode_end_token, add_special_tokens=False)
+
+            episode_path = event["episode_path"]
+            mcap_message = McapMessage.model_validate_json(event["mcap_message"])
+            tokenized_event = self.tokenize(mcap_message)
+
+            tokenized_event["token_ids"] = prefix + tokenized_event["token_ids"] + suffix
+            tokenized_event["total_token_count"] += len(prefix) + len(suffix)
+
+            return {
+                "episode_path": episode_path,
+                "token_ids": tokenized_event["token_ids"],
+                "images": [image.model_dump_json() for image in tokenized_event["images"]],
+                "total_token_count": tokenized_event["total_token_count"],
+            }
+
+        event_dataset = event_dataset.map(
+            process_event,
+            with_indices=True,
+            desc="Tokenizing event dataset",
+            remove_columns=event_dataset.column_names,
+            **map_kwargs,
+        )
+
+        return event_dataset
