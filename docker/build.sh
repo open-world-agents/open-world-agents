@@ -164,7 +164,7 @@ build_image() {
         esac
     fi
 
-    cmd="$cmd -f $dockerfile -t $full_name ."
+    cmd="$cmd -f $DOCKER_DIR/$dockerfile -t $full_name ."
 
     log_info "🔨 $cmd"
 
@@ -199,8 +199,9 @@ build_image() {
 # Enable BuildKit for cache mounts
 export DOCKER_BUILDKIT=1
 
-# Change to docker directory
-cd "$(dirname "$0")"
+# Change to repository root (parent of docker directory)
+cd "$(dirname "$0")/.."
+DOCKER_DIR="docker"
 
 # Track built images for final output
 BUILT_IMAGES=()
