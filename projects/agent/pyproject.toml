@@ -26,5 +26,5 @@ build-backend = "hatchling.build"
 owa-data = { path = "../../open-world-agents/projects/owa-data" }
 litgpt = { git = "https://github.com/Lightning-AI/litgpt" }
 
-[scripts]
+[project.scripts]
 agent = "agent.__main__:main"
