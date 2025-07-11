@@ -1,4 +1,6 @@
-def activate():
-    from . import example_callable  # noqa
-    from . import example_listener  # noqa
-    from . import example_runnable  # noqa
+"""
+Example environment plugin for Open World Agents.
+
+This plugin demonstrates how to create a plugin using the
+entry points-based discovery system.
+"""
