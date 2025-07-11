@@ -16,7 +16,7 @@ ARG CONDA_INSTALL_PATH=/opt/conda
 WORKDIR ${PROJECT_DIR}
 
 # Copy and run project setup script
-COPY ./setup_runtime.sh /tmp/setup_runtime.sh
+COPY docker/setup_runtime.sh /tmp/setup_runtime.sh
 RUN --mount=type=cache,target=${HOME}/.cache/uv,sharing=locked \
     --mount=type=cache,target=${HOME}/.cache/pip,sharing=locked \
     --mount=type=cache,target=${CONDA_INSTALL_PATH}/pkgs,sharing=locked \

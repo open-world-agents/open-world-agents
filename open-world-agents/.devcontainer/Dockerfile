@@ -9,7 +9,7 @@ ARG USER_GID=1000
 ARG DOCKER_GID=998
 ARG CONDA_INSTALL_PATH=/opt/conda
 
-# System setup (packages, user creation, permissions)
+# System setup (user creation, packages, sudoers)
 COPY ./.devcontainer/devcontainer_system.sh /tmp/devcontainer_system.sh
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
@@ -17,13 +17,17 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     /tmp/devcontainer_system.sh ${USERNAME} ${USER_UID} ${USER_GID} ${DOCKER_GID} && \
     rm /tmp/devcontainer_system.sh
 
+# Install useful tools
+RUN uv pip install --system --no-cache-dir glances gpustat
+
 # Switch to user and setup environment
 USER ${USERNAME}
 ENV USER=${USERNAME} UID=${USER_UID} GID=${USER_GID} HOME=/home/${USERNAME}
 WORKDIR ${HOME}
 
-# User environment setup (shell, tools, conda) - copy script last for better caching
+# User environment setup (shell,  conda)
 COPY --chown=${USER}:${USER} ./.devcontainer/devcontainer_user.sh /tmp/devcontainer_user.sh
+COPY --chown=${USER}:${USER} ./.devcontainer/aliases.sh ${HOME}/.devcontainer/aliases.sh
 RUN --mount=type=cache,target=${HOME}/.cache,sharing=locked,uid=${USER_UID},gid=${USER_GID} \
     chmod +x /tmp/devcontainer_user.sh && \
     /tmp/devcontainer_user.sh && \

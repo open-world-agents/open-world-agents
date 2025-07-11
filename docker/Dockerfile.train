@@ -16,7 +16,7 @@ RUN --mount=type=cache,target=${HOME}/.cache/uv,sharing=locked \
     --mount=type=bind,source=open-world-agents/projects/owa-data,target=/workspace/open-world-agents/projects/owa-data \
     --mount=type=bind,source=projects/agent,target=/workspace/projects/agent \
     . activate owa && \
-    vuv pip install torch torchvision && \
+    vuv pip install torch torchvision tqdm einops && \
     vuv pip install /workspace/projects/agent
 
 # =============================================================================

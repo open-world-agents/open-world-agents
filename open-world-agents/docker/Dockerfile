@@ -18,7 +18,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     git curl wget ca-certificates build-essential
 
 # Install miniforge
-COPY ./setup_miniforge.sh /tmp/setup_miniforge.sh
+COPY docker/setup_miniforge.sh /tmp/setup_miniforge.sh
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     chmod +x /tmp/setup_miniforge.sh && \
     /tmp/setup_miniforge.sh ${MINIFORGE_VERSION} ${CONDA_INSTALL_PATH} && \
