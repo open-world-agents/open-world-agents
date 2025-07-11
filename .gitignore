@@ -1,12 +1,8 @@
-*.log
-*.err
-*.out
-.env
 wandb/
+.env
 
 # Temporary directory
 /tmp/
-/projects/agent/examples/goat/tmp
 
 # documentation site
 /site/
@@ -20,5 +16,17 @@ wheels/
 *.egg-info
 downloads/
 
+# Coverage reports
+htmlcov/
+.coverage
+coverage.xml
+
+# caches
+.pytest_cache/
+.ruff_cache/
+
 # Virtual environments
 .venv
+
+# Ignore
+__ignore__/

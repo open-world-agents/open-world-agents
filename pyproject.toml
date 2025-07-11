@@ -8,23 +8,15 @@ dependencies = [
     "owa"
 ]
 
-[project.optional-dependencies]
-docs = [
-    "mkdocs>=1.6.1",
-    "mkdocs-material>=9.5.3",
-    "mkdocstrings[python]>=0.24.0",
-    "mkdocs-git-revision-date-localized-plugin>=1.2.1",
-    "mkdocs-mermaid2-plugin>=1.1.1",
-    "mkdocs-redirects>=1.2.2",
-]
-
 [dependency-groups]
 dev = [
+    "ipykernel>=6.29.5",
     "ipython>=9.0.1",
     "pytest>=8.3.5",
+    "pytest-cov>=6.0.0",
     "pytest-timeout>=2.3.1",
     "ruff>=0.9.7",
-    "virtual-uv>=0.1.1",
+    "virtual-uv>=0.1.4",
 ]
 
 [build-system]
