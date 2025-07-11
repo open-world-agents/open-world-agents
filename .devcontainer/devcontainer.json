@@ -33,10 +33,8 @@
 	// Lifecycle scripts
 	"updateContentCommand": "echo 'Changing ownership of /opt/conda to vscode user...' && sudo chown -R vscode:vscode /opt/conda",
 	"postCreateCommand": {
-		"workspace-install": ". activate owa && pip install -e /workspace --group dev",
-		"conda-info": "conda info --envs",
-		"package-check": ". activate owa && pip list | grep -E '^owa' || echo 'OWA package not found'",
-		"ready-message": "echo 'OWA Development Environment Ready! 🚀'"
+		"workspace-install": ". activate owa && vuv pip install -e /workspace --group dev && (pip list | grep -E '^owa' && echo 'OWA Development Environment Ready! 🚀' || echo 'OWA package not found')",
+		"conda-info": "conda info --envs"
 	},
 	"postStartCommand": "gpustat",
 	// VS Code customizations
