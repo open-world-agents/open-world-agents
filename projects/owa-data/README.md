@@ -272,6 +272,33 @@ for batch in dataloader:
 
 Core component for Few-Shot Learning that prepares tokenized event data for training with sequence handling, padding, and image loading.
 
+### Goals
+
+1. **Accelerate training**: Packing events into fixed-length sequences for efficient training (maybe 3x acceleration, reported on https://github.com/huggingface/nanoVLM/pull/115)
+2. **Context-aware learning**: Provide full context for each event in the sequence
+
+### Design Principles
+
+1. **Tokenization-aware packing**: Uses actual tokenizer to calculate sequence lengths
+2. **Lazy image loading**: Images loaded on-the-fly for memory efficiency
+3. **Automatic sequence splitting**: Long episodes split across multiple sequences
+4. **Episode boundary tokens**: Configurable `<EPISODE_START>` and `<EPISODE_END>` tokens
+5. **Enable random access**: Allow starting iteration from any position for sequence packing
+6. **Simple implementation**: Clean, readable code with minimal complexity
+
+**Key Insight:** Simply preprocess the event dataset to add tokenization and image processing columns. This enables efficient random access and flexible sequence construction during training.
+
+### Added Columns
+
+FSLDataset adds the following columns to the original event dataset:
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `token_ids` | `List[int]` | Padded token sequences (length = `max_sequence_length`) |
+| `attention_mask` | `List[int]` | Attention masks for padded sequences (1 = real token, 0 = padding) |
+| `total_token_count` | `int` | Total number of tokens in the sequence (before padding) |
+| `images` | `List[ScreenCaptured \| PIL.Image]` | Images corresponding to `<image>` tokens (type depends on `load_images` config) |
+
 ### Complete Example
 
 ```python
