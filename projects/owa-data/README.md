@@ -214,7 +214,7 @@ for sample in tqdm(dataset.take(30)):
 FSL[30] | Total: 3.2s/s, 3,274t/s, 44.8i/s, 49.5Mb/s | EMA: 3.0s/s, 3,073t/s, 42.0i/s, 46.5Mb/s
 ```
 
-- **s/s**: Samples per second | **t/s**: Tokens per second | **i/s**: Images per second | **Mb/s**: Megabytes per second | **EMA**: Exponential Moving Average
+- **s/s**: Samples per second | **t/s**: Tokens per second | **i/s**: Images per second | **Mb/s**: Megabits per second | **EMA**: Exponential Moving Average
 
 ## API Reference
 
