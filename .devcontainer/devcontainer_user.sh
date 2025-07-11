@@ -38,4 +38,5 @@ conda config --set auto_activate_base false
 echo ". activate owa" >> ~/.zshrc
 
 # Install useful tools
+. activate owa
 pip3 install glances gpustat

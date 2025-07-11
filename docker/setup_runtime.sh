@@ -14,8 +14,7 @@ conda config --set auto_activate_base false
 
 # Install uv package manager and dependencies
 pip install uv virtual-uv
-vuv install --dev
-vuv pip install -e projects/owa-env-example
+vuv pip install . --group dev
 
 echo "Runtime environment setup complete!"
 echo "Virtual environment: $(which python)"
