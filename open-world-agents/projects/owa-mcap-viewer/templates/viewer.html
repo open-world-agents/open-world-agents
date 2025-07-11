@@ -1,0 +1,99 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OWA Dataset Visualizer: {{ dataset_info.repo_id }}</title>
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h2>Dataset Info</h2>
+            <div id="dataset-info">
+                <p>Repo ID: {% if dataset_info.repo_id != "local" %}<a
+                        href="https://huggingface.co/datasets/{{ dataset_info.repo_id }}" target="_blank">{{
+                        dataset_info.repo_id }}</a>{% else %}{{ dataset_info.repo_id }}{% endif %}</p>
+                <p>Files: {{ dataset_info.files }}</p>
+                <p>Size: {{ dataset_info.size }}</p>
+            </div>
+
+            <h2>Available Files</h2>
+            <div id="file-list"></div>
+
+
+            <div class="upload-section">
+                <h2>Upload Files</h2>
+                <form id="upload-form" enctype="multipart/form-data">
+                    <div class="upload-pair">
+                        <div>
+                            <label for="mcap-file">MCAP File:</label>
+                            <input type="file" id="mcap-file" name="mcap_file" accept=".mcap" required>
+                        </div>
+                        <div>
+                            <label for="mkv-file">MKV File:</label>
+                            <input type="file" id="mkv-file" name="mkv_file" accept=".mkv" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="upload-button">Upload Files</button>
+                </form>
+                <div id="upload-status"></div>
+            </div>
+
+
+            <h2>Uploaded Files</h2>
+            <div id="uploaded-file-list"></div>
+
+        </div>
+        <div class="main-content">
+            <div class="header">
+                <h1>OWA Dataset Visualizer</h1>
+            </div>
+            <div class="mcap-info-container">
+                <h2>MCAP Information</h2>
+                <div id="mcap-info" class="mcap-info">
+                    <pre>Select a file to view MCAP info</pre>
+                </div>
+            </div>
+            <h2>Video Player</h2>
+            <div class="video-container">
+                <video id="video-player" controls>
+                    <source id="video-source" src="" type="video/webm">
+                    Your browser does not support the video tag.
+                </video>
+                <div class="timeline" id="timeline">
+                    <div class="timeline-marker" id="timeline-marker"></div>
+                </div>
+            </div>
+            <div class="visualization">
+                <div class="viz-window">
+                    <h3>Window</h3>
+                    <div id="window-info">Select a file to begin</div>
+                </div>
+                <div class="viz-keyboard">
+                    <h3>Keyboard</h3>
+                    <div id="keyboard-display" class="keyboard">Select a file to begin</div>
+                </div>
+                <div class="viz-mouse">
+                    <h3>Mouse</h3>
+                    <div id="mouse-display" class="mouse-area">
+                        <div id="mouse-cursor"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Create a global variable that your external JS can access
+        window.APP_CONFIG = {
+            repoId: "{{ dataset_info.repo_id }}"
+        };
+    </script>
+    <script src="/static/app.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,1 @@
+Refer to 📖 **[Desktop Plugin Documentation](https://open-world-agents.github.io/open-world-agents/env/plugins/desktop/)**
