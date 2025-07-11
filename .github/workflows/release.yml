@@ -1,0 +1,55 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  release-ocap:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash -el {0}
+
+    env:
+      PYTHONIOENCODING: utf-8 # https://github.com/Textualize/rich/issues/212
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Setup Conda Environment
+        uses: ./.github/actions/setup-conda-env
+        with:
+          os: windows
+          cache-number: '0'
+          cache-suffix: 'ocap'
+
+      - name: Setup uv Environment
+        uses: ./.github/actions/setup-uv-env
+        with:
+          show-uv-cache-info: 'true'
+
+      - name: Install dependencies
+        run: vuv install --dev
+
+      # install `conda-pack`
+      - name: Install conda-pack
+        run: vuv pip install conda-pack
+
+      - name: Generate Release Files
+        run: python scripts/release/ocap/release.py
+      
+      - name: Test whether ocap works well
+        run: ocap --help
+
+      - name: Upload Release Files
+        uses: actions/upload-artifact@v4
+        with:
+          name: ocap
+          path: |
+            scripts/release/ocap/env.tar.gz
+            scripts/release/ocap/run.bat
+            scripts/release/ocap/restore_ocap.py

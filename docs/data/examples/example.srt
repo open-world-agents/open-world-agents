@@ -1,0 +1,1043 @@
+1
+00:00:00,100 --> 00:00:01,100
+event_type='move' x=1111 y=796 button=None pressed=None dx=None dy=None timestamp=None
+
+2
+00:00:00,101 --> 00:00:01,101
+event_type='move' x=1111 y=796 button=None pressed=None dx=None dy=None timestamp=None
+
+3
+00:00:00,107 --> 00:00:01,107
+event_type='move' x=1110 y=796 button=None pressed=None dx=None dy=None timestamp=None
+
+4
+00:00:00,115 --> 00:00:01,115
+event_type='move' x=1109 y=796 button=None pressed=None dx=None dy=None timestamp=None
+
+5
+00:00:00,122 --> 00:00:01,122
+event_type='move' x=1107 y=797 button=None pressed=None dx=None dy=None timestamp=None
+
+6
+00:00:00,130 --> 00:00:01,130
+event_type='move' x=1105 y=798 button=None pressed=None dx=None dy=None timestamp=None
+
+7
+00:00:00,145 --> 00:00:01,145
+event_type='move' x=1102 y=799 button=None pressed=None dx=None dy=None timestamp=None
+
+8
+00:00:00,145 --> 00:00:01,145
+event_type='move' x=1100 y=799 button=None pressed=None dx=None dy=None timestamp=None
+
+9
+00:00:00,152 --> 00:00:01,152
+event_type='move' x=1097 y=800 button=None pressed=None dx=None dy=None timestamp=None
+
+10
+00:00:00,159 --> 00:00:01,159
+event_type='move' x=1095 y=801 button=None pressed=None dx=None dy=None timestamp=None
+
+11
+00:00:00,167 --> 00:00:01,167
+event_type='move' x=1091 y=802 button=None pressed=None dx=None dy=None timestamp=None
+
+12
+00:00:00,175 --> 00:00:01,175
+event_type='move' x=1086 y=803 button=None pressed=None dx=None dy=None timestamp=None
+
+13
+00:00:00,182 --> 00:00:01,182
+event_type='move' x=1082 y=804 button=None pressed=None dx=None dy=None timestamp=None
+
+14
+00:00:00,189 --> 00:00:01,189
+event_type='move' x=1077 y=805 button=None pressed=None dx=None dy=None timestamp=None
+
+15
+00:00:00,197 --> 00:00:01,197
+event_type='move' x=1074 y=806 button=None pressed=None dx=None dy=None timestamp=None
+
+16
+00:00:00,205 --> 00:00:01,205
+event_type='move' x=1072 y=807 button=None pressed=None dx=None dy=None timestamp=None
+
+17
+00:00:00,212 --> 00:00:01,212
+event_type='move' x=1070 y=808 button=None pressed=None dx=None dy=None timestamp=None
+
+18
+00:00:00,219 --> 00:00:01,219
+event_type='move' x=1069 y=808 button=None pressed=None dx=None dy=None timestamp=None
+
+19
+00:00:00,227 --> 00:00:01,227
+event_type='move' x=1067 y=809 button=None pressed=None dx=None dy=None timestamp=None
+
+20
+00:00:00,235 --> 00:00:01,235
+event_type='move' x=1067 y=809 button=None pressed=None dx=None dy=None timestamp=None
+
+21
+00:00:00,399 --> 00:00:01,399
+event_type='move' x=1067 y=810 button=None pressed=None dx=None dy=None timestamp=None
+
+22
+00:00:00,400 --> 00:00:01,400
+event_type='move' x=1066 y=810 button=None pressed=None dx=None dy=None timestamp=None
+
+23
+00:00:00,407 --> 00:00:01,407
+event_type='move' x=1066 y=811 button=None pressed=None dx=None dy=None timestamp=None
+
+24
+00:00:00,415 --> 00:00:01,415
+event_type='move' x=1065 y=811 button=None pressed=None dx=None dy=None timestamp=None
+
+25
+00:00:00,422 --> 00:00:01,422
+event_type='move' x=1064 y=812 button=None pressed=None dx=None dy=None timestamp=None
+
+26
+00:00:00,430 --> 00:00:01,430
+event_type='move' x=1062 y=814 button=None pressed=None dx=None dy=None timestamp=None
+
+27
+00:00:00,437 --> 00:00:01,437
+event_type='move' x=1060 y=815 button=None pressed=None dx=None dy=None timestamp=None
+
+28
+00:00:00,444 --> 00:00:01,444
+event_type='move' x=1059 y=817 button=None pressed=None dx=None dy=None timestamp=None
+
+29
+00:00:00,451 --> 00:00:01,451
+event_type='move' x=1054 y=820 button=None pressed=None dx=None dy=None timestamp=None
+
+30
+00:00:00,459 --> 00:00:01,459
+event_type='move' x=1052 y=822 button=None pressed=None dx=None dy=None timestamp=None
+
+31
+00:00:00,467 --> 00:00:01,467
+event_type='move' x=1048 y=826 button=None pressed=None dx=None dy=None timestamp=None
+
+32
+00:00:00,475 --> 00:00:01,475
+event_type='move' x=1045 y=828 button=None pressed=None dx=None dy=None timestamp=None
+
+33
+00:00:00,482 --> 00:00:01,482
+event_type='move' x=1040 y=831 button=None pressed=None dx=None dy=None timestamp=None
+
+34
+00:00:00,490 --> 00:00:01,490
+event_type='move' x=1039 y=833 button=None pressed=None dx=None dy=None timestamp=None
+
+35
+00:00:00,497 --> 00:00:01,497
+event_type='move' x=1036 y=834 button=None pressed=None dx=None dy=None timestamp=None
+
+36
+00:00:00,504 --> 00:00:01,504
+event_type='move' x=1032 y=837 button=None pressed=None dx=None dy=None timestamp=None
+
+37
+00:00:00,512 --> 00:00:01,512
+event_type='move' x=1031 y=838 button=None pressed=None dx=None dy=None timestamp=None
+
+38
+00:00:00,519 --> 00:00:01,519
+event_type='move' x=1029 y=839 button=None pressed=None dx=None dy=None timestamp=None
+
+39
+00:00:00,526 --> 00:00:01,526
+event_type='move' x=1025 y=842 button=None pressed=None dx=None dy=None timestamp=None
+
+40
+00:00:00,535 --> 00:00:01,535
+event_type='move' x=1024 y=843 button=None pressed=None dx=None dy=None timestamp=None
+
+41
+00:00:00,542 --> 00:00:01,542
+event_type='move' x=1023 y=844 button=None pressed=None dx=None dy=None timestamp=None
+
+42
+00:00:00,550 --> 00:00:01,550
+event_type='move' x=1021 y=846 button=None pressed=None dx=None dy=None timestamp=None
+
+43
+00:00:00,557 --> 00:00:01,557
+event_type='move' x=1020 y=846 button=None pressed=None dx=None dy=None timestamp=None
+
+44
+00:00:00,565 --> 00:00:01,565
+event_type='move' x=1020 y=847 button=None pressed=None dx=None dy=None timestamp=None
+
+45
+00:00:00,572 --> 00:00:01,572
+event_type='move' x=1019 y=848 button=None pressed=None dx=None dy=None timestamp=None
+
+46
+00:00:00,580 --> 00:00:01,580
+event_type='move' x=1017 y=850 button=None pressed=None dx=None dy=None timestamp=None
+
+47
+00:00:00,595 --> 00:00:01,595
+event_type='move' x=1017 y=850 button=None pressed=None dx=None dy=None timestamp=None
+
+48
+00:00:00,595 --> 00:00:01,595
+event_type='move' x=1016 y=851 button=None pressed=None dx=None dy=None timestamp=None
+
+49
+00:00:00,602 --> 00:00:01,602
+event_type='move' x=1016 y=851 button=None pressed=None dx=None dy=None timestamp=None
+
+50
+00:00:00,610 --> 00:00:01,610
+event_type='move' x=1016 y=852 button=None pressed=None dx=None dy=None timestamp=None
+
+51
+00:00:00,617 --> 00:00:01,617
+event_type='move' x=1016 y=853 button=None pressed=None dx=None dy=None timestamp=None
+
+52
+00:00:00,624 --> 00:00:01,624
+event_type='move' x=1015 y=853 button=None pressed=None dx=None dy=None timestamp=None
+
+53
+00:00:00,640 --> 00:00:01,640
+event_type='move' x=1015 y=854 button=None pressed=None dx=None dy=None timestamp=None
+
+54
+00:00:00,647 --> 00:00:01,647
+event_type='move' x=1015 y=854 button=None pressed=None dx=None dy=None timestamp=None
+
+55
+00:00:00,655 --> 00:00:01,655
+event_type='move' x=1015 y=855 button=None pressed=None dx=None dy=None timestamp=None
+
+56
+00:00:00,662 --> 00:00:01,662
+event_type='move' x=1014 y=855 button=None pressed=None dx=None dy=None timestamp=None
+
+57
+00:00:00,685 --> 00:00:01,685
+event_type='move' x=1014 y=855 button=None pressed=None dx=None dy=None timestamp=None
+
+58
+00:00:00,707 --> 00:00:01,707
+event_type='move' x=1013 y=855 button=None pressed=None dx=None dy=None timestamp=None
+
+59
+00:00:00,707 --> 00:00:01,707
+event_type='move' x=1013 y=856 button=None pressed=None dx=None dy=None timestamp=None
+
+60
+00:00:00,715 --> 00:00:01,715
+event_type='move' x=1013 y=857 button=None pressed=None dx=None dy=None timestamp=None
+
+61
+00:00:00,752 --> 00:00:01,752
+event_type='move' x=1012 y=857 button=None pressed=None dx=None dy=None timestamp=None
+
+62
+00:00:00,752 --> 00:00:01,752
+event_type='move' x=1012 y=858 button=None pressed=None dx=None dy=None timestamp=None
+
+63
+00:00:00,759 --> 00:00:01,759
+event_type='move' x=1011 y=858 button=None pressed=None dx=None dy=None timestamp=None
+
+64
+00:00:00,767 --> 00:00:01,767
+event_type='move' x=1011 y=859 button=None pressed=None dx=None dy=None timestamp=None
+
+65
+00:00:00,775 --> 00:00:01,775
+event_type='move' x=1011 y=859 button=None pressed=None dx=None dy=None timestamp=None
+
+66
+00:00:00,782 --> 00:00:01,782
+event_type='move' x=1009 y=860 button=None pressed=None dx=None dy=None timestamp=None
+
+67
+00:00:00,790 --> 00:00:01,790
+event_type='move' x=1009 y=861 button=None pressed=None dx=None dy=None timestamp=None
+
+68
+00:00:00,797 --> 00:00:01,797
+event_type='move' x=1008 y=862 button=None pressed=None dx=None dy=None timestamp=None
+
+69
+00:00:00,804 --> 00:00:01,804
+event_type='move' x=1007 y=863 button=None pressed=None dx=None dy=None timestamp=None
+
+70
+00:00:00,812 --> 00:00:01,812
+event_type='move' x=1006 y=864 button=None pressed=None dx=None dy=None timestamp=None
+
+71
+00:00:00,820 --> 00:00:01,820
+event_type='move' x=1005 y=865 button=None pressed=None dx=None dy=None timestamp=None
+
+72
+00:00:00,835 --> 00:00:01,835
+event_type='move' x=1004 y=866 button=None pressed=None dx=None dy=None timestamp=None
+
+73
+00:00:00,835 --> 00:00:01,835
+event_type='move' x=1003 y=867 button=None pressed=None dx=None dy=None timestamp=None
+
+74
+00:00:00,836 --> 00:00:01,836
+title='ZType – Typing Game - Type to Shoot - Chromium' rect=(642, 264, 1242, 1064) hWnd=7800890
+
+75
+00:00:00,837 --> 00:00:01,837
+buttons=set() timestamp=None
+
+76
+00:00:00,842 --> 00:00:01,842
+event_type='move' x=1002 y=868 button=None pressed=None dx=None dy=None timestamp=None
+
+77
+00:00:00,849 --> 00:00:01,849
+event_type='move' x=1000 y=869 button=None pressed=None dx=None dy=None timestamp=None
+
+78
+00:00:00,857 --> 00:00:01,857
+event_type='move' x=999 y=870 button=None pressed=None dx=None dy=None timestamp=None
+
+79
+00:00:00,864 --> 00:00:01,864
+event_type='move' x=998 y=871 button=None pressed=None dx=None dy=None timestamp=None
+
+80
+00:00:00,872 --> 00:00:01,872
+event_type='move' x=996 y=872 button=None pressed=None dx=None dy=None timestamp=None
+
+81
+00:00:00,879 --> 00:00:01,879
+event_type='move' x=995 y=873 button=None pressed=None dx=None dy=None timestamp=None
+
+82
+00:00:00,895 --> 00:00:01,895
+event_type='move' x=993 y=874 button=None pressed=None dx=None dy=None timestamp=None
+
+83
+00:00:00,896 --> 00:00:01,896
+event_type='move' x=992 y=875 button=None pressed=None dx=None dy=None timestamp=None
+
+84
+00:00:00,902 --> 00:00:01,902
+event_type='move' x=991 y=875 button=None pressed=None dx=None dy=None timestamp=None
+
+85
+00:00:00,910 --> 00:00:01,910
+event_type='move' x=990 y=876 button=None pressed=None dx=None dy=None timestamp=None
+
+86
+00:00:00,924 --> 00:00:01,924
+event_type='move' x=990 y=876 button=None pressed=None dx=None dy=None timestamp=None
+
+87
+00:00:00,925 --> 00:00:01,925
+event_type='move' x=989 y=877 button=None pressed=None dx=None dy=None timestamp=None
+
+88
+00:00:00,939 --> 00:00:01,939
+event_type='move' x=989 y=878 button=None pressed=None dx=None dy=None timestamp=None
+
+89
+00:00:00,947 --> 00:00:01,947
+event_type='move' x=988 y=878 button=None pressed=None dx=None dy=None timestamp=None
+
+90
+00:00:00,955 --> 00:00:01,955
+event_type='move' x=987 y=878 button=None pressed=None dx=None dy=None timestamp=None
+
+91
+00:00:00,962 --> 00:00:01,962
+event_type='move' x=987 y=879 button=None pressed=None dx=None dy=None timestamp=None
+
+92
+00:00:00,970 --> 00:00:01,970
+event_type='move' x=986 y=879 button=None pressed=None dx=None dy=None timestamp=None
+
+93
+00:00:00,977 --> 00:00:01,977
+event_type='move' x=986 y=880 button=None pressed=None dx=None dy=None timestamp=None
+
+94
+00:00:00,985 --> 00:00:01,985
+event_type='move' x=985 y=880 button=None pressed=None dx=None dy=None timestamp=None
+
+95
+00:00:00,992 --> 00:00:01,992
+event_type='move' x=985 y=880 button=None pressed=None dx=None dy=None timestamp=None
+
+96
+00:00:01,007 --> 00:00:02,007
+event_type='move' x=985 y=880 button=None pressed=None dx=None dy=None timestamp=None
+
+97
+00:00:01,473 --> 00:00:02,473
+event_type='click' x=985 y=880 button='left' pressed=True dx=None dy=None timestamp=None
+
+98
+00:00:01,547 --> 00:00:02,547
+event_type='click' x=985 y=880 button='left' pressed=False dx=None dy=None timestamp=None
+
+99
+00:00:01,837 --> 00:00:02,837
+title='ZType – Typing Game - Type to Shoot - Chromium' rect=(642, 264, 1242, 1064) hWnd=7800890
+
+100
+00:00:01,837 --> 00:00:02,837
+buttons=set() timestamp=None
+
+101
+00:00:01,893 --> 00:00:02,893
+event_type='move' x=985 y=880 button=None pressed=None dx=None dy=None timestamp=None
+
+102
+00:00:01,900 --> 00:00:02,900
+event_type='move' x=985 y=880 button=None pressed=None dx=None dy=None timestamp=None
+
+103
+00:00:01,907 --> 00:00:02,907
+event_type='move' x=987 y=878 button=None pressed=None dx=None dy=None timestamp=None
+
+104
+00:00:01,915 --> 00:00:02,915
+event_type='move' x=987 y=878 button=None pressed=None dx=None dy=None timestamp=None
+
+105
+00:00:01,921 --> 00:00:02,921
+event_type='move' x=989 y=876 button=None pressed=None dx=None dy=None timestamp=None
+
+106
+00:00:01,930 --> 00:00:02,930
+event_type='move' x=991 y=875 button=None pressed=None dx=None dy=None timestamp=None
+
+107
+00:00:01,938 --> 00:00:02,938
+event_type='move' x=993 y=873 button=None pressed=None dx=None dy=None timestamp=None
+
+108
+00:00:01,945 --> 00:00:02,945
+event_type='move' x=996 y=872 button=None pressed=None dx=None dy=None timestamp=None
+
+109
+00:00:01,952 --> 00:00:02,952
+event_type='move' x=1000 y=869 button=None pressed=None dx=None dy=None timestamp=None
+
+110
+00:00:01,960 --> 00:00:02,960
+event_type='move' x=1003 y=867 button=None pressed=None dx=None dy=None timestamp=None
+
+111
+00:00:01,967 --> 00:00:02,967
+event_type='move' x=1006 y=865 button=None pressed=None dx=None dy=None timestamp=None
+
+112
+00:00:01,975 --> 00:00:02,975
+event_type='move' x=1009 y=864 button=None pressed=None dx=None dy=None timestamp=None
+
+113
+00:00:01,982 --> 00:00:02,982
+event_type='move' x=1010 y=863 button=None pressed=None dx=None dy=None timestamp=None
+
+114
+00:00:01,989 --> 00:00:02,989
+event_type='move' x=1011 y=862 button=None pressed=None dx=None dy=None timestamp=None
+
+115
+00:00:01,997 --> 00:00:02,997
+event_type='move' x=1012 y=862 button=None pressed=None dx=None dy=None timestamp=None
+
+116
+00:00:02,837 --> 00:00:03,837
+title='ZType – Typing Game - Type to Shoot - Chromium' rect=(642, 264, 1242, 1064) hWnd=7800890
+
+117
+00:00:02,838 --> 00:00:03,838
+buttons=set() timestamp=None
+
+118
+00:00:03,838 --> 00:00:04,838
+title='ZType – Typing Game - Type to Shoot - Chromium' rect=(642, 264, 1242, 1064) hWnd=7800890
+
+119
+00:00:03,838 --> 00:00:04,838
+buttons=set() timestamp=None
+
+120
+00:00:04,838 --> 00:00:05,838
+title='ZType – Typing Game - Type to Shoot - Chromium' rect=(642, 264, 1242, 1064) hWnd=7800890
+
+121
+00:00:04,840 --> 00:00:05,840
+buttons=set() timestamp=None
+
+122
+00:00:05,282 --> 00:00:06,282
+event_type='press' vk=84 timestamp=None
+
+123
+00:00:05,283 --> 00:00:06,283
+event_type='press' vk=69 timestamp=None
+
+124
+00:00:05,355 --> 00:00:06,355
+event_type='press' vk=78 timestamp=None
+
+125
+00:00:05,356 --> 00:00:06,356
+event_type='release' vk=84 timestamp=None
+
+126
+00:00:05,377 --> 00:00:06,377
+event_type='release' vk=69 timestamp=None
+
+127
+00:00:05,491 --> 00:00:06,491
+event_type='release' vk=78 timestamp=None
+
+128
+00:00:05,535 --> 00:00:06,535
+event_type='press' vk=83 timestamp=None
+
+129
+00:00:05,603 --> 00:00:06,603
+event_type='press' vk=84 timestamp=None
+
+130
+00:00:05,670 --> 00:00:06,670
+event_type='release' vk=83 timestamp=None
+
+131
+00:00:05,716 --> 00:00:06,716
+event_type='release' vk=84 timestamp=None
+
+132
+00:00:05,760 --> 00:00:06,760
+event_type='press' vk=79 timestamp=None
+
+133
+00:00:05,828 --> 00:00:06,828
+event_type='press' vk=82 timestamp=None
+
+134
+00:00:05,839 --> 00:00:06,839
+title='ZType – Typing Game - Type to Shoot - Chromium' rect=(642, 264, 1242, 1064) hWnd=7800890
+
+135
+00:00:05,841 --> 00:00:06,841
+buttons={82, 79} timestamp=None
+
+136
+00:00:05,873 --> 00:00:06,873
+event_type='release' vk=79 timestamp=None
+
+137
+00:00:05,875 --> 00:00:06,875
+event_type='press' vk=69 timestamp=None
+
+138
+00:00:05,964 --> 00:00:06,964
+event_type='release' vk=82 timestamp=None
+
+139
+00:00:06,007 --> 00:00:07,007
+event_type='release' vk=69 timestamp=None
+
+140
+00:00:06,683 --> 00:00:07,683
+event_type='press' vk=77 timestamp=None
+
+141
+00:00:06,706 --> 00:00:07,706
+event_type='press' vk=73 timestamp=None
+
+142
+00:00:06,772 --> 00:00:07,772
+event_type='press' vk=83 timestamp=None
+
+143
+00:00:06,795 --> 00:00:07,795
+event_type='release' vk=77 timestamp=None
+
+144
+00:00:06,817 --> 00:00:07,817
+event_type='release' vk=73 timestamp=None
+
+145
+00:00:06,839 --> 00:00:07,839
+title='ZType – Typing Game - Type to Shoot - Chromium' rect=(642, 264, 1242, 1064) hWnd=7800890
+
+146
+00:00:06,840 --> 00:00:07,840
+event_type='release' vk=83 timestamp=None
+
+147
+00:00:06,844 --> 00:00:07,844
+buttons=set() timestamp=None
+
+148
+00:00:06,908 --> 00:00:07,908
+event_type='press' vk=76 timestamp=None
+
+149
+00:00:06,953 --> 00:00:07,953
+event_type='press' vk=69 timestamp=None
+
+150
+00:00:07,020 --> 00:00:08,020
+event_type='release' vk=76 timestamp=None
+
+151
+00:00:07,043 --> 00:00:08,043
+event_type='press' vk=68 timestamp=None
+
+152
+00:00:07,133 --> 00:00:08,133
+event_type='release' vk=69 timestamp=None
+
+153
+00:00:07,155 --> 00:00:08,155
+event_type='release' vk=68 timestamp=None
+
+154
+00:00:07,739 --> 00:00:08,739
+event_type='press' vk=27 timestamp=None
+
+155
+00:00:07,787 --> 00:00:08,787
+event_type='move' x=1012 y=862 button=None pressed=None dx=None dy=None timestamp=None
+
+156
+00:00:07,788 --> 00:00:08,788
+event_type='move' x=1011 y=862 button=None pressed=None dx=None dy=None timestamp=None
+
+157
+00:00:07,794 --> 00:00:08,794
+event_type='move' x=1006 y=862 button=None pressed=None dx=None dy=None timestamp=None
+
+158
+00:00:07,802 --> 00:00:08,802
+event_type='move' x=1000 y=862 button=None pressed=None dx=None dy=None timestamp=None
+
+159
+00:00:07,807 --> 00:00:08,807
+event_type='release' vk=27 timestamp=None
+
+160
+00:00:07,809 --> 00:00:08,809
+event_type='move' x=996 y=862 button=None pressed=None dx=None dy=None timestamp=None
+
+161
+00:00:07,817 --> 00:00:08,817
+event_type='move' x=992 y=863 button=None pressed=None dx=None dy=None timestamp=None
+
+162
+00:00:07,825 --> 00:00:08,825
+event_type='move' x=987 y=864 button=None pressed=None dx=None dy=None timestamp=None
+
+163
+00:00:07,832 --> 00:00:08,832
+event_type='move' x=985 y=866 button=None pressed=None dx=None dy=None timestamp=None
+
+164
+00:00:07,840 --> 00:00:08,840
+title='ZType – Typing Game - Type to Shoot - Chromium' rect=(642, 264, 1242, 1064) hWnd=7800890
+
+165
+00:00:07,840 --> 00:00:08,840
+event_type='move' x=983 y=866 button=None pressed=None dx=None dy=None timestamp=None
+
+166
+00:00:07,846 --> 00:00:08,846
+buttons=set() timestamp=None
+
+167
+00:00:07,854 --> 00:00:08,854
+event_type='move' x=982 y=867 button=None pressed=None dx=None dy=None timestamp=None
+
+168
+00:00:07,855 --> 00:00:08,855
+event_type='move' x=980 y=867 button=None pressed=None dx=None dy=None timestamp=None
+
+169
+00:00:07,862 --> 00:00:08,862
+event_type='move' x=979 y=868 button=None pressed=None dx=None dy=None timestamp=None
+
+170
+00:00:07,870 --> 00:00:08,870
+event_type='move' x=977 y=868 button=None pressed=None dx=None dy=None timestamp=None
+
+171
+00:00:07,877 --> 00:00:08,877
+event_type='move' x=975 y=870 button=None pressed=None dx=None dy=None timestamp=None
+
+172
+00:00:07,884 --> 00:00:08,884
+event_type='move' x=972 y=871 button=None pressed=None dx=None dy=None timestamp=None
+
+173
+00:00:07,892 --> 00:00:08,892
+event_type='move' x=970 y=872 button=None pressed=None dx=None dy=None timestamp=None
+
+174
+00:00:07,907 --> 00:00:08,907
+event_type='move' x=967 y=873 button=None pressed=None dx=None dy=None timestamp=None
+
+175
+00:00:07,907 --> 00:00:08,907
+event_type='move' x=966 y=874 button=None pressed=None dx=None dy=None timestamp=None
+
+176
+00:00:07,915 --> 00:00:08,915
+event_type='move' x=965 y=874 button=None pressed=None dx=None dy=None timestamp=None
+
+177
+00:00:08,320 --> 00:00:09,320
+event_type='move' x=965 y=874 button=None pressed=None dx=None dy=None timestamp=None
+
+178
+00:00:08,320 --> 00:00:09,320
+event_type='move' x=965 y=875 button=None pressed=None dx=None dy=None timestamp=None
+
+179
+00:00:08,327 --> 00:00:09,327
+event_type='move' x=966 y=877 button=None pressed=None dx=None dy=None timestamp=None
+
+180
+00:00:08,334 --> 00:00:09,334
+event_type='move' x=968 y=879 button=None pressed=None dx=None dy=None timestamp=None
+
+181
+00:00:08,342 --> 00:00:09,342
+event_type='move' x=971 y=881 button=None pressed=None dx=None dy=None timestamp=None
+
+182
+00:00:08,350 --> 00:00:09,350
+event_type='move' x=973 y=884 button=None pressed=None dx=None dy=None timestamp=None
+
+183
+00:00:08,357 --> 00:00:09,357
+event_type='move' x=975 y=886 button=None pressed=None dx=None dy=None timestamp=None
+
+184
+00:00:08,365 --> 00:00:09,365
+event_type='move' x=976 y=888 button=None pressed=None dx=None dy=None timestamp=None
+
+185
+00:00:08,372 --> 00:00:09,372
+event_type='move' x=977 y=890 button=None pressed=None dx=None dy=None timestamp=None
+
+186
+00:00:08,380 --> 00:00:09,380
+event_type='move' x=978 y=892 button=None pressed=None dx=None dy=None timestamp=None
+
+187
+00:00:08,387 --> 00:00:09,387
+event_type='move' x=979 y=894 button=None pressed=None dx=None dy=None timestamp=None
+
+188
+00:00:08,395 --> 00:00:09,395
+event_type='move' x=979 y=895 button=None pressed=None dx=None dy=None timestamp=None
+
+189
+00:00:08,402 --> 00:00:09,402
+event_type='move' x=980 y=897 button=None pressed=None dx=None dy=None timestamp=None
+
+190
+00:00:08,409 --> 00:00:09,409
+event_type='move' x=980 y=898 button=None pressed=None dx=None dy=None timestamp=None
+
+191
+00:00:08,417 --> 00:00:09,417
+event_type='move' x=980 y=898 button=None pressed=None dx=None dy=None timestamp=None
+
+192
+00:00:08,425 --> 00:00:09,425
+event_type='move' x=980 y=899 button=None pressed=None dx=None dy=None timestamp=None
+
+193
+00:00:08,432 --> 00:00:09,432
+event_type='move' x=980 y=900 button=None pressed=None dx=None dy=None timestamp=None
+
+194
+00:00:08,477 --> 00:00:09,477
+event_type='move' x=980 y=900 button=None pressed=None dx=None dy=None timestamp=None
+
+195
+00:00:08,485 --> 00:00:09,485
+event_type='move' x=980 y=901 button=None pressed=None dx=None dy=None timestamp=None
+
+196
+00:00:08,492 --> 00:00:09,492
+event_type='move' x=980 y=902 button=None pressed=None dx=None dy=None timestamp=None
+
+197
+00:00:08,499 --> 00:00:09,499
+event_type='move' x=980 y=903 button=None pressed=None dx=None dy=None timestamp=None
+
+198
+00:00:08,507 --> 00:00:09,507
+event_type='move' x=980 y=904 button=None pressed=None dx=None dy=None timestamp=None
+
+199
+00:00:08,515 --> 00:00:09,515
+event_type='move' x=980 y=904 button=None pressed=None dx=None dy=None timestamp=None
+
+200
+00:00:08,522 --> 00:00:09,522
+event_type='move' x=980 y=905 button=None pressed=None dx=None dy=None timestamp=None
+
+201
+00:00:08,529 --> 00:00:09,529
+event_type='move' x=980 y=905 button=None pressed=None dx=None dy=None timestamp=None
+
+202
+00:00:08,537 --> 00:00:09,537
+event_type='move' x=980 y=906 button=None pressed=None dx=None dy=None timestamp=None
+
+203
+00:00:08,544 --> 00:00:09,544
+event_type='move' x=980 y=907 button=None pressed=None dx=None dy=None timestamp=None
+
+204
+00:00:08,552 --> 00:00:09,552
+event_type='move' x=980 y=907 button=None pressed=None dx=None dy=None timestamp=None
+
+205
+00:00:08,559 --> 00:00:09,559
+event_type='move' x=980 y=908 button=None pressed=None dx=None dy=None timestamp=None
+
+206
+00:00:08,567 --> 00:00:09,567
+event_type='move' x=979 y=908 button=None pressed=None dx=None dy=None timestamp=None
+
+207
+00:00:08,582 --> 00:00:09,582
+event_type='move' x=978 y=909 button=None pressed=None dx=None dy=None timestamp=None
+
+208
+00:00:08,590 --> 00:00:09,590
+event_type='move' x=978 y=909 button=None pressed=None dx=None dy=None timestamp=None
+
+209
+00:00:08,687 --> 00:00:09,687
+event_type='move' x=978 y=909 button=None pressed=None dx=None dy=None timestamp=None
+
+210
+00:00:08,823 --> 00:00:09,823
+event_type='click' x=978 y=909 button='left' pressed=True dx=None dy=None timestamp=None
+
+211
+00:00:08,840 --> 00:00:09,840
+title='ZType – Typing Game - Type to Shoot - Chromium' rect=(642, 264, 1242, 1064) hWnd=7800890
+
+212
+00:00:08,848 --> 00:00:09,848
+buttons={1} timestamp=None
+
+213
+00:00:08,869 --> 00:00:09,869
+event_type='click' x=978 y=909 button='left' pressed=False dx=None dy=None timestamp=None
+
+214
+00:00:09,463 --> 00:00:10,463
+event_type='move' x=978 y=909 button=None pressed=None dx=None dy=None timestamp=None
+
+215
+00:00:09,463 --> 00:00:10,463
+event_type='move' x=978 y=909 button=None pressed=None dx=None dy=None timestamp=None
+
+216
+00:00:09,467 --> 00:00:10,467
+event_type='move' x=980 y=909 button=None pressed=None dx=None dy=None timestamp=None
+
+217
+00:00:09,475 --> 00:00:10,475
+event_type='move' x=983 y=909 button=None pressed=None dx=None dy=None timestamp=None
+
+218
+00:00:09,482 --> 00:00:10,482
+event_type='move' x=988 y=909 button=None pressed=None dx=None dy=None timestamp=None
+
+219
+00:00:09,489 --> 00:00:10,489
+event_type='move' x=995 y=910 button=None pressed=None dx=None dy=None timestamp=None
+
+220
+00:00:09,504 --> 00:00:10,504
+event_type='move' x=1007 y=912 button=None pressed=None dx=None dy=None timestamp=None
+
+221
+00:00:09,506 --> 00:00:10,506
+event_type='move' x=1019 y=914 button=None pressed=None dx=None dy=None timestamp=None
+
+222
+00:00:09,512 --> 00:00:10,512
+event_type='move' x=1036 y=916 button=None pressed=None dx=None dy=None timestamp=None
+
+223
+00:00:09,519 --> 00:00:10,519
+event_type='move' x=1062 y=921 button=None pressed=None dx=None dy=None timestamp=None
+
+224
+00:00:09,527 --> 00:00:10,527
+event_type='move' x=1080 y=923 button=None pressed=None dx=None dy=None timestamp=None
+
+225
+00:00:09,535 --> 00:00:10,535
+event_type='move' x=1106 y=928 button=None pressed=None dx=None dy=None timestamp=None
+
+226
+00:00:09,542 --> 00:00:10,542
+event_type='move' x=1133 y=933 button=None pressed=None dx=None dy=None timestamp=None
+
+227
+00:00:09,550 --> 00:00:10,550
+event_type='move' x=1167 y=938 button=None pressed=None dx=None dy=None timestamp=None
+
+228
+00:00:09,557 --> 00:00:10,557
+event_type='move' x=1206 y=945 button=None pressed=None dx=None dy=None timestamp=None
+
+229
+00:00:09,565 --> 00:00:10,565
+event_type='move' x=1252 y=954 button=None pressed=None dx=None dy=None timestamp=None
+
+230
+00:00:09,572 --> 00:00:10,572
+event_type='move' x=1276 y=959 button=None pressed=None dx=None dy=None timestamp=None
+
+231
+00:00:09,580 --> 00:00:10,580
+event_type='move' x=1329 y=971 button=None pressed=None dx=None dy=None timestamp=None
+
+232
+00:00:09,587 --> 00:00:10,587
+event_type='move' x=1361 y=977 button=None pressed=None dx=None dy=None timestamp=None
+
+233
+00:00:09,594 --> 00:00:10,594
+event_type='move' x=1423 y=992 button=None pressed=None dx=None dy=None timestamp=None
+
+234
+00:00:09,602 --> 00:00:10,602
+event_type='move' x=1455 y=1000 button=None pressed=None dx=None dy=None timestamp=None
+
+235
+00:00:09,610 --> 00:00:10,610
+event_type='move' x=1514 y=1017 button=None pressed=None dx=None dy=None timestamp=None
+
+236
+00:00:09,617 --> 00:00:10,617
+event_type='move' x=1547 y=1027 button=None pressed=None dx=None dy=None timestamp=None
+
+237
+00:00:09,632 --> 00:00:10,632
+event_type='move' x=1602 y=1045 button=None pressed=None dx=None dy=None timestamp=None
+
+238
+00:00:09,633 --> 00:00:10,633
+event_type='move' x=1632 y=1057 button=None pressed=None dx=None dy=None timestamp=None
+
+239
+00:00:09,639 --> 00:00:10,639
+event_type='move' x=1663 y=1067 button=None pressed=None dx=None dy=None timestamp=None
+
+240
+00:00:09,646 --> 00:00:10,646
+event_type='move' x=1712 y=1087 button=None pressed=None dx=None dy=None timestamp=None
+
+241
+00:00:09,655 --> 00:00:10,655
+event_type='move' x=1737 y=1095 button=None pressed=None dx=None dy=None timestamp=None
+
+242
+00:00:09,662 --> 00:00:10,662
+event_type='move' x=1765 y=1105 button=None pressed=None dx=None dy=None timestamp=None
+
+243
+00:00:09,669 --> 00:00:10,669
+event_type='move' x=1814 y=1122 button=None pressed=None dx=None dy=None timestamp=None
+
+244
+00:00:09,677 --> 00:00:10,677
+event_type='move' x=1836 y=1130 button=None pressed=None dx=None dy=None timestamp=None
+
+245
+00:00:09,685 --> 00:00:10,685
+event_type='move' x=1855 y=1135 button=None pressed=None dx=None dy=None timestamp=None
+
+246
+00:00:09,692 --> 00:00:10,692
+event_type='move' x=1869 y=1140 button=None pressed=None dx=None dy=None timestamp=None
+
+247
+00:00:09,700 --> 00:00:10,700
+event_type='move' x=1889 y=1147 button=None pressed=None dx=None dy=None timestamp=None
+
+248
+00:00:09,707 --> 00:00:10,707
+event_type='move' x=1897 y=1149 button=None pressed=None dx=None dy=None timestamp=None
+
+249
+00:00:09,715 --> 00:00:10,715
+event_type='move' x=1910 y=1154 button=None pressed=None dx=None dy=None timestamp=None
+
+250
+00:00:09,722 --> 00:00:10,722
+event_type='move' x=1917 y=1156 button=None pressed=None dx=None dy=None timestamp=None
+
+251
+00:00:09,729 --> 00:00:10,729
+event_type='move' x=1923 y=1157 button=None pressed=None dx=None dy=None timestamp=None
+
+252
+00:00:09,737 --> 00:00:10,737
+event_type='move' x=1928 y=1160 button=None pressed=None dx=None dy=None timestamp=None
+
+253
+00:00:09,744 --> 00:00:10,744
+event_type='move' x=1932 y=1161 button=None pressed=None dx=None dy=None timestamp=None
+
+254
+00:00:09,752 --> 00:00:10,752
+event_type='move' x=1936 y=1163 button=None pressed=None dx=None dy=None timestamp=None
+
+255
+00:00:09,759 --> 00:00:10,759
+event_type='move' x=1937 y=1164 button=None pressed=None dx=None dy=None timestamp=None
+
+256
+00:00:09,841 --> 00:00:10,841
+title='ZType – Typing Game - Type to Shoot - Chromium' rect=(642, 264, 1242, 1064) hWnd=7800890
+
+257
+00:00:09,849 --> 00:00:10,849
+buttons=set() timestamp=None
+
+258
+00:00:09,977 --> 00:00:10,977
+event_type='click' x=1937 y=1164 button='left' pressed=True dx=None dy=None timestamp=None
+
+259
+00:00:10,022 --> 00:00:11,022
+event_type='click' x=1937 y=1164 button='left' pressed=False dx=None dy=None timestamp=None
+
+260
+00:00:10,125 --> 00:00:11,125
+event_type='press' vk=162 timestamp=None
+
+261
+00:00:10,193 --> 00:00:11,193
+event_type='press' vk=67 timestamp=None
