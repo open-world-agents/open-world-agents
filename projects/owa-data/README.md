@@ -1,198 +1,226 @@
 # OWA Data Pipeline
 
-A streamlined 2-stage data processing pipeline for Vision-Language-Action (VLA) model training.
-
-## Pipeline Overview
+Streamlined data processing pipeline for Vision-Language-Action (VLA) model training with 3x training acceleration.
 
 ```
-Raw MCAP Data → Event Dataset ────────────→ VLA Training Ready
-     (1)            (2)      Dataset Transforms
-                              (on-the-fly conversion)
-                    ↓
-               Binned Dataset ────────────→ VLA Training Ready
-                              Dataset Transforms
-                              (on-the-fly conversion)
+Raw MCAP Data → Event Dataset → FSLDataset → VLA Training Ready
+     (1)            (2)           (3)        (tokenization-aware packing)
 ```
 
-**Key Features:**
-- **Dataset Transforms** work with both Event Dataset and Binned Dataset
-- On-the-fly conversion to VLA training format during data loading
-- Direct HuggingFace datasets integration with `set_transform()`
-- Flexible pipeline: skip binning step and use Event Dataset directly if preferred
+## Quick Start
 
-## Stage 1: Raw MCAP Data → Event Dataset
-
-**Script**: `scripts/01_raw_events_to_event_dataset.py`
-
-**Purpose**: Extract and downsample raw events from MCAP files
-
-**Usage**:
 ```bash
-# Filter only screen and keyboard
+# Set variables
+export MCAP_TRAIN_DIR="/mnt/raid12/datasets/owa/mcaps/super-hexagon"
+export MCAP_TEST_DIR="/mnt/raid12/datasets/owa/mcaps/super-hexagon-30s"
+export EVENT_DATASET_DIR="/mnt/raid12/datasets/owa/data/super-hexagon-event"
+export BINNED_DATASET_DIR="/mnt/raid12/datasets/owa/data/super-hexagon-bin"
+
+# 1. Process MCAP → Event Dataset
 python scripts/01_raw_events_to_event_dataset.py \
-  --train-dir /mnt/raid12/datasets/owa/mcaps/super-hexagon \
-  --test-dir /mnt/raid12/datasets/owa/mcaps/super-hexagon-30s \
-  --output-dir /mnt/raid12/datasets/owa/data/super-hexagon-event \
-  --rate mouse=60 --rate screen=20 \
-  --keep_topic screen --keep_topic keyboard  # Only screen and keyboard
+  --train-dir $MCAP_TRAIN_DIR \
+  --test-dir $MCAP_TEST_DIR \
+  --output-dir $EVENT_DATASET_DIR \
+  --rate screen=20 --rate mouse=60 \
+  --keep_topic screen --keep_topic keyboard
+
+# 2. (Optional) Event Dataset → Binned Dataset
+python scripts/02_event_dataset_to_binned_dataset.py \
+  --input-dir $EVENT_DATASET_DIR \
+  --output-dir $BINNED_DATASET_DIR \
+  --fps 10 \
+  --filter-empty-actions
+
+# 3. Dataset Transform approach
+python -c "
+from datasets import load_from_disk
+from owa.data import create_event_dataset_transform
+dataset = load_from_disk('$EVENT_DATASET_DIR')
+transform = create_event_dataset_transform()
+dataset.set_transform(transform)
+for sample in dataset['train'].take(2):
+    print(f'{sample=}')
+"
+
+# 4. FSLDataset approach
+python -c "
+from datasets import load_from_disk
+from transformers import AutoTokenizer
+from owa.data.episode_tokenizer import EpisodeTokenizer
+from owa.data.fsl_dataset import FSLDataset
+
+event_dataset = load_from_disk('$EVENT_DATASET_DIR')
+tokenizer = AutoTokenizer.from_pretrained('HuggingFaceTB/SmolVLM2-2.2B-Base')
+event_tokenizer = EpisodeTokenizer(image_token='<image>')
+event_tokenizer.prepare_model(tokenizer=tokenizer)
+
+for split, ds in event_dataset.items():
+    event_dataset[split] = event_tokenizer.tokenize_event_dataset(ds)
+
+fsl_dataset = FSLDataset(event_dataset['train'], pad_token_id=tokenizer.pad_token_id, max_sequence_length=1024)
+fsl_dataset.prepare()
+
+for sample in fsl_dataset.take(1):
+    print(f'{sample=}')
+"
 ```
 
-**Output Schema**:
-```python
-{
-    "episode_path": Value("string"),      # Source MCAP file path
-    "topic": Value("string"),          # Event topic (keyboard, mouse, screen)
-    "timestamp_ns": Value("int64"),    # Timestamp in nanoseconds
-    "message_type": Value("string"),   # Full message type identifier
-    "mcap_message": Value("binary"),   # Serialized McapMessage bytes (topic/timestamp_ns/message_type duplicated for preview)
-}
+## Data Processing
+
+### Stage 1: Raw MCAP → Event Dataset
+
+```bash
+python scripts/01_raw_events_to_event_dataset.py \
+  --train-dir $MCAP_TRAIN_DIR \
+  --test-dir $MCAP_TEST_DIR \
+  --output-dir $EVENT_DATASET_DIR \
+  --rate screen=20 --rate mouse=60 \
+  --keep_topic screen --keep_topic keyboard
 ```
 
-**Key Features**:
-- Rate-limiting per topic (e.g., mouse=60Hz, screen=20Hz)
-- Topic filtering (defaults to screen, keyboard, mouse events)
-- Automatic train/test splitting
-- Preserves raw event data for downstream processing
+**Schema**: `episode_path` (string), `topic` (string), `timestamp_ns` (int64), `message_type` (string), `mcap_message` (binary)
 
-## Stage 2: Event Dataset → Binned Dataset
+**Features**: Rate limiting per topic, topic filtering, train/test splitting, preserves raw event data
 
-**Script**: `scripts/02_event_dataset_to_binned_dataset.py`
+**Note**: Brand-new, event-oriented format where each row represents a single event
 
-**Purpose**: Aggregate events into fixed-rate time bins for uniform temporal sampling
+### Stage 2: Event Dataset → Binned Dataset
 
-**Usage**:
 ```bash
 python scripts/02_event_dataset_to_binned_dataset.py \
-  --input-dir /mnt/raid12/datasets/owa/data/super-hexagon-event \
-  --output-dir /mnt/raid12/datasets/owa/data/super-hexagon-bin \
+  --input-dir $EVENT_DATASET_DIR \
+  --output-dir $BINNED_DATASET_DIR \
   --fps 10 \
-  --filter-empty-actions  # Filter out bins with no actions
+  --filter-empty-actions
 ```
 
-**Output Schema**:
-```python
-{
-    "episode_path": Value("string"),      # Source MCAP file path
-    "bin_idx": Value("int32"),         # Time bin index
-    "timestamp_ns": Value("int64"),    # Bin start timestamp
-    "state": Sequence(feature=Value("binary"), length=-1),    # Sequence of serialized McapMessage bytes (screen events)
-    "actions": Sequence(feature=Value("binary"), length=-1),  # Sequence of serialized McapMessage bytes (action events)
-}
-```
+**Schema**: `episode_path` (string), `bin_idx` (int32), `timestamp_ns` (int64), `state` (sequence), `actions` (sequence)
 
-**Key Features**:
-- Fixed-rate temporal binning (e.g., 10 FPS = 100ms bins)
-- State-action separation (screen = state, keyboard/mouse = actions)
-- Optional filtering of bins with no actions for efficiency
-- Preserves temporal structure for sequence modeling
+**Features**: Fixed-rate binning, state-action separation, empty action filtering, preserves temporal structure
+
+**Note**: Legacy, state-action oriented format similar to conventional datasets like [OpenX](https://robotics-transformer-x.github.io/), [LeRobotDataset](https://github.com/huggingface/lerobot), [RLDS](https://github.com/google-research/rlds)
 
 ## Dataset Transforms
 
-**Purpose**: Apply encoding and image loading transforms directly to HuggingFace datasets using `set_transform`
+**Why needed**: Raw datasets contain binary MCAP messages that need to be converted to training-ready format (text + images).
 
-Dataset transforms provide a unified interface for both Event Dataset and Binned Dataset, allowing you to:
-- Use Event Dataset directly for training (skip binning step)
-- Use Binned Dataset for training (traditional approach)
-- Switch between approaches without changing training code
+**What they do**: Apply on-the-fly conversion using HuggingFace's `set_transform()` - decode binary messages, encode events as text, load images as PIL objects.
 
-**Key Benefits**:
-- **Unified Interface**: Works with both Event Dataset and Binned Dataset
-- **Flexible Pipeline**: Choose your preferred dataset format
-- **Better Integration**: Direct HuggingFace datasets integration with training pipelines
-- **Efficient**: On-demand image loading and action encoding
-- **Configurable**: Support for multiple encoder types (hierarchical, JSON)
+**Output**: `encoded_event` (text), `image` (PIL.Image or None) for Event Dataset | `images` (List[PIL.Image]), `encoded_events` (List[str]), `instruction` (str) for Binned Dataset
 
 ### Event Dataset Transform
 
-**Function**: `create_event_dataset_transform()`
-
-**Purpose**: Transform Event Dataset to add encoded events and loaded images
-
-**Usage**:
 ```python
 from datasets import load_from_disk
 from owa.data import create_event_dataset_transform
 
-# Load event dataset
 event_dataset = load_from_disk("/mnt/raid12/datasets/owa/data/super-hexagon-event")
-
-# Create and apply transform
-transform = create_event_dataset_transform(
-    encoder_type="hierarchical",
-    load_images=True,  # Load images for screen events
-    encode_actions=True,  # Encode keyboard/mouse events
-)
+transform = create_event_dataset_transform(encoder_type="hierarchical", load_images=True)
 event_dataset.set_transform(transform)
 
-# Use transformed dataset
-for sample in event_dataset["train"].take(10):
+for sample in event_dataset["train"].take(5):
     print(f"{sample=}")
 ```
 
 ### Binned Dataset Transform
 
-**Function**: `create_binned_dataset_transform()`
-
-**Purpose**: Transform Binned Dataset to VLA training format for vision-language-action models
-
-**Usage**:
 ```python
 from datasets import load_from_disk
 from owa.data import create_binned_dataset_transform
 
-# Load binned dataset
 binned_dataset = load_from_disk("/mnt/raid12/datasets/owa/data/super-hexagon-bin")
-
-# Create and apply transform
-transform = create_binned_dataset_transform(
-    encoder_type="hierarchical",
-    instruction="Complete the computer task",
-    load_images=True,
-    encode_actions=True,
-)
+transform = create_binned_dataset_transform(instruction="Complete the computer task")
 binned_dataset.set_transform(transform)
 
-# Use transformed dataset for VLA training
-for sample in binned_dataset["train"].take(10):
+for sample in binned_dataset["train"].take(5):
     print(f"{sample=}")
 ```
 
-### Training Pipeline Integration
+## FSLDataset
 
-**Usage with PyTorch DataLoader**:
+Core component for Few-Shot Learning that prepares tokenized event data for training with sequence handling, padding, and image loading.
+
+### Goals
+
+1. **Accelerate training**: Packing events into fixed-length sequences for efficient training (maybe 3x acceleration, reported on https://github.com/huggingface/nanoVLM/pull/115)
+2. **Context-aware learning**: Provide full context for each event in the sequence
+
+### Design Principles
+
+1. **Tokenization-aware packing**: Uses actual tokenizer to calculate sequence lengths
+2. **Lazy image loading**: Images loaded on-the-fly for memory efficiency
+3. **Automatic sequence splitting**: Long episodes split across multiple sequences
+4. **Episode boundary tokens**: Configurable `<EPISODE_START>` and `<EPISODE_END>` tokens
+5. **Enable random access**: Allow starting iteration from any position for sequence packing
+6. **Simple implementation**: Clean, readable code with minimal complexity
+
+**Key Insight:** Simply preprocess the event dataset to add tokenization and image processing columns. This enables efficient random access and flexible sequence construction during training.
+
+### Added Columns
+
+FSLDataset adds the following columns to the original event dataset:
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `token_ids` | `List[int]` | Padded token sequences (length = `max_sequence_length`) |
+| `attention_mask` | `List[int]` | Attention masks for padded sequences (1 = real token, 0 = padding) |
+| `total_token_count` | `int` | Total number of tokens in the sequence (before padding) |
+| `images` | `List[ScreenCaptured \| PIL.Image]` | Images corresponding to `<image>` tokens (type depends on `load_images` config) |
+
+### Complete Example
+
 ```python
 from datasets import load_from_disk
-from torch.utils.data import DataLoader
-from owa.data import create_binned_dataset_transform
+from tqdm import tqdm
+from transformers import AutoTokenizer
 
-# Transform and use with DataLoader
-dataset = load_from_disk("/mnt/raid12/datasets/owa/data/super-hexagon-bin")["train"]
-transform = create_binned_dataset_transform()
-dataset.set_transform(transform)
+from owa.data.episode_tokenizer import EpisodeTokenizer
+from owa.data.fsl_dataset import FSLDataset
 
-def collate_fn(examples):
-    ret = {
-        "images": [example["images"] for example in examples],
-        "encoded_events": [example["encoded_events"] for example in examples],
-        "instruction": [example["instruction"] for example in examples],
-    }
-    return ret
+# Load event dataset
+event_dataset = load_from_disk("/mnt/raid12/datasets/owa/data/super-hexagon-event")
+tokenizer = AutoTokenizer.from_pretrained("HuggingFaceTB/SmolVLM2-2.2B-Base")
 
-dataloader = DataLoader(dataset, batch_size=32, shuffle=True, collate_fn=collate_fn)
-for batch in dataloader:
-    images = batch['images']        # List of List[PIL.Image]
-    actions = batch['encoded_events']  # List of List[str]
-    instructions = batch['instruction']  # List[str]
-    print(f"{images=}")
-    print(f"{actions=}")
-    print(f"{instructions=}")
-    break
+print("[!] Printing raw event dataset...")
+for sample in event_dataset["train"].take(5):
+    print(f"{sample=}")
+
+event_tokenizer = EpisodeTokenizer(image_token="<image>")
+event_tokenizer.prepare_model(tokenizer=tokenizer)
+
+for split, dataset in event_dataset.items():
+    tokenized = event_tokenizer.tokenize_event_dataset(dataset)
+    event_dataset[split] = tokenized
+
+print("[!] Printing tokenized event dataset...")
+for sample in event_dataset["train"].take(5):
+    print(f"{sample=}")
+
+
+dataset = FSLDataset(event_dataset["train"], pad_token_id=tokenizer.pad_token_id, max_sequence_length=1024)
+dataset.prepare()
+
+print("[!] Printing FSL dataset...")
+for sample in dataset.take(1):
+    print(f"{sample=}")
+
+for sample in tqdm(dataset.take(30)):
+    ...
 ```
 
-## EventEncoder
+### Performance Metrics
 
-Converts raw events to text representations for LLM training using `<EVENT_START>` and `<EVENT_END>` tokens.
+```
+FSL[30] | Total: 3.2s/s, 3,274t/s, 44.8i/s, 49.5Mb/s | EMA: 3.0s/s, 3,073t/s, 42.0i/s, 46.5Mb/s
+```
 
-**Encoder Types**:
-- `hierarchical`: Compositional token structure (default, most efficient)
-- `json`: JSON string format with event tokens
+- **s/s**: Samples per second | **t/s**: Tokens per second | **i/s**: Images per second | **Mb/s**: Megabytes per second | **EMA**: Exponential Moving Average
+
+## API Reference
+
+| Component | Purpose | Encoder Types |
+|-----------|---------|---------------|
+| **EpisodeTokenizer** | Event → Token conversion | `hierarchical` (efficient), `json` (readable) |
+| **FSLDataset** | Training preparation | Padding, attention masks, image loading |
+| **create_event_dataset_transform** | On-the-fly processing | Event dataset → VLA format |
+| **create_binned_dataset_transform** | On-the-fly processing | Binned dataset → VLA format |

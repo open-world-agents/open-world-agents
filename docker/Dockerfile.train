@@ -42,7 +42,8 @@ RUN --mount=type=cache,target=${HOME}/.cache/uv,sharing=locked \
     --mount=type=cache,target=${HOME}/.cache/pip,sharing=locked \
     . activate owa && \
     vuv pip install ninja packaging && \
-    vuv pip install flash-attn --no-build-isolation
+    pip wheel flash-attn --no-build-isolation -w /tmp/wheels && \
+    vuv pip install /tmp/wheels/*.whl
 
 # =============================================================================
 # Stage 3: Final Training Image
@@ -51,14 +52,19 @@ FROM ml-base AS final
 
 ARG CONDA_INSTALL_PATH
 
-# Copy compiled flash-attn from builder stage. Following list can be acquired by "uninstalling" flash-attn, or by `pip show -f flash-attn`
-COPY --from=flash-attn-builder ${CONDA_INSTALL_PATH}/envs/owa/lib/python3.11/site-packages/flash_attn ${CONDA_INSTALL_PATH}/envs/owa/lib/python3.11/site-packages/flash_attn
-COPY --from=flash-attn-builder ${CONDA_INSTALL_PATH}/envs/owa/lib/python3.11/site-packages/flash_attn-2.8.0.post2.dist-info ${CONDA_INSTALL_PATH}/envs/owa/lib/python3.11/site-packages/flash_attn-2.8.0.post2.dist-info
-COPY --from=flash-attn-builder ${CONDA_INSTALL_PATH}/envs/owa/lib/python3.11/site-packages/flash_attn_2_cuda.cpython-311-x86_64-linux-gnu.so ${CONDA_INSTALL_PATH}/envs/owa/lib/python3.11/site-packages/
-COPY --from=flash-attn-builder ${CONDA_INSTALL_PATH}/envs/owa/lib/python3.11/site-packages/hopper ${CONDA_INSTALL_PATH}/envs/owa/lib/python3.11/site-packages/hopper
-
-# Following command creates +10GB layer, so not using it for now
+# Following command creates +10GB layer, so must not be used.
 # COPY --from=flash-attn-builder ${CONDA_INSTALL_PATH}/envs/owa/lib/python3.11/site-packages ${CONDA_INSTALL_PATH}/envs/owa/lib/python3.11/site-packages
+
+# Copy compiled flash-attn from builder stage. Following list can be acquired by "uninstalling" flash-attn, or by `pip show -f flash-attn`
+# COPY --from=flash-attn-builder ${CONDA_INSTALL_PATH}/envs/owa/lib/python3.11/site-packages/flash_attn ${CONDA_INSTALL_PATH}/envs/owa/lib/python3.11/site-packages/flash_attn
+# COPY --from=flash-attn-builder ${CONDA_INSTALL_PATH}/envs/owa/lib/python3.11/site-packages/flash_attn-2.8.1.dist-info ${CONDA_INSTALL_PATH}/envs/owa/lib/python3.11/site-packages/flash_attn-2.8.1.dist-info
+# COPY --from=flash-attn-builder ${CONDA_INSTALL_PATH}/envs/owa/lib/python3.11/site-packages/flash_attn_2_cuda.cpython-311-x86_64-linux-gnu.so ${CONDA_INSTALL_PATH}/envs/owa/lib/python3.11/site-packages/
+# COPY --from=flash-attn-builder ${CONDA_INSTALL_PATH}/envs/owa/lib/python3.11/site-packages/hopper ${CONDA_INSTALL_PATH}/envs/owa/lib/python3.11/site-packages/hopper
+
+# Copy and install wheels, much graceful solution than aboves
+RUN --mount=type=cache,target=${HOME}/.cache/uv,sharing=locked \
+    --mount=type=bind,from=flash-attn-builder,source=/tmp/wheels,target=/tmp/wheels \
+    . activate owa && vuv pip install /tmp/wheels/flash_attn-*.whl
 
 # Set working directory
 WORKDIR /workspace

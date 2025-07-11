@@ -9,11 +9,11 @@ from owa.msgs.desktop.keyboard import KeyboardEvent
 from owa.msgs.desktop.mouse import MouseEvent
 from owa.msgs.desktop.screen import ScreenCaptured
 
-from .base_encoder import BaseEventEncoder
+from .base_encoder import BaseEventEncoder, BaseEventEncoderConfig
 
 
 @dataclass
-class HierarchicalEventEncoderConfig:
+class HierarchicalEventEncoderConfig(BaseEventEncoderConfig):
     """Configuration for HierarchicalEventEncoder."""
 
     # ±2 seconds
