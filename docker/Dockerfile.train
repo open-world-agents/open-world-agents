@@ -13,8 +13,10 @@ FROM ${RUNTIME_IMAGE} AS ml-base
 # Install projects/agent package
 RUN --mount=type=cache,target=${HOME}/.cache/uv,sharing=locked \
     --mount=type=cache,target=${HOME}/.cache/pip,sharing=locked \
-    --mount=type=bind,source=.,target=/workspace \
+    --mount=type=bind,source=open-world-agents/projects/owa-data,target=/workspace/open-world-agents/projects/owa-data \
+    --mount=type=bind,source=projects/agent,target=/workspace/projects/agent \
     . activate owa && \
+    vuv pip install torch torchvision && \
     vuv pip install /workspace/projects/agent
 
 # =============================================================================
