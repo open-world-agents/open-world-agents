@@ -26,9 +26,6 @@ docs = [
     "mkdocs-click>=0.8.0",
     "termynal>=0.13.0"
 ]
-viewer = [
-    "owa-mcap-viewer",
-]
 
 [dependency-groups]
 dev = [
@@ -49,7 +46,6 @@ owa-core = { path = "projects/owa-core", editable = true }
 owa-env-desktop = { path = "projects/owa-env-desktop", editable = true }
 owa-env-gst = { path = "projects/owa-env-gst", editable = true }
 owa-msgs = { path = "projects/owa-msgs", editable = true }
-owa-mcap-viewer = { path = "projects/owa-mcap-viewer", editable = true }
 
 [build-system]
 requires = ["hatchling"]
