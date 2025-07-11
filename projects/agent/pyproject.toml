@@ -1,46 +1,27 @@
 [project]
-name = "owa-agent"
+name = "agent"
 version = "0.1.0"
-description = "Add your description here"
+description = "Minimal training"
 readme = "README.md"
+license = { text = "MIT" }
 requires-python = ">=3.11"
 dependencies = [
-    "albumentations>=2.0.6",
-    "datasets>=3.6.0",
-    "fastapi[standard]>=0.115.12",
-    "line-profiler>=4.2.0",
-    "matplotlib>=3.10.3",
-    "num2words>=0.5.14",
-    "openai>=1.76.2",
-    "owa",
-    "pandas>=2.2.3",
-    "pillow>=11.1.0",
-    "torch==2.6.0",
-    "torchvision==0.21.0",
+    "datasets>=4.0.0",
+    "lightning>=2.5.2",
+    "litgpt[extra]",
+    "owa-core>=0.5.3",
+    "owa-data>=0.1.0",
+    "owa-msgs>=0.5.3",
+    "tensorboard>=2.19.0",
+    "torch>=2.7.1",
     "tqdm>=4.67.1",
     "transformers>=4.51.3",
-    "trl>=0.16.0",
-    "typer>=0.15.2",
-    "uvicorn>=0.34.0",
-    "wandb>=0.19.11",
 ]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.hatch.build.targets.wheel]
-packages = ["owa"]
-
 [tool.uv.sources]
-torch = [
-  { index = "pytorch-cu126", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-]
-torchvision = [
-  { index = "pytorch-cu126", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-]
-
-[[tool.uv.index]]
-name = "pytorch-cu126"
-url = "https://download.pytorch.org/whl/cu126"
-explicit = true
+owa-data = { path = "../../open-world-agents/projects/owa-data" }
+litgpt = { git = "https://github.com/Lightning-AI/litgpt" }
