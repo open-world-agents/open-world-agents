@@ -43,14 +43,34 @@ fi
 passwd -d root || true
 passwd -d "$USERNAME" || true
 
-# Install essential development packages
-apt-get update && apt-get install -y --no-install-recommends \
-    sudo bash-completion zsh tmux vim nano htop tree \
-    git curl wget openssh-client jq unzip rsync xz-utils locales \
-    build-essential libssl-dev zlib1g-dev libbz2-dev liblzma-dev \
-    libreadline-dev libsqlite3-dev libncursesw5-dev tk-dev libxml2-dev libxmlsec1-dev libffi-dev
+# Update package lists
+apt-get update
 
-# Generate locale and configure user permissions
+# Install system utilities and shell tools
+apt-get install -y --no-install-recommends \
+    sudo bash-completion zsh tmux \
+    htop tree locales
+
+# Install editors and text processing
+apt-get install -y --no-install-recommends \
+    vim vim-runtime nano
+
+# Install network and download tools
+apt-get install -y --no-install-recommends \
+    git curl wget aria2 openssh-client \
+    jq unzip rsync xz-utils
+
+# Install development tools and libraries
+apt-get install -y --no-install-recommends \
+    build-essential \
+    libssl-dev zlib1g-dev libffi-dev \
+    libreadline-dev libsqlite3-dev libncursesw5-dev
+
+# Install X11 applications and utilities
+apt-get install -y --no-install-recommends \
+    x11-apps xauth
+
+# Generate locale and configure sudoers
 locale-gen en_US.UTF-8
 usermod -aG sudo "$USERNAME"
 echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" > "/etc/sudoers.d/$USERNAME"

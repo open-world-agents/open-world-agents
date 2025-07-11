@@ -37,6 +37,6 @@ conda config --set channel_priority strict \
 conda config --set auto_activate_base false
 echo ". activate owa" >> ~/.zshrc
 
-# Install useful tools
-. activate owa
-pip3 install glances gpustat
+# Source custom aliases
+echo -e "\n# Custom aliases and functions" >> ~/.zshrc
+echo "source ~/.devcontainer/aliases.sh" >> ~/.zshrc
