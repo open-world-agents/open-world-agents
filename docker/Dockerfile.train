@@ -10,14 +10,13 @@ ARG CONDA_INSTALL_PATH=/opt/conda
 # =============================================================================
 FROM ${RUNTIME_IMAGE} AS ml-base
 
-# Install core ML packages using uv with cache mounts
+# Install projects/agent package
 RUN --mount=type=cache,target=${HOME}/.cache/uv,sharing=locked \
     --mount=type=cache,target=${HOME}/.cache/pip,sharing=locked \
-    . activate owa && vuv pip install \
-    torch torchvision \
-    numpy einops pillow \
-    transformers datasets accelerate trl peft huggingface-hub \
-    tqdm wandb
+    --mount=type=bind,source=projects/owa-data,target=/workspace/projects/owa-data \
+    . activate owa && \
+    vuv pip install torch torchvision tqdm einops && \
+    vuv pip install /workspace/projects/owa-data
 
 # =============================================================================
 # Stage 2: Flash Attention Builder
