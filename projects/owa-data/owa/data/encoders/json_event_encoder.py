@@ -16,7 +16,7 @@ from .base_encoder import BaseEventEncoder, BaseEventEncoderConfig
 
 @dataclass
 class JSONEventEncoderConfig(BaseEventEncoderConfig):
-    image_token: str = "<IMAGE>"
+    image_token: str = "<image>"
 
 
 class JSONEventEncoder(BaseEventEncoder):

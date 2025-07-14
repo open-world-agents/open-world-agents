@@ -13,7 +13,7 @@ from owa.msgs.desktop.screen import ScreenCaptured
 class EpisodeTokenizerConfig:
     encoder_type: str = "hierarchical"
     image_token_length: int = 64
-    image_token: str = "<IMAGE>"
+    image_token: str = "<image>"
     episode_start_token: str = "<EPISODE_START>"
     episode_end_token: str = "<EPISODE_END>"
 

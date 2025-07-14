@@ -15,7 +15,7 @@ from owa.msgs.desktop.screen import ScreenCaptured
 
 @dataclass
 class BaseEventEncoderConfig:
-    image_token: str = "<IMAGE>"
+    image_token: str = "<image>"
 
 
 class BaseEventEncoder(ABC):

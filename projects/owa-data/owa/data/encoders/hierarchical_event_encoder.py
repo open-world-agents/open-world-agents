@@ -23,7 +23,7 @@ class HierarchicalEventEncoderConfig(BaseEventEncoderConfig):
     # coordinate quantization bases (like hex: base-16)
     mouse_coord_bases: List[int] = field(default_factory=lambda: [16, 16, 16])
     screen_size: Tuple[int, int] = (1920, 1080)
-    image_token: str = "<IMAGE>"
+    image_token: str = "<image>"
 
 
 def quantize_to_digits(value: float, bases: List[int]) -> List[int]:
@@ -79,7 +79,7 @@ def digits_to_value(digits: List[int], bases: List[int]) -> float:
     return value
 
 
-def _generate_vocab(image_token: str = "<IMAGE>") -> Set[str]:
+def _generate_vocab(image_token: str = "<image>") -> Set[str]:
     """Generate the hierarchical token vocabulary."""
     vocab = ["<EVENT_START>", "<EVENT_END>", "<TIMESTAMP>", "<KEYBOARD>", "<MOUSE>", image_token]
 
