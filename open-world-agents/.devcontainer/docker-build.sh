@@ -13,5 +13,5 @@ docker build \
   --build-arg USER_UID=$USER_UID \
   --build-arg USER_GID=$USER_GID \
   -f Dockerfile \
-  -t owa/dev --progress plain \
+  -t owa/dev \
   ..
