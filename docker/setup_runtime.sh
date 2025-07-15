@@ -14,7 +14,8 @@ conda config --set auto_activate_base false
 
 # Install uv package manager and dependencies
 pip install uv virtual-uv
-vuv pip install . --group dev
+# `--no-sources` is needed to prevent editable install. See https://github.com/astral-sh/uv/issues/14609
+vuv pip install . --group dev --no-sources
 
 echo "Runtime environment setup complete!"
 echo "Virtual environment: $(which python)"

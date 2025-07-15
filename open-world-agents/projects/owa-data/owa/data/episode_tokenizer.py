@@ -14,6 +14,8 @@ class EpisodeTokenizerConfig:
     encoder_type: str = "hierarchical"
     image_token_length: int = 64
     image_token: str = "<image>"
+    image_token_prefix: str = "<fake_token_around_image><global-img>"
+    image_token_suffix: str = "<fake_token_around_image>"
     episode_start_token: str = "<EPISODE_START>"
     episode_end_token: str = "<EPISODE_END>"
 
@@ -28,12 +30,19 @@ class TokenizedEvent(TypedDict):
 class EpisodeTokenizer:
     def __init__(self, config: EpisodeTokenizerConfig = EpisodeTokenizerConfig(), **kwargs):
         self.config = EpisodeTokenizerConfig(**(config.__dict__ | kwargs))
-        self.encoder = create_encoder(self.config.encoder_type, image_token=self.config.image_token)
+        self.encoder = create_encoder(
+            self.config.encoder_type,
+            image_token=self.config.image_token,
+            image_token_prefix=self.config.image_token_prefix,
+            image_token_suffix=self.config.image_token_suffix,
+        )
         self.is_prepared = False
 
     def get_vocab(self) -> set[str]:
         return self.encoder.get_vocab() | {
             self.config.image_token,
+            self.config.image_token_prefix,
+            self.config.image_token_suffix,
             self.config.episode_start_token,
             self.config.episode_end_token,
         }
@@ -50,10 +59,14 @@ class EpisodeTokenizer:
             raise RuntimeError("EpisodeTokenizer must be prepared by `prepare_model` before tokenizing")
 
         encoded_text, images = self.encoder.encode(mcap_msg)
-        # Repeat image_token by image_token_length
-        encoded_text = encoded_text.replace(
-            self.config.image_token, self.config.image_token * self.config.image_token_length
+        # Replace the image token sequence with repeated image tokens
+        # First, create the pattern to search for
+        image_token_pattern = (
+            f"{self.config.image_token_prefix}{self.config.image_token}{self.config.image_token_suffix}"
         )
+        # Replace with prefix + repeated tokens + suffix
+        replacement = f"{self.config.image_token_prefix}{self.config.image_token * self.config.image_token_length}{self.config.image_token_suffix}"
+        encoded_text = encoded_text.replace(image_token_pattern, replacement)
         token_ids = self.tokenizer.encode(encoded_text, add_special_tokens=False)
 
         return TokenizedEvent(

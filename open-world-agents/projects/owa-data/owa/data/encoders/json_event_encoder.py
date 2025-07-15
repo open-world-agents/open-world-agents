@@ -16,7 +16,7 @@ from .base_encoder import BaseEventEncoder, BaseEventEncoderConfig
 
 @dataclass
 class JSONEventEncoderConfig(BaseEventEncoderConfig):
-    image_token: str = "<image>"
+    pass
 
 
 class JSONEventEncoder(BaseEventEncoder):
@@ -36,7 +36,10 @@ class JSONEventEncoder(BaseEventEncoder):
                 if not isinstance(screen_event, ScreenCaptured):
                     raise ValueError(f"Expected ScreenCaptured object, got {type(screen_event)}")
                 images.append(screen_event)
-                mcap_message.message = self.config.image_token.encode("utf-8")
+                image_token_with_prefix_suffix = (
+                    f"{self.config.image_token_prefix}{self.config.image_token}{self.config.image_token_suffix}"
+                )
+                mcap_message.message = image_token_with_prefix_suffix.encode("utf-8")
             except Exception as e:
                 raise ValueError(f"Failed to parse screen event message: {e}")
 
@@ -58,10 +61,13 @@ class JSONEventEncoder(BaseEventEncoder):
             raise ValueError("Decoded content is not a dictionary")
 
         # Handle screen events with image data
+        expected_image_token = (
+            f"{self.config.image_token_prefix}{self.config.image_token}{self.config.image_token_suffix}"
+        )
         if (
             event_dict.get("topic") == "screen"
             and event_dict.get("message_type") == "desktop/ScreenCaptured"
-            and event_dict.get("message") == self.config.image_token
+            and event_dict.get("message") == expected_image_token
         ):
             if not images:
                 raise ValueError("Screen event requires image data but none provided")
@@ -98,4 +104,6 @@ class JSONEventEncoder(BaseEventEncoder):
 
     def get_vocab(self) -> set[str]:
         """Get all tokens in the vocabulary."""
-        return set()
+        # JSONEventEncoder doesn't add special tokens to the vocabulary
+        # except for the image tokens which might be needed by the tokenizer
+        return {self.config.image_token, self.config.image_token_prefix, self.config.image_token_suffix}

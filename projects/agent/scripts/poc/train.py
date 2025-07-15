@@ -1,9 +1,26 @@
 #!/usr/bin/env python3
 """
-Minimal training script for Multimodal LLM with FSLDataset using Lightning Fabric.
+Minimal training script for Multimodal LLM with FSLDataset using Lightning Fabric and FSDP.
 
 This script demonstrates how to train a vision-language model on desktop interaction data
 using the FSLDataset for efficient sequence packing and Lightning Fabric for distributed training.
+
+Features:
+- FSDP (Fully Sharded Data Parallel) support for large model training
+- Automatic detection of transformer blocks for FSDP auto-wrap policy
+- Configurable FSDP sharding strategies (FULL_SHARD, SHARD_GRAD_OP, NO_SHARD, HYBRID_SHARD)
+- Support for both full and sharded checkpoint saving
+- Multi-node and multi-GPU training support
+
+Usage:
+    # Single GPU training
+    python train.py --dataset-path /path/to/dataset --devices 1
+
+    # Multi-GPU FSDP training
+    python train.py --dataset-path /path/to/dataset --devices 4 --fsdp-sharding-strategy FULL_SHARD
+
+    # Multi-node training
+    python train.py --dataset-path /path/to/dataset --devices 4 --num-nodes 2
 """
 
 import argparse
@@ -13,12 +30,57 @@ import torch
 from datasets import load_from_disk
 from lightning.fabric import Fabric
 from lightning.fabric.loggers import TensorBoardLogger
+from lightning.fabric.strategies.fsdp import FSDPStrategy
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import AutoModelForVision2Seq, AutoProcessor, AutoTokenizer
 
 from owa.data.episode_tokenizer import EpisodeTokenizer
 from owa.data.fsl_dataset import FSLDataset, FSLDatasetConfig
+
+
+def get_fsdp_auto_wrap_policy():
+    """
+    Define auto-wrap policy for FSDP based on common transformer blocks.
+
+    This function returns a set of module types that should be wrapped by FSDP.
+    We target common transformer blocks that are likely to be present in vision-language models.
+    """
+    try:
+        # Import common transformer block types
+        from transformers.models.gemma.modeling_gemma import GemmaDecoderLayer
+        from transformers.models.llama.modeling_llama import LlamaDecoderLayer
+        from transformers.models.phi.modeling_phi import PhiDecoderLayer
+        from transformers.models.qwen2.modeling_qwen2 import Qwen2DecoderLayer
+
+        # Return a set of common transformer block types
+        auto_wrap_policy = {
+            LlamaDecoderLayer,
+            PhiDecoderLayer,
+            Qwen2DecoderLayer,
+            GemmaDecoderLayer,
+        }
+
+        # Also try to import vision transformer blocks
+        try:
+            from transformers.models.clip.modeling_clip import CLIPEncoderLayer
+
+            auto_wrap_policy.add(CLIPEncoderLayer)
+        except ImportError:
+            pass
+
+        try:
+            from transformers.models.siglip.modeling_siglip import SiglipEncoderLayer
+
+            auto_wrap_policy.add(SiglipEncoderLayer)
+        except ImportError:
+            pass
+
+        return auto_wrap_policy
+
+    except ImportError:
+        # Fallback: use torch.nn.TransformerEncoderLayer and TransformerDecoderLayer
+        return {torch.nn.TransformerEncoderLayer, torch.nn.TransformerDecoderLayer}
 
 
 def collate_fn(batch):
@@ -127,15 +189,46 @@ def main():
     parser.add_argument("--lr", type=float, default=1e-5, help="Learning rate")
     parser.add_argument("--output-dir", type=str, default="./checkpoints", help="Output directory")
     parser.add_argument("--devices", type=int, default=1, help="Number of devices")
+    parser.add_argument("--num-nodes", type=int, default=1, help="Number of nodes")
     parser.add_argument("--precision", type=str, default="bf16-mixed", help="Training precision")
+    parser.add_argument(
+        "--fsdp-sharding-strategy",
+        type=str,
+        default="FULL_SHARD",
+        choices=["FULL_SHARD", "SHARD_GRAD_OP", "NO_SHARD", "HYBRID_SHARD"],
+        help="FSDP sharding strategy",
+    )
+    parser.add_argument(
+        "--fsdp-state-dict-type",
+        type=str,
+        default="full",
+        choices=["full", "sharded"],
+        help="FSDP state dict type for checkpointing",
+    )
 
     args = parser.parse_args()
+
+    # Configure FSDP strategy if using multiple devices
+    if args.devices * args.num_nodes > 1:
+        auto_wrap_policy = get_fsdp_auto_wrap_policy()
+        strategy = FSDPStrategy(
+            auto_wrap_policy=auto_wrap_policy,
+            state_dict_type=args.fsdp_state_dict_type,
+            sharding_strategy=args.fsdp_sharding_strategy,
+        )
+        print(f"Using FSDP strategy with sharding: {args.fsdp_sharding_strategy}")
+        print(f"Auto-wrap policy includes: {[cls.__name__ for cls in auto_wrap_policy]}")
+    else:
+        strategy = "auto"
+        print("Using single device, FSDP disabled")
 
     # Initialize Fabric
     logger = TensorBoardLogger(root_dir="./logs")
     fabric = Fabric(
         accelerator="auto",
         devices=args.devices,
+        num_nodes=args.num_nodes,
+        strategy=strategy,
         precision=args.precision,
         loggers=logger,
     )
@@ -148,8 +241,15 @@ def main():
     # Initialize tokenizer and processor
     fabric.print(f"Loading model and tokenizer: {args.model_name}")
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
-    processor = AutoProcessor.from_pretrained(args.model_name)
-    model = AutoModelForVision2Seq.from_pretrained(args.model_name)
+    processor = AutoProcessor.from_pretrained(args.model_name, do_image_splitting=False)  # TODO
+
+    # Initialize model with proper device placement for FSDP
+    if isinstance(fabric.strategy, FSDPStrategy):
+        # For FSDP, initialize model on meta device first to avoid memory issues
+        with fabric.init_module(empty_init=True):
+            model = AutoModelForVision2Seq.from_pretrained(args.model_name)
+    else:
+        model = AutoModelForVision2Seq.from_pretrained(args.model_name)
 
     # Setup episode tokenizer
     episode_tokenizer = EpisodeTokenizer(image_token="<image>")
@@ -200,8 +300,15 @@ def main():
         if fabric.global_rank == 0:
             os.makedirs(args.output_dir, exist_ok=True)
             checkpoint_path = os.path.join(args.output_dir, f"checkpoint_epoch_{epoch + 1}.pt")
+
+            # For FSDP, the state dict type determines how the checkpoint is saved
+            # "full" state dict consolidates all shards on rank 0
+            # "sharded" state dict saves each shard separately
             fabric.save(checkpoint_path, {"model": model, "optimizer": optimizer, "epoch": epoch})
             fabric.print(f"Checkpoint saved: {checkpoint_path}")
+
+            if isinstance(fabric.strategy, FSDPStrategy):
+                fabric.print(f"FSDP checkpoint saved with state_dict_type: {args.fsdp_state_dict_type}")
 
     fabric.print("Training completed!")
 

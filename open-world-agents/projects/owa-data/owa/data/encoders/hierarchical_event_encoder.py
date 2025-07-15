@@ -23,7 +23,6 @@ class HierarchicalEventEncoderConfig(BaseEventEncoderConfig):
     # coordinate quantization bases (like hex: base-16)
     mouse_coord_bases: List[int] = field(default_factory=lambda: [16, 16, 16])
     screen_size: Tuple[int, int] = (1920, 1080)
-    image_token: str = "<image>"
 
 
 def quantize_to_digits(value: float, bases: List[int]) -> List[int]:
@@ -79,9 +78,22 @@ def digits_to_value(digits: List[int], bases: List[int]) -> float:
     return value
 
 
-def _generate_vocab(image_token: str = "<image>") -> Set[str]:
+def _generate_vocab(
+    image_token: str = "<image>",
+    image_token_prefix: str = "<fake_token_around_image><global-img>",
+    image_token_suffix: str = "<fake_token_around_image>",
+) -> Set[str]:
     """Generate the hierarchical token vocabulary."""
-    vocab = ["<EVENT_START>", "<EVENT_END>", "<TIMESTAMP>", "<KEYBOARD>", "<MOUSE>", image_token]
+    vocab = [
+        "<EVENT_START>",
+        "<EVENT_END>",
+        "<TIMESTAMP>",
+        "<KEYBOARD>",
+        "<MOUSE>",
+        image_token,
+        image_token_prefix,
+        image_token_suffix,
+    ]
 
     # Numbers 0-255 for various parameters
     vocab.extend(f"<{i}>" for i in range(256))
@@ -210,7 +222,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
             tokens.extend(self._encode_mouse(mouse_event))
         elif mcap_message.topic == "screen":
             screen_event = ScreenCaptured(**msg_data)
-            tokens.append(self.config.image_token)
+            tokens.extend([self.config.image_token_prefix, self.config.image_token, self.config.image_token_suffix])
             images.append(screen_event)
         else:
             raise ValueError(f"Unsupported event type: {mcap_message.topic}")
@@ -330,7 +342,17 @@ class HierarchicalEventEncoder(BaseEventEncoder):
                 message_type="desktop/MouseEvent",
                 message=json.dumps(msg_data).encode("utf-8"),
             )
-        elif event_type_token == self.config.image_token:
+        elif event_type_token == self.config.image_token_prefix:
+            # Check if we have enough tokens for the full image token sequence
+            if (
+                len(tokens) < timestamp_token_count + 3
+                or tokens[timestamp_token_count + 1] != self.config.image_token
+                or tokens[timestamp_token_count + 2] != self.config.image_token_suffix
+            ):
+                raise ValueError(
+                    f"Invalid image token sequence: expected prefix, token, suffix but got {tokens[timestamp_token_count : timestamp_token_count + 3]}"
+                )
+
             if not images:
                 raise ValueError("Screen event requires image data but none provided")
             image_data = images[0]
@@ -370,4 +392,4 @@ class HierarchicalEventEncoder(BaseEventEncoder):
 
     def get_vocab(self) -> Set[str]:
         """Get all tokens in the vocabulary."""
-        return _generate_vocab(self.config.image_token)
+        return _generate_vocab(self.config.image_token, self.config.image_token_prefix, self.config.image_token_suffix)
