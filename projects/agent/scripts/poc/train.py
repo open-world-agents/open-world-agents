@@ -33,7 +33,7 @@ from lightning.fabric.loggers import TensorBoardLogger
 from lightning.fabric.strategies.fsdp import FSDPStrategy
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from transformers import AutoModelForVision2Seq, AutoProcessor, AutoTokenizer
+from transformers import AutoModelForImageTextToText, AutoProcessor, AutoTokenizer
 
 from owa.data.episode_tokenizer import EpisodeTokenizer
 from owa.data.fsl_dataset import FSLDataset, FSLDatasetConfig
@@ -247,9 +247,9 @@ def main():
     if isinstance(fabric.strategy, FSDPStrategy):
         # For FSDP, initialize model on meta device first to avoid memory issues
         with fabric.init_module(empty_init=True):
-            model = AutoModelForVision2Seq.from_pretrained(args.model_name)
+            model = AutoModelForImageTextToText.from_pretrained(args.model_name)
     else:
-        model = AutoModelForVision2Seq.from_pretrained(args.model_name)
+        model = AutoModelForImageTextToText.from_pretrained(args.model_name)
 
     # Setup episode tokenizer
     episode_tokenizer = EpisodeTokenizer(image_token="<image>")
@@ -258,7 +258,7 @@ def main():
     # Tokenize event dataset
     fabric.print("Tokenizing event dataset...")
     for split, dataset in event_dataset.items():
-        tokenized = episode_tokenizer.tokenize_event_dataset(dataset, map_kwargs={"num_proc": 4})
+        tokenized = episode_tokenizer.tokenize_event_dataset(dataset, map_kwargs={"num_proc": 8})
         event_dataset[split] = tokenized
 
     # Create FSLDataset
