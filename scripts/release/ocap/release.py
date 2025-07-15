@@ -1,11 +1,10 @@
 """
 This script is used to create a conda environment tarball for the project. The script does the following:
-1. Replace all `editable = true` with `editable = false` in all `pyproject.toml` files
-2. Run `uv pip install .`
-3. Run `conda pack -n owa`
-4. Revert all `editable = false` back to `editable = true` in all `pyproject.toml` files
+1. Run `uv pip install . --no-sources`
+2. Run `conda pack -n owa`
 
 NOTE: `conda-pack` requires the packages to be installed without `--editable` flag.
+NOTE: `--no-sources` is needed to prevent editable install. See https://github.com/astral-sh/uv/issues/14609
 """
 
 import subprocess
