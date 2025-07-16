@@ -32,12 +32,9 @@ jobs:
         with:
           show-uv-cache-info: 'true'
 
-      - name: Install dependencies
-        run: vuv install --dev
-
       # install `conda-pack`
       - name: Install conda-pack
-        run: vuv pip install conda-pack
+        run: uv pip install conda-pack
 
       - name: Generate Release Files
         run: python scripts/release/ocap/release.py
