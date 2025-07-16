@@ -1,63 +1,14 @@
 # OWA Training Image - ML Training Environment
-# Multi-stage build to exclude cuda from final image
+# Builds on top of owa/runtime:cuda with ML packages
 
 # Build arguments
-ARG BASE_IMAGE=nvidia/cuda:12.6.3-devel-ubuntu24.04
+ARG BASE_IMAGE=owa/runtime:cuda
 ARG CONDA_INSTALL_PATH=/opt/conda
 
 # =============================================================================
-# Stage 1: Runtime Environment
+# Stage 1: ML Base (inherits everything from runtime:cuda)
 # =============================================================================
 FROM ${BASE_IMAGE} AS ml-base
-
-# Build arguments
-ARG MINIFORGE_VERSION=latest
-ARG CONDA_INSTALL_PATH=/opt/conda
-
-# Environment setup
-ENV DEBIAN_FRONTEND=noninteractive 
-ENV USER=root UID=0 GID=0 HOME=/root
-
-# Install system dependencies first (rarely changes)
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    apt-get update && apt-get install -y --no-install-recommends \
-    git curl wget ca-certificates build-essential
-
-# Install miniforge
-COPY docker/setup_miniforge.sh /tmp/setup_miniforge.sh
-RUN --mount=type=cache,target=/root/.cache,sharing=locked \
-    chmod +x /tmp/setup_miniforge.sh && \
-    /tmp/setup_miniforge.sh ${MINIFORGE_VERSION} ${CONDA_INSTALL_PATH} && \
-    rm -f /tmp/setup_miniforge.sh
-
-ENV VUV_ALLOW_BASE=true PATH="${CONDA_INSTALL_PATH}/bin:${PATH}"
-
-# Default configuration
-SHELL ["/bin/bash", "-c"]
-CMD ["/bin/bash"]
-
-# required for opencv-python to work, https://stackoverflow.com/a/68666500, https://askubuntu.com/questions/1060903/importerror-libgthread-2-0-so-0-cannot-open-shared-object-file-no-such-file-o
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    apt-get update && apt-get install -y --no-install-recommends \
-    libgl1 libglib2.0-0
-
-# Project setup arguments
-ARG PROJECT_DIR=/workspace
-ARG CONDA_INSTALL_PATH=/opt/conda
-
-# Set working directory
-WORKDIR ${PROJECT_DIR}
-
-# Copy and run project setup script
-COPY docker/setup_runtime.sh /tmp/setup_runtime.sh
-RUN --mount=type=cache,target=${HOME}/.cache/uv,sharing=locked \
-    --mount=type=cache,target=${HOME}/.cache/pip,sharing=locked \
-    --mount=type=cache,target=${CONDA_INSTALL_PATH}/pkgs,sharing=locked \
-    chmod +x /tmp/setup_runtime.sh && \
-    /tmp/setup_runtime.sh ${PROJECT_DIR} && \
-    rm /tmp/setup_runtime.sh
 
 # Install ML packages and projects/agent package
 RUN --mount=type=cache,target=${HOME}/.cache/uv,sharing=locked \

@@ -11,8 +11,12 @@ help: ## Show help
 	@echo "  make list      # List built images"
 	@echo ""
 	@echo "Images built:"
-	@echo "  owa/base:latest     - Ubuntu + Python"
-	@echo "  owa/runtime:latest  - base + project deps"
+	@echo "  owa/base:ubuntu     - Ubuntu + Python"
+	@echo "  owa/base:cuda       - CUDA + Python"
+	@echo "  owa/base:latest     - Ubuntu + Python (alias)"
+	@echo "  owa/runtime:ubuntu  - Ubuntu + project deps"
+	@echo "  owa/runtime:cuda    - CUDA + project deps"
+	@echo "  owa/runtime:latest  - Ubuntu + project deps (alias)"
 	@echo "  owa/train:latest    - CUDA + ML packages"
 
 build: ## Build all images
@@ -20,7 +24,7 @@ build: ## Build all images
 
 clean: ## Remove all images
 	@echo "🧹 Cleaning up..."
-	-docker rmi owa/train:latest owa/runtime:latest owa/base:latest 2>/dev/null || true
+	-docker rmi owa/train:latest owa/runtime:cuda owa/runtime:ubuntu owa/runtime:latest owa/base:cuda owa/base:ubuntu owa/base:latest 2>/dev/null || true
 
 list: ## List built images
 	@echo "📋 Built images:"

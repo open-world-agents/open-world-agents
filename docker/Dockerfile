@@ -1,5 +1,5 @@
-# Base Image - Ubuntu + Miniforge + uv/vuv
-# Lightweight base without CUDA (CUDA is added in training image when needed)
+# Base Image - Miniforge + uv/vuv
+# Can be built on Ubuntu (lightweight) or CUDA (for training pipeline)
 ARG BASE_IMAGE=ubuntu:24.04
 FROM ${BASE_IMAGE}
 
