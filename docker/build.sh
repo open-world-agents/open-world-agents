@@ -41,12 +41,12 @@ build_image() {
 log_info "🚀 Building all Docker images..."
 
 # Base image
-build_image "base" "owa/base:latest" "docker build -f docker/Dockerfile -t owa/base:latest ."
+build_image "base" "owa/base:latest" "docker build --build-arg BASE_IMAGE=ubuntu:24.04 -f docker/Dockerfile -t owa/base:latest ."
 
 # Runtime image
 build_image "runtime" "owa/runtime:latest" "docker build --build-arg BASE_IMAGE=owa/base:latest -f docker/Dockerfile.runtime -t owa/runtime:latest ."
 
 # Training image
-build_image "training" "owa/train:latest" "docker build --build-arg CUDA_BASE_IMAGE=nvidia/cuda:12.6.3-devel-ubuntu24.04 -f docker/Dockerfile.train -t owa/train:latest ."
+build_image "training" "owa/train:latest" "docker build --build-arg BASE_IMAGE=nvidia/cuda:12.6.3-devel-ubuntu24.04 -f docker/Dockerfile.train -t owa/train:latest ."
 
 log_success "🎉 All images built successfully!"
