@@ -190,7 +190,7 @@ def main():
     parser.add_argument("--output-dir", type=str, default="./checkpoints", help="Output directory")
     parser.add_argument("--devices", type=int, default=1, help="Number of devices")
     parser.add_argument("--num-nodes", type=int, default=1, help="Number of nodes")
-    parser.add_argument("--precision", type=str, default="bf16-mixed", help="Training precision")
+    parser.add_argument("--precision", type=str, default="bf16-true", help="Training precision")
     parser.add_argument(
         "--fsdp-sharding-strategy",
         type=str,
