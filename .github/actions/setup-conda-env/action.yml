@@ -14,8 +14,7 @@ inputs:
     default: ''
   environment-file:
     description: 'Path to conda environment file'
-    required: false
-    default: 'projects/owa-env-gst/environment.yml'
+    required: true
   enable-env-cache:
     description: 'Whether to enable conda environment caching'
     required: false
