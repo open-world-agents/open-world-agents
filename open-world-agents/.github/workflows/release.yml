@@ -38,7 +38,16 @@ jobs:
         run: uv pip install conda-pack
 
       - name: Generate Release Files
-        run: python scripts/release/ocap/release.py
+        run: |
+          # Step 1: Run `uv pip install . --no-sources`
+          # NOTE: `--no-sources` is needed to prevent editable install. See https://github.com/astral-sh/uv/issues/14609
+          uv pip install projects/ocap --no-sources
+          echo "Installed project dependencies."
+
+          # Step 2: Run `conda pack -n owa`
+          # NOTE: `conda-pack` requires the packages to be installed without `--editable` flag.
+          conda-pack -n owa --output scripts/release/ocap/env.tar.gz
+          echo "Packed conda environment."
       
       - name: Test whether ocap works well
         run: ocap --help
