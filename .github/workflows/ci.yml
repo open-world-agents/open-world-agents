@@ -77,7 +77,8 @@ jobs:
         with:
           os: windows
           cache-number: '0'
-          cache-suffix: 'pytest'
+          cache-suffix: 'test-windows' # same as job name
+          environment-file: 'projects/owa-env-gst/environment.yml'
 
       - name: Setup uv Environment
         uses: ./.github/actions/setup-uv-env
