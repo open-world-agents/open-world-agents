@@ -36,8 +36,7 @@ import numpy as np
 import torch
 from accelerate import Accelerator
 from accelerate.utils import set_seed
-from dataset.utils import RepeatingDataset, collate_fn, transform
-from datasets import DatasetDict, load_from_disk
+from owa_game_agent.data.datasets.smolvlm2 import SmolVLM2Dataset, collate_fn
 from torch.utils.data import Subset
 from transformers import AutoModelForImageTextToText, AutoProcessor
 from trl import SFTConfig, SFTTrainer
@@ -45,10 +44,16 @@ from trl import SFTConfig, SFTTrainer
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train SmolVLM model on OWA game queries")
     parser.add_argument(
-        "--dataset_path",
+        "--query_path",
         type=str,
         required=True,
-        help="Path to the dataset directory",
+        help="Path to JSONL file containing queries",
+    )
+    parser.add_argument(
+        "--eval_query_path",
+        type=str,
+        default=None,
+        help="Path to JSONL file containing evaluation queries",
     )
     parser.add_argument(
         "--output_dir",
@@ -59,7 +64,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model_id",
         type=str,
-        default="HuggingFaceTB/SmolVLM2-256M-Video-Instruct",
+        default="HuggingFaceTB/SmolVLM2-500M-Video-Instruct",
         help="Model ID",
     )
     parser.add_argument("--num_epochs", type=int, default=20, help="Number of training epochs")
@@ -108,11 +113,9 @@ if __name__ == "__main__":
     ################
     # Dataset
     ################
-    accelerator.print(f"Loading dataset from: {args.dataset_path}")
-    dataset_dict: DatasetDict = load_from_disk(args.dataset_path)
-    dataset_dict.set_transform(transform=lambda x: transform(x, decode_images=True))
-    train_dataset = RepeatingDataset(dataset_dict["train"], repeat_count=args.repeat_n)
-    eval_dataset = dataset_dict["test"]
+    accelerator.print(f"Loading dataset from: {args.query_path}")
+    train_dataset = SmolVLM2Dataset(args.query_path, repeat_n=args.repeat_n)
+    eval_dataset = SmolVLM2Dataset(args.eval_query_path, repeat_n=1) if args.eval_query_path else None
 
     # Split dataset into train and validation
     rng = np.random.default_rng(seed=23)  # Needed to reproduce the same split per each run / per each device
