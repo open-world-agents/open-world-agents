@@ -6,7 +6,6 @@ FROM ${BASE_IMAGE}
 ARG USERNAME=vscode
 ARG USER_UID=1000
 ARG USER_GID=1000
-ARG DOCKER_GID=998
 ARG CONDA_INSTALL_PATH=/opt/conda
 
 # System setup (user creation, packages, sudoers)
@@ -14,7 +13,7 @@ COPY ./.devcontainer/devcontainer_system.sh /tmp/devcontainer_system.sh
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     chmod +x /tmp/devcontainer_system.sh && \
-    /tmp/devcontainer_system.sh ${USERNAME} ${USER_UID} ${USER_GID} ${DOCKER_GID} && \
+    /tmp/devcontainer_system.sh ${USERNAME} ${USER_UID} ${USER_GID} && \
     rm /tmp/devcontainer_system.sh
 
 # Install useful tools

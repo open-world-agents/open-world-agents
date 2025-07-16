@@ -29,7 +29,7 @@ lr_scheduler_type: "cosine"  # (default: 'linear')
 # ============================================================================
 # PRECISION AND PERFORMANCE
 # ============================================================================
-bf16: true  # (default: True)
+bf16: true  # (default: True for SFTConfig, False for TrainingArguments)
 tf32: true  # (default: None)
 gradient_checkpointing: true  # (default: False)
 gradient_checkpointing_kwargs:
