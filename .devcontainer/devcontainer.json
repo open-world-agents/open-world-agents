@@ -4,7 +4,8 @@
 	// Container configuration
 	"runArgs": [
 		"--gpus=all",
-		"--shm-size=8g"
+		"--ipc=host",
+		"--privileged"
 	],
 	"remoteUser": "vscode",
 	"updateRemoteUserUID": true,
@@ -28,7 +29,7 @@
 	"features": {
 		"ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
 		"ghcr.io/devcontainers/features/git:1": {},
-		"ghcr.io/devcontainers/features/github-cli:1": {},
+		"ghcr.io/devcontainers/features/github-cli:1": {}
 	},
 	// Lifecycle scripts
 	"updateContentCommand": "echo 'Changing ownership of /opt/conda to vscode user...' && sudo chown -R vscode:vscode /opt/conda",
