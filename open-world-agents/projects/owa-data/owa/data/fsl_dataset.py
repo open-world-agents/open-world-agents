@@ -185,9 +185,9 @@ class FSLDataset(Dataset):
             for image_json in images:
                 try:
                     # Deserialize ScreenCaptured from JSON
-                    screen_captured = ScreenCaptured.model_validate_json(image_json).resolve_external_path(
-                        episode_path
-                    )
+                    screen_captured: ScreenCaptured = ScreenCaptured.model_validate_json(
+                        image_json
+                    ).resolve_external_path(episode_path)
                     if self.config.load_images:
                         # Convert to PIL Image
                         screen_captured = screen_captured.to_pil_image()
