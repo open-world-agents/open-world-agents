@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  tritonserver:
+    build: .
+    shm_size: "1g"
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+      - "8002:8002"
+    volumes:
+      - ./model_repository:/app/models
+      - ${DATA_DIR}:${DATA_DIR}
+    stdin_open: true
+    tty: true
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: "nvidia"
+    #           count: all
+    #           capabilities: [gpu]
