@@ -23,7 +23,8 @@
 		"source=/mnt/raid12/cache,target=/mnt/raid12/cache,type=bind",
 		"source=${localEnv:HOME}/.cache,target=/home/vscode/.cache,type=bind",
 		"source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,type=bind",
-		"source=${localEnv:HOME}/.gitconfig,target=/home/vscode/.gitconfig,type=bind,readonly"
+		"source=${localEnv:HOME}/.gitconfig,target=/home/vscode/.gitconfig,type=bind,readonly",
+		"source=${localEnv:HOME}/.netrc,target=/home/vscode/.netrc,type=bind,readonly"
 	],
 	// Features
 	"features": {
