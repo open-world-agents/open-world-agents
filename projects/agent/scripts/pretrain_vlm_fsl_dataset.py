@@ -88,12 +88,6 @@ class PretrainScriptArguments(ScriptArguments):
 
 
 def create_pretraining_collator(processor):
-    """
-    Create a data collator for pretraining that handles FSLDataset format.
-
-    Unlike SFT, pretraining computes loss on all tokens (no masking of prompts).
-    """
-
     def collate_fn(examples):
         # Extract data from FSLDataset format
         input_ids_list = []
@@ -112,18 +106,12 @@ def create_pretraining_collator(processor):
         # For pretraining, labels are the same as input_ids (next token prediction)
         # We shift the labels inside the model, so we don't need to do it here
         labels = input_ids.clone()
+        labels[attention_mask == 0] = -100
 
-        # Handle images - convert PIL images to tensors if needed
+        # Handle images - convert PIL images to tensors if needed. NOTE: smolvlm processor panic when image list is empty.
         if images_list:
-            # Process images using the processor
-            try:
-                # Create dummy text for image processing (processor expects text+images)
-                dummy_texts = [""] * len(images_list)
-                image_inputs = processor(text=dummy_texts, images=images_list, return_tensors="pt")
-                pixel_values = image_inputs.get("pixel_values")
-            except Exception as e:
-                print(f"Warning: Could not process images: {e}")
-                pixel_values = None
+            image_inputs = processor.image_processor(images_list, return_tensors="pt")
+            pixel_values = image_inputs.get("pixel_values")
         else:
             pixel_values = None
 
@@ -172,9 +160,7 @@ def main():
     processor = AutoProcessor.from_pretrained(
         model_args.model_name_or_path, trust_remote_code=model_args.trust_remote_code
     )
-    tokenizer = AutoTokenizer.from_pretrained(
-        model_args.model_name_or_path, trust_remote_code=model_args.trust_remote_code
-    )
+    tokenizer = processor.tokenizer  # TODO: save this
 
     # Set tokenizer model_max_length if needed
     if hasattr(tokenizer, "model_max_length"):
