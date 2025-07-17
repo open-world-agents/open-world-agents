@@ -9,34 +9,39 @@ import time
 # Attempt optional imports for each capturing method
 try:
     from PIL import ImageGrab
+
     PIL_AVAILABLE = True
 except ImportError:
     PIL_AVAILABLE = False
 
 try:
     from mss import mss
+
     MSS_AVAILABLE = True
 except ImportError:
     MSS_AVAILABLE = False
 
 try:
-        import pyscreenshot as ImageGrab2
-        PYSCREENSHOT_AVAILABLE = True
+    import pyscreenshot as ImageGrab2
+
+    PYSCREENSHOT_AVAILABLE = True
 except ImportError:
-        PYSCREENSHOT_AVAILABLE = False
-        ImageGrab2 = None
+    PYSCREENSHOT_AVAILABLE = False
+    ImageGrab2 = None
 
 try:
-    from PyQt5.QtCore import QRect
+    from PyQt5.QtCore import QRect  # noqa
     from PyQt5.QtGui import QGuiApplication
     from PyQt5.QtWidgets import QApplication
+
     PYQT5_AVAILABLE = True
 except ImportError:
     PYQT5_AVAILABLE = False
 
 # Attempt OWA-based import
 try:
-    from owa.registry import RUNNABLES, LISTENERS, activate_module
+    from owa.core.registry import LISTENERS, RUNNABLES
+
     OWA_AVAILABLE = True
 except ImportError:
     OWA_AVAILABLE = False
@@ -44,6 +49,7 @@ except ImportError:
 # For CPU & memory usage
 try:
     import psutil
+
     PSUTIL_AVAILABLE = True
 except ImportError:
     PSUTIL_AVAILABLE = False
@@ -51,6 +57,7 @@ except ImportError:
 # For GPU usage (NVIDIA only)
 try:
     import pynvml
+
     PYNVML_AVAILABLE = True
 except ImportError:
     PYNVML_AVAILABLE = False
@@ -60,11 +67,13 @@ except ImportError:
 # Helper: Resource Measurement
 ###############################################################################
 
+
 class ResourceUsageMonitor:
     """
     Periodically samples CPU%, memory usage, and GPU usage (if available),
     storing them in a queue. On stop(), aggregates average usage.
     """
+
     def __init__(self, interval=0.1):
         """interval: sampling interval in seconds."""
         self.interval = interval
@@ -79,7 +88,7 @@ class ResourceUsageMonitor:
                 pynvml.nvmlInit()
                 # By default, only look at GPU 0
                 self.gpu_handle = pynvml.nvmlDeviceGetHandleByIndex(0)
-            except:
+            except Exception:
                 self.gpu_handle = None
 
     def start(self):
@@ -108,7 +117,7 @@ class ResourceUsageMonitor:
                 try:
                     util = pynvml.nvmlDeviceGetUtilizationRates(self.gpu_handle)
                     gpu_percent = util.gpu
-                except:
+                except Exception:
                     pass
 
             # Fallbacks if something is missing
@@ -169,17 +178,17 @@ class ResourceUsageMonitor:
 
 owa_args = dict(fps=240, window_name=None, monitor_idx=None)
 
+
 def capture_owa_runnable():
     """
-    Capture using the OWA "owa_env_gst" module in runnable mode.
+    Capture using the OWA "owa.env.gst" module in runnable mode.
     Warm-up for 2 seconds, then measure for 2 seconds.
     Returns: (number_of_frames, elapsed_time)
     """
     if not OWA_AVAILABLE:
         raise RuntimeError("OWA environment not available.")
 
-    activate_module("owa_env_gst")
-    screen_capture = RUNNABLES["screen_capture"]()
+    screen_capture = RUNNABLES["gst/screen_capture"]()
     screen_capture.configure(**owa_args)
     screen_capture.start()
 
@@ -203,21 +212,20 @@ def capture_owa_runnable():
 
 def capture_owa_listener():
     """
-    Capture using the OWA "owa_env_gst" module in listener mode.
+    Capture using the OWA "owa.env.gst" module in listener mode.
     Warm-up for 2 seconds, then measure for 2 seconds.
     Returns: (number_of_frames, elapsed_time)
     """
     if not OWA_AVAILABLE:
         raise RuntimeError("OWA environment not available.")
 
-    activate_module("owa_env_gst")
     count = 0
 
     def callback(x, proc):
         nonlocal count
         count += 1
 
-    screen_capture = LISTENERS["screen"]()
+    screen_capture = LISTENERS["gst/screen"]()
     screen_capture.configure(**owa_args, callback=callback)
     screen_capture.start()
 
@@ -343,6 +351,7 @@ def capture_pyqt5():
 ###############################################################################
 # Benchmarking Helper
 ###############################################################################
+
 
 def run_benchmark(name, func):
     """

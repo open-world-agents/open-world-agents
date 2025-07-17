@@ -1,24 +1,25 @@
-from typing import Any, Optional
+from typing import Optional
 
-import orjson
-from easydict import EasyDict
 from mcap.decoder import DecoderFactory as McapDecoderFactory
 from mcap.records import Schema
 from mcap.well_known import MessageEncoding, SchemaEncoding
 
+from .decode_utils import dict_decoder, get_decode_function
 
-# Copied from: https://github.com/foxglove/mcap/blob/6c9ce28b227b379164b2e61e0fd02f365c5442d9/python/mcap/tests/test_reader.py#L152
+
 class DecoderFactory(McapDecoderFactory):
-    def __init__(self):
-        # TODO: implement decoders for OWA
-        # self._decoders: Dict[int, Any] = {}
-        pass
+    def __init__(self, *, decode_args: dict = {}):
+        """Initialize the decoder factory.
+
+        :param decode_args: Dictionary of decode arguments (return_dict, return_dict_on_failure)
+        """
+        self.decode_args = {"return_dict": False, "return_dict_on_failure": False, **decode_args}
 
     def decoder_for(self, message_encoding: str, schema: Optional[Schema]):
         if message_encoding != MessageEncoding.JSON or schema is None or schema.encoding != SchemaEncoding.JSONSchema:
             return None
 
-        def decoder(message_data: bytes) -> Any:
-            return EasyDict(orjson.loads(message_data))
+        return get_decode_function(schema.name, **self.decode_args)
 
-        return decoder
+
+__all__ = ["DecoderFactory", "dict_decoder", "get_decode_function"]

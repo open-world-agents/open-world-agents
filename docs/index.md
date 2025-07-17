@@ -1,95 +1,128 @@
-# Welcome to Open World Agents
+<div align="center">
+  <img src="images/owa-logo.jpg" alt="Open World Agents" width="300"/>
+</div>
 
-### Everything you need to build state-of-the-art foundation multimodal desktop agent, end-to-end.
+# Open World Agents Documentation
 
-Streamline your agent's lifecycle with Open World Agents. From data capture to model training and real-time evaluation, everything is designed for flexibility and performance.
+**A comprehensive framework for building AI agents that interact with desktop applications through vision, keyboard, and mouse control.**
 
-With open-world-agents, you can:
+Open World Agents (OWA) is a monorepo containing the complete toolkit for multimodal desktop agent development. From high-performance data capture to model training and real-time evaluation, everything is designed for flexibility and performance.
 
-- **Data Collection**: Collect your own desktop data, which contains timestamp-aligned **keyboard/mouse** control and **high-frequency(60Hz+) screen** data.
-    - Powered by Windows APIs (`DXGI/WGC`) and the robust [GStreamer](https://gstreamer.freedesktop.org/) framework, ensuring superior performance compared to alternatives. [Learn more...](recorder/why.md)
-- **Asynchronous, real-time event processing**: Compared to existing LLM-agent frameworks and [gymnasium.Env](https://gymnasium.farama.org/api/env/), our platform features an asynchronous processing design leveraging `Callables`, `Listeners`, and `Runnables`. [Learn more...](env/index.md)
-- **Dynamic EnvPlugin Registration**: Seamlessly register and activate EnvPlugins—consisting of `Callables`, `Listeners`, and `Runnables`—at runtime to customize and extend functionality. [Learn more...](env/custom_plugins.md)
-- **Extensible Design**: Easy to add custom EnvPlugin and extend functionality. [Learn more...](env/custom_plugins.md)
-- **Comprehensive Examples**: We provides various examples that demonstrates how to build foundation multimodal desktop agent. Since it's just a example, you may customize anything you want.
-<!-- - **Cross-Platform**: Works on Windows and macOS. -->
+## 🚀 Quick Start: Record → Train in 3 Steps
 
-## Quick Start
+<!-- SYNC-ID: quick-start-3-steps -->
+```bash
+# 1. Record desktop interaction
+$ ocap my-session.mcap
 
-1. Simple example of using `Callables` and `Listeners`. [Learn more...](env)
-    ```python
-    import time
+# 2. Process to training format
+$ python scripts/01_raw_events_to_event_dataset.py --train-dir ./
 
-    from owa.registry import CALLABLES, LISTENERS, activate_module
-
-    # Activate the standard environment module
-    activate_module("owa.env.std")
-
-    def callback():
-        # Get current time in nanoseconds
-        time_ns = CALLABLES["clock.time_ns"]()
-        print(f"Current time in nanoseconds: {time_ns}")
-
-    # Create a listener for clock/tick event
-    tick = LISTENERS["clock/tick"]().configure(callback=callback)
-
-    # Set listener to trigger every 1 second
-    tick.configure(interval=1)
-    # Start the listener
-    tick.start()
-
-    # Allow the listener to run for 2 seconds
-    time.sleep(2)
-
-    # Stop the listener and wait for it to finish
-    tick.stop(), tick.join()
-    ```
-
-2. Record your own desktop usage data by just running `recorder.exe output.mkv`. [Learn more...](recorder/install_and_usage.md)
-
-
-3. How to register your custom EnvPlugin. [Learn more...](env/custom_plugins.md)
-    1. Write your own code
-```python
-from owa import Listener
-from owa.registry import LISTENERS
-
-
-@LISTENERS.register("my/listener")
-class MyEventListener(Listener):
-    def loop(self, *, stop_event, callback):
-        while not stop_event.is_set():
-            event = wait_and_get_event()
-            callback(event)
-```
-    2. Use it!
-```python
-from owa.registry import LISTENERS, activate_module
-
-activate_module("your-own-envplugin")
-
-def callback(event):
-    print(f"Captured event: {event}")
-
-listener = LISTENERS["my/listener"]().configure(callback=callback)
-listener.configure(), listener.start()
-
-... # Run any your own logic here. listener is being executed in background as thread(ListenerThread) or process(ListenerProcess).
-
-# Finish it by calling stop and join
-listener.stop(), listener.join()
+# 3. Train your model
+$ python train.py --dataset ./event-dataset
 ```
 
-<!-- TODO: add agent training lifecycle example -->
+> 📖 **Detailed Guide**: [Complete Quick Start Tutorial](quick-start.md) - Step-by-step walkthrough with examples and troubleshooting
+<!-- END-SYNC: quick-start-3-steps -->
 
-## Contributing
+## Architecture Overview
 
-We welcome contributions! Please see our [Contributing Guide](contributing.md) for details on how to:
+OWA consists of the following core components:
 
-- Set up your development environment.
-- Submit bug reports.
-- Propose new features.
-- Create pull requests.
+<!-- SYNC-ID: core-components-list -->
+- 🌍 **[Environment Framework](env/index.md)** - Universal interface for native desktop automation ("USB-C of desktop agents") with pre-built plugins for desktop control, high-performance screen capture (6x faster), and zero-configuration plugin system
+- 📊 **[Data Infrastructure](data/index.md)** - Complete desktop agent data pipeline from recording to training with `OWAMcap` format - a [universal standard](data/getting-started/why-owamcap.md) powered by [mcap](https://mcap.dev/)
+- 🛠️ **[CLI Tools](cli/index.md)** - Command-line utilities (`owl`) for recording, analyzing, and managing agent data
+- 🤖 **[Examples](examples/)** - Complete implementations and training pipelines for multimodal agents
+<!-- END-SYNC: core-components-list -->
+
+---
+
+## 🌍 Environment Framework
+
+Universal interface for native desktop automation with real-time event handling and zero-configuration plugin discovery.
+
+### Environment Navigation
+
+| Section | Description |
+|---------|-------------|
+| **[Environment Overview](env/index.md)** | Core concepts and quick start guide |
+| **[Environment Guide](env/guide.md)** | Complete system overview and usage examples |
+| **[Custom Plugins](env/custom_plugins.md)** | Create your own environment extensions |
+| **[CLI Tools](cli/env.md)** | Plugin management and exploration commands |
+
+**Built-in Plugins:**
+
+| Plugin | Description | Key Features |
+|--------|-------------|--------------|
+| **[Standard](env/plugins/std.md)** | Core utilities | Time functions, periodic tasks |
+| **[Desktop](env/plugins/desktop.md)** | Desktop automation | Mouse/keyboard control, window management |
+| **[GStreamer](env/plugins/gst.md)** | High-performance capture | 6x faster screen recording |
+
+---
+
+## 📊 Data Infrastructure: Complete Desktop Agent Data Pipeline
+
+Desktop AI needs high-quality, synchronized multimodal data: screen captures, mouse/keyboard events, and window context. OWA provides the **complete pipeline** from recording to training.
+
+### The OWA Data Ecosystem
+
+**🎯 Getting Started**
+New to OWA data? Start here:
+
+- **[Why OWAMcap?](data/getting-started/why-owamcap.md)** - Understand the problem and solution
+- **[Recording Data](data/getting-started/recording-data.md)** - Capture desktop interactions with `ocap`
+- **[Exploring Data](data/getting-started/exploring-data.md)** - View and analyze your recordings
+
+**📚 Technical Reference**
+Deep dive into the format and pipeline:
+
+- **[OWAMcap Format Guide](data/technical-reference/format-guide.md)** - Complete technical specification
+- **[Data Pipeline](data/technical-reference/data-pipeline.md)** - Transform recordings to training-ready datasets
+
+**🛠️ Tools & Ecosystem**
+
+- **[Data Viewer](data/tools/viewer.md)** - Web-based visualization tool
+- **[Comparison with LeRobot](data/tools/comparison-with-lerobot.md)** - Technical comparison with alternatives
+- **[CLI Tools (owl)](cli/index.md)** - Command-line interface for data analysis and management
+
+### 🤗 Community Datasets
+
+<!-- SYNC-ID: community-datasets -->
+**Browse Available Datasets**: [🤗 datasets?other=OWA](https://huggingface.co/datasets?other=OWA)
+
+- **Growing Collection**: Hundreds of community-contributed datasets
+- **Standardized Format**: All use OWAMcap for seamless integration
+- **Interactive Preview**: [Hugging Face Spaces Visualizer](https://huggingface.co/spaces/open-world-agents/visualize_dataset)
+- **Easy Sharing**: Upload recordings directly with one command
+
+> 🚀 **Impact**: OWA has democratized desktop agent data, growing from zero to hundreds of public datasets in the unified OWAMcap format.
+<!-- END-SYNC: community-datasets -->
+
+---
+
+## 🤖 Awesome Examples
+Learn from complete implementations and training pipelines.
+
+| Example | Description | Status |
+|---------|-------------|---------|
+| **[Multimodal Game Agent](examples/multimodal_game_agent.md)** | Vision-based game playing agent | 🚧 In Progress |
+| **[GUI Agent](examples/gui_agent.md)** | General desktop application automation | 🚧 In Progress |
+| **[Interactive World Model](examples/interactive_world_model.md)** | Predictive modeling of desktop environments | 🚧 In Progress |
+| **[Usage with LLMs](examples/usage_with_llm.md)** | Integration with large language models | 🚧 In Progress |
+| **[Usage with Transformers](examples/usage_with_transformers.md)** | Vision transformer implementations | 🚧 In Progress |
+
+## Development Resources
+Learn how to contribute, report issues, and get help.
+
+| Resource | Description |
+|----------|-------------|
+| **[Help with OWA](help_with_owa.md)** | Community support resources |
+| **[Installation Guide](install.md)** | Detailed installation instructions |
+| **[Contributing Guide](contributing.md)** | Development setup, bug reports, feature proposals |
+| **[FAQ for Developers](faq_dev.md)** | Common questions and troubleshooting |
+
+---
 
 ## License
 

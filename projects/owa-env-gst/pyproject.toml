@@ -1,18 +1,34 @@
 [project]
 name = "owa-env-gst"
-version = "0.1.0"
-description = "Add your description here"
+version = "0.5.3"
+description = "High-performance GStreamer-based screen capture plugin for Open World Agents"
 readme = "README.md"
+license = { text = "MIT" }
 requires-python = ">=3.11"
 dependencies = [
-    "owa-core",
-    "pyav>=14.2.1",
+    "owa-core==0.5.3",
+    "pillow>=11.1.0",
+    "av>=14.4.0",
     "pygobject-stubs>=2.12.0",
+    "tqdm>=4.67.1",
+    "opencv-python>=4.11.0",
+    "owa-msgs==0.5.3",
 ]
 
 [tool.uv.sources]
-owa-core = { path = "../core", editable = true }
+owa-core = { path = "../owa-core", editable = true }
+owa-msgs = { path = "../owa-msgs", editable = true }
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["owa"]
+
+# Entry point for plugin discovery
+[project.entry-points."owa.env.plugins"]
+gst = "owa.env.plugins.gst:plugin_spec"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

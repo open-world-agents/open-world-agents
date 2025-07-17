@@ -2,13 +2,12 @@ import time
 
 import pytest
 
-from owa.registry import RUNNABLES, activate_module
+from owa.core import RUNNABLES
 
 
 @pytest.fixture(scope="module")
 def screen_capture():
-    activate_module("owa_env_gst")
-    capture = RUNNABLES["screen_capture"]().configure(fps=60)
+    capture = RUNNABLES["gst/screen_capture"]().configure(fps=60)
     with capture.session:
         yield capture
 
@@ -21,7 +20,7 @@ def test_screen_capture_warmup(screen_capture):
     assert frame_msg.frame_arr.shape[2] == 4 and frame_msg.frame_arr.ndim == 3, (
         f"Expected RGBA frame but got {frame_msg.frame_arr.shape}"
     )
-    print(f"timestamp_ns: {frame_msg.timestamp_ns}, frame_arr.shape: {frame_msg.frame_arr.shape}")
+    print(f"utc_ns: {frame_msg.utc_ns}, frame_arr.shape: {frame_msg.frame_arr.shape}")
 
 
 def test_screen_capture_timing(screen_capture):

@@ -1,15 +1,9 @@
 name: owa
 
 channels:
+  - open-world-agents
   - conda-forge
 
 dependencies:
   - python=3.11
-  - pygobject
-  - gst-python
-  - gst-libav
-  - gstreamer
-  - gst-plugins-base
-  - gst-plugins-good
-  - gst-plugins-bad
-  - gst-plugins-ugly
+  - open-world-agents::gstreamer-bundle

@@ -1,31 +1,99 @@
-We'd love you to contribute to OWA!
+# Contributing to Open World Agents
 
-## Issues
+This guide covers OWA-specific development practices and testing requirements.
 
-Questions, feature requests and bug reports are all welcome as [discussions or issues](https://github.com/open-world-agents/open-world-agents/issues/new/choose).
-**However, to report a security vulnerability, please see our [security policy](https://github.com/open-world-agents/open-world-agents/security/policy).**
-<!-- 
-To make it as simple as possible for us to help you, please include the output of the following call in your issue:
+## Issues and Pull Requests
+
+Questions, feature requests and bug reports are welcome as [discussions or issues](https://github.com/open-world-agents/open-world-agents/issues/new/choose).
+
+!!! warning "Security Vulnerabilities"
+    For security vulnerabilities, see our [security policy](https://github.com/open-world-agents/open-world-agents/security/policy).
+
+## Development Setup
+
+!!! info "Complete Setup Instructions"
+    See the [Installation Guide](install.md#development-installation-editable) for complete development setup instructions.
+
+Quick setup for contributors:
 
 ```bash
-python -c "import pydantic.version; print(pydantic.version.version_info())"
+git clone https://github.com/open-world-agents/open-world-agents.git
+cd open-world-agents
+conda create -n owa python=3.11 open-world-agents::gstreamer-bundle -y && conda activate owa
+pip install uv virtual-uv
+vuv install --dev
+vuv pip install -e projects/owa-env-example  # For testing
 ```
-If you're using Pydantic prior to **v2.0** please use:
+
+## Testing Requirements
+
+Before submitting a PR, run these OWA-specific checks:
+
+=== "Code Quality"
+
+    ```bash
+    ruff check --fix      # Fix linting issues
+    ruff format --check   # Check formatting
+    ```
+
+=== "Plugin Documentation"
+
+    OWA validates environment plugin documentation automatically:
+
+    ```bash
+    owl env docs --validate --strict
+    ```
+
+=== "Test Suite"
+
+    ```bash
+    coverage run -m pytest  # Run all tests with coverage
+    ```
+
+## Environment Plugin Development
+
+!!! info "Custom Plugin Development"
+    For creating custom environment plugins, see the [Custom EnvPlugin Development Guide](env/custom_plugins.md) which covers:
+
+    - Plugin structure and requirements
+    - Entry point registration
+    - Component types (Callables, Listeners, Runnables)
+    - Complete examples and troubleshooting
+
+## Documentation
+
+OWA uses MkDocs with Material theme for documentation. The site includes auto-generated plugin documentation and manual content.
+
+To work with documentation:
+
 ```bash
-python -c "import pydantic.utils; print(pydantic.utils.version_info())"
+vuv install --extra docs  # Install MkDocs and dependencies
+vuv run mkdocs serve       # Serve locally at http://localhost:8000
 ```
 
-Please try to always include the above unless you're unable to install Pydantic or **know** it's not relevant
-to your question or feature request. -->
+Documentation validation happens automatically in CI via `owl env docs --validate --strict`.
 
-## Pull Requests
+## Monorepo Development
 
-Feel free to create a Pull Request. Project maintainers will take a review quickly and give you a comments.
+OWA uses `virtual-uv` for dependency management. For complete setup instructions, see [Installation Guide](install.md#development-installation-editable).
 
-To make contributing as easy and fast as possible, you'll want to run tests and linting locally. Luckily,
-OWA has few dependencies, doesn't require compiling and tests don't need access to databases, etc.
-Because of this, setting up and running the tests should be very simple.
+Quick commands:
+```bash
+vuv install --dev              # Install all dev dependencies
+vuv pip install -e projects/X  # Install specific project
+```
 
-### Run tests
+## Release Management
 
-We're utilizing `pytest` for testing and `ruff` for formatting. Make sure your PR pass all tests in Github Actions.
+For maintainers, OWA includes release automation scripts:
+
+!!! info "Release Scripts"
+    See [`scripts/release/README.md`](https://github.com/open-world-agents/open-world-agents/tree/main/scripts/release) for lockstep versioning and PyPI publishing tools.
+
+    ```bash
+    # Update all packages to version 1.0.0
+    vuv run scripts/release/main.py version 1.0.0
+
+    # Publish to PyPI
+    vuv run scripts/release/main.py publish
+    ```
