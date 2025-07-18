@@ -25,6 +25,9 @@ git subtree push --prefix=open-world-agents owa hotfix/fix-name
 ```
 
 ### Push with hidden commit history (clean single commit)
+
+> Following does not work, it's wrong information.
+
 When you want to push changes to open-world-agents without exposing the detailed commit history from closed-world-agents:
 
 ```bash
