@@ -25,7 +25,7 @@ output [
 
 instance_group [
   {
-    count: 8
+    count: 16
     kind: KIND_CPU
   }
 ]
