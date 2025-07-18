@@ -17,6 +17,9 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     rm /tmp/devcontainer_system.sh
 
 # Install useful tools
+RUN --mount=type=cache,target=${CONDA_INSTALL_PATH}/pkgs,sharing=locked \
+    . activate owa && \
+    mamba install -y ffmpeg open-world-agents::gstreamer-bundle
 RUN uv pip install --system --no-cache-dir glances gpustat
 
 # Switch to user and setup environment
@@ -24,7 +27,7 @@ USER ${USERNAME}
 ENV USER=${USERNAME} UID=${USER_UID} GID=${USER_GID} HOME=/home/${USERNAME}
 WORKDIR ${HOME}
 
-# User environment setup (shell,  conda)
+# User environment setup (shell, conda config)
 COPY --chown=${USER}:${USER} ./.devcontainer/devcontainer_user.sh /tmp/devcontainer_user.sh
 COPY --chown=${USER}:${USER} ./.devcontainer/aliases.sh ${HOME}/.devcontainer/aliases.sh
 RUN --mount=type=cache,target=${HOME}/.cache,sharing=locked,uid=${USER_UID},gid=${USER_GID} \

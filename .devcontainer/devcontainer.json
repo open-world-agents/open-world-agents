@@ -12,7 +12,9 @@
 	"workspaceFolder": "/workspace",
 	// Environment variables
 	"containerEnv": {
-		"HF_HOME": "/mnt/raid12/cache/huggingface"
+		"HF_HOME": "/mnt/raid12/cache/huggingface",
+		// https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/docker-specialized.html#driver-capabilities
+		"NVIDIA_DRIVER_CAPABILITIES": "all" // required to use torchcodec decoding
 	},
 	// Volume mounts
 	"mounts": [
