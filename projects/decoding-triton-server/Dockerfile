@@ -1,5 +1,5 @@
 # Use the NVIDIA Triton Inference Server base image
-FROM nvcr.io/nvidia/tritonserver:25.02-py3
+FROM nvcr.io/nvidia/tritonserver:25.06-py3
 
 # Install the uv package manager
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
