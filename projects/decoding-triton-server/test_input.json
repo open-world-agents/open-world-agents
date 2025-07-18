@@ -1,0 +1,20 @@
+{
+    "data": [
+        {
+            "video_path": ["/mnt/home/claude/GitHub/open-world-agents/projects/decoding-triton-server/output.mkv"],
+            "time_sec": [0.0]
+        },
+        {
+            "video_path": ["/mnt/home/claude/GitHub/open-world-agents/projects/decoding-triton-server/output.mkv"],
+            "time_sec": [0.25]
+        },
+        {
+            "video_path": ["/mnt/home/claude/GitHub/open-world-agents/projects/decoding-triton-server/output.mkv"],
+            "time_sec": [0.49]
+        },
+        {
+            "video_path": ["/mnt/home/claude/GitHub/open-world-agents/projects/decoding-triton-server/output.mkv"],
+            "time_sec": [0.51]
+        }
+    ]
+}
