@@ -197,33 +197,48 @@ class ContainerCache:
             logger.warning(f"Error closing container {path_str}: {e}")
 
 
-# Global cache instance
-_container_cache = ContainerCache(max_size=DEFAULT_CACHE_SIZE)
+# Process-specific cache instances
+_process_caches: Dict[int, ContainerCache] = {}
+_cache_lock = threading.Lock()
 
 
-def get_video_container(video_path: Union[str, Path]) -> av.container.InputContainer:
+# Tried this to prevent errors from training, but does not help.
+def _get_process_cache() -> ContainerCache:
+    """Get or create a cache instance specific to the current process."""
+    import os
+
+    current_pid = os.getpid()
+
+    with _cache_lock:
+        if current_pid not in _process_caches:
+            _process_caches[current_pid] = ContainerCache(max_size=DEFAULT_CACHE_SIZE)
+        return _process_caches[current_pid]
+
+
+def get_video_container(video_path: Union[str, Path]) -> av.container.Container:
     """Get a container from the cache or create a new one."""
-    return _container_cache.get_container(video_path, mode="r")
+    # Note: When mode="r", this returns an InputContainer, but we use Container for type compatibility
+    return _get_process_cache().get_container(video_path, mode="r")
 
 
 def release_video_container(video_path: Union[str, Path]) -> None:
     """Release a container reference."""
-    _container_cache.release_container(video_path)
+    _get_process_cache().release_container(video_path)
 
 
 def close_all_containers():
-    """Close all cached containers."""
-    _container_cache.close_all()
+    """Close all cached containers for the current process."""
+    _get_process_cache().close_all()
 
 
 def force_close_video_container(video_path: Union[str, Path]) -> None:
     """Force immediate closure of a specific container."""
-    _container_cache.force_close_container(video_path)
+    _get_process_cache().force_close_container(video_path)
 
 
 def get_container_cache_stats() -> Dict[str, Any]:
-    """Get statistics about the global container cache."""
-    return _container_cache.get_cache_stats()
+    """Get statistics about the current process's container cache."""
+    return _get_process_cache().get_cache_stats()
 
 
 class VideoWriter:

@@ -1,9 +1,11 @@
 """
 Comprehensive test suite for ContainerCache class.
 
-Tests edge cases, concurrent access patterns, and bug fixes.
+Tests edge cases, concurrent access patterns, bug fixes, and process isolation.
 """
 
+import multiprocessing as mp
+import os
 import tempfile
 import threading
 import time
@@ -246,4 +248,81 @@ def test_global_cache_functions(temp_video):
     assert stats["cache_size"] == 1
 
     release_video_container(temp_video)
+    close_all_containers()
+
+
+def _worker_process_for_cache_test(video_path, process_id, results_queue):
+    """Worker process function for testing process cache isolation."""
+    from owa.core.io.video import _get_process_cache, get_video_container
+
+    # Get the cache instance for this process
+    cache_instance = _get_process_cache()
+
+    # Get initial cache stats
+    initial_stats = get_container_cache_stats()
+
+    # Access the video container multiple times
+    container_ids = []
+    for _ in range(3):
+        container = get_video_container(video_path)
+        container_ids.append(id(container))
+
+    # Get final cache stats
+    final_stats = get_container_cache_stats()
+
+    # Send results back to main process
+    results_queue.put(
+        {
+            "process_id": process_id,
+            "pid": os.getpid(),
+            "cache_instance_id": id(cache_instance),
+            "initial_stats": initial_stats,
+            "final_stats": final_stats,
+            "container_ids": container_ids,
+        }
+    )
+
+
+def test_process_cache_isolation(temp_video):
+    """Test that each process gets its own isolated cache instance."""
+    from owa.core.io.video import get_video_container
+
+    # Test in main process first to populate cache
+    get_video_container(temp_video)
+
+    # Create multiple worker processes
+    results_queue = mp.Queue()
+    processes = []
+
+    for i in range(2):  # Use 2 processes for testing
+        p = mp.Process(target=_worker_process_for_cache_test, args=(temp_video, i, results_queue))
+        processes.append(p)
+        p.start()
+
+    # Wait for all processes to complete
+    for p in processes:
+        p.join()
+
+    # Collect results
+    results = []
+    while not results_queue.empty():
+        results.append(results_queue.get())
+
+    # Verify that each process has its own cache instance
+    cache_instance_ids = [result["cache_instance_id"] for result in results]
+    unique_cache_instances = len(set(cache_instance_ids))
+
+    assert unique_cache_instances == len(results), "Each process should have its own cache instance"
+
+    # Check that all processes started with empty caches
+    initial_cache_sizes = [result["initial_stats"]["cache_size"] for result in results]
+    assert all(size == 0 for size in initial_cache_sizes), "All processes should start with empty caches"
+
+    # Check container reuse within each process
+    for result in results:
+        container_ids = result["container_ids"]
+        unique_containers_in_process = len(set(container_ids))
+        assert unique_containers_in_process == 1, f"Process {result['process_id']} should reuse the same container"
+
+    # Cleanup
     close_all_containers()
