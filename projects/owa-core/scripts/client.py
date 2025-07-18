@@ -112,10 +112,17 @@ def run_benchmark(
         while time.perf_counter() < end_time:
             video = random.choice(video_paths)
             pts = random.random() * durations[video]
-            result = extract_frame_api(video, pts, server_url)
 
-            with lock:
-                results.append(result)
+            try:
+                result = extract_frame_api(video, pts, server_url)
+
+                # Only count results that completed before end_time
+                if time.perf_counter() < end_time:
+                    with lock:
+                        results.append(result)
+            except Exception:
+                # Skip failed requests
+                pass
 
     threads = [threading.Thread(target=worker) for _ in range(concurrency)]
     for thread in threads:
