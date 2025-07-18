@@ -140,8 +140,9 @@ class McapService:
                     for mcap_msg in reader.iter_messages(
                         topics=topics_of_interest, start_time=start_time, end_time=end_time
                     ):
-                        mcap_msg.decoded["timestamp"] = mcap_msg.timestamp
-                        topics_data[mcap_msg.topic].append(mcap_msg.decoded)
+                        message = mcap_msg.decoded.model_dump()
+                        message["timestamp"] = mcap_msg.timestamp
+                        topics_data[mcap_msg.topic].append(message)
 
                 total_messages = sum(len(msgs) for msgs in topics_data.values())
                 logger.info(f"Fetched {total_messages} messages for time range {start_time} to {end_time}")
