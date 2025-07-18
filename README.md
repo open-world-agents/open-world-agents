@@ -32,7 +32,7 @@ When you want to push changes to open-world-agents without exposing the detailed
 SHA=$(git subtree split --prefix=open-world-agents HEAD)
 
 # Push that single commit to a branch on the remote
-git push owa ${SHA}:feature/your-feature-name
+git push owa ${SHA}:refs/heads/feature/your-feature-name
 
 # Or for main branch (use with caution)
 git push owa ${SHA}:main
