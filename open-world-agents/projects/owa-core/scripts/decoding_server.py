@@ -15,6 +15,7 @@ from owa.core.io.video import VideoReader
 
 
 # TODO: batch decoding with torchcodec/PyNvVideoCodec
+# TODO? review https://lightning.ai/docs/litserve/features/async-concurrency
 class SimpleLitAPI(ls.LitAPI):
     def setup(self, device):
         pass
@@ -40,8 +41,10 @@ class SimpleLitAPI(ls.LitAPI):
 
     def encode_response(self, output):
         # send bmp
-        frame_bytes = cv2.imencode(".bmp", output)[1].tobytes()
-        return {"frame": base64.b64encode(frame_bytes).decode("utf-8")}
+        success, frame_bytes = cv2.imencode(".bmp", output)
+        if not success:
+            raise RuntimeError("Failed to encode frame as BMP")
+        return {"frame": base64.b64encode(frame_bytes.tobytes()).decode("utf-8")}
 
 
 if __name__ == "__main__":
@@ -54,4 +57,4 @@ if __name__ == "__main__":
         accelerator="cpu",  # default: auto
         workers_per_device=1,  # default: 1
     )
-    server.run(port=8001, generate_client_file=False, num_api_servers=None)
+    server.run(port=8000, generate_client_file=False, num_api_servers=None)
