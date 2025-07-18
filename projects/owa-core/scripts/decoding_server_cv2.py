@@ -143,6 +143,6 @@ if __name__ == "__main__":
     server = ls.LitServer(
         api,
         accelerator="cpu",  # default: auto
-        workers_per_device=8,  # default: 1
+        workers_per_device=1,  # default: 1
     )
     server.run(port=8000, generate_client_file=False, num_api_servers=None)

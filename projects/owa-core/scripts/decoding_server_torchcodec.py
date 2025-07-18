@@ -73,7 +73,7 @@ class VideoDecoderCache:
                 return self._cache[path_str]
 
             # Create new decoder
-            decoder = VideoDecoder(path_str, device=self.device)
+            decoder = VideoDecoder(path_str, device=self.device, num_ffmpeg_threads=1)
 
             # Evict oldest decoder if cache is full
             if len(self._cache) >= self.max_size:
@@ -181,7 +181,7 @@ class TorchCodecLitAPI(ls.LitAPI):
 
 if __name__ == "__main__":
     api = TorchCodecLitAPI(
-        max_batch_size=1,  # default: 1
+        max_batch_size=16,  # default: 1
         batch_timeout=0.25,  # default: 0.0
     )
     server = ls.LitServer(
