@@ -14,7 +14,7 @@ import random
 import threading
 import time
 from pathlib import Path
-from typing import Dict, List, NamedTuple, Optional, Union
+from typing import Dict, List, NamedTuple, Union
 
 import cv2
 import numpy as np
