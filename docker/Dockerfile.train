@@ -12,19 +12,16 @@ FROM ${BASE_IMAGE} AS ml-base
 
 # Install ML packages and projects/agent package
 RUN --mount=type=cache,target=${HOME}/.cache/uv,sharing=locked \
-    --mount=type=cache,target=${HOME}/.cache/pip,sharing=locked \
     . activate owa && \
     vuv pip install torch torchvision
 
 RUN --mount=type=cache,target=${HOME}/.cache/uv,sharing=locked \
-    --mount=type=cache,target=${HOME}/.cache/pip,sharing=locked \
     --mount=type=bind,source=open-world-agents/projects/owa-data,target=/workspace/open-world-agents/projects/owa-data \
     --mount=type=bind,source=projects/agent,target=/workspace/projects/agent \
     . activate owa && \
     vuv pip install tqdm einops /workspace/projects/agent
 
 RUN --mount=type=cache,target=${HOME}/.cache/uv,sharing=locked \
-    --mount=type=cache,target=${HOME}/.cache/pip,sharing=locked \
     . activate owa && \
     vuv pip install transformers datasets trl accelerate diffusers evaluate peft deepspeed
 
