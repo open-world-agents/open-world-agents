@@ -3,8 +3,9 @@
 # dependencies = [
 #     "litserve",
 #     "opencv-python>=4.11.0",
-#     "torchcodec==0.4",
-#     "torch==2.7",
+#     "torch==2.7.1",
+#     "torchvision==0.22.1",
+#     "torchcodec==0.4.0",
 # ]
 # [tool.uv.sources]
 # torch = [
@@ -33,8 +34,10 @@ from typing import Dict, Union
 
 import cv2
 import litserve as ls
-import torch
 from torchcodec.decoders import VideoDecoder
+
+# os.system("ffmpeg -decoders | grep -i nvidia")
+# os.system("pip list")
 
 
 class VideoDecoderCache:
@@ -68,7 +71,7 @@ class VideoDecoderCache:
                 return self._cache[path_str]
 
             # Create new decoder
-            decoder = VideoDecoder(path_str, device=self.device)
+            decoder = VideoDecoder(path_str, device=self.device, num_ffmpeg_threads=1)
 
             # Evict oldest decoder if cache is full
             if len(self._cache) >= self.max_size:
@@ -99,12 +102,6 @@ class TorchCodecLitAPI(ls.LitAPI):
         """
         self.device = device
         self.decoder_cache = VideoDecoderCache(max_size=10, device=device)
-
-        # Set up torch device
-        if device == "cuda" and torch.cuda.is_available():
-            self.torch_device = torch.device("cuda")
-        else:
-            self.torch_device = torch.device("cpu")
 
     def decode_request(self, request, **kwargs):
         """Decode incoming request to extract video path and timestamp.
@@ -150,7 +147,7 @@ class TorchCodecLitAPI(ls.LitAPI):
 
             # Convert tensors to numpy arrays
             for i, frame_tensor in enumerate(frames):
-                frame_array = frame_tensor.permute(1, 2, 0).numpy()
+                frame_array = frame_tensor.permute(1, 2, 0).cpu().numpy()
                 results[group["indices"][i]] = frame_array
 
         # 3. Return ungrouped results
