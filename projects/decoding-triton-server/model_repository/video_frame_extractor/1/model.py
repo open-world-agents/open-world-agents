@@ -41,17 +41,16 @@ class VideoReader:
             gc.collect()
 
         # Get the video container from cache or open a new one
-        container = self._get_video_container(video_path)
+        with av.open(video_path) as container:
+            # Seek to the specified time
+            container.seek(int(time_sec * av.time_base), any_frame=False)
 
-        # Seek to the specified time
-        container.seek(int(time_sec * av.time_base), any_frame=False)
+            # Decode and find the frame
+            for frame in container.decode(video=0):
+                if frame.pts * frame.time_base >= time_sec:
+                    return frame.to_rgb().to_image()
 
-        # Decode and find the frame
-        for frame in container.decode(video=0):
-            if frame.pts * frame.time_base >= time_sec:
-                return frame.to_rgb().to_image()
-
-        raise Exception(f"Failed to capture frame at time: {time_sec}")
+            raise Exception(f"Failed to capture frame at time: {time_sec}")
 
     def _get_video_container(self, video_path):
         """
