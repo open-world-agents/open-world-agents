@@ -1,4 +1,4 @@
-name: "video_frame_extractor"
+name: "video_decoder"
 backend: "python"
 max_batch_size: 0
 

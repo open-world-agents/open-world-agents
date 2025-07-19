@@ -1,14 +1,13 @@
 [project]
-name = "decoding-triton-server"
+name = "video-decoding-server"
 version = "0.1.0"
-description = "Add your description here"
+description = "High-performance video decoding server using NVIDIA Triton Inference Server"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "av>=14.2.0",
     "loguru>=0.7.3",
     "numpy>=2.2.3",
+    "opencv-python-headless>=4.11.0",
     "pillow>=11.1.0",
 ]
-
-

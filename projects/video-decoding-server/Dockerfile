@@ -35,9 +35,6 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     vuv install --frozen --no-install-project
 
-RUN --mount=type=cache,target=/root/.cache/uv \
-    vuv pip install opencv-python-headless
-
 # or  install the dependencies manually
 # ADD . /app
 # RUN --mount=type=cache,target=/root/.cache/uv \

@@ -48,7 +48,7 @@ def extract_frame_api(
     inputs[0].set_data_from_numpy(np.array([str(video_path).encode()], dtype=np.object_))
     inputs[1].set_data_from_numpy(np.array([pts], dtype=np.float32))
     outputs = [httpclient.InferRequestedOutput("frame")]
-    response = client.infer("video_frame_extractor", inputs=inputs, outputs=outputs)
+    response = client.infer("video_decoder", inputs=inputs, outputs=outputs)
     frame_array = response.as_numpy("frame")
 
     response_size = frame_array.nbytes if frame_array is not None else 0
