@@ -1,6 +1,7 @@
 services:
   tritonserver:
     build: .
+    # shm_size/ulimits: same configuration from https://docs.nvidia.com/deeplearning/triton-inference-server/user-guide/docs/tutorials/Quick_Deploy/HuggingFaceTransformers/README.html#step-3-launch-the-triton-inference-server
     shm_size: "1g"
     ulimits:
       memlock: -1

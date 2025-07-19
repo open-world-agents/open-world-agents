@@ -18,16 +18,25 @@ ENV PATH="/opt/venv/bin:$PATH"
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv pip install virtual-uv
 
-
 # ======================= Install the dependencies =======================
 
-WORKDIR /app
+# Install ffmpeg
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg
 
-# Install dependencies: THIS CREATES NEW VENV wtf 
+RUN --mount=type=cache,target=/root/.cache/uv \
+    vuv pip install torch==2.7.1 torchvision==0.22.1 torchcodec==0.4.0 --index-url https://download.pytorch.org/whl/cu126
+
+# Install dependencies
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    vuv sync --frozen --no-install-project
+    vuv install --frozen --no-install-project
+
+RUN --mount=type=cache,target=/root/.cache/uv \
+    vuv pip install opencv-python-headless
 
 # or  install the dependencies manually
 # ADD . /app
@@ -37,6 +46,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 
 # ======================= Copy the model repository =======================
+
+WORKDIR /app
 
 # Copy the model repository (assuming you have it in the `models` directory)
 COPY model_repository /app/models

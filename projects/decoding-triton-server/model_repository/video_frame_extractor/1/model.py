@@ -7,11 +7,71 @@ TODO: batch process for more efficient processing
 import gc
 import json
 import os
-import threading
 
-import av
 import numpy as np
 import triton_python_backend_utils as pb_utils
+
+
+class Logger:
+    """Wrapper around Triton's logger since `pb_utils.Logger` is not accesible before `initialize`."""
+
+    def __init__(self):
+        self._configured = False
+
+    def configure(self):
+        self.logger = pb_utils.Logger
+        self._configured = True
+
+    def info(self, message):
+        assert self._configured, "Logger is not configured"
+        self.logger.log_info(message)
+
+    def warning(self, message):
+        assert self._configured, "Logger is not configured"
+        self.logger.log_warn(message)
+
+    def error(self, message):
+        assert self._configured, "Logger is not configured"
+        self.logger.log_error(message)
+
+
+logger = Logger()
+
+
+def get_frame_cv2(video_path, time_sec):
+    """Extract frame using OpenCV."""
+    import cv2
+
+    cap = cv2.VideoCapture(video_path)
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    frame_number = int(time_sec * fps)
+    cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
+    ret, frame = cap.read()
+    cap.release()
+    if not ret:
+        raise Exception(f"Failed to capture frame at time: {time_sec}")
+    return cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+
+def get_frame_pyav(video_path, time_sec):
+    """Extract frame using PyAV."""
+    import av
+
+    with av.open(video_path) as container:
+        container.seek(int(time_sec * av.time_base), any_frame=False)
+        for frame in container.decode(video=0):
+            if frame.pts * frame.time_base >= time_sec:
+                return np.asarray(frame.to_rgb().to_image())
+    raise Exception(f"Failed to capture frame at time: {time_sec}")
+
+
+def get_frame_torchcodec(video_path, time_sec):
+    """Extract frame using TorchCodec."""
+    from torchcodec.decoders import VideoDecoder
+
+    decoder = VideoDecoder(video_path, num_ffmpeg_threads=1, device="cuda")
+    frame = decoder.get_frame_played_at(time_sec)
+    return frame.data.permute(1, 2, 0).cpu().numpy()
 
 
 class VideoReader:
@@ -20,65 +80,32 @@ class VideoReader:
     _GC_COLLECT_COUNT = 0
     _GC_COLLECTION_INTERVAL = 10  # Adjust based on memory usage
 
-    _video_container_cache = {}
-    _cache_lock = threading.Lock()
-    _max_cache_size = 4  # Default maximum number of cached containers
-
-    def __init__(self, max_cache_size=None):
-        """Initialize VideoReader with an optional cache size."""
-        if max_cache_size is not None:
-            self._max_cache_size = max_cache_size
+    def __init__(self, backend="pyav"):
+        """Initialize VideoReader with configurable backend."""
+        self.backend = backend
+        self.backend_func = {
+            "cv2": get_frame_cv2,
+            "pyav": get_frame_pyav,
+            "torchcodec": get_frame_torchcodec,
+        }[backend]
 
     def get_frame_at_time(self, video_path, time_sec):
-        """
-        Extract a frame from a video at a specified time.
-        """
-        # Increment GC counter and occasionally run garbage collection
-        self._GC_COLLECT_COUNT += 1
-        if self._GC_COLLECT_COUNT % self._GC_COLLECTION_INTERVAL == 0:
-            # mandatory to prevent thread explosion. if not called, thread is created over 500k for multi-gpu training and the program will crash
-            # same logic is implemented in torchvision. https://github.com/pytorch/vision/blob/124dfa404f395db90280e6dd84a51c50c742d5fd/torchvision/io/video.py#L52
-            gc.collect()
+        """Extract a frame from a video at a specified time."""
+        # Only apply GC handling for PyAV backend
+        if self.backend == "pyav":
+            # Increment GC counter and occasionally run garbage collection
+            self._GC_COLLECT_COUNT += 1
+            if self._GC_COLLECT_COUNT % self._GC_COLLECTION_INTERVAL == 0:
+                # mandatory to prevent thread explosion. if not called, thread is created over 500k for multi-gpu training and the program will crash
+                # same logic is implemented in torchvision. https://github.com/pytorch/vision/blob/124dfa404f395db90280e6dd84a51c50c742d5fd/torchvision/io/video.py#L52
+                gc.collect()
 
-        # Get the video container from cache or open a new one
-        with av.open(video_path) as container:
-            # Seek to the specified time
-            container.seek(int(time_sec * av.time_base), any_frame=False)
-
-            # Decode and find the frame
-            for frame in container.decode(video=0):
-                if frame.pts * frame.time_base >= time_sec:
-                    return frame.to_rgb().to_image()
-
-            raise Exception(f"Failed to capture frame at time: {time_sec}")
-
-    def _get_video_container(self, video_path):
-        """
-        Get a video container from cache or create a new one.
-        Thread-safe implementation with size limiting.
-        """
-        with self._cache_lock:
-            # Check if it's already cached
-            if video_path in self._video_container_cache:
-                return self._video_container_cache[video_path]
-
-            # If cache is full, remove the oldest entry
-            if len(self._video_container_cache) >= self._max_cache_size:
-                oldest_key = next(iter(self._video_container_cache))
-                del self._video_container_cache[oldest_key]
-
-            # Open a new container and add it to the cache
-            container = av.open(video_path)
-            self._video_container_cache[video_path] = container
-            return container
+        return self.backend_func(video_path, time_sec)
 
     def clear_cache(self):
-        """Close and clear all cached video containers."""
-        with self._cache_lock:
-            for container in self._video_container_cache.values():
-                container.close()
-            self._video_container_cache.clear()
-        gc.collect()
+        """Clear any cached resources."""
+        if self.backend == "pyav":
+            gc.collect()
 
 
 class TritonPythonModel:
@@ -88,14 +115,15 @@ class TritonPythonModel:
         """
         Initialize the model.
         """
+        logger.configure()
         self.model_config = json.loads(args["model_config"])
         self.output_dtype = pb_utils.triton_string_to_numpy(self.model_config["output"][0]["data_type"])
 
-        # Set cache size from environment variable if present
-        max_cache_size = int(os.environ.get("MAX_CACHE_SIZE", "50"))
+        # Set backend from environment variable
+        backend = os.environ.get("VIDEO_BACKEND", "pyav")
 
         # Initialize the video reader
-        self.video_reader = VideoReader(max_cache_size)
+        self.video_reader = VideoReader(backend)
 
     def execute(self, requests):
         """
@@ -114,8 +142,7 @@ class TritonPythonModel:
 
             try:
                 # Extract frame from video
-                frame = self.video_reader.get_frame_at_time(video_path, time_sec)
-                frame_array = np.asarray(frame)
+                frame_array = self.video_reader.get_frame_at_time(video_path, time_sec)
 
                 # Create output tensor
                 output_tensor = pb_utils.Tensor("frame", frame_array.astype(self.output_dtype))
@@ -126,6 +153,7 @@ class TritonPythonModel:
             except Exception as e:
                 error = pb_utils.TritonError(str(e))
                 responses.append(pb_utils.InferenceResponse(output_tensors=[], error=error))
+                logger.error(f"Failed to process the request(s), message: {str(e)}")
 
         return responses
 
