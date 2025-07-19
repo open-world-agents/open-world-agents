@@ -35,7 +35,6 @@ from typing import Dict, Union
 
 import cv2
 import litserve as ls
-import torch
 from torchcodec.decoders import VideoDecoder
 
 # os.system("ffmpeg -decoders | grep -i nvidia")
