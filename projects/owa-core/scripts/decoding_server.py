@@ -3,15 +3,26 @@
 # dependencies = [
 #     "litserve",
 #     "opencv-python>=4.11.0",
-#     "owa-core",
+#     "numpy",
 # ]
 # ///
 import base64
 
 import cv2
 import litserve as ls
+import numpy as np
 
-from owa.core.io.video import VideoReader
+
+def get_frame_pyav(video_path, time_sec):
+    """Extract frame using PyAV."""
+    import av
+
+    with av.open(video_path) as container:
+        container.seek(int(time_sec * av.time_base), any_frame=False)
+        for frame in container.decode(video=0):
+            if frame.pts * frame.time_base >= time_sec:
+                return np.asarray(frame.to_rgb().to_image())
+    raise Exception(f"Failed to capture frame at time: {time_sec}")
 
 
 # TODO: batch decoding with torchcodec/PyNvVideoCodec
@@ -31,10 +42,7 @@ class SimpleLitAPI(ls.LitAPI):
             x = [x]
         results = []
         for video_path, pts in x:
-            with VideoReader(video_path) as reader:
-                frame = reader.read_frame(pts=pts)
-                frame_array = frame.to_ndarray(format="rgb24")
-                results.append(frame_array)
+            results.append(get_frame_pyav(video_path, pts))
         return results if is_batch else results[0]
 
     # def unbatch(self, output): ...
@@ -50,11 +58,11 @@ class SimpleLitAPI(ls.LitAPI):
 if __name__ == "__main__":
     api = SimpleLitAPI(
         max_batch_size=1,  # default: 1
-        batch_timeout=0.01,  # default: 0.0
+        batch_timeout=0.0,  # default: 0.0
     )
     server = ls.LitServer(
         api,
         accelerator="cpu",  # default: auto
-        workers_per_device=1,  # default: 1
+        workers_per_device=16,  # default: 1
     )
     server.run(port=8000, generate_client_file=False, num_api_servers=None)
