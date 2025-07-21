@@ -1,18 +1,3 @@
-"""
-Core media I/O utilities for Open World Agents.
-
-This module provides essential functions for loading images and video frames
-from various sources (embedded base64, local files, remote URLs) and converting
-between different formats.
-
-Key functions:
-- load_image_as_bgra(): Load any image source as BGRA numpy array
-- load_video_frame_as_bgra(): Load video frame as BGRA numpy array
-- encode_to_base64(): Encode numpy array to base64 string
-- decode_from_base64(): Decode base64 string to numpy array
-- validate_media_path(): Check if media path is accessible
-"""
-
 import base64
 from fractions import Fraction
 from pathlib import Path
@@ -100,14 +85,14 @@ def load_video_frame_as_bgra(path_or_url: str, pts_ns: int, force_close: bool = 
 # ============================================================================
 
 
-def encode_to_base64(array: np.ndarray, format: Literal["png", "jpeg"], quality: Optional[int] = None) -> str:
+def encode_to_base64(array: np.ndarray, format: Literal["png", "jpeg", "bmp"], quality: Optional[int] = None) -> str:
     """
     Encode BGRA numpy array to base64 string.
 
     Args:
         array: BGRA numpy array
-        format: Output format ('png' or 'jpeg')
-        quality: JPEG quality (1-100), ignored for PNG
+        format: Output format ('png', 'jpeg', or 'bmp')
+        quality: JPEG quality (1-100), ignored for PNG and BMP
 
     Returns:
         Base64 encoded string
@@ -124,6 +109,8 @@ def encode_to_base64(array: np.ndarray, format: Literal["png", "jpeg"], quality:
         if not (1 <= quality <= 100):
             raise ValueError("JPEG quality must be between 1 and 100")
         success, encoded = cv2.imencode(".jpg", bgr_array, [cv2.IMWRITE_JPEG_QUALITY, quality])
+    elif format == "bmp":
+        success, encoded = cv2.imencode(".bmp", bgr_array)
     else:
         raise ValueError(f"Unsupported format: {format}")
 
