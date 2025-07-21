@@ -232,12 +232,9 @@ class TestValidateMediaPath:
 
     def test_validate_existing_file(self):
         """Test validation of existing file."""
-        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_file:
+        with tempfile.NamedTemporaryFile(suffix=".png", delete=True) as tmp_file:
             tmp_path = Path(tmp_file.name)
-            try:
-                assert validate_media_path(str(tmp_path)) is True
-            finally:
-                tmp_path.unlink()
+            assert validate_media_path(str(tmp_path)) is True
 
     def test_validate_nonexistent_file(self):
         """Test validation of non-existent file."""
@@ -260,20 +257,18 @@ class TestLoadImageAsBgra:
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_file:
             tmp_path = Path(tmp_file.name)
 
-            try:
-                # Save sample array as PNG file
-                bgr_array = cv2.cvtColor(sample_bgra_array, cv2.COLOR_BGRA2BGR)
-                cv2.imwrite(str(tmp_path), bgr_array)
+            # Save sample array as PNG file
+            bgr_array = cv2.cvtColor(sample_bgra_array, cv2.COLOR_BGRA2BGR)
+            cv2.imwrite(str(tmp_path), bgr_array)
 
-                # Load it back
-                loaded_array = load_image_as_bgra(str(tmp_path))
+            # Load it back
+            loaded_array = load_image_as_bgra(str(tmp_path))
 
-                assert loaded_array.shape[:2] == sample_bgra_array.shape[:2]
-                assert loaded_array.shape[2] == 4  # BGRA
-                assert loaded_array.dtype == np.uint8
+            assert loaded_array.shape[:2] == sample_bgra_array.shape[:2]
+            assert loaded_array.shape[2] == 4  # BGRA
+            assert loaded_array.dtype == np.uint8
 
-            finally:
-                tmp_path.unlink()
+        tmp_path.unlink()
 
     def test_load_image_from_data_uri(self, sample_bgra_array):
         """Test loading image from data URI."""

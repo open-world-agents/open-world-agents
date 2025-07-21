@@ -1,4 +1,4 @@
-from typing import Any, Iterator, cast, overload
+from typing import Any, Iterator, overload
 
 import av.container
 from av.audio.frame import AudioFrame
