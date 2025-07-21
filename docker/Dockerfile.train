@@ -23,7 +23,7 @@ RUN --mount=type=cache,target=${HOME}/.cache/uv,sharing=locked \
 
 RUN --mount=type=cache,target=${HOME}/.cache/uv,sharing=locked \
     . activate owa && \
-    vuv pip install transformers datasets trl accelerate diffusers evaluate peft deepspeed
+    vuv pip install transformers datasets trl accelerate diffusers evaluate peft deepspeed wandb
 
 # =============================================================================
 # Stage 2: Flash Attention Builder (with CUDA build tools)
