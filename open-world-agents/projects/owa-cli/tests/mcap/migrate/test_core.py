@@ -17,7 +17,7 @@ class TestMigrateIntegration:
 
     def test_migrate_successful_operation(
         self,
-        temp_dir,
+        tmp_path,
         cli_runner,
         mock_migration_orchestrator,
         mock_migration_result,
@@ -25,7 +25,7 @@ class TestMigrateIntegration:
         mock_file_detection,
     ):
         """Test successful migration operation."""
-        test_file = temp_dir / "test.mcap"
+        test_file = tmp_path / "test.mcap"
         test_file.write_bytes(b"original mcap content")
 
         # Setup mocks
@@ -40,10 +40,10 @@ class TestMigrateIntegration:
         mock_migration_orchestrator.migrate_file.assert_called_once()
 
     def test_migrate_failed_operation(
-        self, temp_dir, cli_runner, mock_migration_orchestrator, mock_file_info, mock_file_detection
+        self, tmp_path, cli_runner, mock_migration_orchestrator, mock_file_info, mock_file_detection
     ):
         """Test failed migration operation."""
-        test_file = temp_dir / "test.mcap"
+        test_file = tmp_path / "test.mcap"
         test_file.write_bytes(b"original mcap content")
 
         # Mock failed migration
@@ -62,10 +62,10 @@ class TestMigrateIntegration:
         assert result.exit_code == 1
         mock_migration_orchestrator.migrate_file.assert_called_once()
 
-    def test_migrate_multiple_files(self, temp_dir, cli_runner):
+    def test_migrate_multiple_files(self, tmp_path, cli_runner):
         """Test migration with multiple files."""
-        test_file1 = temp_dir / "test1.mcap"
-        test_file2 = temp_dir / "test2.mcap"
+        test_file1 = tmp_path / "test1.mcap"
+        test_file2 = tmp_path / "test2.mcap"
 
         test_file1.write_bytes(b"content 1")
         test_file2.write_bytes(b"content 2")
@@ -102,9 +102,9 @@ class TestMigrateIntegration:
                 # Should be called twice, once for each file
                 assert mock_orchestrator.migrate_file.call_count == 2
 
-    def test_migrate_dry_run(self, temp_dir, cli_runner):
+    def test_migrate_dry_run(self, tmp_path, cli_runner):
         """Test dry run mode doesn't perform actual migration."""
-        test_file = temp_dir / "test.mcap"
+        test_file = tmp_path / "test.mcap"
         original_content = b"original content"
         test_file.write_bytes(original_content)
 
@@ -131,9 +131,9 @@ class TestMigrateIntegration:
                 # Migration should not be attempted
                 mock_orchestrator.migrate_file.assert_not_called()
 
-    def test_migrate_no_files_need_migration(self, temp_dir, cli_runner):
+    def test_migrate_no_files_need_migration(self, tmp_path, cli_runner):
         """Test behavior when no files need migration."""
-        test_file = temp_dir / "test.mcap"
+        test_file = tmp_path / "test.mcap"
         test_file.write_bytes(b"content")
 
         with patch("owa.cli.mcap.migrate.migrate.detect_files_needing_migration") as mock_detect:
@@ -149,9 +149,9 @@ class TestMigrateIntegration:
 class TestMigrationOrchestrator:
     """Test MigrationOrchestrator core functionality."""
 
-    def test_orchestrator_successful_migration(self, temp_dir):
+    def test_orchestrator_successful_migration(self, tmp_path):
         """Test successful migration through orchestrator."""
-        test_file = temp_dir / "test.mcap"
+        test_file = tmp_path / "test.mcap"
         test_file.write_bytes(b"content")
 
         orchestrator = MigrationOrchestrator()
@@ -182,9 +182,9 @@ class TestMigrationOrchestrator:
                 assert len(results) == 1
                 assert results[0].success
 
-    def test_orchestrator_failed_migration(self, temp_dir):
+    def test_orchestrator_failed_migration(self, tmp_path):
         """Test failed migration through orchestrator."""
-        test_file = temp_dir / "test.mcap"
+        test_file = tmp_path / "test.mcap"
         test_file.write_bytes(b"content")
 
         orchestrator = MigrationOrchestrator()
@@ -209,9 +209,9 @@ class TestMigrationOrchestrator:
                 with pytest.raises(RuntimeError, match="Migration failed"):
                     orchestrator.migrate_file(test_file, "0.4.0", console)
 
-    def test_orchestrator_no_migration_needed(self, temp_dir):
+    def test_orchestrator_no_migration_needed(self, tmp_path):
         """Test orchestrator when no migration is needed."""
-        test_file = temp_dir / "test.mcap"
+        test_file = tmp_path / "test.mcap"
         test_file.write_bytes(b"content")
 
         orchestrator = MigrationOrchestrator()

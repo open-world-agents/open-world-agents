@@ -20,30 +20,25 @@ Examples:
             writer.write_frame(frame_array)
 """
 
-import atexit
 import gc
 import os
-import threading
-import time
 from fractions import Fraction
 from pathlib import Path
 from typing import Any, Dict, Generator, Literal, Optional, Union
 
 import av
-import av.container
 import numpy as np
 from loguru import logger
 
+from . import cached_av
+
 # Constants
-DEFAULT_CACHE_SIZE = 10
-DEFAULT_INACTIVE_TIMEOUT = 10**9  # Very large timeout (effectively disabled)
 DUPLICATE_TOLERANCE_SECOND: Fraction = Fraction(1, 120)
 
 # Type aliases
 SECOND_TYPE = Union[float, Fraction]
 PTSUnit = Literal["pts", "sec"]
 VideoPathType = Union[str, os.PathLike, Path]  # Supports both local paths and URLs
-ContainerMode = Literal["r", "w"]
 
 # Garbage collection counters for PyAV reference cycles
 # Reference: https://github.com/pytorch/vision/blob/428a54c96e82226c0d2d8522e9cbfdca64283da0/torchvision/io/video.py#L53-L55
@@ -84,161 +79,6 @@ def _normalize_video_path(video_path: VideoPathType) -> Union[str, Path]:
         if not local_path.exists():
             raise FileNotFoundError(f"Video file not found: {local_path}")
         return local_path
-
-
-class ContainerCache:
-    """Thread-safe container cache with automatic cleanup.
-
-    This cache manages PyAV containers with reference counting to prevent
-    resource leaks while allowing efficient reuse of containers.
-    """
-
-    def __init__(self, max_size: int = DEFAULT_CACHE_SIZE, inactive_timeout: float = DEFAULT_INACTIVE_TIMEOUT):
-        """Initialize the container cache."""
-        self._cache: Dict[str, tuple[av.container.Container, int, float]] = {}
-        self._lock = threading.RLock()
-        self.max_size = max_size
-        self.inactive_timeout = inactive_timeout
-        atexit.register(self.close_all)
-
-    def get_container(self, video_path: Union[str, Path], mode: ContainerMode = "r") -> av.container.Container:
-        """Get or create cached container with reference counting."""
-        path_str = str(video_path)
-
-        with self._lock:
-            self._cleanup_inactive()
-
-            # Reuse existing read-mode container
-            if path_str in self._cache and mode == "r":
-                container, refs, _ = self._cache[path_str]
-                self._cache[path_str] = (container, refs + 1, time.time())
-                return container
-
-            # Create new container
-            container = av.open(path_str, mode)
-
-            # Cache read-mode containers only
-            if mode == "r":
-                if len(self._cache) >= self.max_size:
-                    if not self._evict_unused():
-                        return container
-                self._cache[path_str] = (container, 1, time.time())
-
-            return container
-
-    def release_container(self, video_path: Union[str, Path]) -> None:
-        """Decrease reference count."""
-        path_str = str(video_path)
-        with self._lock:
-            if path_str in self._cache:
-                container, refs, _ = self._cache[path_str]
-                self._cache[path_str] = (container, max(0, refs - 1), time.time())
-
-    def force_close_container(self, video_path: Union[str, Path]) -> None:
-        """Immediately close and remove container."""
-        path_str = str(video_path)
-        with self._lock:
-            if path_str in self._cache:
-                container, _, _ = self._cache.pop(path_str)
-                self._safe_close(container, path_str)
-
-    def close_all(self) -> None:
-        """Close all cached containers."""
-        with self._lock:
-            for path_str, (container, _, _) in list(self._cache.items()):
-                self._safe_close(container, path_str)
-            self._cache.clear()
-
-    def _cleanup_inactive(self):
-        """Remove unused containers that are too old."""
-        current_time = time.time()
-        to_remove = [
-            (path, container)
-            for path, (container, refs, last_used) in self._cache.items()
-            if refs == 0 and (current_time - last_used) > self.inactive_timeout
-        ]
-
-        for path, container in to_remove:
-            self._cache.pop(path, None)
-            self._safe_close(container, path)
-
-    def _evict_unused(self) -> bool:
-        """Remove oldest unused container."""
-        unused = [(path, last_used) for path, (_, refs, last_used) in self._cache.items() if refs == 0]
-
-        if not unused:
-            return False
-
-        oldest_path = min(unused, key=lambda x: x[1])[0]
-        container, _, _ = self._cache.pop(oldest_path)
-        self._safe_close(container, oldest_path)
-        return True
-
-    def get_cache_stats(self) -> Dict[str, Any]:
-        """Get cache statistics for monitoring."""
-        with self._lock:
-            total_refs = sum(refs for _, refs, _ in self._cache.values())
-            unused_count = sum(1 for _, refs, _ in self._cache.values() if refs == 0)
-
-            return {
-                "cache_size": len(self._cache),
-                "max_size": self.max_size,
-                "total_references": total_refs,
-                "unused_containers": unused_count,
-                "cache_utilization": len(self._cache) / self.max_size if self.max_size > 0 else 0.0,
-            }
-
-    @staticmethod
-    def _safe_close(container, path_str):
-        """Safely close container with error handling."""
-        try:
-            container.close()
-        except Exception as e:
-            logger.warning(f"Error closing container {path_str}: {e}")
-
-
-# Process-specific cache instances
-_process_caches: Dict[int, ContainerCache] = {}
-_cache_lock = threading.Lock()
-
-
-# Tried this to prevent errors from training, but does not help.
-def _get_process_cache() -> ContainerCache:
-    """Get or create a cache instance specific to the current process."""
-    import os
-
-    current_pid = os.getpid()
-
-    with _cache_lock:
-        if current_pid not in _process_caches:
-            _process_caches[current_pid] = ContainerCache(max_size=DEFAULT_CACHE_SIZE)
-        return _process_caches[current_pid]
-
-
-def get_video_container(video_path: Union[str, Path]) -> av.container.Container:
-    """Get a container from the cache or create a new one."""
-    # Note: When mode="r", this returns an InputContainer, but we use Container for type compatibility
-    return _get_process_cache().get_container(video_path, mode="r")
-
-
-def release_video_container(video_path: Union[str, Path]) -> None:
-    """Release a container reference."""
-    _get_process_cache().release_container(video_path)
-
-
-def close_all_containers():
-    """Close all cached containers for the current process."""
-    _get_process_cache().close_all()
-
-
-def force_close_video_container(video_path: Union[str, Path]) -> None:
-    """Force immediate closure of a specific container."""
-    _get_process_cache().force_close_container(video_path)
-
-
-def get_container_cache_stats() -> Dict[str, Any]:
-    """Get statistics about the current process's container cache."""
-    return _get_process_cache().get_cache_stats()
 
 
 class VideoWriter:
@@ -392,7 +232,7 @@ class VideoReader:
         """
         self.video_path = _normalize_video_path(video_path)
         self.force_close = force_close
-        self.container = get_video_container(self.video_path)
+        self.container = cached_av.open(self.video_path, "r")
 
     def read_frames(
         self, start_pts: SECOND_TYPE = 0.0, end_pts: Optional[SECOND_TYPE] = None, fps: Optional[float] = None
@@ -468,10 +308,9 @@ class VideoReader:
 
     def close(self) -> None:
         """Release container reference or force close."""
+        self.container.close()
         if self.force_close:
-            force_close_video_container(self.video_path)
-        else:
-            release_video_container(self.video_path)
+            cached_av.cleanup_cache(self.container)
 
     def __enter__(self) -> "VideoReader":
         return self

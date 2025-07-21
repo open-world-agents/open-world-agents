@@ -328,7 +328,7 @@ OWAMcap's key advantage is efficient media handling through external media refer
     )
 
     # Must resolve external paths before loading from MCAP files
-    screen_msg.resolve_external_path("/path/to/data.mcap")
+    screen_msg.resolve_relative_path("/path/to/data.mcap")
 
     # Lazy loading: Frame data is loaded on-demand when these methods are called
     rgb_array = screen_msg.to_rgb_array()        # RGB numpy array (most common)
@@ -647,7 +647,7 @@ owl mcap migrate run old_file.mcap --output new_file.mcap
     When video files are missing:
     ```python
     # Resolve relative paths
-    screen_msg.resolve_external_path("/path/to/mcap/file.mcap")
+    screen_msg.resolve_relative_path("/path/to/mcap/file.mcap")
     # Check if external media exists
     screen_msg.media_ref.validate_uri()
     ```
