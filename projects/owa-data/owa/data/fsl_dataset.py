@@ -187,7 +187,7 @@ class FSLDataset(Dataset):
                     # Deserialize ScreenCaptured from JSON
                     screen_captured: ScreenCaptured = ScreenCaptured.model_validate_json(
                         image_json
-                    ).resolve_external_path(episode_path)
+                    ).resolve_relative_path(episode_path)
                     if self.config.load_images:
                         # Convert to PIL Image
                         screen_captured = screen_captured.to_pil_image()

@@ -103,7 +103,7 @@ class ScreenCaptured(OWAMessage):
     - to_pil_image(): Get PIL Image object
 
     Path resolution:
-    - resolve_external_path(base_path): Resolve relative paths against base directory
+    - resolve_relative_path(base_path): Resolve relative paths against base directory
 
     Serialization requires media_ref (use embed_as_data_uri() for in-memory arrays).
     """
@@ -195,7 +195,7 @@ class ScreenCaptured(OWAMessage):
         rgb_array = self.to_rgb_array()
         return Image.fromarray(rgb_array, mode="RGB")
 
-    def resolve_external_path(self, base_path: str) -> Self:
+    def resolve_relative_path(self, base_path: str) -> Self:
         """
         Resolve relative paths in media_ref against a base path.
 

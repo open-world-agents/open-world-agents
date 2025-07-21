@@ -303,13 +303,13 @@ class TestScreenCaptured:
 
     # === Path Resolution (as documented in docstring) ===
 
-    def test_resolve_external_path_method(self):
-        """Test: resolve_external_path(base_path): Resolve relative paths against base directory"""
+    def test_resolve_relative_path_method(self):
+        """Test: resolve_relative_path(base_path): Resolve relative paths against base directory"""
         # Create with relative path
         screen_msg = ScreenCaptured(media_ref={"uri": "videos/frame.jpg"})
 
         # Resolve against MCAP file path
-        result = screen_msg.resolve_external_path("/data/recordings/session.mcap")
+        result = screen_msg.resolve_relative_path("/data/recordings/session.mcap")
 
         # Verify path resolution
         assert result is screen_msg  # Returns self for chaining
@@ -318,7 +318,7 @@ class TestScreenCaptured:
 
         # Test with no media_ref (should not crash)
         screen_msg_no_ref = ScreenCaptured(frame_arr=np.zeros((10, 10, 4), dtype=np.uint8))
-        screen_msg_no_ref.resolve_external_path("/some/path.mcap")  # Should not crash
+        screen_msg_no_ref.resolve_relative_path("/some/path.mcap")  # Should not crash
 
     # === Serialization Requirements (as documented in docstring) ===
 
@@ -529,14 +529,14 @@ class TestScreenCaptured:
         repr_str3 = str(screen_msg2)
         assert "video@2000000000ns" in repr_str3
 
-    def test_resolve_external_path(self):
+    def test_resolve_relative_path(self):
         """Test resolving relative paths in ScreenCaptured."""
         # Create with relative path
         media_ref = MediaRef(uri="videos/frame.jpg")
         screen_msg = ScreenCaptured(utc_ns=1741608540328534500, media_ref=media_ref)
 
         # Resolve against MCAP file path
-        screen_msg.resolve_external_path("/data/recordings/session.mcap")
+        screen_msg.resolve_relative_path("/data/recordings/session.mcap")
 
         # Should have resolved path
         expected_path = PurePosixPath("/data/recordings/videos/frame.jpg").as_posix()
@@ -544,7 +544,7 @@ class TestScreenCaptured:
 
         # Test with no media_ref (should not crash)
         screen_msg_no_ref = ScreenCaptured(utc_ns=1741608540328534500, frame_arr=np.zeros((10, 10, 4), dtype=np.uint8))
-        screen_msg_no_ref.resolve_external_path("/some/path.mcap")  # Should not crash
+        screen_msg_no_ref.resolve_relative_path("/some/path.mcap")  # Should not crash
 
     # === Remote URL Tests (merged from test_screen_remote.py) ===
 
