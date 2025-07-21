@@ -5,7 +5,8 @@
 	"runArgs": [
 		"--gpus=all",
 		"--ipc=host",
-		"--privileged"
+		"--privileged",
+		"--network=host"
 	],
 	"remoteUser": "vscode",
 	"updateRemoteUserUID": true,
@@ -35,7 +36,7 @@
 		"ghcr.io/devcontainers/features/github-cli:1": {}
 	},
 	// Lifecycle scripts
-	"updateContentCommand": "sudo chown -R vscode:vscode /opt/conda | tqdm --desc 'Changing ownership of /opt/conda to vscode user...' --unit files > /dev/null",
+	"updateContentCommand": "sudo chown -vR vscode:vscode /opt/conda | tqdm --desc 'Changing ownership of /opt/conda to vscode user...' --unit files > /dev/null",
 	"postCreateCommand": {
 		"workspace-install": ". activate owa && vuv pip install -e /workspace --group dev && (pip list | grep -E '^owa' && echo 'OWA Development Environment Ready! 🚀' || echo 'OWA package not found')",
 		"conda-info": "conda info --envs"
