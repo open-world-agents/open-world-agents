@@ -2,8 +2,6 @@
 Tests for mcap CLI automatic upgrade functionality.
 """
 
-import tempfile
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from packaging.version import parse as parse_version
@@ -77,82 +75,76 @@ class TestMcapVersionFunctions:
             else:
                 os.environ["OWA_DISABLE_VERSION_CHECK"] = original_value
 
-    def test_get_local_version_success(self):
+    def test_get_local_version_success(self, tmp_path):
         """Test successful parsing of local mcap version."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            mock_mcap = Path(temp_dir) / "mcap"
-            mock_mcap.touch()
+        mock_mcap = tmp_path / "mcap"
+        mock_mcap.touch()
 
-            with patch("owa.cli.mcap.info.subprocess.run") as mock_run:
-                mock_run.return_value = MagicMock(returncode=0, stdout="v0.0.53\n")
+        with patch("owa.cli.mcap.info.subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock(returncode=0, stdout="v0.0.53\n")
 
-                version = get_local_mcap_version(mock_mcap)
-                assert version == "v0.0.53"
+            version = get_local_mcap_version(mock_mcap)
+            assert version == "v0.0.53"
 
-                # Verify it calls the correct command
-                mock_run.assert_called_once()
-                args = mock_run.call_args[0][0]
-                assert args[1] == "version"  # Should use "version" subcommand
+            # Verify it calls the correct command
+            mock_run.assert_called_once()
+            args = mock_run.call_args[0][0]
+            assert args[1] == "version"  # Should use "version" subcommand
 
-    def test_get_local_version_failure(self):
+    def test_get_local_version_failure(self, tmp_path):
         """Test handling of failed version check."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            mock_mcap = Path(temp_dir) / "mcap"
-            mock_mcap.touch()
+        mock_mcap = tmp_path / "mcap"
+        mock_mcap.touch()
 
-            with patch("owa.cli.mcap.info.subprocess.run", side_effect=FileNotFoundError()):
-                version = get_local_mcap_version(mock_mcap)
-                assert version == "unknown"
+        with patch("owa.cli.mcap.info.subprocess.run", side_effect=FileNotFoundError()):
+            version = get_local_mcap_version(mock_mcap)
+            assert version == "unknown"
 
-    def test_should_upgrade_nonexistent_file(self):
+    def test_should_upgrade_nonexistent_file(self, tmp_path):
         """Test upgrade decision for non-existent file."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            mock_mcap = Path(temp_dir) / "mcap"
-            # File doesn't exist
+        mock_mcap = tmp_path / "mcap"
+        # File doesn't exist
+        assert should_upgrade_mcap(mock_mcap) is True
+
+    def test_should_upgrade_force(self, tmp_path):
+        """Test force upgrade option."""
+        mock_mcap = tmp_path / "mcap"
+        mock_mcap.touch()
+        assert should_upgrade_mcap(mock_mcap, force=True) is True
+
+    def test_should_upgrade_version_comparison(self, tmp_path):
+        """Test version comparison logic."""
+        mock_mcap = tmp_path / "mcap"
+        mock_mcap.touch()
+
+        # Mock local version as older
+        with (
+            patch("owa.cli.mcap.info.get_local_mcap_version", return_value="v0.0.52"),
+            patch("owa.cli.mcap.info.get_latest_mcap_cli_version", return_value="v0.0.53"),
+        ):
             assert should_upgrade_mcap(mock_mcap) is True
 
-    def test_should_upgrade_force(self):
-        """Test force upgrade option."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            mock_mcap = Path(temp_dir) / "mcap"
-            mock_mcap.touch()
-            assert should_upgrade_mcap(mock_mcap, force=True) is True
+        # Mock local version as same
+        with (
+            patch("owa.cli.mcap.info.get_local_mcap_version", return_value="v0.0.53"),
+            patch("owa.cli.mcap.info.get_latest_mcap_cli_version", return_value="v0.0.53"),
+        ):
+            assert should_upgrade_mcap(mock_mcap) is False
 
-    def test_should_upgrade_version_comparison(self):
-        """Test version comparison logic."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            mock_mcap = Path(temp_dir) / "mcap"
-            mock_mcap.touch()
+        # Mock local version as newer (shouldn't happen but test anyway)
+        with (
+            patch("owa.cli.mcap.info.get_local_mcap_version", return_value="v0.0.54"),
+            patch("owa.cli.mcap.info.get_latest_mcap_cli_version", return_value="v0.0.53"),
+        ):
+            assert should_upgrade_mcap(mock_mcap) is False
 
-            # Mock local version as older
-            with (
-                patch("owa.cli.mcap.info.get_local_mcap_version", return_value="v0.0.52"),
-                patch("owa.cli.mcap.info.get_latest_mcap_cli_version", return_value="v0.0.53"),
-            ):
-                assert should_upgrade_mcap(mock_mcap) is True
-
-            # Mock local version as same
-            with (
-                patch("owa.cli.mcap.info.get_local_mcap_version", return_value="v0.0.53"),
-                patch("owa.cli.mcap.info.get_latest_mcap_cli_version", return_value="v0.0.53"),
-            ):
-                assert should_upgrade_mcap(mock_mcap) is False
-
-            # Mock local version as newer (shouldn't happen but test anyway)
-            with (
-                patch("owa.cli.mcap.info.get_local_mcap_version", return_value="v0.0.54"),
-                patch("owa.cli.mcap.info.get_latest_mcap_cli_version", return_value="v0.0.53"),
-            ):
-                assert should_upgrade_mcap(mock_mcap) is False
-
-    def test_should_upgrade_unknown_version(self):
+    def test_should_upgrade_unknown_version(self, tmp_path):
         """Test upgrade decision when local version is unknown."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            mock_mcap = Path(temp_dir) / "mcap"
-            mock_mcap.touch()
+        mock_mcap = tmp_path / "mcap"
+        mock_mcap.touch()
 
-            with patch("owa.cli.mcap.info.get_local_mcap_version", return_value="unknown"):
-                assert should_upgrade_mcap(mock_mcap) is True
+        with patch("owa.cli.mcap.info.get_local_mcap_version", return_value="unknown"):
+            assert should_upgrade_mcap(mock_mcap) is True
 
 
 class TestVersionParsing:

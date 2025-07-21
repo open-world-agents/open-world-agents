@@ -5,8 +5,6 @@ Minimal tests for screen capture message with new clean API.
 import errno
 import os
 import socket
-import tempfile
-from pathlib import Path
 from urllib.error import URLError
 
 import cv2
@@ -36,44 +34,42 @@ def sample_bgra_frame():
 
 
 @pytest.fixture
-def sample_video_file():
+def sample_video_file(tmp_path):
     """Create a temporary video file with known frames for testing."""
-    with tempfile.TemporaryDirectory() as temp_dir:
-        video_path = Path(temp_dir) / "test_video.mp4"
+    video_path = tmp_path / "test_video.mp4"
 
-        # Create test video with 5 frames at different timestamps
-        timestamps = [0.0, 0.1, 0.2, 0.3, 0.4]  # 5 frames at 100ms intervals
+    # Create test video with 5 frames at different timestamps
+    timestamps = [0.0, 0.1, 0.2, 0.3, 0.4]  # 5 frames at 100ms intervals
 
-        with VideoWriter(video_path, fps=10.0, vfr=True) as writer:
-            for i, timestamp in enumerate(timestamps):
-                # Create distinct frames with different colors
-                frame = np.full((48, 64, 3), i * 50, dtype=np.uint8)  # RGB
-                writer.write_frame(frame, pts=timestamp, pts_unit="sec")
+    with VideoWriter(video_path, fps=10.0, vfr=True) as writer:
+        for i, timestamp in enumerate(timestamps):
+            # Create distinct frames with different colors
+            frame = np.full((48, 64, 3), i * 50, dtype=np.uint8)  # RGB
+            writer.write_frame(frame, pts=timestamp, pts_unit="sec")
 
-            # Add a final frame to ensure the last intended frame has duration
-            final_timestamp = timestamps[-1] + 0.1  # 100ms after last frame
-            final_frame = np.zeros((48, 64, 3), dtype=np.uint8)  # Black frame as end marker
-            writer.write_frame(final_frame, pts=final_timestamp, pts_unit="sec")
+        # Add a final frame to ensure the last intended frame has duration
+        final_timestamp = timestamps[-1] + 0.1  # 100ms after last frame
+        final_frame = np.zeros((48, 64, 3), dtype=np.uint8)  # Black frame as end marker
+        writer.write_frame(final_frame, pts=final_timestamp, pts_unit="sec")
 
-        yield video_path, timestamps
+    yield video_path, timestamps
 
-        cached_av.cleanup_cache(video_path)
+    cached_av.cleanup_cache(video_path)
 
 
 @pytest.fixture
-def sample_image_file():
+def sample_image_file(tmp_path):
     """Create a temporary image file for testing."""
-    with tempfile.TemporaryDirectory() as temp_dir:
-        image_path = Path(temp_dir) / "test_image.png"
+    image_path = tmp_path / "test_image.png"
 
-        # Create a simple test image
-        test_image = np.zeros((48, 64, 3), dtype=np.uint8)
-        test_image[:, :, 0] = 255  # Red channel
+    # Create a simple test image
+    test_image = np.zeros((48, 64, 3), dtype=np.uint8)
+    test_image[:, :, 0] = 255  # Red channel
 
-        # Save as PNG
-        cv2.imwrite(str(image_path), test_image)
+    # Save as PNG
+    cv2.imwrite(str(image_path), test_image)
 
-        yield image_path
+    return image_path
 
 
 class TestMediaRef:

@@ -6,8 +6,6 @@ including mocking of GitHub API calls to prevent rate limiting during test execu
 """
 
 import os
-import tempfile
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -121,10 +119,3 @@ def no_version_check():
 def cli_runner():
     """Create a CLI runner for testing."""
     return CliRunner(charset="utf-8")
-
-
-@pytest.fixture
-def temp_dir():
-    """Create a temporary directory for test files."""
-    with tempfile.TemporaryDirectory() as temp_dir:
-        yield Path(temp_dir)

@@ -1,22 +1,12 @@
-import tempfile
 import time
-from pathlib import Path
 
-import pytest
 
 from owa.core import RUNNABLES
 
 
-@pytest.fixture
-def temp_output_dir():
-    """Provide a temporary directory for test outputs."""
-    with tempfile.TemporaryDirectory() as temp_dir:
-        yield Path(temp_dir)
-
-
-def test_screen_capture(temp_output_dir):
+def test_screen_capture(tmp_path):
     """Test basic recorder functionality with minimal recording time."""
-    output_file = temp_output_dir / "output.mkv"
+    output_file = tmp_path / "output.mkv"
 
     recorder = RUNNABLES["gst/omnimodal.subprocess_recorder"]()
     recorder.configure(filesink_location=str(output_file), window_name="open-world-agents")
