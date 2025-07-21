@@ -241,7 +241,7 @@ def test_migration_orchestrator_with_mocked_reader():
 
 
 @patch("owa.cli.mcap.migrate.migrate.OWAMcapReader")
-def test_detect_version_with_mocked_reader(mock_reader_class, temp_dir):
+def test_detect_version_with_mocked_reader(mock_reader_class, tmp_path):
     """Test version detection with mocked reader."""
     # Setup mock
     mock_reader = MagicMock()
@@ -250,7 +250,7 @@ def test_detect_version_with_mocked_reader(mock_reader_class, temp_dir):
 
     orchestrator = MigrationOrchestrator()
 
-    tmp_path = temp_dir / "test.mcap"
+    tmp_path = tmp_path / "test.mcap"
     tmp_path.touch()
 
     version = orchestrator.detect_version(tmp_path)
@@ -258,7 +258,7 @@ def test_detect_version_with_mocked_reader(mock_reader_class, temp_dir):
 
 
 @patch("owa.cli.mcap.migrate.migrate.OWAMcapReader")
-def test_multi_step_migration_with_script_migrators(mock_reader_class, temp_dir):
+def test_multi_step_migration_with_script_migrators(mock_reader_class, tmp_path):
     """Test that multi-step migration works with script migrators."""
     orchestrator = MigrationOrchestrator()
 
@@ -297,7 +297,7 @@ def test_multi_step_migration_with_script_migrators(mock_reader_class, temp_dir)
     # Replace orchestrator's script migrators with our mocks
     orchestrator.script_migrators = [mock_migrator_1, mock_migrator_2]
 
-    tmp_path = temp_dir / "test.mcap"
+    tmp_path = tmp_path / "test.mcap"
     tmp_path.touch()
 
     # Mock the console for migrate_file
@@ -320,9 +320,9 @@ def test_multi_step_migration_with_script_migrators(mock_reader_class, temp_dir)
 class TestScriptMigratorErrorHandling:
     """Test error handling improvements in ScriptMigrator."""
 
-    def test_migrate_with_json_error_output(self, temp_dir):
+    def test_migrate_with_json_error_output(self, tmp_path):
         """Test that JSON error output is properly parsed and handled."""
-        script_path = temp_dir / "test_migrator.py"
+        script_path = tmp_path / "test_migrator.py"
         script_path.write_text("#!/usr/bin/env python3\nprint('test')")
 
         migrator = ScriptMigrator(script_path, "0.3.0", "0.4.0")
@@ -335,7 +335,7 @@ class TestScriptMigratorErrorHandling:
         mock_result.stderr = ""
 
         with patch("subprocess.run", return_value=mock_result):
-            result = migrator.migrate(temp_dir / "test.mcap", verbose=False)
+            result = migrator.migrate(tmp_path / "test.mcap", verbose=False)
 
         assert not result.success
         assert result.error == "Test migration error"
@@ -343,9 +343,9 @@ class TestScriptMigratorErrorHandling:
         assert result.from_version == "0.3.0"
         assert result.to_version == "0.4.0"
 
-    def test_migrate_with_invalid_json_error_fallback(self, temp_dir):
+    def test_migrate_with_invalid_json_error_fallback(self, tmp_path):
         """Test fallback to stderr/stdout when JSON is invalid."""
-        script_path = temp_dir / "test_migrator.py"
+        script_path = tmp_path / "test_migrator.py"
         script_path.write_text("#!/usr/bin/env python3\nprint('test')")
 
         migrator = ScriptMigrator(script_path, "0.3.0", "0.4.0")
@@ -357,15 +357,15 @@ class TestScriptMigratorErrorHandling:
         mock_result.stderr = "Script execution failed"
 
         with patch("subprocess.run", return_value=mock_result):
-            result = migrator.migrate(temp_dir / "test.mcap", verbose=False)
+            result = migrator.migrate(tmp_path / "test.mcap", verbose=False)
 
         assert not result.success
         assert result.error == "Script execution failed"
         assert result.changes_made == 0
 
-    def test_migrate_with_json_success_false_on_zero_exit(self, temp_dir):
+    def test_migrate_with_json_success_false_on_zero_exit(self, tmp_path):
         """Test handling JSON with success=false even when exit code is 0."""
-        script_path = temp_dir / "test_migrator.py"
+        script_path = tmp_path / "test_migrator.py"
         script_path.write_text("#!/usr/bin/env python3\nprint('test')")
 
         migrator = ScriptMigrator(script_path, "0.3.0", "0.4.0")
@@ -378,15 +378,15 @@ class TestScriptMigratorErrorHandling:
         mock_result.stderr = ""
 
         with patch("subprocess.run", return_value=mock_result):
-            result = migrator.migrate(temp_dir / "test.mcap", verbose=False)
+            result = migrator.migrate(tmp_path / "test.mcap", verbose=False)
 
         assert not result.success
         assert result.error == "Validation failed"
         assert result.changes_made == 0
 
-    def test_verify_migration_with_json_error_output(self, temp_dir):
+    def test_verify_migration_with_json_error_output(self, tmp_path):
         """Test that verification JSON error output is properly handled."""
-        script_path = temp_dir / "test_migrator.py"
+        script_path = tmp_path / "test_migrator.py"
         script_path.write_text("#!/usr/bin/env python3\nprint('test')")
 
         migrator = ScriptMigrator(script_path, "0.3.0", "0.4.0")
@@ -399,14 +399,14 @@ class TestScriptMigratorErrorHandling:
         mock_result.stderr = ""
 
         with patch("subprocess.run", return_value=mock_result):
-            result = migrator.verify_migration(temp_dir / "test.mcap", None, verbose=False)
+            result = migrator.verify_migration(tmp_path / "test.mcap", None, verbose=False)
 
         assert not result.success
         assert result.error == "Legacy structures found"
 
-    def test_verify_migration_with_json_success_output(self, temp_dir):
+    def test_verify_migration_with_json_success_output(self, tmp_path):
         """Test that verification JSON success output is properly handled."""
-        script_path = temp_dir / "test_migrator.py"
+        script_path = tmp_path / "test_migrator.py"
         script_path.write_text("#!/usr/bin/env python3\nprint('test')")
 
         migrator = ScriptMigrator(script_path, "0.3.0", "0.4.0")
@@ -419,7 +419,7 @@ class TestScriptMigratorErrorHandling:
         mock_result.stderr = ""
 
         with patch("subprocess.run", return_value=mock_result):
-            result = migrator.verify_migration(temp_dir / "test.mcap", None, verbose=False)
+            result = migrator.verify_migration(tmp_path / "test.mcap", None, verbose=False)
 
         assert result.success
         assert result.error == ""

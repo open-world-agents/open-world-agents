@@ -344,7 +344,7 @@ def _resolve_video_path(screen_captured: ScreenCaptured, metadata: Dict[str, Any
         if screen_captured.media_ref.is_video:
             episode_path = metadata.get("episode_path")
             if episode_path:
-                screen_captured.resolve_external_path(episode_path)
+                screen_captured.resolve_relative_path(episode_path)
 
     # For other media_ref types or if no episode_path, return as-is
     return screen_captured

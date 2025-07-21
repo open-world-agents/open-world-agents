@@ -1,5 +1,48 @@
-I've tried litserve to construct video decoding server, but since it's destructively poor performance I've switched to Triton Inference Server. However, I'm keeping the code here for reference.
+# LitServe Video Decoding Implementation
 
-Compared with NVIDIA Triton Inference Server, litserve has much lower throughput and higher latency.
-- For worker=1, clicnet concurrency=1 setting, throughput was 5x lower(24 r/s vs 5 r/s) and latency was 3x higher(77 ms vs 251ms)
-- For worker=16, client concurrency=64 setting, throughput was 6x lower(112.4 r/s vs 617.6 r/s) and latency was 9x higher(990.5 ms vs 135.8ms)
+This directory contains an alternative LitServe-based implementation of the video decoding server.
+
+## Overview
+
+While this implementation offers excellent developer experience and rapid prototyping capabilities, it has significantly lower performance compared to the main Triton Inference Server implementation.
+
+## Performance Comparison
+
+For detailed performance benchmarks and comparison with the main Triton implementation, see the [Performance Benchmarks section](../../README.md#performance-benchmarks) in the main README.
+
+## How to Run
+
+1. Install dependencies:
+   ```bash
+   # Basic dependencies
+   pip install litserve opencv-python-headless av
+
+   # For TorchCodec backend, follow official installation guide:
+   # https://github.com/pytorch/torchcodec?tab=readme-ov-file#installing-torchcodec
+   ```
+
+2. Start the server:
+   ```bash
+   # PyAV backend (default)
+   python decoding_server.py
+
+   # OpenCV backend
+   python decoding_server_cv2.py
+
+   # TorchCodec backend
+   python decoding_server_torchcodec.py
+   ```
+
+3. Test with client:
+   ```bash
+   python client.py video.mp4 10.5
+   ```
+
+## Usage
+
+The LitServe implementation is recommended for:
+- Rapid prototyping and experimentation
+- Development environments where ease of setup is prioritized
+- Scenarios where ~100ms additional latency is acceptable
+
+For production deployments requiring high throughput, use the main Triton Inference Server implementation.
