@@ -7,6 +7,8 @@ from typing import Literal, Optional, Union, overload
 import av
 import av.container
 
+from .input_container_mixin import InputContainerMixin
+
 DEFAULT_CACHE_SIZE = 10
 
 VideoPathType = Union[str, os.PathLike, Path]
@@ -55,7 +57,7 @@ def _explicit_cleanup(container: Optional["MockedInputContainer" | VideoPathType
             if container is None:
                 return
         container._container.close()
-        _cache.pop(container.file, None)
+        _cache.pop(container.file_path, None)
 
 
 # Ensure all containers are closed on program exit
@@ -78,19 +80,17 @@ def _implicit_cleanup():
         _explicit_cleanup(container)
 
 
-class MockedInputContainer:
+class MockedInputContainer(InputContainerMixin):
     """Wrapper for av.InputContainer that tracks references and usage for caching."""
 
     def __init__(self, file: VideoPathType):
-        self.file = file
-        self._container = av.open(file, "r")
+        self.file_path = file
+        self._container: av.container.InputContainer = av.open(file, "r")
         self.refs = 0  # Reference count for tracking usage
         self.last_used = time.time()
 
-        # Delegate all methods from underlying container except close
-        for method_name in dir(self._container):
-            if not method_name.startswith("_") and method_name != "close":
-                setattr(self, method_name, getattr(self._container, method_name))
+    def __enter__(self) -> "MockedInputContainer":
+        return self
 
     def close(self):
         """Decrement reference count and cleanup if no longer referenced."""
