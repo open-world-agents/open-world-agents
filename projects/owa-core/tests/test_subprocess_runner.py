@@ -70,7 +70,10 @@ class TestSubprocessRunner:
         runner._loop()
 
         # Verify process creation and signal handling
-        mock_popen.assert_called_once_with(["echo", "hello"])
+        if os.name == "nt":  # Windows
+            mock_popen.assert_called_once_with(["echo", "hello"], creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
+        else:  # Unix-like systems
+            mock_popen.assert_called_once_with(["echo", "hello"])
         expected_signal = signal.CTRL_BREAK_EVENT if os.name == "nt" else signal.SIGINT
         mock_process.send_signal.assert_called_once_with(expected_signal)
         mock_process.wait.assert_called_once_with(timeout=5)
