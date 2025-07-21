@@ -169,11 +169,10 @@ class TestMediaRef:
         resolved2 = ref.resolve_relative_path("C:/mcap/files/")
         assert resolved2.uri == "C:/mcap/files/images/test.jpg"
 
-        # Test with Windows absolute path - NOTE: Due to PurePosixPath usage in is_relative_path,
-        # Windows paths like "C:/..." are treated as relative, so they get resolved
+        # Test with Windows absolute path - Ensure absolute paths are correctly identified
         ref_abs = MediaRef(uri="C:/absolute/path/test.jpg")
         resolved3 = ref_abs.resolve_relative_path("C:/mcap/files/recording.mcap")
-        # This will be resolved as a relative path due to the PurePosixPath limitation
+        # Absolute paths should remain unchanged
         assert resolved3.uri == "C:/absolute/path/test.jpg"
 
         # Test with backslash paths (Windows native)
