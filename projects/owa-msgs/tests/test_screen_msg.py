@@ -179,7 +179,7 @@ class TestMediaRef:
         # Test with backslash paths (Windows native)
         resolved4 = ref.resolve_relative_path(r"C:\mcap\files\recording.mcap")
         # The method always returns forward slashes due to as_posix()
-        assert resolved4.uri == "C:/mcap/files/recording.mcap/images/test.jpg"
+        assert resolved4.uri == "C:/mcap/files/images/test.jpg"
 
     def test_direct_constructor(self):
         """Test MediaRef direct constructor."""
