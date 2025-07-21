@@ -5,6 +5,7 @@ This module tests the subprocess management functionality including
 SubprocessRunner class and helper functions.
 """
 
+import os
 import signal
 import subprocess
 import threading
@@ -23,11 +24,12 @@ class TestSubprocessRunner:
         runner = SubprocessRunner()
         subprocess_args = ["echo", "hello"]
 
-        # Test default signal
+        # Test default signal (platform-specific)
         configured_runner = runner.configure(subprocess_args)
         assert configured_runner is runner  # Should return self
         assert runner.subprocess_args == subprocess_args
-        assert runner._stop_signal == signal.CTRL_BREAK_EVENT
+        expected_default_signal = signal.CTRL_BREAK_EVENT if os.name == "nt" else signal.SIGINT
+        assert runner._stop_signal == expected_default_signal
         assert runner._process is None
         assert runner._configured is True  # Should be marked as configured
 
@@ -68,8 +70,9 @@ class TestSubprocessRunner:
         runner._loop()
 
         # Verify process creation and signal handling
-        mock_popen.assert_called_once_with(["echo", "hello"], creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
-        mock_process.send_signal.assert_called_once_with(signal.CTRL_BREAK_EVENT)
+        mock_popen.assert_called_once_with(["echo", "hello"])
+        expected_signal = signal.CTRL_BREAK_EVENT if os.name == "nt" else signal.SIGINT
+        mock_process.send_signal.assert_called_once_with(expected_signal)
         mock_process.wait.assert_called_once_with(timeout=5)
         assert runner._process == mock_process
 
@@ -88,7 +91,8 @@ class TestSubprocessRunner:
         runner._stop_event.set()
         runner._loop()  # Should not raise exception
 
-        mock_process.send_signal.assert_called_once_with(signal.CTRL_BREAK_EVENT)
+        expected_signal = signal.CTRL_BREAK_EVENT if os.name == "nt" else signal.SIGINT
+        mock_process.send_signal.assert_called_once_with(expected_signal)
         mock_process.wait.assert_called_once_with(timeout=5)
 
     def test_cleanup_scenarios(self):

@@ -55,6 +55,32 @@ jobs:
           owl --silent env docs --validate --strict --output-format json desktop
           owl --silent env docs --validate --strict --output-format json gst
 
+  test-ubuntu:
+    runs-on: ubuntu-latest
+    name: Pytest on Ubuntu
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Virtual Environment
+        uses: ./.github/actions/setup-venv
+        with:
+          python-version: '3.11'
+
+      - name: Setup uv Environment
+        uses: ./.github/actions/setup-uv-env
+
+      - name: Install Dependencies
+        run: vuv install --dev
+
+      - name: Run pytest
+        run: pytest
+
   test-windows:
     runs-on: windows-latest
     name: Pytest on Windows

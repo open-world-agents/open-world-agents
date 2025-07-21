@@ -1,15 +1,21 @@
 import os
-from pathlib import Path
+
+import pytest
 
 
-def pytest_ignore_collect(collection_path: Path) -> bool:
+def pytest_runtest_setup(item):
     """
-    Return True to prevent pytest from collecting tests from the specified path.
+    Skip tests based on platform and environment conditions.
+    This will mark tests as "skipped" rather than ignoring them completely.
     """
-    str_path = collection_path.as_posix()
+    test_path = str(item.fspath)
 
-    # Check if running in GitHub Actions and if path contains projects/owa-env-gst
-    if os.environ.get("GITHUB_ACTIONS") == "true" and "projects/owa-env-gst" in str_path:
-        return True
+    # On Github Actions, skip tests that require physical display
+    if os.environ.get("GITHUB_ACTIONS") == "true" and "projects/owa-env-gst" in test_path:
+        pytest.skip("Skipping tests that require physical display on GitHub Actions")
 
-    return False
+    # Skip Windows-specific tests on non-Windows platforms
+    if os.name != "nt" and (
+        "projects/owa-env-gst" in test_path or "projects/owa-env-desktop" in test_path or "projects/ocap" in test_path
+    ):
+        pytest.skip("Skipping Windows-specific tests on non-Windows platform")
