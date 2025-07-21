@@ -3,7 +3,6 @@ Tests for the media.py module, focusing on image format encoding and decoding.
 """
 
 import base64
-import tempfile
 from pathlib import Path
 
 import cv2
@@ -230,11 +229,11 @@ class TestBgraArrayToPil:
 class TestValidateMediaPath:
     """Test the validate_media_path function."""
 
-    def test_validate_existing_file(self):
+    def test_validate_existing_file(self, tmp_path):
         """Test validation of existing file."""
-        with tempfile.NamedTemporaryFile(suffix=".png", delete=True) as tmp_file:
-            tmp_path = Path(tmp_file.name)
-            assert validate_media_path(str(tmp_path)) is True
+        test_file = tmp_path / "test.png"
+        test_file.touch()  # Create empty file
+        assert validate_media_path(str(test_file)) is True
 
     def test_validate_nonexistent_file(self):
         """Test validation of non-existent file."""
@@ -252,23 +251,20 @@ class TestValidateMediaPath:
 class TestLoadImageAsBgra:
     """Test the load_image_as_bgra function."""
 
-    def test_load_image_from_file(self, sample_bgra_array):
+    def test_load_image_from_file(self, sample_bgra_array, tmp_path):
         """Test loading image from file."""
-        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_file:
-            tmp_path = Path(tmp_file.name)
+        test_image = tmp_path / "test_image.png"
 
-            # Save sample array as PNG file
-            bgr_array = cv2.cvtColor(sample_bgra_array, cv2.COLOR_BGRA2BGR)
-            cv2.imwrite(str(tmp_path), bgr_array)
+        # Save sample array as PNG file
+        bgr_array = cv2.cvtColor(sample_bgra_array, cv2.COLOR_BGRA2BGR)
+        cv2.imwrite(str(test_image), bgr_array)
 
-            # Load it back
-            loaded_array = load_image_as_bgra(str(tmp_path))
+        # Load it back
+        loaded_array = load_image_as_bgra(str(test_image))
 
-            assert loaded_array.shape[:2] == sample_bgra_array.shape[:2]
-            assert loaded_array.shape[2] == 4  # BGRA
-            assert loaded_array.dtype == np.uint8
-
-        tmp_path.unlink()
+        assert loaded_array.shape[:2] == sample_bgra_array.shape[:2]
+        assert loaded_array.shape[2] == 4  # BGRA
+        assert loaded_array.dtype == np.uint8
 
     def test_load_image_from_data_uri(self, sample_bgra_array):
         """Test loading image from data URI."""

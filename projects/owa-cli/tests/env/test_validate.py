@@ -2,9 +2,6 @@
 Tests for the owl env validate command.
 """
 
-import tempfile
-from pathlib import Path
-
 import pytest
 import yaml
 from typer.testing import CliRunner
@@ -20,43 +17,37 @@ def runner():
 
 
 @pytest.fixture
-def sample_yaml_file():
+def sample_yaml_file(tmp_path):
     """Create a temporary YAML file for testing."""
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
-        yaml.dump(
-            {
-                "namespace": "test_plugin",
-                "version": "1.0.0",
-                "description": "Test plugin for validation",
-                "author": "Test Author",
-                "components": {
-                    "callables": {"hello": "test.module:hello_function", "add": "test.module:add_function"},
-                    "listeners": {"events": "test.module:EventListener"},
-                },
-            },
-            f,
-        )
-        yield f.name
-    Path(f.name).unlink()
+    yaml_file = tmp_path / "test_plugin.yaml"
+    yaml_content = {
+        "namespace": "test_plugin",
+        "version": "1.0.0",
+        "description": "Test plugin for validation",
+        "author": "Test Author",
+        "components": {
+            "callables": {"hello": "test.module:hello_function", "add": "test.module:add_function"},
+            "listeners": {"events": "test.module:EventListener"},
+        },
+    }
+    yaml_file.write_text(yaml.dump(yaml_content))
+    return str(yaml_file)
 
 
 @pytest.fixture
-def invalid_yaml_file():
+def invalid_yaml_file(tmp_path):
     """Create a temporary invalid YAML file for testing."""
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
-        yaml.dump(
-            {
-                "namespace": "invalid_plugin",
-                "version": "1.0.0",
-                "description": "Invalid plugin for testing",
-                "components": {
-                    "callables": {"bad_import": "invalid_format_no_colon", "good_import": "test.module:good_function"}
-                },
-            },
-            f,
-        )
-        yield f.name
-    Path(f.name).unlink()
+    yaml_file = tmp_path / "invalid_plugin.yaml"
+    yaml_content = {
+        "namespace": "invalid_plugin",
+        "version": "1.0.0",
+        "description": "Invalid plugin for testing",
+        "components": {
+            "callables": {"bad_import": "invalid_format_no_colon", "good_import": "test.module:good_function"}
+        },
+    }
+    yaml_file.write_text(yaml.dump(yaml_content))
+    return str(yaml_file)
 
 
 def test_validate_yaml_file_success(runner, sample_yaml_file):
@@ -108,28 +99,23 @@ def test_validate_verbose_mode(runner, sample_yaml_file):
     assert "Detected input type: yaml" in result.stdout
 
 
-def test_plugin_spec_from_yaml():
+def test_plugin_spec_from_yaml(tmp_path):
     """Test PluginSpec.from_yaml method directly."""
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
-        yaml.dump(
-            {
-                "namespace": "direct_test",
-                "version": "2.0.0",
-                "description": "Direct test plugin",
-                "components": {"callables": {"test": "test.module:test_function"}},
-            },
-            f,
-        )
-        f.flush()
+    yaml_file = tmp_path / "direct_test.yaml"
+    yaml_content = {
+        "namespace": "direct_test",
+        "version": "2.0.0",
+        "description": "Direct test plugin",
+        "components": {"callables": {"test": "test.module:test_function"}},
+    }
+    yaml_file.write_text(yaml.dump(yaml_content))
 
-        spec = PluginSpec.from_yaml(f.name)
-        assert spec.namespace == "direct_test"
-        assert spec.version == "2.0.0"
-        assert spec.description == "Direct test plugin"
-        assert "callables" in spec.components
-        assert spec.components["callables"]["test"] == "test.module:test_function"
-
-    Path(f.name).unlink()
+    spec = PluginSpec.from_yaml(str(yaml_file))
+    assert spec.namespace == "direct_test"
+    assert spec.version == "2.0.0"
+    assert spec.description == "Direct test plugin"
+    assert "callables" in spec.components
+    assert spec.components["callables"]["test"] == "test.module:test_function"
 
 
 def test_plugin_spec_from_entry_point():
