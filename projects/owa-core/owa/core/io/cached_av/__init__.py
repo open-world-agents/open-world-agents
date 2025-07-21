@@ -127,3 +127,6 @@ class MockedInputContainer(InputContainerMixin):
         self.refs = max(0, self.refs - 1)
         if self.refs == 0:
             _explicit_cleanup(self)
+
+
+__all__ = ["open", "cleanup_cache"]
