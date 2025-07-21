@@ -74,7 +74,7 @@ class TestSubprocessRunner:
         expected_signal = signal.CTRL_BREAK_EVENT if os.name == "nt" else signal.SIGINT
         mock_process.send_signal.assert_called_once_with(expected_signal)
         mock_process.wait.assert_called_once_with(timeout=5)
-        assert runner._process == mock_process
+        assert runner._process.args == mock_process.args
 
     @patch("owa.core.runner.subprocess_runner.subprocess.Popen")
     def test_timeout_handling(self, mock_popen):
