@@ -210,6 +210,8 @@ for sample in tqdm(dataset.take(30)):
 
 ### Performance Metrics
 
+To enable logging, set `logger.enable("owa.data.fsl_dataset")` for loguru logger.
+
 ```
 FSL[30] | Total: 3.2s/s, 3,274t/s, 44.8i/s, 49.5Mb/s | EMA: 3.0s/s, 3,073t/s, 42.0i/s, 46.5Mb/s
 ```
