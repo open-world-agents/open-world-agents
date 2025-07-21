@@ -305,7 +305,7 @@ class TestScreenCaptured:
         screen_msg = ScreenCaptured(utc_ns=1741608540328534500, media_ref={"uri": "videos/frame.jpg"})
 
         # Resolve against MCAP file path
-        result = screen_msg.resolve_relative_path("/data/recordings/session.mcap")
+        result = screen_msg.resolve_relative_path("/data/recordings")
 
         # Verify path resolution
         assert result is screen_msg  # Returns self for chaining

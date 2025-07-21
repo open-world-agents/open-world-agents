@@ -79,8 +79,8 @@ class MediaRef(BaseModel):
             return self  # Already absolute or not a local path
 
         base_path_obj = Path(base_path)
-        # Special handling for OWAMcap's paired mcap/mkv format
-        if base_path_obj.suffix == ".mcap" and base_path_obj.stem == Path(self.uri).stem:
+        # If base path is an MCAP file, use its parent directory
+        if base_path_obj.suffix == ".mcap":
             base_path_obj = base_path_obj.parent
 
         resolved_path = (base_path_obj / self.uri).as_posix()
