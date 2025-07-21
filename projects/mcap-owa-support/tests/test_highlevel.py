@@ -10,7 +10,6 @@ These tests focus on the mcap-owa-support package's own functionality
 and use mock message types instead of importing from other packages.
 """
 
-import tempfile
 import warnings
 
 import pytest
@@ -41,10 +40,10 @@ class MockMouseEvent(OWAMessage):
 
 
 @pytest.fixture
-def temp_mcap_file():
-    with tempfile.TemporaryDirectory() as tmpdir:
-        file_path = tmpdir + "/output.mcap"
-        yield file_path
+def temp_mcap_file(tmp_path):
+    """Create a temporary MCAP file for testing."""
+    mcap_file = tmp_path / "output.mcap"
+    return str(mcap_file)
 
 
 def test_write_and_read_messages(temp_mcap_file):

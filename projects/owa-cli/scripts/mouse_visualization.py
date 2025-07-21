@@ -90,7 +90,7 @@ def main(
                             if current_time_seconds >= end_time:
                                 break
 
-                        msg = mcap_msg.decoded.resolve_external_path(mcap_path)
+                        msg = mcap_msg.decoded.resolve_relative_path(mcap_path)
                         image = msg.to_pil_image()
 
                         # Convert PIL image to numpy array (RGB format)

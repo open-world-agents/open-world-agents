@@ -2,8 +2,6 @@
 Tests for the plugin specification system (owa.core.plugin_spec).
 """
 
-import tempfile
-from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
@@ -160,7 +158,7 @@ class TestPluginSpecValidation:
 class TestPluginSpecYAML:
     """Test PluginSpec YAML functionality."""
 
-    def test_from_yaml_success(self):
+    def test_from_yaml_success(self, tmp_path):
         """Test loading PluginSpec from YAML file."""
         yaml_content = {
             "namespace": "test",
@@ -170,49 +168,37 @@ class TestPluginSpecYAML:
             "components": {"callables": {"test_func": "test.module:test_function"}},
         }
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
-            yaml.dump(yaml_content, f)
-            yaml_path = f.name
+        yaml_file = tmp_path / "test_plugin.yaml"
+        yaml_file.write_text(yaml.dump(yaml_content))
 
-        try:
-            plugin_spec = PluginSpec.from_yaml(yaml_path)
+        plugin_spec = PluginSpec.from_yaml(str(yaml_file))
 
-            assert plugin_spec.namespace == "test"
-            assert plugin_spec.version == "1.0.0"
-            assert plugin_spec.description == "Test plugin"
-            assert plugin_spec.author == "Test Author"
-            assert "callables" in plugin_spec.components
-            assert plugin_spec.components["callables"]["test_func"] == "test.module:test_function"
-        finally:
-            Path(yaml_path).unlink()
+        assert plugin_spec.namespace == "test"
+        assert plugin_spec.version == "1.0.0"
+        assert plugin_spec.description == "Test plugin"
+        assert plugin_spec.author == "Test Author"
+        assert "callables" in plugin_spec.components
+        assert plugin_spec.components["callables"]["test_func"] == "test.module:test_function"
 
-    def test_from_yaml_error_cases(self):
+    def test_from_yaml_error_cases(self, tmp_path):
         """Test from_yaml with various error scenarios."""
         # File not found
         with pytest.raises(FileNotFoundError, match="YAML file not found"):
             PluginSpec.from_yaml("nonexistent.yaml")
 
         # Invalid YAML content
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
-            f.write("invalid: yaml: content: [")
-            yaml_path = f.name
-        try:
-            with pytest.raises(yaml.YAMLError, match="Invalid YAML"):
-                PluginSpec.from_yaml(yaml_path)
-        finally:
-            Path(yaml_path).unlink()
+        invalid_yaml_file = tmp_path / "invalid.yaml"
+        invalid_yaml_file.write_text("invalid: yaml: content: [")
+        with pytest.raises(yaml.YAMLError, match="Invalid YAML"):
+            PluginSpec.from_yaml(str(invalid_yaml_file))
 
         # Non-dictionary YAML content
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
-            yaml.dump(["not", "a", "dictionary"], f)
-            yaml_path = f.name
-        try:
-            with pytest.raises(ValueError, match="YAML file must contain a dictionary"):
-                PluginSpec.from_yaml(yaml_path)
-        finally:
-            Path(yaml_path).unlink()
+        non_dict_yaml_file = tmp_path / "non_dict.yaml"
+        non_dict_yaml_file.write_text(yaml.dump(["not", "a", "dictionary"]))
+        with pytest.raises(ValueError, match="YAML file must contain a dictionary"):
+            PluginSpec.from_yaml(str(non_dict_yaml_file))
 
-    def test_to_yaml_success(self):
+    def test_to_yaml_success(self, tmp_path):
         """Test saving PluginSpec to YAML file."""
         plugin_spec = PluginSpec(
             namespace="test",
@@ -222,34 +208,32 @@ class TestPluginSpecYAML:
             components={"callables": {"test_func": "test.module:test_function"}},
         )
 
-        with tempfile.TemporaryDirectory() as temp_dir:
-            yaml_path = Path(temp_dir) / "test_plugin.yaml"
+        yaml_path = tmp_path / "test_plugin.yaml"
 
-            plugin_spec.to_yaml(yaml_path)
+        plugin_spec.to_yaml(yaml_path)
 
-            assert yaml_path.exists()
+        assert yaml_path.exists()
 
-            # Verify content by loading it back
-            with open(yaml_path, "r") as f:
-                loaded_data = yaml.safe_load(f)
+        # Verify content by loading it back
+        with open(yaml_path, "r") as f:
+            loaded_data = yaml.safe_load(f)
 
-            assert loaded_data["namespace"] == "test"
-            assert loaded_data["version"] == "1.0.0"
-            assert loaded_data["description"] == "Test plugin"
-            assert loaded_data["author"] == "Test Author"
-            assert "callables" in loaded_data["components"]
+        assert loaded_data["namespace"] == "test"
+        assert loaded_data["version"] == "1.0.0"
+        assert loaded_data["description"] == "Test plugin"
+        assert loaded_data["author"] == "Test Author"
+        assert "callables" in loaded_data["components"]
 
-    def test_to_yaml_creates_directories(self):
+    def test_to_yaml_creates_directories(self, tmp_path):
         """Test that to_yaml creates parent directories."""
         plugin_spec = PluginSpec(namespace="test", version="1.0.0", description="Test plugin", components={})
 
-        with tempfile.TemporaryDirectory() as temp_dir:
-            yaml_path = Path(temp_dir) / "subdir" / "test_plugin.yaml"
+        yaml_path = tmp_path / "subdir" / "test_plugin.yaml"
 
-            plugin_spec.to_yaml(yaml_path)
+        plugin_spec.to_yaml(yaml_path)
 
-            assert yaml_path.exists()
-            assert yaml_path.parent.exists()
+        assert yaml_path.exists()
+        assert yaml_path.parent.exists()
 
 
 class TestPluginSpecEntryPoint:
