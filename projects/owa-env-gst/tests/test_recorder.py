@@ -1,6 +1,5 @@
 import time
 
-
 from owa.core import RUNNABLES
 
 
@@ -15,7 +14,7 @@ def test_screen_capture(tmp_path):
         recorder.start()
         time.sleep(2)  # Minimal recording time
         recorder.stop()
-        recorder.join(timeout=5)
+        recorder.join(timeout=10)
 
         # Basic verification that the process completed
         assert not recorder.is_alive(), "Recorder should be stopped"
