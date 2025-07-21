@@ -51,7 +51,6 @@ from datasets import load_from_disk
 from transformers import (
     AutoModelForImageTextToText,
     AutoProcessor,
-    AutoTokenizer,
 )
 from trl import (
     ModelConfig,

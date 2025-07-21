@@ -28,7 +28,6 @@
 
 import base64
 import gc
-import os
 import threading
 from pathlib import Path
 from typing import Dict, Union
