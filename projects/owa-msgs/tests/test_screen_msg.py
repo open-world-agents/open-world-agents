@@ -15,7 +15,7 @@ import pytest
 import requests
 from PIL import Image
 
-from owa.core.io.video import VideoWriter, force_close_video_container
+from owa.core.io.video import VideoWriter, cached_av
 from owa.core.time import TimeUnits
 from owa.msgs.desktop.screen import MediaRef, ScreenCaptured
 
@@ -57,7 +57,7 @@ def sample_video_file():
 
         yield video_path, timestamps
 
-        force_close_video_container(video_path)
+        cached_av.cleanup_cache(video_path)
 
 
 @pytest.fixture
