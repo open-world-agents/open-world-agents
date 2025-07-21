@@ -5,7 +5,7 @@ Minimal, clean design focused on essential functionality.
 """
 
 import warnings
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Optional, Self, Tuple
 
 import cv2
@@ -22,7 +22,7 @@ class MediaRef(BaseModel):
 
     uri: str = Field(
         ...,
-        description="URI(data:image/png;base64,... | file:///path | http[s]://...) or file path(/absolute/path | relative/path)",
+        description="URI(data:image/png;base64,... | file:///path | http[s]://...) or posix file path(/absolute/path | relative/path)",
     )
     pts_ns: Optional[int] = Field(None, description="Video frame timestamp in nanoseconds")
 
@@ -51,7 +51,7 @@ class MediaRef(BaseModel):
         """True if this is a relative path (not absolute, not URI)."""
         if self.is_embedded or self.is_remote or self.uri.startswith("file://"):
             return False
-        return not Path(self.uri).is_absolute()
+        return not PurePosixPath(self.uri).is_absolute()
 
     def validate_uri(self) -> bool:
         """Validate that the URI exists (local files only)."""
@@ -78,20 +78,13 @@ class MediaRef(BaseModel):
         if not self.is_relative_path:
             return self  # Already absolute or not a local path
 
-        # Determine if base_path is a file or directory (must be MCAP file)
         base_path_obj = Path(base_path)
-        if base_path_obj.is_file():
-            if base_path_obj.suffix != ".mcap":
-                raise ValueError(f"Base path must be an MCAP file: {base_path}")
-            # Treat as file path, use parent directory
-            base = base_path_obj.parent
-        else:
-            # Treat as directory path
-            base = base_path_obj
+        # Special handling for OWAMcap's paired mcap/mkv format
+        if base_path_obj.suffix == ".mcap" and base_path_obj.stem == Path(self.uri).stem:
+            base_path_obj = base_path_obj.parent
 
-        resolved_path = (base / self.uri).resolve()
-
-        return MediaRef(uri=str(resolved_path), pts_ns=self.pts_ns)
+        resolved_path = (base_path_obj / self.uri).as_posix()
+        return MediaRef(uri=resolved_path, pts_ns=self.pts_ns)
 
 
 class ScreenCaptured(OWAMessage):

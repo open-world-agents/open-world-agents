@@ -3,9 +3,10 @@ Minimal tests for screen capture message with new clean API.
 """
 
 import errno
+import os
 import socket
 import tempfile
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from urllib.error import URLError
 
 import cv2
@@ -139,23 +140,50 @@ class TestMediaRef:
         ref_data = MediaRef(uri="data:image/png;base64,abc123")
         assert not ref_data.is_relative_path
 
-    def test_resolve_relative_path(self):
-        """Test relative path resolution."""
+    @pytest.mark.skipif(os.name == "nt", reason="POSIX-specific path test")
+    def test_resolve_relative_path_posix(self):
+        """Test relative path resolution on POSIX systems."""
         ref = MediaRef(uri="images/test.jpg")
 
-        # Test with file path as base
+        # Test with non-existent file path as base (treated as directory since file doesn't exist)
         resolved = ref.resolve_relative_path("/mcap/files/recording.mcap")
-        assert resolved.uri == str(Path("/mcap/files/images/test.jpg").resolve())
+        assert resolved.uri == "/mcap/files/recording.mcap/images/test.jpg"
         assert resolved.pts_ns == ref.pts_ns
 
         # Test with directory as base
         resolved2 = ref.resolve_relative_path("/mcap/files/")
-        assert resolved2.uri == str(Path("/mcap/files/images/test.jpg").resolve())
+        assert resolved2.uri == "/mcap/files/images/test.jpg"
 
         # Test with absolute path (should return self)
         ref_abs = MediaRef(uri="/absolute/path/test.jpg")
         resolved3 = ref_abs.resolve_relative_path("/mcap/files/recording.mcap")
         assert resolved3 is ref_abs
+
+    @pytest.mark.skipif(os.name != "nt", reason="Windows-specific path test")
+    def test_resolve_relative_path_windows(self):
+        """Test relative path resolution on Windows systems."""
+        ref = MediaRef(uri="images/test.jpg")
+
+        # Test with non-existent file path as base (treated as directory since file doesn't exist)
+        resolved = ref.resolve_relative_path("C:/mcap/files/recording.mcap")
+        assert resolved.uri == "C:/mcap/files/recording.mcap/images/test.jpg"
+        assert resolved.pts_ns == ref.pts_ns
+
+        # Test with directory as base (Windows style)
+        resolved2 = ref.resolve_relative_path("C:/mcap/files/")
+        assert resolved2.uri == "C:/mcap/files/images/test.jpg"
+
+        # Test with Windows absolute path - NOTE: Due to PurePosixPath usage in is_relative_path,
+        # Windows paths like "C:/..." are treated as relative, so they get resolved
+        ref_abs = MediaRef(uri="C:/absolute/path/test.jpg")
+        resolved3 = ref_abs.resolve_relative_path("C:/mcap/files/recording.mcap")
+        # This will be resolved as a relative path due to the PurePosixPath limitation
+        assert resolved3.uri == "C:/absolute/path/test.jpg"
+
+        # Test with backslash paths (Windows native)
+        resolved4 = ref.resolve_relative_path(r"C:\mcap\files\recording.mcap")
+        # The method always returns forward slashes due to as_posix()
+        assert resolved4.uri == "C:/mcap/files/recording.mcap/images/test.jpg"
 
     def test_direct_constructor(self):
         """Test MediaRef direct constructor."""
@@ -285,7 +313,7 @@ class TestScreenCaptured:
 
         # Verify path resolution
         assert result is screen_msg  # Returns self for chaining
-        expected_path = str(Path("/data/recordings/videos/frame.jpg").resolve())
+        expected_path = PurePosixPath("/data/recordings/videos/frame.jpg").as_posix()
         assert screen_msg.media_ref.uri == expected_path
 
         # Test with no media_ref (should not crash)
@@ -511,7 +539,7 @@ class TestScreenCaptured:
         screen_msg.resolve_external_path("/data/recordings/session.mcap")
 
         # Should have resolved path
-        expected_path = str(Path("/data/recordings/videos/frame.jpg").resolve())
+        expected_path = PurePosixPath("/data/recordings/videos/frame.jpg").as_posix()
         assert screen_msg.media_ref.uri == expected_path
 
         # Test with no media_ref (should not crash)
