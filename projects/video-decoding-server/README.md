@@ -26,6 +26,8 @@ High-performance video frame extraction service using NVIDIA Triton Inference Se
 
 - [perf_analyzer Guide](https://github.com/triton-inference-server/perf_analyzer/blob/main/README.md)
 
+> **Note**: For optimal performance, match CPU cores with instance group count (1:1 ratio). Set `cpus: '16.0'` in docker-compose.yml and `count: 16` in config.pbtxt. Additional CPUs beyond instance count don't improve throughput.
+
 ## Options
 
 ### Client:
@@ -145,6 +147,8 @@ A LitServe-based implementation is available in [`scripts/litserve/`](scripts/li
 - **Cons**: 5-6x lower throughput compared to Triton Inference Server
 - **Use case**: Suitable for experimentation and scenarios where ~100ms latency is acceptable
 
+
+
 ## Features
 
 - **High throughput**: 5.5+ Gbps sustained performance with NVIDIA Triton + PyAV
@@ -152,6 +156,7 @@ A LitServe-based implementation is available in [`scripts/litserve/`](scripts/li
 - **Production-ready**: 617+ requests/second with sub-140ms P99 latency
 - **Comprehensive metrics**: P95/P99 latencies, throughput, bitrate analysis
 - **Resource management**: Configurable process limits and dynamic scaling
+- **Optimized CPU allocation**: 1:1 CPU-to-instance ratio for maximum efficiency
 
 ## References
 

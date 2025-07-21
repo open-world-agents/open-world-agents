@@ -21,10 +21,17 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: "nvidia"
-    #           count: all
-    #           capabilities: [gpu]
+    deploy:
+      resources:
+        # CPU Strategy: Match CPU count with instance_group count (1:1 ratio)
+        limits:
+          cpus: '16.0' # Match instance_group count in config.pbtxt
+          memory: 16G
+        reservations:
+          cpus: '16.0' # Same as limits for consistent performance
+          memory: 8G
+        # GPU support (uncomment if needed)
+        #   devices:
+        #     - driver: "nvidia"
+        #       count: all
+        #       capabilities: [gpu]
