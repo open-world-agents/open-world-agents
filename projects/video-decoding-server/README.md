@@ -27,7 +27,7 @@ High-performance video frame extraction service using NVIDIA Triton Inference Se
    python client.py video.mp4 10.5 -o frame.jpg
    ```
 
-3. Benchmark performance (see [Usage](#usage) for options):
+3. Benchmark performance (see [Options](#options) for options):
    ```bash
    # Using perf_analyzer (recommended)
    docker run -it --net=host -v .:/workspace nvcr.io/nvidia/tritonserver:25.06-py3-sdk \
