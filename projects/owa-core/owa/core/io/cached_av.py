@@ -67,7 +67,10 @@ def cleanup_cache(container: Optional["MockedInputContainer" | VideoPathType] = 
 
 def _retrieve_cache(file: VideoPathType):
     """Get or create cached container and update usage tracking."""
-    container = get_cache().get(file, MockedInputContainer(file))
+    cache = get_cache()
+    if file not in cache:
+        cache[file] = MockedInputContainer(file)
+    container = cache[file]
     container.refs += 1
     container.last_used = time.time()
     return container
