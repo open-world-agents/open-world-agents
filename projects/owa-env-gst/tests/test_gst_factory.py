@@ -2,8 +2,6 @@ import os
 
 import pytest
 
-import owa.env.gst  # must import 'gst' to enable GST_PLUGIN_PATH environment variable setup
-
 
 @pytest.fixture
 def gstreamer():
@@ -13,10 +11,12 @@ def gstreamer():
     gi.require_version("Gst", "1.0")
     from gi.repository import Gst
 
+    from owa.env.gst import pipeline_builder
+
     if not Gst.is_initialized():
         Gst.init(None)
 
-    return Gst, owa.env.gst.pipeline_builder
+    return Gst, pipeline_builder
 
 
 def check_plugin(gst, plugin_name):
