@@ -15,31 +15,43 @@ from typer.testing import CliRunner
 @pytest.fixture(scope="session", autouse=True)
 def mock_github_api_calls():
     """
-    Automatically mock all GitHub API calls during test execution.
+    Automatically mock GitHub API calls during test execution.
 
     This fixture runs for the entire test session and prevents any real
-    GitHub API calls that could cause rate limiting issues.
+    GitHub API calls that could cause rate limiting issues. It only mocks
+    specific GitHub API endpoints to avoid interfering with other HTTP requests.
     """
-    # Mock the main OWA version check API call
-    with patch("owa.cli.utils.requests.get") as mock_get:
-        # Set up mock response for OWA version check
-        mock_response = MagicMock()
-        mock_response.json.return_value = {"tag_name": "v0.4.2"}
-        mock_response.raise_for_status.return_value = None
-        mock_get.return_value = mock_response
+    # Store the original requests.get function before any patching
+    import requests
 
-        # Also mock the mcap CLI version check API call
-        with patch("owa.cli.mcap.info.requests.get") as mock_mcap_get:
-            # Set up mock response for mcap CLI version check
-            mock_mcap_response = MagicMock()
-            mock_mcap_response.json.return_value = [
+    original_requests_get = requests.get
+
+    def mock_requests_get(url, *args, **kwargs):
+        """Mock requests.get but only for GitHub API calls."""
+        # Mock OWA version check API call
+        if url == "https://api.github.com/repos/open-world-agents/open-world-agents/releases/latest":
+            mock_response = MagicMock()
+            mock_response.json.return_value = {"tag_name": "v0.4.2"}
+            mock_response.raise_for_status.return_value = None
+            return mock_response
+
+        # Mock mcap CLI version check API call
+        elif url == "https://api.github.com/repos/foxglove/mcap/releases":
+            mock_response = MagicMock()
+            mock_response.json.return_value = [
                 {"tag_name": "releases/mcap-cli/v0.0.54"},
                 {"tag_name": "releases/rust/v0.19.0"},
                 {"tag_name": "releases/mcap-cli/v0.0.53"},
             ]
-            mock_mcap_response.raise_for_status.return_value = None
-            mock_mcap_get.return_value = mock_mcap_response
+            mock_response.raise_for_status.return_value = None
+            return mock_response
 
+        # For any other URL, make the actual request using the original function
+        return original_requests_get(url, *args, **kwargs)
+
+    # Mock both modules' requests.get calls
+    with patch("owa.cli.utils.requests.get", side_effect=mock_requests_get):
+        with patch("owa.cli.mcap.info.requests.get", side_effect=mock_requests_get):
             yield
 
 
