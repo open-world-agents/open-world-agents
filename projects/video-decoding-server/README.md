@@ -1,6 +1,19 @@
 # Video Decoding Server
 
-High-performance video frame extraction service using NVIDIA Triton Inference Server with PyAV backend, achieving 5.5+ Gbps throughput.
+High-performance video frame extraction service using NVIDIA Triton Inference Server with PyAV backend.
+
+**Performance (Multi-Instance count=16, cpus=16, PyAV backend):**
+
+| Concurrency | Throughput | Bitrate | P99 Latency |
+|-------------|------------|---------|-------------|
+| 1 | 17.6 r/s | 155.7 Mbps | 84.1 ms |
+| 4 | 80.6 r/s | 713.1 Mbps | 80.7 ms |
+| 16 | 421.6 r/s | 3730.0 Mbps | 69.2 ms |
+| 64 | 617.6 r/s | 5464.1 Mbps | 135.8 ms |
+
+> **Note**: Bitrate measures the total size of raw frame data (in megabits per second) that the server outputs. It's calculated from the numpy array bytes of extracted frames (e.g., 1920x1080x3 RGB = ~6MB per frame). Higher bitrate means the server can process and return more frame data per second.
+
+**Theoretical Performance Ceiling**: Network loopback (iperf3) typically achieves ~60 Gbps, indicating substantial headroom beyond current 5.5 Gbps performance. The bottleneck is video decoding computation, not network or memory bandwidth.
 
 ## Quick Start
 
@@ -146,17 +159,6 @@ A LitServe-based implementation is available in [`scripts/litserve/`](scripts/li
 - **Pros**: Easy setup (`pip install litserve`), single-file implementation, built-in dynamic batching
 - **Cons**: 5-6x lower throughput compared to Triton Inference Server
 - **Use case**: Suitable for experimentation and scenarios where ~100ms latency is acceptable
-
-
-
-## Features
-
-- **High throughput**: 5.5+ Gbps sustained performance with NVIDIA Triton + PyAV
-- **Multiple backends**: cv2, pyav, torchcodec with comprehensive performance testing
-- **Production-ready**: 617+ requests/second with sub-140ms P99 latency
-- **Comprehensive metrics**: P95/P99 latencies, throughput, bitrate analysis
-- **Resource management**: Configurable process limits and dynamic scaling
-- **Optimized CPU allocation**: 1:1 CPU-to-instance ratio for maximum efficiency
 
 ## References
 
