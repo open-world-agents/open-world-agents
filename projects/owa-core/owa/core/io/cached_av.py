@@ -1,5 +1,6 @@
 import atexit
 import os
+import threading
 import time
 from pathlib import Path
 from typing import Literal, Optional, Union, overload
@@ -12,8 +13,34 @@ from .input_container_mixin import InputContainerMixin
 DEFAULT_CACHE_SIZE = 10
 
 VideoPathType = Union[str, os.PathLike, Path]
-# Global cache for video containers to avoid repeated file opening
-_cache: dict[VideoPathType, "MockedInputContainer"] = {}
+
+
+class _ProcessCache:
+    """Thread-safe cache for video containers within a single process."""
+
+    def __init__(self):
+        self._cache: dict[VideoPathType, "MockedInputContainer"] = {}
+        self._lock = threading.RLock()
+        self._pid = os.getpid()
+
+    def get_cache(self) -> dict[VideoPathType, "MockedInputContainer"]:
+        """Get the cache dictionary, ensuring it's valid for current process."""
+        current_pid = os.getpid()
+        with self._lock:
+            if self._pid != current_pid:
+                # Process was forked, reset cache
+                self._cache.clear()
+                self._pid = current_pid
+            return self._cache
+
+
+# Process-level cache
+_process_cache = _ProcessCache()
+
+
+def get_cache() -> dict[VideoPathType, "MockedInputContainer"]:
+    """Get cache for current process."""
+    return _process_cache.get_cache()
 
 
 @overload
@@ -40,7 +67,7 @@ def cleanup_cache(container: Optional["MockedInputContainer" | VideoPathType] = 
 
 def _retrieve_cache(file: VideoPathType):
     """Get or create cached container and update usage tracking."""
-    container = _cache.get(file, MockedInputContainer(file))
+    container = get_cache().get(file, MockedInputContainer(file))
     container.refs += 1
     container.last_used = time.time()
     return container
@@ -49,15 +76,15 @@ def _retrieve_cache(file: VideoPathType):
 def _explicit_cleanup(container: Optional["MockedInputContainer" | VideoPathType] = None):
     """Force cleanup of specific container or all containers."""
     if container is None:
-        for container in _cache.values():
+        for container in get_cache().values():
             _explicit_cleanup(container)
     else:
         if isinstance(container, VideoPathType):
-            container = _cache.get(container)
+            container = get_cache().get(container)
             if container is None:
                 return
         container._container.close()
-        _cache.pop(container.file_path, None)
+        get_cache().pop(container.file_path, None)
 
 
 # Ensure all containers are closed on program exit
@@ -67,14 +94,14 @@ atexit.register(_explicit_cleanup)
 def _implicit_cleanup():
     """Cleanup refs == 0 first and then cleanup the oldest containers."""
     # Remove unreferenced containers first
-    to_remove = [path for path, container in _cache.items() if container.refs == 0]
+    to_remove = [path for path, container in get_cache().items() if container.refs == 0]
     for path in to_remove:
         _explicit_cleanup(path)
 
     # Remove oldest containers if cache exceeds size limit
-    if len(_cache) <= DEFAULT_CACHE_SIZE:
+    if len(get_cache()) <= DEFAULT_CACHE_SIZE:
         return
-    containers_sorted_by_last_used = sorted(_cache.values(), key=lambda x: x.last_used)
+    containers_sorted_by_last_used = sorted(get_cache().values(), key=lambda x: x.last_used)
     to_remove = containers_sorted_by_last_used[: len(containers_sorted_by_last_used) - DEFAULT_CACHE_SIZE]
     for container in to_remove:
         _explicit_cleanup(container)
