@@ -25,7 +25,7 @@ services:
       resources:
         # CPU Strategy: Match CPU count with instance_group count (1:1 ratio)
         limits:
-          cpus: '32.0' # 2x for margin
+          cpus: '32.0' # 2x of reservation to leave margin
           memory: 16G
         reservations:
           cpus: '16.0' # Same as instace_group count
