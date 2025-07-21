@@ -143,7 +143,7 @@ class TestMediaRef:
 
         # Test with non-existent file path as base (treated as directory since file doesn't exist)
         resolved = ref.resolve_relative_path("/mcap/files/recording.mcap")
-        assert resolved.uri == "/mcap/files/recording.mcap/images/test.jpg"
+        assert resolved.uri == "/mcap/files/images/test.jpg"
         assert resolved.pts_ns == ref.pts_ns
 
         # Test with directory as base
@@ -162,7 +162,7 @@ class TestMediaRef:
 
         # Test with non-existent file path as base (treated as directory since file doesn't exist)
         resolved = ref.resolve_relative_path("C:/mcap/files/recording.mcap")
-        assert resolved.uri == "C:/mcap/files/recording.mcap/images/test.jpg"
+        assert resolved.uri == "C:/mcap/files/images/test.jpg"
         assert resolved.pts_ns == ref.pts_ns
 
         # Test with directory as base (Windows style)
