@@ -2,12 +2,14 @@
 Subprocess management utility for running external processes as threads.
 
 This module provides tools to run and manage external processes in a thread-safe manner,
-with proper handling of termination signals and cleanup. The implementation is
-optimized for Windows environments with special handling for process group signals.
+with proper handling of termination signals and cleanup. The implementation supports
+both Windows and Unix-like systems with platform-specific optimizations.
 """
 
+import os
 import signal
 import subprocess
+from typing import List, Optional, Union
 
 from loguru import logger
 
@@ -57,40 +59,46 @@ class SubprocessRunner(RunnableThread):
 
     from owa.core.runner import SubprocessRunner
 
+
     def main():
         # Create a runner for a GStreamer pipeline
-        cmd = ["gst-launch-1.0.exe", "-e", "-v", "videotestsrc", "!", "videoconvert", "!", "autovideosink"]
+        cmd = (
+            "gst-launch-1.0 -e videotestsrc is-live=true ! videoconvert ! x264enc ! mp4mux ! filesink location=output.mp4"
+        ).split()
         runner = SubprocessRunner()
         try:
             # Configure and start the subprocess
             runner.configure(cmd)
-            runner.start()
-            print("subprocess started. Running for 2 seconds...")
-            time.sleep(2)
-            print("Stopping subprocess...")
-            runner.stop()
+            with runner.session:
+                time.sleep(5)
+            print("Subprocess completed.")
         except KeyboardInterrupt:
             print("Interrupted by user")
             runner.stop()
         finally:
             runner.join()
 
+
     if __name__ == "__main__":
         main()
     ```
     """
 
-    def on_configure(self, subprocess_args, stop_signal=signal.CTRL_BREAK_EVENT):
+    def on_configure(self, subprocess_args: Union[List[str], str], stop_signal: Optional[int] = None) -> None:
         """
         Configure the subprocess runner with command arguments.
 
         Args:
             subprocess_args: List or string containing the command and arguments
                              to be executed as a subprocess.
+            stop_signal: Signal to send when stopping the process. Defaults to
+                        CTRL_BREAK_EVENT on Windows, SIGINT on Unix-like systems.
         """
-        self._process = None  # Reference to the subprocess once started
+        self._process: Optional[subprocess.Popen] = None
         self.subprocess_args = subprocess_args
-        self._stop_signal = stop_signal
+
+        # Set default stop signal based on platform if not provided
+        self._stop_signal = stop_signal or (signal.CTRL_BREAK_EVENT if os.name == "nt" else signal.SIGINT)
 
     def loop(self):
         """
@@ -102,7 +110,7 @@ class SubprocessRunner(RunnableThread):
         finally:
             self.cleanup()
 
-    def _loop(self):
+    def _loop(self) -> None:
         """
         Internal implementation of the monitoring loop.
 
@@ -110,27 +118,30 @@ class SubprocessRunner(RunnableThread):
         1. If the subprocess is still running
         2. If a stop event has been triggered
 
-        When a stop is requested, sends a break event to allow clean termination.
+        When a stop is requested, sends the configured signal to allow clean termination.
         """
-        # Start the subprocess with CREATE_NEW_PROCESS_GROUP flag for proper signal handling in Windows
-        self._process = subprocess.Popen(self.subprocess_args, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
+        # Start the subprocess with platform-specific flags
+        if os.name == "nt":  # Windows
+            self._process = subprocess.Popen(self.subprocess_args, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
+        else:  # Unix-like systems
+            self._process = subprocess.Popen(self.subprocess_args)
 
         # Monitor the process and check for stop event
         while self._process.poll() is None:  # None indicates the process is still running
             if self._stop_event.is_set():
-                # Stop event is set, send CTRL_BREAK_EVENT to the process group for clean shutdown
+                # Stop event is set, send the configured signal for clean shutdown
                 self._process.send_signal(self._stop_signal)
                 break
             # Sleep briefly to avoid busy waiting while checking status
             self._stop_event.wait(0.5)
 
-        # Grants time for the process to stop signal gracefully
+        # Grant time for the process to handle the signal gracefully
         try:
             self._process.wait(timeout=5)
         except subprocess.TimeoutExpired:
-            ...
+            pass  # Process didn't terminate gracefully, cleanup will handle it
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """
         Clean up resources and ensure subprocess termination.
 
