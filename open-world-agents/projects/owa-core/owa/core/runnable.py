@@ -26,7 +26,7 @@ class RunnableSessionContextManager:
         self.runnable.stop()
         self.runnable.join()
 
-    def is_alive(self):
+    def is_alive(self) -> bool:
         return self.runnable.is_alive()
 
 
