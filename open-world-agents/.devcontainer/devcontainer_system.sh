@@ -4,7 +4,6 @@ set -e
 USERNAME=${1:-vscode}
 USER_UID=${2:-1000}
 USER_GID=${3:-1000}
-DOCKER_GID=${4:-998}
 
 echo "Setting up devcontainer for user: $USERNAME (UID: $USER_UID, GID: $USER_GID)"
 
