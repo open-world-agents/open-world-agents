@@ -28,9 +28,7 @@ def safe_temp_file(mode="wb", suffix=".mcap"):
     """
     Context manager for temporary files that works reliably on Windows.
 
-    This handles the Windows file locking issue by using delete=False
-    and cleaning up manually, while providing the same interface as
-    tempfile.NamedTemporaryFile with delete=True.
+    This handles the Windows file locking issue: https://stackoverflow.com/a/23212515
     """
     with tempfile.NamedTemporaryFile(mode=mode, suffix=suffix, delete=False) as temp_file:
         temp_path = Path(temp_file.name)
