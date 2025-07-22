@@ -181,7 +181,7 @@ class FSLDataset(Dataset):
             all_token_ids.extend(token_ids)
             tokens_so_far += total_token_count
 
-            # Load images if requested
+            # Load images if requested. TODO: parallelize this
             for image_json in images:
                 try:
                     # Deserialize ScreenCaptured from JSON
