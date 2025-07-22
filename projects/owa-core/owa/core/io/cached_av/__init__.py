@@ -1,4 +1,5 @@
 import atexit
+import gc
 import os
 import threading
 import time
@@ -7,6 +8,7 @@ from typing import Literal, Optional, Union, overload
 
 import av
 import av.container
+from loguru import logger
 
 from .input_container_mixin import InputContainerMixin
 
@@ -21,16 +23,10 @@ class _CacheContext:
     def __init__(self):
         self._cache: dict[VideoPathType, "MockedInputContainer"] = {}
         self._lock = threading.RLock()
-        self._pid = os.getpid()
 
     def __enter__(self) -> dict[VideoPathType, "MockedInputContainer"]:
         """Enter context manager and return locked cache."""
         self._lock.acquire()
-        current_pid = os.getpid()
-        if self._pid != current_pid:
-            # Process was forked, reset cache
-            self._cache.clear()
-            self._pid = current_pid
         return self._cache
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -74,7 +70,10 @@ def _retrieve_cache(file: VideoPathType):
     """Get or create cached container and update usage tracking."""
     with get_cache_context() as cache:
         if file not in cache:
+            logger.info(f"Caching video container for {file}")
             cache[file] = MockedInputContainer(file)
+        else:
+            logger.info(f"Using cached video container for {file}")
         container = cache[file]
         container.refs += 1
         container.last_used = time.time()
@@ -97,30 +96,37 @@ def _explicit_cleanup(container: Optional["MockedInputContainer" | VideoPathType
                 container = cache.get(container)
                 if container is None:
                     return
+            logger.info(f"Cleaning up cached video container for {container.file_path}")
             container._container.close()
             cache.pop(container.file_path, None)
 
+
+# Ensure no forked processes share the same container object.
+# PyAV's FFmpeg objects are not fork-safe, must not be forked.
+os.register_at_fork(before=lambda: (_explicit_cleanup(), gc.collect()))
 
 # Ensure all containers are closed on program exit
 atexit.register(_explicit_cleanup)
 
 
 def _implicit_cleanup():
-    """Cleanup refs == 0 first and then cleanup the oldest containers."""
+    """Cleanup unreferenced containers first and then cleanup the oldest containers."""
     with get_cache_context() as cache:
         if len(cache) <= DEFAULT_CACHE_SIZE:
             return
         # Remove unreferenced containers first
         to_remove = [path for path, container in cache.items() if container.refs == 0]
         for path in to_remove:
+            logger.info(f"Cleaning up unreferenced cached video container for {path}")
             _explicit_cleanup(path)
 
-        # Remove oldest containers if cache exceeds size limit
         if len(cache) <= DEFAULT_CACHE_SIZE:
             return
+        # Remove oldest containers until we reach the cache size limit
         containers_sorted_by_last_used = sorted(cache.values(), key=lambda x: x.last_used)
         to_remove = containers_sorted_by_last_used[: len(containers_sorted_by_last_used) - DEFAULT_CACHE_SIZE]
         for container in to_remove:
+            logger.info(f"Cleaning up oldest cached video container for {container.file_path}")
             _explicit_cleanup(container)
 
 
@@ -139,6 +145,8 @@ class MockedInputContainer(InputContainerMixin):
     def close(self):
         """Decrement reference count and cleanup if no longer referenced."""
         self.refs = max(0, self.refs - 1)
+        if self.refs == 0:
+            logger.info(f"Ref count reached 0 for cached video container for {self.file_path}")
 
 
 __all__ = ["open", "cleanup_cache"]
