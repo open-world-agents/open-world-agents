@@ -2,6 +2,10 @@
 
 This repository contains the closed-world-agents project with [open-world-agents](https://github.com/open-world-agents/open-world-agents) integrated as a git subtree.
 
+## Development with DevContainer
+
+See [.devcontainer/README.md](.devcontainer/README.md) for instructions.
+
 ## Subtree Management
 
 ### Setup
