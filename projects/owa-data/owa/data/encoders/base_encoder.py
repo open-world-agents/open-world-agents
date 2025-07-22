@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from mcap_owa.highlevel.reader import McapMessage
+from mcap_owa.highlevel import McapMessage
 from owa.msgs.desktop.screen import ScreenCaptured
 
 
