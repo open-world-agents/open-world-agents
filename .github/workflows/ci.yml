@@ -75,7 +75,7 @@ jobs:
           python-version: '3.11'
 
       - name: Setup uv Environment
-        uses: ./.github/actions/setup-uv-env
+        uses: ./.github/actions/setup-uv
 
       - name: Install Dependencies
         run: vuv install --dev
