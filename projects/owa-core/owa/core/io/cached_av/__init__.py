@@ -10,7 +10,7 @@ import av.container
 
 from .input_container_mixin import InputContainerMixin
 
-DEFAULT_CACHE_SIZE = 10
+DEFAULT_CACHE_SIZE = int(os.environ.get("AV_CACHE_SIZE", 10))
 
 VideoPathType = Union[str, os.PathLike, Path]
 
@@ -108,6 +108,8 @@ atexit.register(_explicit_cleanup)
 def _implicit_cleanup():
     """Cleanup refs == 0 first and then cleanup the oldest containers."""
     with get_cache_context() as cache:
+        if len(cache) <= DEFAULT_CACHE_SIZE:
+            return
         # Remove unreferenced containers first
         to_remove = [path for path, container in cache.items() if container.refs == 0]
         for path in to_remove:
@@ -136,12 +138,7 @@ class MockedInputContainer(InputContainerMixin):
 
     def close(self):
         """Decrement reference count and cleanup if no longer referenced."""
-        with get_cache_context() as cache:
-            self.refs = max(0, self.refs - 1)
-            if self.refs == 0:
-                # Cleanup immediately while holding the lock to prevent race conditions
-                self._container.close()
-                cache.pop(self.file_path, None)
+        self.refs = max(0, self.refs - 1)
 
 
 __all__ = ["open", "cleanup_cache"]
