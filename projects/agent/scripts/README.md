@@ -4,8 +4,6 @@ This directory contains scripts for pretraining vision-language models using FSL
 
 ## Quick Start
 
-### Using Configuration File (Recommended)
-
 ```bash
 # Multi-GPU with accelerate
 accelerate launch --config_file=accelerate_configs/multi_gpu.yaml \
