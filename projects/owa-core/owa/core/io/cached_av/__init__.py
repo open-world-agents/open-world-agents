@@ -106,7 +106,7 @@ atexit.register(_explicit_cleanup)
 
 
 def _implicit_cleanup():
-    """Cleanup refs == 0 first and then cleanup the oldest containers."""
+    """Cleanup unreferenced containers first and then cleanup the oldest containers."""
     with get_cache_context() as cache:
         if len(cache) <= DEFAULT_CACHE_SIZE:
             return
@@ -115,9 +115,9 @@ def _implicit_cleanup():
         for path in to_remove:
             _explicit_cleanup(path)
 
-        # Remove oldest containers if cache exceeds size limit
         if len(cache) <= DEFAULT_CACHE_SIZE:
             return
+        # Remove oldest containers until we reach the cache size limit
         containers_sorted_by_last_used = sorted(cache.values(), key=lambda x: x.last_used)
         to_remove = containers_sorted_by_last_used[: len(containers_sorted_by_last_used) - DEFAULT_CACHE_SIZE]
         for container in to_remove:
@@ -139,6 +139,10 @@ class MockedInputContainer(InputContainerMixin):
     def close(self):
         """Decrement reference count and cleanup if no longer referenced."""
         self.refs = max(0, self.refs - 1)
+        if self.refs == 0:
+            # this line intended to be commented out to ensure faster training, but without this line training hangs :(
+            # without this line video random read is accelerated by 1.5x
+            _explicit_cleanup(self)
 
 
 __all__ = ["open", "cleanup_cache"]
