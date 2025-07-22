@@ -1,51 +1,30 @@
-# OWA Docker Makefile - Simple Build Interface
+# OWA Docker Makefile
 
-.PHONY: help base runtime train all clean list
-
-# Default values
-REGISTRY ?=
-TAG ?= latest
-PUSH ?= false
+.PHONY: help build clean list
 
 help: ## Show help
 	@echo "🐳 OWA Docker Build"
 	@echo ""
-	@echo "Main workflow (base -> runtime -> train):"
-	@echo "  make base      # Build owa/base:latest"
-	@echo "  make runtime   # Build owa/runtime:latest"
-	@echo "  make train     # Build owa/train:latest"
-	@echo "  make all       # Build all images"
-	@echo ""
-	@echo "Custom builds:"
-	@echo "  make train FROM=owa/base:latest TAG=my-train:minimal"
-	@echo ""
-	@echo "Utilities:"
+	@echo "Commands:"
+	@echo "  make build     # Build all images (base → runtime → train)"
 	@echo "  make clean     # Remove all images"
 	@echo "  make list      # List built images"
 	@echo ""
-	@echo "Variables:"
-	@echo "  FROM=...       # Base image to build from"
-	@echo "  TAG=...        # Output image name:tag (like docker -t)"
-	@echo "  REGISTRY=...   # Docker registry prefix"
-	@echo "  PUSH=true      # Push after build"
-	@echo ""
-	@echo "For devcontainer builds, use .devcontainer/ directory"
+	@echo "Images built:"
+	@echo "  owa/base:ubuntu     - Ubuntu + Python"
+	@echo "  owa/base:cuda       - CUDA + Python"
+	@echo "  owa/base:latest     - Ubuntu + Python (alias)"
+	@echo "  owa/runtime:ubuntu  - Ubuntu + project deps"
+	@echo "  owa/runtime:cuda    - CUDA + project deps"
+	@echo "  owa/runtime:latest  - Ubuntu + project deps (alias)"
+	@echo "  owa/train:latest    - CUDA + ML packages"
 
-base: ## Build base image
-	./build.sh $(if $(REGISTRY),--registry $(REGISTRY)) $(if $(TAG),-t $(TAG)) $(if $(FROM),--from $(FROM)) $(if $(filter true,$(PUSH)),--push) base
-
-runtime: ## Build runtime image
-	./build.sh $(if $(REGISTRY),--registry $(REGISTRY)) $(if $(TAG),-t $(TAG)) $(if $(FROM),--from $(FROM)) $(if $(filter true,$(PUSH)),--push) runtime
-
-train: ## Build training image
-	./build.sh $(if $(REGISTRY),--registry $(REGISTRY)) $(if $(TAG),-t $(TAG)) $(if $(FROM),--from $(FROM)) $(if $(filter true,$(PUSH)),--push) train
-
-all: ## Build all images
-	./build.sh $(if $(REGISTRY),--registry $(REGISTRY)) $(if $(FROM),--from $(FROM)) $(if $(filter true,$(PUSH)),--push) all
+build: ## Build all images
+	./build.sh
 
 clean: ## Remove all images
 	@echo "🧹 Cleaning up..."
-	-docker rmi owa/train:latest owa/runtime:latest owa/base:latest 2>/dev/null || true
+	-docker rmi owa/train:latest owa/runtime:cuda owa/runtime:ubuntu owa/runtime:latest owa/base:cuda owa/base:ubuntu owa/base:latest 2>/dev/null || true
 
 list: ## List built images
 	@echo "📋 Built images:"
