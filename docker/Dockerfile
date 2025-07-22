@@ -1,7 +1,7 @@
-# Base Image - CUDA(nvidia/cuda) + Miniforge + uv/vuv
-# if devel needed: 12.6.3-devel-ubuntu24.04 (e.g. compiling flash-attn)
-# if cudnn needed: 12.6.3-cudnn-devel-ubuntu24.04
-FROM nvidia/cuda:12.6.3-runtime-ubuntu24.04
+# Base Image - Miniforge + uv/vuv
+# Can be built on Ubuntu (lightweight) or CUDA (for training pipeline)
+ARG BASE_IMAGE=ubuntu:24.04
+FROM ${BASE_IMAGE}
 
 # Build arguments
 ARG MINIFORGE_VERSION=latest

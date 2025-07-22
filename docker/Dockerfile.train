@@ -1,25 +1,31 @@
-# OWA Training Image - ML Training Environment with Flash Attention
-# Multi-stage build for efficient flash-attention compilation
+# OWA Training Image - ML Training Environment
+# Builds on top of owa/runtime:cuda with ML packages
 
 # Build arguments
-ARG RUNTIME_IMAGE=owa/runtime:latest
+ARG BASE_IMAGE=owa/runtime:cuda
 ARG CONDA_INSTALL_PATH=/opt/conda
 
 # =============================================================================
-# Stage 1: Base ML Environment
+# Stage 1: ML Base (inherits everything from runtime:cuda)
 # =============================================================================
-FROM ${RUNTIME_IMAGE} AS ml-base
+FROM ${BASE_IMAGE} AS ml-base
 
-# Install projects/agent package
+# Install ML packages and projects/agent package
 RUN --mount=type=cache,target=${HOME}/.cache/uv,sharing=locked \
-    --mount=type=cache,target=${HOME}/.cache/pip,sharing=locked \
+    . activate owa && \
+    vuv pip install torch torchvision
+
+RUN --mount=type=cache,target=${HOME}/.cache/uv,sharing=locked \
     --mount=type=bind,source=projects/owa-data,target=/workspace/projects/owa-data \
     . activate owa && \
-    vuv pip install torch torchvision tqdm einops && \
-    vuv pip install /workspace/projects/owa-data
+    vuv pip install tqdm einops /workspace/projects/owa-data
+
+RUN --mount=type=cache,target=${HOME}/.cache/uv,sharing=locked \
+    . activate owa && \
+    vuv pip install transformers datasets trl accelerate diffusers evaluate peft deepspeed wandb
 
 # =============================================================================
-# Stage 2: Flash Attention Builder
+# Stage 2: Flash Attention Builder (with CUDA build tools)
 # =============================================================================
 FROM nvidia/cuda:12.6.3-devel-ubuntu24.04 AS flash-attn-builder
 
