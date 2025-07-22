@@ -14,11 +14,15 @@ from .container_mixin import ContainerMixin
 
 
 class InputContainerMixin(ContainerMixin):
-    """Mixin that provides InputContainer interface by delegating to _container."""
+    """Mixin that provides InputContainer interface by delegating to _container.
+
+    Methods and properties copied from PyAV input container interface:
+    https://github.com/PyAV-Org/PyAV/blob/main/av/container/input.pyi#L14-L49
+    """
 
     _container: av.container.InputContainer  # type: ignore[override]
 
-    # InputContainer-specific properties
+    # InputContainer-specific properties (copied from PyAV input container interface)
     @property
     def start_time(self) -> int:
         return self._container.start_time
