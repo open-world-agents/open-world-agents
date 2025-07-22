@@ -48,7 +48,9 @@ git push owa ${SHA}:main
 ### Troubleshooting
 ```bash
 # Reset if subtree gets corrupted
+CURRENT_SHA=$(git rev-parse HEAD)
 git rm -r open-world-agents/
 git commit -m "Remove subtree for reset"
 git subtree add --prefix=open-world-agents owa main --squash
+git reset --soft ${CURRENT_SHA}
 ```
