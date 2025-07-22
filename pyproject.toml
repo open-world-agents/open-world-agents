@@ -5,7 +5,7 @@ description = "Proprietary extension of https://github.com/open-world-agents/ope
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "owa"
+    "owa",
 ]
 
 [dependency-groups]
@@ -25,3 +25,6 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 bypass-selection = true
+
+[tool.uv.sources]
+owa = { path = "open-world-agents", editable = true }
