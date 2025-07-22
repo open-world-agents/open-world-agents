@@ -1,23 +1,8 @@
 """
-Video I/O utilities for Open World Agents.
+Video I/O utilities.
 
 This module provides VideoReader and VideoWriter classes for reading and writing
 video files using PyAV. Both local files and remote URLs (HTTP/HTTPS) are supported.
-
-Examples:
-    Reading from a local file:
-        with VideoReader("video.mp4") as reader:
-            for frame in reader.read_frames():
-                # Process frame
-                pass
-
-    Reading from a remote URL:
-        with VideoReader("https://example.com/video.mp4") as reader:
-            frame = reader.read_frame(pts=1.5)  # Read frame at 1.5 seconds
-
-    Writing a video:
-        with VideoWriter("output.mp4", fps=30.0) as writer:
-            writer.write_frame(frame_array)
 """
 
 import gc
