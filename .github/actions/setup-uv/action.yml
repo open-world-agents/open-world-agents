@@ -1,4 +1,4 @@
-name: 'Setup uv Environment'
+name: 'Setup uv'
 description: 'Setup uv and virtual-uv (package installation should be done separately in workflow)'
 inputs:
   show-uv-cache-info:

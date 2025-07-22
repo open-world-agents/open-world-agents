@@ -1,5 +1,5 @@
 """
-Image loading utilities for Open World Agents.
+Image loading utilities.
 
 This module provides utilities for loading images from various sources including
 local files, URLs, and PIL Image objects.
