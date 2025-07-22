@@ -171,11 +171,15 @@ FSLDataset adds the following columns to the original event dataset:
 
 ```python
 from datasets import load_from_disk
+from loguru import logger
 from tqdm import tqdm
 from transformers import AutoTokenizer
 
 from owa.data.episode_tokenizer import EpisodeTokenizer
 from owa.data.fsl_dataset import FSLDataset
+
+# This line is to enable throughput logging from FSLDataset
+logger.enable("owa.data.fsl_dataset")
 
 # Load event dataset
 event_dataset = load_from_disk("/mnt/raid12/datasets/owa/data/super-hexagon-event")
@@ -204,7 +208,7 @@ print("[!] Printing FSL dataset...")
 for sample in dataset.take(1):
     print(f"{sample=}")
 
-for sample in tqdm(dataset.take(30)):
+for sample in tqdm(dataset.take(50)):
     ...
 ```
 
