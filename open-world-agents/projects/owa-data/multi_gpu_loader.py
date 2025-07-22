@@ -1,14 +1,14 @@
-#!/usr/bin/env python3
-# multi_gpu_loader.py
-
 import torch
 from accelerate import Accelerator
 from datasets import load_from_disk
+from loguru import logger
 from torch.utils.data import DataLoader
 from transformers import AutoProcessor
 
 from owa.data.episode_tokenizer import EpisodeTokenizer
 from owa.data.fsl_dataset import FSLDataset
+
+logger.enable("owa.data.fsl_dataset")
 
 
 def create_pretraining_collator(processor):

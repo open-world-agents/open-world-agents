@@ -1,3 +1,5 @@
+import concurrent.futures
+import os
 import time
 from dataclasses import dataclass
 
@@ -7,6 +9,8 @@ from loguru import logger
 from torch.utils.data import Dataset
 
 from owa.msgs.desktop.screen import ScreenCaptured
+
+is_decoding_server_available = "VIDEO_DECODING_SERVER_URL" in os.environ
 
 
 @dataclass
@@ -163,9 +167,9 @@ class FSLDataset(Dataset):
         start_event_index = np.searchsorted(self._cumsum, start_token_index, side="left")
 
         # Collect token_ids and images from events
-        all_token_ids = []
-        all_images = []
-        tokens_so_far = 0
+        all_token_ids: list[int] = []
+        all_images: list[ScreenCaptured] = []
+        tokens_so_far: int = 0
 
         for event_idx in range(start_event_index, len(self.dataset)):
             event = self.dataset[event_idx]
@@ -181,20 +185,29 @@ class FSLDataset(Dataset):
             all_token_ids.extend(token_ids)
             tokens_so_far += total_token_count
 
-            # Load images if requested
-            for image_json in images:
-                try:
-                    # Deserialize ScreenCaptured from JSON
-                    screen_captured: ScreenCaptured = ScreenCaptured.model_validate_json(
-                        image_json
-                    ).resolve_relative_path(episode_path)
-                    if self.config.load_images:
-                        # Convert to PIL Image
-                        screen_captured = screen_captured.to_pil_image()
-                    all_images.append(screen_captured)
-                except Exception as e:
-                    print(f"Warning: Could not load image: {e}")
-                    continue
+            # Deserialize ScreenCaptured from JSON
+            images = [
+                ScreenCaptured.model_validate_json(image_json).resolve_relative_path(episode_path)
+                for image_json in images
+            ]
+            all_images.extend(images)
+
+        if self.config.load_images:
+            # If we have a decoding server, use it to load all images in parallel
+            if is_decoding_server_available:
+                # TODO?: we may need to initialize ThreadPool once but it's initialization only takes 10.3 μs ± 275 ns per loop
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    futures = [executor.submit(image.to_pil_image) for image in all_images]
+                    for idx, future in enumerate(futures):
+                        try:
+                            # screen_captured.frame_arr is cached here so that next time we call to_pil_image, it's fast
+                            future.result(timeout=5)
+                        except Exception as e:
+                            all_images[idx].frame_arr = np.zeros((512, 512, 3), dtype=np.uint8)
+                            logger.error(f"Failed to load image: {e}")
+
+            # Now load the images
+            all_images = [screen_captured.to_pil_image() for screen_captured in all_images]  # type: ignore
 
         # Pad token_ids to max_sequence_length if needed
         if tokens_so_far < self.config.max_sequence_length:

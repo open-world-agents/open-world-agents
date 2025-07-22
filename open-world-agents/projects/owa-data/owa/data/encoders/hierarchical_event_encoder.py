@@ -16,7 +16,7 @@ from .base_encoder import BaseEventEncoder, BaseEventEncoderConfig
 class HierarchicalEventEncoderConfig(BaseEventEncoderConfig):
     """Configuration for HierarchicalEventEncoder."""
 
-    # ±2 seconds
+    # -2 to +2 seconds
     timestamp_range_ns: int = 4 * TimeUnits.SECOND
     # 4 seconds in 10ms intervals
     timestamp_bases: List[int] = field(default_factory=lambda: [4, 10, 10])

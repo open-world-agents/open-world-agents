@@ -1,4 +1,5 @@
 import base64
+import os
 from fractions import Fraction
 from pathlib import Path
 from typing import Literal, Optional
@@ -11,6 +12,8 @@ import PIL.Image
 from ..time import TimeUnits
 from .image import load_image
 from .video import VideoReader
+
+VIDEO_DECODING_SERVER_URL = os.environ.get("VIDEO_DECODING_SERVER_URL")  # e.g. 127.0.0.1:8000
 
 # ============================================================================
 # Core Image/Video Loading Functions
@@ -66,7 +69,12 @@ def load_video_frame_as_bgra(path_or_url: str, pts_ns: int, force_close: bool = 
             if not Path(path_or_url).exists():
                 raise FileNotFoundError(f"Video file not found: {path_or_url}")
 
-        # Load frame using VideoReader
+        # Use Triton decoding server if available
+        if VIDEO_DECODING_SERVER_URL:
+            rgb_array = extract_frame(path_or_url, pts_ns / TimeUnits.SECOND, server_url=VIDEO_DECODING_SERVER_URL)
+            return cv2.cvtColor(rgb_array, cv2.COLOR_RGB2BGRA)
+
+        # Use VideoReader
         pts_fraction = Fraction(pts_ns, TimeUnits.SECOND)
 
         with VideoReader(path_or_url, force_close=force_close) as reader:
@@ -78,6 +86,41 @@ def load_video_frame_as_bgra(path_or_url: str, pts_ns: int, force_close: bool = 
     except Exception as e:
         pts_seconds = pts_ns / 1_000_000_000
         raise ValueError(f"Failed to load frame at {pts_seconds:.3f}s from {path_or_url}: {e}") from e
+
+
+# ============================================================================
+# Triton Decoding Server Support
+# ============================================================================
+
+
+def extract_frame(video_path: str, time_sec: float, server_url: str = "127.0.0.1:8000") -> np.ndarray:
+    """
+    Extract a frame from video at specified time.
+
+    Args:
+        video_path: Path to video file
+        time_sec: Time in seconds
+        server_url: Triton server URL
+
+    Returns:
+        Frame as numpy array (H, W, 3)
+    """
+    import tritonclient.http as httpclient
+
+    client = httpclient.InferenceServerClient(url=server_url)
+
+    inputs = [httpclient.InferInput("video_path", [1], "BYTES"), httpclient.InferInput("time_sec", [1], "FP32")]
+    inputs[0].set_data_from_numpy(np.array([str(video_path).encode()], dtype=np.object_))
+    inputs[1].set_data_from_numpy(np.array([time_sec], dtype=np.float32))
+
+    outputs = [httpclient.InferRequestedOutput("frame")]
+    response = client.infer("video_decoder", inputs=inputs, outputs=outputs)
+
+    frame = response.as_numpy("frame")
+    if frame is None:
+        raise RuntimeError("Failed to extract frame from server response")
+
+    return frame
 
 
 # ============================================================================
