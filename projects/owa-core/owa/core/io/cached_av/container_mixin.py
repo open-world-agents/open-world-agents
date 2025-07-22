@@ -10,11 +10,15 @@ Real = int | float | Fraction
 
 
 class ContainerMixin:
-    """Mixin that provides Container interface by delegating to _container."""
+    """Mixin that provides Container interface by delegating to _container.
+
+    Methods and properties copied from PyAV container core interface:
+    https://github.com/PyAV-Org/PyAV/blob/main/av/container/core.pyi#L70-L98
+    """
 
     _container: av.container.Container
 
-    # Properties from Container
+    # Properties from Container (copied from PyAV container core interface)
     @property
     def writeable(self) -> bool:
         return self._container.writeable
