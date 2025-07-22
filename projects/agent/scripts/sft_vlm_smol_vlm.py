@@ -1,3 +1,5 @@
+# Copied from https://github.com/huggingface/trl/blob/main/examples/scripts/sft_vlm_smol_vlm.py
+
 # Copyright 2020-2025 The HuggingFace Team. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -39,6 +41,7 @@ For meta-llama/Llama-3.2-11B-Vision-Instruct, use: (requires transformers>=4.45.
 
 import torch
 from datasets import load_dataset
+
 # The class `AutoModelForVision2Seq` is deprecated and will be removed in v5.0
 from transformers import (
     AutoModelForImageTextToText,
