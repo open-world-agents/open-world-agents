@@ -48,6 +48,7 @@ from typing import Optional
 import torch
 from accelerate import Accelerator
 from datasets import load_from_disk
+from loguru import logger
 from transformers import (
     AutoModelForImageTextToText,
     AutoProcessor,
@@ -64,6 +65,9 @@ from trl import (
 
 from owa.data.episode_tokenizer import EpisodeTokenizer
 from owa.data.fsl_dataset import FSLDataset, FSLDatasetConfig
+
+# This line is to enable throughput logging from FSLDataset
+logger.enable("owa.data.fsl_dataset")
 
 
 @dataclass
