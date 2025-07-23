@@ -90,7 +90,7 @@ class PretrainScriptArguments(ScriptArguments):
     )
 
 
-def create_pretraining_collator(processor):
+def create_pretraining_collator(processor, max_sequence_length: int):
     def collate_fn(examples):
         # Extract data from FSLDataset format
         input_ids_list = []
@@ -106,10 +106,18 @@ def create_pretraining_collator(processor):
         input_ids = torch.tensor(input_ids_list, dtype=torch.long)
         attention_mask = torch.tensor(attention_mask_list, dtype=torch.long)
 
-        # For pretraining, labels are the same as input_ids (next token prediction)
+        if input_ids.shape[1] != max_sequence_length:
+            raise ValueError(
+                f"Input ids length ({input_ids.shape[1]}) does not match max_sequence_length ({max_sequence_length})"
+            )
+
         # We shift the labels inside the model, so we don't need to do it here
         labels = input_ids.clone()
-        labels[attention_mask == 0] = -100
+        # Ignore padding tokens in the loss computation
+        labels[labels == processor.tokenizer.pad_token_id] = -100
+        # Ignore the image token index in the loss computation
+        labels[labels == processor.tokenizer.image_token_id] = -100
+        assert (labels[attention_mask == 0] == -100).all()
 
         # Handle images - convert PIL images to tensors if needed. NOTE: smolvlm processor panic when image list is empty.
         if images_list:
@@ -161,7 +169,7 @@ def main():
 
     # Load processor and tokenizer
     processor = AutoProcessor.from_pretrained(
-        model_args.model_name_or_path, trust_remote_code=model_args.trust_remote_code
+        model_args.model_name_or_path, trust_remote_code=model_args.trust_remote_code, do_image_splitting=False
     )
     tokenizer = processor.tokenizer  # TODO: save this
 
@@ -190,6 +198,11 @@ def main():
                 accelerator.print(
                     f"Model max_position_embeddings: {original_max_pos}, using max_sequence_length: {script_args.max_sequence_length}"
                 )
+
+    # Freeze vision encoder TODO: make this configurable
+    # if hasattr(model, "model") and hasattr(model.model, "vision_model"):
+    #     for param in model.model.vision_model.parameters():
+    #         param.requires_grad = False
 
     # Print trainable parameters
     trainable_params = model.num_parameters(only_trainable=True)
@@ -257,7 +270,7 @@ def main():
     ################
     # Data Collator
     ################
-    data_collator = create_pretraining_collator(processor)
+    data_collator = create_pretraining_collator(processor, max_sequence_length=script_args.max_sequence_length)
 
     ################
     # Trainer
