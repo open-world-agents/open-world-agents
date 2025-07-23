@@ -176,6 +176,14 @@ def process_single_file(jsonl_file_path):
 
             # NOTE: we suppose the keys are pressed/released in the fastest observable timing of tick.
 
+            # release keys that are not in the current tick
+            for state_key in list(keyboard_state):
+                if state_key not in current_tick_keys:
+                    keyboard_state.remove(state_key)
+                    topic = "keyboard"
+                    event = KeyboardEvent(event_type="release", vk=VPT_KEYBOARD_VK_MAPPING[state_key])
+                    writer.write_message(event, topic=topic, timestamp=log_time)
+
             # press keys that are in the current tick, and not already pressed
             for key in current_tick_keys:
                 if key not in VPT_KEYBOARD_VK_MAPPING:
@@ -188,14 +196,6 @@ def process_single_file(jsonl_file_path):
                         topic = "keyboard"
                         event = KeyboardEvent(event_type="press", vk=VPT_KEYBOARD_VK_MAPPING[key])
                         writer.write_message(event, topic=topic, timestamp=log_time)
-
-            # release keys that are not in the current tick
-            for state_key in list(keyboard_state):
-                if state_key not in current_tick_keys:
-                    keyboard_state.remove(state_key)
-                    topic = "keyboard"
-                    event = KeyboardEvent(event_type="release", vk=VPT_KEYBOARD_VK_MAPPING[state_key])
-                    writer.write_message(event, topic=topic, timestamp=log_time)
 
             ## MOUSE EVENT
             dx = tick["mouse"]["dx"]
@@ -219,30 +219,6 @@ def process_single_file(jsonl_file_path):
             # 0 : left click, 1 : right click, 2 : middle click
             current_tick_buttons = tick["mouse"]["buttons"]
 
-            # press buttons that are in the current tick, and not already pressed
-            for button in current_tick_buttons:
-                if button in button_state:
-                    continue # already pressed
-                else:
-                    button_state.add(button)
-                    topic = "mouse"
-                    if button == 0:  # left click
-                        button_flags = RawMouseEvent.ButtonFlags.RI_MOUSE_LEFT_BUTTON_DOWN
-                    elif button == 1:  # right click
-                        button_flags = RawMouseEvent.ButtonFlags.RI_MOUSE_RIGHT_BUTTON_DOWN
-                    elif button == 2:  # middle click
-                        button_flags = RawMouseEvent.ButtonFlags.RI_MOUSE_MIDDLE_BUTTON_DOWN
-                    else:
-                        raise ValueError(f"Unknown mouse button {button} in VPT data.")
-
-                    event = RawMouseEvent(
-                        dx=0,
-                        dy=0,
-                        button_flags=button_flags,
-                        timestamp=log_time,
-                    )
-                    writer.write_message(event, topic=topic, timestamp=log_time)
-            
             # release buttons that are not in the current tick
             for state_button in list(button_state):
                 if state_button not in current_tick_buttons:
@@ -256,7 +232,31 @@ def process_single_file(jsonl_file_path):
                         button_flags = RawMouseEvent.ButtonFlags.RI_MOUSE_MIDDLE_BUTTON_UP
                     else:
                         raise ValueError(f"Unknown mouse button {state_button} in VPT data.")
-                    
+
+                    event = RawMouseEvent(
+                        dx=0,
+                        dy=0,
+                        button_flags=button_flags,
+                        timestamp=log_time,
+                    )
+                    writer.write_message(event, topic=topic, timestamp=log_time)
+
+            # press buttons that are in the current tick, and not already pressed
+            for button in current_tick_buttons:
+                if button in button_state:
+                    continue  # already pressed
+                else:
+                    button_state.add(button)
+                    topic = "mouse"
+                    if button == 0:  # left click
+                        button_flags = RawMouseEvent.ButtonFlags.RI_MOUSE_LEFT_BUTTON_DOWN
+                    elif button == 1:  # right click
+                        button_flags = RawMouseEvent.ButtonFlags.RI_MOUSE_RIGHT_BUTTON_DOWN
+                    elif button == 2:  # middle click
+                        button_flags = RawMouseEvent.ButtonFlags.RI_MOUSE_MIDDLE_BUTTON_DOWN
+                    else:
+                        raise ValueError(f"Unknown mouse button {button} in VPT data.")
+
                     event = RawMouseEvent(
                         dx=0,
                         dy=0,
