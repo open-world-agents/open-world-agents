@@ -229,8 +229,10 @@ class FSLDataset(Dataset):
 
         # Return dict with the processed data. TODO?: return `labels` also
         result = {
-            "input_ids": all_token_ids,
-            "attention_mask": [1 if token_id != self.config.pad_token_id else 0 for token_id in all_token_ids],
+            "input_ids": torch.tensor(all_token_ids, dtype=torch.long),
+            "attention_mask": torch.tensor(
+                [1 if token_id != self.config.pad_token_id else 0 for token_id in all_token_ids], dtype=torch.long
+            ),
             "images": all_images,
         }
 
