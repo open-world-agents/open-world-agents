@@ -14,49 +14,41 @@ logger.enable("owa.data.fsl_dataset")
 
 
 @line_profiler.profile
-def collate_fn(examples, processor):
+def collate_fn(examples):
     # batch = {
     #     "input_ids": torch.randint(0, 1000, (1, 1024), dtype=torch.long),
     #     "attention_mask": torch.randint(0, 1, (1, 1024), dtype=torch.long),
     #     "labels": torch.randint(0, 1000, (1, 1024), dtype=torch.long),
+    #     "image_hidden_states": torch.rand(112, 3, 512, 512, dtype=torch.float32),
     # }
     # return batch
 
-    # Extract data from FSLDataset format
     input_ids_list = []
     attention_mask_list = []
-    images_list = []
+    image_hidden_states_list = []
 
     for example in examples:
-        input_ids_list.append(example["token_ids"])
-        attention_mask_list.append(example["attention_mask"])
-        images_list.extend(example["images"])  # Flatten images from all examples
+        input_ids_list.append(example["input_ids"])  # [seq_len,]
+        attention_mask_list.append(example["attention_mask"])  # [seq_len,]
+        image_hidden_states_list.append(example["images"]["pixel_values"])  # [num_images, channels, height, width]
+        print(example["images"]["pixel_values"].shape, example["images"]["pixel_values"].dtype)
 
     # Convert to tensors
-    input_ids = torch.tensor(input_ids_list, dtype=torch.long)
-    attention_mask = torch.tensor(attention_mask_list, dtype=torch.long)
+    input_ids = torch.tensor(input_ids_list, dtype=torch.long)  # [batch_size, seq_len]
+    attention_mask = torch.tensor(attention_mask_list, dtype=torch.long)  # [batch_size, seq_len]
+    image_hidden_states = torch.concat(image_hidden_states_list)  # [total_num_images, channels, height, width]
 
     # For pretraining, labels are the same as input_ids (next token prediction)
     # We shift the labels inside the model, so we don't need to do it here
     labels = input_ids.clone()
     labels[attention_mask == 0] = -100
 
-    # Handle images - convert PIL images to tensors if needed. NOTE: smolvlm processor panic when image list is empty.
-    if images_list:
-        image_inputs = processor.image_processor(images_list, return_tensors="pt", device="cuda")
-        pixel_values = image_inputs.get("pixel_values").cpu()
-    else:
-        pixel_values = None
-
     batch = {
         "input_ids": input_ids,
         "attention_mask": attention_mask,
         "labels": labels,
+        "image_hidden_states": image_hidden_states,
     }
-
-    if pixel_values is not None:
-        batch["pixel_values"] = pixel_values
-
     return batch
 
 
@@ -84,7 +76,12 @@ def main():
         tokenized[split] = ep_tok.tokenize_event_dataset(ds)
 
     # 3) Wrap into your FSLDataset (only train shown here)
-    train_ds = FSLDataset(tokenized["train"], pad_token_id=processor.tokenizer.pad_token_id, max_sequence_length=1024)
+    train_ds = FSLDataset(
+        tokenized["train"],
+        image_processor=processor.image_processor,
+        pad_token_id=processor.tokenizer.pad_token_id,
+        max_sequence_length=1024,
+    )
     train_ds.prepare()
 
     # 4) Create a DataLoader
@@ -95,7 +92,7 @@ def main():
         num_workers=0,
         # persistent_workers=True,
         pin_memory=True,
-        collate_fn=lambda x: collate_fn(x, processor),
+        collate_fn=collate_fn,
     )
 
     # 5) (Optional) A dummy model so you can do a full prepare()
