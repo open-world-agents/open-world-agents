@@ -3,8 +3,14 @@
 # requires-python = ">=3.11"
 # dependencies = [
 #     "h5py",
+#     "mcap-owa-support",
+#     "numpy",
+#     "opencv-python",
+#     "owa-core",
+#     "owa-env-desktop",
 # ]
 # ///
+# NOTE: run with : `uv run convert_to_owamcap.py [INPUT_DIR] [OUTPUT_DIR]`
 """
 Convert Counter-Strike Deathmatch dataset to OWAMcap format.
 
