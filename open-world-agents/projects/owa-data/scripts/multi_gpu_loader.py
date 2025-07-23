@@ -5,7 +5,7 @@ from datasets import load_from_disk
 from loguru import logger
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from transformers import AutoProcessor, SmolVLMImageProcessor
+from transformers import AutoImageProcessor, AutoProcessor
 
 from owa.data.episode_tokenizer import EpisodeTokenizer
 from owa.data.fsl_dataset import FSLDataset
@@ -43,8 +43,8 @@ def collate_fn(examples, processor):
 
     # Handle images - convert PIL images to tensors if needed. NOTE: smolvlm processor panic when image list is empty.
     if images_list:
-        image_inputs = processor.image_processor(images_list, return_tensors="pt")
-        pixel_values = image_inputs.get("pixel_values")
+        image_inputs = processor.image_processor(images_list, return_tensors="pt", device="cuda")
+        pixel_values = image_inputs.get("pixel_values").cpu()
     else:
         pixel_values = None
 
@@ -69,7 +69,10 @@ def main():
     event_ds = load_from_disk("/mnt/raid12/datasets/owa/data/super-hexagon-event")
 
     print("▶ Loading tokenizer…")
-    processor = AutoProcessor.from_pretrained("HuggingFaceTB/SmolVLM2-2.2B-Base", do_image_splitting=False)
+    processor = AutoProcessor.from_pretrained("HuggingFaceTB/SmolVLM2-256M-Video-Instruct", do_image_splitting=False)
+    processor.image_processor = AutoImageProcessor.from_pretrained(
+        "HuggingFaceTB/SmolVLM2-256M-Video-Instruct", use_fast=True, do_image_splitting=False
+    )
 
     print("▶ Preparing EpisodeTokenizer…")
     ep_tok = EpisodeTokenizer(image_token="<image>")
