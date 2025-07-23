@@ -50,10 +50,11 @@ def _record_environment_metadata(writer: OWAMcapWriter) -> None:
         #     "MouseSpeed": 1,
         #     "MouseSensitivity": 10,
         # }
+        # TODO: check if settings are not default
         metadata_str_dict = {str(key): str(value) for key, value in metadata_dict.items()}
 
         writer.write_metadata("pointer_ballistics_config", metadata_str_dict)
-        logger.debug("Recorded pointer ballistics configuration as metadata", metadata_str_dict)
+        logger.debug(f"Recorded pointer ballistics configuration as metadata {metadata_str_dict}")
     except Exception as e:
         logger.warning(f"Failed to record pointer ballistics configuration: {e}")
 
@@ -62,8 +63,9 @@ def _record_environment_metadata(writer: OWAMcapWriter) -> None:
         import platform
 
         os_version = platform.platform()
-        writer.write_metadata("os_version", {"os_version": os_version})
-        logger.debug("Recorded OS version as metadata", {"os_version": os_version})
+        metadata_str_dict = {"os_version": os_version}
+        writer.write_metadata("os_version", metadata_str_dict)
+        logger.debug(f"Recorded OS version as metadata {metadata_str_dict}")
     except Exception as e:
         logger.warning(f"Failed to record OS version: {e}")
 
@@ -72,14 +74,16 @@ def _record_environment_metadata(writer: OWAMcapWriter) -> None:
         import win32api
         import win32con
 
-        devmode = win32api.EnumDisplaySettings(None, win32con.ENUM_CURRENT_SETTINGS)
+        devmode = win32api.EnumDisplaySettings(None, win32con.ENUM_CURRENT_SETTINGS)  # primary monitor
         metadata_dict = {
             "resolution": f"{devmode.PelsWidth}x{devmode.PelsHeight}",
             "refresh_rate": devmode.DisplayFrequency,
         }
+        # TODO: check if monitor is not 1080p or 1440p
+        # TODO: get multiple monitors
         metadata_str_dict = {str(key): str(value) for key, value in metadata_dict.items()}
         writer.write_metadata("display_config", metadata_str_dict)
-        logger.debug("Recorded display configuration as metadata", metadata_str_dict)
+        logger.debug(f"Recorded display configuration as metadata {metadata_str_dict}")
     except Exception as e:
         logger.warning(f"Failed to record display configuration: {e}")
 
