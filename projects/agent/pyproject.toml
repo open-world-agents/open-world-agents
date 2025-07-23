@@ -23,7 +23,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.uv.sources]
-owa-data = { path = "../../open-world-agents/projects/owa-data" }
+owa-data = { path = "../../open-world-agents/projects/owa-data", editable = true }
 litgpt = { git = "https://github.com/Lightning-AI/litgpt" }
 
 [project.scripts]

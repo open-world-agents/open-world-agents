@@ -20,7 +20,7 @@ trust_remote_code: false  # (default: False)
 # ============================================================================
 # TRAINING HYPERPARAMETERS
 # ============================================================================
-num_train_epochs: 3  # (default: 3.0)
+num_train_epochs: 10  # (default: 3.0)
 per_device_train_batch_size: 8  # (default: 8)
 gradient_accumulation_steps: 1  # (default: 1)
 learning_rate: 3e-4  # (default: 2e-5)
@@ -41,7 +41,7 @@ lr_scheduler_kwargs:
 # ============================================================================
 bf16: true  # (default: False for TrainingArguments)
 tf32: true  # (default: None)
-gradient_checkpointing: true  # (default: False)
+gradient_checkpointing: false  # (default: False)
 gradient_checkpointing_kwargs:
   use_reentrant: false  # (default: None, would use True if set)
 
@@ -61,7 +61,7 @@ run_name: "smolvlm-256m-pretrain-fsl"  # (default: None)
 dataset_kwargs:
   skip_prepare_dataset: true  # (default: None/False) - required for custom dataset
 remove_unused_columns: false  # (default: True) - required for custom dataset
-dataloader_num_workers: 4  # (default: 0)
+dataloader_num_workers: 16    # (default: 0)
 
 # ============================================================================
 # EVALUATION SETTINGS
