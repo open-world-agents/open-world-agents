@@ -44,19 +44,52 @@ def _record_environment_metadata(writer: OWAMcapWriter) -> None:
 
         # Convert to Dict[str, str] as required by MCAP
         metadata_dict = ballistics_config.model_dump(by_alias=True)
+        # defaults = {
+        #     "MouseThreshold1": 6,
+        #     "MouseThreshold2": 10,
+        #     "MouseSpeed": 1,
+        #     "MouseSensitivity": 10,
+        # }
         metadata_str_dict = {str(key): str(value) for key, value in metadata_dict.items()}
 
         writer.write_metadata("pointer_ballistics_config", metadata_str_dict)
-        logger.debug("Recorded pointer ballistics configuration as metadata")
+        logger.debug("Recorded pointer ballistics configuration as metadata", metadata_str_dict)
     except Exception as e:
         logger.warning(f"Failed to record pointer ballistics configuration: {e}")
 
-    # TODO: Add more environment metadata here:
-    # - System information (OS version, hardware specs)
-    # - Display configuration (resolution, DPI, multiple monitors)
-    # - Audio configuration (devices, sample rates)
-    # - Input device configuration (keyboard layout, mouse settings)
-    # - Game/application specific settings
+    # Record OS version
+    try:
+        import platform
+
+        os_version = platform.platform()
+        writer.write_metadata("os_version", {"os_version": os_version})
+        logger.debug("Recorded OS version as metadata", {"os_version": os_version})
+    except Exception as e:
+        logger.warning(f"Failed to record OS version: {e}")
+
+    # Record Display Configuration
+    try:
+        import win32api
+        import win32con
+
+        devmode = win32api.EnumDisplaySettings(None, win32con.ENUM_CURRENT_SETTINGS)
+        metadata_dict = {
+            "resolution": f"{devmode.PelsWidth}x{devmode.PelsHeight}",
+            "refresh_rate": devmode.DisplayFrequency,
+        }
+        metadata_str_dict = {str(key): str(value) for key, value in metadata_dict.items()}
+        writer.write_metadata("display_config", metadata_str_dict)
+        logger.debug("Recorded display configuration as metadata", metadata_str_dict)
+    except Exception as e:
+        logger.warning(f"Failed to record display configuration: {e}")
+
+
+# TODO: Add more environment metadata here:
+# - System information (OS version, hardware specs)
+# - Display configuration (resolution, DPI, multiple monitors)
+# - Audio configuration (devices, sample rates)
+# - Input device configuration (keyboard layout, mouse settings)
+# - Game/application specific settings
 
 
 def check_resources_health(resources):
