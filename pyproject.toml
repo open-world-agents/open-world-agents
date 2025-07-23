@@ -5,6 +5,7 @@ description = "Proprietary extension of https://github.com/open-world-agents/ope
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "agent",
     "owa",
 ]
 
@@ -28,3 +29,9 @@ bypass-selection = true
 
 [tool.uv.sources]
 owa = { path = "open-world-agents", editable = true }
+agent = { workspace = true }
+
+[tool.uv.workspace]
+members = [
+    "projects/agent",
+]
