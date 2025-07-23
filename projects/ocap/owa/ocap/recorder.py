@@ -18,6 +18,11 @@ from owa.core.time import TimeUnits
 logger.remove()
 # how to use loguru with tqdm: https://github.com/Delgan/loguru/issues/135
 logger.add(lambda msg: tqdm.write(msg, end=""), filter={"owa.ocap": "DEBUG", "owa.env.gst": "INFO"}, colorize=True)
+# Add file logging
+logger.add(
+    "ocap_recording_{time:YYYY-MM-DD_HH-mm-ss}.log",
+    filter={"owa.ocap": "DEBUG", "owa.env.gst": "INFO"},
+)
 
 event_queue = Queue()
 MCAP_LOCATION = None
