@@ -1,6 +1,7 @@
 import atexit
 import gc
 import os
+import sys
 import threading
 import time
 from pathlib import Path
@@ -103,7 +104,8 @@ def _explicit_cleanup(container: Optional["MockedInputContainer" | VideoPathType
 
 # Ensure no forked processes share the same container object.
 # PyAV's FFmpeg objects are not fork-safe, must not be forked.
-os.register_at_fork(before=lambda: (_explicit_cleanup(), gc.collect()))
+if sys.platform != "win32":
+    os.register_at_fork(before=lambda: (_explicit_cleanup(), gc.collect()))
 
 # Ensure all containers are closed on program exit
 atexit.register(_explicit_cleanup)

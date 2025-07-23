@@ -34,8 +34,8 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Setup uv Environment
-        uses: ./.github/actions/setup-uv-env
+      - name: Setup uv
+        uses: ./.github/actions/setup-uv
 
       - name: Install Dependencies
         run: vuv install --extra docs
@@ -75,7 +75,7 @@ jobs:
           python-version: '3.11'
 
       - name: Setup uv Environment
-        uses: ./.github/actions/setup-uv-env
+        uses: ./.github/actions/setup-uv
 
       - name: Install Dependencies
         run: vuv install --dev
@@ -108,8 +108,8 @@ jobs:
           cache-suffix: 'test-windows' # same as job name
           environment-file: 'projects/owa-env-gst/environment.yml'
 
-      - name: Setup uv Environment
-        uses: ./.github/actions/setup-uv-env
+      - name: Setup uv
+        uses: ./.github/actions/setup-uv
         with:
           show-uv-cache-info: 'true'
 

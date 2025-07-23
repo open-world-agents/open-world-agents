@@ -17,7 +17,7 @@ echo "export PATH=\"$PWD/.venv/bin:\$PATH\"" >> /etc/profile
 echo "Virtual environment activated: $VIRTUAL_ENV"
 which python
 
-# Step 3: Install uv (replicating setup-uv-env action)
+# Step 3: Install uv (replicating setup-uv action)
 echo "Installing uv..."
 pip install uv
 echo "Installing virtual-uv..."

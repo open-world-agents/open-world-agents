@@ -219,6 +219,7 @@ def test_video_processing_pipeline(tmp_path):
 # ============================================================================
 
 
+@pytest.mark.network
 @pytest.mark.parametrize(
     "test_url,expected_frame_shape",
     [
@@ -328,12 +329,13 @@ def test_video_reader_path_type_handling(tmp_path):
         assert frame is not None
 
 
+@pytest.mark.network
 def test_video_reader_container_caching_with_urls():
     """Test that container caching works correctly with URLs."""
-    test_url = "https://httpbin.org/status/200"  # Simple URL for testing
+    test_url = "https://httpbingo.org/status/200"  # Simple URL for testing
 
     # Note: This test focuses on the caching mechanism rather than actual video processing
-    # since httpbin.org/status/200 is not a video file
+    # since httpbingo.org/status/200 is not a video file
 
     try:
         # First access - should create new container
@@ -356,11 +358,12 @@ def test_video_reader_container_caching_with_urls():
         pytest.skip(f"URL caching test skipped due to network/URL issue: {e}")
 
 
+@pytest.mark.network
 @pytest.mark.parametrize(
     "url_type,test_url",
     [
-        ("http", "http://httpbin.org/status/200"),
-        ("https", "https://httpbin.org/status/200"),
+        ("http", "http://httpbingo.org/status/200"),
+        ("https", "https://httpbingo.org/status/200"),
     ],
 )
 def test_video_reader_url_schemes(url_type, test_url):
@@ -375,9 +378,10 @@ def test_video_reader_url_schemes(url_type, test_url):
         # Any other error (like "not a video file") is acceptable for this test
 
 
+@pytest.mark.network
 def test_video_reader_force_close_with_urls():
     """Test force_close parameter works with URLs."""
-    test_url = "https://httpbin.org/status/200"
+    test_url = "https://httpbingo.org/status/200"
 
     try:
         # Test with force_close=True
