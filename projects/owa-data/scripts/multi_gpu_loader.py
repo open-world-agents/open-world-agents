@@ -16,9 +16,9 @@ logger.enable("owa.data.fsl_dataset")
 @line_profiler.profile
 def collate_fn(examples):
     # batch = {
-    #     "input_ids": torch.randint(0, 1000, (1, 1024), dtype=torch.long),
+    #     "input_ids": torch.randint(0, 1024, (1, 1024), dtype=torch.long),
     #     "attention_mask": torch.randint(0, 1, (1, 1024), dtype=torch.long),
-    #     "labels": torch.randint(0, 1000, (1, 1024), dtype=torch.long),
+    #     "labels": torch.randint(0, 1024, (1, 1024), dtype=torch.long),
     #     "image_hidden_states": torch.rand(112, 3, 512, 512, dtype=torch.float32),
     # }
     # return batch
