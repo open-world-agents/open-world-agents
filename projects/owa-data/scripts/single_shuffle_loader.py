@@ -12,7 +12,7 @@ logger.enable("owa.data.fsl_dataset")
 
 # Load event dataset
 event_dataset = load_from_disk("/mnt/raid12/datasets/owa/data/super-hexagon-event")
-tokenizer = AutoTokenizer.from_pretrained("HuggingFaceTB/SmolVLM2-2.2B-Base")
+tokenizer = AutoTokenizer.from_pretrained("HuggingFaceTB/SmolVLM2-256M-Video-Instruct")
 
 event_tokenizer = EpisodeTokenizer(image_token="<image>")
 event_tokenizer.prepare_model(tokenizer=tokenizer)
