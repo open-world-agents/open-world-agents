@@ -84,7 +84,7 @@ if __name__ == "__main__":
         quantization_config=quantization_config,
     )
     processor = AutoProcessor.from_pretrained(
-        model_args.model_name_or_path, trust_remote_code=model_args.trust_remote_code
+        model_args.model_name_or_path, trust_remote_code=model_args.trust_remote_code, do_image_splitting=False
     )
 
     model = AutoModelForImageTextToText.from_pretrained(

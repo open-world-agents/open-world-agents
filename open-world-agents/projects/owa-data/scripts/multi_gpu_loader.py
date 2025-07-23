@@ -1,9 +1,11 @@
+import line_profiler
 import torch
 from accelerate import Accelerator
 from datasets import load_from_disk
 from loguru import logger
 from torch.utils.data import DataLoader
-from transformers import AutoProcessor
+from tqdm import tqdm
+from transformers import AutoProcessor, SmolVLMImageProcessor
 
 from owa.data.episode_tokenizer import EpisodeTokenizer
 from owa.data.fsl_dataset import FSLDataset
@@ -11,46 +13,51 @@ from owa.data.fsl_dataset import FSLDataset
 logger.enable("owa.data.fsl_dataset")
 
 
-def create_pretraining_collator(processor):
-    def collate_fn(examples):
-        # Extract data from FSLDataset format
-        input_ids_list = []
-        attention_mask_list = []
-        images_list = []
+@line_profiler.profile
+def collate_fn(examples, processor):
+    # batch = {
+    #     "input_ids": torch.randint(0, 1000, (1, 1024), dtype=torch.long),
+    #     "attention_mask": torch.randint(0, 1, (1, 1024), dtype=torch.long),
+    #     "labels": torch.randint(0, 1000, (1, 1024), dtype=torch.long),
+    # }
+    # return batch
 
-        for example in examples:
-            input_ids_list.append(example["token_ids"])
-            attention_mask_list.append(example["attention_mask"])
-            images_list.extend(example["images"])  # Flatten images from all examples
+    # Extract data from FSLDataset format
+    input_ids_list = []
+    attention_mask_list = []
+    images_list = []
 
-        # Convert to tensors
-        input_ids = torch.tensor(input_ids_list, dtype=torch.long)
-        attention_mask = torch.tensor(attention_mask_list, dtype=torch.long)
+    for example in examples:
+        input_ids_list.append(example["token_ids"])
+        attention_mask_list.append(example["attention_mask"])
+        images_list.extend(example["images"])  # Flatten images from all examples
 
-        # For pretraining, labels are the same as input_ids (next token prediction)
-        # We shift the labels inside the model, so we don't need to do it here
-        labels = input_ids.clone()
-        labels[attention_mask == 0] = -100
+    # Convert to tensors
+    input_ids = torch.tensor(input_ids_list, dtype=torch.long)
+    attention_mask = torch.tensor(attention_mask_list, dtype=torch.long)
 
-        # Handle images - convert PIL images to tensors if needed. NOTE: smolvlm processor panic when image list is empty.
-        if images_list:
-            image_inputs = processor.image_processor(images_list, return_tensors="pt")
-            pixel_values = image_inputs.get("pixel_values")
-        else:
-            pixel_values = None
+    # For pretraining, labels are the same as input_ids (next token prediction)
+    # We shift the labels inside the model, so we don't need to do it here
+    labels = input_ids.clone()
+    labels[attention_mask == 0] = -100
 
-        batch = {
-            "input_ids": input_ids,
-            "attention_mask": attention_mask,
-            "labels": labels,
-        }
+    # Handle images - convert PIL images to tensors if needed. NOTE: smolvlm processor panic when image list is empty.
+    if images_list:
+        image_inputs = processor.image_processor(images_list, return_tensors="pt")
+        pixel_values = image_inputs.get("pixel_values")
+    else:
+        pixel_values = None
 
-        if pixel_values is not None:
-            batch["pixel_values"] = pixel_values
+    batch = {
+        "input_ids": input_ids,
+        "attention_mask": attention_mask,
+        "labels": labels,
+    }
 
-        return batch
+    if pixel_values is not None:
+        batch["pixel_values"] = pixel_values
 
-    return collate_fn
+    return batch
 
 
 def main():
@@ -82,9 +89,10 @@ def main():
         train_ds,
         batch_size=8,
         shuffle=True,
-        num_workers=16,
+        num_workers=0,
+        # persistent_workers=True,
         pin_memory=True,
-        collate_fn=create_pretraining_collator(processor),
+        collate_fn=lambda x: collate_fn(x, processor),
     )
 
     # 5) (Optional) A dummy model so you can do a full prepare()
@@ -95,6 +103,7 @@ def main():
     model, optimizer, train_loader = accelerator.prepare(model, optimizer, train_loader)
 
     # 7) Simple loop to verify each GPU/process sees its shard
+    pbar = tqdm(total=2 * len(train_loader), disable=not accelerator.is_local_main_process)
     for epoch in range(2):
         for step, batch in enumerate(train_loader):
             # batch["input_ids"] is on the correct device
@@ -104,8 +113,8 @@ def main():
             optimizer.step()
             optimizer.zero_grad()
 
-            if step % 20 == 0:
-                accelerator.print(f"[Epoch {epoch} · step {step:4d}] loss={loss.item():.4f}")
+            pbar.update()
+            pbar.set_postfix({"loss": f"{loss.item():.4f}"})
 
 
 if __name__ == "__main__":
