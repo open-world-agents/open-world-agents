@@ -3,6 +3,7 @@ import time
 from contextlib import contextmanager
 from pathlib import Path
 from queue import Empty, Queue
+from threading import Event
 from typing import Optional
 
 import typer
@@ -20,6 +21,7 @@ logger.add(lambda msg: tqdm.write(msg, end=""), filter={"owa.ocap": "DEBUG", "ow
 
 event_queue = Queue()
 MCAP_LOCATION = None
+stop_recording_event = Event()
 
 
 def _record_environment_metadata(writer: OWAMcapWriter) -> None:
@@ -88,6 +90,12 @@ def enqueue_event(event, *, topic):
 
 
 def keyboard_monitor_callback(event):
+    # F9 key detection for immediate stop
+    if event.vk == 0x78 and event.event_type == "press":  # F9 key
+        logger.info("F9 key pressed - stopping recording...")
+        stop_recording_event.set()
+        return
+
     # info only for F1-F12 keys
     if 0x70 <= event.vk <= 0x7B and event.event_type == "press":
         logger.info(f"F1-F12 key pressed: F{event.vk - 0x70 + 1}")
@@ -263,7 +271,8 @@ def record(
     ] = 5.0,
 ):
     """Record screen, keyboard, mouse, and window events to an `.mcap` and `.mkv` file."""
-    global MCAP_LOCATION
+    global MCAP_LOCATION, stop_recording_event
+    stop_recording_event.clear()  # Reset the stop event
     output_file = ensure_output_files_ready(file_location)
     MCAP_LOCATION = output_file
 
@@ -280,6 +289,7 @@ def record(
     additional_properties = parse_additional_properties(additional_args)
 
     logger.info(USER_INSTRUCTION)
+    logger.info("Press F9 to stop recording at any time.")
 
     # Handle delayed start
     if start_after:
@@ -310,6 +320,11 @@ def record(
 
             try:
                 while True:
+                    # Check if F9 stop was triggered
+                    if stop_recording_event.is_set():
+                        logger.info("Recording stopped by user.")
+                        break
+
                     # Check if auto-stop time has been reached
                     if stop_after and (time.time() - recording_start_time) >= stop_after:
                         logger.info("⏰ Auto-stop time reached - stopping recording...")
