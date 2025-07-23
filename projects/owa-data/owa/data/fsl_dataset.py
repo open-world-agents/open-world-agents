@@ -48,12 +48,11 @@ class FSLStatLogger:
     def _is_master_rank(self) -> bool:
         """Check if current process is master rank (rank 0) in distributed training."""
         try:
-            import torch.distributed as dist
+            from accelerate import PartialState
 
-            if dist.is_available() and dist.is_initialized():
-                return dist.get_rank() == 0
+            return PartialState().local_process_index == 0
         except ImportError:
-            # torch.distributed not available, assume single process
+            # accelerate not available, assume single process
             pass
         return True
 
