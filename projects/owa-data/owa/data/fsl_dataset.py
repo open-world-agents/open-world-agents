@@ -22,7 +22,7 @@ class FSLDatasetConfig:
 
 
 class FSLStatLogger:
-    """Every n-th sample, log the stats, if master rank."""
+    """Every n-th sample, log the stats."""
 
     def __init__(self, log_every=10, decay_alpha=0.9):
         self.log_every = log_every
@@ -45,17 +45,6 @@ class FSLStatLogger:
         self.ema_images_per_sec = None
         self.ema_image_bitrate = None
 
-    def _is_master_rank(self) -> bool:
-        """Check if current process is master rank (rank 0) in distributed training."""
-        try:
-            from accelerate import PartialState
-
-            return PartialState().local_process_index == 0
-        except ImportError:
-            # accelerate not available, assume single process
-            pass
-        return True
-
     def update(self, count, tokens, images, image_bits):
         self.count += count
         self.total_tokens += tokens
@@ -68,7 +57,7 @@ class FSLStatLogger:
         self.images_since_last_log += images
         self.image_bits_since_last_log += image_bits
 
-        if self.count % self.log_every == 0 and self._is_master_rank():
+        if self.count % self.log_every == 0:
             current_time = time.time()
             elapsed_total = current_time - self.start_time
             elapsed_since_last = current_time - self.last_log_time
