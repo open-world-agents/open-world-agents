@@ -233,11 +233,11 @@ def ensure_output_files_ready(file_location: Path):
 
 def record(
     file_location: Annotated[
-        Path,
+        Optional[Path],
         typer.Argument(
-            help="The location of the output file. If `output.mcap` is given as argument, the output file would be `output.mcap` and `output.mkv`."
+            help="The location of the output file. If not provided, a filename will be generated based on window name and timestamp. If `output.mcap` is given as argument, the output file would be `output.mcap` and `output.mkv`."
         ),
-    ],
+    ] = None,
     *,
     record_audio: Annotated[bool, typer.Option(help="Whether to record audio")] = True,
     record_video: Annotated[bool, typer.Option(help="Whether to record video")] = True,
@@ -278,6 +278,18 @@ def record(
     """Record screen, keyboard, mouse, and window events to an `.mcap` and `.mkv` file."""
     global MCAP_LOCATION, stop_recording_event
     stop_recording_event.clear()  # Reset the stop event
+
+    # Generate filename if not provided
+    if file_location is None:
+        import uuid
+        from datetime import datetime
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        window_part = f"{window_name.replace(' ', '_')}" if window_name else ""
+        unique_id = str(uuid.uuid4())[:8]
+        filename = f"recording_{timestamp}_{window_part}_{unique_id}.mcap"
+        file_location = Path(filename)
+
     output_file = ensure_output_files_ready(file_location)
     MCAP_LOCATION = output_file
 
