@@ -120,6 +120,7 @@ def _record_environment_metadata(writer: OWAMcapWriter) -> bool:
 
     return ret
 
+
 # TODO: Add more environment metadata here:
 # - System information (OS version, hardware specs)
 # - Display configuration (resolution, DPI, multiple monitors)
