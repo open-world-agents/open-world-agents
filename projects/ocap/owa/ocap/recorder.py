@@ -95,6 +95,7 @@ def _record_environment_metadata(writer: OWAMcapWriter) -> bool:
         common_resolutions = {
             (1920, 1080): "1080p",
             (2560, 1440): "1440p",
+            (3840, 2160): "4K",
         }
 
         if (width, height) not in common_resolutions:

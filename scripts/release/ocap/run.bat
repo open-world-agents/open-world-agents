@@ -100,4 +100,6 @@ exit /b 0
     echo Type 'exit' to close the window when finished.
     echo.
     start cmd.exe /k "call .\env\Scripts\activate.bat && title Conda Environment (%ENV_DIR%)"
+    @REM start cmd.exe /c "call .\env\Scripts\activate.bat && title Conda Environment (%ENV_DIR%) && ocap --window-name \"Euro Truck Simulator 2\""
+    @REM start cmd.exe /c "call .\env\Scripts\activate.bat && title Conda Environment (%ENV_DIR%) && ocap --window-name \"Grand Theft Auto V\""
     exit /b 0
