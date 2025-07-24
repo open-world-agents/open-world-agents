@@ -29,7 +29,7 @@ MCAP_LOCATION = None
 stop_recording_event = Event()
 
 
-def _record_environment_metadata(writer: OWAMcapWriter) -> None:
+def _record_environment_metadata(writer: OWAMcapWriter) -> bool:
     """Record environment configuration as MCAP metadata.
 
     This function captures recording environment information that applies to the
@@ -37,7 +37,10 @@ def _record_environment_metadata(writer: OWAMcapWriter) -> None:
 
     Args:
         writer: The MCAP writer to store metadata in
+    Returns:
+        bool: True if metadata was successfully recorded, False otherwise
     """
+    ret = True
     # Record pointer ballistics configuration
     try:
         ballistics_config = CALLABLES["desktop/mouse.get_pointer_ballistics_config"]()
@@ -59,7 +62,7 @@ def _record_environment_metadata(writer: OWAMcapWriter) -> None:
 
         if non_default_settings:
             logger.warning(f"Non-default mouse settings detected: {non_default_settings}")
-            exit(1)
+            ret = False
 
         metadata_str_dict = {str(key): str(value) for key, value in metadata_dict.items()}
 
@@ -99,7 +102,7 @@ def _record_environment_metadata(writer: OWAMcapWriter) -> None:
                 f"Non-standard resolution detected: {width}x{height}. "
                 f"Common resolutions are 1920x1080 (1080p) and 2560x1440 (1440p)"
             )
-            exit(1)
+            ret = False
         else:
             resolution_name = common_resolutions[(width, height)]
             logger.debug(f"Standard resolution detected: {width}x{height} ({resolution_name})")
@@ -114,6 +117,7 @@ def _record_environment_metadata(writer: OWAMcapWriter) -> None:
     except Exception as e:
         logger.warning(f"Failed to record display configuration: {e}")
 
+    return ret
 
 # TODO: Add more environment metadata here:
 # - System information (OS version, hardware specs)
@@ -397,7 +401,10 @@ def record(
 
         with OWAMcapWriter(output_file) as writer, tqdm(desc="Recording", unit="event", dynamic_ncols=True) as pbar:
             # Record environment metadata
-            _record_environment_metadata(writer)
+            success = _record_environment_metadata(writer)
+            if not success:
+                logger.error("❌ Failed to record environment metadata. Stopping.")
+                return
 
             try:
                 while True:
