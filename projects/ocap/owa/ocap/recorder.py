@@ -44,13 +44,23 @@ def _record_environment_metadata(writer: OWAMcapWriter) -> None:
 
         # Convert to Dict[str, str] as required by MCAP
         metadata_dict = ballistics_config.model_dump(by_alias=True)
-        # defaults = {
-        #     "MouseThreshold1": 6,
-        #     "MouseThreshold2": 10,
-        #     "MouseSpeed": 1,
-        #     "MouseSensitivity": 10,
-        # }
-        # TODO: check if settings are not default
+        defaults = {
+            "MouseThreshold1": 6,
+            "MouseThreshold2": 10,
+            "MouseSpeed": 1,
+            "MouseSensitivity": 10,
+        }
+
+        # Check if mouse settings are not default
+        non_default_settings = {}
+        for key, value in metadata_dict.items():
+            if key in defaults and int(value) != defaults[key]:
+                non_default_settings[key] = f"{value} (default: {defaults[key]})"
+
+        if non_default_settings:
+            logger.warning(f"Non-default mouse settings detected: {non_default_settings}")
+            exit(1)
+
         metadata_str_dict = {str(key): str(value) for key, value in metadata_dict.items()}
 
         writer.write_metadata("pointer_ballistics_config", metadata_str_dict)
@@ -74,13 +84,31 @@ def _record_environment_metadata(writer: OWAMcapWriter) -> None:
         import win32api
         import win32con
 
-        devmode = win32api.EnumDisplaySettings(None, win32con.ENUM_CURRENT_SETTINGS)  # primary monitor
+        # TODO: get multiple monitors
+        devmode = win32api.EnumDisplaySettings(None, win32con.ENUM_CURRENT_SETTINGS)  # only primary monitor
+        
+
+        # Check if monitor is not 1080p or 1440p
+        width, height = devmode.PelsWidth, devmode.PelsHeight
+        common_resolutions = {
+            (1920, 1080): "1080p",
+            (2560, 1440): "1440p",
+        }
+
+        if (width, height) not in common_resolutions:
+            logger.warning(
+                f"Non-standard resolution detected: {width}x{height}. "
+                f"Common resolutions are 1920x1080 (1080p) and 2560x1440 (1440p)"
+            )
+            exit(1)
+        else:
+            resolution_name = common_resolutions[(width, height)]
+            logger.debug(f"Standard resolution detected: {width}x{height} ({resolution_name})")
+
         metadata_dict = {
             "resolution": f"{devmode.PelsWidth}x{devmode.PelsHeight}",
             "refresh_rate": devmode.DisplayFrequency,
         }
-        # TODO: check if monitor is not 1080p or 1440p
-        # TODO: get multiple monitors
         metadata_str_dict = {str(key): str(value) for key, value in metadata_dict.items()}
         writer.write_metadata("display_config", metadata_str_dict)
         logger.debug(f"Recorded display configuration as metadata {metadata_str_dict}")
