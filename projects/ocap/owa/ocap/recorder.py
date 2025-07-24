@@ -86,7 +86,6 @@ def _record_environment_metadata(writer: OWAMcapWriter) -> None:
 
         # TODO: get multiple monitors
         devmode = win32api.EnumDisplaySettings(None, win32con.ENUM_CURRENT_SETTINGS)  # only primary monitor
-        
 
         # Check if monitor is not 1080p or 1440p
         width, height = devmode.PelsWidth, devmode.PelsHeight
