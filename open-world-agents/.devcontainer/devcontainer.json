@@ -1,0 +1,78 @@
+{
+	"name": "OWA Development Environment",
+	"image": "owa/dev:latest",
+	// Container configuration
+	"runArgs": [
+		"--gpus=all",
+		"--ipc=host",
+		"--privileged",
+		"--network=host"
+	],
+	"remoteUser": "vscode",
+	"updateRemoteUserUID": true,
+	"workspaceFolder": "/workspace",
+	// Environment variables
+	"containerEnv": {
+		"HF_HOME": "/mnt/raid12/cache/huggingface",
+		// https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/docker-specialized.html#driver-capabilities
+		"NVIDIA_DRIVER_CAPABILITIES": "all" // required to use torchcodec decoding
+	},
+	// Volume mounts
+	"mounts": [
+		"source=${localWorkspaceFolder},target=/workspace,type=bind",
+		"source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind",
+		"source=/mnt/raid12/datasets,target=/mnt/raid12/datasets,type=bind,readonly",
+		"source=/mnt/raid12/datasets/owa/data,target=/mnt/raid12/datasets/owa/data,type=bind",
+		"source=/mnt/raid12/cache,target=/mnt/raid12/cache,type=bind",
+		"source=${localEnv:HOME}/.cache,target=/home/vscode/.cache,type=bind",
+		"source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,type=bind",
+		"source=${localEnv:HOME}/.gitconfig,target=/home/vscode/.gitconfig,type=bind,readonly",
+		"source=${localEnv:HOME}/.netrc,target=/home/vscode/.netrc,type=bind,readonly"
+	],
+	// Features
+	"features": {
+		"ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
+		"ghcr.io/devcontainers/features/git:1": {},
+		"ghcr.io/devcontainers/features/github-cli:1": {}
+	},
+	// Lifecycle scripts
+	"updateContentCommand": "sudo chown -vR vscode:vscode /opt/conda | tqdm --desc 'Changing ownership of /opt/conda to vscode user...' --unit files > /dev/null",
+	"postCreateCommand": {
+		// Since postCreateCommand use `sh` as default shell, `. activate owa` does not work unless we use `bash -c`
+		"workspace-install": "bash -c '. activate owa && vuv pip install -e /workspace --group dev && (pip list | grep -E ^owa && echo \"OWA Development Environment Ready! 🚀\" || echo \"OWA package not found\")'",
+		"conda-info": "conda info --envs"
+	},
+	"postStartCommand": "gpustat",
+	// VS Code customizations
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"Augment.vscode-augment",
+				"charliermarsh.ruff",
+				"christian-kohler.path-intellisense",
+				"eamodio.gitlens",
+				"GitHub.copilot",
+				"GitHub.copilot-chat",
+				"GitHub.vscode-pull-request-github",
+				"mechatroner.rainbow-csv",
+				"ms-azuretools.vscode-docker",
+				"ms-python.vscode-pylance",
+				"ms-toolsai.jupyter",
+				"ms-vscode.makefile-tools",
+				"ms-vsliveshare.vsliveshare",
+				"oderwat.indent-rainbow",
+				"RooVeterinaryInc.roo-cline"
+			],
+			"settings": {
+				"python.defaultInterpreterPath": "/opt/conda/envs/owa/bin/python",
+				"python.terminal.activateEnvironment": true,
+				"terminal.integrated.defaultProfile.linux": "zsh",
+				"terminal.integrated.profiles.linux": {
+					"zsh": {
+						"path": "/bin/zsh"
+					}
+				}
+			}
+		}
+	}
+}

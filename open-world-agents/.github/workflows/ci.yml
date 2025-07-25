@@ -1,0 +1,209 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types:
+      - opened
+      - synchronize
+
+jobs:
+  ruff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/ruff-action@v3
+      - run: ruff check --fix
+      - run: ruff format --check --diff
+
+  validate-docs:
+    runs-on: ubuntu-latest
+    name: Validate EnvPlugin Documentation
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Virtual Environment
+        uses: ./.github/actions/setup-venv
+        with:
+          python-version: '3.11'
+
+      - name: Setup uv
+        uses: ./.github/actions/setup-uv
+
+      - name: Install Dependencies
+        run: vuv install --extra docs
+
+      - name: Install EnvPlugins
+        run: vuv pip install -e projects/owa-env-example
+
+      - name: Generate documentation statistics
+        run: owl env docs
+
+      - name: Validate all plugin documentation
+        run: owl --silent env docs --validate --strict --output-format json
+
+      - name: Validate individual plugins
+        run: |
+          echo "Validating individual plugins..."
+          owl --silent env docs --validate --strict --output-format json example
+          owl --silent env docs --validate --strict --output-format json std
+          owl --silent env docs --validate --strict --output-format json desktop
+          owl --silent env docs --validate --strict --output-format json gst
+
+  test-ubuntu:
+    runs-on: ubuntu-latest
+    name: Pytest on Ubuntu
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Virtual Environment
+        uses: ./.github/actions/setup-venv
+        with:
+          python-version: '3.11'
+
+      - name: Setup uv Environment
+        uses: ./.github/actions/setup-uv
+
+      - name: Install Dependencies
+        run: vuv install --dev
+
+      - name: Run pytest
+        run: pytest
+
+  test-windows:
+    runs-on: windows-latest
+    name: Pytest on Windows
+    defaults:
+      run:
+        shell: bash -el {0}
+
+    env:
+      PYTHONIOENCODING: utf-8 # https://github.com/Textualize/rich/issues/212
+      PYTHONUTF8: 1 # from https://github.com/ndonkoHenri/flet-github-action-workflows/blob/main/.github/workflows/windows-build.yml#L29C3-L29C16
+      # below line is legacy line, but I'm keeping it here for reference to know where the packages are installed
+      # GST_PLUGIN_PATH: "D:\\a\\open-world-agents\\open-world-agents\\projects\\owa-env-gst\\gst-plugins"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Setup Conda Environment
+        uses: ./.github/actions/setup-conda-env
+        with:
+          os: windows
+          cache-number: '0'
+          cache-suffix: 'test-windows' # same as job name
+          environment-file: 'projects/owa-env-gst/environment.yml'
+
+      - name: Setup uv
+        uses: ./.github/actions/setup-uv
+        with:
+          show-uv-cache-info: 'true'
+
+      - name: Install dependencies
+        run: vuv install --dev
+
+      - run: mkdir coverage
+
+      - name: Run pytest with coverage
+        run: coverage run -m pytest
+        env:
+          COVERAGE_FILE: coverage/.coverage.main-tests
+          CONTEXT: main-tests
+
+      - name: Install owa-env-example
+        run: vuv pip install -e projects/owa-env-example
+
+      - name: Run pytest for owa-env-example with coverage
+        run: coverage run -m pytest projects/owa-env-example/tests
+        env:
+          COVERAGE_FILE: coverage/.coverage.owa-env-example
+          CONTEXT: owa-env-example
+
+      - name: Store coverage files
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-windows
+          path: coverage
+          include-hidden-files: true
+
+  # copied from: https://github.com/pydantic/pydantic/blob/main/.github/workflows/ci.yml#L229-L294
+  coverage-combine:
+    needs: [test-windows]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Get coverage files
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          pattern: coverage-*
+          path: coverage
+
+      - run: pip install coverage[toml]
+
+      - run: ls -la coverage
+      - run: coverage combine coverage
+      - run: coverage report
+      - run: coverage html --show-contexts --title "open-world-agents coverage for ${{ github.sha }}"
+
+      - name: Store coverage data
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-data
+          path: .coverage
+          include-hidden-files: true
+
+      - name: Store coverage HTML
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html
+          path: htmlcov
+
+  coverage-pr-comment:
+    needs: coverage-combine
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      pull-requests: write
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download coverage data
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-data
+
+      - name: Generate coverage comment
+        id: coverage-comment
+        uses: py-cov-action/python-coverage-comment-action@v3
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Store coverage comment
+        uses: actions/upload-artifact@v4
+        if: steps.coverage-comment.outputs.COMMENT_FILE_WRITTEN == 'true'
+        with:
+          name: python-coverage-comment-action
+          path: python-coverage-comment-action.txt

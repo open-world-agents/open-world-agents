@@ -1,0 +1,64 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types:
+      - opened
+      - synchronize
+
+jobs:
+  release-ocap:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash -el {0}
+
+    env:
+      PYTHONIOENCODING: utf-8 # https://github.com/Textualize/rich/issues/212
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Setup Conda Environment
+        uses: ./.github/actions/setup-conda-env
+        with:
+          os: windows
+          cache-number: '0'
+          cache-suffix: 'release-ocap' # same as job name
+          environment-file: 'projects/owa-env-gst/environment.yml'
+
+      - name: Setup uv
+        uses: ./.github/actions/setup-uv
+        with:
+          show-uv-cache-info: 'true'
+
+      # install `conda-pack`
+      - name: Install conda-pack
+        run: uv pip install conda-pack
+
+      - name: Generate Release Files
+        run: |
+          # Step 1: Run `uv pip install . --no-sources`
+          # NOTE: `--no-sources` is needed to prevent editable install. See https://github.com/astral-sh/uv/issues/14609
+          uv pip install projects/ocap --no-sources
+          echo "Installed project dependencies."
+
+          # Step 2: Run `conda pack -n owa`
+          # NOTE: `conda-pack` requires the packages to be installed without `--editable` flag.
+          conda-pack -n owa --output scripts/release/ocap/env.tar.gz
+          echo "Packed conda environment."
+      
+      - name: Test whether ocap works well
+        run: ocap --help
+
+      - name: Upload Release Files
+        uses: actions/upload-artifact@v4
+        with:
+          name: ocap
+          path: |
+            scripts/release/ocap/env.tar.gz
+            scripts/release/ocap/run.bat
+            scripts/release/ocap/restore_ocap.py

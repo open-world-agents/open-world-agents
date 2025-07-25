@@ -1,0 +1,78 @@
+# OWA Training Image - ML Training Environment
+# Builds on top of owa/runtime:cuda with ML packages
+
+# Build arguments
+ARG BASE_IMAGE=owa/runtime:cuda
+ARG CONDA_INSTALL_PATH=/opt/conda
+
+# =============================================================================
+# Stage 1: ML Base (inherits everything from runtime:cuda)
+# =============================================================================
+FROM ${BASE_IMAGE} AS ml-base
+
+# Install ML packages and projects/agent package
+RUN --mount=type=cache,target=${HOME}/.cache/uv,sharing=locked \
+    . activate owa && \
+    vuv pip install torch torchvision
+
+RUN --mount=type=cache,target=${HOME}/.cache/uv,sharing=locked \
+    --mount=type=bind,source=projects/owa-data,target=/workspace/projects/owa-data \
+    . activate owa && \
+    vuv pip install tqdm einops /workspace/projects/owa-data
+
+RUN --mount=type=cache,target=${HOME}/.cache/uv,sharing=locked \
+    . activate owa && \
+    vuv pip install transformers datasets trl accelerate diffusers evaluate peft deepspeed wandb
+
+# =============================================================================
+# Stage 2: Flash Attention Builder (with CUDA build tools)
+# =============================================================================
+FROM nvidia/cuda:12.6.3-devel-ubuntu24.04 AS flash-attn-builder
+
+ARG CONDA_INSTALL_PATH
+
+# Environment configuration
+ENV DEBIAN_FRONTEND=noninteractive \
+    USER=root UID=0 GID=0 HOME=/root \
+    VUV_ALLOW_BASE=true PATH="${CONDA_INSTALL_PATH}/bin:${PATH}"
+
+# Set shell for RUN commands
+SHELL ["/bin/bash", "-c"]
+
+# Copy conda environment from ml-base stage
+COPY --from=ml-base ${CONDA_INSTALL_PATH} ${CONDA_INSTALL_PATH}
+
+# Install build dependencies and compile flash-attn
+RUN --mount=type=cache,target=${HOME}/.cache/uv,sharing=locked \
+    --mount=type=cache,target=${HOME}/.cache/pip,sharing=locked \
+    . activate owa && \
+    vuv pip install ninja packaging && \
+    pip wheel flash-attn --no-build-isolation -w /tmp/wheels && \
+    vuv pip install /tmp/wheels/*.whl
+
+# =============================================================================
+# Stage 3: Final Training Image
+# =============================================================================
+FROM ml-base AS final
+
+ARG CONDA_INSTALL_PATH
+
+# Following command creates +10GB layer, so must not be used.
+# COPY --from=flash-attn-builder ${CONDA_INSTALL_PATH}/envs/owa/lib/python3.11/site-packages ${CONDA_INSTALL_PATH}/envs/owa/lib/python3.11/site-packages
+
+# Copy compiled flash-attn from builder stage. Following list can be acquired by "uninstalling" flash-attn, or by `pip show -f flash-attn`
+# COPY --from=flash-attn-builder ${CONDA_INSTALL_PATH}/envs/owa/lib/python3.11/site-packages/flash_attn ${CONDA_INSTALL_PATH}/envs/owa/lib/python3.11/site-packages/flash_attn
+# COPY --from=flash-attn-builder ${CONDA_INSTALL_PATH}/envs/owa/lib/python3.11/site-packages/flash_attn-2.8.1.dist-info ${CONDA_INSTALL_PATH}/envs/owa/lib/python3.11/site-packages/flash_attn-2.8.1.dist-info
+# COPY --from=flash-attn-builder ${CONDA_INSTALL_PATH}/envs/owa/lib/python3.11/site-packages/flash_attn_2_cuda.cpython-311-x86_64-linux-gnu.so ${CONDA_INSTALL_PATH}/envs/owa/lib/python3.11/site-packages/
+# COPY --from=flash-attn-builder ${CONDA_INSTALL_PATH}/envs/owa/lib/python3.11/site-packages/hopper ${CONDA_INSTALL_PATH}/envs/owa/lib/python3.11/site-packages/hopper
+
+# Copy and install wheels, much graceful solution than aboves
+RUN --mount=type=cache,target=${HOME}/.cache/uv,sharing=locked \
+    --mount=type=bind,from=flash-attn-builder,source=/tmp/wheels,target=/tmp/wheels \
+    . activate owa && vuv pip install /tmp/wheels/flash_attn-*.whl
+
+# Set working directory
+WORKDIR /workspace
+
+# Default command
+CMD ["/bin/bash"]

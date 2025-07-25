@@ -1,0 +1,66 @@
+# Training Configuration for SmolVLM SFT
+# This file captures the customized training arguments from temp_train.py
+# Comments show: [CUSTOM_VALUE] (default: DEFAULT_VALUE)
+
+# ============================================================================
+# MODEL CONFIGURATION
+# ============================================================================
+model_name_or_path: "HuggingFaceTB/SmolVLM2-500M-Video-Instruct"  # (default: None)
+torch_dtype: "bfloat16"  # (default: None)
+attn_implementation: "flash_attention_2"  # (default: None)
+
+# ============================================================================
+# TRAINING HYPERPARAMETERS
+# ============================================================================
+num_train_epochs: 20  # (default: 3.0)
+per_device_train_batch_size: 8  # (default: 8)
+gradient_accumulation_steps: 1  # (default: 1)
+learning_rate: 4e-5  # (default: 2e-05)
+
+# ============================================================================
+# OPTIMIZATION SETTINGS
+# ============================================================================
+optim: "adamw_torch_fused"  # (default: 'adamw_torch')
+max_grad_norm: 0.3  # (default: 1.0)
+warmup_ratio: 0.03  # (default: 0.0)
+weight_decay: 0.0  # (default: 0.0)
+lr_scheduler_type: "cosine"  # (default: 'linear')
+
+# ============================================================================
+# PRECISION AND PERFORMANCE
+# ============================================================================
+bf16: true  # (default: True for SFTConfig, False for TrainingArguments)
+tf32: true  # (default: None)
+gradient_checkpointing: true  # (default: False)
+gradient_checkpointing_kwargs:
+  use_reentrant: false  # (default: None, would use True if set)
+
+# ============================================================================
+# LOGGING AND CHECKPOINTING
+# ============================================================================
+logging_steps: 1  # (default: 10)
+save_strategy: "steps"  # (default: 'steps')
+save_steps: 1000  # (default: 500)
+save_total_limit: 1  # (default: None)
+report_to: "wandb"  # (default: ['tensorboard'])
+
+# ============================================================================
+# DATASET HANDLING
+# ============================================================================
+dataset_text_field: ""  # (default: 'text') - empty for custom collator
+dataset_kwargs:
+  skip_prepare_dataset: true  # (default: None/False) - required for custom collator
+remove_unused_columns: false  # (default: True) - required for custom dataset
+dataloader_num_workers: 32  # (default: 0) - important for throughput
+
+# ============================================================================
+# EVALUATION SETTINGS
+# ============================================================================
+do_eval: true  # (default: False)
+eval_strategy: "epoch"  # (default: 'no')
+eval_steps: 5  # (default: None) - used when eval_strategy is 'steps'
+
+# ============================================================================
+# OUTPUT DIRECTORY
+# ============================================================================
+output_dir: "trainer_output"  # (default: 'trainer_output') - can be overridden via CLI

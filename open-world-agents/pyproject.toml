@@ -1,0 +1,92 @@
+[project]
+name = "owa"
+version = "0.5.3"
+description = "Everything you need to build state-of-the-art foundation multimodal desktop agent, end-to-end."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "mcap-owa-support==0.5.3",
+    "ocap==0.5.3",
+    "owa-cli==0.5.3",
+    "owa-core==0.5.3",
+    "owa-env-desktop==0.5.3",
+    "owa-env-gst==0.5.3",
+    "owa-msgs==0.5.3",
+]
+
+[project.optional-dependencies]
+docs = [
+    "mkdocs>=1.6.1",
+    "mkdocs-material>=9.5.3",
+    "mkdocstrings[python]>=0.24.0",
+    "mkdocs-git-revision-date-localized-plugin>=1.2.1",
+    "mkdocs-mermaid2-plugin>=1.1.1",
+    "mkdocs-redirects>=1.2.2",
+    "mkdocstrings-owa>=1.16.12",
+    "mkdocs-click>=0.8.0",
+    "termynal>=0.13.0"
+]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=6.29.5",
+    "ipython>=9.0.1",
+    "pytest>=8.3.5",
+    "pytest-cov>=6.0.0",
+    "pytest-timeout>=2.3.1",
+    "ruff>=0.9.7",
+    "virtual-uv>=0.1.4",
+]
+
+[tool.uv.sources]
+mcap-owa-support = { path = "projects/mcap-owa-support", editable = true }
+ocap = { path = "projects/ocap", editable = true }
+owa-cli = { path = "projects/owa-cli", editable = true }
+owa-core = { path = "projects/owa-core", editable = true }
+owa-env-desktop = { path = "projects/owa-env-desktop", editable = true }
+owa-env-gst = { path = "projects/owa-env-gst", editable = true }
+owa-msgs = { path = "projects/owa-msgs", editable = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+bypass-selection = true
+
+[tool.coverage.run]
+source = ["projects"]
+branch = true
+relative_files = true
+context = "${CONTEXT}"
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "*/__pycache__/*",
+    "*/venv/*",
+    "*/.venv/*",
+]
+
+[tool.coverage.report]
+precision = 2
+exclude_lines = [
+    'pragma: no cover',
+    'raise NotImplementedError',
+    'if TYPE_CHECKING:',
+    'if typing.TYPE_CHECKING:',
+    '@overload',
+    '@typing.overload',
+    '\(Protocol\):$',
+    'typing.assert_never',
+    'assert_never',
+]
+
+[tool.coverage.paths]
+source = [
+    "projects/",
+    "/home/runner/work/open-world-agents/open-world-agents/projects/",
+    "D:\\a\\open-world-agents\\open-world-agents\\projects\\",
+]
+
+[tool.coverage.html]
+directory = "htmlcov"

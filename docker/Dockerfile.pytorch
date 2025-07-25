@@ -1,0 +1,6 @@
+FROM owa/base:latest
+
+# Install pytorch and torchvision
+RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
+    --mount=type=cache,target=/root/.cache/uv,sharing=locked \
+    . activate && vuv pip install torch torchvision
