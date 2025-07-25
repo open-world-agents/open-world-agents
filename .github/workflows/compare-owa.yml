@@ -1,0 +1,120 @@
+name: Compare Open World Agents
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: git clone https://github.com/open-world-agents/open-world-agents.git /tmp/upstream-owa
+      - id: compare
+        run: |
+          chmod +x scripts/compare-owa.sh
+          scripts/compare-owa.sh
+
+      - if: steps.compare.outputs.push_has_changes == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: rsync-patch
+          path: /tmp/rsync-changes.patch
+
+      - if: steps.compare.outputs.pull_has_changes == 'true' || steps.compare.outputs.push_has_changes == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pull = '${{ steps.compare.outputs.pull_has_changes }}' === 'true';
+            const push = '${{ steps.compare.outputs.push_has_changes }}' === 'true';
+
+            let body = `## 🔄 Open World Agents Sync Options
+
+Choose your preferred sync method:
+
+`;
+
+            if (pull) {
+              body += `### 📥 Pull Changes (Upstream → Proprietary)
+
+**Option A: Git Subtree (preserves history)**
+\`\`\`bash
+cd open-world-agents
+git subtree pull --prefix=. owa main --squash
+cd ..
+git add open-world-agents/
+git commit -m "Update open-world-agents via subtree"
+\`\`\`
+
+**Option B: File Sync (clean, no history)**
+\`\`\`bash
+git clone https://github.com/open-world-agents/open-world-agents.git /tmp/upstream
+rsync -av --delete /tmp/upstream/ ./open-world-agents/
+git add open-world-agents/
+git commit -m "Sync with upstream open-world-agents"
+\`\`\`
+
+`;
+            }
+
+            if (push) {
+              body += `### 📤 Push Changes (Proprietary → Upstream)
+
+**Option A: Git Subtree (preserves history)**
+\`\`\`bash
+cd open-world-agents
+git subtree push --prefix=. owa feature-branch
+# Then create PR from feature-branch
+\`\`\`
+
+**Option B: File Sync (clean, squashed)**
+1. Download the \`rsync-patch\` artifact from this workflow
+2. Or use this script:
+\`\`\`bash
+git clone https://github.com/open-world-agents/open-world-agents.git /tmp/upstream-pr
+cd /tmp/upstream-pr
+git checkout -b sync-$(date +%Y%m%d)
+rsync -av --delete /path/to/your/open-world-agents/ ./
+git add -A
+git commit -m "Sync changes from proprietary (squashed)"
+git push origin sync-$(date +%Y%m%d)
+# Create PR on GitHub
+\`\`\`
+
+`;
+            }
+
+            if (!pull && !push) {
+              body += `✅ **Everything is in sync!**
+
+Both git subtree and file-based comparisons show no differences.
+`;
+            }
+
+            body += `
+### 🤔 Which Method to Choose?
+
+- **Git Subtree**: Preserves commit history, better for ongoing collaboration
+- **File Sync (rsync)**: Clean squashed changes, better for occasional syncs
+
+---
+*Updated automatically on PR changes*`;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number
+            });
+            const existing = comments.find(c => c.user.type === 'Bot' && c.body.includes('Open World Agents Sync Options'));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner, repo: context.repo.repo, comment_id: existing.id, body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, body
+              });
+            }
