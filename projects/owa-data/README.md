@@ -8,26 +8,6 @@ Raw MCAP Data → Event Dataset → FSLDataset → VLA Training Ready
 ```
 
 ## Quick Start
-
-### Python API
-```python
-from owa.data.datasets import load_from_disk, create_event_transform
-
-# Load any OWA dataset with automatic type detection
-dataset = load_from_disk("/path/to/dataset")
-print(f"Dataset stage: {dataset.stage}")  # EVENT, BINNED, TOKENIZED, or FSL
-
-# Apply stage-specific transform
-transform = create_event_transform(encoder_type="hierarchical", load_images=True)
-dataset.set_transform(transform)
-
-# Use in training loop
-for batch in dataset:
-    # batch contains processed data ready for training
-    pass
-```
-
-### Command Line
 ```bash
 # Set variables
 export MCAP_TRAIN_DIR="/mnt/raid12/datasets/owa/mcaps/super-hexagon"
@@ -59,7 +39,18 @@ print(f'Dataset stage: {dataset.stage}')  # EVENT, BINNED, TOKENIZED, or FSL
 # Apply stage-specific transform
 transform = create_event_transform(encoder_type='hierarchical', load_images=True)
 dataset.set_transform(transform)
-for sample in dataset['train'].take(2):
+for sample in dataset['train'].take(3):
+    print(f'{sample=}')
+"
+python -c "
+from owa.data.datasets import load_from_disk, create_binned_transform
+dataset = load_from_disk('$BINNED_DATASET_DIR')
+print(f'Dataset stage: {dataset.stage}')  # EVENT, BINNED, TOKENIZED, or FSL
+
+# Apply stage-specific transform
+transform = create_binned_transform(instruction='Complete the computer task')
+dataset.set_transform(transform)
+for sample in dataset['train'].take(3):
     print(f'{sample=}')
 "
 
@@ -129,47 +120,29 @@ python scripts/02_event_dataset_to_binned_dataset.py \
 
 ## Dataset Transforms
 
-**Why needed**: Raw datasets contain binary MCAP messages that need to be converted to training-ready format (text + images).
-
-**What they do**: Apply on-the-fly conversion using HuggingFace's `set_transform()` - decode binary messages, encode events as text, load images as PIL objects.
-
-**Output**: `encoded_event` (text), `image` (PIL.Image or None) for Event Dataset | `images` (List[PIL.Image]), `encoded_events` (List[str]), `instruction` (str) for Binned Dataset
-
-### Event Dataset Transform
+Raw datasets contain binary MCAP messages that need conversion to training-ready format (text + images). Transforms apply on-the-fly conversion using HuggingFace's `set_transform()`.
 
 ```python
-from datasets import load_from_disk
-from owa.data import create_event_dataset_transform
+from owa.data.datasets import load_from_disk, create_event_transform, create_binned_transform
 
-event_dataset = load_from_disk("/mnt/raid12/datasets/owa/data/super-hexagon-event")
-transform = create_event_dataset_transform(encoder_type="hierarchical", load_images=True)
-event_dataset.set_transform(transform)
+# Event Dataset Transform
+dataset = load_from_disk("/path/to/event/dataset")
+transform = create_event_transform(encoder_type="hierarchical", load_images=False)
+dataset["train"].set_transform(transform)
 
-for sample in event_dataset["train"].take(5):
-    print(f"{sample=}")
+# Binned Dataset Transform
+dataset = load_from_disk("/path/to/binned/dataset")
+transform = create_binned_transform(instruction="Complete the computer task")
+dataset["train"].set_transform(transform)
 ```
 
-### Binned Dataset Transform
-
-```python
-from datasets import load_from_disk
-from owa.data import create_binned_dataset_transform
-
-binned_dataset = load_from_disk("/mnt/raid12/datasets/owa/data/super-hexagon-bin")
-transform = create_binned_dataset_transform(instruction="Complete the computer task")
-binned_dataset.set_transform(transform)
-
-for sample in binned_dataset["train"].take(5):
-    print(f"{sample=}")
-```
-
-## FSLDataset
+## FSL (Fixed Sequence Length) Processing
 
 Core component for Fixed Sequence Length processing that prepares tokenized event data for training with sequence handling, padding, and image loading.
 
 ### Goals
 
-1. **Accelerate training**: Packing events into fixed-length sequences for efficient training (maybe 3x acceleration, reported on https://github.com/huggingface/nanoVLM/pull/115)
+1. **Accelerate training**: Packing events into fixed-length sequences for efficient training (3x acceleration, reported in [nanoVLM](https://github.com/huggingface/nanoVLM/pull/115))
 2. **Context-aware learning**: Provide full context for each event in the sequence
 
 ### Design Principles
@@ -181,67 +154,14 @@ Core component for Fixed Sequence Length processing that prepares tokenized even
 5. **Enable random access**: Allow starting iteration from any position for sequence packing
 6. **Simple implementation**: Clean, readable code with minimal complexity
 
-**Key Insight:** Simply preprocess the event dataset to add tokenization and image processing columns. This enables efficient random access and flexible sequence construction during training.
+### Complete Examples
 
-### Added Columns
+For complete FSL usage examples, see:
 
-FSLDataset adds the following columns to the original event dataset:
+- **Single GPU**: [`scripts/single_shuffle_loader.py`](scripts/single_shuffle_loader.py) - Basic FSL dataset usage with single GPU training
+- **Multi GPU**: [`scripts/multi_gpu_loader.py`](scripts/multi_gpu_loader.py) - Distributed FSL dataset usage with multi-GPU training
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `token_ids` | `List[int]` | Padded token sequences (length = `max_sequence_length`) |
-| `attention_mask` | `List[int]` | Attention masks for padded sequences (1 = real token, 0 = padding) |
-| `images` | `List[ScreenCaptured \| PIL.Image \| ImageProcesser Output]` | Images corresponding to `<image>` tokens (type depends on `load_images` config and `image_processor` argument) |
-
-### Complete Example
-
-```python
-from datasets import load_from_disk
-from loguru import logger
-from tqdm import tqdm
-from transformers import AutoTokenizer
-
-from owa.data.datasets import Dataset, DatasetConfig, DatasetStage, create_event_transform, create_fsl_transform
-from owa.data.episode_tokenizer import EpisodeTokenizer
-
-# Load event dataset
-event_dataset = Dataset.load_from_disk("/mnt/raid12/datasets/owa/data/super-hexagon-event")
-print(f"Loaded dataset stage: {event_dataset.stage}")  # Should be EVENT
-
-tokenizer = AutoTokenizer.from_pretrained("HuggingFaceTB/SmolVLM2-2.2B-Base")
-
-print("[!] Printing raw event dataset...")
-for sample in event_dataset.take(5):
-    print(f"{sample=}")
-
-# Apply event transform
-event_transform = create_event_transform(encoder_type="hierarchical", load_images=True)
-event_dataset.set_transform(event_transform)
-
-print("[!] Printing transformed event dataset...")
-for sample in event_dataset.take(5):
-    print(f"{sample=}")
-
-# Tokenize to create TOKENIZED stage
-event_tokenizer = EpisodeTokenizer(image_token="<image>")
-event_tokenizer.prepare_model(tokenizer=tokenizer)
-tokenized_data = event_tokenizer.tokenize_event_dataset(event_dataset)
-
-# Create FSL stage dataset with minimal config
-fsl_config = DatasetConfig(stage=DatasetStage.FSL)
-fsl_dataset = Dataset(tokenized_data.data, tokenized_data.info, owa_config=fsl_config)
-
-# Use FSL transform
-fsl_transform = create_fsl_transform(max_sequence_length=1024, pad_token_id=tokenizer.pad_token_id)
-fsl_transform['prepare'](fsl_dataset)
-
-print("[!] Printing FSL dataset...")
-sample = fsl_transform['getitem'](fsl_dataset, 0)
-print(f"{sample=}")
-
-for i in tqdm(range(min(50, fsl_transform['len'](fsl_dataset)))):
-    sample = fsl_transform['getitem'](fsl_dataset, i)
-```
+These scripts demonstrate the full pipeline from event dataset → tokenization → FSL transforms → training-ready data.
 
 ### Performance Metrics
 
@@ -251,13 +171,18 @@ To enable logging, set `logger.enable("owa.data.fsl_dataset")` for loguru logger
 FSL[30] | Total: 3.2s/s, 3,274t/s, 44.8i/s, 49.5Mb/s | EMA: 3.0s/s, 3,073t/s, 42.0i/s, 46.5Mb/s
 ```
 
-- **s/s**: Samples per second | **t/s**: Tokens per second | **i/s**: Images per second | **Mb/s**: Megabits per second | **EMA**: Exponential Moving Average
+**Metrics explanation:**
+- **s/s**: Samples per second
+- **t/s**: Tokens per second
+- **i/s**: Images per second
+- **Mb/s**: Megabits per second
+- **EMA**: Exponential Moving Average
 
-## API Reference
+## References
 
-| Component | Purpose | Encoder Types |
-|-----------|---------|---------------|
-| **EpisodeTokenizer** | Event → Token conversion | `hierarchical` (efficient), `json` (readable) |
-| **FSLDataset** | Training preparation | Padding, attention masks, image loading |
-| **create_event_dataset_transform** | On-the-fly processing | Event dataset → VLA format |
-| **create_binned_dataset_transform** | On-the-fly processing | Binned dataset → VLA format |
+1. **[olmo-core FSLDataset](https://github.com/allenai/OLMo-core/blob/main/src/olmo_core/data/fsl_dataset.py)** - Original FSL implementation for language model training
+2. **[nanoVLM Sequence Packing](https://github.com/huggingface/nanoVLM/pull/115)** - 3x training acceleration through sequence packing
+3. **[HuggingFace Datasets](https://huggingface.co/docs/datasets/)** - Foundation for dataset handling and transforms
+4. **[OpenX Embodied](https://robotics-transformer-x.github.io/)** - Large-scale robotics dataset format
+5. **[LeRobot Dataset](https://github.com/huggingface/lerobot)** - Robotics dataset processing pipeline
+
