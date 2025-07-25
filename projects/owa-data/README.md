@@ -56,7 +56,7 @@ for sample in dataset['train'].take(3):
 
 # 4. FSL (Fixed Sequence Length) approach
 python -c "
-from owa.data.datasets import Dataset, DatasetConfig, DatasetStage, create_fsl_transform
+from owa.data.datasets import Dataset, prepare_fsl
 from transformers import AutoTokenizer
 from owa.data.episode_tokenizer import EpisodeTokenizer
 
@@ -69,16 +69,10 @@ event_tokenizer.prepare_model(tokenizer=tokenizer)
 # Tokenize to create TOKENIZED stage dataset
 tokenized_data = event_tokenizer.tokenize_event_dataset(event_dataset)
 
-# Create FSL stage dataset with minimal config
-fsl_config = DatasetConfig(stage=DatasetStage.FSL)
-fsl_dataset = Dataset(tokenized_data.data, tokenized_data.info, owa_config=fsl_config)
+# Create FSL stage dataset
+fsl_dataset = prepare_fsl(tokenized_data['train'], max_sequence_length=1024, pad_token_id=tokenizer.pad_token_id)
 
-# Use FSL transform for sequence packing
-fsl_transform = create_fsl_transform(max_sequence_length=1024, pad_token_id=tokenizer.pad_token_id)
-fsl_transform['prepare'](fsl_dataset)
-
-for i in range(1):
-    sample = fsl_transform['getitem'](fsl_dataset, i)
+for sample in fsl_dataset.take(3):
     print(f'{sample=}')
 "
 ```
