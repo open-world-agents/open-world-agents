@@ -43,7 +43,7 @@ accelerate launch --config_file=accelerate_configs/deepspeed_zero1.yaml \
 """
 
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, cast
 
 import torch
 from accelerate import Accelerator
@@ -144,6 +144,7 @@ def main():
     script_args, training_args, model_args = parser.parse_args_and_config()
 
     # Configure training arguments for pretraining
+    training_args = cast(SFTConfig, training_args)
     training_args.gradient_checkpointing_kwargs = dict(use_reentrant=False)
     training_args.remove_unused_columns = False
     training_args.dataset_kwargs = {"skip_prepare_dataset": True}
@@ -218,40 +219,39 @@ def main():
     ################
     accelerator.print(f"Loading dataset from {script_args.dataset_path}...")
     event_dataset = load_from_disk(script_args.dataset_path)
+    with training_args.main_process_first(desc="dataset map tokenization"):
+        # Setup episode tokenizer
+        episode_tokenizer = EpisodeTokenizer(image_token="<image>")
+        episode_tokenizer.prepare_model(tokenizer=tokenizer, model=model)
 
-    # Setup episode tokenizer
-    episode_tokenizer = EpisodeTokenizer(image_token="<image>")
-    episode_tokenizer.prepare_model(tokenizer=tokenizer, model=model)
+        # Tokenize event dataset
+        # Handle both DatasetDict and single Dataset cases
+        if hasattr(event_dataset, "keys") and callable(getattr(event_dataset, "keys")):
+            # DatasetDict case
+            tokenized_datasets = {}
+            for split_name in ["train", "test", "validation"]:
+                if split_name in event_dataset:
+                    from datasets import Dataset
 
-    # Tokenize event dataset
-    accelerator.print("Tokenizing event dataset...")
-    # Handle both DatasetDict and single Dataset cases
-    if hasattr(event_dataset, "keys") and callable(getattr(event_dataset, "keys")):
-        # DatasetDict case
-        tokenized_datasets = {}
-        for split_name in ["train", "test", "validation"]:
-            if split_name in event_dataset:
-                from datasets import Dataset
-
-                dataset = event_dataset[split_name]
-                # Type cast to help with type checking
-                if isinstance(dataset, Dataset):
-                    tokenized = episode_tokenizer.tokenize_event_dataset(
-                        dataset, map_kwargs={"num_proc": script_args.preprocessing_num_workers}
-                    )
-                    tokenized_datasets[split_name] = tokenized
-        event_dataset = tokenized_datasets
-    else:
-        # Single Dataset case - assume it's the train split
-        from datasets import Dataset
-
-        if isinstance(event_dataset, Dataset):
-            tokenized = episode_tokenizer.tokenize_event_dataset(
-                event_dataset, map_kwargs={"num_proc": script_args.preprocessing_num_workers}
-            )
-            event_dataset = {"train": tokenized}
+                    dataset = event_dataset[split_name]
+                    # Type cast to help with type checking
+                    if isinstance(dataset, Dataset):
+                        tokenized = episode_tokenizer.tokenize_event_dataset(
+                            dataset, map_kwargs={"num_proc": script_args.preprocessing_num_workers}
+                        )
+                        tokenized_datasets[split_name] = tokenized
+            event_dataset = tokenized_datasets
         else:
-            raise ValueError(f"Unsupported dataset type: {type(event_dataset)}")
+            # Single Dataset case - assume it's the train split
+            from datasets import Dataset
+
+            if isinstance(event_dataset, Dataset):
+                tokenized = episode_tokenizer.tokenize_event_dataset(
+                    event_dataset, map_kwargs={"num_proc": script_args.preprocessing_num_workers}
+                )
+                event_dataset = {"train": tokenized}
+            else:
+                raise ValueError(f"Unsupported dataset type: {type(event_dataset)}")
 
     # Create FSL datasets
     accelerator.print("Creating FSLDataset...")
