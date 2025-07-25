@@ -6,19 +6,16 @@ message registry system, ensuring that messages from the registry
 can be properly serialized and deserialized through MCAP.
 """
 
-import tempfile
-
 import pytest
 
 from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
 
 
 @pytest.fixture
-def temp_mcap_file():
+def temp_mcap_file(tmp_path):
     """Create a temporary MCAP file for testing."""
-    with tempfile.NamedTemporaryFile(suffix=".mcap", delete=False) as tmp:
-        yield tmp.name
-    # Cleanup is handled by the OS since delete=False
+    mcap_file = tmp_path / "test.mcap"
+    return str(mcap_file)
 
 
 class TestMcapRegistryIntegration:
@@ -55,7 +52,7 @@ class TestMcapRegistryIntegration:
             assert decoded.vk == 65
             assert decoded.timestamp == 1234567890
 
-    def test_multiple_registry_message_types(self):
+    def test_multiple_registry_message_types(self, tmp_path):
         """Test MCAP with multiple message types from registry."""
         try:
             from owa.core import MESSAGES
@@ -69,8 +66,7 @@ class TestMcapRegistryIntegration:
         # Test KeyboardEvent messages
         KeyboardEvent = MESSAGES["desktop/KeyboardEvent"]
 
-        with tempfile.NamedTemporaryFile(suffix=".mcap", delete=False) as tmp:
-            kb_file = tmp.name
+        kb_file = str(tmp_path / "keyboard_events.mcap")
 
         with OWAMcapWriter(kb_file) as writer:
             kb_event1 = KeyboardEvent(event_type="press", vk=65, timestamp=1000)
@@ -93,8 +89,7 @@ class TestMcapRegistryIntegration:
         # Test MouseEvent messages separately
         MouseEvent = MESSAGES["desktop/MouseEvent"]
 
-        with tempfile.NamedTemporaryFile(suffix=".mcap", delete=False) as tmp:
-            mouse_file = tmp.name
+        mouse_file = str(tmp_path / "mouse_events.mcap")
 
         with OWAMcapWriter(mouse_file) as writer:
             mouse_event = MouseEvent(event_type="click", x=100, y=200, button="left", pressed=True, timestamp=2000)
@@ -171,7 +166,7 @@ class TestMcapRegistryIntegration:
             assert hasattr(MessageClass, "_type")
             assert MessageClass._type.default == message_type
 
-    def test_registry_message_filtering(self):
+    def test_registry_message_filtering(self, tmp_path):
         """Test filtering MCAP messages by schema type from registry."""
         try:
             from owa.core import MESSAGES
@@ -182,8 +177,7 @@ class TestMcapRegistryIntegration:
         KeyboardEvent = MESSAGES["desktop/KeyboardEvent"]
 
         # Create separate temp files for each message type to avoid schema collisions
-        with tempfile.NamedTemporaryFile(suffix=".mcap", delete=False) as tmp:
-            kb_file = tmp.name
+        kb_file = str(tmp_path / "keyboard_filtering.mcap")
 
         # Write keyboard events only
         with OWAMcapWriter(kb_file) as writer:
@@ -207,7 +201,7 @@ class TestMcapRegistryIntegration:
                 assert msg.topic == "/keyboard"
                 assert msg.timestamp == i * 1000
 
-    def test_schema_collision_issue_documentation(self):
+    def test_schema_collision_issue_documentation(self, tmp_path):
         """Document the known schema collision issue when mixing message types."""
         try:
             from owa.core import MESSAGES
@@ -221,8 +215,7 @@ class TestMcapRegistryIntegration:
         KeyboardEvent = MESSAGES["desktop/KeyboardEvent"]
         MouseEvent = MESSAGES["desktop/MouseEvent"]
 
-        with tempfile.NamedTemporaryFile(suffix=".mcap", delete=False) as tmp:
-            mixed_file = tmp.name
+        mixed_file = str(tmp_path / "mixed_messages.mcap")
 
         # Write mixed message types (this should work for writing)
         with OWAMcapWriter(mixed_file) as writer:

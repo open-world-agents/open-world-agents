@@ -30,3 +30,6 @@ packages = ["owa"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "network: marks tests as requiring network access (may be slow or unreliable)",
+]

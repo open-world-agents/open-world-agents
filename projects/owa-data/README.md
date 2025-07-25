@@ -171,11 +171,15 @@ FSLDataset adds the following columns to the original event dataset:
 
 ```python
 from datasets import load_from_disk
+from loguru import logger
 from tqdm import tqdm
 from transformers import AutoTokenizer
 
 from owa.data.episode_tokenizer import EpisodeTokenizer
 from owa.data.fsl_dataset import FSLDataset
+
+# This line is to enable throughput logging from FSLDataset
+logger.enable("owa.data.fsl_dataset")
 
 # Load event dataset
 event_dataset = load_from_disk("/mnt/raid12/datasets/owa/data/super-hexagon-event")
@@ -204,11 +208,13 @@ print("[!] Printing FSL dataset...")
 for sample in dataset.take(1):
     print(f"{sample=}")
 
-for sample in tqdm(dataset.take(30)):
+for sample in tqdm(dataset.take(50)):
     ...
 ```
 
 ### Performance Metrics
+
+To enable logging, set `logger.enable("owa.data.fsl_dataset")` for loguru logger.
 
 ```
 FSL[30] | Total: 3.2s/s, 3,274t/s, 44.8i/s, 49.5Mb/s | EMA: 3.0s/s, 3,073t/s, 42.0i/s, 46.5Mb/s

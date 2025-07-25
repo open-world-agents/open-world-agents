@@ -26,7 +26,7 @@ class RunnableSessionContextManager:
         self.runnable.stop()
         self.runnable.join()
 
-    def is_alive(self):
+    def is_alive(self) -> bool:
         return self.runnable.is_alive()
 
 
@@ -66,7 +66,7 @@ class RunnableMixin(ABC):
         """Wait for the runnable object to complete."""
 
     @abstractmethod
-    def is_alive(self): ...
+    def is_alive(self) -> bool: ...
 
     # Common functionality
     _configured = False
@@ -113,10 +113,9 @@ class RunnableMixin(ABC):
         pass
 
     @abstractmethod
-    def loop(self):
+    def loop(self, *args, **kwargs):
         """
         Main execution loop. Must be implemented by subclasses.
-
         This method contains the main logic that runs while the runnable is active.
 
         Requirements:
