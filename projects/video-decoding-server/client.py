@@ -49,10 +49,6 @@ def main():
 
     args = parser.parse_args()
 
-    if not Path(args.video).exists():
-        print(f"Error: Video file not found: {args.video}")
-        sys.exit(1)
-
     try:
         frame = extract_frame(args.video, args.time, args.server_url)
 
