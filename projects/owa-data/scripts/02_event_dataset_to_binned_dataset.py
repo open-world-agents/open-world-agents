@@ -24,6 +24,9 @@ from rich.console import Console
 from rich.panel import Panel
 from tqdm import tqdm
 
+# OWA Dataset imports
+from owa.data.datasets import BinnedDataset, BinnedDatasetConfig, DatasetType, load_owa_dataset
+
 app = typer.Typer(add_completion=False)
 console = Console()
 
@@ -147,7 +150,43 @@ def main(
         )
     else:
         console.print("[cyan]🔍[/cyan] Filter empty actions: [bold]DISABLED[/bold] - all bins will be kept")
-    ds_dict = load_from_disk(str(input_dir))
+
+    # Load using auto-detection to get EventDataset
+    ds_dict = load_owa_dataset(str(input_dir))
+
+    # Get config from the first dataset to inherit settings
+    first_dataset = (
+        ds_dict["train"] if "train" in ds_dict else list(ds_dict.values())[0] if hasattr(ds_dict, "keys") else ds_dict
+    )
+    event_config = (
+        first_dataset.owa_config if hasattr(first_dataset, "owa_config") and first_dataset.owa_config else None
+    )
+
+    # Create BinnedDatasetConfig inheriting from EventDataset config
+    if event_config:
+        binned_config = BinnedDatasetConfig(
+            mcap_root_directory=event_config.mcap_root_directory,
+            dataset_type=DatasetType.BINNED,
+            fps=fps,
+            filter_empty_actions=filter_empty_actions,
+            bin_interval_ns=int((1.0 / fps) * 1e9),  # Computed from fps
+            source_event_dataset=str(input_dir),
+            instruction="Complete the computer task",  # Default
+            encoder_type=getattr(event_config, "encoder_type", "hierarchical"),
+            load_images=getattr(event_config, "load_images", True),
+        )
+        console.print(f"[green]✓[/green] Inherited config from EventDataset: {event_config.dataset_type}")
+    else:
+        # Fallback config if no EventDataset config found
+        binned_config = BinnedDatasetConfig(
+            mcap_root_directory=str(input_dir),  # Fallback
+            dataset_type=DatasetType.BINNED,
+            fps=fps,
+            filter_empty_actions=filter_empty_actions,
+            bin_interval_ns=int((1.0 / fps) * 1e9),
+            source_event_dataset=str(input_dir),
+        )
+        console.print("[yellow]⚠[/yellow] No EventDataset config found, using fallback config")
     # Support both DatasetDict and Dataset
     if hasattr(ds_dict, "keys"):
         splits = list(ds_dict.keys())
@@ -202,7 +241,19 @@ def main(
         )
         # McapMessage objects are already serialized as bytes from previous step
         console.print(f"[cyan]🔧[/cyan] Creating dataset from [bold]{len(all_binned_data):,}[/bold] binned entries...")
-        binned_dataset = Dataset.from_list(all_binned_data, features=features)
+
+        # Create regular HF Dataset first
+        hf_dataset = Dataset.from_list(all_binned_data, features=features)
+
+        # Convert to BinnedDataset with config
+        binned_dataset = BinnedDataset(
+            arrow_table=hf_dataset.data,
+            info=hf_dataset.info,
+            split=hf_dataset.split,
+            indices_table=hf_dataset._indices,
+            fingerprint=hf_dataset._fingerprint,
+            owa_config=binned_config,
+        )
 
         # Store the dataset for this split
         split_name = split if split else "train"  # Default to "train" if no split

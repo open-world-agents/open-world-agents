@@ -43,6 +43,9 @@ from tqdm import tqdm
 
 # MCAP and interval extraction imports
 from mcap_owa.highlevel import McapMessage, OWAMcapReader
+
+# OWA Dataset imports
+from owa.data.datasets import DatasetType, EventDataset, EventDatasetConfig
 from owa.data.interval import Intervals
 from owa.data.interval.selector import All
 
@@ -82,6 +85,7 @@ def process_raw_events_file(
     episode_path: str,
     rate_settings: Dict[str, float],
     keep_topics: Optional[List[str]] = None,
+    mcap_root_directory: Optional[str] = None,
 ) -> List[Dict]:
     """
     Process a single MCAP file to extract raw events, applying rate-limiting
@@ -133,9 +137,18 @@ def process_raw_events_file(
                     # Serialize McapMessage to bytes using model_dump_json
                     mcap_message_bytes = mcap_message_obj.model_dump_json().encode("utf-8")
 
+                    # Store relative path if mcap_root_directory is provided
+                    stored_episode_path = episode_path
+                    if mcap_root_directory:
+                        try:
+                            stored_episode_path = str(Path(episode_path).relative_to(mcap_root_directory))
+                        except ValueError:
+                            # If path is not relative to mcap_root_directory, store absolute path
+                            stored_episode_path = episode_path
+
                     events.append(
                         {
-                            "episode_path": episode_path,
+                            "episode_path": stored_episode_path,
                             "topic": topic,
                             "timestamp_ns": timestamp_ns,
                             "message_type": message_type,
@@ -154,6 +167,7 @@ def generate_event_examples(
     rate_settings: Dict[str, float],
     keep_topics: Optional[List[str]] = None,
     num_workers: int = 4,
+    mcap_root_directory: Optional[str] = None,
 ):
     """
     Generator function that yields event examples by processing each raw events file
@@ -171,7 +185,8 @@ def generate_event_examples(
     total_files = len(episode_paths)
     with ProcessPoolExecutor(max_workers=num_workers) as executor:
         future_to_path = {
-            executor.submit(process_raw_events_file, fp, rate_settings, keep_topics): fp for fp in episode_paths
+            executor.submit(process_raw_events_file, fp, rate_settings, keep_topics, mcap_root_directory): fp
+            for fp in episode_paths
         }
         with tqdm(total=total_files, desc="Processing files", unit="file") as pbar:
             for future in as_completed(future_to_path):
@@ -193,7 +208,9 @@ def create_event_dataset(
     keep_topics: Optional[List[str]] = None,
     num_workers: int = 4,
     split: str = "train",
-) -> HFDataset:
+    mcap_root_directory: Optional[str] = None,
+    owa_config: Optional[EventDatasetConfig] = None,
+) -> EventDataset:
     """
     Create a Hugging Face event dataset from the given MCAP file paths by streaming
     examples from a generator.
@@ -219,13 +236,15 @@ def create_event_dataset(
         }
     )
 
-    event_dataset = HFDataset.from_generator(
+    # Create HF Dataset first
+    hf_dataset = HFDataset.from_generator(
         generate_event_examples,
         gen_kwargs={
             "episode_paths": episode_path_strs,
             "rate_settings": rate_settings,
             "keep_topics": keep_topics,
             "num_workers": num_workers,
+            "mcap_root_directory": mcap_root_directory,
         },
         features=features,
         split=split,
@@ -235,7 +254,17 @@ def create_event_dataset(
         dataset_name="open-world-agents/goat",
         homepage="https://github.com/open-world-agents",
     )
-    event_dataset.info.update(info_to_update)
+    hf_dataset.info.update(info_to_update)
+
+    # Convert to EventDataset
+    event_dataset = EventDataset(
+        arrow_table=hf_dataset.data,
+        info=hf_dataset.info,
+        split=hf_dataset.split,
+        indices_table=hf_dataset._indices,
+        fingerprint=hf_dataset._fingerprint,
+        owa_config=owa_config,
+    )
 
     return event_dataset
 
@@ -356,24 +385,55 @@ def main(
             console.print("[yellow]⚠[/yellow] Aborting because no output directory was provided.")
             raise typer.Exit(code=1)
 
-    # 7. Create event datasets for train and test
-    train_dataset = create_event_dataset(train_files, rate_settings, topics_to_keep, num_workers, split="train")
-    test_dataset = create_event_dataset(test_files, rate_settings, topics_to_keep, num_workers, split="test")
+    # 7. Create EventDatasetConfig for reproducibility
+    mcap_root_directory = str(train_dir)  # Use train_dir as the root
+    event_config = EventDatasetConfig(
+        mcap_root_directory=mcap_root_directory,
+        dataset_type=DatasetType.EVENT,
+        rate_settings=rate_settings,
+        keep_topics=topics_to_keep,
+        num_workers=num_workers,
+        source_train_dir=str(train_dir),
+        source_test_dir=str(test_dir) if test_dir else None,
+        test_percent=test_percent if not test_dir else None,
+        encoder_type="hierarchical",  # Default
+        load_images=True,  # Default
+    )
 
-    # 8. Combine into DatasetDict
+    # 8. Create event datasets for train and test
+    train_dataset = create_event_dataset(
+        train_files,
+        rate_settings,
+        topics_to_keep,
+        num_workers,
+        split="train",
+        mcap_root_directory=mcap_root_directory,
+        owa_config=event_config,
+    )
+    test_dataset = create_event_dataset(
+        test_files,
+        rate_settings,
+        topics_to_keep,
+        num_workers,
+        split="test",
+        mcap_root_directory=mcap_root_directory,
+        owa_config=event_config,
+    )
+
+    # 9. Combine into DatasetDict
     dataset_dict = DatasetDict({"train": train_dataset, "test": test_dataset})
     console.print(
         f"[green]✓[/green] Created [bold]{len(train_dataset):,}[/bold] train, [bold]{len(test_dataset):,}[/bold] test examples"
     )
 
-    # 9. Save to disk if requested
+    # 10. Save to disk if requested
     if output_dir:
         output_dir.mkdir(parents=True, exist_ok=True)
         console.print(f"[cyan]💾[/cyan] Saving to {output_dir}")
         dataset_dict.save_to_disk(str(output_dir))
         console.print("[green]✓[/green] Saved successfully")
 
-    # 10. Display timing information
+    # 11. Display timing information
     elapsed_time = time.time() - start_time
     console.print(
         f"[green]🎉[/green] Completed in [bold]{elapsed_time:.2f}s[/bold] ([bold]{elapsed_time / 60:.1f}min[/bold])"
