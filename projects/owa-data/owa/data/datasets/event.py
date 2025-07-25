@@ -1,6 +1,5 @@
 """Event dataset implementation."""
 
-from pathlib import Path
 from typing import Optional
 
 from datasets import Dataset as HFDataset
@@ -18,12 +17,12 @@ class EventDataset(OWADatasetBase):
     to decode messages and load images.
     """
 
+    owa_config: Optional[EventDatasetConfig]  # type: ignore[override]
+
     def __init__(self, *args, owa_config: Optional[EventDatasetConfig] = None, **kwargs):
         super().__init__(*args, owa_config=owa_config, **kwargs)
 
-    def set_transform_for_training(
-        self, encoder_type: str = None, load_images: bool = None, encode_actions: bool = True
-    ):
+    def set_transform_for_training(self, encoder_type: Optional[str] = None, load_images: Optional[bool] = None):
         """
         Set transform for training/inference that converts raw MCAP events to processed format.
 
@@ -126,7 +125,7 @@ class EventDataset(OWADatasetBase):
         hf_dataset = HFDataset.load_from_disk(dataset_path, **hf_kwargs)
 
         # Try to load OWA config with remote support
-        resolved_path, config_data, fs = resolve_dataset_path_and_config(dataset_path, storage_options)
+        _, config_data, _ = resolve_dataset_path_and_config(dataset_path, storage_options)
         owa_config = None
         if config_data:
             try:

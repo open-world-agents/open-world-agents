@@ -25,7 +25,7 @@ class OWADatasetBase(HFDataset):
     def owa_config(self, config: OWADatasetConfig) -> None:
         self._owa_config = config
 
-    def save_to_disk(self, dataset_path: PathLike, **kwargs) -> None:
+    def save_to_disk(self, dataset_path: PathLike, **kwargs) -> None:  # type: ignore[override]
         """Save dataset to disk with automatic config persistence."""
         super().save_to_disk(dataset_path, **kwargs)
         if self._owa_config is not None:
@@ -47,7 +47,7 @@ class OWADatasetBase(HFDataset):
         super().set_transform(transform, columns, output_all_columns)
 
     @staticmethod
-    def load_from_disk(dataset_path: PathLike, storage_options: Optional[dict] = None, **kwargs) -> "OWADatasetBase":
+    def load_from_disk(dataset_path: PathLike, storage_options: Optional[dict] = None, **kwargs) -> "OWADatasetBase":  # type: ignore[override]
         """
         Load OWA dataset from disk with remote filesystem support.
 

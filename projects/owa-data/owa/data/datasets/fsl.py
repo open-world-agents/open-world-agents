@@ -1,11 +1,13 @@
-"""FSL (Few-Shot Learning) dataset implementation with on-the-fly sequence generation."""
+"""FSL (Fixed Sequence Length) dataset implementation with on-the-fly sequence generation."""
 
 import concurrent.futures
 import os
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
+import numpy as np
+import torch
 from datasets import Dataset as HFDataset
 from datasets.utils.typing import PathLike
 from loguru import logger
@@ -28,7 +30,7 @@ except ImportError:
 class FSLStatLogger:
     """Statistics logger for FSL dataset performance monitoring."""
 
-    def __init__(self, log_every=10, decay_alpha=0.9):
+    def __init__(self, log_every: int = 10, decay_alpha: float = 0.9):
         self.log_every = log_every
         self.decay_alpha = decay_alpha
         self.count = 0
@@ -43,10 +45,10 @@ class FSLStatLogger:
         self.samples_since_last_log = 0
         self.image_bits_since_last_log = 0
         # Exponential moving averages
-        self.ema_samples_per_sec = None
-        self.ema_tokens_per_sec = None
-        self.ema_images_per_sec = None
-        self.ema_image_bitrate = None
+        self.ema_samples_per_sec: Optional[float] = None
+        self.ema_tokens_per_sec: Optional[float] = None
+        self.ema_images_per_sec: Optional[float] = None
+        self.ema_image_bitrate: Optional[float] = None
 
     def update(self, count, tokens, images, image_bits):
         self.count += count
@@ -85,6 +87,12 @@ class FSLStatLogger:
                     self.ema_images_per_sec = images_per_sec_recent
                     self.ema_image_bitrate = image_bitrate_recent
                 else:
+                    # Type checker: these are guaranteed to be non-None due to the if condition above
+                    assert self.ema_samples_per_sec is not None
+                    assert self.ema_tokens_per_sec is not None
+                    assert self.ema_images_per_sec is not None
+                    assert self.ema_image_bitrate is not None
+
                     self.ema_samples_per_sec = (
                         self.decay_alpha * self.ema_samples_per_sec + (1 - self.decay_alpha) * samples_per_sec_recent
                     )
@@ -138,11 +146,16 @@ class FSLStatLogger:
 
 class FSLDataset(OWADatasetBase):
     """
-    FSL Dataset that provides on-the-fly sequence generation from tokenized events.
+    Fixed Sequence Length (FSL) Dataset for efficient training with tokenization-aware packing.
 
-    This dataset takes a tokenized event dataset and generates training sequences
-    by concatenating events up to max_sequence_length tokens. It handles image
-    loading and processing on-demand for efficient memory usage.
+    This dataset takes a tokenized event dataset and generates fixed-length training sequences
+    by concatenating events up to max_sequence_length tokens. It provides:
+
+    - **Fixed sequence length**: All sequences padded/truncated to exact same length
+    - **Tokenization-aware packing**: Uses actual token counts for efficient sequence packing
+    - **On-the-fly sequence generation**: Concatenates events into training-ready sequences
+    - **Lazy image loading**: Loads images on-demand for memory efficiency
+    - **Automatic padding**: Creates proper attention masks and padding
 
     The dataset expects input data with columns:
     - 'episode_path': str - Path to the episode file
@@ -151,6 +164,8 @@ class FSLDataset(OWADatasetBase):
     - 'total_token_count': int - Number of tokens in this event
     - 'text': str - Human-readable text representation
     """
+
+    owa_config: FSLDatasetConfig  # type: ignore[override]
 
     def __init__(
         self, dataset: HFDataset, image_processor=None, owa_config: Optional[FSLDatasetConfig] = None, **kwargs
@@ -174,12 +189,14 @@ class FSLDataset(OWADatasetBase):
 
         # Merge config with kwargs for backward compatibility
         if owa_config is None:
-            owa_config = FSLDatasetConfig("/tmp", dataset_type="fsl")
+            from .config import DatasetType
+
+            owa_config = FSLDatasetConfig("/tmp", DatasetType.FSL)
 
         # Override config with any provided kwargs
         config_dict = owa_config.to_dict()
         config_dict.update(kwargs)
-        owa_config = FSLDatasetConfig.from_dict(config_dict)
+        owa_config = FSLDatasetConfig.from_dict(config_dict)  # type: ignore[assignment]
 
         super().__init__(
             arrow_table=arrow_table,
@@ -189,6 +206,9 @@ class FSLDataset(OWADatasetBase):
             fingerprint=fingerprint,
             owa_config=owa_config,
         )
+
+        # Ensure we have the correct config type
+        assert isinstance(self.owa_config, FSLDatasetConfig), "FSLDataset requires FSLDatasetConfig"
 
         self.image_processor = image_processor
         self._prepared = False
@@ -204,7 +224,7 @@ class FSLDataset(OWADatasetBase):
         self._cumsum = np.cumsum(total_token_counts)
         self._prepared = True
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx) -> dict:  # type: ignore[override]
         """
         Get a training sequence by concatenating events up to max_sequence_length.
 
@@ -247,9 +267,9 @@ class FSLDataset(OWADatasetBase):
 
                 # Resolve episode path using config if available
                 if self.owa_config.mcap_root_directory and episode_path:
-                    full_episode_path = Path(self.owa_config.mcap_root_directory) / episode_path
+                    full_episode_path = Path(self.owa_config.mcap_root_directory) / str(episode_path)
                 else:
-                    full_episode_path = episode_path
+                    full_episode_path = str(episode_path)
 
                 screen_images = [
                     ScreenCaptured.model_validate_json(img_json).resolve_relative_path(str(full_episode_path))
@@ -312,7 +332,7 @@ class FSLDataset(OWADatasetBase):
 
         return result
 
-    def take(self, n):
+    def take(self, n):  # type: ignore[override]
         """Take n samples from the dataset."""
         for i in range(n):
             yield self[i]
@@ -338,7 +358,7 @@ class FSLDataset(OWADatasetBase):
         hf_dataset = HFDataset.load_from_disk(dataset_path, **hf_kwargs)
 
         # Try to load OWA config with remote support
-        resolved_path, config_data, fs = resolve_dataset_path_and_config(dataset_path, storage_options)
+        _, config_data, _ = resolve_dataset_path_and_config(dataset_path, storage_options)
         owa_config = None
         if config_data:
             try:

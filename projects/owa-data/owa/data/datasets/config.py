@@ -18,6 +18,7 @@ class DatasetType(StrEnum):
 @dataclass
 class OWADatasetConfig:
     """Base configuration for OWA datasets."""
+
     mcap_root_directory: PathLike
     dataset_type: DatasetType
 
@@ -42,6 +43,7 @@ class OWADatasetConfig:
 @dataclass
 class EventDatasetConfig(OWADatasetConfig):
     """Configuration for event datasets."""
+
     dataset_type: DatasetType = DatasetType.EVENT
     rate_settings: Optional[Dict[str, float]] = None
     keep_topics: Optional[list[str]] = None
@@ -56,6 +58,7 @@ class EventDatasetConfig(OWADatasetConfig):
 @dataclass
 class BinnedDatasetConfig(OWADatasetConfig):
     """Configuration for binned datasets."""
+
     dataset_type: DatasetType = DatasetType.BINNED
     fps: float = 10.0
     filter_empty_actions: bool = False
@@ -68,7 +71,8 @@ class BinnedDatasetConfig(OWADatasetConfig):
 
 @dataclass
 class FSLDatasetConfig(OWADatasetConfig):
-    """Configuration for FSL (Few-Shot Learning) datasets."""
+    """Configuration for FSL (Fixed Sequence Length) datasets."""
+
     dataset_type: DatasetType = DatasetType.FSL
     pad_token_id: int = 0
     max_sequence_length: int = 8192

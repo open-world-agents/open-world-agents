@@ -1,6 +1,5 @@
 """Binned dataset implementation."""
 
-from pathlib import Path
 from typing import Optional
 
 from datasets import Dataset as HFDataset
@@ -18,11 +17,17 @@ class BinnedDataset(OWADatasetBase):
     transforms on-the-fly to load images and encode actions.
     """
 
+    owa_config: Optional[BinnedDatasetConfig]  # type: ignore[override]
+
     def __init__(self, *args, owa_config: Optional[BinnedDatasetConfig] = None, **kwargs):
         super().__init__(*args, owa_config=owa_config, **kwargs)
 
     def set_transform_for_training(
-        self, instruction: str = None, encoder_type: str = None, load_images: bool = None, encode_actions: bool = True
+        self,
+        instruction: Optional[str] = None,
+        encoder_type: Optional[str] = None,
+        load_images: Optional[bool] = None,
+        encode_actions: bool = True,
     ):
         """
         Set transform for training/inference that converts binned data to VLA format.
@@ -126,7 +131,7 @@ class BinnedDataset(OWADatasetBase):
         hf_dataset = HFDataset.load_from_disk(dataset_path, **hf_kwargs)
 
         # Try to load OWA config with remote support
-        resolved_path, config_data, fs = resolve_dataset_path_and_config(dataset_path, storage_options)
+        _, config_data, _ = resolve_dataset_path_and_config(dataset_path, storage_options)
         owa_config = None
         if config_data:
             try:
