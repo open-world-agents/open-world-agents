@@ -164,8 +164,7 @@ FSLDataset adds the following columns to the original event dataset:
 |--------|------|-------------|
 | `token_ids` | `List[int]` | Padded token sequences (length = `max_sequence_length`) |
 | `attention_mask` | `List[int]` | Attention masks for padded sequences (1 = real token, 0 = padding) |
-| `total_token_count` | `int` | Total number of tokens in the sequence (before padding) |
-| `images` | `List[ScreenCaptured \| PIL.Image]` | Images corresponding to `<image>` tokens (type depends on `load_images` config) |
+| `images` | `List[ScreenCaptured \| PIL.Image \| ImageProcesser Output]` | Images corresponding to `<image>` tokens (type depends on `load_images` config and `image_processor` argument) |
 
 ### Complete Example
 
