@@ -1,39 +1,31 @@
-"""OWA Datasets - Custom HuggingFace Dataset implementations with OWA-specific functionality."""
+"""OWA Datasets - Unified HuggingFace Dataset implementation with stage-specific functionality."""
 
-# Core dataset classes
-from .base import OWADatasetBase
-from .binned import BinnedDataset
-
-# Configuration classes
-from .config import (
-    BinnedDatasetConfig,
-    DatasetType,
-    EventDatasetConfig,
-    FSLDatasetConfig,
-    OWADatasetConfig,
+from .config import DatasetConfig, DatasetStage
+from .dataset import Dataset, DatasetDict
+from .discovery import list_datasets
+from .load import load_from_disk
+from .transforms import (
+    create_binned_transform,
+    create_event_transform,
+    create_fsl_transform,
+    create_tokenized_transform,
+    create_transform,
 )
 
-# Utility functions
-from .discovery import list_datasets
-from .event import EventDataset
-from .fsl import FSLDataset
-from .utils import create_dataset, load_dataset
-
 __all__ = [
-    # Dataset Types
-    "DatasetType",
-    # Configuration Classes
-    "OWADatasetConfig",
-    "EventDatasetConfig",
-    "BinnedDatasetConfig",
-    "FSLDatasetConfig",
-    # Dataset Classes
-    "OWADatasetBase",
-    "EventDataset",
-    "BinnedDataset",
-    "FSLDataset",
+    # Core Dataset Classes
+    "Dataset",
+    "DatasetDict",
+    "load_from_disk",
+    # Configuration
+    "DatasetConfig",
+    "DatasetStage",
     # Main Functions
-    "load_dataset",
-    "create_dataset",
     "list_datasets",
+    # Transform Functions
+    "create_event_transform",
+    "create_binned_transform",
+    "create_tokenized_transform",
+    "create_fsl_transform",
+    "create_transform",
 ]

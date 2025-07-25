@@ -19,13 +19,14 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import typer
-from datasets import Dataset, Features, Sequence, Value, load_from_disk
+from datasets import Dataset as HFDataset
+from datasets import Features, Sequence, Value
 from rich.console import Console
 from rich.panel import Panel
 from tqdm import tqdm
 
 # OWA Dataset imports
-from owa.data.datasets import BinnedDataset, BinnedDatasetConfig, DatasetType, load_dataset
+from owa.data.datasets import Dataset, DatasetConfig, DatasetDict, DatasetStage, load_from_disk
 
 app = typer.Typer(add_completion=False)
 console = Console()
@@ -151,44 +152,39 @@ def main(
     else:
         console.print("[cyan]🔍[/cyan] Filter empty actions: [bold]DISABLED[/bold] - all bins will be kept")
 
-    # Load using auto-detection to get EventDataset
-    ds_dict = load_dataset(str(input_dir))
+    # Load dataset using OWA load_from_disk (handles both Dataset and DatasetDict)
+    ds_dict = load_from_disk(str(input_dir))
 
-    # Get config from the first dataset to inherit settings
-    first_dataset = (
-        ds_dict["train"] if "train" in ds_dict else list(ds_dict.values())[0] if hasattr(ds_dict, "keys") else ds_dict
-    )
-    event_config = (
-        first_dataset.owa_config if hasattr(first_dataset, "owa_config") and first_dataset.owa_config else None
-    )
+    if isinstance(ds_dict, DatasetDict):
+        console.print(f"[green]✓[/green] Loaded DatasetDict with splits: {list(ds_dict.keys())}")
+        # Get config from first dataset
+        first_dataset = next(iter(ds_dict.values()))
+        event_config = first_dataset.owa_config
+    else:
+        console.print("[green]✓[/green] Loaded single Dataset")
+        event_config = ds_dict.owa_config
 
-    # Create BinnedDatasetConfig inheriting from EventDataset config
     if event_config:
-        binned_config = BinnedDatasetConfig(
+        console.print(f"[green]✓[/green] Found OWA config: {event_config.stage}")
+    else:
+        console.print("[yellow]⚠[/yellow] No OWA config found")
+
+    # Create DatasetConfig inheriting from EventDataset config
+    if event_config:
+        binned_config = DatasetConfig(
+            stage=DatasetStage.BINNED,
             mcap_root_directory=event_config.mcap_root_directory,
-            dataset_type=DatasetType.BINNED,
-            fps=fps,
-            filter_empty_actions=filter_empty_actions,
-            bin_interval_ns=int((1.0 / fps) * 1e9),  # Computed from fps
-            source_event_dataset=str(input_dir),
-            instruction="Complete the computer task",  # Default
-            encoder_type=getattr(event_config, "encoder_type", "hierarchical"),
-            load_images=getattr(event_config, "load_images", True),
         )
-        console.print(f"[green]✓[/green] Inherited config from EventDataset: {event_config.dataset_type}")
+        console.print(f"[green]✓[/green] Inherited config from EventDataset: {event_config.stage}")
     else:
         # Fallback config if no EventDataset config found
-        binned_config = BinnedDatasetConfig(
+        binned_config = DatasetConfig(
+            stage=DatasetStage.BINNED,
             mcap_root_directory=str(input_dir),  # Fallback
-            dataset_type=DatasetType.BINNED,
-            fps=fps,
-            filter_empty_actions=filter_empty_actions,
-            bin_interval_ns=int((1.0 / fps) * 1e9),
-            source_event_dataset=str(input_dir),
         )
         console.print("[yellow]⚠[/yellow] No EventDataset config found, using fallback config")
     # Support both DatasetDict and Dataset
-    if hasattr(ds_dict, "keys"):
+    if isinstance(ds_dict, DatasetDict):
         splits = list(ds_dict.keys())
     else:
         splits = [None]
@@ -203,7 +199,7 @@ def main(
             ds = ds_dict
         # Group by episode_path more efficiently
         console.print(f"[cyan]🔍[/cyan] Analyzing [bold]{len(ds):,}[/bold] events to group by file...")
-        episode_paths = sorted(set(ds["episode_path"]))  # Sort for consistent ordering
+        episode_paths = sorted(list(set(ds["episode_path"])))  # type: ignore  # Sort for consistent ordering
         all_binned_data = []
 
         console.print(f"[green]📊[/green] Found [bold]{len(episode_paths)}[/bold] files to process")
@@ -243,10 +239,10 @@ def main(
         console.print(f"[cyan]🔧[/cyan] Creating dataset from [bold]{len(all_binned_data):,}[/bold] binned entries...")
 
         # Create regular HF Dataset first
-        hf_dataset = Dataset.from_list(all_binned_data, features=features)
+        hf_dataset = HFDataset.from_list(all_binned_data, features=features)
 
-        # Convert to BinnedDataset with config
-        binned_dataset = BinnedDataset(
+        # Convert to unified Dataset with config
+        binned_dataset = Dataset(
             arrow_table=hf_dataset.data,
             info=hf_dataset.info,
             split=hf_dataset.split,
@@ -265,9 +261,6 @@ def main(
 
     # Save all datasets as DatasetDict or single Dataset
     if len(processed_datasets) > 1:
-        # Multiple splits - create DatasetDict
-        from datasets import DatasetDict
-
         final_dataset = DatasetDict(processed_datasets)
     else:
         # Single split - save as Dataset

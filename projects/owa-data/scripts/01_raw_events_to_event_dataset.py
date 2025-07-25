@@ -45,7 +45,7 @@ from tqdm import tqdm
 from mcap_owa.highlevel import McapMessage, OWAMcapReader
 
 # OWA Dataset imports
-from owa.data.datasets import DatasetType, EventDataset, EventDatasetConfig
+from owa.data.datasets import Dataset, DatasetConfig, DatasetStage
 from owa.data.interval import Intervals
 from owa.data.interval.selector import All
 
@@ -209,8 +209,8 @@ def create_event_dataset(
     num_workers: int = 4,
     split: str = "train",
     mcap_root_directory: Optional[str] = None,
-    owa_config: Optional[EventDatasetConfig] = None,
-) -> EventDataset:
+    owa_config: Optional[DatasetConfig] = None,
+) -> Dataset:
     """
     Create a Hugging Face event dataset from the given MCAP file paths by streaming
     examples from a generator.
@@ -256,8 +256,8 @@ def create_event_dataset(
     )
     hf_dataset.info.update(info_to_update)
 
-    # Convert to EventDataset
-    event_dataset = EventDataset(
+    # Convert to unified Dataset
+    event_dataset = Dataset(
         arrow_table=hf_dataset.data,
         info=hf_dataset.info,
         split=hf_dataset.split,
@@ -385,19 +385,11 @@ def main(
             console.print("[yellow]⚠[/yellow] Aborting because no output directory was provided.")
             raise typer.Exit(code=1)
 
-    # 7. Create EventDatasetConfig for reproducibility
+    # 7. Create DatasetConfig for reproducibility
     mcap_root_directory = str(train_dir)  # Use train_dir as the root
-    event_config = EventDatasetConfig(
+    event_config = DatasetConfig(
+        stage=DatasetStage.EVENT,
         mcap_root_directory=mcap_root_directory,
-        dataset_type=DatasetType.EVENT,
-        rate_settings=rate_settings,
-        keep_topics=topics_to_keep,
-        num_workers=num_workers,
-        source_train_dir=str(train_dir),
-        source_test_dir=str(test_dir) if test_dir else None,
-        test_percent=test_percent if not test_dir else None,
-        encoder_type="hierarchical",  # Default
-        load_images=True,  # Default
     )
 
     # 8. Create event datasets for train and test

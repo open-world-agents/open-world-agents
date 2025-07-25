@@ -9,12 +9,31 @@ Raw MCAP Data → Event Dataset → FSLDataset → VLA Training Ready
 
 ## Quick Start
 
+### Python API
+```python
+from owa.data.datasets import load_from_disk, create_event_transform
+
+# Load any OWA dataset with automatic type detection
+dataset = load_from_disk("/path/to/dataset")
+print(f"Dataset stage: {dataset.stage}")  # EVENT, BINNED, TOKENIZED, or FSL
+
+# Apply stage-specific transform
+transform = create_event_transform(encoder_type="hierarchical", load_images=True)
+dataset.set_transform(transform)
+
+# Use in training loop
+for batch in dataset:
+    # batch contains processed data ready for training
+    pass
+```
+
+### Command Line
 ```bash
 # Set variables
 export MCAP_TRAIN_DIR="/mnt/raid12/datasets/owa/mcaps/super-hexagon"
 export MCAP_TEST_DIR="/mnt/raid12/datasets/owa/mcaps/super-hexagon-30s"
-export EVENT_DATASET_DIR="/mnt/raid12/datasets/owa/data/super-hexagon-event"
-export BINNED_DATASET_DIR="/mnt/raid12/datasets/owa/data/super-hexagon-bin"
+export EVENT_DATASET_DIR="/mnt/raid12/datasets/owa/data/super-hexagon-event-tmp"
+export BINNED_DATASET_DIR="/mnt/raid12/datasets/owa/data/super-hexagon-bin-tmp"
 
 # 1. Process MCAP → Event Dataset
 python scripts/01_raw_events_to_event_dataset.py \
@@ -31,36 +50,44 @@ python scripts/02_event_dataset_to_binned_dataset.py \
   --fps 10 \
   --filter-empty-actions
 
-# 3. Dataset Transform approach
+# 3. Clean Dataset with separate transforms
 python -c "
-from datasets import load_from_disk
-from owa.data import create_event_dataset_transform
+from owa.data.datasets import load_from_disk, create_event_transform
 dataset = load_from_disk('$EVENT_DATASET_DIR')
-transform = create_event_dataset_transform()
+print(f'Dataset stage: {dataset.stage}')  # EVENT, BINNED, TOKENIZED, or FSL
+
+# Apply stage-specific transform
+transform = create_event_transform(encoder_type='hierarchical', load_images=True)
 dataset.set_transform(transform)
 for sample in dataset['train'].take(2):
     print(f'{sample=}')
 "
 
-# 4. FSLDataset approach
+# 4. FSL (Fixed Sequence Length) approach
 python -c "
-from datasets import load_from_disk
+from owa.data.datasets import Dataset, DatasetConfig, DatasetStage, create_fsl_transform
 from transformers import AutoTokenizer
 from owa.data.episode_tokenizer import EpisodeTokenizer
-from owa.data.fsl_dataset import FSLDataset
 
-event_dataset = load_from_disk('$EVENT_DATASET_DIR')
+# Load event dataset and tokenize
+event_dataset = Dataset.load_from_disk('$EVENT_DATASET_DIR')
 tokenizer = AutoTokenizer.from_pretrained('HuggingFaceTB/SmolVLM2-2.2B-Base')
 event_tokenizer = EpisodeTokenizer(image_token='<image>')
 event_tokenizer.prepare_model(tokenizer=tokenizer)
 
-for split, ds in event_dataset.items():
-    event_dataset[split] = event_tokenizer.tokenize_event_dataset(ds)
+# Tokenize to create TOKENIZED stage dataset
+tokenized_data = event_tokenizer.tokenize_event_dataset(event_dataset)
 
-fsl_dataset = FSLDataset(event_dataset['train'], pad_token_id=tokenizer.pad_token_id, max_sequence_length=1024)
-fsl_dataset.prepare()
+# Create FSL stage dataset with minimal config
+fsl_config = DatasetConfig(stage=DatasetStage.FSL)
+fsl_dataset = Dataset(tokenized_data.data, tokenized_data.info, owa_config=fsl_config)
 
-for sample in fsl_dataset.take(1):
+# Use FSL transform for sequence packing
+fsl_transform = create_fsl_transform(max_sequence_length=1024, pad_token_id=tokenizer.pad_token_id)
+fsl_transform['prepare'](fsl_dataset)
+
+for i in range(1):
+    sample = fsl_transform['getitem'](fsl_dataset, i)
     print(f'{sample=}')
 "
 ```
@@ -174,41 +201,46 @@ from loguru import logger
 from tqdm import tqdm
 from transformers import AutoTokenizer
 
+from owa.data.datasets import Dataset, DatasetConfig, DatasetStage, create_event_transform, create_fsl_transform
 from owa.data.episode_tokenizer import EpisodeTokenizer
-from owa.data.fsl_dataset import FSLDataset
-
-# This line is to enable throughput logging from FSLDataset
-logger.enable("owa.data.fsl_dataset")
 
 # Load event dataset
-event_dataset = load_from_disk("/mnt/raid12/datasets/owa/data/super-hexagon-event")
+event_dataset = Dataset.load_from_disk("/mnt/raid12/datasets/owa/data/super-hexagon-event")
+print(f"Loaded dataset stage: {event_dataset.stage}")  # Should be EVENT
+
 tokenizer = AutoTokenizer.from_pretrained("HuggingFaceTB/SmolVLM2-2.2B-Base")
 
 print("[!] Printing raw event dataset...")
-for sample in event_dataset["train"].take(5):
+for sample in event_dataset.take(5):
     print(f"{sample=}")
 
+# Apply event transform
+event_transform = create_event_transform(encoder_type="hierarchical", load_images=True)
+event_dataset.set_transform(event_transform)
+
+print("[!] Printing transformed event dataset...")
+for sample in event_dataset.take(5):
+    print(f"{sample=}")
+
+# Tokenize to create TOKENIZED stage
 event_tokenizer = EpisodeTokenizer(image_token="<image>")
 event_tokenizer.prepare_model(tokenizer=tokenizer)
+tokenized_data = event_tokenizer.tokenize_event_dataset(event_dataset)
 
-for split, dataset in event_dataset.items():
-    tokenized = event_tokenizer.tokenize_event_dataset(dataset)
-    event_dataset[split] = tokenized
+# Create FSL stage dataset with minimal config
+fsl_config = DatasetConfig(stage=DatasetStage.FSL)
+fsl_dataset = Dataset(tokenized_data.data, tokenized_data.info, owa_config=fsl_config)
 
-print("[!] Printing tokenized event dataset...")
-for sample in event_dataset["train"].take(5):
-    print(f"{sample=}")
-
-
-dataset = FSLDataset(event_dataset["train"], pad_token_id=tokenizer.pad_token_id, max_sequence_length=1024)
-dataset.prepare()
+# Use FSL transform
+fsl_transform = create_fsl_transform(max_sequence_length=1024, pad_token_id=tokenizer.pad_token_id)
+fsl_transform['prepare'](fsl_dataset)
 
 print("[!] Printing FSL dataset...")
-for sample in dataset.take(1):
-    print(f"{sample=}")
+sample = fsl_transform['getitem'](fsl_dataset, 0)
+print(f"{sample=}")
 
-for sample in tqdm(dataset.take(50)):
-    ...
+for i in tqdm(range(min(50, fsl_transform['len'](fsl_dataset)))):
+    sample = fsl_transform['getitem'](fsl_dataset, i)
 ```
 
 ### Performance Metrics
