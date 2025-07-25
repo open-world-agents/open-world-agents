@@ -7,10 +7,10 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import AutoImageProcessor, AutoProcessor
 
+from owa.data.datasets import FSLDataset
 from owa.data.episode_tokenizer import EpisodeTokenizer
-from owa.data.fsl_dataset import FSLDataset
 
-logger.enable("owa.data.fsl_dataset")
+logger.enable("owa.data.datasets.fsl")
 
 
 class DummyDataset(torch.utils.data.Dataset):

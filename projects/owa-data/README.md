@@ -138,7 +138,7 @@ for sample in binned_dataset["train"].take(5):
 
 ## FSLDataset
 
-Core component for Few-Shot Learning that prepares tokenized event data for training with sequence handling, padding, and image loading.
+Core component for Fixed Sequence Length processing that prepares tokenized event data for training with sequence handling, padding, and image loading.
 
 ### Goals
 

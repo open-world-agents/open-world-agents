@@ -25,7 +25,7 @@ from rich.panel import Panel
 from tqdm import tqdm
 
 # OWA Dataset imports
-from owa.data.datasets import BinnedDataset, BinnedDatasetConfig, DatasetType, load_owa_dataset
+from owa.data.datasets import BinnedDataset, BinnedDatasetConfig, DatasetType, load_dataset
 
 app = typer.Typer(add_completion=False)
 console = Console()
@@ -152,7 +152,7 @@ def main(
         console.print("[cyan]🔍[/cyan] Filter empty actions: [bold]DISABLED[/bold] - all bins will be kept")
 
     # Load using auto-detection to get EventDataset
-    ds_dict = load_owa_dataset(str(input_dir))
+    ds_dict = load_dataset(str(input_dir))
 
     # Get config from the first dataset to inherit settings
     first_dataset = (
