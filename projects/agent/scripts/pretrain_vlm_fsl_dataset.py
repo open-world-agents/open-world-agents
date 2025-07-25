@@ -276,7 +276,7 @@ def main():
     ################
     # Data Collator
     ################
-    data_collator = lambda examples: collate_fn(examples, script_args.max_sequence_length, tokenizer)
+    data_collator = lambda examples: collate_fn(examples, script_args.max_sequence_length, tokenizer)  # noqa: E731
 
     ################
     # Trainer
