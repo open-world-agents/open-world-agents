@@ -165,7 +165,7 @@ class FSLDataset(Dataset):
 
         # Collect token_ids and images from events
         all_token_ids: list[int] = []
-        all_images: list[ScreenCaptured] = []
+        all_image_msgs: list[ScreenCaptured] = []
         tokens_so_far: int = 0
 
         for event_idx in range(start_event_index, len(self.dataset)):
@@ -187,24 +187,24 @@ class FSLDataset(Dataset):
                 ScreenCaptured.model_validate_json(image_json).resolve_relative_path(episode_path)
                 for image_json in images
             ]
-            all_images.extend(images)
+            all_image_msgs.extend(images)
 
         if self.config.load_images:
             # If we have a decoding server, use it to load all images in parallel
             if is_decoding_server_available:
                 # TODO?: we may need to initialize ThreadPool once but it's initialization only takes 10.3 μs ± 275 ns per loop
                 with concurrent.futures.ThreadPoolExecutor() as executor:
-                    futures = [executor.submit(image.to_pil_image) for image in all_images]
+                    futures = [executor.submit(image.to_pil_image) for image in all_image_msgs]
                     for idx, future in enumerate(futures):
                         try:
                             # screen_captured.frame_arr is cached here so that next time we call to_pil_image, it's fast
                             future.result(timeout=5)
                         except Exception as e:
-                            all_images[idx].frame_arr = np.zeros((512, 512, 3), dtype=np.uint8)
+                            all_image_msgs[idx].frame_arr = np.zeros((512, 512, 3), dtype=np.uint8)
                             logger.error(f"Failed to load image: {e}")
 
             # Now load the images
-            all_images = [screen_captured.to_pil_image() for screen_captured in all_images]  # type: ignore
+            all_images = [screen_captured.to_pil_image() for screen_captured in all_image_msgs]
             image_bits = sum(image.width * image.height * 3 for image in all_images)
 
             if self.image_processor is not None:
@@ -215,9 +215,13 @@ class FSLDataset(Dataset):
                     pixel_value = processed["pixel_values"].squeeze(0).squeeze(0)
                     assert (processed["pixel_attention_mask"] == 1).all()
                     pixel_values.append(pixel_value)
-                all_images = {"pixel_values": torch.stack(pixel_values)}
+                # NOTE: this line assumes image_processor returns fixed size images.
+                image_object_to_return = torch.stack(pixel_values) if pixel_values else torch.empty(0, 3, 224, 224)
+            else:
+                image_object_to_return = all_images
         else:
             image_bits = 0  # No images loaded
+            image_object_to_return = all_image_msgs
 
         # Pad token_ids to max_sequence_length if needed
         if tokens_so_far < self.config.max_sequence_length:
@@ -233,10 +237,10 @@ class FSLDataset(Dataset):
             "attention_mask": torch.tensor(
                 [1 if token_id != self.config.pad_token_id else 0 for token_id in all_token_ids], dtype=torch.long
             ),
-            "images": all_images,
+            "images": image_object_to_return,
         }
 
-        self.stat_logger.update(1, tokens_so_far, len(all_images), image_bits)
+        self.stat_logger.update(1, tokens_so_far, len(image_object_to_return), image_bits)
 
         return result
 

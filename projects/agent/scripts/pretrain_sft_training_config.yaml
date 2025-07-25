@@ -6,7 +6,7 @@
 # SCRIPT ARGUMENTS (Custom for FSLDataset pretraining)
 # ============================================================================
 dataset_path: "/mnt/raid12/datasets/owa/data/super-hexagon-event"  # (default: None) - required
-max_sequence_length: 1024  # (default: 1024)
+max_sequence_length: 256  # (default: 1024)
 preprocessing_num_workers: 16  # (default: None)
 
 # ============================================================================
@@ -20,10 +20,10 @@ trust_remote_code: false  # (default: False)
 # ============================================================================
 # TRAINING HYPERPARAMETERS
 # ============================================================================
-num_train_epochs: 3  # (default: 3.0)
+num_train_epochs: 10  # (default: 3.0)
 per_device_train_batch_size: 8  # (default: 8)
 gradient_accumulation_steps: 1  # (default: 1)
-learning_rate: 3e-4  # (default: 2e-5)
+learning_rate: 4e-5  # (default: 2e-5)
 
 # ============================================================================
 # OPTIMIZATION SETTINGS
@@ -31,10 +31,8 @@ learning_rate: 3e-4  # (default: 2e-5)
 optim: "adamw_torch_fused"  # (default: 'adamw_torch')
 max_grad_norm: 1.0  # (default: 1.0)
 warmup_ratio: 0.03  # (default: 0)
-weight_decay: 0.1  # (default: 0.0)
-lr_scheduler_type: "cosine_with_min_lr"  # (default: 'linear')
-lr_scheduler_kwargs:
-  min_lr_rate: 3e-5  # (default: None)
+weight_decay: 0.0  # (default: 0.0)
+lr_scheduler_type: "cosine"  # (default: 'linear')
 
 # ============================================================================
 # PRECISION AND PERFORMANCE
@@ -74,7 +72,7 @@ per_device_eval_batch_size: 8  # (default: 8)
 # ============================================================================
 # OUTPUT DIRECTORY
 # ============================================================================
-output_dir: "/mnt/raid12/scratch/claude/checkpoints/pretrain_smolvlm_256m_fsl"  # (default: 'trainer_output') - can be overridden via CLI
+output_dir: "/mnt/raid12/scratch/claude/checkpoints/sft_smolvlm_256m_fsl"  # (default: 'trainer_output') - can be overridden via CLI
 
 # ============================================================================
 # DISTRIBUTED TRAINING SETTINGS

@@ -48,11 +48,8 @@ from typing import Optional
 import torch
 from accelerate import Accelerator
 from datasets import load_from_disk
-from loguru import logger
-from transformers import (
-    AutoModelForImageTextToText,
-    AutoProcessor,
-)
+from loguru import logger  # noqa: F401
+from transformers import AutoImageProcessor, AutoModelForImageTextToText, AutoProcessor
 from trl import (
     ModelConfig,
     ScriptArguments,
@@ -67,7 +64,7 @@ from owa.data.episode_tokenizer import EpisodeTokenizer
 from owa.data.fsl_dataset import FSLDataset, FSLDatasetConfig
 
 # This line is to enable throughput logging from FSLDataset
-logger.enable("owa.data.fsl_dataset")
+# logger.enable("owa.data.fsl_dataset")
 
 
 @dataclass
@@ -90,54 +87,53 @@ class PretrainScriptArguments(ScriptArguments):
     )
 
 
-def create_pretraining_collator(processor, max_sequence_length: int):
-    def collate_fn(examples):
-        # Extract data from FSLDataset format
-        input_ids_list = []
-        attention_mask_list = []
-        images_list = []
+def collate_fn(examples, max_sequence_length: int | None = None, tokenizer=None):
+    input_ids_list = []
+    attention_mask_list = []
+    pixel_values_list = []
 
-        for example in examples:
-            input_ids_list.append(example["token_ids"])
-            attention_mask_list.append(example["attention_mask"])
-            images_list.extend(example["images"])  # Flatten images from all examples
+    for example in examples:
+        input_ids_list.append(example["input_ids"])  # [seq_len,]
+        attention_mask_list.append(example["attention_mask"])  # [seq_len,]
+        pixel_values_list.append(example["images"])  # [num_images, channels, height, width]
+        assert isinstance(example["images"], torch.Tensor), f"Expected tensor, got {type(example['images'])}"
 
-        # Convert to tensors
-        input_ids = torch.tensor(input_ids_list, dtype=torch.long)
-        attention_mask = torch.tensor(attention_mask_list, dtype=torch.long)
+    max_num_images = max([len(images) for images in pixel_values_list])
+    # Pad images to max_num_images
+    for idx, images in enumerate(pixel_values_list):
+        if len(images) < max_num_images:
+            # NOTE: Idefics3/SmolVLM expect all-zero image to be a padding image. see: https://github.com/huggingface/transformers/blob/69b158260fcb679ea3bfbc1e6a358545ee53ee28/src/transformers/models/idefics3/modeling_idefics3.py#L693
+            padding = torch.zeros(max_num_images - len(images), *images.shape[1:], dtype=torch.float32)
+            pixel_values_list[idx] = torch.concat([images, padding])
 
-        if input_ids.shape[1] != max_sequence_length:
-            raise ValueError(
-                f"Input ids length ({input_ids.shape[1]}) does not match max_sequence_length ({max_sequence_length})"
-            )
+    # Convert to tensors
+    input_ids = torch.stack(input_ids_list)  # [batch_size, seq_len]
+    attention_mask = torch.stack(attention_mask_list)  # [batch_size, seq_len]
+    pixel_values = torch.stack(pixel_values_list)  # [batch_size, max_num_images, 3, max_heights, max_widths]
 
-        # We shift the labels inside the model, so we don't need to do it here
-        labels = input_ids.clone()
+    if max_sequence_length is not None and input_ids.shape[1] != max_sequence_length:
+        raise ValueError(
+            f"Input ids length ({input_ids.shape[1]}) does not match max_sequence_length ({max_sequence_length})"
+        )
+
+    # NOTE: we shift the labels inside the model, so we don't need to do it here
+    labels = input_ids.clone()
+    if tokenizer is not None:
         # Ignore padding tokens in the loss computation
-        labels[labels == processor.tokenizer.pad_token_id] = -100
+        labels[labels == tokenizer.pad_token_id] = -100
         # Ignore the image token index in the loss computation
-        labels[labels == processor.tokenizer.image_token_id] = -100
+        labels[labels == tokenizer.image_token_id] = -100
         assert (labels[attention_mask == 0] == -100).all()
+    else:
+        labels[attention_mask == 0] = -100
 
-        # Handle images - convert PIL images to tensors if needed. NOTE: smolvlm processor panic when image list is empty.
-        if images_list:
-            image_inputs = processor.image_processor(images_list, return_tensors="pt")
-            pixel_values = image_inputs.get("pixel_values")
-        else:
-            pixel_values = None
-
-        batch = {
-            "input_ids": input_ids,
-            "attention_mask": attention_mask,
-            "labels": labels,
-        }
-
-        if pixel_values is not None:
-            batch["pixel_values"] = pixel_values
-
-        return batch
-
-    return collate_fn
+    batch = {
+        "input_ids": input_ids,
+        "attention_mask": attention_mask,
+        "labels": labels,
+        "pixel_values": pixel_values,
+    }
+    return batch
 
 
 def main():
@@ -167,9 +163,15 @@ def main():
         quantization_config=quantization_config,
     )
 
-    # Load processor and tokenizer
+    # Load processor and tokenizer. TODO: make argument configurable
     processor = AutoProcessor.from_pretrained(
         model_args.model_name_or_path, trust_remote_code=model_args.trust_remote_code, do_image_splitting=False
+    )
+    processor.image_processor = AutoImageProcessor.from_pretrained(
+        model_args.model_name_or_path,
+        trust_remote_code=model_args.trust_remote_code,
+        do_image_splitting=False,
+        use_fast=True,
     )
     tokenizer = processor.tokenizer  # TODO: save this
 
@@ -259,18 +261,22 @@ def main():
         load_images=True,
     )
 
-    train_fsl_dataset = FSLDataset(event_dataset["train"], config=fsl_config)
+    train_fsl_dataset = FSLDataset(
+        event_dataset["train"], image_processor=processor.image_processor, config=fsl_config
+    )
     train_fsl_dataset.prepare()
 
     eval_fsl_dataset = None
     if "test" in event_dataset:
-        eval_fsl_dataset = FSLDataset(event_dataset["test"], config=fsl_config)
+        eval_fsl_dataset = FSLDataset(
+            event_dataset["test"], image_processor=processor.image_processor, config=fsl_config
+        )
         eval_fsl_dataset.prepare()
 
     ################
     # Data Collator
     ################
-    data_collator = create_pretraining_collator(processor, max_sequence_length=script_args.max_sequence_length)
+    data_collator = lambda examples: collate_fn(examples, script_args.max_sequence_length, tokenizer)
 
     ################
     # Trainer
