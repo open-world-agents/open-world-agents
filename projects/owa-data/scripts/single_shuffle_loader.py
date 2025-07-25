@@ -38,6 +38,5 @@ for sample in dataset.take(1):
 
 # take random shuffle
 shuffled_index = np.random.permutation(len(dataset))
-for i in tqdm(shuffled_index):
-    sample = dataset[i]
+for i in tqdm(shuffled_index):  # expected: 2.1 it/s
     ...
