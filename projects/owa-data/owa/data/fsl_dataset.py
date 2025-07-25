@@ -164,12 +164,14 @@ class FSLDataset(Dataset):
         start_event_index = np.searchsorted(self._cumsum, start_token_index, side="left")
 
         # Collect token_ids and images from events
+        texts: list[str] = []
         all_token_ids: list[int] = []
         all_image_msgs: list[ScreenCaptured] = []
         tokens_so_far: int = 0
 
         for event_idx in range(start_event_index, len(self.dataset)):
             event = self.dataset[event_idx]
+            texts.append(event["text"])
             episode_path = event["episode_path"]
             token_ids = event["token_ids"]
             images = event["images"]
@@ -233,6 +235,7 @@ class FSLDataset(Dataset):
 
         # Return dict with the processed data. TODO?: return `labels` also
         result = {
+            "texts": "".join(texts),
             "input_ids": torch.tensor(all_token_ids, dtype=torch.long),
             "attention_mask": torch.tensor(
                 [1 if token_id != self.config.pad_token_id else 0 for token_id in all_token_ids], dtype=torch.long
