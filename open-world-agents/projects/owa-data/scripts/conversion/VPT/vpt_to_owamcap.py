@@ -10,17 +10,16 @@ from tqdm import tqdm
 from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
 from owa.env.desktop.constants import VK
 from owa.msgs.desktop.keyboard import KeyboardEvent
-from owa.msgs.desktop.mouse import MouseEvent
+from owa.msgs.desktop.mouse import RawMouseEvent
 from owa.msgs.desktop.screen import ScreenCaptured
 from owa.msgs.desktop.window import WindowInfo
 
 VPT_FOLDER_PATH = Path(
-    "~/data/Video-Pre-Training/data/"
+    "/mnt/raid12/datasets/owa/mcaps/vpt_filtered_data"
 ).expanduser()  # NOTE: Change this to your VPT data folder path. We expect paired mp4 and jsonl files for VPT dataset.
 VPT_TARGET_LIST_FILE = "./vpt_target_files.txt"
 VPT_INTERVAL_TICK_NS = 50_000_000  # 50 ms interval per tick
 VPT_EXPECTED_TICKS = 6000  # 5 minutes of 50ms ticks
-VPT_MOUSE_PIN_NS = 1_000_000  # We assume 1 ms for mouse pin movement
 VPT_X_RESOLUTION = 1280
 VPT_Y_RESOLUTION = 720
 
@@ -49,15 +48,27 @@ VPT_KEYBOARD_BUTTON_MAPPING = {
     "key.keyboard.f": "swapHands",
 }
 
-# NOTE: we only convert navigation related keys and mouse movement
 VPT_KEYBOARD_VK_MAPPING = {
+    "key.keyboard.escape": VK.ESCAPE,
     "key.keyboard.s": VK.KEY_S,
+    "key.keyboard.q": VK.KEY_Q,
     "key.keyboard.w": VK.KEY_W,
+    "key.keyboard.1": VK.KEY_1,
+    "key.keyboard.2": VK.KEY_2,
+    "key.keyboard.3": VK.KEY_3,
+    "key.keyboard.4": VK.KEY_4,
+    "key.keyboard.5": VK.KEY_5,
+    "key.keyboard.6": VK.KEY_6,
+    "key.keyboard.7": VK.KEY_7,
+    "key.keyboard.8": VK.KEY_8,
+    "key.keyboard.9": VK.KEY_9,
+    "key.keyboard.e": VK.KEY_E,
     "key.keyboard.space": VK.SPACE,
     "key.keyboard.a": VK.KEY_A,
     "key.keyboard.d": VK.KEY_D,
     "key.keyboard.left.shift": VK.LSHIFT,
     "key.keyboard.left.control": VK.LCONTROL,
+    "key.keyboard.f": VK.KEY_F,
 }
 
 
@@ -110,10 +121,6 @@ def process_single_file(jsonl_file_path):
 
     # Writing messages to an OWAMcap file
     unix_epoch_ns = 0  # Unix epoch time in nanoseconds (Jan 1, 1970)
-    center_x, center_y = (
-        VPT_X_RESOLUTION // 2,
-        VPT_Y_RESOLUTION // 2,
-    )  # x, y coordinates of the center of the screen (1280x720)
 
     try:
         with open(jsonl_file_path, "r") as f:  # jsonl file
@@ -135,12 +142,8 @@ def process_single_file(jsonl_file_path):
         )
         writer.write_message(event, topic=topic, timestamp=unix_epoch_ns)
 
-        # NOTE: we assume mouse starts from the center of the screen
-        topic = "mouse"
-        event = MouseEvent(event_type="move", x=center_x, y=center_y)
-        writer.write_message(event, topic=topic, timestamp=unix_epoch_ns)
-
         keyboard_state = set()
+        button_state = set()
 
         ## SCREEN EVENT
         topic = "screen"
@@ -173,6 +176,14 @@ def process_single_file(jsonl_file_path):
 
             # NOTE: we suppose the keys are pressed/released in the fastest observable timing of tick.
 
+            # release keys that are not in the current tick
+            for state_key in list(keyboard_state):
+                if state_key not in current_tick_keys:
+                    keyboard_state.remove(state_key)
+                    topic = "keyboard"
+                    event = KeyboardEvent(event_type="release", vk=VPT_KEYBOARD_VK_MAPPING[state_key])
+                    writer.write_message(event, topic=topic, timestamp=log_time)
+
             # press keys that are in the current tick, and not already pressed
             for key in current_tick_keys:
                 if key not in VPT_KEYBOARD_VK_MAPPING:
@@ -186,14 +197,6 @@ def process_single_file(jsonl_file_path):
                         event = KeyboardEvent(event_type="press", vk=VPT_KEYBOARD_VK_MAPPING[key])
                         writer.write_message(event, topic=topic, timestamp=log_time)
 
-            # release keys that are not in the current tick
-            for state_key in list(keyboard_state):
-                if state_key not in current_tick_keys:
-                    keyboard_state.remove(state_key)
-                    topic = "keyboard"
-                    event = KeyboardEvent(event_type="release", vk=VPT_KEYBOARD_VK_MAPPING[state_key])
-                    writer.write_message(event, topic=topic, timestamp=log_time)
-
             ## MOUSE EVENT
             dx = tick["mouse"]["dx"]
             dy = tick["mouse"]["dy"]
@@ -203,14 +206,64 @@ def process_single_file(jsonl_file_path):
             dy = int(round(dy))
 
             if dx != 0 or dy != 0:
-                # NOTE: we suppose the mouse is pinned to the center. it takes VPT_MOUSE_PIN_NS for the program to pin the mouse to the center
                 topic = "mouse"
-                event = MouseEvent(event_type="move", x=center_x + dx, y=center_y + dy)
-                writer.write_message(event, topic=topic, timestamp=log_time - VPT_MOUSE_PIN_NS)
-
-                topic = "mouse"
-                event = MouseEvent(event_type="move", x=center_x, y=center_y)
+                event = RawMouseEvent(
+                    dx=dx,
+                    dy=dy,
+                    button_flags=RawMouseEvent.ButtonFlags.RI_MOUSE_NOP,
+                    timestamp=log_time,
+                )
                 writer.write_message(event, topic=topic, timestamp=log_time)
+
+            # mouse buttons : https://github.com/openai/Video-Pre-Training/blob/4ea1e8e0eddcdd5ae3cc88621a80c434f22b7f3d/run_inverse_dynamics_model.py#L114-L123
+            # 0 : left click, 1 : right click, 2 : middle click
+            current_tick_buttons = tick["mouse"]["buttons"]
+
+            # release buttons that are not in the current tick
+            for state_button in list(button_state):
+                if state_button not in current_tick_buttons:
+                    button_state.remove(state_button)
+                    topic = "mouse"
+                    if state_button == 0:  # left click
+                        button_flags = RawMouseEvent.ButtonFlags.RI_MOUSE_LEFT_BUTTON_UP
+                    elif state_button == 1:  # right click
+                        button_flags = RawMouseEvent.ButtonFlags.RI_MOUSE_RIGHT_BUTTON_UP
+                    elif state_button == 2:  # middle click
+                        button_flags = RawMouseEvent.ButtonFlags.RI_MOUSE_MIDDLE_BUTTON_UP
+                    else:
+                        raise ValueError(f"Unknown mouse button {state_button} in VPT data.")
+
+                    event = RawMouseEvent(
+                        dx=0,
+                        dy=0,
+                        button_flags=button_flags,
+                        timestamp=log_time,
+                    )
+                    writer.write_message(event, topic=topic, timestamp=log_time)
+
+            # press buttons that are in the current tick, and not already pressed
+            for button in current_tick_buttons:
+                if button in button_state:
+                    continue  # already pressed
+                else:
+                    button_state.add(button)
+                    topic = "mouse"
+                    if button == 0:  # left click
+                        button_flags = RawMouseEvent.ButtonFlags.RI_MOUSE_LEFT_BUTTON_DOWN
+                    elif button == 1:  # right click
+                        button_flags = RawMouseEvent.ButtonFlags.RI_MOUSE_RIGHT_BUTTON_DOWN
+                    elif button == 2:  # middle click
+                        button_flags = RawMouseEvent.ButtonFlags.RI_MOUSE_MIDDLE_BUTTON_DOWN
+                    else:
+                        raise ValueError(f"Unknown mouse button {button} in VPT data.")
+
+                    event = RawMouseEvent(
+                        dx=0,
+                        dy=0,
+                        button_flags=button_flags,
+                        timestamp=log_time,
+                    )
+                    writer.write_message(event, topic=topic, timestamp=log_time)
 
 
 def main(max_workers: int = None):

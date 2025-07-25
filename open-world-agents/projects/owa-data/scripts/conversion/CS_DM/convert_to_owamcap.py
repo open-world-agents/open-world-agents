@@ -1,4 +1,16 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#     "h5py",
+#     "mcap-owa-support",
+#     "numpy",
+#     "opencv-python",
+#     "owa-core",
+#     "owa-env-desktop",
+# ]
+# ///
+# NOTE: run with : `uv run convert_to_owamcap.py [INPUT_DIR] [OUTPUT_DIR]`
 """
 Convert Counter-Strike Deathmatch dataset to OWAMcap format.
 
@@ -34,6 +46,7 @@ from owa.core.io.video import VideoWriter
 
 # Import OWA message types
 ScreenCaptured = MESSAGES["desktop/ScreenCaptured"]
+RawMouseEvent = MESSAGES["desktop/RawMouseEvent"]
 MouseEvent = MESSAGES["desktop/MouseEvent"]
 MouseState = MESSAGES["desktop/MouseState"]
 KeyboardEvent = MESSAGES["desktop/KeyboardEvent"]
@@ -268,7 +281,6 @@ def convert_hdf5_to_owamcap(
 
     with OWAMcapWriter(str(mcap_path)) as writer:
         # Track mouse position (infinite coordinate space for 3D games)
-        mouse_x, mouse_y = 0, 0  # Start at origin
         last_window_time = -1
 
         # Track previous frame state for releases in next frame
@@ -330,11 +342,14 @@ def convert_hdf5_to_owamcap(
 
             # Process mouse movement (infinite coordinate space for 3D games)
             if action["mouse_dx"] != 0 or action["mouse_dy"] != 0:
-                mouse_x += action["mouse_dx"]
-                mouse_y += action["mouse_dy"]
+                raw_mouse_event = RawMouseEvent(
+                    dx=action["mouse_dx"],
+                    dy=action["mouse_dy"],
+                    button_flags=RawMouseEvent.ButtonFlags.RI_MOUSE_NOP,
+                    timestamp=timestamp_ns,
+                )
 
-                mouse_event = MouseEvent(event_type="move", x=mouse_x, y=mouse_y, timestamp=timestamp_ns)
-                writer.write_message(mouse_event, topic="mouse", timestamp=timestamp_ns)
+                writer.write_message(raw_mouse_event, topic="mouse", timestamp=timestamp_ns)
 
             # Process mouse clicks - release previous frame clicks, press current frame clicks
             current_left_click = action["mouse_left_click"]
@@ -342,29 +357,41 @@ def convert_hdf5_to_owamcap(
 
             # Release previous frame clicks
             if prev_left_click:
-                mouse_event = MouseEvent(
-                    event_type="click", x=mouse_x, y=mouse_y, button="left", pressed=False, timestamp=timestamp_ns
+                raw_mouse_event = RawMouseEvent(
+                    dx=action["mouse_dx"],
+                    dy=action["mouse_dy"],
+                    button_flags=RawMouseEvent.ButtonFlags.RI_MOUSE_LEFT_BUTTON_UP,
+                    timestamp=timestamp_ns,
                 )
-                writer.write_message(mouse_event, topic="mouse", timestamp=timestamp_ns)
+                writer.write_message(raw_mouse_event, topic="mouse", timestamp=timestamp_ns)
 
             if prev_right_click:
-                mouse_event = MouseEvent(
-                    event_type="click", x=mouse_x, y=mouse_y, button="right", pressed=False, timestamp=timestamp_ns
+                raw_mouse_event = RawMouseEvent(
+                    dx=action["mouse_dx"],
+                    dy=action["mouse_dy"],
+                    button_flags=RawMouseEvent.ButtonFlags.RI_MOUSE_RIGHT_BUTTON_UP,
+                    timestamp=timestamp_ns,
                 )
-                writer.write_message(mouse_event, topic="mouse", timestamp=timestamp_ns)
+                writer.write_message(raw_mouse_event, topic="mouse", timestamp=timestamp_ns)
 
             # Press current frame clicks
             if current_left_click:
-                mouse_event = MouseEvent(
-                    event_type="click", x=mouse_x, y=mouse_y, button="left", pressed=True, timestamp=timestamp_ns
+                raw_mouse_event = RawMouseEvent(
+                    dx=action["mouse_dx"],
+                    dy=action["mouse_dy"],
+                    button_flags=RawMouseEvent.ButtonFlags.RI_MOUSE_LEFT_BUTTON_DOWN,
+                    timestamp=timestamp_ns,
                 )
-                writer.write_message(mouse_event, topic="mouse", timestamp=timestamp_ns)
+                writer.write_message(raw_mouse_event, topic="mouse", timestamp=timestamp_ns)
 
             if current_right_click:
-                mouse_event = MouseEvent(
-                    event_type="click", x=mouse_x, y=mouse_y, button="right", pressed=True, timestamp=timestamp_ns
+                raw_mouse_event = RawMouseEvent(
+                    dx=action["mouse_dx"],
+                    dy=action["mouse_dy"],
+                    button_flags=RawMouseEvent.ButtonFlags.RI_MOUSE_RIGHT_BUTTON_DOWN,
+                    timestamp=timestamp_ns,
                 )
-                writer.write_message(mouse_event, topic="mouse", timestamp=timestamp_ns)
+                writer.write_message(raw_mouse_event, topic="mouse", timestamp=timestamp_ns)
 
             prev_left_click = current_left_click
             prev_right_click = current_right_click
@@ -385,7 +412,11 @@ def main():
         default="external_mkv",
         help="How to store screen frames: external_mkv (default), external_mp4, or embedded",
     )
-    parser.add_argument("--subset", choices=["aim_expert", "dm_expert_othermaps"], help="Convert specific subset only")
+    parser.add_argument(
+        "--subset",
+        choices=["aim_expert", "dm_expert_dust2", "dm_expert_othermaps"],
+        help="Convert specific subset only",
+    )
 
     args = parser.parse_args()
 
