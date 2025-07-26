@@ -209,7 +209,6 @@ def create_event_dataset(
     num_workers: int = 4,
     split: str = "train",
     mcap_root_directory: Optional[str] = None,
-    owa_config: Optional[DatasetConfig] = None,
 ) -> Dataset:
     """
     Create a Hugging Face event dataset from the given MCAP file paths by streaming
@@ -263,7 +262,10 @@ def create_event_dataset(
         split=hf_dataset.split,
         indices_table=hf_dataset._indices,
         fingerprint=hf_dataset._fingerprint,
-        owa_config=owa_config,
+        owa_config=DatasetConfig(
+            stage=DatasetStage.EVENT,
+            mcap_root_directory=mcap_root_directory,
+        ),
     )
 
     return event_dataset
@@ -385,12 +387,8 @@ def main(
             console.print("[yellow]⚠[/yellow] Aborting because no output directory was provided.")
             raise typer.Exit(code=1)
 
-    # 7. Create DatasetConfig for reproducibility
+    # 7. Set mcap_root_directory
     mcap_root_directory = str(train_dir)  # Use train_dir as the root
-    event_config = DatasetConfig(
-        stage=DatasetStage.EVENT,
-        mcap_root_directory=mcap_root_directory,
-    )
 
     # 8. Create event datasets for train and test
     train_dataset = create_event_dataset(
@@ -400,7 +398,6 @@ def main(
         num_workers,
         split="train",
         mcap_root_directory=mcap_root_directory,
-        owa_config=event_config,
     )
     test_dataset = create_event_dataset(
         test_files,
@@ -409,7 +406,6 @@ def main(
         num_workers,
         split="test",
         mcap_root_directory=mcap_root_directory,
-        owa_config=event_config,
     )
 
     # 9. Combine into DatasetDict

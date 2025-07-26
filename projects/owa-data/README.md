@@ -32,45 +32,43 @@ python scripts/02_event_dataset_to_binned_dataset.py \
 
 # 3. Clean Dataset with separate transforms
 python -c "
-from owa.data.datasets import load_from_disk, create_event_transform
+from owa.data.datasets import load_from_disk
 dataset = load_from_disk('$EVENT_DATASET_DIR')
 print(f'Dataset stage: {dataset.stage}')  # EVENT, BINNED, TOKENIZED, or FSL
 
 # Apply stage-specific transform
-transform = create_event_transform(encoder_type='hierarchical', load_images=True)
-dataset.set_transform(transform)
+dataset.auto_set_transform(stage='event', encoder_type='hierarchical', load_images=True)
 for sample in dataset['train'].take(3):
     print(f'{sample=}')
 "
 python -c "
-from owa.data.datasets import load_from_disk, create_binned_transform
+from owa.data.datasets import load_from_disk
 dataset = load_from_disk('$BINNED_DATASET_DIR')
 print(f'Dataset stage: {dataset.stage}')  # EVENT, BINNED, TOKENIZED, or FSL
 
 # Apply stage-specific transform
-transform = create_binned_transform(instruction='Complete the computer task')
-dataset.set_transform(transform)
+dataset.auto_set_transform(stage='binned', instruction='Complete the computer task')
 for sample in dataset['train'].take(3):
     print(f'{sample=}')
 "
 
 # 4. FSL (Fixed Sequence Length) approach
 python -c "
-from owa.data.datasets import Dataset, prepare_fsl
+from owa.data.datasets import load_from_disk, prepare_fsl
 from transformers import AutoTokenizer
 from owa.data.episode_tokenizer import EpisodeTokenizer
 
 # Load event dataset and tokenize
-event_dataset = Dataset.load_from_disk('$EVENT_DATASET_DIR')
+event_dataset = load_from_disk('$EVENT_DATASET_DIR')
 tokenizer = AutoTokenizer.from_pretrained('HuggingFaceTB/SmolVLM2-2.2B-Base')
 event_tokenizer = EpisodeTokenizer(image_token='<image>')
 event_tokenizer.prepare_model(tokenizer=tokenizer)
 
-# Tokenize to create TOKENIZED stage dataset
-tokenized_data = event_tokenizer.tokenize_event_dataset(event_dataset)
+# Tokenize each split to create TOKENIZED stage datasets
+tokenized_train = event_tokenizer.tokenize_event_dataset(event_dataset['train'])
 
 # Create FSL stage dataset
-fsl_dataset = prepare_fsl(tokenized_data['train'], max_sequence_length=1024, pad_token_id=tokenizer.pad_token_id)
+fsl_dataset = prepare_fsl(tokenized_train, max_sequence_length=1024, pad_token_id=tokenizer.pad_token_id)
 
 for sample in fsl_dataset.take(3):
     print(f'{sample=}')

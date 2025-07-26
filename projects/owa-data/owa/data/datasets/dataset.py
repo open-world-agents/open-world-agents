@@ -3,8 +3,7 @@
 import json
 import posixpath
 from pathlib import Path
-from typing import Optional, Union, cast
-from unittest.mock import patch
+from typing import Optional, Union
 
 import fsspec
 from datasets import Dataset as HFDataset
@@ -53,7 +52,9 @@ class OWADatasetMixin:
         """Set the MCAP root directory."""
         self.owa_config.mcap_root_directory = value
 
-    def auto_set_transform(self, stage: Optional[str] = None, mcap_root_directory: Optional[str] = None, **kwargs):
+    def auto_set_transform(
+        self, stage: Optional[str] = None, mcap_root_directory: Optional[str] = None, **kwargs
+    ) -> DatasetStage:
         """Set appropriate transform for a dataset based on its stage."""
         stage = stage or self.stage
         mcap_root_directory = mcap_root_directory or self.mcap_root_directory
@@ -61,6 +62,7 @@ class OWADatasetMixin:
             raise ValueError("mcap_root_directory must be set")
 
         self.set_transform(create_transform(stage, mcap_root_directory, **kwargs))
+        return stage
 
 
 class Dataset(HFDataset, OWADatasetMixin):
@@ -77,6 +79,17 @@ class Dataset(HFDataset, OWADatasetMixin):
     def __init__(self, *args, owa_config: DatasetConfig, **kwargs):
         super().__init__(*args, **kwargs)
         self._owa_config = owa_config
+
+    @classmethod
+    def from_hf_dataset(cls, hf_dataset: HFDataset, owa_config: DatasetConfig) -> "Dataset":
+        return cls(
+            arrow_table=hf_dataset.data,
+            info=hf_dataset.info,
+            split=hf_dataset.split,
+            indices_table=hf_dataset._indices,
+            fingerprint=hf_dataset._fingerprint,
+            owa_config=owa_config,
+        )
 
     def save_to_disk(self, dataset_path: PathLike, **kwargs) -> None:  # type: ignore[override]
         super().save_to_disk(dataset_path, **kwargs)
@@ -97,14 +110,7 @@ class Dataset(HFDataset, OWADatasetMixin):
         _, config_data, _ = resolve_dataset_path_and_config(dataset_path, storage_options)
         owa_config = DatasetConfig(**config_data)
 
-        return Dataset(
-            arrow_table=hf_dataset.data,
-            info=hf_dataset.info,
-            split=hf_dataset.split,
-            indices_table=getattr(hf_dataset, "_indices", None),
-            fingerprint=getattr(hf_dataset, "_fingerprint", None),
-            owa_config=owa_config,
-        )
+        return Dataset.from_hf_dataset(hf_dataset, owa_config=owa_config)
 
 
 class DatasetDict(HFDatasetDict, OWADatasetMixin):
