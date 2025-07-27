@@ -31,17 +31,14 @@ class JSONEventEncoder(BaseEventEncoder):
 
         images = []
         if mcap_message.topic == "screen" and mcap_message.message_type == "desktop/ScreenCaptured":
-            try:
-                screen_event = mcap_message.decoded
-                if not isinstance(screen_event, ScreenCaptured):
-                    raise ValueError(f"Expected ScreenCaptured object, got {type(screen_event)}")
-                images.append(screen_event)
-                image_token_with_prefix_suffix = (
-                    f"{self.config.image_token_prefix}{self.config.image_token}{self.config.image_token_suffix}"
-                )
-                mcap_message.message = image_token_with_prefix_suffix.encode("utf-8")
-            except Exception as e:
-                raise ValueError(f"Failed to parse screen event message: {e}")
+            screen_event = mcap_message.decoded
+            if not isinstance(screen_event, ScreenCaptured):
+                raise ValueError(f"Expected ScreenCaptured object, got {type(screen_event)}")
+            images.append(screen_event)
+            image_token_with_prefix_suffix = (
+                f"{self.config.image_token_prefix}{self.config.image_token}{self.config.image_token_suffix}"
+            )
+            mcap_message.message = image_token_with_prefix_suffix.encode("utf-8")
 
         return f"<EVENT_START>{mcap_message.model_dump_json()}<EVENT_END>", images
 

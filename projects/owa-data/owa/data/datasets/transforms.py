@@ -43,7 +43,9 @@ def create_event_transform(
 
                 results["encoded_event"].append(encoded_text)
                 results["images"].append(images)
-            except Exception:
+            except Exception as e:
+                # Log warning but continue processing other messages
+                print(f"Warning: Failed to process message {i}: {e}")
                 results["encoded_event"].append(None)
                 results["images"].append(None)
 
