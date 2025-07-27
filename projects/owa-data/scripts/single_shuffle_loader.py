@@ -4,11 +4,11 @@ from loguru import logger
 from tqdm import tqdm
 from transformers import AutoImageProcessor, AutoTokenizer
 
+from owa.data.datasets import FSLDataset
 from owa.data.episode_tokenizer import EpisodeTokenizer
-from owa.data.fsl_dataset import FSLDataset
 
 # This line is to enable throughput logging from FSLDataset
-logger.enable("owa.data.fsl_dataset")
+logger.enable("owa.data.datasets.fsl_dataset")
 
 # Load event dataset
 event_dataset = load_from_disk("/mnt/raid12/datasets/owa/data/super-hexagon-event")

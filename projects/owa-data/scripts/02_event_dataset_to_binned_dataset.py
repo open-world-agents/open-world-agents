@@ -1,247 +1,163 @@
 #!/usr/bin/env python3
-"""
-02_event_dataset_to_binned_dataset.py
+"""Convert event dataset to binned dataset format."""
 
-Convert event-per-row dataset (output of 01_raw_events_to_event_dataset.py) into a binned dataset format.
-
-Usage (CLI):
-    python 02_event_dataset_to_binned_dataset.py \
-        --input-dir /path/to/input_event_dataset \
-        --output-dir /path/to/output_binned_dataset \
-        [--fps 10]
-
-- Bins events into fixed-rate time intervals at the specified FPS.
-- Each output row contains: episode_path, bin_idx, timestamp_ns, state, actions.
-"""
-
-import time
 from pathlib import Path
 from typing import Any, Dict, List
 
 import typer
-from datasets import Dataset, Features, Sequence, Value, load_from_disk
-from rich.console import Console
-from rich.panel import Panel
+from datasets import Dataset as HFDataset
+from datasets import Features, Sequence, Value
 from tqdm import tqdm
 
+from owa.data.datasets import Dataset, DatasetConfig, DatasetDict, DatasetStage, load_from_disk
+
 app = typer.Typer(add_completion=False)
-console = Console()
 
 
 def aggregate_events_to_bins(
-    events: List[Dict[str, Any]],
-    fps: float,
-    filter_empty_actions: bool = False,
+    events: List[Dict[str, Any]], fps: float, filter_empty_actions: bool = False
 ) -> List[Dict[str, Any]]:
-    """
-    Aggregate events into time bins at the specified FPS.
-    Args:
-        events: List of event dicts (from input event dataset).
-        fps: Global FPS for bins.
-        filter_empty_actions: If True, filter out bins with no actions.
-    Returns:
-        List of dicts, each representing a time bin with state and actions.
-    """
+    """Aggregate events into time bins at the specified FPS."""
     if not events:
         return []
 
-    # Sort by timestamp
     events.sort(key=lambda e: e["timestamp_ns"])
-
-    # Find min/max timestamp
-    min_ts = events[0]["timestamp_ns"]
-    max_ts = events[-1]["timestamp_ns"]
+    min_ts, max_ts = events[0]["timestamp_ns"], events[-1]["timestamp_ns"]
     bin_interval_ns = int(1e9 / fps)
-
-    # Calculate total number of bins for progress tracking
-    total_bins = int((max_ts - min_ts) / bin_interval_ns) + 1
 
     bins = []
     bin_idx = 0
     bin_start = min_ts
-    bin_end = bin_start + bin_interval_ns
     event_idx = 0
     last_screen = None
 
-    # Add progress bar for bin generation (only for large datasets)
-    bin_pbar = tqdm(total=total_bins, desc="Generating bins", leave=False, disable=total_bins < 100)
-
     while bin_start <= max_ts:
-        # Aggregate actions in this bin
+        bin_end = bin_start + bin_interval_ns
         actions = []
-        # Find all events in [bin_start, bin_end)
+
+        # Process events in this bin
         while event_idx < len(events) and events[event_idx]["timestamp_ns"] < bin_end:
             ev = events[event_idx]
             if ev["topic"].startswith("screen"):
-                last_screen = ev  # Use latest screen as state
+                last_screen = ev
             elif ev["topic"].startswith("keyboard") or ev["topic"].startswith("mouse"):
-                actions.append(ev["mcap_message"])  # Store serialized McapMessage bytes
+                actions.append(ev["mcap_message"])
             event_idx += 1
 
-        # Compose bin
+        # Create bin data
         bin_data = {
             "episode_path": events[0]["episode_path"],
             "bin_idx": bin_idx,
             "timestamp_ns": bin_start,
-            "state": [last_screen["mcap_message"]]
-            if last_screen
-            else [],  # Store as list of serialized McapMessage bytes
-            "actions": actions,  # Store list of serialized McapMessage bytes
+            "state": [last_screen["mcap_message"]] if last_screen else [],
+            "actions": actions,
         }
 
-        # Filter out bins with no actions if requested
-        if not filter_empty_actions or len(actions) > 0:
+        if not filter_empty_actions or actions:
             bins.append(bin_data)
 
         bin_idx += 1
         bin_start = bin_end
-        bin_end += bin_interval_ns
 
-        # Update progress
-        bin_pbar.update(1)
-
-    bin_pbar.close()
     return bins
 
 
 @app.command()
 def main(
-    input_dir: Path = typer.Option(
-        ...,
-        "--input-dir",
-        "-i",
-        exists=True,
-        file_okay=False,
-        dir_okay=True,
-        readable=True,
-        help="Input event dataset directory (output of 01_raw_events_to_event_dataset.py)",
-    ),
-    output_dir: Path = typer.Option(
-        ...,
-        "--output-dir",
-        "-o",
-        file_okay=False,
-        dir_okay=True,
-        help="Output binned dataset directory",
-    ),
-    fps: float = typer.Option(10.0, "--fps", help="Global FPS for bins (default: 10)"),
-    filter_empty_actions: bool = typer.Option(
-        False,
-        "--filter-empty-actions/--no-filter-empty-actions",
-        help="Filter out bins with no actions (default: False)",
-    ),
+    input_dir: Path = typer.Option(..., "--input-dir", help="Input event dataset directory"),
+    output_dir: Path = typer.Option(..., "--output-dir", help="Output binned dataset directory"),
+    fps: float = typer.Option(10.0, "--fps", help="Global FPS for bins"),
+    filter_empty_actions: bool = typer.Option(False, "--filter-empty-actions", help="Filter out bins with no actions"),
 ):
-    """
-    Convert event-per-row dataset to binned dataset format with state/actions per bin.
-    """
-    start_time = time.time()
-
-    # Print header
-    console.print(Panel.fit("🗂️ Event Dataset to Binned Dataset", style="bold blue"))
-
-    console.print(f"[cyan]📁[/cyan] Loading from: {input_dir}")
-    console.print(f"[cyan]⚡[/cyan] Target FPS: [bold]{fps}[/bold]")
+    """Convert event dataset to binned dataset format."""
+    print(f"Loading from: {input_dir}")
+    print(f"Target FPS: {fps}")
     if filter_empty_actions:
-        console.print(
-            "[yellow]🔍[/yellow] Filter empty actions: [bold]ENABLED[/bold] - bins with no actions will be filtered out"
-        )
+        print("Filter empty actions: ENABLED")
     else:
-        console.print("[cyan]🔍[/cyan] Filter empty actions: [bold]DISABLED[/bold] - all bins will be kept")
+        print("Filter empty actions: DISABLED")
+
+    # Load dataset
     ds_dict = load_from_disk(str(input_dir))
-    # Support both DatasetDict and Dataset
-    if hasattr(ds_dict, "keys"):
+
+    # Get config from first dataset if available
+    if isinstance(ds_dict, DatasetDict):
+        print(f"Loaded DatasetDict with splits: {list(ds_dict.keys())}")
+        event_config = next(iter(ds_dict.values())).owa_config
         splits = list(ds_dict.keys())
     else:
+        print("Loaded single Dataset")
+        event_config = ds_dict.owa_config
         splits = [None]
 
-    # Store all processed datasets
+    # Create binned config
+    binned_config = DatasetConfig(
+        stage=DatasetStage.BINNED,
+        mcap_root_directory=event_config.mcap_root_directory if event_config else str(input_dir),
+    )
+
     processed_datasets = {}
 
     for split in splits:
-        if split:
-            ds = ds_dict[split]
-        else:
-            ds = ds_dict
-        # Group by episode_path more efficiently
-        console.print(f"[cyan]🔍[/cyan] Analyzing [bold]{len(ds):,}[/bold] events to group by file...")
-        episode_paths = sorted(set(ds["episode_path"]))  # Sort for consistent ordering
+        ds = ds_dict[split] if split else ds_dict
+        print(f"Processing {len(ds):,} events from {split or 'dataset'}")
+
+        episode_paths = sorted(set(ds["episode_path"]))
         all_binned_data = []
 
-        console.print(f"[green]📊[/green] Found [bold]{len(episode_paths)}[/bold] files to process")
+        print(f"Found {len(episode_paths)} files to process")
 
-        # Create a progress bar for files
-        file_pbar = tqdm(episode_paths, desc=f"Processing {split or 'dataset'} files")
-        for fp in file_pbar:
-            file_pbar.set_postfix({"current_file": Path(fp).name})
-
+        for fp in tqdm(episode_paths, desc=f"Processing {split or 'dataset'} files"):
             # Get all events for this file
             file_ds = ds.filter(lambda example: example["episode_path"] == fp)
-
-            # Convert to list of dicts
-            events = []
-            for i in range(len(file_ds)):
-                event = file_ds[i]
-                events.append(event)
-
+            events = [file_ds[i] for i in range(len(file_ds))]
             binned_data = aggregate_events_to_bins(events, fps, filter_empty_actions)
             all_binned_data.extend(binned_data)
-
-            # Update file progress with bin count
-            file_pbar.set_postfix({"current_file": Path(fp).name, "events": len(events), "bins": len(binned_data)})
-
-        file_pbar.close()
-        # Define features
+        # Create dataset
         features = Features(
             {
                 "episode_path": Value("string"),
                 "bin_idx": Value("int32"),
                 "timestamp_ns": Value("int64"),
-                "state": Sequence(feature=Value("binary"), length=-1),  # Sequence of serialized McapMessage bytes
-                "actions": Sequence(feature=Value("binary"), length=-1),  # Sequence of serialized McapMessage bytes
+                "state": Sequence(feature=Value("binary"), length=-1),
+                "actions": Sequence(feature=Value("binary"), length=-1),
             }
         )
-        # McapMessage objects are already serialized as bytes from previous step
-        console.print(f"[cyan]🔧[/cyan] Creating dataset from [bold]{len(all_binned_data):,}[/bold] binned entries...")
-        binned_dataset = Dataset.from_list(all_binned_data, features=features)
 
-        # Store the dataset for this split
-        split_name = split if split else "train"  # Default to "train" if no split
-        processed_datasets[split_name] = binned_dataset
+        print(f"Creating dataset from {len(all_binned_data):,} binned entries...")
+        hf_dataset = HFDataset.from_list(all_binned_data, features=features)
 
-        console.print(
-            f"[green]✓[/green] Created [bold]{len(binned_dataset):,}[/bold] binned entries for [bold]{split_name}[/bold] split"
+        binned_dataset = Dataset(
+            arrow_table=hf_dataset.data,
+            info=hf_dataset.info,
+            split=hf_dataset.split,
+            indices_table=hf_dataset._indices,
+            fingerprint=hf_dataset._fingerprint,
+            owa_config=binned_config,
         )
 
-    # Save all datasets as DatasetDict or single Dataset
-    if len(processed_datasets) > 1:
-        # Multiple splits - create DatasetDict
-        from datasets import DatasetDict
+        split_name = split if split else "train"
+        processed_datasets[split_name] = binned_dataset
+        print(f"Created {len(binned_dataset):,} binned entries for {split_name} split")
 
-        final_dataset = DatasetDict(processed_datasets)
-    else:
-        # Single split - save as Dataset
-        final_dataset = list(processed_datasets.values())[0]
+    # Save dataset
+    final_dataset = (
+        DatasetDict(processed_datasets) if len(processed_datasets) > 1 else list(processed_datasets.values())[0]
+    )
 
-    # Save to output directory
     output_dir.mkdir(parents=True, exist_ok=True)
-    console.print(f"[cyan]💾[/cyan] Saving to {output_dir}")
+    print(f"Saving to {output_dir}")
     final_dataset.save_to_disk(str(output_dir))
 
-    # Calculate and display timing information
-    elapsed_time = time.time() - start_time
     if len(processed_datasets) > 1:
         total_entries = sum(len(ds) for ds in processed_datasets.values())
-        console.print(f"[green]✓[/green] Saved [bold]{total_entries:,}[/bold] total binned entries")
+        print(f"Saved {total_entries:,} total binned entries")
         for split_name, ds in processed_datasets.items():
-            console.print(f"  [cyan]•[/cyan] {split_name}: [bold]{len(ds):,}[/bold] entries")
+            print(f"  {split_name}: {len(ds):,} entries")
     else:
         split_name = list(processed_datasets.keys())[0]
         ds = list(processed_datasets.values())[0]
-        console.print(f"[green]✓[/green] Saved [bold]{len(ds):,}[/bold] binned entries ([bold]{split_name}[/bold])")
-
-    console.print(
-        f"[green]🎉[/green] Completed in [bold]{elapsed_time:.2f}s[/bold] ([bold]{elapsed_time / 60:.1f}min[/bold])"
-    )
+        print(f"Saved {len(ds):,} binned entries ({split_name})")
 
 
 if __name__ == "__main__":
