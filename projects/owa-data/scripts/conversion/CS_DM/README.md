@@ -97,11 +97,6 @@ Each converted file produces:
 - OWAMcap with external MP4: ~5-10MB MCAP + ~20-30MB MP4
 - OWAMcap with embedded frames: ~100-150MB MCAP (no external files)
 
-### Processing Speed
-- ~1-2 minutes per file on modern hardware
-- Memory usage: ~500MB-1GB per file during conversion
-- Parallel processing not implemented (can run multiple instances)
-
 ## Design Decisions
 
 ### Frame Rate: 16 FPS (Not 20 Hz)
@@ -141,24 +136,25 @@ The original dataset uses **non-uniform quantization** for mouse movement, which
 - Mouse sensitivity/acceleration not preserved (original data was pre-quantized)
 - Some metadata (xaux) not converted (contains previous actions, not needed for replay)
 
-## Example Output
+## Execution Output
 
-```
+```sh
+$ uv run convert_to_owamcap.py /mnt/raid12/datasets/CounterStrike_Deathmatch /mnt/raid12/datasets/owa/mcaps/csgo --workers 24                                                                                                                   ✹
+Found 5765 HDF5 files to convert
+Using 24 parallel workers
+ERROR converting hdf5_dm_july2021_expert_90.hdf5: Failed to read HDF5 file /mnt/raid12/datasets/CounterStrike_Deathmatch/dataset_dm_expert_dust2/hdf5_dm_july2021_expert_90.hdf5: Unable to synchronously open file (truncated file: eof = 54820857, sblock->base_addr = 0, stored_eof = 128406464)
+ERROR converting hdf5_dm_july2021_expert_96.hdf5: Failed to read HDF5 file /mnt/raid12/datasets/CounterStrike_Deathmatch/dataset_dm_expert_dust2/hdf5_dm_july2021_expert_96.hdf5: Unable to synchronously open file (truncated file: eof = 78839801, sblock->base_addr = 0, stored_eof = 128406464)
+Converting files: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 5765/5765 [31:20<00:00,  3.07file/s, Completed: hdf5_dm_july2021_999.hdf5]
+
 === Conversion Summary ===
-Converted 45/45 files
-Total time: 127.3 seconds
-Output directory: ./output
+Converted: 5763/5765 files
+Failed: 2 files
+Total time: 1880.3 seconds
+Output directory: /mnt/raid12/datasets/owa/mcaps/csgo
 
-=== Verification Results ===
-Found 45 OWAMcap files
-
-Verifying hdf5_aim_july2021_expert_1.mcap:
-  File size: 8.2 MB
-  Duration: 62.4 seconds
-  Messages: 15847
-  Frames: 1000
-  Topics: ['window', 'screen', 'mouse/raw' 'keyboard', 'keyboard_state']
-  ✓ No errors found
+Failed files:
+  hdf5_dm_july2021_expert_90.hdf5: Failed to read HDF5 file /mnt/raid12/datasets/CounterStrike_Deathmatch/dataset_dm_expert_dust2/hdf5_dm_july2021_expert_90.hdf5: Unable to synchronously open file (truncated file: eof = 54820857, sblock->base_addr = 0, stored_eof = 128406464)
+  hdf5_dm_july2021_expert_96.hdf5: Failed to read HDF5 file /mnt/raid12/datasets/CounterStrike_Deathmatch/dataset_dm_expert_dust2/hdf5_dm_july2021_expert_96.hdf5: Unable to synchronously open file (truncated file: eof = 78839801, sblock->base_addr = 0, stored_eof = 128406464)
 ```
 
 ## References

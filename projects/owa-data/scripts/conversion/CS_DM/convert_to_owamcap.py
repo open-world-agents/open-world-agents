@@ -302,6 +302,13 @@ def convert_single_file(args_tuple: Tuple[Path, Path, str, Optional[int]]) -> Tu
         mcap_path = convert_hdf5_to_owamcap(hdf5_path, output_dir, storage_mode, max_frames)
         return True, mcap_path, None
     except Exception as e:
+        # cleanup both mcap and video file
+        mcap_path = output_dir / f"{hdf5_path.stem}.mcap"
+        video_path = output_dir / f"{hdf5_path.stem}.mp4"
+        if mcap_path.exists():
+            mcap_path.unlink()
+        if video_path.exists():
+            video_path.unlink()
         return False, hdf5_path, str(e)
 
 
