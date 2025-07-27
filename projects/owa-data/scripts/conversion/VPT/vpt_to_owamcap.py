@@ -206,7 +206,7 @@ def process_single_file(jsonl_file_path):
             dy = int(round(dy))
 
             if dx != 0 or dy != 0:
-                topic = "mouse"
+                topic = "mouse/raw"
                 event = RawMouseEvent(
                     dx=dx,
                     dy=dy,
@@ -223,7 +223,7 @@ def process_single_file(jsonl_file_path):
             for state_button in list(button_state):
                 if state_button not in current_tick_buttons:
                     button_state.remove(state_button)
-                    topic = "mouse"
+                    topic = "mouse/raw"
                     if state_button == 0:  # left click
                         button_flags = RawMouseEvent.ButtonFlags.RI_MOUSE_LEFT_BUTTON_UP
                     elif state_button == 1:  # right click
@@ -247,7 +247,7 @@ def process_single_file(jsonl_file_path):
                     continue  # already pressed
                 else:
                     button_state.add(button)
-                    topic = "mouse"
+                    topic = "mouse/raw"
                     if button == 0:  # left click
                         button_flags = RawMouseEvent.ButtonFlags.RI_MOUSE_LEFT_BUTTON_DOWN
                     elif button == 1:  # right click
