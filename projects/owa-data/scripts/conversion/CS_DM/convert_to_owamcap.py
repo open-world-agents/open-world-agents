@@ -8,19 +8,22 @@
 #   "owa-core==0.5.4",
 #   "owa-msgs==0.5.4",
 #   "tqdm",
+#   "joblib",
 # ]
 # [tool.uv]
 # exclude-newer = "2025-07-27T12:00:00Z"
 # ///
 
 import argparse
+import multiprocessing as mp
 import time
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import cv2
 import h5py
 import numpy as np
+from joblib import Parallel, delayed
 from tqdm import tqdm
 
 from mcap_owa.highlevel import OWAMcapWriter
@@ -116,7 +119,7 @@ def create_video_from_frames(
 
     try:
         with VideoWriter(output_path, fps=float(fps), vfr=False) as writer:
-            for frame in tqdm(frames, desc="  Creating video", leave=False, unit="frame"):
+            for frame in frames:
                 writer.write_frame(frame)
     except Exception as e:
         raise RuntimeError(f"Failed to create video {output_path}: {e}")
@@ -151,7 +154,7 @@ def convert_hdf5_to_owamcap(
             if num_frames == 0:
                 raise ValueError("No frame data found in HDF5 file")
 
-            for i in tqdm(range(num_frames), desc="  Loading frames", leave=False, unit="frame"):
+            for i in range(num_frames):
                 frame_key, action_key = f"frame_{i}_x", f"frame_{i}_y"
 
                 if frame_key not in f or action_key not in f:
@@ -184,9 +187,7 @@ def convert_hdf5_to_owamcap(
             prev_keys = set()
             prev_left_click = prev_right_click = False
 
-            for frame_idx, (frame, action) in enumerate(
-                tqdm(zip(frames, actions), desc="  Writing MCAP", leave=False, unit="frame", total=len(frames))
-            ):
+            for frame_idx, (frame, action) in enumerate(zip(frames, actions)):
                 timestamp_ns = frame_idx * FRAME_DURATION_NS
 
                 # Write window info every second
@@ -286,10 +287,34 @@ def convert_hdf5_to_owamcap(
     return mcap_path
 
 
-def main():
+def convert_single_file(args_tuple: Tuple[Path, Path, str, Optional[int]]) -> Tuple[bool, Path, Optional[str]]:
+    """
+    Wrapper function for parallel processing of a single HDF5 file.
+
+    Args:
+        args_tuple: (hdf5_path, output_dir, storage_mode, max_frames)
+
+    Returns:
+        (success, result_path, error_message)
+    """
+    hdf5_path, output_dir, storage_mode, max_frames = args_tuple
+
+    try:
+        mcap_path = convert_hdf5_to_owamcap(hdf5_path, output_dir, storage_mode, max_frames)
+        return True, mcap_path, None
+    except Exception as e:
+        return False, hdf5_path, str(e)
+
+
+def setup_argument_parser() -> argparse.ArgumentParser:
+    """Setup and return the argument parser."""
     parser = argparse.ArgumentParser(description="Convert CS:GO dataset to OWAMcap format")
+
+    # Required arguments
     parser.add_argument("input_dir", type=Path, help="Input directory containing HDF5 files")
     parser.add_argument("output_dir", type=Path, help="Output directory for OWAMcap files")
+
+    # Optional arguments
     parser.add_argument("--max-files", type=int, help="Maximum number of files to convert")
     parser.add_argument("--max-frames", type=int, help="Maximum frames per file to convert")
     parser.add_argument(
@@ -303,6 +328,66 @@ def main():
         choices=["dm_july2021", "aim_expert", "dm_expert_dust2", "dm_expert_othermaps"],
         help="Convert specific subset only",
     )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=mp.cpu_count(),
+        help=f"Number of parallel workers (default: {mp.cpu_count()})",
+    )
+
+    return parser
+
+
+def find_hdf5_files(input_dir: Path, subset: Optional[str] = None) -> List[Path]:
+    """Find HDF5 files in the input directory."""
+    if subset:
+        subset_dir = input_dir / f"dataset_{subset}"
+        if not subset_dir.exists():
+            raise FileNotFoundError(f"Subset directory {subset_dir} does not exist")
+        return sorted(subset_dir.glob("*.hdf5"))
+    else:
+        return sorted(input_dir.rglob("*.hdf5"))
+
+
+def process_files_parallel(
+    hdf5_files: List[Path], output_dir: Path, storage_mode: str, max_frames: Optional[int], workers: int
+) -> Tuple[List[Path], List[Tuple[Path, str]]]:
+    """
+    Process HDF5 files in parallel using joblib.
+
+    Returns:
+        (converted_files, failed_files)
+    """
+    converted_files = []
+    failed_files = []
+
+    # Create conversion tasks
+    conversion_tasks = [
+        delayed(convert_single_file)((hdf5_file, output_dir, storage_mode, max_frames)) for hdf5_file in hdf5_files
+    ]
+
+    # Execute tasks in parallel with streaming results
+    parallel_executor = Parallel(n_jobs=workers, verbose=0, return_as="generator")
+    results_stream = parallel_executor(conversion_tasks)
+
+    # Process results as they complete
+    with tqdm(total=len(hdf5_files), desc="Converting files", unit="file") as pbar:
+        for (success, result_path, error), hdf5_file in zip(results_stream, hdf5_files):
+            pbar.set_postfix_str(f"Completed: {hdf5_file.name}")
+
+            if success:
+                converted_files.append(result_path)
+            else:
+                print(f"ERROR converting {hdf5_file.name}: {error}")
+                failed_files.append((hdf5_file, error))
+
+            pbar.update(1)
+
+    return converted_files, failed_files
+
+
+def main():
+    parser = setup_argument_parser()
 
     args = parser.parse_args()
 
@@ -315,14 +400,11 @@ def main():
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
     # Find HDF5 files
-    if args.subset:
-        subset_dir = args.input_dir / f"dataset_{args.subset}"
-        if not subset_dir.exists():
-            print(f"ERROR: Subset directory {subset_dir} does not exist")
-            return 1
-        hdf5_files = sorted(subset_dir.glob("*.hdf5"))
-    else:
-        hdf5_files = sorted(args.input_dir.rglob("*.hdf5"))
+    try:
+        hdf5_files = find_hdf5_files(args.input_dir, args.subset)
+    except FileNotFoundError as e:
+        print(f"ERROR: {e}")
+        return 1
 
     if not hdf5_files:
         print("ERROR: No HDF5 files found in input directory")
@@ -333,26 +415,15 @@ def main():
         hdf5_files = hdf5_files[: args.max_files]
 
     print(f"Found {len(hdf5_files)} HDF5 files to convert")
+    print(f"Using {args.workers} parallel workers")
 
     # Convert files
     start_time = time.time()
-    converted_files = []
-    failed_files = []
 
-    with tqdm(hdf5_files, desc="Converting files", unit="file") as pbar:
-        for hdf5_file in pbar:
-            # Update progress bar to show current file
-            pbar.set_postfix_str(f"Processing: {hdf5_file.name}")
-
-            try:
-                mcap_path = convert_hdf5_to_owamcap(
-                    hdf5_file, args.output_dir, storage_mode=args.storage_mode, max_frames=args.max_frames
-                )
-                converted_files.append(mcap_path)
-
-            except Exception as e:
-                print(f"ERROR converting {hdf5_file.name}: {e}")
-                failed_files.append((hdf5_file, str(e)))
+    # Process files in parallel using joblib with streaming results
+    converted_files, failed_files = process_files_parallel(
+        hdf5_files, args.output_dir, args.storage_mode, args.max_frames, args.workers
+    )
 
     # Summary
     elapsed_time = time.time() - start_time
