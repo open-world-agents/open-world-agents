@@ -8,7 +8,7 @@ from owa.data.datasets import FSLDataset
 from owa.data.episode_tokenizer import EpisodeTokenizer
 
 # This line is to enable throughput logging from FSLDataset
-logger.enable("owa.data.datasets.fsl")
+logger.enable("owa.data.datasets.fsl_dataset")
 
 # Load event dataset
 event_dataset = load_from_disk("/mnt/raid12/datasets/owa/data/super-hexagon-event")
