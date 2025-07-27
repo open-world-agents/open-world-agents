@@ -31,23 +31,17 @@ def create_event_transform(
         results = {"encoded_event": [], "images": []}
 
         for i in range(len(batch["mcap_message"])):
-            try:
-                mcap_msg = McapMessage.model_validate_json(batch["mcap_message"][i].decode("utf-8"))
-                encoded_text, screen_captured = encoder.encode(mcap_msg)
+            mcap_msg = McapMessage.model_validate_json(batch["mcap_message"][i].decode("utf-8"))
+            encoded_text, screen_captured = encoder.encode(mcap_msg)
 
-                images = []
-                if batch["topic"][i] == "screen" and screen_captured and load_images:
-                    for screen in screen_captured:
-                        screen.resolve_relative_path(episode_paths[i])
-                        images.append(screen.to_pil_image())
+            images = []
+            if batch["topic"][i] == "screen" and screen_captured and load_images:
+                for screen in screen_captured:
+                    screen.resolve_relative_path(episode_paths[i])
+                    images.append(screen.to_pil_image())
 
-                results["encoded_event"].append(encoded_text)
-                results["images"].append(images)
-            except Exception as e:
-                # Log warning but continue processing other messages
-                print(f"Warning: Failed to process message {i}: {e}")
-                results["encoded_event"].append(None)
-                results["images"].append(None)
+            results["encoded_event"].append(encoded_text)
+            results["images"].append(images)
 
         return results
 
