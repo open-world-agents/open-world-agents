@@ -15,7 +15,6 @@
 # ///
 
 import argparse
-import multiprocessing as mp
 import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -328,12 +327,7 @@ def setup_argument_parser() -> argparse.ArgumentParser:
         choices=["dm_july2021", "aim_expert", "dm_expert_dust2", "dm_expert_othermaps"],
         help="Convert specific subset only",
     )
-    parser.add_argument(
-        "--workers",
-        type=int,
-        default=mp.cpu_count(),
-        help=f"Number of parallel workers (default: {mp.cpu_count()})",
-    )
+    parser.add_argument("--workers", type=int, default=4, help="Number of parallel workers (default: 4)")
 
     return parser
 
