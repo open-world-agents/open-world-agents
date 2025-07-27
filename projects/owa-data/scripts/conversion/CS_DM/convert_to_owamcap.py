@@ -7,6 +7,7 @@
 #   "mcap-owa-support==0.5.4",
 #   "owa-core==0.5.4",
 #   "owa-msgs==0.5.4",
+#   "tqdm",
 # ]
 # [tool.uv]
 # exclude-newer = "2025-07-27T12:00:00Z"
@@ -20,10 +21,14 @@ from typing import Dict, List, Optional
 import cv2
 import h5py
 import numpy as np
+from tqdm import tqdm
 
 from mcap_owa.highlevel import OWAMcapWriter
 from owa.core import MESSAGES
 from owa.core.io.video import VideoWriter
+
+# Alias print to tqdm.write for better progress bar display
+print = tqdm.write
 
 # OWA message types
 ScreenCaptured = MESSAGES["desktop/ScreenCaptured"]
@@ -111,7 +116,7 @@ def create_video_from_frames(
 
     try:
         with VideoWriter(output_path, fps=float(fps), vfr=False) as writer:
-            for frame in frames:
+            for frame in tqdm(frames, desc="  Creating video", leave=False, unit="frame"):
                 writer.write_frame(frame)
     except Exception as e:
         raise RuntimeError(f"Failed to create video {output_path}: {e}")
@@ -121,7 +126,6 @@ def convert_hdf5_to_owamcap(
     hdf5_path: Path, output_dir: Path, storage_mode: str = "external_mkv", max_frames: Optional[int] = None
 ) -> Path:
     """Convert HDF5 file to OWAMcap format."""
-    print(f"Converting {hdf5_path.name}...")
 
     # Validate input
     if not hdf5_path.exists():
@@ -147,9 +151,7 @@ def convert_hdf5_to_owamcap(
             if num_frames == 0:
                 raise ValueError("No frame data found in HDF5 file")
 
-            print(f"  Processing {num_frames} frames...")
-
-            for i in range(num_frames):
+            for i in tqdm(range(num_frames), desc="  Loading frames", leave=False, unit="frame"):
                 frame_key, action_key = f"frame_{i}_x", f"frame_{i}_y"
 
                 if frame_key not in f or action_key not in f:
@@ -172,11 +174,9 @@ def convert_hdf5_to_owamcap(
     # Create video if needed
     if video_path:
         video_format = storage_mode.split("_")[1]
-        print(f"  Creating {video_format.upper()} video: {video_path.name}")
         create_video_from_frames(frames, video_path, video_format=video_format)
 
     # Create MCAP file
-    print(f"  Creating OWAMcap: {mcap_path.name}")
 
     try:
         with OWAMcapWriter(str(mcap_path)) as writer:
@@ -184,7 +184,9 @@ def convert_hdf5_to_owamcap(
             prev_keys = set()
             prev_left_click = prev_right_click = False
 
-            for frame_idx, (frame, action) in enumerate(zip(frames, actions)):
+            for frame_idx, (frame, action) in enumerate(
+                tqdm(zip(frames, actions), desc="  Writing MCAP", leave=False, unit="frame", total=len(frames))
+            ):
                 timestamp_ns = frame_idx * FRAME_DURATION_NS
 
                 # Write window info every second
@@ -281,7 +283,6 @@ def convert_hdf5_to_owamcap(
     except Exception as e:
         raise RuntimeError(f"Failed to create MCAP file {mcap_path}: {e}")
 
-    print(f"  Conversion complete: {mcap_path}")
     return mcap_path
 
 
@@ -338,18 +339,20 @@ def main():
     converted_files = []
     failed_files = []
 
-    for i, hdf5_file in enumerate(hdf5_files):
-        print(f"\n[{i + 1}/{len(hdf5_files)}] Converting {hdf5_file.name}")
+    with tqdm(hdf5_files, desc="Converting files", unit="file") as pbar:
+        for hdf5_file in pbar:
+            # Update progress bar to show current file
+            pbar.set_postfix_str(f"Processing: {hdf5_file.name}")
 
-        try:
-            mcap_path = convert_hdf5_to_owamcap(
-                hdf5_file, args.output_dir, storage_mode=args.storage_mode, max_frames=args.max_frames
-            )
-            converted_files.append(mcap_path)
+            try:
+                mcap_path = convert_hdf5_to_owamcap(
+                    hdf5_file, args.output_dir, storage_mode=args.storage_mode, max_frames=args.max_frames
+                )
+                converted_files.append(mcap_path)
 
-        except Exception as e:
-            print(f"  ERROR: {e}")
-            failed_files.append((hdf5_file, str(e)))
+            except Exception as e:
+                print(f"ERROR converting {hdf5_file.name}: {e}")
+                failed_files.append((hdf5_file, str(e)))
 
     # Summary
     elapsed_time = time.time() - start_time
@@ -368,7 +371,7 @@ def main():
 
 
 def verify_conversion(output_dir: Path) -> None:
-    """Simple verification of converted files."""
+    """Enhanced verification of converted files."""
     mcap_files = list(output_dir.glob("*.mcap"))
     if not mcap_files:
         print("No MCAP files found for verification")
@@ -380,16 +383,67 @@ def verify_conversion(output_dir: Path) -> None:
     total_size = sum(f.stat().st_size for f in mcap_files)
     print(f"Total size: {total_size / 1024 / 1024:.1f} MB")
 
-    # Check a few files
-    for mcap_file in mcap_files[:3]:
-        try:
-            from mcap_owa.highlevel import OWAMcapReader
+    valid_files = 0
+    invalid_files = []
 
-            with OWAMcapReader(str(mcap_file)) as reader:
-                message_count = sum(1 for _ in reader.iter_messages())
-                print(f"  {mcap_file.name}: {message_count} messages")
-        except Exception as e:
-            print(f"  {mcap_file.name}: ERROR - {e}")
+    # Check all files with enhanced validation
+    with tqdm(mcap_files, desc="Verifying files", unit="file") as pbar:
+        for mcap_file in pbar:
+            # Update progress bar to show current file
+            pbar.set_postfix_str(f"Checking: {mcap_file.name}")
+
+            try:
+                from mcap_owa.highlevel import OWAMcapReader
+
+                with OWAMcapReader(str(mcap_file)) as reader:
+                    message_counts = {"screen": 0, "mouse/raw": 0, "keyboard": 0, "window": 0}
+                    timestamps = []
+
+                    for message in reader.iter_messages():
+                        topic = message.topic
+                        if topic in message_counts:
+                            message_counts[topic] += 1
+                        timestamps.append(message.timestamp)
+
+                    # Calculate duration
+                    if timestamps:
+                        duration_ns = max(timestamps) - min(timestamps)
+                        duration_s = duration_ns / 1e9
+                    else:
+                        duration_s = 0
+
+                    # Validation criteria
+                    screen_mouse_count = message_counts["screen"] + message_counts["mouse/raw"]
+                    is_valid = duration_s > 60 and screen_mouse_count > 1000
+
+                    if is_valid:
+                        valid_files += 1
+                    else:
+                        invalid_files.append(
+                            {
+                                "file": mcap_file.name,
+                                "duration": duration_s,
+                                "screen_mouse": screen_mouse_count,
+                                "messages": message_counts,
+                            }
+                        )
+
+            except Exception as e:
+                invalid_files.append({"file": mcap_file.name, "error": str(e)})
+
+    print("\nValidation Results:")
+    print(f"  Valid files: {valid_files}/{len(mcap_files)} ({valid_files / len(mcap_files) * 100:.1f}%)")
+    print(f"  Invalid files: {len(invalid_files)}")
+
+    if invalid_files:
+        print("\nInvalid files (showing first 10):")
+        for item in invalid_files[:10]:
+            if "error" in item:
+                print(f"  {item['file']}: ERROR - {item['error']}")
+            else:
+                print(f"  {item['file']}: {item['duration']:.1f}s, {item['screen_mouse']} screen/mouse msgs")
+
+    print("\nCriteria: >60s duration AND >1000 screen/mouse messages")
 
 
 if __name__ == "__main__":
