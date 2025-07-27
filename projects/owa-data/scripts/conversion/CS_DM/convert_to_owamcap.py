@@ -1,37 +1,16 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
 # /// script
 # requires-python = ">=3.11"
 # dependencies = [
-#     "h5py",
-#     "mcap-owa-support",
-#     "numpy",
-#     "opencv-python",
-#     "owa-core",
-#     "owa-env-desktop",
+#   "h5py",
+#   "numpy>=2.2.0",
+#   "mcap-owa-support==0.5.4",
+#   "owa-core==0.5.4",
+#   "owa-msgs==0.5.4",
 # ]
+# [tool.uv]
+# exclude-newer = "2025-07-27T12:00:00Z"
 # ///
-# NOTE: run with : `uv run convert_to_owamcap.py [INPUT_DIR] [OUTPUT_DIR]`
-"""
-Convert Counter-Strike Deathmatch dataset to OWAMcap format.
-
-This script converts the Counter-Strike Deathmatch dataset from the paper
-"Counter-Strike Deathmatch with Large-Scale Behavioural Cloning" by Tim Pearce and Jun Zhu
-into OWAMcap format for use with Open World Agents.
-
-Dataset structure:
-- HDF5 files contain 1000 frames each with:
-  - frame_i_x: Screenshots (150, 280, 3) RGB images
-  - frame_i_y: Action vectors (51,) containing [keys_pressed_onehot, Lclicks_onehot, Rclicks_onehot, mouse_x_onehot, mouse_y_onehot]
-  - frame_i_xaux: Previous actions + metadata (54,)
-  - frame_i_helperarr: [kill_flag, death_flag] (2,)
-
-OWAMcap output:
-- ScreenCaptured messages for images (with external video references)
-- MouseEvent/MouseState for mouse actions
-- KeyboardEvent/KeyboardState for keyboard actions
-- WindowInfo for window context
-"""
-
 import argparse
 import time
 from pathlib import Path
@@ -47,8 +26,6 @@ from owa.core.io.video import VideoWriter
 # Import OWA message types
 ScreenCaptured = MESSAGES["desktop/ScreenCaptured"]
 RawMouseEvent = MESSAGES["desktop/RawMouseEvent"]
-MouseEvent = MESSAGES["desktop/MouseEvent"]
-MouseState = MESSAGES["desktop/MouseState"]
 KeyboardEvent = MESSAGES["desktop/KeyboardEvent"]
 KeyboardState = MESSAGES["desktop/KeyboardState"]
 WindowInfo = MESSAGES["desktop/WindowInfo"]
@@ -349,7 +326,7 @@ def convert_hdf5_to_owamcap(
                     timestamp=timestamp_ns,
                 )
 
-                writer.write_message(raw_mouse_event, topic="mouse", timestamp=timestamp_ns)
+                writer.write_message(raw_mouse_event, topic="mouse/raw", timestamp=timestamp_ns)
 
             # Process mouse clicks - release previous frame clicks, press current frame clicks
             current_left_click = action["mouse_left_click"]
@@ -363,7 +340,7 @@ def convert_hdf5_to_owamcap(
                     button_flags=RawMouseEvent.ButtonFlags.RI_MOUSE_LEFT_BUTTON_UP,
                     timestamp=timestamp_ns,
                 )
-                writer.write_message(raw_mouse_event, topic="mouse", timestamp=timestamp_ns)
+                writer.write_message(raw_mouse_event, topic="mouse/raw", timestamp=timestamp_ns)
 
             if prev_right_click:
                 raw_mouse_event = RawMouseEvent(
@@ -372,7 +349,7 @@ def convert_hdf5_to_owamcap(
                     button_flags=RawMouseEvent.ButtonFlags.RI_MOUSE_RIGHT_BUTTON_UP,
                     timestamp=timestamp_ns,
                 )
-                writer.write_message(raw_mouse_event, topic="mouse", timestamp=timestamp_ns)
+                writer.write_message(raw_mouse_event, topic="mouse/raw", timestamp=timestamp_ns)
 
             # Press current frame clicks
             if current_left_click:
@@ -382,7 +359,7 @@ def convert_hdf5_to_owamcap(
                     button_flags=RawMouseEvent.ButtonFlags.RI_MOUSE_LEFT_BUTTON_DOWN,
                     timestamp=timestamp_ns,
                 )
-                writer.write_message(raw_mouse_event, topic="mouse", timestamp=timestamp_ns)
+                writer.write_message(raw_mouse_event, topic="mouse/raw", timestamp=timestamp_ns)
 
             if current_right_click:
                 raw_mouse_event = RawMouseEvent(
@@ -391,7 +368,7 @@ def convert_hdf5_to_owamcap(
                     button_flags=RawMouseEvent.ButtonFlags.RI_MOUSE_RIGHT_BUTTON_DOWN,
                     timestamp=timestamp_ns,
                 )
-                writer.write_message(raw_mouse_event, topic="mouse", timestamp=timestamp_ns)
+                writer.write_message(raw_mouse_event, topic="mouse/raw", timestamp=timestamp_ns)
 
             prev_left_click = current_left_click
             prev_right_click = current_right_click
@@ -414,7 +391,7 @@ def main():
     )
     parser.add_argument(
         "--subset",
-        choices=["aim_expert", "dm_expert_dust2", "dm_expert_othermaps"],
+        choices=["dm_july2021", "aim_expert", "dm_expert_dust2", "dm_expert_othermaps"],
         help="Convert specific subset only",
     )
 
@@ -434,9 +411,9 @@ def main():
         if not subset_dir.exists():
             print(f"Error: Subset directory {subset_dir} does not exist")
             return 1
-        hdf5_files = list(subset_dir.glob("*.hdf5"))
+        hdf5_files = sorted(subset_dir.glob("*.hdf5"))
     else:
-        hdf5_files = list(args.input_dir.rglob("*.hdf5"))
+        hdf5_files = sorted(args.input_dir.rglob("*.hdf5"))
 
     if not hdf5_files:
         print("No HDF5 files found in input directory")

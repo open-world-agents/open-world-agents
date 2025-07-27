@@ -14,6 +14,7 @@ The original dataset contains:
 
 ### Dataset Subsets
 
+- `dataset_dm_july2021/`: 5501 files, 658GB - scraped from online servers
 - `dataset_aim_expert/`: 45 files, 6GB - Expert aim training data
 - `dataset_dm_expert_othermaps/`: 30 files, 3.6GB - Expert deathmatch on various maps
 - `dataset_dm_expert_dust2/`: 190 files, 24GB - Expert deathmatch on dust2 (not available in current mount)
@@ -31,67 +32,26 @@ The conversion script (`convert_to_owamcap.py`) transforms the dataset into OWAM
 
 ### Output Format (OWAMcap)
 - **ScreenCaptured** messages with external video references or embedded frames
-- **MouseEvent** messages for mouse movements and clicks
-- **MouseState** messages for current mouse position and button states
+- **RawMouseEvent** messages for mouse movements and clicks
 - **KeyboardEvent** messages for key presses and releases
 - **KeyboardState** messages for current pressed keys
 - **WindowInfo** messages for CS:GO window context
 
 ## Usage
 
-### Prerequisites
+1. Ensure you have uv installed. You can install uv using `pip install uv`.
 
-Ensure you have the required packages installed:
+2. Run the conversion script:
 ```bash
-pip install mcap-owa-support owa-msgs opencv-python h5py numpy
+uv run convert_to_owamcap.py /mnt/raid12/datasets/CounterStrike_Deathmatch /mnt/raid12/datasets/owa/mcaps/csgo
 ```
 
-### Basic Conversion
-
-Convert a specific subset:
+3. Verify the conversion:
 ```bash
-python convert_to_owamcap.py /mnt/raid12/datasets/CounterStrike_Deathmatch ./output --subset aim_expert
+uv run convert_to_owamcap.py verify /mnt/raid12/datasets/owa/mcaps/csgo 
 ```
 
-Convert with options:
-```bash
-python convert_to_owamcap.py /mnt/raid12/datasets/CounterStrike_Deathmatch ./output \
-    --max-files 5 \
-    --max-frames 100 \
-    --storage-mode embedded
-```
-
-Convert to MKV format (recommended):
-```bash
-python convert_to_owamcap.py /mnt/raid12/datasets/CounterStrike_Deathmatch ./output \
-    --storage-mode external_mkv
-```
-
-### Testing
-
-Run tests to validate the conversion:
-```bash
-python test_conversion.py
-```
-
-### Verification
-
-Verify converted files:
-```bash
-python convert_to_owamcap.py verify ./output
-```
-
-## Command Line Options
-
-- `input_dir`: Input directory containing HDF5 files
-- `output_dir`: Output directory for OWAMcap files
-- `--max-files N`: Limit conversion to N files
-- `--max-frames N`: Limit each file to N frames
-- `--storage-mode {external_mkv,external_mp4,embedded}`: How to store screen frames
-  - `external_mkv`: Create external MKV video files (recommended, smaller files)
-  - `external_mp4`: Create external MP4 video files (compatible but larger)
-  - `embedded`: Embed frames as PNG data URIs in MCAP (largest files, no external dependencies)
-- `--subset {aim_expert,dm_expert_othermaps}`: Convert specific subset only
+For detailed CLI arguments, run `uv run convert_to_owamcap.py --help`.
 
 ## Action Mapping
 
@@ -126,7 +86,6 @@ Each converted file produces:
 - `window`: Window information (CS:GO context)
 - `screen`: Screen capture frames
 - `mouse`: Mouse events (movement, clicks)
-- `mouse/state`: Current mouse state
 - `keyboard`: Keyboard events (press/release)
 - `keyboard/state`: Current keyboard state
 
@@ -182,24 +141,6 @@ The original dataset uses **non-uniform quantization** for mouse movement, which
 - Mouse sensitivity/acceleration not preserved (original data was pre-quantized)
 - Some metadata (xaux) not converted (contains previous actions, not needed for replay)
 
-## Troubleshooting
-
-### Common Issues
-
-1. **Import errors**: Ensure all OWA packages are installed
-2. **Memory errors**: Use `--max-frames` to limit memory usage
-3. **Disk space**: Each file produces ~30-50MB output
-4. **Permission errors**: Check dataset mount permissions
-
-### Validation
-
-The verification script checks:
-- File integrity and readability
-- Message type validation
-- Topic consistency
-- Timestamp ordering
-- Frame count accuracy
-
 ## Example Output
 
 ```
@@ -216,7 +157,7 @@ Verifying hdf5_aim_july2021_expert_1.mcap:
   Duration: 62.4 seconds
   Messages: 15847
   Frames: 1000
-  Topics: ['window', 'screen', 'mouse', 'mouse_state', 'keyboard', 'keyboard_state']
+  Topics: ['window', 'screen', 'mouse/raw' 'keyboard', 'keyboard_state']
   ✓ No errors found
 ```
 
