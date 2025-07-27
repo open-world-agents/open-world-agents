@@ -2,6 +2,7 @@
 """Process raw MCAP files to create event datasets."""
 
 import random
+import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -143,7 +144,8 @@ def generate_event_examples(
                     for event in events:
                         yield event
                 except Exception as e:
-                    print(f"⚠ Failed to process file {Path(fp).name}: {e}")
+                    # Log error but don't stop processing other files
+                    print(f"⚠ Failed to process file {Path(fp).name}: {e}", file=sys.stderr)
                 finally:
                     pbar.update(1)
 

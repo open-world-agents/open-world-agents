@@ -326,6 +326,7 @@ class MigrationOrchestrator:
                 file_version = reader.file_version
                 return file_version if file_version and file_version != "unknown" else self.current_version
         except Exception:
+            print(f"Failed to detect version for {file_path}", file=sys.stderr)
             return "unknown"
 
     def get_migration_path(self, from_version: str, to_version: str) -> List[ScriptMigrator]:
