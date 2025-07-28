@@ -7,7 +7,7 @@ ensuring consistency across different encoding strategies.
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import List, Optional, Set, Tuple
 
 from mcap_owa.highlevel import McapMessage
 from owa.msgs.desktop.screen import ScreenCaptured
@@ -21,13 +21,7 @@ class BaseEventEncoderConfig:
 
 
 class BaseEventEncoder(ABC):
-    """
-    Abstract base class for all event encoders.
-
-    This interface ensures that all encoders provide consistent encode/decode
-    functionality while allowing for different internal representations and
-    optimization strategies.
-    """
+    """Abstract base class for all event encoders."""
 
     @abstractmethod
     def encode(self, mcap_message: McapMessage) -> Tuple[str, List[ScreenCaptured]]:
@@ -38,9 +32,7 @@ class BaseEventEncoder(ABC):
             mcap_message: McapMessage instance
 
         Returns:
-            Tuple containing:
-                - str: Encoded representation as string
-                - List[ScreenCaptured]: Image data for screen events
+            Tuple containing encoded string and list of images for screen events
 
         Raises:
             ValueError: If the mcap_message format is invalid
@@ -48,7 +40,7 @@ class BaseEventEncoder(ABC):
         pass
 
     @abstractmethod
-    def decode(self, encoded_data: str, images: Optional[List[ScreenCaptured]] = None) -> "McapMessage":
+    def decode(self, encoded_data: str, images: Optional[List[ScreenCaptured]] = None) -> McapMessage:
         """
         Decode encoded data back to McapMessage format.
 
@@ -57,69 +49,33 @@ class BaseEventEncoder(ABC):
             images: Optional list of image data for screen events
 
         Returns:
-            McapMessage: Reconstructed message in McapMessage format
+            McapMessage: Reconstructed message
 
         Raises:
             ValueError: If encoded_data format is invalid
         """
         pass
 
-    @abstractmethod
     def encode_batch(self, mcap_messages: List[McapMessage]) -> Tuple[List[str], List[List[ScreenCaptured]]]:
-        """
-        Encode a batch of McapMessage-like objects.
+        """Encode a batch of McapMessage objects."""
+        all_tokens, all_images = [], []
+        for message in mcap_messages:
+            tokens, images = self.encode(message)
+            all_tokens.append(tokens)
+            all_images.append(images)
+        return all_tokens, all_images
 
-        Args:
-            mcap_messages: List of McapMessage instances or dictionaries
-
-        Returns:
-            Tuple containing:
-                - List[str]: Batch of encoded representations as strings
-                - List[List[ScreenCaptured]]: Image data for each event
-        """
-        pass
-
-    @abstractmethod
     def decode_batch(
         self, encoded_batch: List[str], all_images: Optional[List[List[ScreenCaptured]]] = None
     ) -> List[McapMessage]:
-        """
-        Decode a batch of encoded data.
-
-        Args:
-            encoded_batch: Batch of encoded representations as strings
-            all_images: Optional list of image data lists for each event
-
-        Returns:
-            List[McapMessage]: Reconstructed messages in McapMessage format
-        """
-        pass
+        """Decode a batch of encoded data."""
+        if all_images is None:
+            all_images = [[] for _ in encoded_batch]
+        if len(encoded_batch) != len(all_images):
+            raise ValueError("Length mismatch between encoded data and images")
+        return [self.decode(data, images) for data, images in zip(encoded_batch, all_images)]
 
     @abstractmethod
     def get_vocab(self) -> Set[str]:
         """Get all tokens in the vocabulary."""
         pass
-
-    def extend_vocab_from_tokenizer(self, tokenizer, model=None):
-        """
-        Extend tokenizer and model vocabulary with encoder tokens.
-
-        Args:
-            tokenizer: HuggingFace tokenizer to extend
-            model: Optional model to resize embeddings
-        """
-        tokenizer.add_tokens(self.get_vocab())
-        if model is not None:
-            model.resize_token_embeddings(len(tokenizer))
-
-    def get_encoder_info(self) -> Dict[str, Any]:
-        """
-        Get information about this encoder.
-
-        Returns:
-            Dict containing encoder metadata like type, added tokens, etc.
-        """
-        return {
-            "encoder_type": self.__class__.__name__,
-            "added_tokens": self.get_vocab(),
-        }
