@@ -134,7 +134,7 @@ class RawMouseEvent(OWAMessage):
     @property
     def dx(self) -> int:
         """Get raw horizontal movement delta."""
-        if self.us_flags & self.UsFlags.MOUSE_MOVE_RELATIVE:
+        if self.us_flags == self.UsFlags.MOUSE_MOVE_RELATIVE:
             return self.last_x
         else:
             raise NotImplementedError("Absolute mouse movement not implemented")
@@ -142,7 +142,7 @@ class RawMouseEvent(OWAMessage):
     @property
     def dy(self) -> int:
         """Get raw vertical movement delta."""
-        if self.us_flags & self.UsFlags.MOUSE_MOVE_RELATIVE:
+        if self.us_flags == self.UsFlags.MOUSE_MOVE_RELATIVE:
             return self.last_y
         else:
             raise NotImplementedError("Absolute mouse movement not implemented")
