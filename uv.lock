@@ -1060,7 +1060,7 @@ wheels = [
 
 [[package]]
 name = "ocap"
-version = "0.5.4"
+version = "0.5.5"
 source = { editable = "projects/ocap" }
 dependencies = [
     { name = "owa-cli" },
@@ -1158,7 +1158,7 @@ wheels = [
 
 [[package]]
 name = "owa"
-version = "0.5.4"
+version = "0.5.5"
 source = { editable = "." }
 dependencies = [
     { name = "mcap-owa-support" },
@@ -1228,7 +1228,7 @@ dev = [
 
 [[package]]
 name = "owa-cli"
-version = "0.5.4"
+version = "0.5.5"
 source = { editable = "projects/owa-cli" }
 dependencies = [
     { name = "loguru" },
@@ -1263,7 +1263,7 @@ requires-dist = [
 
 [[package]]
 name = "owa-core"
-version = "0.5.4"
+version = "0.5.5"
 source = { editable = "projects/owa-core" }
 dependencies = [
     { name = "av" },
@@ -1291,7 +1291,7 @@ requires-dist = [
 
 [[package]]
 name = "owa-env-desktop"
-version = "0.5.4"
+version = "0.5.5"
 source = { editable = "projects/owa-env-desktop" }
 dependencies = [
     { name = "bettercam", marker = "sys_platform == 'win32'" },
@@ -1320,7 +1320,7 @@ requires-dist = [
 
 [[package]]
 name = "owa-env-gst"
-version = "0.5.4"
+version = "0.5.5"
 source = { editable = "projects/owa-env-gst" }
 dependencies = [
     { name = "av" },
@@ -1345,7 +1345,7 @@ requires-dist = [
 
 [[package]]
 name = "owa-msgs"
-version = "0.5.4"
+version = "0.5.5"
 source = { editable = "projects/owa-msgs" }
 dependencies = [
     { name = "annotated-types" },
