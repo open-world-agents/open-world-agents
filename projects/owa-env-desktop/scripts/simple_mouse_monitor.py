@@ -10,6 +10,7 @@ from threading import Lock
 from tqdm import tqdm
 
 from owa.core import LISTENERS
+from owa.msgs.desktop.mouse import MouseEvent, RawMouseEvent
 
 # Stats tracking
 stats_lock = Lock()
@@ -33,7 +34,7 @@ std_total = {"x": 0, "y": 0}
 should_quit = False
 
 
-def on_raw_mouse(event):
+def on_raw_mouse(event: RawMouseEvent):
     """Raw mouse event handler."""
     global verbose_mode, raw_total
 
@@ -46,10 +47,10 @@ def on_raw_mouse(event):
 
     # Verbose mode - print all events
     if verbose_mode:
-        tqdm.write(f"RAW: {event}")
+        tqdm.write(f"RAW[*]: {event}")
 
 
-def on_std_mouse(event):
+def on_std_mouse(event: MouseEvent):
     """Standard mouse event handler."""
     global verbose_mode, std_total
 
@@ -66,7 +67,8 @@ def on_std_mouse(event):
             tqdm.write(f"STD: x={event.x:4d} y={event.y:4d} type={event.event_type}")
     elif verbose_mode:
         # Print non-move events too
-        tqdm.write(f"STD: {event.event_type} button={event.button} pressed={event.pressed}")
+        ...
+        # tqdm.write(f"STD: {event.event_type} button={event.button} pressed={event.pressed}")
 
 
 def toggle_verbose():
