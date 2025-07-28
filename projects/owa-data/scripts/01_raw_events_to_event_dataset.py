@@ -228,7 +228,7 @@ def main(
     num_workers: int = typer.Option(4, "--num-workers", help="Number of parallel worker processes"),
     output_dir: Optional[Path] = typer.Option(None, "--output-dir", help="Directory to save the dataset"),
     keep_topic: Optional[List[str]] = typer.Option(
-        None, "--keep_topic", help="Topics to keep (default: screen, keyboard, mouse)"
+        None, "--keep-topic", help="Topics to keep (default: screen, keyboard, mouse)"
     ),
 ):
     """Generate event dataset from raw MCAP files."""

@@ -109,15 +109,11 @@ def _generate_vocab(
 
 
 class HierarchicalEventEncoder(BaseEventEncoder):
-    """
-    Hierarchical event encoder for VLA training with compositional token structure.
+    """Hierarchical event encoder with simple token structure."""
 
-    This encoder converts raw events to hierarchical token sequences that are more
-    efficient and learnable than traditional flat token approaches.
-    """
-
-    def __init__(self, config: HierarchicalEventEncoderConfig = HierarchicalEventEncoderConfig(), **kwargs):
-        """Initialize the hierarchical event encoder."""
+    def __init__(self, config: Optional[HierarchicalEventEncoderConfig] = None, **kwargs):
+        if config is None:
+            config = HierarchicalEventEncoderConfig()
         self.config = HierarchicalEventEncoderConfig(**(config.__dict__ | kwargs))
 
     def _encode_timestamp(self, timestamp_ns: int) -> List[str]:
@@ -365,30 +361,6 @@ class HierarchicalEventEncoder(BaseEventEncoder):
             )
         else:
             raise ValueError(f"Unknown event type token: {event_type_token}")
-
-    def encode_batch(self, mcap_messages: List[McapMessage]) -> Tuple[List[str], List[List[ScreenCaptured]]]:
-        """Encode a batch of McapMessage objects."""
-        all_tokens, all_images = [], []
-        for event in mcap_messages:
-            tokens, images = self.encode(event)
-            all_tokens.append(tokens)
-            all_images.append(images)
-        return all_tokens, all_images
-
-    def decode_batch(
-        self,
-        encoded_batch: List[str],
-        all_images: Optional[List[List[ScreenCaptured]]] = None,
-        screen_size: Optional[Tuple[int, int]] = None,
-    ) -> List[McapMessage]:
-        """Decode a batch of hierarchical token sequences."""
-        if all_images is None:
-            all_images = [[] for _ in encoded_batch]
-        if len(encoded_batch) != len(all_images):
-            raise ValueError("Length mismatch between tokens and images")
-        return [
-            self.decode(encoded_data, images, screen_size) for encoded_data, images in zip(encoded_batch, all_images)
-        ]
 
     def get_vocab(self) -> Set[str]:
         """Get all tokens in the vocabulary."""

@@ -12,8 +12,8 @@ Raw MCAP Data → Event Dataset → FSLDataset → VLA Training Ready
 # Set variables
 export MCAP_TRAIN_DIR="/mnt/raid12/datasets/owa/mcaps/super-hexagon"
 export MCAP_TEST_DIR="/mnt/raid12/datasets/owa/mcaps/super-hexagon-30s"
-export EVENT_DATASET_DIR="/mnt/raid12/datasets/owa/data/super-hexagon-event-tmp"
-export BINNED_DATASET_DIR="/mnt/raid12/datasets/owa/data/super-hexagon-bin-tmp"
+export EVENT_DATASET_DIR="/mnt/raid12/datasets/owa/data/super-hexagon-event"
+export BINNED_DATASET_DIR="/mnt/raid12/datasets/owa/data/super-hexagon-bin"
 
 # 1. Process MCAP → Event Dataset
 python scripts/01_raw_events_to_event_dataset.py \
@@ -21,7 +21,7 @@ python scripts/01_raw_events_to_event_dataset.py \
   --test-dir $MCAP_TEST_DIR \
   --output-dir $EVENT_DATASET_DIR \
   --rate screen=20 --rate mouse=60 \
-  --keep_topic screen --keep_topic keyboard
+  --keep-topic screen --keep-topic keyboard
 
 # 2. (Optional) Event Dataset → Binned Dataset
 python scripts/02_event_dataset_to_binned_dataset.py \
@@ -85,7 +85,7 @@ python scripts/01_raw_events_to_event_dataset.py \
   --test-dir $MCAP_TEST_DIR \
   --output-dir $EVENT_DATASET_DIR \
   --rate screen=20 --rate mouse=60 \
-  --keep_topic screen --keep_topic keyboard
+  --keep-topic screen --keep-topic keyboard
 ```
 
 **Schema**: `episode_path` (string), `topic` (string), `timestamp_ns` (int64), `message_type` (string), `mcap_message` (binary)
