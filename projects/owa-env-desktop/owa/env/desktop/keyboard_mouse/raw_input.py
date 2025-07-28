@@ -363,8 +363,9 @@ if sys.platform == "win32":
 
                 # Create raw mouse event
                 event = RawMouseEvent(
-                    dx=mouse_data.lLastX,
-                    dy=mouse_data.lLastY,
+                    us_flags=mouse_data.usFlags,
+                    last_x=mouse_data.lLastX,
+                    last_y=mouse_data.lLastY,
                     button_flags=mouse_data.ButtonsUnion.Buttons.usButtonFlags,
                     button_data=mouse_data.ButtonsUnion.Buttons.usButtonData,
                     device_handle=int(raw_input.header.hDevice) if raw_input.header.hDevice else None,

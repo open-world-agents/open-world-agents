@@ -71,25 +71,40 @@ class MouseState(OWAMessage):
 class RawMouseEvent(OWAMessage):
     """
     Represents raw mouse input data from Windows WM_INPUT messages.
+    Ref: https://learn.microsoft.com/ko-kr/windows/win32/api/winuser/ns-winuser-rawmouse
 
     This message captures high-definition mouse movement data directly from the HID stack,
     bypassing Windows pointer acceleration and screen resolution limits. Provides sub-pixel
     precision and unfiltered input data essential for gaming and precision applications.
 
     Attributes:
-        dx: Raw horizontal movement delta from HID device
-        dy: Raw vertical movement delta from HID device
-        button_flags: Raw button state flags from RAWMOUSE structure
+        us_flags: mouse state flags, containing movement data type (relative/absolute). Default is relative.
+        last_x: can be relative or absolute, depends on us_flags
+        last_y: can be relative or absolute, depends on us_flags
+        button_flags: Raw button state flags from Windows RAWMOUSE structure
         button_data: Additional button data (wheel delta, etc.)
         device_handle: Raw input device handle (optional)
         timestamp: Optional timestamp in nanoseconds since epoch
+    Properties:
+        dx: Horizontal movement delta (derived from last_x)
+        dy: Vertical movement delta (derived from last_y)
     """
 
     _type = "desktop/RawMouseEvent"
 
-    # Raw movement deltas (not limited by screen resolution)
-    dx: int
-    dy: int
+    last_x: int  # can be relative or absolute, depends on us_flags
+    last_y: int  # can be relative or absolute, depends on us_flags
+
+    class UsFlags(IntFlag):
+        MOUSE_MOVE_RELATIVE = 0x0000
+        MOUSE_MOVE_ABSOLUTE = 0x0001
+        MOUSE_VIRTUAL_DESKTOP = 0x0002  # the coordinates are mapped to the virtual desktop
+        MOUSE_ATTRIBUTES_CHANGED = 0x0004  # the mouse button flags or mouse attributes have changed
+        MOUSE_MOVE_NOCOALESCE = 0x0008  # the message should not be coalesced
+
+    us_flags: UsFlags = (
+        UsFlags.MOUSE_MOVE_RELATIVE
+    )  # mouse state flags, containing movement data type (relative/absolute). Default is relative.
 
     class ButtonFlags(IntFlag):
         RI_MOUSE_NOP = 0x0000
@@ -107,7 +122,6 @@ class RawMouseEvent(OWAMessage):
         RI_MOUSE_HWHEEL = 0x0800
 
     # Raw button information from Windows RAWMOUSE structure
-    # ref: https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-rawmouse
     button_flags: ButtonFlags = ButtonFlags.RI_MOUSE_NOP  # RI_MOUSE_* flags (button press/release, wheel)
     button_data: int = 0  # Additional data (wheel delta, x-button info)
 
@@ -116,6 +130,22 @@ class RawMouseEvent(OWAMessage):
 
     # Timing
     timestamp: int | None = None
+
+    @property
+    def dx(self) -> int:
+        """Get raw horizontal movement delta."""
+        if self.us_flags & self.UsFlags.MOUSE_MOVE_RELATIVE:
+            return self.last_x
+        else:
+            raise NotImplementedError("Absolute mouse movement not implemented")
+
+    @property
+    def dy(self) -> int:
+        """Get raw vertical movement delta."""
+        if self.us_flags & self.UsFlags.MOUSE_MOVE_RELATIVE:
+            return self.last_y
+        else:
+            raise NotImplementedError("Absolute mouse movement not implemented")
 
 
 class PointerBallisticsConfig(OWAMessage):

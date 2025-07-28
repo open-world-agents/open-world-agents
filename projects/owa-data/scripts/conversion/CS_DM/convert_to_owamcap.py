@@ -343,8 +343,8 @@ def convert_hdf5_to_owamcap(
             # Process mouse movement (infinite coordinate space for 3D games)
             if action["mouse_dx"] != 0 or action["mouse_dy"] != 0:
                 raw_mouse_event = RawMouseEvent(
-                    dx=action["mouse_dx"],
-                    dy=action["mouse_dy"],
+                    last_x=action["mouse_dx"],
+                    last_y=action["mouse_dy"],
                     button_flags=RawMouseEvent.ButtonFlags.RI_MOUSE_NOP,
                     timestamp=timestamp_ns,
                 )
@@ -358,8 +358,8 @@ def convert_hdf5_to_owamcap(
             # Release previous frame clicks
             if prev_left_click:
                 raw_mouse_event = RawMouseEvent(
-                    dx=action["mouse_dx"],
-                    dy=action["mouse_dy"],
+                    last_x=action["mouse_dx"],
+                    last_y=action["mouse_dy"],
                     button_flags=RawMouseEvent.ButtonFlags.RI_MOUSE_LEFT_BUTTON_UP,
                     timestamp=timestamp_ns,
                 )
@@ -367,8 +367,8 @@ def convert_hdf5_to_owamcap(
 
             if prev_right_click:
                 raw_mouse_event = RawMouseEvent(
-                    dx=action["mouse_dx"],
-                    dy=action["mouse_dy"],
+                    last_x=action["mouse_dx"],
+                    last_y=action["mouse_dy"],
                     button_flags=RawMouseEvent.ButtonFlags.RI_MOUSE_RIGHT_BUTTON_UP,
                     timestamp=timestamp_ns,
                 )
@@ -377,8 +377,8 @@ def convert_hdf5_to_owamcap(
             # Press current frame clicks
             if current_left_click:
                 raw_mouse_event = RawMouseEvent(
-                    dx=action["mouse_dx"],
-                    dy=action["mouse_dy"],
+                    last_x=action["mouse_dx"],
+                    last_y=action["mouse_dy"],
                     button_flags=RawMouseEvent.ButtonFlags.RI_MOUSE_LEFT_BUTTON_DOWN,
                     timestamp=timestamp_ns,
                 )
@@ -386,8 +386,8 @@ def convert_hdf5_to_owamcap(
 
             if current_right_click:
                 raw_mouse_event = RawMouseEvent(
-                    dx=action["mouse_dx"],
-                    dy=action["mouse_dy"],
+                    last_x=action["mouse_dx"],
+                    last_y=action["mouse_dy"],
                     button_flags=RawMouseEvent.ButtonFlags.RI_MOUSE_RIGHT_BUTTON_DOWN,
                     timestamp=timestamp_ns,
                 )
