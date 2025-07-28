@@ -12,6 +12,10 @@
 #   "owa-core==0.5.5",
 #   "owa-msgs==0.5.5",
 # ]
+# [tool.uv.sources]
+# mcap-owa-support = { path = "../../../../../../mcap-owa-support", editable = true }
+# owa-core = { path = "../../../../../../owa-core", editable = true }
+# owa-msgs = { path = "../../../../../../owa-msgs", editable = true }
 # [tool.uv]
 # exclude-newer = "2025-07-28T12:00:00Z"
 # ///
