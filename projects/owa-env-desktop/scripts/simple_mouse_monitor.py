@@ -47,7 +47,7 @@ def on_raw_mouse(event: RawMouseEvent):
 
     # Verbose mode - print all events
     if verbose_mode:
-        tqdm.write(f"RAW[*]: {event}")
+        tqdm.write(f"RAW: {event}")
 
 
 def on_std_mouse(event: MouseEvent):
@@ -67,8 +67,7 @@ def on_std_mouse(event: MouseEvent):
             tqdm.write(f"STD: x={event.x:4d} y={event.y:4d} type={event.event_type}")
     elif verbose_mode:
         # Print non-move events too
-        ...
-        # tqdm.write(f"STD: {event.event_type} button={event.button} pressed={event.pressed}")
+        tqdm.write(f"STD: {event.event_type} button={event.button} pressed={event.pressed}")
 
 
 def toggle_verbose():

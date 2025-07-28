@@ -433,7 +433,7 @@ wheels = [
 
 [[package]]
 name = "owa-cli"
-version = "0.5.4"
+version = "0.5.5"
 source = { editable = "." }
 dependencies = [
     { name = "loguru" },
@@ -468,7 +468,7 @@ requires-dist = [
 
 [[package]]
 name = "owa-core"
-version = "0.5.4"
+version = "0.5.5"
 source = { editable = "../owa-core" }
 dependencies = [
     { name = "av" },

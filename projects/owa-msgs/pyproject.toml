@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "owa-msgs"
-version = "0.5.4"
+version = "0.5.5"
 description = "Core message definitions for Open World Agents"
 readme = "README.md"
 license = { text = "MIT" }
@@ -21,7 +21,7 @@ classifiers = [
 ]
 requires-python = ">=3.11"
 dependencies = [
-    "owa-core==0.5.4",
+    "owa-core==0.5.5",
     "pydantic>=2.10.6",
     "annotated-types",
     "numpy>=2.3.0",
