@@ -2,6 +2,8 @@
 
 This directory contains scripts for pretraining vision-language models using FSLDataset.
 
+> Prerequisites: quick environment setup can be done following [devcontainer guide](https://github.com/MaumAI-Company/closed-world-agents/blob/main/.devcontainer/README.md)
+
 ## Quick Start
 
 1. Launch video decoding server. See [video-decoding-server](../../../open-world-agents/projects/video-decoding-server/README.md) for more details.
