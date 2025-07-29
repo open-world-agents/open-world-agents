@@ -159,11 +159,10 @@ def download_mcap_cli(bin_dir: Path, force_upgrade: bool = False):
 
         print(f"mcap CLI {latest_version} installed at {mcap_executable}")
 
-    except Exception as e:
-        # Clean up temp file if download failed
+    finally:
+        # Clean up temp file if it still exists
         if temp_file.exists():
             temp_file.unlink()
-        raise RuntimeError(f"Failed to download mcap CLI: {e}")
 
 
 def info(

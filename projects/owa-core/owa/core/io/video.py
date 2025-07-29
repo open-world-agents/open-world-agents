@@ -1,49 +1,34 @@
 """
-Video I/O utilities for Open World Agents.
+Video I/O utilities.
 
 This module provides VideoReader and VideoWriter classes for reading and writing
 video files using PyAV. Both local files and remote URLs (HTTP/HTTPS) are supported.
-
-Examples:
-    Reading from a local file:
-        with VideoReader("video.mp4") as reader:
-            for frame in reader.read_frames():
-                # Process frame
-                pass
-
-    Reading from a remote URL:
-        with VideoReader("https://example.com/video.mp4") as reader:
-            frame = reader.read_frame(pts=1.5)  # Read frame at 1.5 seconds
-
-    Writing a video:
-        with VideoWriter("output.mp4", fps=30.0) as writer:
-            writer.write_frame(frame_array)
 """
 
-import atexit
 import gc
 import os
-import threading
-import time
 from fractions import Fraction
 from pathlib import Path
 from typing import Any, Dict, Generator, Literal, Optional, Union
 
 import av
-import av.container
 import numpy as np
 from loguru import logger
 
+from . import cached_av
+
+# Constants
+DUPLICATE_TOLERANCE_SECOND: Fraction = Fraction(1, 120)
+
 # Type aliases
 SECOND_TYPE = Union[float, Fraction]
-DUPLICATE_TOLERANCE_SECOND: Fraction = Fraction(1, 120)
 PTSUnit = Literal["pts", "sec"]
 VideoPathType = Union[str, os.PathLike, Path]  # Supports both local paths and URLs
 
 # Garbage collection counters for PyAV reference cycles
 # Reference: https://github.com/pytorch/vision/blob/428a54c96e82226c0d2d8522e9cbfdca64283da0/torchvision/io/video.py#L53-L55
 _CALLED_TIMES = 0
-_GC_COLLECTION_INTERVAL = 10
+GC_COLLECTION_INTERVAL = 10
 
 
 def _normalize_video_path(video_path: VideoPathType) -> Union[str, Path]:
@@ -79,125 +64,6 @@ def _normalize_video_path(video_path: VideoPathType) -> Union[str, Path]:
         if not local_path.exists():
             raise FileNotFoundError(f"Video file not found: {local_path}")
         return local_path
-
-
-class ContainerCache:
-    """Thread-safe container cache with automatic cleanup."""
-
-    def __init__(self, max_size=10, inactive_timeout=10**9):
-        self._cache = {}  # path -> (container, ref_count, last_accessed)
-        self._lock = threading.RLock()
-        self.max_size = max_size
-        self.inactive_timeout = inactive_timeout
-        atexit.register(self.close_all)
-
-    def get_container(self, video_path: Union[str, Path], mode: str = "r") -> av.container.Container:
-        """Get or create cached container with reference counting."""
-        path_str = str(video_path)
-
-        with self._lock:
-            self._cleanup_inactive()
-
-            # Reuse existing read-mode container
-            if path_str in self._cache and mode == "r":
-                container, refs, _ = self._cache[path_str]
-                self._cache[path_str] = (container, refs + 1, time.time())
-                return container
-
-            # Create new container
-            container = av.open(path_str, mode)
-
-            # Cache read-mode containers only
-            if mode == "r":
-                if len(self._cache) >= self.max_size:
-                    self._evict_unused()
-                self._cache[path_str] = (container, 1, time.time())
-
-            return container
-
-    def release_container(self, video_path: Union[str, Path]) -> None:
-        """Decrease reference count."""
-        path_str = str(video_path)
-
-        with self._lock:
-            if path_str in self._cache:
-                container, refs, _ = self._cache[path_str]
-                self._cache[path_str] = (container, max(0, refs - 1), time.time())
-
-    def force_close_container(self, video_path: Union[str, Path]) -> None:
-        """Immediately close and remove container."""
-        path_str = str(video_path)
-
-        with self._lock:
-            if path_str in self._cache:
-                container, _, _ = self._cache.pop(path_str)
-                self._safe_close(container, path_str)
-
-    def close_all(self) -> None:
-        """Close all cached containers."""
-        with self._lock:
-            for path_str, (container, _, _) in list(self._cache.items()):
-                self._safe_close(container, path_str)
-            self._cache.clear()
-
-    def _cleanup_inactive(self):
-        """Remove unused containers that are too old."""
-        current_time = time.time()
-        to_remove = []
-
-        for path, (container, refs, last_used) in self._cache.items():
-            if refs == 0 and (current_time - last_used) > self.inactive_timeout:
-                to_remove.append((path, container))
-
-        for path, container in to_remove:
-            self._cache.pop(path, None)
-            self._safe_close(container, path)
-
-    def _evict_unused(self):
-        """Remove oldest unused container."""
-        oldest_path = None
-        oldest_time = float("inf")
-
-        for path, (_, refs, last_used) in self._cache.items():
-            if refs == 0 and last_used < oldest_time:
-                oldest_path = path
-                oldest_time = last_used
-
-        if oldest_path:
-            container, _, _ = self._cache.pop(oldest_path)
-            self._safe_close(container, oldest_path)
-
-    @staticmethod
-    def _safe_close(container, path_str):
-        """Safely close container with error handling."""
-        try:
-            container.close()
-        except Exception as e:
-            logger.warning(f"Error closing container {path_str}: {e}")
-
-
-# Global cache instance
-_container_cache = ContainerCache(max_size=10)
-
-
-def get_video_container(video_path: Union[str, Path]) -> av.container.InputContainer:
-    """Get a container from the cache or create a new one."""
-    return _container_cache.get_container(video_path, mode="r")
-
-
-def release_video_container(video_path: Union[str, Path]) -> None:
-    """Release a container reference."""
-    _container_cache.release_container(video_path)
-
-
-def close_all_containers():
-    """Close all cached containers."""
-    _container_cache.close_all()
-
-
-def force_close_video_container(video_path: Union[str, Path]) -> None:
-    """Force immediate closure of a specific container."""
-    _container_cache.force_close_container(video_path)
 
 
 class VideoWriter:
@@ -259,7 +125,7 @@ class VideoWriter:
         """Write a frame to the video."""
         global _CALLED_TIMES
         _CALLED_TIMES += 1
-        if _CALLED_TIMES % _GC_COLLECTION_INTERVAL == 0:
+        if _CALLED_TIMES % GC_COLLECTION_INTERVAL == 0:
             gc.collect()
 
         # Convert numpy to VideoFrame
@@ -273,7 +139,7 @@ class VideoWriter:
         pts_as_sec = self.pts_to_sec(pts_as_pts)
 
         # Skip duplicate frames
-        if self._is_duplicate(pts_as_pts, pts_as_sec):
+        if self._is_duplicate(pts_as_pts):
             return {"source": str(self.video_path), "timestamp": float(pts_as_sec)}
 
         # Write frame
@@ -307,12 +173,9 @@ class VideoWriter:
         else:
             raise ValueError(f"Invalid pts_unit: {pts_unit}")
 
-    def _is_duplicate(self, pts_as_pts, pts_as_sec):
+    def _is_duplicate(self, pts_as_pts):
         """Check if frame is duplicate within tolerance."""
-        if self.past_pts is not None and pts_as_pts - self.past_pts < self.sec_to_pts(DUPLICATE_TOLERANCE_SECOND):
-            logger.warning(f"Duplicate frame at {float(pts_as_sec):.2f}s in {self.video_path}. Skipping.")
-            return True
-        return False
+        return self.past_pts is not None and pts_as_pts - self.past_pts < self.sec_to_pts(DUPLICATE_TOLERANCE_SECOND)
 
     def pts_to_sec(self, pts: int) -> Fraction:
         return pts * self.stream.codec_context.time_base
@@ -327,15 +190,11 @@ class VideoWriter:
         if self._closed:
             return
 
-        try:
-            # Flush encoder
-            for packet in self.stream.encode():
-                self.container.mux(packet)
-            self.container.close()
-        except Exception as e:
-            logger.error(f"Error closing VideoWriter: {e}")
-        finally:
-            self._closed = True
+        # Flush encoder
+        for packet in self.stream.encode():
+            self.container.mux(packet)
+        self.container.close()
+        self._closed = True
 
     def __enter__(self) -> "VideoWriter":
         return self
@@ -358,7 +217,7 @@ class VideoReader:
         """
         self.video_path = _normalize_video_path(video_path)
         self.force_close = force_close
-        self.container = get_video_container(self.video_path)
+        self.container = cached_av.open(self.video_path, "r")
 
     def read_frames(
         self, start_pts: SECOND_TYPE = 0.0, end_pts: Optional[SECOND_TYPE] = None, fps: Optional[float] = None
@@ -366,7 +225,7 @@ class VideoReader:
         """Yield frames between start_pts and end_pts in seconds."""
         global _CALLED_TIMES
         _CALLED_TIMES += 1
-        if _CALLED_TIMES % _GC_COLLECTION_INTERVAL == 0:
+        if _CALLED_TIMES % GC_COLLECTION_INTERVAL == 0:
             gc.collect()
 
         # Handle negative end_pts (Python-style indexing)
@@ -434,10 +293,9 @@ class VideoReader:
 
     def close(self) -> None:
         """Release container reference or force close."""
+        self.container.close()
         if self.force_close:
-            force_close_video_container(self.video_path)
-        else:
-            release_video_container(self.video_path)
+            cached_av.cleanup_cache(self.container)
 
     def __enter__(self) -> "VideoReader":
         return self

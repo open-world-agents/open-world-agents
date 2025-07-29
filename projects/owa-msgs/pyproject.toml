@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "owa-msgs"
-version = "0.5.3"
+version = "0.5.5"
 description = "Core message definitions for Open World Agents"
 readme = "README.md"
 license = { text = "MIT" }
@@ -21,7 +21,7 @@ classifiers = [
 ]
 requires-python = ">=3.11"
 dependencies = [
-    "owa-core==0.5.3",
+    "owa-core==0.5.5",
     "pydantic>=2.10.6",
     "annotated-types",
     "numpy>=2.3.0",
@@ -59,3 +59,6 @@ extend = "../../ruff.toml"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "network: marks tests as requiring network access (may be slow or unreliable)",
+]

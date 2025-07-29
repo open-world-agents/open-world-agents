@@ -17,11 +17,11 @@ from owa.cli.mcap.backup_utils import BackupContext
 class TestBackupContext:
     """Test cases for the BackupContext context manager."""
 
-    def test_backup_context_success(self, temp_dir):
+    def test_backup_context_success(self, tmp_path):
         """Test successful backup context usage."""
         console = Console()
 
-        test_file = temp_dir / "test.mcap"
+        test_file = tmp_path / "test.mcap"
         test_file.write_bytes(b"original content")
 
         with BackupContext(test_file, console) as ctx:
@@ -35,11 +35,11 @@ class TestBackupContext:
         assert test_file.read_bytes() == b"modified content"
         assert ctx.backup_path.exists()
 
-    def test_backup_context_auto_rollback_on_exception(self, temp_dir):
+    def test_backup_context_auto_rollback_on_exception(self, tmp_path):
         """Test automatic rollback when exception occurs."""
         console = Console()
 
-        test_file = temp_dir / "test.mcap"
+        test_file = tmp_path / "test.mcap"
         original_content = b"original content"
         test_file.write_bytes(original_content)
 
@@ -55,11 +55,11 @@ class TestBackupContext:
         assert test_file.read_bytes() == original_content
         assert not ctx.backup_path.exists()  # Backup deleted after rollback
 
-    def test_backup_context_manual_rollback_only(self, temp_dir):
+    def test_backup_context_manual_rollback_only(self, tmp_path):
         """Test context with manual rollback only (no automatic rollback)."""
         console = Console()
 
-        test_file = temp_dir / "test.mcap"
+        test_file = tmp_path / "test.mcap"
         original_content = b"original content"
         test_file.write_bytes(original_content)
 
@@ -73,11 +73,11 @@ class TestBackupContext:
         assert test_file.read_bytes() == original_content
         assert not ctx.backup_path.exists()  # Backup deleted after rollback
 
-    def test_backup_context_manual_rollback(self, temp_dir):
+    def test_backup_context_manual_rollback(self, tmp_path):
         """Test manual rollback functionality."""
         console = Console()
 
-        test_file = temp_dir / "test.mcap"
+        test_file = tmp_path / "test.mcap"
         original_content = b"original content"
         test_file.write_bytes(original_content)
 
@@ -90,11 +90,11 @@ class TestBackupContext:
             assert test_file.read_bytes() == original_content
             assert not ctx.backup_path.exists()
 
-    def test_backup_context_cleanup_backup(self, temp_dir):
+    def test_backup_context_cleanup_backup(self, tmp_path):
         """Test manual backup cleanup."""
         console = Console()
 
-        test_file = temp_dir / "test.mcap"
+        test_file = tmp_path / "test.mcap"
         test_file.write_bytes(b"content")
 
         with BackupContext(test_file, console) as ctx:
@@ -103,11 +103,11 @@ class TestBackupContext:
             ctx.cleanup_backup()
             assert not ctx.backup_path.exists()
 
-    def test_backup_context_custom_suffix(self, temp_dir):
+    def test_backup_context_custom_suffix(self, tmp_path):
         """Test backup context with custom suffix."""
         console = Console()
 
-        test_file = temp_dir / "test.mcap"
+        test_file = tmp_path / "test.mcap"
         test_file.write_bytes(b"content")
 
         with BackupContext(test_file, console, backup_suffix=".bak") as ctx:
@@ -115,22 +115,22 @@ class TestBackupContext:
             assert ctx.backup_path == expected_backup
             assert ctx.backup_path.exists()
 
-    def test_backup_context_backup_creation_fails(self, temp_dir):
+    def test_backup_context_backup_creation_fails(self, tmp_path):
         """Test context when backup creation fails."""
         console = Console()
 
         # Create a file that doesn't exist
-        nonexistent_file = temp_dir / "nonexistent.mcap"
+        nonexistent_file = tmp_path / "nonexistent.mcap"
 
         with pytest.raises(FileNotFoundError):
             with BackupContext(nonexistent_file, console):
                 pass
 
-    def test_backup_context_rollback_no_backup_created(self, temp_dir):
+    def test_backup_context_rollback_no_backup_created(self, tmp_path):
         """Test rollback when no backup was created."""
         console = Console()
 
-        test_file = temp_dir / "test.mcap"
+        test_file = tmp_path / "test.mcap"
         test_file.write_bytes(b"content")
 
         ctx = BackupContext(test_file, console)
@@ -140,11 +140,11 @@ class TestBackupContext:
         assert result is False
 
     @patch("owa.cli.mcap.backup_utils.Path.unlink")
-    def test_backup_context_cleanup_fails(self, mock_unlink, temp_dir):
+    def test_backup_context_cleanup_fails(self, mock_unlink, tmp_path):
         """Test cleanup when backup deletion fails."""
         console = Console()
 
-        test_file = temp_dir / "test.mcap"
+        test_file = tmp_path / "test.mcap"
         test_file.write_bytes(b"content")
 
         mock_unlink.side_effect = OSError("Permission denied")
@@ -153,11 +153,11 @@ class TestBackupContext:
             # Should not raise exception when cleanup fails
             ctx.cleanup_backup()
 
-    def test_backup_context_auto_cleanup_on_success(self, temp_dir):
+    def test_backup_context_auto_cleanup_on_success(self, tmp_path):
         """Test automatic cleanup when keep_backup=False."""
         console = Console()
 
-        test_file = temp_dir / "test.mcap"
+        test_file = tmp_path / "test.mcap"
         test_file.write_bytes(b"original content")
 
         with BackupContext(test_file, console, keep_backup=False) as ctx:
@@ -168,11 +168,11 @@ class TestBackupContext:
         assert not ctx.backup_path.exists()
         assert test_file.read_bytes() == b"modified content"
 
-    def test_backup_context_keep_backup_on_success(self, temp_dir):
+    def test_backup_context_keep_backup_on_success(self, tmp_path):
         """Test keeping backup when keep_backup=True."""
         console = Console()
 
-        test_file = temp_dir / "test.mcap"
+        test_file = tmp_path / "test.mcap"
         test_file.write_bytes(b"original content")
 
         with BackupContext(test_file, console, keep_backup=True) as ctx:
@@ -184,11 +184,11 @@ class TestBackupContext:
         assert ctx.backup_path.read_bytes() == b"original content"
         assert test_file.read_bytes() == b"modified content"
 
-    def test_nested_backup_contexts(self, temp_dir):
+    def test_nested_backup_contexts(self, tmp_path):
         """Test nested backup contexts."""
         console = Console()
 
-        test_file = temp_dir / "test.mcap"
+        test_file = tmp_path / "test.mcap"
         original_content = b"original"
         test_file.write_bytes(original_content)
 

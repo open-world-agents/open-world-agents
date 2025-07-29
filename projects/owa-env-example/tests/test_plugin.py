@@ -1,9 +1,7 @@
 """Tests for the owa-env-example plugin."""
 
-import tempfile
 import threading
 import time
-from pathlib import Path
 from threading import Event
 
 import pytest
@@ -98,7 +96,7 @@ def test_listener_components(example_registries):
     assert len(triggered) == 1
 
 
-def test_runnable_components(example_registries):
+def test_runnable_components(example_registries, tmp_path):
     """Test runnable components."""
     runnables = example_registries["runnables"]
 
@@ -106,19 +104,18 @@ def test_runnable_components(example_registries):
     runnable_cls = runnables["example/runnable"]
     runnable = runnable_cls()
 
-    with tempfile.TemporaryDirectory() as temp_dir:
-        output_file = Path(temp_dir) / "test.txt"
-        configured = runnable.configure(interval=0.05, output_file=str(output_file))
-        assert configured.interval == 0.05
-        assert configured.output_file == output_file
+    output_file = tmp_path / "test.txt"
+    configured = runnable.configure(interval=0.05, output_file=str(output_file))
+    assert configured.interval == 0.05
+    assert configured.output_file == output_file
 
-        with configured.session:
-            time.sleep(0.15)
+    with configured.session:
+        time.sleep(0.15)
 
-        assert output_file.exists()
-        content = output_file.read_text()
-        assert "Example Runnable Output" in content
-        assert "Task #" in content
+    assert output_file.exists()
+    content = output_file.read_text()
+    assert "Example Runnable Output" in content
+    assert "Task #" in content
 
     # Test example/counter
     counter_cls = runnables["example/counter"]

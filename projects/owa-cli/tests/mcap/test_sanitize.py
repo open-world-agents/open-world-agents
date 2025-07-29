@@ -12,9 +12,9 @@ from owa.cli.mcap import app as mcap_app
 class TestSanitizeIntegration:
     """Integration tests for sanitize command core functionality."""
 
-    def test_sanitize_successful_operation(self, temp_dir, cli_runner):
+    def test_sanitize_successful_operation(self, tmp_path, cli_runner):
         """Test successful sanitization operation."""
-        test_file = temp_dir / "test.mcap"
+        test_file = tmp_path / "test.mcap"
 
         # Mock the MCAP reading/writing to avoid actual MCAP dependencies
         with (
@@ -55,9 +55,9 @@ class TestSanitizeIntegration:
 
             assert result.exit_code == 0
 
-    def test_sanitize_failed_operation(self, temp_dir, cli_runner):
+    def test_sanitize_failed_operation(self, tmp_path, cli_runner):
         """Test failed sanitization operation."""
-        test_file = temp_dir / "test.mcap"
+        test_file = tmp_path / "test.mcap"
         test_file.write_bytes(b"original mcap content")
 
         with (
@@ -86,10 +86,10 @@ class TestSanitizeIntegration:
 
             assert result.exit_code == 1
 
-    def test_sanitize_multiple_files(self, temp_dir, cli_runner):
+    def test_sanitize_multiple_files(self, tmp_path, cli_runner):
         """Test sanitization with multiple files."""
-        test_file1 = temp_dir / "test1.mcap"
-        test_file2 = temp_dir / "test2.mcap"
+        test_file1 = tmp_path / "test1.mcap"
+        test_file2 = tmp_path / "test2.mcap"
 
         test_file1.write_bytes(b"mock mcap content 1")
         test_file2.write_bytes(b"mock mcap content 2")
@@ -126,9 +126,9 @@ class TestSanitizeIntegration:
 
             assert result.exit_code == 0
 
-    def test_sanitize_dry_run(self, temp_dir, cli_runner):
+    def test_sanitize_dry_run(self, tmp_path, cli_runner):
         """Test dry run mode doesn't modify files."""
-        test_file = temp_dir / "test.mcap"
+        test_file = tmp_path / "test.mcap"
         original_content = b"original mcap content"
         test_file.write_bytes(original_content)
 
@@ -155,9 +155,9 @@ class TestSanitizeIntegration:
             # Original file should be unchanged
             assert test_file.read_bytes() == original_content
 
-    def test_sanitize_window_filtering(self, temp_dir, cli_runner):
+    def test_sanitize_window_filtering(self, tmp_path, cli_runner):
         """Test window filtering functionality."""
-        test_file = temp_dir / "test.mcap"
+        test_file = tmp_path / "test.mcap"
         test_file.write_bytes(b"content")
 
         with (
@@ -189,9 +189,9 @@ class TestSanitizeIntegration:
 
             assert result.exit_code == 0
 
-    def test_sanitize_exact_window_matching(self, temp_dir, cli_runner):
+    def test_sanitize_exact_window_matching(self, tmp_path, cli_runner):
         """Test exact window matching functionality."""
-        test_file = temp_dir / "test.mcap"
+        test_file = tmp_path / "test.mcap"
         test_file.write_bytes(b"content")
 
         with (
@@ -220,9 +220,9 @@ class TestSanitizeIntegration:
 
             assert result.exit_code == 0
 
-    def test_sanitize_substring_window_matching(self, temp_dir, cli_runner):
+    def test_sanitize_substring_window_matching(self, tmp_path, cli_runner):
         """Test substring window matching functionality."""
-        test_file = temp_dir / "test.mcap"
+        test_file = tmp_path / "test.mcap"
         test_file.write_bytes(b"content")
 
         with (

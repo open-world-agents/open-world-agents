@@ -39,9 +39,9 @@ def test_migrate_nonexistent_file(cli_runner):
     assert "File not found" in result.stdout
 
 
-def test_migrate_non_mcap_file(cli_runner, temp_dir):
+def test_migrate_non_mcap_file(cli_runner, tmp_path):
     """Test migration with non-MCAP file."""
-    test_file = temp_dir / "test.txt"
+    test_file = tmp_path / "test.txt"
     test_file.write_text("not an mcap file")
 
     result = cli_runner.invoke(app, ["mcap", "migrate", "run", str(test_file)])
@@ -49,9 +49,9 @@ def test_migrate_non_mcap_file(cli_runner, temp_dir):
     assert "Skipping non-MCAP file" in result.stdout
 
 
-def test_migrate_dry_run(cli_runner, test_data_dir, temp_dir, copy_test_file, suppress_mcap_warnings):
+def test_migrate_dry_run(cli_runner, test_data_dir, tmp_path, copy_test_file, suppress_mcap_warnings):
     """Test dry run mode doesn't modify files."""
-    test_file = copy_test_file(test_data_dir, "0.3.2.mcap", temp_dir)
+    test_file = copy_test_file(test_data_dir, "0.3.2.mcap", tmp_path)
     original_size = test_file.stat().st_size
     original_mtime = test_file.stat().st_mtime
 
@@ -67,7 +67,7 @@ def test_migrate_dry_run(cli_runner, test_data_dir, temp_dir, copy_test_file, su
 
 
 @patch("owa.cli.mcap.migrate.migrate.OWAMcapReader")
-def test_migrate_already_current_version(mock_reader_class, cli_runner, test_data_dir, temp_dir, copy_test_file):
+def test_migrate_already_current_version(mock_reader_class, cli_runner, test_data_dir, tmp_path, copy_test_file):
     """Test migration when file is already at current version."""
     from owa.cli.mcap.migrate import MigrationOrchestrator
 
@@ -85,16 +85,16 @@ def test_migrate_already_current_version(mock_reader_class, cli_runner, test_dat
     # Set the file version to the highest reachable version so no migration is needed
     mock_reader.file_version = highest_version
 
-    test_file = copy_test_file(test_data_dir, "0.4.2.mcap", temp_dir)
+    test_file = copy_test_file(test_data_dir, "0.4.2.mcap", tmp_path)
     result = cli_runner.invoke(app, ["mcap", "migrate", "run", str(test_file)])
 
     assert result.exit_code == 0
     assert "already at the target version" in result.stdout
 
 
-def test_migrate_verbose_mode(cli_runner, test_data_dir, temp_dir, copy_test_file, suppress_mcap_warnings):
+def test_migrate_verbose_mode(cli_runner, test_data_dir, tmp_path, copy_test_file, suppress_mcap_warnings):
     """Test verbose mode shows additional information."""
-    test_file = copy_test_file(test_data_dir, "0.3.2.mcap", temp_dir)
+    test_file = copy_test_file(test_data_dir, "0.3.2.mcap", tmp_path)
 
     # Warnings are suppressed by the fixture
     result = cli_runner.invoke(app, ["mcap", "migrate", "run", str(test_file), "--verbose", "--dry-run"])
@@ -103,9 +103,9 @@ def test_migrate_verbose_mode(cli_runner, test_data_dir, temp_dir, copy_test_fil
     assert "Available script migrators" in result.stdout
 
 
-def test_migrate_with_target_version(cli_runner, test_data_dir, temp_dir, copy_test_file, suppress_mcap_warnings):
+def test_migrate_with_target_version(cli_runner, test_data_dir, tmp_path, copy_test_file, suppress_mcap_warnings):
     """Test migration with specific target version."""
-    test_file = copy_test_file(test_data_dir, "0.3.2.mcap", temp_dir)
+    test_file = copy_test_file(test_data_dir, "0.3.2.mcap", tmp_path)
 
     # Warnings are suppressed by the fixture
     result = cli_runner.invoke(app, ["mcap", "migrate", "run", str(test_file), "--target", "0.4.2", "--dry-run"])
@@ -114,10 +114,10 @@ def test_migrate_with_target_version(cli_runner, test_data_dir, temp_dir, copy_t
     assert "Target version: 0.4.2" in result.stdout
 
 
-def test_migrate_multiple_files(cli_runner, test_data_dir, temp_dir, copy_test_file, suppress_mcap_warnings):
+def test_migrate_multiple_files(cli_runner, test_data_dir, tmp_path, copy_test_file, suppress_mcap_warnings):
     """Test migration with multiple files."""
-    file1 = copy_test_file(test_data_dir, "0.3.2.mcap", temp_dir)
-    file2 = copy_test_file(test_data_dir, "0.4.2.mcap", temp_dir)
+    file1 = copy_test_file(test_data_dir, "0.3.2.mcap", tmp_path)
+    file2 = copy_test_file(test_data_dir, "0.4.2.mcap", tmp_path)
 
     # Warnings are suppressed by the fixture
     result = cli_runner.invoke(app, ["mcap", "migrate", "run", str(file1), str(file2), "--dry-run"])
@@ -126,9 +126,9 @@ def test_migrate_multiple_files(cli_runner, test_data_dir, temp_dir, copy_test_f
     assert "Files to process: 2" in result.stdout
 
 
-def test_migrate_user_cancellation(cli_runner, test_data_dir, temp_dir, copy_test_file, suppress_mcap_warnings):
+def test_migrate_user_cancellation(cli_runner, test_data_dir, tmp_path, copy_test_file, suppress_mcap_warnings):
     """Test user cancellation of migration."""
-    test_file = copy_test_file(test_data_dir, "0.3.2.mcap", temp_dir)
+    test_file = copy_test_file(test_data_dir, "0.3.2.mcap", tmp_path)
 
     # Warnings are suppressed by the fixture
     result = cli_runner.invoke(app, ["mcap", "migrate", "run", str(test_file)], input="n\n")
@@ -137,12 +137,12 @@ def test_migrate_user_cancellation(cli_runner, test_data_dir, temp_dir, copy_tes
 
 
 @patch("owa.cli.mcap.migrate.migrate.OWAMcapReader")
-def test_migrate_shows_migration_summary_table(mock_reader_class, cli_runner, test_data_dir, temp_dir, copy_test_file):
+def test_migrate_shows_migration_summary_table(mock_reader_class, cli_runner, test_data_dir, tmp_path, copy_test_file):
     """Test that migration shows a summary table."""
     mock_reader = mock_reader_class.return_value.__enter__.return_value
     mock_reader.file_version = "0.3.2"
 
-    test_file = copy_test_file(test_data_dir, "0.3.2.mcap", temp_dir)
+    test_file = copy_test_file(test_data_dir, "0.3.2.mcap", tmp_path)
     result = cli_runner.invoke(app, ["mcap", "migrate", "run", str(test_file), "--dry-run"])
     assert result.exit_code == 0
     assert "Migration Summary" in result.stdout
@@ -193,12 +193,12 @@ def test_version_range_matching():
         pass  # No path exists, which is acceptable
 
 
-def test_cli_with_multiple_files(cli_runner, test_data_dir, temp_dir, copy_test_file, suppress_mcap_warnings):
+def test_cli_with_multiple_files(cli_runner, test_data_dir, tmp_path, copy_test_file, suppress_mcap_warnings):
     """Test CLI with multiple files."""
     files = []
     for filename in ["0.3.2.mcap", "0.4.2.mcap"]:
         try:
-            file_path = copy_test_file(test_data_dir, filename, temp_dir)
+            file_path = copy_test_file(test_data_dir, filename, tmp_path)
             files.append(str(file_path))
         except pytest.skip.Exception:
             continue
@@ -215,7 +215,7 @@ def test_cli_with_multiple_files(cli_runner, test_data_dir, temp_dir, copy_test_
 
 # Output verification tests
 def test_migration_produces_expected_output(
-    cli_runner, test_data_dir, temp_dir, copy_test_file, suppress_mcap_warnings
+    cli_runner, test_data_dir, tmp_path, copy_test_file, suppress_mcap_warnings
 ):
     """Test that migrating 0.3.2.mcap produces expected output."""
     from packaging.version import Version
@@ -227,7 +227,7 @@ def test_migration_produces_expected_output(
     if not source_file.exists():
         pytest.skip("Required test file not found")
 
-    test_file = copy_test_file(test_data_dir, "0.3.2.mcap", temp_dir)
+    test_file = copy_test_file(test_data_dir, "0.3.2.mcap", tmp_path)
 
     # Get the original version before migration
     orchestrator = MigrationOrchestrator()
@@ -256,7 +256,7 @@ def test_migration_produces_expected_output(
     assert test_file.stat().st_size > 0
 
 
-def test_migration_integrity_verification(cli_runner, test_data_dir, temp_dir, copy_test_file, suppress_mcap_warnings):
+def test_migration_integrity_verification(cli_runner, test_data_dir, tmp_path, copy_test_file, suppress_mcap_warnings):
     """Test migration integrity verification functionality."""
 
     from owa.cli.mcap.migrate.utils import verify_migration_integrity
@@ -265,7 +265,7 @@ def test_migration_integrity_verification(cli_runner, test_data_dir, temp_dir, c
     if not source_file.exists():
         pytest.skip("Required test file not found")
 
-    test_file = copy_test_file(test_data_dir, "0.3.2.mcap", temp_dir)
+    test_file = copy_test_file(test_data_dir, "0.3.2.mcap", tmp_path)
 
     # Warnings are suppressed by the fixture
     # Migrate up to v0.5.0 first, this is to prevent false-positive verification fail.
@@ -278,7 +278,7 @@ def test_migration_integrity_verification(cli_runner, test_data_dir, temp_dir, c
     assert result.exit_code == 0
 
     # Test integrity verification with backup file (BackupContext creates this automatically)
-    backup_file = temp_dir / "0.3.2.mcap.backup"
+    backup_file = tmp_path / "0.3.2.mcap.backup"
     if backup_file.exists():  # Only test if backup was created by BackupContext
         # Verify integrity - warnings are suppressed by the fixture
         integrity_result = verify_migration_integrity(
@@ -291,9 +291,9 @@ def test_migration_integrity_verification(cli_runner, test_data_dir, temp_dir, c
 
 
 # Error handling tests
-def test_migrate_with_corrupted_file(cli_runner, temp_dir, suppress_mcap_warnings):
+def test_migrate_with_corrupted_file(cli_runner, tmp_path, suppress_mcap_warnings):
     """Test migration with corrupted MCAP file."""
-    corrupted_file = temp_dir / "corrupted.mcap"
+    corrupted_file = tmp_path / "corrupted.mcap"
     corrupted_file.write_bytes(b"not a valid mcap file content")
 
     # Warnings are suppressed by the fixture
@@ -302,9 +302,9 @@ def test_migrate_with_corrupted_file(cli_runner, temp_dir, suppress_mcap_warning
     assert result.exit_code == 0
 
 
-def test_migrate_with_empty_file(cli_runner, temp_dir, suppress_mcap_warnings):
+def test_migrate_with_empty_file(cli_runner, tmp_path, suppress_mcap_warnings):
     """Test migration with empty MCAP file."""
-    empty_file = temp_dir / "empty.mcap"
+    empty_file = tmp_path / "empty.mcap"
     empty_file.touch()
 
     # Warnings are suppressed by the fixture
@@ -336,9 +336,9 @@ def test_migrate_cleanup_help(cli_runner, strip_ansi_codes):
     assert "--verbose" in clean_output
 
 
-def test_migrate_rollback_no_backups(cli_runner, temp_dir):
+def test_migrate_rollback_no_backups(cli_runner, tmp_path):
     """Test rollback with no backup files."""
-    test_file = temp_dir / "test.mcap"
+    test_file = tmp_path / "test.mcap"
     test_file.write_text("test content")
 
     result = cli_runner.invoke(app, ["mcap", "migrate", "rollback", str(test_file)])
@@ -346,20 +346,20 @@ def test_migrate_rollback_no_backups(cli_runner, temp_dir):
     assert "No backup files found" in result.stdout
 
 
-def test_migrate_cleanup_no_backups(cli_runner, temp_dir):
+def test_migrate_cleanup_no_backups(cli_runner, tmp_path):
     """Test cleanup with no backup files in a controlled directory."""
-    # Run cleanup in the temp_dir to confine the operation to a safe directory
-    result = cli_runner.invoke(app, ["mcap", "migrate", "cleanup", str(temp_dir / "*.mcap.backup"), "--dry-run"])
+    # Run cleanup in the tmp_path to confine the operation to a safe directory
+    result = cli_runner.invoke(app, ["mcap", "migrate", "cleanup", str(tmp_path / "*.mcap.backup"), "--dry-run"])
     assert result.exit_code == 0
     assert "No backup files found" in result.stdout
 
 
 def test_migrate_rollback_cleanup_workflow(
-    cli_runner, test_data_dir, temp_dir, copy_test_file, suppress_mcap_warnings
+    cli_runner, test_data_dir, tmp_path, copy_test_file, suppress_mcap_warnings
 ):
     """Test complete workflow: migrate -> rollback -> cleanup."""
     # Setup: Copy test file
-    test_file = copy_test_file(test_data_dir, "0.3.2.mcap", temp_dir)
+    test_file = copy_test_file(test_data_dir, "0.3.2.mcap", tmp_path)
     backup_file = test_file.with_suffix(".mcap.backup")
 
     # Step 1: Run migration.
@@ -402,12 +402,12 @@ def test_migrate_rollback_cleanup_workflow(
     assert not backup_file.exists(), "Backup file should be removed after cleanup"
 
 
-def test_migrate_rollback_with_missing_current(cli_runner, temp_dir):
+def test_migrate_rollback_with_missing_current(cli_runner, tmp_path):
     """Test rollback when current file is missing (restore scenario)."""
     # Create backup file without original
-    backup_file = temp_dir / "missing.mcap.backup"
+    backup_file = tmp_path / "missing.mcap.backup"
     backup_file.write_text("backup content")
-    original_file = temp_dir / "missing.mcap"
+    original_file = tmp_path / "missing.mcap"
 
     # Test rollback (should restore the missing file)
     result = cli_runner.invoke(app, ["mcap", "migrate", "rollback", str(original_file), "--yes", "--verbose"])
@@ -421,12 +421,12 @@ def test_migrate_rollback_with_missing_current(cli_runner, temp_dir):
     assert not backup_file.exists(), "Backup file should be removed after rollback"
 
 
-def test_migrate_cleanup_with_patterns(cli_runner, temp_dir):
+def test_migrate_cleanup_with_patterns(cli_runner, tmp_path):
     """Test cleanup with different file patterns."""
     # Create multiple backup files
-    backup1 = temp_dir / "test1.mcap.backup"
-    backup2 = temp_dir / "test2.mcap.backup"
-    backup3 = temp_dir / "subdir" / "test3.mcap.backup"
+    backup1 = tmp_path / "test1.mcap.backup"
+    backup2 = tmp_path / "test2.mcap.backup"
+    backup3 = tmp_path / "subdir" / "test3.mcap.backup"
 
     backup1.write_text("backup1")
     backup2.write_text("backup2")
@@ -434,19 +434,19 @@ def test_migrate_cleanup_with_patterns(cli_runner, temp_dir):
     backup3.write_text("backup3")
 
     # Test cleanup with specific pattern
-    result = cli_runner.invoke(app, ["mcap", "migrate", "cleanup", str(temp_dir / "test1.mcap.backup"), "--dry-run"])
+    result = cli_runner.invoke(app, ["mcap", "migrate", "cleanup", str(tmp_path / "test1.mcap.backup"), "--dry-run"])
     assert result.exit_code == 0
     assert "test1" in result.stdout  # Filename should appear in table (may be truncated)
     assert "Would delete 1 backup files" in result.stdout
 
     # Test cleanup with wildcard pattern
-    result = cli_runner.invoke(app, ["mcap", "migrate", "cleanup", str(temp_dir / "*.mcap.backup"), "--dry-run"])
+    result = cli_runner.invoke(app, ["mcap", "migrate", "cleanup", str(tmp_path / "*.mcap.backup"), "--dry-run"])
     assert result.exit_code == 0
     assert "Would delete 2 backup files" in result.stdout  # Should find test1 and test2
 
     # Test cleanup with recursive pattern
     result = cli_runner.invoke(
-        app, ["mcap", "migrate", "cleanup", str(temp_dir / "**" / "*.mcap.backup"), "--dry-run"]
+        app, ["mcap", "migrate", "cleanup", str(tmp_path / "**" / "*.mcap.backup"), "--dry-run"]
     )
     assert result.exit_code == 0
     assert "Would delete 3 backup files" in result.stdout  # Should find all 3 files
