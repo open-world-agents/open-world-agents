@@ -4,14 +4,14 @@
 # dependencies = [
 #   "h5py",
 #   "numpy>=2.2.0",
-#   "mcap-owa-support==0.5.4",
-#   "owa-core==0.5.4",
-#   "owa-msgs==0.5.4",
+#   "mcap-owa-support==0.5.5",
+#   "owa-core==0.5.5",
+#   "owa-msgs==0.5.5",
 #   "tqdm",
 #   "joblib",
 # ]
 # [tool.uv]
-# exclude-newer = "2025-07-27T12:00:00Z"
+# exclude-newer = "2025-07-30T12:00:00Z"
 # ///
 
 import argparse
