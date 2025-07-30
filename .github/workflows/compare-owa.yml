@@ -32,77 +32,60 @@ jobs:
             const pull = '${{ steps.compare.outputs.pull_has_changes }}' === 'true';
             const push = '${{ steps.compare.outputs.push_has_changes }}' === 'true';
 
-            let body = `## 🔄 Open World Agents Sync Options
-
-Choose your preferred sync method:
-
-`;
+            let body = "## 🔄 Open World Agents Sync Options\n\nChoose your preferred sync method:\n\n";
 
             if (pull) {
-              body += `### 📥 Pull Changes (Upstream → Proprietary)
-
-**Option A: Git Subtree (preserves history)**
-\`\`\`bash
-cd open-world-agents
-git subtree pull --prefix=. owa main --squash
-cd ..
-git add open-world-agents/
-git commit -m "Update open-world-agents via subtree"
-\`\`\`
-
-**Option B: File Sync (clean, no history)**
-\`\`\`bash
-git clone https://github.com/open-world-agents/open-world-agents.git /tmp/upstream
-rsync -av --delete /tmp/upstream/ ./open-world-agents/
-git add open-world-agents/
-git commit -m "Sync with upstream open-world-agents"
-\`\`\`
-
-`;
+              body += "### 📥 Pull Changes (Upstream → Proprietary)\n\n" +
+                      "**Option A: Git Subtree (preserves history)**\n" +
+                      "```bash\n" +
+                      "cd open-world-agents\n" +
+                      "git subtree pull --prefix=. owa main --squash\n" +
+                      "cd ..\n" +
+                      "git add open-world-agents/\n" +
+                      "git commit -m \"Update open-world-agents via subtree\"\n" +
+                      "```\n\n" +
+                      "**Option B: File Sync (clean, no history)**\n" +
+                      "```bash\n" +
+                      "git clone https://github.com/open-world-agents/open-world-agents.git /tmp/upstream\n" +
+                      "rsync -av --delete /tmp/upstream/ ./open-world-agents/\n" +
+                      "git add open-world-agents/\n" +
+                      "git commit -m \"Sync with upstream open-world-agents\"\n" +
+                      "```\n\n";
             }
 
             if (push) {
-              body += `### 📤 Push Changes (Proprietary → Upstream)
-
-**Option A: Git Subtree (preserves history)**
-\`\`\`bash
-cd open-world-agents
-git subtree push --prefix=. owa feature-branch
-# Then create PR from feature-branch
-\`\`\`
-
-**Option B: File Sync (clean, squashed)**
-1. Download the \`rsync-patch\` artifact from this workflow
-2. Or use this script:
-\`\`\`bash
-git clone https://github.com/open-world-agents/open-world-agents.git /tmp/upstream-pr
-cd /tmp/upstream-pr
-git checkout -b sync-$(date +%Y%m%d)
-rsync -av --delete /path/to/your/open-world-agents/ ./
-git add -A
-git commit -m "Sync changes from proprietary (squashed)"
-git push origin sync-$(date +%Y%m%d)
-# Create PR on GitHub
-\`\`\`
-
-`;
+              body += "### 📤 Push Changes (Proprietary → Upstream)\n\n" +
+                      "**Option A: Git Subtree (preserves history)**\n" +
+                      "```bash\n" +
+                      "cd open-world-agents\n" +
+                      "git subtree push --prefix=. owa feature-branch\n" +
+                      "# Then create PR from feature-branch\n" +
+                      "```\n\n" +
+                      "**Option B: File Sync (clean, squashed)**\n" +
+                      "1. Download the [`rsync-patch` artifact](https://github.com/" + context.repo.owner + "/" + context.repo.repo + "/actions/runs/" + context.runId + ") from this workflow\n" +
+                      "2. Or use this script:\n" +
+                      "```bash\n" +
+                      "git clone https://github.com/open-world-agents/open-world-agents.git /tmp/upstream-pr\n" +
+                      "cd /tmp/upstream-pr\n" +
+                      "git checkout -b sync-$(date +%Y%m%d)\n" +
+                      "rsync -av --delete ./open-world-agents/ ./\n" +
+                      "git add -A\n" +
+                      "git commit -m \"Sync changes from proprietary (squashed)\"\n" +
+                      "git push origin sync-$(date +%Y%m%d)\n" +
+                      "# Create PR on GitHub\n" +
+                      "```\n\n";
             }
 
             if (!pull && !push) {
-              body += `✅ **Everything is in sync!**
-
-Both git subtree and file-based comparisons show no differences.
-`;
+              body += "✅ **Everything is in sync!**\n\n" +
+                      "Both git subtree and file-based comparisons show no differences.\n";
             }
 
-            body += `
-### 🤔 Which Method to Choose?
-
-- **Git Subtree**: Preserves commit history, better for ongoing collaboration
-- **File Sync (rsync)**: Clean squashed changes, better for occasional syncs
-
----
-*Updated automatically on PR changes*`;
+            body += "\n### 🤔 Which Method to Choose?\n\n" +
+                    "- **Git Subtree**: Preserves commit history, better for ongoing collaboration\n" +
+                    "- **File Sync (rsync)**: Clean squashed changes, better for occasional syncs\n\n" +
+                    "---\n" +
+                    "*Updated automatically on PR changes*";
 
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number
