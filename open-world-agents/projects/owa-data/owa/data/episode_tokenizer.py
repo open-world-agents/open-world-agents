@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import TypedDict
 
+import numpy as np
 from transformers import PreTrainedTokenizer
 
 from mcap_owa.highlevel import McapMessage
@@ -118,5 +119,9 @@ class EpisodeTokenizer:
         )
         tokenized_dataset = Dataset.from_hf_dataset(tokenized_dataset, owa_config=event_dataset.owa_config)
         tokenized_dataset.owa_config.stage = DatasetStage.TOKENIZED
+
+        # Add cumulative token count column
+        cumulative_token_count = np.cumsum(tokenized_dataset["total_token_count"]).tolist()
+        tokenized_dataset = tokenized_dataset.add_column("cumulative_token_count", cumulative_token_count)
 
         return tokenized_dataset
