@@ -7,7 +7,7 @@ output_dir: "/mnt/raid12/scratch/claude/checkpoints/pretrain_smolvlm_256m_fsl"  
 # ============================================================================
 # SCRIPT ARGUMENTS (Custom for FSLDataset pretraining)
 # ============================================================================
-dataset_path: "/mnt/raid12/datasets/owa/data/super-hexagon-event"  # (default: None) - required
+dataset_path: "/mnt/raid12/datasets/owa/data/csgo-event"  # (default: None) - required
 max_sequence_length: 1024  # (default: 1024)
 preprocessing_num_workers: 16  # (default: None)
 
@@ -34,9 +34,9 @@ optim: "adamw_torch_fused"  # (default: 'adamw_torch')
 max_grad_norm: 1.0  # (default: 1.0)
 warmup_ratio: 0.03  # (default: 0)
 weight_decay: 0.1  # (default: 0.0)
-lr_scheduler_type: "cosine_with_min_lr"  # (default: 'linear')
-lr_scheduler_kwargs:
-  min_lr_rate: 3e-5  # (default: None)
+lr_scheduler_type: "cosine"  # (default: 'linear')
+# lr_scheduler_kwargs:
+#   min_lr_rate: 3e-5  # (default: None)
 
 # ============================================================================
 # PRECISION AND PERFORMANCE
