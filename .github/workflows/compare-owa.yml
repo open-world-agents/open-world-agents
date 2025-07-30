@@ -44,18 +44,16 @@ jobs:
 
             if (!pull && !push) return;
 
-            let body = "## 🔄 OWA Sync Status\n\n";
+            let body = "";
 
             if (pull && push) {
-              body += "⚠️ **Both directions have changes** - review carefully\n\n";
+              body += "⚠️ **Both directions have changes** - review carefully before syncing\n\n";
             }
 
-            if (pull) {
-              body += "📥 **Pull available** - Upstream has new changes\n\n";
-            }
-
-            if (push) {
-              body += "📤 **Push available** - Local changes ready to contribute\n\n";
+            // Add detailed changes summary first
+            const changesSummary = `${{ needs.compare.outputs.changes_summary }}`;
+            if (changesSummary && changesSummary !== '') {
+              body += changesSummary + "\n\n";
             }
 
             // Get the detailed report from workflow summary
@@ -91,12 +89,6 @@ jobs:
             }
 
             body += "</details>\n\n";
-
-            // Add detailed changes summary
-            const changesSummary = `${{ needs.compare.outputs.changes_summary }}`;
-            if (changesSummary && changesSummary !== '') {
-              body += changesSummary + "\n\n";
-            }
 
             body += `*Full report also available in [workflow summary](${summaryUrl})*`;
 
