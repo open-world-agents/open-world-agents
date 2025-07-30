@@ -48,7 +48,7 @@ jobs:
 
             if (!pull && !push) return;
 
-            let body = "🔄 **OWA Sync Status**\n\n";
+            let body = "<!-- compare-owa-action -->\n🔄 **OWA Sync Status**\n\n";
 
             if (pull && push) {
               body += "⚠️ **Both directions have changes** - review carefully before syncing\n\n";
@@ -107,7 +107,7 @@ jobs:
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number
             });
-            const existing = comments.find(c => c.user.login === 'github-actions[bot]' && c.body.includes('🔄 OWA Sync Status'));
+            const existing = comments.find(c => c.user.login === 'github-actions[bot]' && c.body.includes('<!-- compare-owa-action -->'));
 
             if (existing) {
               await github.rest.issues.updateComment({
