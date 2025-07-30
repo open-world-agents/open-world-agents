@@ -182,11 +182,11 @@ jobs:
                       "**🟢 Non-destructive method (recommended):**\n" +
                       "```bash\n" +
                       "# First, ensure you have a fork of open-world-agents\n" +
-                      `git subtree push --prefix=open-world-agents https://github.com/YOUR_USERNAME/open-world-agents.git sync-${targetBranch}-$(date +%Y%m%d)\n` +
+                      `git subtree push --prefix=open-world-agents https://github.com/open-world-agents/open-world-agents.git sync-${targetBranch}-$(date +%Y%m%d)\n` +
                       `# Then create a pull request from your fork to upstream/${targetBranch}\n` +
                       "```\n\n" +
                       "**🔴 Destructive method (overwrites upstream changes):**\n" +
-                      "1. Download the `rsync-patch` artifact from this workflow\n" +
+                      `1. Download the [\`rsync-patch\` artifact](${summaryUrl}) from this workflow\n` +
                       "2. Apply to your fork of open-world-agents\n" +
                       `3. Create a pull request targeting \`${targetBranch}\`\n\n` +
                       "Or use rsync:\n" +
