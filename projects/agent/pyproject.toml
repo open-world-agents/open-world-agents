@@ -6,16 +6,20 @@ readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.11"
 dependencies = [
+    "accelerate>=1.9.0",
     "datasets>=4.0.0",
-    "lightning>=2.5.2",
+    "deepspeed>=0.17.3",
     "num2words>=0.5.14",
     "owa-core>=0.5.3",
     "owa-data>=0.1.0",
     "owa-msgs>=0.5.3",
     "tensorboard>=2.19.0",
     "torch>=2.7.1",
+    "torchvision>=0.22.1",
     "tqdm>=4.67.1",
     "transformers>=4.51.3",
+    "trl>=0.20.0",
+    "wandb>=0.21.0",
 ]
 
 [build-system]
@@ -27,7 +31,3 @@ packages = ["owa"]
 
 [tool.uv.sources]
 owa-data = { path = "../../open-world-agents/projects/owa-data", editable = true }
-litgpt = { git = "https://github.com/Lightning-AI/litgpt" }
-
-[project.scripts]
-agent = "agent.__main__:main"
