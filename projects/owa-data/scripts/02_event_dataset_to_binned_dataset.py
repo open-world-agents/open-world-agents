@@ -40,7 +40,7 @@ def aggregate_events_to_bins(
             ev = events[event_idx]
             if ev["topic"].startswith("screen"):
                 last_screen = ev
-            elif ev["topic"].startswith("keyboard") or ev["topic"].startswith("mouse"):
+            elif ev["topic"].startswith("keyboard") or ev["topic"].startswith("mouse/raw"):
                 actions.append(ev["mcap_message"])
             event_idx += 1
 

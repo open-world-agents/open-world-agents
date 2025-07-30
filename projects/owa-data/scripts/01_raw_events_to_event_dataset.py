@@ -228,7 +228,7 @@ def main(
     num_workers: int = typer.Option(4, "--num-workers", help="Number of parallel worker processes"),
     output_dir: Optional[Path] = typer.Option(None, "--output-dir", help="Directory to save the dataset"),
     keep_topic: Optional[List[str]] = typer.Option(
-        None, "--keep-topic", help="Topics to keep (default: screen, keyboard, mouse)"
+        None, "--keep-topic", help="Topics to keep (default: screen, keyboard, mouse/raw)"
     ),
 ):
     """Generate event dataset from raw MCAP files."""
@@ -238,8 +238,8 @@ def main(
         raise typer.BadParameter("--test_percent must be between 0 and 1 (exclusive)")
 
     # Parse rate settings or use defaults
-    rate_settings = parse_rate_argument(rate) if rate else {"mouse": 60.0, "screen": 20.0}
-    topics_to_keep = keep_topic if keep_topic else ["screen", "keyboard", "mouse"]
+    rate_settings = parse_rate_argument(rate) if rate else {"mouse/raw": 60.0, "screen": 20.0}
+    topics_to_keep = keep_topic if keep_topic else ["screen", "keyboard", "mouse/raw"]
 
     # Gather MCAP files
     train_files = sorted(train_dir.glob("*.mcap"))
