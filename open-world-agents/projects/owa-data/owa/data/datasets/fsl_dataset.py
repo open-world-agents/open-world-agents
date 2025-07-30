@@ -3,6 +3,7 @@ import os
 import time
 import warnings
 from dataclasses import dataclass
+from typing import Optional
 
 import numpy as np
 import torch
@@ -161,7 +162,9 @@ class FSLDataset(TorchDataset):
                 "Image processor must be a fast image processor, make sure you pass `use_fast` directly to ImageProcessor.from_pretrained"
             )
 
-        self._cumsum = self.dataset["cumulative_token_count"]
+        # TODO: this line is slow, must cache.
+        # NOTE: MUST cache whole FSLDataset, or load whole cumsum in RAM. If cumsum is loaded partially on RAM data iteration gone very slow
+        self._cumsum = np.cumsum(self.dataset["total_token_count"])
 
     def __getitem__(self, idx):
         start_token_index = idx * self.config.max_sequence_length
@@ -272,9 +275,12 @@ def prepare_fsl(
     *,
     image_processor=None,
     config: FSLDatasetConfig = FSLDatasetConfig(),
+    mcap_root_directory: Optional[str] = None,
     **kwargs,
 ) -> FSLDataset:
     """Prepare FSL dataset from tokenized dataset."""
     config = FSLDatasetConfig(**(config.__dict__ | kwargs))
+    if mcap_root_directory is not None:
+        tokenized_dataset.owa_config.mcap_root_directory = mcap_root_directory
     fsl_dataset = FSLDataset(tokenized_dataset, image_processor, config)
     return fsl_dataset
