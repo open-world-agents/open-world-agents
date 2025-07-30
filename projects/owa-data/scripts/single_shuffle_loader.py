@@ -3,7 +3,7 @@ from loguru import logger
 from tqdm import tqdm
 from transformers import AutoImageProcessor, AutoTokenizer
 
-from owa.data.datasets import FSLDataset, load_from_disk
+from owa.data.datasets import load_from_disk, prepare_fsl
 from owa.data.episode_tokenizer import EpisodeTokenizer
 
 # This line is to enable throughput logging from FSLDataset
@@ -24,13 +24,12 @@ for split, dataset in event_dataset.items():
     event_dataset[split] = tokenized
 
 
-dataset = FSLDataset(
+dataset = prepare_fsl(
     event_dataset["train"],
     image_processor=image_processor,
     pad_token_id=tokenizer.pad_token_id,
     max_sequence_length=1024,
 )
-dataset.prepare()
 
 for sample in dataset.take(1):
     print(f"{sample=}")
