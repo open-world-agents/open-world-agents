@@ -1,7 +1,22 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#   "mcap-owa-support==0.5.5",
+#   "owa-core==0.5.5",
+#   "owa-msgs==0.5.5",
+#   "owa-env-desktop==0.5.5",
+#   "tqdm",
+#   "rich",
+# ]
+# [tool.uv]
+# exclude-newer = "2025-07-30T12:00:00Z"
+# ///
+
 import json
 import os
 import typing
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 from rich import print
@@ -15,7 +30,7 @@ from owa.msgs.desktop.screen import ScreenCaptured
 from owa.msgs.desktop.window import WindowInfo
 
 VPT_FOLDER_PATH = Path(
-    "/mnt/raid12/datasets/owa/mcaps/vpt_filtered_data"
+    "/mnt/raid12/datasets/owa/mcaps/vpt"
 ).expanduser()  # NOTE: Change this to your VPT data folder path. We expect paired mp4 and jsonl files for VPT dataset.
 VPT_TARGET_LIST_FILE = "./vpt_target_files.txt"
 VPT_INTERVAL_TICK_NS = 50_000_000  # 50 ms interval per tick
@@ -79,7 +94,6 @@ def vpt_generate_target_list_file(
     Filter VPT files that have valid jsonl files paired with mp4, and are 5 minutes long.
     The list of valid target files is saved to `target_list_file`.
     """
-    from tqdm import tqdm
 
     all_mp4_stems = set([f.stem for f in VPT_FOLDER_PATH.iterdir() if f.suffix == ".mp4" and f.is_file()])
 
@@ -268,9 +282,8 @@ def process_single_file(jsonl_file_path):
 
 def main(max_workers: int = None):
     if max_workers is None:
-        max_workers = 1
-
-    print(f"Using {max_workers} worker threads.")
+        max_workers = 50
+    print(f"Using {max_workers} worker processes.")
 
     if not Path(VPT_TARGET_LIST_FILE).exists():
         print(f"{VPT_TARGET_LIST_FILE=} does not exist. Generating it.")
@@ -281,8 +294,8 @@ def main(max_workers: int = None):
         vpt_target_list = [Path(line.strip()) for line in f.readlines()]
         print(f"We will convert {len(vpt_target_list)=} VPT files.")
 
-    # Use ThreadPoolExecutor for multithreading
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+    # Use ProcessPoolExecutor for multiprocessing
+    with ProcessPoolExecutor(max_workers=max_workers) as executor:
         # Submit all tasks
         future_to_file = {
             executor.submit(process_single_file, jsonl_file_path): jsonl_file_path
