@@ -10,25 +10,25 @@ set -e
 echo "## OWA Sync Report" >> $GITHUB_STEP_SUMMARY
 echo "" >> $GITHUB_STEP_SUMMARY
 
-# Git-based comparison with detailed stats
+# Git-based comparison using git's native diff output
 ORIGINAL_DIR=$(pwd)
 cd /tmp/upstream-owa
 
-# Get push changes (local → upstream) with detailed diff
+# Get push changes (local → upstream)
 git reset --hard HEAD >/dev/null 2>&1
 rsync -av --delete --exclude='.git' "$ORIGINAL_DIR/open-world-agents/" ./ >/dev/null 2>&1
 git add -A >/dev/null 2>&1
 PUSH_DIFF=$(git diff --cached --name-status 2>/dev/null || true)
-PUSH_STATS=$(git diff --cached --numstat 2>/dev/null || true)
+PUSH_STAT=$(git diff --cached --stat 2>/dev/null || true)
 
-# Get pull changes (upstream → local) with detailed diff
+# Get pull changes (upstream → local)
 git reset --hard HEAD >/dev/null 2>&1
 mkdir -p /tmp/local-copy
 rsync -av --delete --exclude='.git' "$ORIGINAL_DIR/open-world-agents/" /tmp/local-copy/ >/dev/null 2>&1
 rsync -av --delete --exclude='.git' /tmp/local-copy/ ./ >/dev/null 2>&1
 git add -A >/dev/null 2>&1
 PULL_DIFF=$(git diff --cached --name-status 2>/dev/null || true)
-PULL_STATS=$(git diff --cached --numstat 2>/dev/null || true)
+PULL_STAT=$(git diff --cached --stat 2>/dev/null || true)
 
 # Cleanup
 rm -rf /tmp/local-copy
@@ -58,105 +58,44 @@ if [ -n "$PUSH_DIFF" ]; then
     cd "$ORIGINAL_DIR"
 fi
 
-# Calculate totals
-calculate_totals() {
-    local stats="$1"
-    local added=0
-    local deleted=0
-    local files=0
-
-    if [ -n "$stats" ]; then
-        while IFS=$'\t' read -r add del file; do
-            if [[ "$add" =~ ^[0-9]+$ ]]; then
-                added=$((added + add))
-            fi
-            if [[ "$del" =~ ^[0-9]+$ ]]; then
-                deleted=$((deleted + del))
-            fi
-            files=$((files + 1))
-        done <<< "$stats"
-    fi
-
-    echo "$files $added $deleted"
-}
-
-# Generate coverage-style report
+# Generate git-style diff summary
 if [ -n "$PULL_DIFF" ] || [ -n "$PUSH_DIFF" ]; then
-    # Calculate stats
-    if [ -n "$PULL_STATS" ]; then
-        read pull_files pull_added pull_deleted <<< $(calculate_totals "$PULL_STATS")
-    else
-        pull_files=0 pull_added=0 pull_deleted=0
+    # Pull changes
+    if [ -n "$PULL_STAT" ]; then
+        echo "### 📥 Pull Changes (Upstream → Local)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        echo "$PULL_STAT" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
     fi
 
-    if [ -n "$PUSH_STATS" ]; then
-        read push_files push_added push_deleted <<< $(calculate_totals "$PUSH_STATS")
-    else
-        push_files=0 push_added=0 push_deleted=0
+    # Push changes
+    if [ -n "$PUSH_STAT" ]; then
+        echo "### 📤 Push Changes (Local → Upstream)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        echo "$PUSH_STAT" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
     fi
 
-    # Summary badges
-    if [ $pull_files -gt 0 ]; then
-        echo "<img src=\"https://img.shields.io/badge/Pull%20Files-$pull_files-blue.svg\" alt=\"Pull Files\"> <img src=\"https://img.shields.io/badge/+$pull_added-brightgreen.svg\" alt=\"+$pull_added\"> <img src=\"https://img.shields.io/badge/-$pull_deleted-red.svg\" alt=\"-$pull_deleted\">" >> $GITHUB_STEP_SUMMARY
-    fi
-
-    if [ $push_files -gt 0 ]; then
-        echo "<img src=\"https://img.shields.io/badge/Push%20Files-$push_files-purple.svg\" alt=\"Push Files\"> <img src=\"https://img.shields.io/badge/+$push_added-brightgreen.svg\" alt=\"+$push_added\"> <img src=\"https://img.shields.io/badge/-$push_deleted-red.svg\" alt=\"-$push_deleted\">" >> $GITHUB_STEP_SUMMARY
-    fi
-
-    # Generate separate tables for pull and push
-    generate_changes_tables() {
-        local output_file="$1"
-
-        # Pull changes table
-        if [ -n "$PULL_STATS" ]; then
-            echo "<details><summary>📥 Pull Changes (Upstream → Local)</summary>" >> "$output_file"
-            echo "<table><thead>" >> "$output_file"
-            echo "<tr><th>File</th><th>Changes</th></tr>" >> "$output_file"
-            echo "</thead><tbody>" >> "$output_file"
-
-            echo "$PULL_STATS" | while IFS=$'\t' read -r added deleted file; do
-                if [ "$added" = "-" ]; then added="0"; fi
-                if [ "$deleted" = "-" ]; then deleted="0"; fi
-                echo "<tr><td><code>$file</code></td><td align=\"center\"><img src=\"https://img.shields.io/badge/+$added-brightgreen.svg\" alt=\"+$added\"> <img src=\"https://img.shields.io/badge/-$deleted-red.svg\" alt=\"-$deleted\"></td></tr>" >> "$output_file"
-            done
-
-            echo "</tbody></table>" >> "$output_file"
-            echo "</details>" >> "$output_file"
-            echo "" >> "$output_file"
-        fi
-
-        # Push changes table
-        if [ -n "$PUSH_STATS" ]; then
-            echo "<details><summary>📤 Push Changes (Local → Upstream)</summary>" >> "$output_file"
-            echo "<table><thead>" >> "$output_file"
-            echo "<tr><th>File</th><th>Changes</th></tr>" >> "$output_file"
-            echo "</thead><tbody>" >> "$output_file"
-
-            echo "$PUSH_STATS" | while IFS=$'\t' read -r added deleted file; do
-                if [ "$added" = "-" ]; then added="0"; fi
-                if [ "$deleted" = "-" ]; then deleted="0"; fi
-                echo "<tr><td><code>$file</code></td><td align=\"center\"><img src=\"https://img.shields.io/badge/+$added-brightgreen.svg\" alt=\"+$added\"> <img src=\"https://img.shields.io/badge/-$deleted-red.svg\" alt=\"-$deleted\"></td></tr>" >> "$output_file"
-            done
-
-            echo "</tbody></table>" >> "$output_file"
-            echo "</details>" >> "$output_file"
-            echo "" >> "$output_file"
-        fi
-    }
-
-    # Generate for step summary
-    generate_changes_tables "$GITHUB_STEP_SUMMARY"
-
-    # Generate compact summary for comment
+    # Generate summary for comment
     echo "changes_summary<<EOF" >> $GITHUB_OUTPUT
-    if [ $pull_files -gt 0 ]; then
-        echo "<img src=\"https://img.shields.io/badge/Pull%20Files-$pull_files-blue.svg\" alt=\"Pull Files\"> <img src=\"https://img.shields.io/badge/+$pull_added-brightgreen.svg\" alt=\"+$pull_added\"> <img src=\"https://img.shields.io/badge/-$pull_deleted-red.svg\" alt=\"-$pull_deleted\">" >> $GITHUB_OUTPUT
+    if [ -n "$PULL_STAT" ]; then
+        echo "### 📥 Pull Changes (Upstream → Local)" >> $GITHUB_OUTPUT
+        echo '```' >> $GITHUB_OUTPUT
+        echo "$PULL_STAT" >> $GITHUB_OUTPUT
+        echo '```' >> $GITHUB_OUTPUT
+        echo "" >> $GITHUB_OUTPUT
     fi
-    if [ $push_files -gt 0 ]; then
-        echo "<img src=\"https://img.shields.io/badge/Push%20Files-$push_files-purple.svg\" alt=\"Push Files\"> <img src=\"https://img.shields.io/badge/+$push_added-brightgreen.svg\" alt=\"+$push_added\"> <img src=\"https://img.shields.io/badge/-$push_deleted-red.svg\" alt=\"-$push_deleted\">" >> $GITHUB_OUTPUT
+    if [ -n "$PUSH_STAT" ]; then
+        echo "### 📤 Push Changes (Local → Upstream)" >> $GITHUB_OUTPUT
+        echo '```' >> $GITHUB_OUTPUT
+        echo "$PUSH_STAT" >> $GITHUB_OUTPUT
+        echo '```' >> $GITHUB_OUTPUT
+        echo "" >> $GITHUB_OUTPUT
     fi
-    generate_changes_tables "$GITHUB_OUTPUT"
     echo "EOF" >> $GITHUB_OUTPUT
 else
     echo "✅ **Everything is in sync!**" >> $GITHUB_STEP_SUMMARY
