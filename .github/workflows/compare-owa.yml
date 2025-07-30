@@ -1,0 +1,231 @@
+name: Diff OWA & CWA
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize]
+  issue_comment:
+    types: [created, edited]
+  workflow_dispatch:
+    inputs:
+      target_branch:
+        description: 'Target branch to compare against'
+        required: false
+        default: 'main'
+        type: string
+
+jobs:
+  parse-comment:
+    runs-on: ubuntu-latest
+    # Only run on PR comments, not regular issue comments
+    if: github.event_name != 'issue_comment' || github.event.issue.pull_request
+    permissions:
+      pull-requests: write
+    outputs:
+      target_branch: ${{ steps.parse.outputs.target_branch }}
+      should_compare: ${{ steps.parse.outputs.should_compare }}
+    steps:
+      - name: Parse latest owa-sync comment
+        id: parse
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // 0. If workflow_dispatch configured target_branch, early exit
+            if ('${{ github.event.inputs.target_branch }}') {
+              core.setOutput('target_branch', '${{ github.event.inputs.target_branch }}');
+              return;
+            }
+
+            // 1. Set default = main
+            let targetBranch = 'main';
+
+            // 2. Find latest comments with command
+            let prNumber = null;
+            if (context.eventName === 'issue_comment') prNumber = context.payload.issue.number;
+            else if (context.eventName === 'pull_request') prNumber = context.payload.pull_request.number;
+
+            if (prNumber) {
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber
+              });
+
+              for (let i = comments.length - 1; i >= 0; i--) {
+                const match = comments[i].body.match(/\/owa-sync(?:\s+(\S+))?/i);
+                if (match) {
+                  targetBranch = match[1] || 'main';
+                  break;
+                }
+              }
+            }
+
+            // React to current comment if it's a command
+            if (context.eventName === 'issue_comment' && context.payload.comment.body.includes('/owa-sync')) {
+              await github.rest.reactions.createForIssueComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: context.payload.comment.id,
+                content: 'rocket'
+              });
+            }
+
+            core.setOutput('target_branch', targetBranch);
+
+            // Determine if we should run compare
+            const shouldCompare = context.eventName !== 'issue_comment' || context.payload.comment.body.includes('/owa-sync');
+            core.setOutput('should_compare', shouldCompare.toString());
+
+
+
+  compare:
+    runs-on: ubuntu-latest
+    needs: [parse-comment]
+    if: needs.parse-comment.outputs.should_compare == 'true'
+    permissions:
+      contents: read
+    outputs:
+      pull_has_changes: ${{ steps.compare.outputs.pull_has_changes }}
+      push_has_changes: ${{ steps.compare.outputs.push_has_changes }}
+      changes_summary: ${{ steps.compare.outputs.changes_summary }}
+      detailed_changes: ${{ steps.compare.outputs.detailed_changes }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get target branch
+        id: get-target
+        run: |
+          TARGET_BRANCH="${{ needs.parse-comment.outputs.target_branch }}"
+          echo "branch=$TARGET_BRANCH" >> $GITHUB_OUTPUT
+          echo "Using target branch: $TARGET_BRANCH"
+
+      - name: Clone upstream
+        run: |
+          TARGET_BRANCH="${{ steps.get-target.outputs.branch }}"
+          echo "Cloning upstream branch: $TARGET_BRANCH"
+          git clone --branch "$TARGET_BRANCH" https://github.com/open-world-agents/open-world-agents.git /tmp/upstream-owa
+
+      - name: Run comparison
+        id: compare
+        run: |
+          chmod +x scripts/compare-owa.sh
+          TARGET_BRANCH="${{ steps.get-target.outputs.branch }}" scripts/compare-owa.sh
+
+      - name: Upload patch
+        if: steps.compare.outputs.push_has_changes == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: rsync-patch
+          path: /tmp/rsync-changes.patch
+
+  post-comment:
+    runs-on: ubuntu-latest
+    needs: [parse-comment, compare]
+    # Always post comment if compare ran successfully
+    if: always() && needs.compare.result == 'success'
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Post comment
+        uses: actions/github-script@v7
+        env:
+          CHANGES_SUMMARY: ${{ needs.compare.outputs.changes_summary }}
+          DETAILED_CHANGES: ${{ needs.compare.outputs.detailed_changes }}
+          TARGET_BRANCH: ${{ needs.parse-comment.outputs.target_branch }}
+        with:
+          script: |
+            const pull = '${{ needs.compare.outputs.pull_has_changes }}' === 'true';
+            const push = '${{ needs.compare.outputs.push_has_changes }}' === 'true';
+            const targetBranch = process.env.TARGET_BRANCH;
+
+            let body = "<!-- compare-owa-action -->\n🔄 **OWA Sync Status**\n";
+            body += `**Target Branch:** \`${targetBranch}\`\n\n`;
+
+            // Handle no changes case
+            if (!pull && !push) {
+              body += "✅ **Everything is in sync!** No changes detected between local and upstream.\n\n";
+            } else {
+              // Handle changes detected case
+              if (pull && push) {
+                body += "⚠️ **Both directions have changes** - review carefully before syncing\n\n";
+              }
+
+              const changesSummary = process.env.CHANGES_SUMMARY || '';
+              if (changesSummary) body += changesSummary + "\n";
+
+              const detailedChanges = process.env.DETAILED_CHANGES || '';
+              if (detailedChanges) {
+                body += "<details><summary>📊 Detailed Changes</summary>\n\n" + detailedChanges + "</details>\n\n";
+              }
+            }
+
+            // Only show sync instructions if there are changes
+            if (pull || push) {
+              const summaryUrl = `${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`;
+              body += "<details><summary>📋 How to sync</summary>\n\n";
+
+              if (pull) {
+              body += "**📥 To pull upstream changes:**\n\n" +
+                      "**🟢 Non-destructive method (recommended):**\n" +
+                      "```bash\n" +
+                      `git subtree pull --prefix=open-world-agents https://github.com/open-world-agents/open-world-agents.git ${targetBranch} --squash\n` +
+                      "```\n\n" +
+                      "**🔴 Destructive method (overwrites local changes):**\n" +
+                      "```bash\n" +
+                      `git clone --branch ${targetBranch} https://github.com/open-world-agents/open-world-agents.git /tmp/upstream\n` +
+                      "rsync -av --delete --exclude='.git' /tmp/upstream/ ./open-world-agents/\n" +
+                      "git add open-world-agents/\n" +
+                      `git commit -m \"Sync with upstream open-world-agents (${targetBranch})\"\n` +
+                      "```\n\n";
+            }
+
+            if (push) {
+              body += "**📤 To push local changes:**\n\n" +
+                      "**🟢 Non-destructive method (recommended):**\n" +
+                      "```bash\n" +
+                      "# First, ensure you have a fork of open-world-agents\n" +
+                      `git subtree push --prefix=open-world-agents https://github.com/YOUR_USERNAME/open-world-agents.git sync-${targetBranch}-$(date +%Y%m%d)\n` +
+                      `# Then create a pull request from your fork to upstream/${targetBranch}\n` +
+                      "```\n\n" +
+                      "**🔴 Destructive method (overwrites upstream changes):**\n" +
+                      "1. Download the `rsync-patch` artifact from this workflow\n" +
+                      "2. Apply to your fork of open-world-agents\n" +
+                      `3. Create a pull request targeting \`${targetBranch}\`\n\n` +
+                      "Or use rsync:\n" +
+                      "```bash\n" +
+                      `git clone --branch ${targetBranch} https://github.com/open-world-agents/open-world-agents.git /tmp/upstream-pr\n` +
+                      "cd /tmp/upstream-pr\n" +
+                      `git checkout -b sync-${targetBranch}-$(date +%Y%m%d)\n` +
+                      "rsync -av --delete --exclude='.git' ../open-world-agents/ ./\n" +
+                      "git add -A\n" +
+                      `git commit -m \"Sync changes from proprietary to ${targetBranch}\"\n` +
+                      `git push origin sync-${targetBranch}-$(date +%Y%m%d)\n` +
+                      "```\n\n";
+              }
+
+              body += "</details>\n\n";
+              body += `*Full report also available in [workflow summary](${summaryUrl})*\n\n`;
+            }
+
+            body += "<details><summary>💬 Change Target Branch</summary>\n\n" +
+                    "Comment with `/owa-sync [branch]` to compare against a different branch:\n\n" +
+                    "- `/owa-sync` - Compare with main (default)\n" +
+                    "- `/owa-sync develop` - Compare with develop branch\n" +
+                    "- `/owa-sync feature/xyz` - Compare with feature/xyz branch\n\n" +
+                    "</details>";
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number
+            });
+            const existing = comments.find(c => c.user.login === 'github-actions[bot]' && c.body.includes('<!-- compare-owa-action -->'));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner, repo: context.repo.repo, comment_id: existing.id, body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, body
+              });
+            }

@@ -97,8 +97,8 @@ def test_raw_mouse_event_message():
 
     # Test creating a raw mouse event
     event = RawMouseEvent(
-        dx=10,
-        dy=-5,
+        last_x=10,
+        last_y=-5,
         button_flags=0x0001,  # RI_MOUSE_LEFT_BUTTON_DOWN
         button_data=0,
         device_handle=12345,
@@ -113,7 +113,7 @@ def test_raw_mouse_event_message():
     assert event.timestamp == 1234567890
 
     # Test with minimal required fields
-    minimal_event = RawMouseEvent(dx=0, dy=0, button_flags=0, button_data=0)
+    minimal_event = RawMouseEvent(last_x=0, last_y=0, button_flags=0, button_data=0)
     assert minimal_event.dx == 0
     assert minimal_event.dy == 0
     assert minimal_event.device_handle is None
@@ -163,7 +163,7 @@ def test_raw_mouse_listener_functionality():
 
         # Simulate receiving a raw mouse event
         RawMouseEvent = MESSAGES["desktop/RawMouseEvent"]
-        test_event = RawMouseEvent(dx=15, dy=-10, button_flags=0x0001, button_data=0, timestamp=time.time_ns())
+        test_event = RawMouseEvent(last_x=15, last_y=-10, button_flags=0x0001, button_data=0, timestamp=time.time_ns())
 
         # Manually trigger the internal callback
         raw_mouse_listener._on_raw_mouse_event(test_event)
@@ -238,19 +238,19 @@ def test_raw_mouse_event_fields():
 
     for flag in button_flags:
         event = RawMouseEvent(
-            dx=1,
-            dy=1,
+            last_x=1,
+            last_y=1,
             button_flags=flag,
             button_data=120 if flag == 0x0400 else 0,  # Wheel delta for wheel events
         )
         assert event.button_flags == flag
 
     # Test negative movement values
-    event = RawMouseEvent(dx=-100, dy=-50, button_flags=0, button_data=0)
+    event = RawMouseEvent(last_x=-100, last_y=-50, button_flags=0, button_data=0)
     assert event.dx == -100
     assert event.dy == -50
 
     # Test large movement values (high-DPI scenarios)
-    event = RawMouseEvent(dx=1000, dy=800, button_flags=0, button_data=0)
+    event = RawMouseEvent(last_x=1000, last_y=800, button_flags=0, button_data=0)
     assert event.dx == 1000
     assert event.dy == 800

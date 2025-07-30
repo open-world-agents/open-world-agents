@@ -1,11 +1,11 @@
 import pytest
 
-from owa.data import load_dataset
+from owa.data.datasets import list_datasets, load_dataset
 
 
 @pytest.mark.network
 def test_list_available():
-    datasets = load_dataset.list_available()
+    datasets = list_datasets()
     assert isinstance(datasets, list)
     assert any("open-world-agents/example_dataset" in ds for ds in datasets)
 

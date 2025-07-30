@@ -5,15 +5,16 @@ from .json_event_encoder import JSONEventEncoder, JSONEventEncoderConfig
 
 def create_encoder(encoder_type: str, **kwargs) -> BaseEventEncoder:
     """Create an encoder instance based on the specified type."""
+    encoders = {
+        "hierarchical": HierarchicalEventEncoder,
+        "json": JSONEventEncoder,
+    }
 
-    encoder_type = encoder_type.lower()
+    encoder_class = encoders.get(encoder_type.lower())
+    if encoder_class is None:
+        raise ValueError(f"Unsupported encoder type: {encoder_type}. Available: {list(encoders.keys())}")
 
-    if encoder_type == "hierarchical":
-        return HierarchicalEventEncoder(**kwargs)
-    elif encoder_type == "json":
-        return JSONEventEncoder(**kwargs)
-    else:
-        raise ValueError(f"Unsupported encoder type: {encoder_type}.")
+    return encoder_class(**kwargs)
 
 
 __all__ = [
