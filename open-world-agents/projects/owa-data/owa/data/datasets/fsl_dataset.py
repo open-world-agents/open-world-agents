@@ -140,6 +140,9 @@ class FSLDataset(TorchDataset):
     def __init__(
         self, dataset: Dataset, image_processor=None, config: FSLDatasetConfig = FSLDatasetConfig(), **kwargs
     ):
+        if not isinstance(dataset, Dataset):
+            raise ValueError(f"Expected Dataset from `owa.data.datasets`, got {type(dataset)}")
+
         self.dataset = dataset
         self.image_processor = image_processor
         self.config = FSLDatasetConfig(**(config.__dict__ | kwargs))
