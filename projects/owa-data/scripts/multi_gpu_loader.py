@@ -1,13 +1,12 @@
 import line_profiler
 import torch
 from accelerate import Accelerator
-from datasets import load_from_disk
 from loguru import logger
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import AutoImageProcessor, AutoProcessor
 
-from owa.data.datasets import FSLDataset
+from owa.data.datasets import FSLDataset, load_from_disk
 from owa.data.episode_tokenizer import EpisodeTokenizer
 
 logger.enable("owa.data.datasets.fsl_dataset")
