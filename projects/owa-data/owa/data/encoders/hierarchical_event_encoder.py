@@ -6,7 +6,7 @@ from typing import List, Optional, Set, Tuple
 from mcap_owa.highlevel.reader import McapMessage
 from owa.core.time import TimeUnits
 from owa.msgs.desktop.keyboard import KeyboardEvent
-from owa.msgs.desktop.mouse import MouseEvent
+from owa.msgs.desktop.mouse import RawMouseEvent
 from owa.msgs.desktop.screen import ScreenCaptured
 
 from .base_encoder import BaseEventEncoder, BaseEventEncoderConfig
@@ -20,9 +20,12 @@ class HierarchicalEventEncoderConfig(BaseEventEncoderConfig):
     timestamp_range_ns: int = 4 * TimeUnits.SECOND
     # 4 seconds in 10ms intervals
     timestamp_bases: List[int] = field(default_factory=lambda: [4, 10, 10])
-    # coordinate quantization bases (like hex: base-16)
-    mouse_coord_bases: List[int] = field(default_factory=lambda: [16, 16, 16])
-    screen_size: Tuple[int, int] = (1920, 1080)
+    # raw mouse delta quantization bases
+    mouse_delta_bases: List[int] = field(default_factory=lambda: [10, 10, 10])
+    # maximum dx value for normalization
+    max_mouse_delta_x: int = 1000
+    # maximum dy value for normalization
+    max_mouse_delta_y: int = 1000
 
 
 def quantize_to_digits(value: float, bases: List[int]) -> List[int]:
@@ -133,64 +136,72 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         """Encode keyboard event: [<KEYBOARD>, <vk>, <action>]"""
         return ["<KEYBOARD>", f"<{event.vk}>", f"<{event.event_type}>"]
 
-    def _encode_mouse(self, event: MouseEvent) -> List[str]:
-        """Encode mouse event with multi-level coordinate quantization."""
-        x, y = event.x, event.y
-        norm_x = x / self.config.screen_size[0]
-        norm_y = y / self.config.screen_size[1]
+    def _encode_mouse(self, event: RawMouseEvent) -> List[str]:
+        """Encode raw mouse event with multi-level delta quantization."""
+        # Normalize dx, dy to [0, 1] range using separate max_mouse_delta values
+        # Clamp values to [-max_mouse_delta_x, max_mouse_delta_x] and [-max_mouse_delta_y, max_mouse_delta_y] then normalize to [0, 1]
+        dx_clamped = max(-self.config.max_mouse_delta_x, min(self.config.max_mouse_delta_x, event.dx))
+        dy_clamped = max(-self.config.max_mouse_delta_y, min(self.config.max_mouse_delta_y, event.dy))
 
-        tokens = ["<MOUSE>", "<move>"]
+        norm_dx = (dx_clamped + self.config.max_mouse_delta_x) / (2 * self.config.max_mouse_delta_x)
+        norm_dy = (dy_clamped + self.config.max_mouse_delta_y) / (2 * self.config.max_mouse_delta_y)
 
-        # Quantize coordinates to digits
-        digits_x = quantize_to_digits(norm_x, self.config.mouse_coord_bases)
-        digits_y = quantize_to_digits(norm_y, self.config.mouse_coord_bases)
+        tokens = ["<MOUSE>"]
 
-        # Interleave x,y digit pairs
-        for digit_x, digit_y in zip(digits_x, digits_y):
-            tokens.extend([f"<{digit_x}>", f"<{digit_y}>"])
+        # Quantize deltas to digits
+        digits_dx = quantize_to_digits(norm_dx, self.config.mouse_delta_bases)
+        digits_dy = quantize_to_digits(norm_dy, self.config.mouse_delta_bases)
 
-        # Add action-specific tokens
-        if event.event_type == "click":
-            button = event.button or "unknown"
-            action = "press" if bool(event.pressed) else "release"
-            tokens.extend([f"<{button}>", f"<{action}>"])
-        elif event.event_type == "scroll":
-            dx = event.dx if event.dx is not None else 0
-            dy = event.dy if event.dy is not None else 0
-            tokens.extend([f"<{dx}>", f"<{dy}>"])
+        # Interleave dx,dy digit pairs
+        for digit_dx, digit_dy in zip(digits_dx, digits_dy):
+            tokens.extend([f"<{digit_dx}>", f"<{digit_dy}>"])
+
+        # Add button flags as a single token
+        tokens.append(f"<{int(event.button_flags)}>")
+
+        # Add button data if non-zero (for wheel events)
+        if event.button_data != 0:
+            # NOTE: button_data is USHORT and is multiple if 120=WHEEL_DELTA. See: https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-rawmouse
+            button_data = event.button_data
+            if button_data >= 32768:
+                button_data -= 65536
+            button_data //= 120
+            tokens.append(f"<{button_data}>")
 
         return tokens
 
-    def _decode_mouse_coords(
-        self, tokens: List[str], screen_size: Optional[Tuple[int, int]] = None
-    ) -> Tuple[int, int]:
-        """Decode quantized mouse coordinates."""
-        if screen_size is None:
-            screen_size = self.config.screen_size
+    def _decode_mouse_deltas(self, tokens: List[str]) -> Tuple[int, int]:
+        """Decode quantized mouse deltas."""
+        delta_tokens = tokens[1:]  # Skip <MOUSE>
 
-        coord_tokens = tokens[2:]  # Skip <MOUSE> and <move>
-        if len(coord_tokens) != len(self.config.mouse_coord_bases) * 2:
-            raise ValueError(f"Expected {len(self.config.mouse_coord_bases) * 2} coordinate tokens")
+        # Extract delta digit pairs (before button flags)
+        expected_delta_tokens = len(self.config.mouse_delta_bases) * 2
+        if len(delta_tokens) < expected_delta_tokens:
+            raise ValueError(f"Expected at least {expected_delta_tokens} delta tokens")
 
         # Parse digit pairs from tokens
-        digits_x, digits_y = [], []
-        for i in range(0, len(coord_tokens), 2):
-            x_token = coord_tokens[i]
-            y_token = coord_tokens[i + 1]
+        digits_dx, digits_dy = [], []
+        for i in range(0, expected_delta_tokens, 2):
+            dx_token = delta_tokens[i]
+            dy_token = delta_tokens[i + 1]
 
-            x_match = re.match(r"<(\d+)>", x_token)
-            y_match = re.match(r"<(\d+)>", y_token)
-            if not x_match or not y_match:
-                raise ValueError(f"Invalid coordinate tokens: {x_token}, {y_token}")
+            dx_match = re.match(r"<(\d+)>", dx_token)
+            dy_match = re.match(r"<(\d+)>", dy_token)
+            if not dx_match or not dy_match:
+                raise ValueError(f"Invalid delta tokens: {dx_token}, {dy_token}")
 
-            digits_x.append(int(x_match.group(1)))
-            digits_y.append(int(y_match.group(1)))
+            digits_dx.append(int(dx_match.group(1)))
+            digits_dy.append(int(dy_match.group(1)))
 
-        # Reconstruct normalized coordinates from digits
-        norm_x = digits_to_value(digits_x, self.config.mouse_coord_bases)
-        norm_y = digits_to_value(digits_y, self.config.mouse_coord_bases)
+        # Reconstruct normalized deltas from digits
+        norm_dx = digits_to_value(digits_dx, self.config.mouse_delta_bases)
+        norm_dy = digits_to_value(digits_dy, self.config.mouse_delta_bases)
 
-        return int(round(norm_x * (screen_size[0] - 1))), int(round(norm_y * (screen_size[1] - 1)))
+        # Convert back to actual delta values using separate max values
+        dx = int(round(norm_dx * (2 * self.config.max_mouse_delta_x) - self.config.max_mouse_delta_x))
+        dy = int(round(norm_dy * (2 * self.config.max_mouse_delta_y) - self.config.max_mouse_delta_y))
+
+        return dx, dy
 
     def encode(self, mcap_message: McapMessage) -> Tuple[str, List[ScreenCaptured]]:
         """Encode a single McapMessage object to hierarchical token format."""
@@ -213,9 +224,9 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         if mcap_message.topic == "keyboard":
             keyboard_event = KeyboardEvent(**msg_data)
             tokens.extend(self._encode_keyboard(keyboard_event))
-        elif mcap_message.topic == "mouse":
-            mouse_event = MouseEvent(**msg_data)
-            tokens.extend(self._encode_mouse(mouse_event))
+        elif mcap_message.topic == "mouse" or mcap_message.topic == "mouse/raw":
+            raw_mouse_event = RawMouseEvent(**msg_data)
+            tokens.extend(self._encode_mouse(raw_mouse_event))
         elif mcap_message.topic == "screen":
             screen_event = ScreenCaptured(**msg_data)
             tokens.extend([self.config.image_token_prefix, self.config.image_token, self.config.image_token_suffix])
@@ -254,49 +265,43 @@ class HierarchicalEventEncoder(BaseEventEncoder):
             raise ValueError(f"Invalid keyboard tokens: {tokens}")
         return KeyboardEvent(event_type=action_match.group(1), vk=int(vk_match.group(1)))
 
-    def _decode_mouse(self, tokens: List[str], screen_size: Optional[Tuple[int, int]] = None) -> MouseEvent:
-        """Decode mouse tokens back to MouseEvent."""
+    def _decode_mouse(self, tokens: List[str]) -> RawMouseEvent:
+        """Decode mouse tokens back to RawMouseEvent."""
         if len(tokens) < 2 or tokens[0] != "<MOUSE>":
             raise ValueError(f"Invalid mouse tokens: {tokens}")
 
-        # Decode coordinates
-        move_end_idx = 2 + len(self.config.mouse_coord_bases) * 2
-        x, y = self._decode_mouse_coords(tokens[:move_end_idx], screen_size)
+        # Decode deltas
+        dx, dy = self._decode_mouse_deltas(tokens)
 
-        # Determine event type and additional parameters
-        if len(tokens) == move_end_idx:
-            return MouseEvent(event_type="move", x=x, y=y)
-        elif len(tokens) >= move_end_idx + 2:
-            if "<left>" in tokens or "<right>" in tokens or "<middle>" in tokens:
-                # Click event
-                button_token = tokens[move_end_idx]
-                action_token = tokens[move_end_idx + 1]
-                button_match = re.match(r"<(\w+)>", button_token)
-                action_match = re.match(r"<(\w+)>", action_token)
-                if not button_match or not action_match:
-                    raise ValueError(f"Invalid click tokens: {button_token}, {action_token}")
-                button = button_match.group(1)
-                pressed = action_match.group(1) == "press"
-                return MouseEvent(event_type="click", x=x, y=y, button=button, pressed=pressed)
-            else:
-                # Scroll event
-                dx_token = tokens[move_end_idx]
-                dy_token = tokens[move_end_idx + 1]
-                dx_match = re.match(r"<(-?\d+)>", dx_token)
-                dy_match = re.match(r"<(-?\d+)>", dy_token)
-                if not dx_match or not dy_match:
-                    raise ValueError(f"Invalid scroll tokens: {dx_token}, {dy_token}")
-                dx = int(dx_match.group(1))
-                dy = int(dy_match.group(1))
-                return MouseEvent(event_type="scroll", x=x, y=y, dx=dx, dy=dy)
+        # Extract button flags
+        delta_token_count = len(self.config.mouse_delta_bases) * 2
+        button_flags_idx = 1 + delta_token_count
 
-        raise ValueError(f"Invalid mouse token sequence: {tokens}")
+        if len(tokens) <= button_flags_idx:
+            raise ValueError("Missing button flags token")
+
+        button_flags_token = tokens[button_flags_idx]
+        button_flags_match = re.match(r"<(\d+)>", button_flags_token)
+        if not button_flags_match:
+            raise ValueError(f"Invalid button flags token: {button_flags_token}")
+        button_flags = int(button_flags_match.group(1))
+
+        # Extract button data if present
+        button_data = 0
+        if len(tokens) > button_flags_idx + 1:
+            button_data_token = tokens[button_flags_idx + 1]
+            button_data_match = re.match(r"<(-?\d+)>", button_data_token)
+            if button_data_match:
+                button_data = int(button_data_match.group(1))
+
+        return RawMouseEvent(
+            dx=dx, dy=dy, button_flags=RawMouseEvent.ButtonFlags(button_flags), button_data=button_data
+        )
 
     def decode(
         self,
         encoded_data: str,
         images: Optional[List[ScreenCaptured]] = None,
-        screen_size: Optional[Tuple[int, int]] = None,
     ) -> McapMessage:
         """Decode hierarchical tokens back to original raw event format."""
         if not encoded_data.startswith("<EVENT_START>") or not encoded_data.endswith("<EVENT_END>"):
@@ -322,20 +327,21 @@ class HierarchicalEventEncoder(BaseEventEncoder):
                 message=json.dumps(msg_data).encode("utf-8"),
             )
         elif event_type_token == "<MOUSE>":
-            mouse_event = self._decode_mouse(tokens[timestamp_token_count:], screen_size)
-            msg_data = {"event_type": mouse_event.event_type, "x": mouse_event.x, "y": mouse_event.y}
-            if mouse_event.button:
-                msg_data["button"] = mouse_event.button
-            if mouse_event.pressed is not None:
-                msg_data["pressed"] = mouse_event.pressed
-            if mouse_event.dx is not None:
-                msg_data["dx"] = mouse_event.dx
-            if mouse_event.dy is not None:
-                msg_data["dy"] = mouse_event.dy
+            raw_mouse_event = self._decode_mouse(tokens[timestamp_token_count:])
+            msg_data = {
+                "dx": raw_mouse_event.dx,
+                "dy": raw_mouse_event.dy,
+                "button_flags": int(raw_mouse_event.button_flags),
+                "button_data": raw_mouse_event.button_data,
+            }
+            if raw_mouse_event.device_handle is not None:
+                msg_data["device_handle"] = raw_mouse_event.device_handle
+            if raw_mouse_event.timestamp is not None:
+                msg_data["timestamp"] = raw_mouse_event.timestamp
             return McapMessage(
-                topic="mouse",
+                topic="mouse/raw",
                 timestamp=timestamp_ns,
-                message_type="desktop/MouseEvent",
+                message_type="desktop/RawMouseEvent",
                 message=json.dumps(msg_data).encode("utf-8"),
             )
         elif event_type_token == self.config.image_token_prefix:
