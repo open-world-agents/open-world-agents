@@ -2,14 +2,14 @@
 # This configuration is optimized for pretraining vision-language models on desktop interaction data
 # Comments show: [CUSTOM_VALUE] (default: DEFAULT_VALUE)
 
-output_dir: "/mnt/raid12/scratch/claude/checkpoints/pretrain_smolvlm_256m_fsl"  # (default: 'trainer_output') - can be overridden via CLI
+output_dir: "/mnt/raid12/scratch/claude/checkpoints/pretrain_smolvlm_256m_csgo-full-nodec"  # (default: 'trainer_output') - can be overridden via CLI
 
 # ============================================================================
 # SCRIPT ARGUMENTS (Custom for FSLDataset pretraining)
 # ============================================================================
-dataset_path: "/mnt/raid12/datasets/owa/data/csgo-event"  # (default: None) - required
+dataset_path: "/mnt/raid12/datasets/owa/data/csgo-full-event"  # (default: None) - required
 max_sequence_length: 1024  # (default: 1024)
-preprocessing_num_workers: 16  # (default: None)
+preprocessing_num_workers: 32  # (default: None)
 
 # ============================================================================
 # MODEL CONFIGURATION
@@ -54,7 +54,7 @@ logging_steps: 10  # (default: 10)
 save_strategy: "steps"  # (default: 'steps')
 save_steps: 500  # (default: 500)
 save_total_limit: null  # (default: None) - keep more checkpoints for pretraining
-report_to: ["tensorboard"]  # (default: ['tensorboard'])
+report_to: ["tensorboard", "wandb"]  # (default: ['tensorboard'])
 run_name: null  # (default: None)
 
 # ============================================================================
@@ -69,8 +69,8 @@ dataloader_num_workers: 8    # (default: 0)
 # EVALUATION SETTINGS
 # ============================================================================
 do_eval: true  # (default: False)
-eval_strategy: "epoch"  # (default: 'no')
-eval_steps: null  # (default: None) - used when eval_strategy is 'steps'
+eval_strategy: "steps"  # (default: 'no')
+eval_steps: 1000  # (default: None) - used when eval_strategy is 'steps'
 per_device_eval_batch_size: 8  # (default: 8)
 
 # ============================================================================

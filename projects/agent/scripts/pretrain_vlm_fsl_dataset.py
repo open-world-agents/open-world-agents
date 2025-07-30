@@ -59,7 +59,7 @@ from trl import (
     get_quantization_config,
 )
 
-from owa.data.datasets import FSLDatasetConfig, load_from_disk, prepare_fsl
+from owa.data.datasets import Dataset, FSLDatasetConfig, load_from_disk, prepare_fsl
 from owa.data.episode_tokenizer import EpisodeTokenizer
 
 # This line is to enable throughput logging from FSLDataset
@@ -230,8 +230,6 @@ def main():
             tokenized_datasets = {}
             for split_name in ["train", "test", "validation"]:
                 if split_name in event_dataset:
-                    from datasets import Dataset
-
                     dataset = event_dataset[split_name]
                     # Type cast to help with type checking
                     if isinstance(dataset, Dataset):
@@ -242,8 +240,6 @@ def main():
             event_dataset = tokenized_datasets
         else:
             # Single Dataset case - assume it's the train split
-            from datasets import Dataset
-
             if isinstance(event_dataset, Dataset):
                 tokenized = episode_tokenizer.tokenize_event_dataset(
                     event_dataset, map_kwargs={"num_proc": script_args.preprocessing_num_workers}
@@ -267,7 +263,11 @@ def main():
     eval_fsl_dataset = None
     if "test" in event_dataset:
         test_samples = min(len(event_dataset["test"]), 1024)  # FIXME: remove this
-        event_dataset["test"] = event_dataset["test"].select(range(test_samples))
+        owa_config = event_dataset["test"].owa_config
+        # since .select yields HF dataset, we need to wrap it back in our Dataset class
+        event_dataset["test"] = Dataset.from_hf_dataset(
+            event_dataset["test"].select(range(test_samples)), owa_config=owa_config
+        )
         eval_fsl_dataset = prepare_fsl(
             event_dataset["test"], image_processor=processor.image_processor, config=fsl_config
         )
