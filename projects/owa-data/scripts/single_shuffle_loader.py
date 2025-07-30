@@ -10,7 +10,7 @@ from owa.data.episode_tokenizer import EpisodeTokenizer
 logger.enable("owa.data.datasets.fsl_dataset")
 
 # Load event dataset
-event_dataset = load_from_disk("/mnt/raid12/datasets/owa/data/csgo-event")
+event_dataset = load_from_disk("/raid/datasets/owa/data/csgo-event")
 tokenizer = AutoTokenizer.from_pretrained("HuggingFaceTB/SmolVLM2-256M-Video-Instruct")
 image_processor = AutoImageProcessor.from_pretrained(
     "HuggingFaceTB/SmolVLM2-256M-Video-Instruct", do_image_splitting=False, use_fast=True

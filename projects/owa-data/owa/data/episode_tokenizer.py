@@ -110,7 +110,6 @@ class EpisodeTokenizer:
                 "token_ids": tokenized_event["token_ids"],
                 "images": [image.model_dump_json() for image in tokenized_event["images"]],
                 "total_token_count": tokenized_event["total_token_count"],
-                "cumulative_token_count": tokenized_event["total_token_count"],  # initiated with itself
             }
 
         # Tokenize the dataset
@@ -121,36 +120,12 @@ class EpisodeTokenizer:
             remove_columns=event_dataset.column_names,
             **map_kwargs,
         )
-        # Parallel scan to compute cumulative token count
-        tokenized_dataset = chunked_cumsum(tokenized_dataset, key="cumulative_token_count")
 
         # Switch back to OWA Dataset from HF Dataset
         tokenized_dataset = Dataset.from_hf_dataset(tokenized_dataset, owa_config=event_dataset.owa_config)
         tokenized_dataset.owa_config.stage = DatasetStage.TOKENIZED
 
         return tokenized_dataset
-
-
-def chunked_cumsum(dataset: Dataset, key: str, chunk_size: int = 1048576):
-    """Compute cumulative sum of a column in chunks. O(n / c * c log c) compute, O(c) memory, O(n / c * log c) time."""
-
-    def process_chunk(example, idx):
-        cumulative_sum = np.cumsum(example[key])
-        first_idx = idx[0]
-        if first_idx > 0:
-            cumulative_sum += dataset[first_idx - 1]["cumulative_token_count"]
-        example[key] = cumulative_sum
-        return example
-
-    dataset = dataset.map(
-        process_chunk,
-        with_indices=True,
-        desc="Computing cumulative sum",
-        batched=True,
-        batch_size=chunk_size,
-        num_proc=1,
-    )
-    return dataset
 
 
 # Inefficient pscan impl
