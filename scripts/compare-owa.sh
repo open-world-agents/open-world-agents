@@ -17,9 +17,9 @@ else
 fi
 cd ..
 
-# Rsync-based comparison
-PULL_DIFF=$(rsync -avun --delete /tmp/upstream-owa/ ./open-world-agents/ | grep -E "(deleting|>f|cd)" || true)
-PUSH_DIFF=$(rsync -avun --delete ./open-world-agents/ /tmp/upstream-owa/ | grep -E "(deleting|>f|cd)" || true)
+# Rsync-based comparison (excluding .git directories)
+PULL_DIFF=$(rsync -avun --delete --exclude='.git' /tmp/upstream-owa/ ./open-world-agents/ | grep -E "(deleting|>f|cd)" || true)
+PUSH_DIFF=$(rsync -avun --delete --exclude='.git' ./open-world-agents/ /tmp/upstream-owa/ | grep -E "(deleting|>f|cd)" || true)
 
 # Set outputs
 if [ -n "$PULL_DIFF" ] || [ "$HAS_SUBTREE" = true -a "$LOCAL_COMMIT" != "$UPSTREAM_COMMIT" ]; then
@@ -33,7 +33,7 @@ if [ -n "$PUSH_DIFF" ]; then
     # Create rsync patch
     ORIGINAL_DIR=$(pwd)
     cd /tmp/upstream-owa
-    rsync -av --delete "$ORIGINAL_DIR/open-world-agents/" ./
+    rsync -av --delete --exclude='.git' "$ORIGINAL_DIR/open-world-agents/" ./
     git add -A && git diff --cached > /tmp/rsync-changes.patch
     cd "$ORIGINAL_DIR"
 else

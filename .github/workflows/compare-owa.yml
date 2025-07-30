@@ -1,4 +1,4 @@
-name: Compare Open World Agents
+name: Diff OWA/CWA
 
 on:
   push:
@@ -56,7 +56,7 @@ jobs:
                       "**Option B: File Sync (clean, no history)**\n" +
                       "```bash\n" +
                       "git clone https://github.com/open-world-agents/open-world-agents.git /tmp/upstream\n" +
-                      "rsync -av --delete /tmp/upstream/ ./open-world-agents/\n" +
+                      "rsync -av --delete --exclude='.git' /tmp/upstream/ ./open-world-agents/\n" +
                       "git add open-world-agents/\n" +
                       "git commit -m \"Sync with upstream open-world-agents\"\n" +
                       "```\n\n";
@@ -77,7 +77,7 @@ jobs:
                       "git clone https://github.com/open-world-agents/open-world-agents.git /tmp/upstream-pr\n" +
                       "cd /tmp/upstream-pr\n" +
                       "git checkout -b sync-$(date +%Y%m%d)\n" +
-                      "rsync -av --delete ./open-world-agents/ ./\n" +
+                      "rsync -av --delete --exclude='.git' ../open-world-agents/ ./\n" +
                       "git add -A\n" +
                       "git commit -m \"Sync changes from proprietary (squashed)\"\n" +
                       "git push origin sync-$(date +%Y%m%d)\n" +
