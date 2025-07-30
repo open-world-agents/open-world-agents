@@ -218,15 +218,16 @@ OWA provides standardized message types through the `owa-msgs` package for consi
     class RawMouseEvent(OWAMessage):
         _type = "desktop/RawMouseEvent"
 
-        dx: int                   # Raw horizontal movement delta
-        dy: int                   # Raw vertical movement delta
-        button_flags: int         # Raw button state flags
-        button_data: int          # Additional button data (wheel, etc.)
-        device_handle: int = None # Optional device handle
-        timestamp: int = None     # Optional timestamp
+        us_flags: mouse state flags, containing movement data type (relative/absolute). Default is relative.
+        last_x: can be relative or absolute, depends on us_flags
+        last_y: can be relative or absolute, depends on us_flags
+        button_flags: Raw button state flags from Windows RAWMOUSE structure
+        button_data: Additional button data (wheel delta, etc.)
+        device_handle: Raw input device handle (optional)
+        timestamp: Optional timestamp in nanoseconds since epoch
 
     # Example: Raw mouse movement
-    RawMouseEvent(dx=15, dy=-10, button_flags=0x0000, button_data=0)
+    RawMouseEvent(us_flags=0x0000, last_x=15, last_y=-10, button_flags=0x0000, button_data=0)
     ```
 
 === "ScreenCaptured"

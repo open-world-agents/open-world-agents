@@ -10,6 +10,7 @@ from threading import Lock
 from tqdm import tqdm
 
 from owa.core import LISTENERS
+from owa.msgs.desktop.mouse import MouseEvent, RawMouseEvent
 
 # Stats tracking
 stats_lock = Lock()
@@ -33,7 +34,7 @@ std_total = {"x": 0, "y": 0}
 should_quit = False
 
 
-def on_raw_mouse(event):
+def on_raw_mouse(event: RawMouseEvent):
     """Raw mouse event handler."""
     global verbose_mode, raw_total
 
@@ -49,7 +50,7 @@ def on_raw_mouse(event):
         tqdm.write(f"RAW: {event}")
 
 
-def on_std_mouse(event):
+def on_std_mouse(event: MouseEvent):
     """Standard mouse event handler."""
     global verbose_mode, std_total
 

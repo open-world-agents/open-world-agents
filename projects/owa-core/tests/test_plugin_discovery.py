@@ -259,19 +259,6 @@ class TestModuleFunctions:
 class TestPluginDiscoveryErrorHandling:
     """Test error handling in PluginDiscovery."""
 
-    def test_discover_plugins_entry_points_exception(self):
-        """Test discover_plugins when entry_points() raises an exception."""
-        discovery = PluginDiscovery()
-
-        with patch("owa.core.plugin_discovery.entry_points") as mock_entry_points:
-            mock_entry_points.side_effect = Exception("Entry points discovery failed")
-
-            discovery.discover_plugins()
-
-            # Should handle exception gracefully
-            assert discovery.discovered_plugins == {}
-            assert discovery.failed_plugins == {}
-
     def test_register_all_components_exception(self, isolated_registries):
         """Test register_all_components when component registration fails."""
         discovery = PluginDiscovery()

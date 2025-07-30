@@ -1,12 +1,13 @@
 from dataclasses import dataclass
 from typing import TypedDict
 
-from datasets import Dataset as HFDataset
 from transformers import PreTrainedTokenizer
 
 from mcap_owa.highlevel import McapMessage
 from owa.data.encoders import create_encoder
 from owa.msgs.desktop.screen import ScreenCaptured
+
+from .datasets import Dataset, DatasetStage
 
 
 @dataclass
@@ -76,7 +77,7 @@ class EpisodeTokenizer:
             total_token_count=len(token_ids),
         )
 
-    def tokenize_event_dataset(self, event_dataset: HFDataset, map_kwargs: dict = {"num_proc": 16}) -> HFDataset:
+    def tokenize_event_dataset(self, event_dataset: Dataset, map_kwargs: dict = {"num_proc": 16}) -> Dataset:
         def process_event(event, idx):
             prefix_text = suffix_text = ""
             # Add episode start token
@@ -105,12 +106,14 @@ class EpisodeTokenizer:
                 "total_token_count": tokenized_event["total_token_count"],
             }
 
-        event_dataset = event_dataset.map(
+        tokenized_dataset = event_dataset.map(
             process_event,
             with_indices=True,
             desc="Tokenizing event dataset",
             remove_columns=event_dataset.column_names,
             **map_kwargs,
         )
+        tokenized_dataset = Dataset.from_hf_dataset(tokenized_dataset, owa_config=event_dataset.owa_config)
+        tokenized_dataset.owa_config.stage = DatasetStage.TOKENIZED
 
-        return event_dataset
+        return tokenized_dataset
