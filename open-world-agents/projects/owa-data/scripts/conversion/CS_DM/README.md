@@ -14,6 +14,7 @@ The original dataset contains:
 
 ### Dataset Subsets
 
+- `dataset_dm_july2021/`: 5501 files, 658GB - scraped from online servers
 - `dataset_aim_expert/`: 45 files, 6GB - Expert aim training data
 - `dataset_dm_expert_othermaps/`: 30 files, 3.6GB - Expert deathmatch on various maps
 - `dataset_dm_expert_dust2/`: 190 files, 24GB - Expert deathmatch on dust2 (not available in current mount)
@@ -31,67 +32,26 @@ The conversion script (`convert_to_owamcap.py`) transforms the dataset into OWAM
 
 ### Output Format (OWAMcap)
 - **ScreenCaptured** messages with external video references or embedded frames
-- **MouseEvent** messages for mouse movements and clicks
-- **MouseState** messages for current mouse position and button states
+- **RawMouseEvent** messages for mouse movements and clicks
 - **KeyboardEvent** messages for key presses and releases
 - **KeyboardState** messages for current pressed keys
 - **WindowInfo** messages for CS:GO window context
 
 ## Usage
 
-### Prerequisites
+1. Ensure you have uv installed. You can install uv using `pip install uv`.
 
-Ensure you have the required packages installed:
+2. Run the conversion script:
 ```bash
-pip install mcap-owa-support owa-msgs opencv-python h5py numpy
+uv run convert_to_owamcap.py /mnt/raid12/datasets/CounterStrike_Deathmatch /mnt/raid12/datasets/owa/mcaps/csgo
 ```
 
-### Basic Conversion
-
-Convert a specific subset:
+3. Verify the conversion:
 ```bash
-python convert_to_owamcap.py /mnt/raid12/datasets/CounterStrike_Deathmatch ./output --subset aim_expert
+uv run convert_to_owamcap.py verify /mnt/raid12/datasets/owa/mcaps/csgo 
 ```
 
-Convert with options:
-```bash
-python convert_to_owamcap.py /mnt/raid12/datasets/CounterStrike_Deathmatch ./output \
-    --max-files 5 \
-    --max-frames 100 \
-    --storage-mode embedded
-```
-
-Convert to MKV format (recommended):
-```bash
-python convert_to_owamcap.py /mnt/raid12/datasets/CounterStrike_Deathmatch ./output \
-    --storage-mode external_mkv
-```
-
-### Testing
-
-Run tests to validate the conversion:
-```bash
-python test_conversion.py
-```
-
-### Verification
-
-Verify converted files:
-```bash
-python convert_to_owamcap.py verify ./output
-```
-
-## Command Line Options
-
-- `input_dir`: Input directory containing HDF5 files
-- `output_dir`: Output directory for OWAMcap files
-- `--max-files N`: Limit conversion to N files
-- `--max-frames N`: Limit each file to N frames
-- `--storage-mode {external_mkv,external_mp4,embedded}`: How to store screen frames
-  - `external_mkv`: Create external MKV video files (recommended, smaller files)
-  - `external_mp4`: Create external MP4 video files (compatible but larger)
-  - `embedded`: Embed frames as PNG data URIs in MCAP (largest files, no external dependencies)
-- `--subset {aim_expert,dm_expert_othermaps}`: Convert specific subset only
+For detailed CLI arguments, run `uv run convert_to_owamcap.py --help`.
 
 ## Action Mapping
 
@@ -126,7 +86,6 @@ Each converted file produces:
 - `window`: Window information (CS:GO context)
 - `screen`: Screen capture frames
 - `mouse`: Mouse events (movement, clicks)
-- `mouse/state`: Current mouse state
 - `keyboard`: Keyboard events (press/release)
 - `keyboard/state`: Current keyboard state
 
@@ -137,11 +96,6 @@ Each converted file produces:
 - OWAMcap with external MKV: ~5-10MB MCAP + ~15-25MB MKV (recommended)
 - OWAMcap with external MP4: ~5-10MB MCAP + ~20-30MB MP4
 - OWAMcap with embedded frames: ~100-150MB MCAP (no external files)
-
-### Processing Speed
-- ~1-2 minutes per file on modern hardware
-- Memory usage: ~500MB-1GB per file during conversion
-- Parallel processing not implemented (can run multiple instances)
 
 ## Design Decisions
 
@@ -182,42 +136,25 @@ The original dataset uses **non-uniform quantization** for mouse movement, which
 - Mouse sensitivity/acceleration not preserved (original data was pre-quantized)
 - Some metadata (xaux) not converted (contains previous actions, not needed for replay)
 
-## Troubleshooting
+## Execution Output
 
-### Common Issues
+```sh
+$ uv run convert_to_owamcap.py /mnt/raid12/datasets/CounterStrike_Deathmatch /mnt/raid12/datasets/owa/mcaps/csgo --workers 24                                                                                                                   ✹
+Found 5765 HDF5 files to convert
+Using 24 parallel workers
+ERROR converting hdf5_dm_july2021_expert_90.hdf5: Failed to read HDF5 file /mnt/raid12/datasets/CounterStrike_Deathmatch/dataset_dm_expert_dust2/hdf5_dm_july2021_expert_90.hdf5: Unable to synchronously open file (truncated file: eof = 54820857, sblock->base_addr = 0, stored_eof = 128406464)
+ERROR converting hdf5_dm_july2021_expert_96.hdf5: Failed to read HDF5 file /mnt/raid12/datasets/CounterStrike_Deathmatch/dataset_dm_expert_dust2/hdf5_dm_july2021_expert_96.hdf5: Unable to synchronously open file (truncated file: eof = 78839801, sblock->base_addr = 0, stored_eof = 128406464)
+Converting files: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 5765/5765 [31:20<00:00,  3.07file/s, Completed: hdf5_dm_july2021_999.hdf5]
 
-1. **Import errors**: Ensure all OWA packages are installed
-2. **Memory errors**: Use `--max-frames` to limit memory usage
-3. **Disk space**: Each file produces ~30-50MB output
-4. **Permission errors**: Check dataset mount permissions
-
-### Validation
-
-The verification script checks:
-- File integrity and readability
-- Message type validation
-- Topic consistency
-- Timestamp ordering
-- Frame count accuracy
-
-## Example Output
-
-```
 === Conversion Summary ===
-Converted 45/45 files
-Total time: 127.3 seconds
-Output directory: ./output
+Converted: 5763/5765 files
+Failed: 2 files
+Total time: 1880.3 seconds
+Output directory: /mnt/raid12/datasets/owa/mcaps/csgo
 
-=== Verification Results ===
-Found 45 OWAMcap files
-
-Verifying hdf5_aim_july2021_expert_1.mcap:
-  File size: 8.2 MB
-  Duration: 62.4 seconds
-  Messages: 15847
-  Frames: 1000
-  Topics: ['window', 'screen', 'mouse', 'mouse_state', 'keyboard', 'keyboard_state']
-  ✓ No errors found
+Failed files:
+  hdf5_dm_july2021_expert_90.hdf5: Failed to read HDF5 file /mnt/raid12/datasets/CounterStrike_Deathmatch/dataset_dm_expert_dust2/hdf5_dm_july2021_expert_90.hdf5: Unable to synchronously open file (truncated file: eof = 54820857, sblock->base_addr = 0, stored_eof = 128406464)
+  hdf5_dm_july2021_expert_96.hdf5: Failed to read HDF5 file /mnt/raid12/datasets/CounterStrike_Deathmatch/dataset_dm_expert_dust2/hdf5_dm_july2021_expert_96.hdf5: Unable to synchronously open file (truncated file: eof = 78839801, sblock->base_addr = 0, stored_eof = 128406464)
 ```
 
 ## References
