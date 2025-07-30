@@ -97,11 +97,11 @@ if [ -n "$PULL_DIFF" ] || [ -n "$PUSH_DIFF" ]; then
 
     # Summary badges
     if [ $pull_files -gt 0 ]; then
-        echo "<img src=\"https://img.shields.io/badge/Pull%20Files-$pull_files-blue.svg\" alt=\"Pull Files\"> <img src=\"https://img.shields.io/badge/Lines-+$pull_added%20-$pull_deleted-orange.svg\" alt=\"Pull Lines\">" >> $GITHUB_STEP_SUMMARY
+        echo "<img src=\"https://img.shields.io/badge/Pull%20Files-$pull_files-blue.svg\" alt=\"Pull Files\"> <img src=\"https://img.shields.io/badge/+$pull_added-brightgreen.svg\" alt=\"+$pull_added\"> <img src=\"https://img.shields.io/badge/-$pull_deleted-red.svg\" alt=\"-$pull_deleted\">" >> $GITHUB_STEP_SUMMARY
     fi
 
     if [ $push_files -gt 0 ]; then
-        echo "<img src=\"https://img.shields.io/badge/Push%20Files-$push_files-purple.svg\" alt=\"Push Files\"> <img src=\"https://img.shields.io/badge/Lines-+$push_added%20-$push_deleted-orange.svg\" alt=\"Push Lines\">" >> $GITHUB_STEP_SUMMARY
+        echo "<img src=\"https://img.shields.io/badge/Push%20Files-$push_files-purple.svg\" alt=\"Push Files\"> <img src=\"https://img.shields.io/badge/+$push_added-brightgreen.svg\" alt=\"+$push_added\"> <img src=\"https://img.shields.io/badge/-$push_deleted-red.svg\" alt=\"-$push_deleted\">" >> $GITHUB_STEP_SUMMARY
     fi
 
     # Generate separate tables for pull and push
@@ -118,7 +118,7 @@ if [ -n "$PULL_DIFF" ] || [ -n "$PUSH_DIFF" ]; then
             echo "$PULL_STATS" | while IFS=$'\t' read -r added deleted file; do
                 if [ "$added" = "-" ]; then added="0"; fi
                 if [ "$deleted" = "-" ]; then deleted="0"; fi
-                echo "<tr><td><code>$file</code></td><td align=\"center\"><img src=\"https://img.shields.io/badge/+$added%20-$deleted-orange.svg\" alt=\"+$added -$deleted\"></td></tr>" >> "$output_file"
+                echo "<tr><td><code>$file</code></td><td align=\"center\"><img src=\"https://img.shields.io/badge/+$added-brightgreen.svg\" alt=\"+$added\"> <img src=\"https://img.shields.io/badge/-$deleted-red.svg\" alt=\"-$deleted\"></td></tr>" >> "$output_file"
             done
 
             echo "</tbody></table>" >> "$output_file"
@@ -136,7 +136,7 @@ if [ -n "$PULL_DIFF" ] || [ -n "$PUSH_DIFF" ]; then
             echo "$PUSH_STATS" | while IFS=$'\t' read -r added deleted file; do
                 if [ "$added" = "-" ]; then added="0"; fi
                 if [ "$deleted" = "-" ]; then deleted="0"; fi
-                echo "<tr><td><code>$file</code></td><td align=\"center\"><img src=\"https://img.shields.io/badge/+$added%20-$deleted-orange.svg\" alt=\"+$added -$deleted\"></td></tr>" >> "$output_file"
+                echo "<tr><td><code>$file</code></td><td align=\"center\"><img src=\"https://img.shields.io/badge/+$added-brightgreen.svg\" alt=\"+$added\"> <img src=\"https://img.shields.io/badge/-$deleted-red.svg\" alt=\"-$deleted\"></td></tr>" >> "$output_file"
             done
 
             echo "</tbody></table>" >> "$output_file"
@@ -151,10 +151,10 @@ if [ -n "$PULL_DIFF" ] || [ -n "$PUSH_DIFF" ]; then
     # Generate compact summary for comment
     echo "changes_summary<<EOF" >> $GITHUB_OUTPUT
     if [ $pull_files -gt 0 ]; then
-        echo "<img src=\"https://img.shields.io/badge/Pull%20Files-$pull_files-blue.svg\" alt=\"Pull Files\"> <img src=\"https://img.shields.io/badge/Lines-+$pull_added%20-$pull_deleted-orange.svg\" alt=\"Pull Lines\">" >> $GITHUB_OUTPUT
+        echo "<img src=\"https://img.shields.io/badge/Pull%20Files-$pull_files-blue.svg\" alt=\"Pull Files\"> <img src=\"https://img.shields.io/badge/+$pull_added-brightgreen.svg\" alt=\"+$pull_added\"> <img src=\"https://img.shields.io/badge/-$pull_deleted-red.svg\" alt=\"-$pull_deleted\">" >> $GITHUB_OUTPUT
     fi
     if [ $push_files -gt 0 ]; then
-        echo "<img src=\"https://img.shields.io/badge/Push%20Files-$push_files-purple.svg\" alt=\"Push Files\"> <img src=\"https://img.shields.io/badge/Lines-+$push_added%20-$push_deleted-orange.svg\" alt=\"Push Lines\">" >> $GITHUB_OUTPUT
+        echo "<img src=\"https://img.shields.io/badge/Push%20Files-$push_files-purple.svg\" alt=\"Push Files\"> <img src=\"https://img.shields.io/badge/+$push_added-brightgreen.svg\" alt=\"+$push_added\"> <img src=\"https://img.shields.io/badge/-$push_deleted-red.svg\" alt=\"-$push_deleted\">" >> $GITHUB_OUTPUT
     fi
     generate_changes_tables "$GITHUB_OUTPUT"
     echo "EOF" >> $GITHUB_OUTPUT
