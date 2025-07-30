@@ -1,10 +1,12 @@
-name: Diff OWA/CWA
+name: Diff OWA & CWA
 
 on:
   push:
     branches: [main]
   pull_request:
     types: [opened, synchronize]
+  issue_comment:
+    types: [created, edited]
   workflow_dispatch:
     inputs:
       target_branch:
@@ -14,31 +16,81 @@ on:
         type: string
 
 jobs:
-  compare:
+  parse-command:
+    if: github.event_name == 'issue_comment' && github.event.issue.pull_request
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pull-requests: read
+    outputs:
+      target_branch: ${{ steps.parse.outputs.target_branch }}
+      should_run: ${{ steps.parse.outputs.should_run }}
+    steps:
+      - id: parse
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const comment = context.payload.comment.body;
+            console.log('Comment body:', comment);
+
+            // Magic commands to detect
+            let targetBranch = null;
+            let shouldRun = false;
+
+            // /owa-sync [branch] - Main command
+            const syncMatch = comment.match(/\/owa-sync(?:\s+(\S+))?/i);
+            if (syncMatch) {
+              shouldRun = true;
+              targetBranch = syncMatch[1] || 'main';  // Use specified branch or default to main
+              console.log(`Found sync command, target branch: ${targetBranch}`);
+            }
+
+            core.setOutput('target_branch', targetBranch || 'main');
+            core.setOutput('should_run', shouldRun.toString());
+
+            return { targetBranch: targetBranch || 'main', shouldRun };
+
+  compare:
+    runs-on: ubuntu-latest
+    needs: [parse-command]
+    if: |
+      always() && (
+        github.event_name != 'issue_comment' ||
+        needs.parse-command.outputs.should_run == 'true'
+      )
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       pull_has_changes: ${{ steps.compare.outputs.pull_has_changes }}
       push_has_changes: ${{ steps.compare.outputs.push_has_changes }}
       changes_summary: ${{ steps.compare.outputs.changes_summary }}
       detailed_changes: ${{ steps.compare.outputs.detailed_changes }}
-      target_branch: ${{ github.event.inputs.target_branch || env.TARGET_BRANCH || 'main' }}
+      target_branch: ${{ steps.get-branch.outputs.target_branch }}
     steps:
       - uses: actions/checkout@v4
+      - id: get-branch
+        name: Determine target branch
+        run: |
+          # Priority: 1. Comment command, 2. Workflow input, 3. Env var, 4. Default
+          if [ "${{ github.event_name }}" = "issue_comment" ]; then
+            TARGET_BRANCH="${{ needs.parse-command.outputs.target_branch }}"
+          else
+            TARGET_BRANCH="${{ github.event.inputs.target_branch || env.TARGET_BRANCH || 'main' }}"
+          fi
+          echo "target_branch=$TARGET_BRANCH" >> $GITHUB_OUTPUT
+          echo "Using target branch: $TARGET_BRANCH"
+        env:
+          TARGET_BRANCH: main
       - name: Clone upstream repository
         run: |
-          TARGET_BRANCH="${{ github.event.inputs.target_branch || env.TARGET_BRANCH || 'main' }}"
+          TARGET_BRANCH="${{ steps.get-branch.outputs.target_branch }}"
           echo "Cloning branch: $TARGET_BRANCH"
           git clone --branch "$TARGET_BRANCH" https://github.com/open-world-agents/open-world-agents.git /tmp/upstream-owa
-        env:
-          TARGET_BRANCH: main  # Default fallback, can be overridden in repository settings
       - id: compare
         run: |
           chmod +x scripts/compare-owa.sh
-          TARGET_BRANCH="${{ github.event.inputs.target_branch || env.TARGET_BRANCH || 'main' }}" scripts/compare-owa.sh
-        env:
-          TARGET_BRANCH: main
+          TARGET_BRANCH="${{ steps.get-branch.outputs.target_branch }}" scripts/compare-owa.sh
 
       - if: steps.compare.outputs.push_has_changes == 'true'
         uses: actions/upload-artifact@v4
@@ -46,13 +98,28 @@ jobs:
           name: rsync-patch
           path: /tmp/rsync-changes.patch
 
-  comment:
+  post-comment:
     runs-on: ubuntu-latest
-    needs: compare
-    if: github.event_name == 'pull_request' && (needs.compare.outputs.pull_has_changes == 'true' || needs.compare.outputs.push_has_changes == 'true')
+    needs: [parse-command, compare]
+    if: |
+      always() && needs.compare.result == 'success' && (
+        (github.event_name == 'pull_request' && (needs.compare.outputs.pull_has_changes == 'true' || needs.compare.outputs.push_has_changes == 'true')) ||
+        (github.event_name == 'issue_comment' && needs.parse-command.outputs.should_run == 'true')
+      )
     permissions:
       pull-requests: write
     steps:
+      - name: Add reaction to command comment
+        if: github.event_name == 'issue_comment'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: 'rocket'
+            });
       - uses: actions/github-script@v7
         env:
           CHANGES_SUMMARY: ${{ needs.compare.outputs.changes_summary }}
@@ -130,6 +197,14 @@ jobs:
                       "```\n\n";
             }
 
+            body += "</details>\n\n";
+
+            // Add command help
+            body += "<details><summary>💬 Change Target Branch</summary>\n\n";
+            body += "Comment with `/owa-sync [branch]` to compare against a different branch:\n\n";
+            body += "- `/owa-sync` - Compare with main (default)\n";
+            body += "- `/owa-sync develop` - Compare with develop branch\n";
+            body += "- `/owa-sync feature/xyz` - Compare with feature/xyz branch\n\n";
             body += "</details>\n\n";
 
             body += `*Full report also available in [workflow summary](${summaryUrl})*`;
