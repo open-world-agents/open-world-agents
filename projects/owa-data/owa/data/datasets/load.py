@@ -9,6 +9,10 @@ from fsspec.core import url_to_fs
 from .dataset import Dataset, DatasetDict
 
 
+def load_dataset(path: str):
+    raise NotImplementedError("Not implemented yet")
+
+
 # Copied from: https://github.com/huggingface/datasets/blob/main/src/datasets/load.py#L1429-L1476
 def load_from_disk(
     dataset_path: PathLike, keep_in_memory: Optional[bool] = None, storage_options: Optional[dict] = None

@@ -4,7 +4,7 @@ from .config import DatasetConfig, DatasetStage
 from .dataset import Dataset, DatasetDict
 from .discovery import list_datasets
 from .fsl_dataset import FSLDataset, FSLDatasetConfig, prepare_fsl
-from .load import load_from_disk
+from .load import load_dataset, load_from_disk
 from .transforms import (
     create_binned_transform,
     create_event_transform,
@@ -17,6 +17,7 @@ __all__ = [
     "Dataset",
     "DatasetDict",
     "FSLDataset",
+    "load_dataset",
     "load_from_disk",
     # Configuration
     "DatasetConfig",
