@@ -7,26 +7,28 @@ set -e
 > $GITHUB_STEP_SUMMARY
 > $GITHUB_OUTPUT
 
-echo "## 🔄 OWA Sync Status" >> $GITHUB_STEP_SUMMARY
+echo "## OWA Sync Report" >> $GITHUB_STEP_SUMMARY
 echo "" >> $GITHUB_STEP_SUMMARY
 
-# Git-based comparison
+# Git-based comparison with detailed stats
 ORIGINAL_DIR=$(pwd)
 cd /tmp/upstream-owa
 
-# Get push changes (local → upstream)
+# Get push changes (local → upstream) with detailed diff
 git reset --hard HEAD >/dev/null 2>&1
 rsync -av --delete --exclude='.git' "$ORIGINAL_DIR/open-world-agents/" ./ >/dev/null 2>&1
 git add -A >/dev/null 2>&1
 PUSH_DIFF=$(git diff --cached --name-status 2>/dev/null || true)
+PUSH_STATS=$(git diff --cached --numstat 2>/dev/null || true)
 
-# Get pull changes (upstream → local)
+# Get pull changes (upstream → local) with detailed diff
 git reset --hard HEAD >/dev/null 2>&1
 mkdir -p /tmp/local-copy
 rsync -av --delete --exclude='.git' "$ORIGINAL_DIR/open-world-agents/" /tmp/local-copy/ >/dev/null 2>&1
 rsync -av --delete --exclude='.git' /tmp/local-copy/ ./ >/dev/null 2>&1
 git add -A >/dev/null 2>&1
 PULL_DIFF=$(git diff --cached --name-status 2>/dev/null || true)
+PULL_STATS=$(git diff --cached --numstat 2>/dev/null || true)
 
 # Cleanup
 rm -rf /tmp/local-copy
@@ -56,83 +58,77 @@ if [ -n "$PUSH_DIFF" ]; then
     cd "$ORIGINAL_DIR"
 fi
 
-# Generate detailed summary like coverage report
-generate_file_table() {
-    local diff="$1"
-    local direction="$2"
+# Calculate totals
+calculate_totals() {
+    local stats="$1"
+    local added=0
+    local deleted=0
+    local files=0
 
-    if [ -z "$diff" ]; then
-        return
+    if [ -n "$stats" ]; then
+        while IFS=$'\t' read -r add del file; do
+            if [[ "$add" =~ ^[0-9]+$ ]]; then
+                added=$((added + add))
+            fi
+            if [[ "$del" =~ ^[0-9]+$ ]]; then
+                deleted=$((deleted + del))
+            fi
+            files=$((files + 1))
+        done <<< "$stats"
     fi
 
-    echo "<details><summary>📋 $direction</summary>"
-    echo "<table><thead>"
-    echo "<tr><th>File</th><th>Status</th></tr>"
-    echo "</thead><tbody>"
-
-    echo "$diff" | while IFS=$'\t' read -r status file; do
-        case "$status" in
-            A*)
-                echo "<tr><td><code>$file</code></td><td><img src=\"https://img.shields.io/badge/Added-brightgreen.svg\" alt=\"Added\"></td></tr>"
-                ;;
-            M*)
-                echo "<tr><td><code>$file</code></td><td><img src=\"https://img.shields.io/badge/Modified-orange.svg\" alt=\"Modified\"></td></tr>"
-                ;;
-            D*)
-                echo "<tr><td><code>$file</code></td><td><img src=\"https://img.shields.io/badge/Deleted-red.svg\" alt=\"Deleted\"></td></tr>"
-                ;;
-            R*)
-                echo "<tr><td><code>$file</code></td><td><img src=\"https://img.shields.io/badge/Renamed-blue.svg\" alt=\"Renamed\"></td></tr>"
-                ;;
-        esac
-    done
-
-    echo "</tbody></table>"
-    echo "</details>"
-    echo ""
+    echo "$files $added $deleted"
 }
 
-# Count changes for summary
-count_by_type() {
-    local diff="$1"
-    local type="$2"
-    echo "$diff" | grep -c "^$type" 2>/dev/null || echo "0"
-}
-
+# Generate coverage-style report
 if [ -n "$PULL_DIFF" ] || [ -n "$PUSH_DIFF" ]; then
+    # Calculate stats
+    if [ -n "$PULL_STATS" ]; then
+        read pull_files pull_added pull_deleted <<< $(calculate_totals "$PULL_STATS")
+    else
+        pull_files=0 pull_added=0 pull_deleted=0
+    fi
+
+    if [ -n "$PUSH_STATS" ]; then
+        read push_files push_added push_deleted <<< $(calculate_totals "$PUSH_STATS")
+    else
+        push_files=0 push_added=0 push_deleted=0
+    fi
+
     # Summary badges
-    if [ -n "$PULL_DIFF" ]; then
-        pull_total=$(echo "$PULL_DIFF" | wc -l)
-        pull_added=$(count_by_type "$PULL_DIFF" "A")
-        pull_modified=$(count_by_type "$PULL_DIFF" "M")
-        pull_deleted=$(count_by_type "$PULL_DIFF" "D")
-        echo "<img src=\"https://img.shields.io/badge/Pull%20Changes-$pull_total%20files-blue.svg\" alt=\"Pull Changes\"> " >> $GITHUB_STEP_SUMMARY
-        echo "<img src=\"https://img.shields.io/badge/Added-$pull_added-brightgreen.svg\" alt=\"Added\"> " >> $GITHUB_STEP_SUMMARY
-        echo "<img src=\"https://img.shields.io/badge/Modified-$pull_modified-orange.svg\" alt=\"Modified\"> " >> $GITHUB_STEP_SUMMARY
-        echo "<img src=\"https://img.shields.io/badge/Deleted-$pull_deleted-red.svg\" alt=\"Deleted\">" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
+    if [ $pull_files -gt 0 ]; then
+        echo "<img src=\"https://img.shields.io/badge/Pull%20Files-$pull_files-blue.svg\" alt=\"Pull Files\"> <img src=\"https://img.shields.io/badge/Lines-+$pull_added%20~$pull_deleted-orange.svg\" alt=\"Pull Lines\">" >> $GITHUB_STEP_SUMMARY
     fi
 
-    if [ -n "$PUSH_DIFF" ]; then
-        push_total=$(echo "$PUSH_DIFF" | wc -l)
-        push_added=$(count_by_type "$PUSH_DIFF" "A")
-        push_modified=$(count_by_type "$PUSH_DIFF" "M")
-        push_deleted=$(count_by_type "$PUSH_DIFF" "D")
-        echo "<img src=\"https://img.shields.io/badge/Push%20Changes-$push_total%20files-purple.svg\" alt=\"Push Changes\"> " >> $GITHUB_STEP_SUMMARY
-        echo "<img src=\"https://img.shields.io/badge/Added-$push_added-brightgreen.svg\" alt=\"Added\"> " >> $GITHUB_STEP_SUMMARY
-        echo "<img src=\"https://img.shields.io/badge/Modified-$push_modified-orange.svg\" alt=\"Modified\"> " >> $GITHUB_STEP_SUMMARY
-        echo "<img src=\"https://img.shields.io/badge/Deleted-$push_deleted-red.svg\" alt=\"Deleted\">" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
+    if [ $push_files -gt 0 ]; then
+        echo "<img src=\"https://img.shields.io/badge/Push%20Files-$push_files-purple.svg\" alt=\"Push Files\"> <img src=\"https://img.shields.io/badge/Lines-+$push_added%20~$push_deleted-orange.svg\" alt=\"Push Lines\">" >> $GITHUB_STEP_SUMMARY
     fi
 
-    # Detailed file tables
-    if [ -n "$PULL_DIFF" ]; then
-        generate_file_table "$PULL_DIFF" "📥 Pull Changes (Upstream → Local)" >> $GITHUB_STEP_SUMMARY
+    echo "<details><summary>Click to see where and how files changed</summary>" >> $GITHUB_STEP_SUMMARY
+    echo "<table><thead>" >> $GITHUB_STEP_SUMMARY
+    echo "<tr><th>File</th><th>Lines Added</th><th>Lines Deleted</th><th>Direction</th></tr>" >> $GITHUB_STEP_SUMMARY
+    echo "</thead><tbody>" >> $GITHUB_STEP_SUMMARY
+
+    # Process pull changes
+    if [ -n "$PULL_STATS" ]; then
+        echo "$PULL_STATS" | while IFS=$'\t' read -r added deleted file; do
+            if [ "$added" = "-" ]; then added="0"; fi
+            if [ "$deleted" = "-" ]; then deleted="0"; fi
+            echo "<tr><td><code>$file</code></td><td align=\"center\"><img src=\"https://img.shields.io/badge/+$added-brightgreen.svg\" alt=\"+$added\"></td><td align=\"center\"><img src=\"https://img.shields.io/badge/-$deleted-red.svg\" alt=\"-$deleted\"></td><td align=\"center\">📥 Pull</td></tr>" >> $GITHUB_STEP_SUMMARY
+        done
     fi
 
-    if [ -n "$PUSH_DIFF" ]; then
-        generate_file_table "$PUSH_DIFF" "📤 Push Changes (Local → Upstream)" >> $GITHUB_STEP_SUMMARY
+    # Process push changes
+    if [ -n "$PUSH_STATS" ]; then
+        echo "$PUSH_STATS" | while IFS=$'\t' read -r added deleted file; do
+            if [ "$added" = "-" ]; then added="0"; fi
+            if [ "$deleted" = "-" ]; then deleted="0"; fi
+            echo "<tr><td><code>$file</code></td><td align=\"center\"><img src=\"https://img.shields.io/badge/+$added-brightgreen.svg\" alt=\"+$added\"></td><td align=\"center\"><img src=\"https://img.shields.io/badge/-$deleted-red.svg\" alt=\"-$deleted\"></td><td align=\"center\">📤 Push</td></tr>" >> $GITHUB_STEP_SUMMARY
+        done
     fi
+
+    echo "</tbody></table>" >> $GITHUB_STEP_SUMMARY
+    echo "</details>" >> $GITHUB_STEP_SUMMARY
 else
     echo "✅ **Everything is in sync!**" >> $GITHUB_STEP_SUMMARY
 fi
