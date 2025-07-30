@@ -7,6 +7,20 @@ set -euo pipefail
 TARGET_BRANCH="${TARGET_BRANCH:-main}"
 echo "Comparing against upstream branch: $TARGET_BRANCH"
 
+# Set up GitHub Actions environment variables if not set (for local testing)
+if [ -z "${GITHUB_STEP_SUMMARY:-}" ]; then
+    GITHUB_STEP_SUMMARY="/tmp/github_step_summary_$$.md"
+    echo "GITHUB_STEP_SUMMARY not set, using: $GITHUB_STEP_SUMMARY"
+fi
+
+if [ -z "${GITHUB_OUTPUT:-}" ]; then
+    GITHUB_OUTPUT="/tmp/github_output_$$.txt"
+    echo "GITHUB_OUTPUT not set, using: $GITHUB_OUTPUT"
+fi
+
+# Ensure the output files exist
+touch "$GITHUB_STEP_SUMMARY" "$GITHUB_OUTPUT"
+
 # Validate environment
 if [ ! -d "/tmp/upstream-owa" ]; then
     echo "Error: /tmp/upstream-owa not found. Run git clone first." >&2
@@ -44,21 +58,22 @@ PUSH_DIFF=$(git diff --cached --name-status 2>/dev/null || true)
 PUSH_STAT=$(git diff --cached --stat 2>/dev/null || true)
 PUSH_STAT_SUMMARY=$(git diff --cached --stat --format='' 2>/dev/null | tail -n1 || true)
 
+# Cleanup
+git reset --hard HEAD >/dev/null 2>&1
+git clean -fd >/dev/null 2>&1
+
 # Get pull changes (upstream → local)
 git reset --hard HEAD >/dev/null 2>&1
-mkdir -p /tmp/local-copy
-rsync -av --delete --exclude='.git' "$ORIGINAL_DIR/open-world-agents/" /tmp/local-copy/ >/dev/null 2>&1
-rsync -av --delete --exclude='.git' /tmp/local-copy/ ./ >/dev/null 2>&1
+rsync -av --delete --exclude='.git' ./ "$ORIGINAL_DIR/open-world-agents/" >/dev/null 2>&1
+cd "$ORIGINAL_DIR"
 git add -A >/dev/null 2>&1
 PULL_DIFF=$(git diff --cached --name-status 2>/dev/null || true)
 PULL_STAT=$(git diff --cached --stat 2>/dev/null || true)
 PULL_STAT_SUMMARY=$(git diff --cached --stat --format='' 2>/dev/null | tail -n1 || true)
 
 # Cleanup
-rm -rf /tmp/local-copy
 git reset --hard HEAD >/dev/null 2>&1
 git clean -fd >/dev/null 2>&1
-cd "$ORIGINAL_DIR"
 
 # Set outputs
 if [ -n "$PULL_DIFF" ]; then
