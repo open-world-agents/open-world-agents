@@ -1,6 +1,7 @@
 import concurrent.futures
 import os
 import time
+import warnings
 from dataclasses import dataclass
 
 import numpy as np
@@ -119,7 +120,7 @@ class FSLStatLogger:
                     f"{format_bitrate(self.ema_image_bitrate)}"
                 )
 
-            logger.info(
+            logger.debug(
                 f"FSL[{self.count}] | Total: "
                 f"{samples_per_sec_total:.1f}s/s, "
                 f"{tokens_per_sec_total:,.0f}t/s, "
@@ -212,7 +213,11 @@ class FSLDataset(TorchDataset):
                             future.result(timeout=5)
                         except Exception as e:
                             all_image_msgs[idx].frame_arr = np.zeros((512, 512, 3), dtype=np.uint8)
-                            logger.error(f"Failed to load image: {e}")
+                            warnings.warn(
+                                f"Failed to load image at index {idx}: {e}. Using placeholder image.",
+                                UserWarning,
+                                stacklevel=2,
+                            )
 
             # Now load the images
             all_images = [screen_captured.to_pil_image() for screen_captured in all_image_msgs]

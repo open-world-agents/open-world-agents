@@ -63,7 +63,7 @@ from owa.data.datasets import FSLDataset, FSLDatasetConfig, load_from_disk
 from owa.data.episode_tokenizer import EpisodeTokenizer
 
 # This line is to enable throughput logging from FSLDataset
-# logger.enable("owa.data.fsl_dataset")
+# logger.enable("owa.data.datasets.fsl_dataset")
 
 
 @dataclass
