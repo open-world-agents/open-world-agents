@@ -74,7 +74,12 @@ jobs:
             body += "<details><summary>📋 How to sync</summary>\n\n";
 
             if (pull) {
-              body += "**📥 To pull upstream changes:**\n" +
+              body += "**📥 To pull upstream changes:**\n\n" +
+                      "**🟢 Non-destructive method (recommended):**\n" +
+                      "```bash\n" +
+                      "git subtree pull --prefix=open-world-agents https://github.com/open-world-agents/open-world-agents.git main --squash\n" +
+                      "```\n\n" +
+                      "**🔴 Destructive method (overwrites local changes):**\n" +
                       "```bash\n" +
                       "git clone https://github.com/open-world-agents/open-world-agents.git /tmp/upstream\n" +
                       "rsync -av --delete --exclude='.git' /tmp/upstream/ ./open-world-agents/\n" +
@@ -84,7 +89,14 @@ jobs:
             }
 
             if (push) {
-              body += "**📤 To push local changes:**\n" +
+              body += "**📤 To push local changes:**\n\n" +
+                      "**🟢 Non-destructive method (recommended):**\n" +
+                      "```bash\n" +
+                      "# First, ensure you have a fork of open-world-agents\n" +
+                      "git subtree push --prefix=open-world-agents https://github.com/YOUR_USERNAME/open-world-agents.git sync-$(date +%Y%m%d)\n" +
+                      "# Then create a pull request from your fork to upstream\n" +
+                      "```\n\n" +
+                      "**🔴 Destructive method (overwrites upstream changes):**\n" +
                       "1. Download the `rsync-patch` artifact from this workflow\n" +
                       "2. Apply to your fork of open-world-agents\n" +
                       "3. Create a pull request\n\n" +
