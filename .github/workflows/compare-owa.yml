@@ -37,6 +37,8 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/github-script@v7
+        env:
+          CHANGES_SUMMARY: ${{ needs.compare.outputs.changes_summary }}
         with:
           script: |
             const pull = '${{ needs.compare.outputs.pull_has_changes }}' === 'true';
@@ -51,7 +53,7 @@ jobs:
             }
 
             // Add detailed changes summary first
-            const changesSummary = `${{ needs.compare.outputs.changes_summary }}`;
+            const changesSummary = process.env.CHANGES_SUMMARY || '';
             if (changesSummary && changesSummary !== '') {
               body += changesSummary + "\n\n";
             }
