@@ -36,6 +36,7 @@ git reset --hard HEAD >/dev/null 2>&1
 rsync -av --delete --exclude='.git' "$ORIGINAL_DIR/open-world-agents/" ./ >/dev/null 2>&1
 git add -A >/dev/null 2>&1
 PUSH_DIFF=$(git diff --cached --name-status 2>/dev/null || true)
+PUSH_STAT_COLOR=$(git diff --cached --stat --color=always 2>/dev/null || true)
 PUSH_STAT=$(git diff --cached --stat 2>/dev/null || true)
 PUSH_STAT_SUMMARY=$(git diff --cached --stat --format='' 2>/dev/null | tail -n1 || true)
 
@@ -46,6 +47,7 @@ rsync -av --delete --exclude='.git' "$ORIGINAL_DIR/open-world-agents/" /tmp/loca
 rsync -av --delete --exclude='.git' /tmp/local-copy/ ./ >/dev/null 2>&1
 git add -A >/dev/null 2>&1
 PULL_DIFF=$(git diff --cached --name-status 2>/dev/null || true)
+PULL_STAT_COLOR=$(git diff --cached --stat --color=always 2>/dev/null || true)
 PULL_STAT=$(git diff --cached --stat 2>/dev/null || true)
 PULL_STAT_SUMMARY=$(git diff --cached --stat --format='' 2>/dev/null | tail -n1 || true)
 
@@ -78,25 +80,56 @@ if [ -n "$PUSH_DIFF" ]; then
     cd "$ORIGINAL_DIR"
 fi
 
-# Generate git-style diff summary
+# Output colored version to terminal/console (preserves ANSI codes for local viewing)
 if [ -n "$PULL_DIFF" ] || [ -n "$PUSH_DIFF" ]; then
-    # Pull changes
-    if [ -n "$PULL_STAT" ]; then
+    if [ -n "$PULL_STAT_COLOR" ]; then
+        echo "### 📥 Pull Changes (Upstream → Local)"
+        echo "$PULL_STAT_COLOR"
+        echo ""
+    fi
+    if [ -n "$PUSH_STAT_COLOR" ]; then
+        echo "### 📤 Push Changes (Local → Upstream)"
+        echo "$PUSH_STAT_COLOR"
+        echo ""
+    fi
+fi
+
+# Install ansi2html if not available
+if ! command -v ansi2html &> /dev/null; then
+    pip install ansi2html >/dev/null 2>&1 || echo "Warning: Could not install ansi2html, falling back to plain text"
+fi
+
+# Generate git-style diff summary for GitHub with HTML colors
+if [ -n "$PULL_DIFF" ] || [ -n "$PUSH_DIFF" ]; then
+    # Pull changes - convert ANSI to HTML
+    if [ -n "$PULL_STAT_COLOR" ]; then
         echo "### 📥 Pull Changes (Upstream → Local)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo '```' >> $GITHUB_STEP_SUMMARY
-        echo "$PULL_STAT" >> $GITHUB_STEP_SUMMARY
-        echo '```' >> $GITHUB_STEP_SUMMARY
+        if command -v ansi2html &> /dev/null; then
+            echo '<pre>' >> $GITHUB_STEP_SUMMARY
+            echo "$PULL_STAT_COLOR" | ansi2html --inline >> $GITHUB_STEP_SUMMARY
+            echo '</pre>' >> $GITHUB_STEP_SUMMARY
+        else
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "$PULL_STAT" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+        fi
         echo "" >> $GITHUB_STEP_SUMMARY
     fi
 
-    # Push changes
-    if [ -n "$PUSH_STAT" ]; then
+    # Push changes - convert ANSI to HTML
+    if [ -n "$PUSH_STAT_COLOR" ]; then
         echo "### 📤 Push Changes (Local → Upstream)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo '```' >> $GITHUB_STEP_SUMMARY
-        echo "$PUSH_STAT" >> $GITHUB_STEP_SUMMARY
-        echo '```' >> $GITHUB_STEP_SUMMARY
+        if command -v ansi2html &> /dev/null; then
+            echo '<pre>' >> $GITHUB_STEP_SUMMARY
+            echo "$PUSH_STAT_COLOR" | ansi2html --inline >> $GITHUB_STEP_SUMMARY
+            echo '</pre>' >> $GITHUB_STEP_SUMMARY
+        else
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "$PUSH_STAT" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+        fi
         echo "" >> $GITHUB_STEP_SUMMARY
     fi
 
@@ -112,20 +145,34 @@ if [ -n "$PULL_DIFF" ] || [ -n "$PUSH_DIFF" ]; then
     fi
     echo "EOF" >> $GITHUB_OUTPUT
 
-    # Generate detailed diff for collapsible section
+    # Generate detailed diff for collapsible section with HTML colors
     echo "detailed_changes<<EOF" >> $GITHUB_OUTPUT
-    if [ -n "$PULL_STAT" ]; then
+    if [ -n "$PULL_STAT_COLOR" ]; then
         echo "### 📥 Pull Changes (Upstream → Local)" >> $GITHUB_OUTPUT
-        echo '```diff' >> $GITHUB_OUTPUT
-        echo "$PULL_STAT" >> $GITHUB_OUTPUT
-        echo '```' >> $GITHUB_OUTPUT
+        echo "" >> $GITHUB_OUTPUT
+        if command -v ansi2html &> /dev/null; then
+            echo '<pre>' >> $GITHUB_OUTPUT
+            echo "$PULL_STAT_COLOR" | ansi2html --inline >> $GITHUB_OUTPUT
+            echo '</pre>' >> $GITHUB_OUTPUT
+        else
+            echo '```' >> $GITHUB_OUTPUT
+            echo "$PULL_STAT" >> $GITHUB_OUTPUT
+            echo '```' >> $GITHUB_OUTPUT
+        fi
         echo "" >> $GITHUB_OUTPUT
     fi
-    if [ -n "$PUSH_STAT" ]; then
+    if [ -n "$PUSH_STAT_COLOR" ]; then
         echo "### 📤 Push Changes (Local → Upstream)" >> $GITHUB_OUTPUT
-        echo '```diff' >> $GITHUB_OUTPUT
-        echo "$PUSH_STAT" >> $GITHUB_OUTPUT
-        echo '```' >> $GITHUB_OUTPUT
+        echo "" >> $GITHUB_OUTPUT
+        if command -v ansi2html &> /dev/null; then
+            echo '<pre>' >> $GITHUB_OUTPUT
+            echo "$PUSH_STAT_COLOR" | ansi2html --inline >> $GITHUB_OUTPUT
+            echo '</pre>' >> $GITHUB_OUTPUT
+        else
+            echo '```' >> $GITHUB_OUTPUT
+            echo "$PUSH_STAT" >> $GITHUB_OUTPUT
+            echo '```' >> $GITHUB_OUTPUT
+        fi
         echo "" >> $GITHUB_OUTPUT
     fi
     echo "EOF" >> $GITHUB_OUTPUT
