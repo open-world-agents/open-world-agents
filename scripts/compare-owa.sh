@@ -3,6 +3,10 @@
 # Compare open-world-agents: upstream vs proprietary
 set -euo pipefail
 
+# Get target branch from environment or default to main
+TARGET_BRANCH="${TARGET_BRANCH:-main}"
+echo "Comparing against upstream branch: $TARGET_BRANCH"
+
 # Validate environment
 if [ ! -d "/tmp/upstream-owa" ]; then
     echo "Error: /tmp/upstream-owa not found. Run git clone first." >&2
@@ -19,6 +23,7 @@ fi
 > "$GITHUB_OUTPUT"
 
 echo "## OWA Sync Report" >> "$GITHUB_STEP_SUMMARY"
+echo "**Target Branch:** \`$TARGET_BRANCH\`" >> "$GITHUB_STEP_SUMMARY"
 echo "" >> "$GITHUB_STEP_SUMMARY"
 
 # Git-based comparison using git's native diff output

@@ -5,6 +5,13 @@ on:
     branches: [main]
   pull_request:
     types: [opened, synchronize]
+  workflow_dispatch:
+    inputs:
+      target_branch:
+        description: 'Target branch to compare against'
+        required: false
+        default: 'main'
+        type: string
 
 jobs:
   compare:
@@ -16,13 +23,22 @@ jobs:
       push_has_changes: ${{ steps.compare.outputs.push_has_changes }}
       changes_summary: ${{ steps.compare.outputs.changes_summary }}
       detailed_changes: ${{ steps.compare.outputs.detailed_changes }}
+      target_branch: ${{ github.event.inputs.target_branch || env.TARGET_BRANCH || 'main' }}
     steps:
       - uses: actions/checkout@v4
-      - run: git clone https://github.com/open-world-agents/open-world-agents.git /tmp/upstream-owa
+      - name: Clone upstream repository
+        run: |
+          TARGET_BRANCH="${{ github.event.inputs.target_branch || env.TARGET_BRANCH || 'main' }}"
+          echo "Cloning branch: $TARGET_BRANCH"
+          git clone --branch "$TARGET_BRANCH" https://github.com/open-world-agents/open-world-agents.git /tmp/upstream-owa
+        env:
+          TARGET_BRANCH: main  # Default fallback, can be overridden in repository settings
       - id: compare
         run: |
           chmod +x scripts/compare-owa.sh
-          scripts/compare-owa.sh
+          TARGET_BRANCH="${{ github.event.inputs.target_branch || env.TARGET_BRANCH || 'main' }}" scripts/compare-owa.sh
+        env:
+          TARGET_BRANCH: main
 
       - if: steps.compare.outputs.push_has_changes == 'true'
         uses: actions/upload-artifact@v4
@@ -48,7 +64,8 @@ jobs:
 
             if (!pull && !push) return;
 
-            let body = "<!-- compare-owa-action -->\n🔄 **OWA Sync Status**\n\n";
+            let body = "<!-- compare-owa-action -->\n🔄 **OWA Sync Status**\n";
+            body += `**Target Branch:** \`${{ needs.compare.outputs.target_branch }}\`\n\n`;
 
             if (pull && push) {
               body += "⚠️ **Both directions have changes** - review carefully before syncing\n\n";
@@ -74,17 +91,18 @@ jobs:
             body += "<details><summary>📋 How to sync</summary>\n\n";
 
             if (pull) {
+              const targetBranch = '${{ needs.compare.outputs.target_branch }}';
               body += "**📥 To pull upstream changes:**\n\n" +
                       "**🟢 Non-destructive method (recommended):**\n" +
                       "```bash\n" +
-                      "git subtree pull --prefix=open-world-agents https://github.com/open-world-agents/open-world-agents.git main --squash\n" +
+                      `git subtree pull --prefix=open-world-agents https://github.com/open-world-agents/open-world-agents.git ${targetBranch} --squash\n` +
                       "```\n\n" +
                       "**🔴 Destructive method (overwrites local changes):**\n" +
                       "```bash\n" +
-                      "git clone https://github.com/open-world-agents/open-world-agents.git /tmp/upstream\n" +
+                      `git clone --branch ${targetBranch} https://github.com/open-world-agents/open-world-agents.git /tmp/upstream\n` +
                       "rsync -av --delete --exclude='.git' /tmp/upstream/ ./open-world-agents/\n" +
                       "git add open-world-agents/\n" +
-                      "git commit -m \"Sync with upstream open-world-agents\"\n" +
+                      `git commit -m \"Sync with upstream open-world-agents (${targetBranch})\"\n` +
                       "```\n\n";
             }
 
@@ -93,22 +111,22 @@ jobs:
                       "**🟢 Non-destructive method (recommended):**\n" +
                       "```bash\n" +
                       "# First, ensure you have a fork of open-world-agents\n" +
-                      "git subtree push --prefix=open-world-agents https://github.com/YOUR_USERNAME/open-world-agents.git sync-$(date +%Y%m%d)\n" +
-                      "# Then create a pull request from your fork to upstream\n" +
+                      `git subtree push --prefix=open-world-agents https://github.com/YOUR_USERNAME/open-world-agents.git sync-${targetBranch}-$(date +%Y%m%d)\n` +
+                      `# Then create a pull request from your fork to upstream/${targetBranch}\n` +
                       "```\n\n" +
                       "**🔴 Destructive method (overwrites upstream changes):**\n" +
                       "1. Download the `rsync-patch` artifact from this workflow\n" +
                       "2. Apply to your fork of open-world-agents\n" +
-                      "3. Create a pull request\n\n" +
+                      `3. Create a pull request targeting \`${targetBranch}\`\n\n` +
                       "Or use rsync:\n" +
                       "```bash\n" +
-                      "git clone https://github.com/open-world-agents/open-world-agents.git /tmp/upstream-pr\n" +
+                      `git clone --branch ${targetBranch} https://github.com/open-world-agents/open-world-agents.git /tmp/upstream-pr\n` +
                       "cd /tmp/upstream-pr\n" +
-                      "git checkout -b sync-$(date +%Y%m%d)\n" +
+                      `git checkout -b sync-${targetBranch}-$(date +%Y%m%d)\n` +
                       "rsync -av --delete --exclude='.git' ../open-world-agents/ ./\n" +
                       "git add -A\n" +
-                      "git commit -m \"Sync changes from proprietary\"\n" +
-                      "git push origin sync-$(date +%Y%m%d)\n" +
+                      `git commit -m \"Sync changes from proprietary to ${targetBranch}\"\n` +
+                      `git push origin sync-${targetBranch}-$(date +%Y%m%d)\n` +
                       "```\n\n";
             }
 
