@@ -16,83 +16,102 @@ on:
         type: string
 
 jobs:
-  parse-command:
-    if: github.event_name == 'issue_comment' && github.event.issue.pull_request
+  parse-comment:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      pull-requests: read
+      pull-requests: write
     outputs:
       target_branch: ${{ steps.parse.outputs.target_branch }}
-      should_run: ${{ steps.parse.outputs.should_run }}
+      should_compare: ${{ steps.parse.outputs.should_compare }}
     steps:
-      - id: parse
+      - name: Parse latest owa-sync comment
+        id: parse
         uses: actions/github-script@v7
         with:
           script: |
-            const comment = context.payload.comment.body;
-            console.log('Comment body:', comment);
-
-            // Magic commands to detect
-            let targetBranch = null;
-            let shouldRun = false;
-
-            // /owa-sync [branch] - Main command
-            const syncMatch = comment.match(/\/owa-sync(?:\s+(\S+))?/i);
-            if (syncMatch) {
-              shouldRun = true;
-              targetBranch = syncMatch[1] || 'main';  // Use specified branch or default to main
-              console.log(`Found sync command, target branch: ${targetBranch}`);
+            // 0. If workflow_dispatch configured target_branch, early exit
+            if ('${{ github.event.inputs.target_branch }}') {
+              core.setOutput('target_branch', '${{ github.event.inputs.target_branch }}');
+              return;
             }
 
-            core.setOutput('target_branch', targetBranch || 'main');
-            core.setOutput('should_run', shouldRun.toString());
+            // 1. Set default = main
+            let targetBranch = 'main';
 
-            return { targetBranch: targetBranch || 'main', shouldRun };
+            // 2. Find latest comments with command
+            let prNumber = null;
+            if (context.eventName === 'issue_comment') prNumber = context.payload.issue.number;
+            else if (context.eventName === 'pull_request') prNumber = context.payload.pull_request.number;
+
+            if (prNumber) {
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber
+              });
+
+              for (let i = comments.length - 1; i >= 0; i--) {
+                const match = comments[i].body.match(/\/owa-sync(?:\s+(\S+))?/i);
+                if (match) {
+                  targetBranch = match[1] || 'main';
+                  break;
+                }
+              }
+            }
+
+            // React to current comment if it's a command
+            if (context.eventName === 'issue_comment' && context.payload.comment.body.includes('/owa-sync')) {
+              await github.rest.reactions.createForIssueComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: context.payload.comment.id,
+                content: 'rocket'
+              });
+            }
+
+            core.setOutput('target_branch', targetBranch);
+
+            // Determine if we should run compare
+            const shouldCompare = context.eventName !== 'issue_comment' || context.payload.comment.body.includes('/owa-sync');
+            core.setOutput('should_compare', shouldCompare.toString());
+
+
 
   compare:
     runs-on: ubuntu-latest
-    needs: [parse-command]
-    if: |
-      always() && (
-        github.event_name != 'issue_comment' ||
-        needs.parse-command.outputs.should_run == 'true'
-      )
+    needs: [parse-comment]
+    if: needs.parse-comment.outputs.should_compare == 'true'
     permissions:
       contents: read
-      pull-requests: read
     outputs:
       pull_has_changes: ${{ steps.compare.outputs.pull_has_changes }}
       push_has_changes: ${{ steps.compare.outputs.push_has_changes }}
       changes_summary: ${{ steps.compare.outputs.changes_summary }}
       detailed_changes: ${{ steps.compare.outputs.detailed_changes }}
-      target_branch: ${{ steps.get-branch.outputs.target_branch }}
     steps:
       - uses: actions/checkout@v4
-      - id: get-branch
-        name: Determine target branch
+
+      - name: Get target branch
+        id: get-target
         run: |
-          # Priority: 1. Comment command, 2. Workflow input, 3. Env var, 4. Default
-          if [ "${{ github.event_name }}" = "issue_comment" ]; then
-            TARGET_BRANCH="${{ needs.parse-command.outputs.target_branch }}"
-          else
-            TARGET_BRANCH="${{ github.event.inputs.target_branch || env.TARGET_BRANCH || 'main' }}"
-          fi
-          echo "target_branch=$TARGET_BRANCH" >> $GITHUB_OUTPUT
+          TARGET_BRANCH="${{ needs.parse-comment.outputs.target_branch }}"
+          echo "branch=$TARGET_BRANCH" >> $GITHUB_OUTPUT
           echo "Using target branch: $TARGET_BRANCH"
-        env:
-          TARGET_BRANCH: main
-      - name: Clone upstream repository
+
+      - name: Clone upstream
         run: |
-          TARGET_BRANCH="${{ steps.get-branch.outputs.target_branch }}"
-          echo "Cloning branch: $TARGET_BRANCH"
+          TARGET_BRANCH="${{ steps.get-target.outputs.branch }}"
+          echo "Cloning upstream branch: $TARGET_BRANCH"
           git clone --branch "$TARGET_BRANCH" https://github.com/open-world-agents/open-world-agents.git /tmp/upstream-owa
-      - id: compare
+
+      - name: Run comparison
+        id: compare
         run: |
           chmod +x scripts/compare-owa.sh
-          TARGET_BRANCH="${{ steps.get-branch.outputs.target_branch }}" scripts/compare-owa.sh
+          TARGET_BRANCH="${{ steps.get-target.outputs.branch }}" scripts/compare-owa.sh
 
-      - if: steps.compare.outputs.push_has_changes == 'true'
+      - name: Upload patch
+        if: steps.compare.outputs.push_has_changes == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: rsync-patch
@@ -100,65 +119,51 @@ jobs:
 
   post-comment:
     runs-on: ubuntu-latest
-    needs: [parse-command, compare]
-    if: |
-      always() && needs.compare.result == 'success' && (
-        (github.event_name == 'pull_request' && (needs.compare.outputs.pull_has_changes == 'true' || needs.compare.outputs.push_has_changes == 'true')) ||
-        (github.event_name == 'issue_comment' && needs.parse-command.outputs.should_run == 'true')
-      )
+    needs: [parse-comment, compare]
+    # Always post comment if compare ran successfully
+    if: always() && needs.compare.result == 'success'
     permissions:
       pull-requests: write
     steps:
-      - name: Add reaction to command comment
-        if: github.event_name == 'issue_comment'
+      - name: Post comment
         uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.reactions.createForIssueComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              comment_id: context.payload.comment.id,
-              content: 'rocket'
-            });
-      - uses: actions/github-script@v7
         env:
           CHANGES_SUMMARY: ${{ needs.compare.outputs.changes_summary }}
           DETAILED_CHANGES: ${{ needs.compare.outputs.detailed_changes }}
+          TARGET_BRANCH: ${{ needs.parse-comment.outputs.target_branch }}
         with:
           script: |
             const pull = '${{ needs.compare.outputs.pull_has_changes }}' === 'true';
             const push = '${{ needs.compare.outputs.push_has_changes }}' === 'true';
-
-            if (!pull && !push) return;
+            const targetBranch = process.env.TARGET_BRANCH;
 
             let body = "<!-- compare-owa-action -->\n🔄 **OWA Sync Status**\n";
-            body += `**Target Branch:** \`${{ needs.compare.outputs.target_branch }}\`\n\n`;
+            body += `**Target Branch:** \`${targetBranch}\`\n\n`;
 
-            if (pull && push) {
-              body += "⚠️ **Both directions have changes** - review carefully before syncing\n\n";
+            // Handle no changes case
+            if (!pull && !push) {
+              body += "✅ **Everything is in sync!** No changes detected between local and upstream.\n\n";
+            } else {
+              // Handle changes detected case
+              if (pull && push) {
+                body += "⚠️ **Both directions have changes** - review carefully before syncing\n\n";
+              }
+
+              const changesSummary = process.env.CHANGES_SUMMARY || '';
+              if (changesSummary) body += changesSummary + "\n";
+
+              const detailedChanges = process.env.DETAILED_CHANGES || '';
+              if (detailedChanges) {
+                body += "<details><summary>📊 Detailed Changes</summary>\n\n" + detailedChanges + "</details>\n\n";
+              }
             }
 
-            // Add concise changes summary
-            const changesSummary = process.env.CHANGES_SUMMARY || '';
-            if (changesSummary && changesSummary !== '') {
-              body += changesSummary + "\n";
-            }
+            // Only show sync instructions if there are changes
+            if (pull || push) {
+              const summaryUrl = `${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`;
+              body += "<details><summary>📋 How to sync</summary>\n\n";
 
-            // Add detailed changes in collapsible section
-            const detailedChanges = process.env.DETAILED_CHANGES || '';
-            if (detailedChanges && detailedChanges !== '') {
-              body += "<details><summary>📊 Detailed Changes</summary>\n\n";
-              body += detailedChanges;
-              body += "</details>\n\n";
-            }
-
-            // Get the detailed report from workflow summary
-            const summaryUrl = `${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`;
-
-            body += "<details><summary>📋 How to sync</summary>\n\n";
-
-            if (pull) {
-              const targetBranch = '${{ needs.compare.outputs.target_branch }}';
+              if (pull) {
               body += "**📥 To pull upstream changes:**\n\n" +
                       "**🟢 Non-destructive method (recommended):**\n" +
                       "```bash\n" +
@@ -195,19 +200,18 @@ jobs:
                       `git commit -m \"Sync changes from proprietary to ${targetBranch}\"\n` +
                       `git push origin sync-${targetBranch}-$(date +%Y%m%d)\n` +
                       "```\n\n";
+              }
+
+              body += "</details>\n\n";
+              body += `*Full report also available in [workflow summary](${summaryUrl})*\n\n`;
             }
 
-            body += "</details>\n\n";
-
-            // Add command help
-            body += "<details><summary>💬 Change Target Branch</summary>\n\n";
-            body += "Comment with `/owa-sync [branch]` to compare against a different branch:\n\n";
-            body += "- `/owa-sync` - Compare with main (default)\n";
-            body += "- `/owa-sync develop` - Compare with develop branch\n";
-            body += "- `/owa-sync feature/xyz` - Compare with feature/xyz branch\n\n";
-            body += "</details>\n\n";
-
-            body += `*Full report also available in [workflow summary](${summaryUrl})*`;
+            body += "<details><summary>💬 Change Target Branch</summary>\n\n" +
+                    "Comment with `/owa-sync [branch]` to compare against a different branch:\n\n" +
+                    "- `/owa-sync` - Compare with main (default)\n" +
+                    "- `/owa-sync develop` - Compare with develop branch\n" +
+                    "- `/owa-sync feature/xyz` - Compare with feature/xyz branch\n\n" +
+                    "</details>";
 
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number
