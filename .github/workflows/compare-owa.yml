@@ -10,7 +10,10 @@ jobs:
   compare:
     runs-on: ubuntu-latest
     permissions:
-      pull-requests: write
+      contents: read
+    outputs:
+      pull_has_changes: ${{ steps.compare.outputs.pull_has_changes }}
+      push_has_changes: ${{ steps.compare.outputs.push_has_changes }}
     steps:
       - uses: actions/checkout@v4
       - run: git clone https://github.com/open-world-agents/open-world-agents.git /tmp/upstream-owa
@@ -25,12 +28,18 @@ jobs:
           name: rsync-patch
           path: /tmp/rsync-changes.patch
 
-      - if: steps.compare.outputs.pull_has_changes == 'true' || steps.compare.outputs.push_has_changes == 'true'
-        uses: actions/github-script@v7
+  comment:
+    runs-on: ubuntu-latest
+    needs: compare
+    if: github.event_name == 'pull_request' && (needs.compare.outputs.pull_has_changes == 'true' || needs.compare.outputs.push_has_changes == 'true')
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/github-script@v7
         with:
           script: |
-            const pull = '${{ steps.compare.outputs.pull_has_changes }}' === 'true';
-            const push = '${{ steps.compare.outputs.push_has_changes }}' === 'true';
+            const pull = '${{ needs.compare.outputs.pull_has_changes }}' === 'true';
+            const push = '${{ needs.compare.outputs.push_has_changes }}' === 'true';
 
             let body = "## 🔄 Open World Agents Sync Options\n\nChoose your preferred sync method:\n\n";
 
