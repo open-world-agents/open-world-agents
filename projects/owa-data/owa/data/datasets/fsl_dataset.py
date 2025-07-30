@@ -5,11 +5,14 @@ from dataclasses import dataclass
 
 import numpy as np
 import torch
-from datasets import Dataset as HFDataset
 from loguru import logger
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset as TorchDataset
 
 from owa.msgs.desktop.screen import ScreenCaptured
+
+from .config import DatasetStage
+from .dataset import Dataset
+from .transforms import resolve_episode_path
 
 is_decoding_server_available = "VIDEO_DECODING_SERVER_URL" in os.environ
 
@@ -133,14 +136,17 @@ class FSLStatLogger:
             self.last_log_time = current_time
 
 
-class FSLDataset(Dataset):
+class FSLDataset(TorchDataset):
     def __init__(
-        self, dataset: HFDataset, image_processor=None, config: FSLDatasetConfig = FSLDatasetConfig(), **kwargs
+        self, dataset: Dataset, image_processor=None, config: FSLDatasetConfig = FSLDatasetConfig(), **kwargs
     ):
         self.dataset = dataset
         self.image_processor = image_processor
         self.config = FSLDatasetConfig(**(config.__dict__ | kwargs))
         self.stat_logger = FSLStatLogger()
+
+        if dataset.stage != DatasetStage.TOKENIZED:
+            raise ValueError(f"Expected dataset stage to be TOKENIZED, got {dataset.stage}")
 
         if image_processor is not None and "Fast" not in image_processor.__class__.__name__:
             raise ValueError(
@@ -172,7 +178,7 @@ class FSLDataset(Dataset):
         for event_idx in range(start_event_index, len(self.dataset)):
             event = self.dataset[event_idx]
             texts.append(event["text"])
-            episode_path = event["episode_path"]
+            episode_path = resolve_episode_path(event["episode_path"], self.dataset.owa_config.mcap_root_directory)
             token_ids = event["token_ids"]
             images = event["images"]
             total_token_count = event["total_token_count"]
@@ -257,3 +263,19 @@ class FSLDataset(Dataset):
 
         total_tokens = self._cumsum[-1]
         return max(1, total_tokens // self.config.max_sequence_length)
+
+
+def prepare_fsl(
+    tokenized_dataset,
+    max_sequence_length: int = 1024,
+    pad_token_id: int = 0,
+    load_images: bool = True,
+    image_processor=None,
+) -> FSLDataset:
+    """Prepare FSL dataset from tokenized dataset."""
+    config = FSLDatasetConfig(
+        max_sequence_length=max_sequence_length, pad_token_id=pad_token_id, load_images=load_images
+    )
+    fsl_dataset = FSLDataset(tokenized_dataset, image_processor, config)
+    fsl_dataset.prepare()
+    return fsl_dataset

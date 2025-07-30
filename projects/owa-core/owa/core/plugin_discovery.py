@@ -11,9 +11,9 @@ from .registry import CALLABLES, LISTENERS, RUNNABLES
 
 # Import entry_points based on Python version
 if sys.version_info < (3, 10):
-    from importlib_metadata import entry_points
+    from importlib_metadata import EntryPoint, entry_points
 else:
-    from importlib.metadata import entry_points
+    from importlib.metadata import EntryPoint, entry_points
 
 
 class PluginDiscovery:
@@ -39,11 +39,7 @@ class PluginDiscovery:
         """
         logger.info("Starting plugin discovery via entry points...")
 
-        try:
-            discovered_eps = entry_points(group=self.ENTRY_POINT_GROUP)
-        except Exception as e:
-            logger.error(f"Failed to discover entry points: {e}")
-            return
+        discovered_eps = entry_points(group=self.ENTRY_POINT_GROUP)
 
         for ep in discovered_eps:
             try:
@@ -56,7 +52,7 @@ class PluginDiscovery:
             f"Plugin discovery complete. Loaded: {len(self.discovered_plugins)}, Failed: {len(self.failed_plugins)}"
         )
 
-    def _load_plugin_spec(self, entry_point) -> None:
+    def _load_plugin_spec(self, entry_point: EntryPoint) -> None:
         """
         Load and validate a plugin specification from an entry point.
 

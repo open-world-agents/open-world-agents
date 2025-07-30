@@ -11,7 +11,7 @@ $ python scripts/01_raw_events_to_event_dataset.py \
   --train-dir /data/mcaps/game-session \
   --output-dir /data/event-dataset \
   --rate mouse=60 --rate screen=20 \
-  --keep_topic screen --keep_topic keyboard
+  --keep-topic screen --keep-topic keyboard
 🔄 Raw Events to Event Dataset
 📁 Loading from: /data/mcaps/game-session
 📊 Found 3 train, 1 test files
@@ -153,7 +153,7 @@ python scripts/01_raw_events_to_event_dataset.py \
   --train-dir /path/to/mcap/files \
   --output-dir /path/to/event/dataset \
   --rate mouse=60 --rate screen=20 \
-  --keep_topic screen --keep_topic keyboard
+  --keep-topic screen --keep-topic keyboard
 ```
 
 ### Key Parameters
@@ -163,7 +163,7 @@ python scripts/01_raw_events_to_event_dataset.py \
 | `--train-dir` | Directory containing MCAP files | `/data/recordings/` |
 | `--output-dir` | Output directory for Event Dataset | `/data/event-dataset/` |
 | `--rate` | Rate limiting per topic (Hz) | `mouse=60 screen=20` |
-| `--keep_topic` | Topics to include in dataset | `screen keyboard mouse` |
+| `--keep-topic` | Topics to include in dataset | `screen keyboard mouse` |
 
 ### Output Schema
 
