@@ -78,6 +78,9 @@ class EpisodeTokenizer:
         )
 
     def tokenize_event_dataset(self, event_dataset: Dataset, map_kwargs: dict = {"num_proc": 16}) -> Dataset:
+        if not isinstance(event_dataset, Dataset):
+            raise ValueError(f"Expected Dataset from `owa.data.datasets`, got {type(event_dataset)}")
+
         def process_event(event, idx):
             prefix_text = suffix_text = ""
             # Add episode start token
