@@ -158,8 +158,11 @@ class FSLDataset(TorchDataset):
             )
 
     def prepare(self):
-        # TODO?: apply parallel scan
-        self._cumsum = np.cumsum(self.dataset["total_token_count"])
+        """Prepare dataset by using pre-computed cumulative sum or computing it."""
+        if "cumulative_token_count" in self.dataset.column_names:
+            self._cumsum = np.array(self.dataset["cumulative_token_count"])
+        else:
+            self._cumsum = np.cumsum(self.dataset["total_token_count"])
 
     def check_prepared(self):
         if not hasattr(self, "_cumsum"):
