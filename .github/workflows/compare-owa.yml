@@ -15,6 +15,7 @@ jobs:
       pull_has_changes: ${{ steps.compare.outputs.pull_has_changes }}
       push_has_changes: ${{ steps.compare.outputs.push_has_changes }}
       changes_summary: ${{ steps.compare.outputs.changes_summary }}
+      detailed_changes: ${{ steps.compare.outputs.detailed_changes }}
     steps:
       - uses: actions/checkout@v4
       - run: git clone https://github.com/open-world-agents/open-world-agents.git /tmp/upstream-owa
@@ -39,6 +40,7 @@ jobs:
       - uses: actions/github-script@v7
         env:
           CHANGES_SUMMARY: ${{ needs.compare.outputs.changes_summary }}
+          DETAILED_CHANGES: ${{ needs.compare.outputs.detailed_changes }}
         with:
           script: |
             const pull = '${{ needs.compare.outputs.pull_has_changes }}' === 'true';
@@ -46,16 +48,24 @@ jobs:
 
             if (!pull && !push) return;
 
-            let body = "";
+            let body = "🔄 **OWA Sync Status**\n\n";
 
             if (pull && push) {
               body += "⚠️ **Both directions have changes** - review carefully before syncing\n\n";
             }
 
-            // Add detailed changes summary first
+            // Add concise changes summary
             const changesSummary = process.env.CHANGES_SUMMARY || '';
             if (changesSummary && changesSummary !== '') {
-              body += changesSummary + "\n\n";
+              body += changesSummary + "\n";
+            }
+
+            // Add detailed changes in collapsible section
+            const detailedChanges = process.env.DETAILED_CHANGES || '';
+            if (detailedChanges && detailedChanges !== '') {
+              body += "<details><summary>📊 Detailed Changes</summary>\n\n";
+              body += detailedChanges;
+              body += "</details>\n\n";
             }
 
             // Get the detailed report from workflow summary

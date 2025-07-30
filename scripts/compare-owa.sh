@@ -36,7 +36,8 @@ git reset --hard HEAD >/dev/null 2>&1
 rsync -av --delete --exclude='.git' "$ORIGINAL_DIR/open-world-agents/" ./ >/dev/null 2>&1
 git add -A >/dev/null 2>&1
 PUSH_DIFF=$(git diff --cached --name-status 2>/dev/null || true)
-PUSH_STAT=$(git diff --cached --stat --color=always 2>/dev/null || true)
+PUSH_STAT=$(git diff --cached --stat 2>/dev/null || true)
+PUSH_STAT_SUMMARY=$(git diff --cached --stat --format='' 2>/dev/null | tail -n1 || true)
 
 # Get pull changes (upstream → local)
 git reset --hard HEAD >/dev/null 2>&1
@@ -45,7 +46,8 @@ rsync -av --delete --exclude='.git' "$ORIGINAL_DIR/open-world-agents/" /tmp/loca
 rsync -av --delete --exclude='.git' /tmp/local-copy/ ./ >/dev/null 2>&1
 git add -A >/dev/null 2>&1
 PULL_DIFF=$(git diff --cached --name-status 2>/dev/null || true)
-PULL_STAT=$(git diff --cached --stat --color=always 2>/dev/null || true)
+PULL_STAT=$(git diff --cached --stat 2>/dev/null || true)
+PULL_STAT_SUMMARY=$(git diff --cached --stat --format='' 2>/dev/null | tail -n1 || true)
 
 # Cleanup
 rm -rf /tmp/local-copy
@@ -98,17 +100,29 @@ if [ -n "$PULL_DIFF" ] || [ -n "$PUSH_DIFF" ]; then
         echo "" >> $GITHUB_STEP_SUMMARY
     fi
 
-    # Generate concise summary for comment
+    # Generate concise summary for comment (just totals, no detailed diff)
     echo "changes_summary<<EOF" >> $GITHUB_OUTPUT
+    if [ -n "$PULL_STAT_SUMMARY" ]; then
+        echo "📥 **Pull Available (Upstream → Local):** $PULL_STAT_SUMMARY" >> $GITHUB_OUTPUT
+        echo "" >> $GITHUB_OUTPUT
+    fi
+    if [ -n "$PUSH_STAT_SUMMARY" ]; then
+        echo "📤 **Push Available (Local → Upstream):** $PUSH_STAT_SUMMARY" >> $GITHUB_OUTPUT
+        echo "" >> $GITHUB_OUTPUT
+    fi
+    echo "EOF" >> $GITHUB_OUTPUT
+
+    # Generate detailed diff for collapsible section
+    echo "detailed_changes<<EOF" >> $GITHUB_OUTPUT
     if [ -n "$PULL_STAT" ]; then
-        echo "## 📥 Pull Available (Upstream → Local)" >> $GITHUB_OUTPUT
+        echo "### 📥 Pull Changes (Upstream → Local)" >> $GITHUB_OUTPUT
         echo '```diff' >> $GITHUB_OUTPUT
         echo "$PULL_STAT" >> $GITHUB_OUTPUT
         echo '```' >> $GITHUB_OUTPUT
         echo "" >> $GITHUB_OUTPUT
     fi
     if [ -n "$PUSH_STAT" ]; then
-        echo "## 📤 Push Available (Local → Upstream)" >> $GITHUB_OUTPUT
+        echo "### 📤 Push Changes (Local → Upstream)" >> $GITHUB_OUTPUT
         echo '```diff' >> $GITHUB_OUTPUT
         echo "$PUSH_STAT" >> $GITHUB_OUTPUT
         echo '```' >> $GITHUB_OUTPUT
