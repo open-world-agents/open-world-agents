@@ -21,7 +21,7 @@ python scripts/01_raw_events_to_event_dataset.py \
   --test-dir $MCAP_TEST_DIR \
   --output-dir $EVENT_DATASET_DIR \
   --rate screen=20 --rate mouse=60 \
-  --keep-topic screen --keep-topic keyboard
+  --keep-topic screen --keep-topic keyboard --keep-topic mouse/raw
 
 # 2. (Optional) Event Dataset → Binned Dataset
 python scripts/02_event_dataset_to_binned_dataset.py \

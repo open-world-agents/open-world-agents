@@ -102,17 +102,40 @@ def main(
         ds = ds_dict[split] if split else ds_dict
         print(f"Processing {len(ds):,} events from {split or 'dataset'}")
 
-        episode_paths = sorted(set(ds["episode_path"]))
         all_binned_data = []
 
-        print(f"Found {len(episode_paths)} files to process")
+        # Process dataset sequentially, grouping by episode_path
+        current_episode_events = []
+        current_episode_path = None
+        processed_episodes = 0
 
-        for fp in tqdm(episode_paths, desc=f"Processing {split or 'dataset'} files"):
-            # Get all events for this file
-            file_ds = ds.filter(lambda example: example["episode_path"] == fp)
-            events = [file_ds[i] for i in range(len(file_ds))]
-            binned_data = aggregate_events_to_bins(events, fps, filter_empty_actions)
-            all_binned_data.extend(binned_data)
+        print("Processing events sequentially...")
+
+        with tqdm(total=len(ds), desc=f"Processing {split or 'dataset'} events") as pbar:
+            for i in range(len(ds)):
+                event = ds[i]
+                episode_path = event["episode_path"]
+
+                # If we encounter a new episode path, process the previous episode
+                if current_episode_path is not None and episode_path != current_episode_path:
+                    if current_episode_events:
+                        binned_data = aggregate_events_to_bins(current_episode_events, fps, filter_empty_actions)
+                        all_binned_data.extend(binned_data)
+                        processed_episodes += 1
+                    current_episode_events = []
+
+                # Add current event to the episode
+                current_episode_path = episode_path
+                current_episode_events.append(event)
+                pbar.update(1)
+
+            # Process the last episode
+            if current_episode_events:
+                binned_data = aggregate_events_to_bins(current_episode_events, fps, filter_empty_actions)
+                all_binned_data.extend(binned_data)
+                processed_episodes += 1
+
+        print(f"Processed {processed_episodes} episode files")
         # Create dataset
         features = Features(
             {
