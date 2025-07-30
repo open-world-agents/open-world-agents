@@ -141,36 +141,29 @@ class FSLDataset(TorchDataset):
     def __init__(
         self, dataset: Dataset, image_processor=None, config: FSLDatasetConfig = FSLDatasetConfig(), **kwargs
     ):
+        # Check if the input is a Dataset
         if not isinstance(dataset, Dataset):
             raise ValueError(f"Expected Dataset from `owa.data.datasets`, got {type(dataset)}")
 
+        # Initialize dataset
         self.dataset = dataset
         self.image_processor = image_processor
         self.config = FSLDatasetConfig(**(config.__dict__ | kwargs))
         self.stat_logger = FSLStatLogger()
 
+        # Check if the dataset is in TOKENIZED stage
         if dataset.stage != DatasetStage.TOKENIZED:
             raise ValueError(f"Expected dataset stage to be TOKENIZED, got {dataset.stage}")
 
+        # Check if the image processor is fast
         if image_processor is not None and "Fast" not in image_processor.__class__.__name__:
             raise ValueError(
                 "Image processor must be a fast image processor, make sure you pass `use_fast` directly to ImageProcessor.from_pretrained"
             )
 
-    def prepare(self):
-        """Prepare dataset by using pre-computed cumulative sum or computing it."""
-        if "cumulative_token_count" in self.dataset.column_names:
-            self._cumsum = np.array(self.dataset["cumulative_token_count"])
-        else:
-            self._cumsum = np.cumsum(self.dataset["total_token_count"])
-
-    def check_prepared(self):
-        if not hasattr(self, "_cumsum"):
-            raise RuntimeError("Dataset must be prepared before use. Call prepare() first.")
+        self._cumsum = self.dataset["cumulative_token_count"]
 
     def __getitem__(self, idx):
-        self.check_prepared()
-
         start_token_index = idx * self.config.max_sequence_length
 
         # self.cumsum[start_event_index-1] < start_token_index <= self._cumsum[start_event_index]
@@ -270,23 +263,18 @@ class FSLDataset(TorchDataset):
 
     def __len__(self):
         """Calculate the number of sequences based on total tokens and max_sequence_length."""
-        self.check_prepared()
-
         total_tokens = self._cumsum[-1]
         return max(1, total_tokens // self.config.max_sequence_length)
 
 
 def prepare_fsl(
     tokenized_dataset,
-    max_sequence_length: int = 1024,
-    pad_token_id: int = 0,
-    load_images: bool = True,
+    *,
     image_processor=None,
+    config: FSLDatasetConfig = FSLDatasetConfig(),
+    **kwargs,
 ) -> FSLDataset:
     """Prepare FSL dataset from tokenized dataset."""
-    config = FSLDatasetConfig(
-        max_sequence_length=max_sequence_length, pad_token_id=pad_token_id, load_images=load_images
-    )
+    config = FSLDatasetConfig(**(config.__dict__ | kwargs))
     fsl_dataset = FSLDataset(tokenized_dataset, image_processor, config)
-    fsl_dataset.prepare()
     return fsl_dataset

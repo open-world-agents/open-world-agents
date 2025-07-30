@@ -59,7 +59,7 @@ from trl import (
     get_quantization_config,
 )
 
-from owa.data.datasets import FSLDataset, FSLDatasetConfig, load_from_disk
+from owa.data.datasets import FSLDatasetConfig, load_from_disk, prepare_fsl
 from owa.data.episode_tokenizer import EpisodeTokenizer
 
 # This line is to enable throughput logging from FSLDataset
@@ -260,17 +260,17 @@ def main():
         load_images=True,
     )
 
-    train_fsl_dataset = FSLDataset(
+    train_fsl_dataset = prepare_fsl(
         event_dataset["train"], image_processor=processor.image_processor, config=fsl_config
     )
-    train_fsl_dataset.prepare()
 
     eval_fsl_dataset = None
     if "test" in event_dataset:
-        eval_fsl_dataset = FSLDataset(
+        test_samples = min(len(event_dataset["test"]), 1024)  # FIXME: remove this
+        event_dataset["test"] = event_dataset["test"].select(range(test_samples))
+        eval_fsl_dataset = prepare_fsl(
             event_dataset["test"], image_processor=processor.image_processor, config=fsl_config
         )
-        eval_fsl_dataset.prepare()
 
     ################
     # Data Collator

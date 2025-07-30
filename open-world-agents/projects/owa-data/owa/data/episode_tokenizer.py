@@ -79,9 +79,11 @@ class EpisodeTokenizer:
         )
 
     def tokenize_event_dataset(self, event_dataset: Dataset, map_kwargs: dict = {"num_proc": 16}) -> Dataset:
+        # Check if the input is a Dataset
         if not isinstance(event_dataset, Dataset):
             raise ValueError(f"Expected Dataset from `owa.data.datasets`, got {type(event_dataset)}")
 
+        # Tokenize each event in the dataset
         def process_event(event, idx):
             prefix_text = suffix_text = ""
             # Add episode start token
@@ -110,6 +112,7 @@ class EpisodeTokenizer:
                 "total_token_count": tokenized_event["total_token_count"],
             }
 
+        # Tokenize the dataset
         tokenized_dataset = event_dataset.map(
             process_event,
             with_indices=True,
@@ -117,11 +120,12 @@ class EpisodeTokenizer:
             remove_columns=event_dataset.column_names,
             **map_kwargs,
         )
+        # Add cumulative token count column. TODO?: bounded memory/parallel scan for large datasets
+        cumulative_token_count = np.cumsum(tokenized_dataset["total_token_count"])
+        tokenized_dataset = tokenized_dataset.add_column("cumulative_token_count", cumulative_token_count)
+
+        # Switch back to OWA Dataset from HF Dataset
         tokenized_dataset = Dataset.from_hf_dataset(tokenized_dataset, owa_config=event_dataset.owa_config)
         tokenized_dataset.owa_config.stage = DatasetStage.TOKENIZED
-
-        # Add cumulative token count column
-        cumulative_token_count = np.cumsum(tokenized_dataset["total_token_count"]).tolist()
-        tokenized_dataset = tokenized_dataset.add_column("cumulative_token_count", cumulative_token_count)
 
         return tokenized_dataset
