@@ -97,38 +97,67 @@ if [ -n "$PULL_DIFF" ] || [ -n "$PUSH_DIFF" ]; then
 
     # Summary badges
     if [ $pull_files -gt 0 ]; then
-        echo "<img src=\"https://img.shields.io/badge/Pull%20Files-$pull_files-blue.svg\" alt=\"Pull Files\"> <img src=\"https://img.shields.io/badge/Lines-+$pull_added%20~$pull_deleted-orange.svg\" alt=\"Pull Lines\">" >> $GITHUB_STEP_SUMMARY
+        echo "<img src=\"https://img.shields.io/badge/Pull%20Files-$pull_files-blue.svg\" alt=\"Pull Files\"> <img src=\"https://img.shields.io/badge/Lines-+$pull_added%20-$pull_deleted-orange.svg\" alt=\"Pull Lines\">" >> $GITHUB_STEP_SUMMARY
     fi
 
     if [ $push_files -gt 0 ]; then
-        echo "<img src=\"https://img.shields.io/badge/Push%20Files-$push_files-purple.svg\" alt=\"Push Files\"> <img src=\"https://img.shields.io/badge/Lines-+$push_added%20~$push_deleted-orange.svg\" alt=\"Push Lines\">" >> $GITHUB_STEP_SUMMARY
+        echo "<img src=\"https://img.shields.io/badge/Push%20Files-$push_files-purple.svg\" alt=\"Push Files\"> <img src=\"https://img.shields.io/badge/Lines-+$push_added%20-$push_deleted-orange.svg\" alt=\"Push Lines\">" >> $GITHUB_STEP_SUMMARY
     fi
 
-    echo "<details><summary>Click to see where and how files changed</summary>" >> $GITHUB_STEP_SUMMARY
-    echo "<table><thead>" >> $GITHUB_STEP_SUMMARY
-    echo "<tr><th>File</th><th>Lines Added</th><th>Lines Deleted</th><th>Direction</th></tr>" >> $GITHUB_STEP_SUMMARY
-    echo "</thead><tbody>" >> $GITHUB_STEP_SUMMARY
+    # Generate separate tables for pull and push
+    generate_changes_tables() {
+        local output_file="$1"
 
-    # Process pull changes
-    if [ -n "$PULL_STATS" ]; then
-        echo "$PULL_STATS" | while IFS=$'\t' read -r added deleted file; do
-            if [ "$added" = "-" ]; then added="0"; fi
-            if [ "$deleted" = "-" ]; then deleted="0"; fi
-            echo "<tr><td><code>$file</code></td><td align=\"center\"><img src=\"https://img.shields.io/badge/+$added-brightgreen.svg\" alt=\"+$added\"></td><td align=\"center\"><img src=\"https://img.shields.io/badge/-$deleted-red.svg\" alt=\"-$deleted\"></td><td align=\"center\">📥 Pull</td></tr>" >> $GITHUB_STEP_SUMMARY
-        done
+        # Pull changes table
+        if [ -n "$PULL_STATS" ]; then
+            echo "<details><summary>📥 Pull Changes (Upstream → Local)</summary>" >> "$output_file"
+            echo "<table><thead>" >> "$output_file"
+            echo "<tr><th>File</th><th>Changes</th></tr>" >> "$output_file"
+            echo "</thead><tbody>" >> "$output_file"
+
+            echo "$PULL_STATS" | while IFS=$'\t' read -r added deleted file; do
+                if [ "$added" = "-" ]; then added="0"; fi
+                if [ "$deleted" = "-" ]; then deleted="0"; fi
+                echo "<tr><td><code>$file</code></td><td align=\"center\"><img src=\"https://img.shields.io/badge/+$added%20-$deleted-orange.svg\" alt=\"+$added -$deleted\"></td></tr>" >> "$output_file"
+            done
+
+            echo "</tbody></table>" >> "$output_file"
+            echo "</details>" >> "$output_file"
+            echo "" >> "$output_file"
+        fi
+
+        # Push changes table
+        if [ -n "$PUSH_STATS" ]; then
+            echo "<details><summary>📤 Push Changes (Local → Upstream)</summary>" >> "$output_file"
+            echo "<table><thead>" >> "$output_file"
+            echo "<tr><th>File</th><th>Changes</th></tr>" >> "$output_file"
+            echo "</thead><tbody>" >> "$output_file"
+
+            echo "$PUSH_STATS" | while IFS=$'\t' read -r added deleted file; do
+                if [ "$added" = "-" ]; then added="0"; fi
+                if [ "$deleted" = "-" ]; then deleted="0"; fi
+                echo "<tr><td><code>$file</code></td><td align=\"center\"><img src=\"https://img.shields.io/badge/+$added%20-$deleted-orange.svg\" alt=\"+$added -$deleted\"></td></tr>" >> "$output_file"
+            done
+
+            echo "</tbody></table>" >> "$output_file"
+            echo "</details>" >> "$output_file"
+            echo "" >> "$output_file"
+        fi
+    }
+
+    # Generate for step summary
+    generate_changes_tables "$GITHUB_STEP_SUMMARY"
+
+    # Generate compact summary for comment
+    echo "changes_summary<<EOF" >> $GITHUB_OUTPUT
+    if [ $pull_files -gt 0 ]; then
+        echo "<img src=\"https://img.shields.io/badge/Pull%20Files-$pull_files-blue.svg\" alt=\"Pull Files\"> <img src=\"https://img.shields.io/badge/Lines-+$pull_added%20-$pull_deleted-orange.svg\" alt=\"Pull Lines\">" >> $GITHUB_OUTPUT
     fi
-
-    # Process push changes
-    if [ -n "$PUSH_STATS" ]; then
-        echo "$PUSH_STATS" | while IFS=$'\t' read -r added deleted file; do
-            if [ "$added" = "-" ]; then added="0"; fi
-            if [ "$deleted" = "-" ]; then deleted="0"; fi
-            echo "<tr><td><code>$file</code></td><td align=\"center\"><img src=\"https://img.shields.io/badge/+$added-brightgreen.svg\" alt=\"+$added\"></td><td align=\"center\"><img src=\"https://img.shields.io/badge/-$deleted-red.svg\" alt=\"-$deleted\"></td><td align=\"center\">📤 Push</td></tr>" >> $GITHUB_STEP_SUMMARY
-        done
+    if [ $push_files -gt 0 ]; then
+        echo "<img src=\"https://img.shields.io/badge/Push%20Files-$push_files-purple.svg\" alt=\"Push Files\"> <img src=\"https://img.shields.io/badge/Lines-+$push_added%20-$push_deleted-orange.svg\" alt=\"Push Lines\">" >> $GITHUB_OUTPUT
     fi
-
-    echo "</tbody></table>" >> $GITHUB_STEP_SUMMARY
-    echo "</details>" >> $GITHUB_STEP_SUMMARY
+    generate_changes_tables "$GITHUB_OUTPUT"
+    echo "EOF" >> $GITHUB_OUTPUT
 else
     echo "✅ **Everything is in sync!**" >> $GITHUB_STEP_SUMMARY
 fi
