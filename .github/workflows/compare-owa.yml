@@ -41,19 +41,26 @@ jobs:
             const pull = '${{ needs.compare.outputs.pull_has_changes }}' === 'true';
             const push = '${{ needs.compare.outputs.push_has_changes }}' === 'true';
 
-            let body = "## 🔄 Open World Agents Sync Options\n\nChoose your preferred sync method:\n\n";
+            if (!pull && !push) return;
+
+            let body = "## 🔄 OWA Sync Status\n\n";
+
+            if (pull && push) {
+              body += "⚠️ **Both directions have changes** - review carefully\n\n";
+            }
 
             if (pull) {
-              body += "### 📥 Pull Changes (Upstream → Proprietary)\n\n" +
-                      "**Option A: Git Subtree (preserves history)**\n" +
-                      "```bash\n" +
-                      "cd open-world-agents\n" +
-                      "git subtree pull --prefix=. owa main --squash\n" +
-                      "cd ..\n" +
-                      "git add open-world-agents/\n" +
-                      "git commit -m \"Update open-world-agents via subtree\"\n" +
-                      "```\n\n" +
-                      "**Option B: File Sync (clean, no history)**\n" +
+              body += "📥 **Pull available** - Upstream has new changes\n\n";
+            }
+
+            if (push) {
+              body += "📤 **Push available** - Local changes ready to contribute\n\n";
+            }
+
+            body += "<details><summary>📋 How to sync</summary>\n\n";
+
+            if (pull) {
+              body += "**📥 To pull upstream changes:**\n" +
                       "```bash\n" +
                       "git clone https://github.com/open-world-agents/open-world-agents.git /tmp/upstream\n" +
                       "rsync -av --delete --exclude='.git' /tmp/upstream/ ./open-world-agents/\n" +
@@ -63,43 +70,30 @@ jobs:
             }
 
             if (push) {
-              body += "### 📤 Push Changes (Proprietary → Upstream)\n\n" +
-                      "**Option A: Git Subtree (preserves history)**\n" +
-                      "```bash\n" +
-                      "cd open-world-agents\n" +
-                      "git subtree push --prefix=. owa feature-branch\n" +
-                      "# Then create PR from feature-branch\n" +
-                      "```\n\n" +
-                      "**Option B: File Sync (clean, squashed)**\n" +
-                      "1. Download the [`rsync-patch` artifact](https://github.com/" + context.repo.owner + "/" + context.repo.repo + "/actions/runs/" + context.runId + ") from this workflow\n" +
-                      "2. Or use this script:\n" +
+              body += "**📤 To push local changes:**\n" +
+                      "1. Download the `rsync-patch` artifact from this workflow\n" +
+                      "2. Apply to your fork of open-world-agents\n" +
+                      "3. Create a pull request\n\n" +
+                      "Or use rsync:\n" +
                       "```bash\n" +
                       "git clone https://github.com/open-world-agents/open-world-agents.git /tmp/upstream-pr\n" +
                       "cd /tmp/upstream-pr\n" +
                       "git checkout -b sync-$(date +%Y%m%d)\n" +
                       "rsync -av --delete --exclude='.git' ../open-world-agents/ ./\n" +
                       "git add -A\n" +
-                      "git commit -m \"Sync changes from proprietary (squashed)\"\n" +
+                      "git commit -m \"Sync changes from proprietary\"\n" +
                       "git push origin sync-$(date +%Y%m%d)\n" +
-                      "# Create PR on GitHub\n" +
                       "```\n\n";
             }
 
-            if (!pull && !push) {
-              body += "✅ **Everything is in sync!**\n\n" +
-                      "Both git subtree and file-based comparisons show no differences.\n";
-            }
-
-            body += "\n### 🤔 Which Method to Choose?\n\n" +
-                    "- **Git Subtree**: Preserves commit history, better for ongoing collaboration\n" +
-                    "- **File Sync (rsync)**: Clean squashed changes, better for occasional syncs\n\n" +
-                    "---\n" +
-                    "*Updated automatically on PR changes*";
+            body += "**📋 Detailed file changes:**\n" +
+                    "Check the [workflow summary](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for file-by-file breakdown.\n\n" +
+                    "</details>";
 
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number
             });
-            const existing = comments.find(c => c.user.type === 'Bot' && c.body.includes('Open World Agents Sync Options'));
+            const existing = comments.find(c => c.user.login === 'github-actions[bot]' && c.body.includes('🔄 OWA Sync Status'));
 
             if (existing) {
               await github.rest.issues.updateComment({
