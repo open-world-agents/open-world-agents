@@ -31,10 +31,11 @@ fi
 if [ -n "$PUSH_DIFF" ]; then
     echo "push_has_changes=true" >> $GITHUB_OUTPUT
     # Create rsync patch
+    ORIGINAL_DIR=$(pwd)
     cd /tmp/upstream-owa
-    rsync -av --delete /workspace/open-world-agents/ ./
+    rsync -av --delete "$ORIGINAL_DIR/open-world-agents/" ./
     git add -A && git diff --cached > /tmp/rsync-changes.patch
-    cd /workspace
+    cd "$ORIGINAL_DIR"
 else
     echo "push_has_changes=false" >> $GITHUB_OUTPUT
 fi
