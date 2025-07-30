@@ -18,6 +18,8 @@ on:
 jobs:
   parse-comment:
     runs-on: ubuntu-latest
+    # Only run on PR comments, not regular issue comments
+    if: github.event_name != 'issue_comment' || github.event.issue.pull_request
     permissions:
       pull-requests: write
     outputs:
