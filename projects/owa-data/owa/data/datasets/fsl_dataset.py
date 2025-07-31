@@ -209,7 +209,7 @@ class FSLDataset(TorchDataset):
                     for idx, future in enumerate(futures):
                         try:
                             # screen_captured.frame_arr is cached here so that next time we call to_pil_image, it's fast
-                            future.result(timeout=5)
+                            future.result(timeout=30)
                         except Exception as e:
                             all_image_msgs[idx].frame_arr = np.zeros((512, 512, 3), dtype=np.uint8)
                             warnings.warn(
