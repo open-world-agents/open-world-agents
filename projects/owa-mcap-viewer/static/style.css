@@ -231,6 +231,21 @@ body {
     color: white;
 }
 
+.file-name {
+    font-weight: 500;
+    margin-bottom: 2px;
+}
+
+.file-info {
+    font-size: 0.8em;
+    color: #666;
+    opacity: 0.8;
+}
+
+.file-item.active .file-info {
+    color: rgba(255, 255, 255, 0.8);
+}
+
 .error {
     color: red;
     padding: 10px;
@@ -343,6 +358,27 @@ body {
     background-color: #f8f8f8;
     border-radius: 8px;
     border: 1px solid #e0e0e0;
+}
+
+.upload-method {
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 5px;
+    background-color: #fff;
+}
+
+.upload-method h3 {
+    margin: 0 0 5px 0;
+    color: #333;
+    font-size: 1.1em;
+}
+
+.upload-description {
+    margin: 0 0 10px 0;
+    font-size: 0.9em;
+    color: #666;
+    font-style: italic;
 }
 
 .upload-pair {

@@ -28,19 +28,39 @@
 
             <div class="upload-section">
                 <h2>Upload Files</h2>
-                <form id="upload-form" enctype="multipart/form-data">
-                    <div class="upload-pair">
+
+                <!-- MCAP-only upload (recommended) -->
+                <div class="upload-method">
+                    <h3>MCAP File (Recommended)</h3>
+                    <p class="upload-description">Upload a single MCAP file with embedded or referenced media</p>
+                    <form id="mcap-upload-form" enctype="multipart/form-data">
                         <div>
-                            <label for="mcap-file">MCAP File:</label>
-                            <input type="file" id="mcap-file" name="mcap_file" accept=".mcap" required>
+                            <label for="mcap-only-file">MCAP File:</label>
+                            <input type="file" id="mcap-only-file" name="mcap_file" accept=".mcap" required>
                         </div>
-                        <div>
-                            <label for="mkv-file">MKV File:</label>
-                            <input type="file" id="mkv-file" name="mkv_file" accept=".mkv" required>
+                        <button type="submit" class="upload-button">Upload MCAP</button>
+                    </form>
+                </div>
+
+                <!-- Legacy MCAP+MKV upload -->
+                <div class="upload-method">
+                    <h3>MCAP + MKV Pair (Legacy)</h3>
+                    <p class="upload-description">Upload separate MCAP and MKV files (for older recordings)</p>
+                    <form id="legacy-upload-form" enctype="multipart/form-data">
+                        <div class="upload-pair">
+                            <div>
+                                <label for="mcap-file">MCAP File:</label>
+                                <input type="file" id="mcap-file" name="mcap_file" accept=".mcap" required>
+                            </div>
+                            <div>
+                                <label for="mkv-file">MKV File:</label>
+                                <input type="file" id="mkv-file" name="mkv_file" accept=".mkv" required>
+                            </div>
                         </div>
-                    </div>
-                    <button type="submit" class="upload-button">Upload Files</button>
-                </form>
+                        <button type="submit" class="upload-button">Upload Pair</button>
+                    </form>
+                </div>
+
                 <div id="upload-status"></div>
             </div>
 

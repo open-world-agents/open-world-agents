@@ -50,3 +50,10 @@ class McapProcessingError(AppError):
 
     def __init__(self, detail: str):
         super().__init__(status_code=500, detail=detail, error_code="MCAP_PROCESSING_ERROR")
+
+
+class MediaResolutionError(AppError):
+    """Raised when media reference resolution fails"""
+
+    def __init__(self, detail: str):
+        super().__init__(status_code=404, detail=detail, error_code="MEDIA_RESOLUTION_ERROR")

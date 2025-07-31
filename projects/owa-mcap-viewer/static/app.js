@@ -57,7 +57,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Display original filename if available, otherwise use the basename
                 const displayName = pair.original_basename || pair.basename;
-                item.textContent = displayName;
+
+                // Create main content
+                const nameDiv = document.createElement('div');
+                nameDiv.className = 'file-name';
+                nameDiv.textContent = displayName;
+                item.appendChild(nameDiv);
+
+                // Add media info
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'file-info';
+
+                let mediaInfo = [];
+                if (pair.has_embedded_media) {
+                    mediaInfo.push('📷 Embedded');
+                }
+                if (pair.has_external_media) {
+                    mediaInfo.push('🎥 External');
+                }
+                if (pair.url_mkv) {
+                    mediaInfo.push('📹 MKV');
+                }
+                if (mediaInfo.length === 0) {
+                    mediaInfo.push('📄 MCAP only');
+                }
+
+                infoDiv.textContent = mediaInfo.join(' • ');
+                item.appendChild(infoDiv);
 
                 // Store the unique filename as a data attribute for selection
                 item.dataset.uniqueId = pair.basename;
@@ -107,10 +133,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Load a specific MCAP+MKV pair
+    // Load a specific MCAP file
     async function loadFilePair(pair) {
         try {
-            console.log("Loading file pair:", pair);
+            console.log("Loading file:", pair);
             currentFile = pair;
 
             // Update UI to show selected file - use the unique ID to select only the correct file
@@ -129,15 +155,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Set loading state
             setLoadingState(true);
 
-            // Set the video source
-            if (pair.local) {
-                console.log(`Setting video source to: /files/${pair.url_mkv}`);
-                videoSource.src = `/files/${pair.url_mkv}`;
-            } else {
-                console.log(`Setting video source to: ${pair.url_mkv}`);
-                videoSource.src = pair.url_mkv;
-            }
-            videoPlayer.load();
+            // Set the video source - try MediaRef-based approach first, then fallback to legacy
+            await setVideoSource(pair);
             console.log("Video source set successfully");
 
             // Fetch MCAP metadata
@@ -193,6 +212,64 @@ document.addEventListener('DOMContentLoaded', () => {
             alert(`Error loading file: ${error.message}`);
         } finally {
             setLoadingState(false);
+        }
+    }
+
+    // Set video source using MediaRef-based approach or legacy fallback
+    async function setVideoSource(pair) {
+        try {
+            // First, try to get primary video from MediaRef
+            if (pair.has_external_media || pair.media_references?.length > 0) {
+                console.log("Attempting to load video from MediaRef...");
+                const videoResponse = await fetch(`/files/primary_video?mcap_filename=${pair.url_mcap}&local=${pair.local}`);
+
+                if (videoResponse.ok) {
+                    // For large video files (potentially 10GB+), use direct URL instead of blob
+                    // This allows the browser to stream the video efficiently
+                    const videoUrl = `/files/primary_video?mcap_filename=${pair.url_mcap}&local=${pair.local}`;
+                    videoSource.src = videoUrl;
+                    videoPlayer.load();
+                    console.log("Successfully loaded video from MediaRef (streaming)");
+                    return;
+                }
+            }
+
+            // Fallback to legacy MKV file if available
+            if (pair.url_mkv) {
+                console.log("Falling back to legacy MKV file...");
+                if (pair.local) {
+                    console.log(`Setting video source to: /files/${pair.url_mkv}`);
+                    videoSource.src = `/files/${pair.url_mkv}`;
+                } else {
+                    console.log(`Setting video source to: ${pair.url_mkv}`);
+                    videoSource.src = pair.url_mkv;
+                }
+                videoPlayer.load();
+                console.log("Successfully loaded legacy MKV file");
+                return;
+            }
+
+            // No video source available
+            console.warn("No video source available for this MCAP file");
+            videoSource.src = "";
+            videoPlayer.load();
+
+        } catch (error) {
+            console.error("Error setting video source:", error);
+
+            // Final fallback to legacy MKV if available
+            if (pair.url_mkv) {
+                console.log("Error occurred, trying legacy MKV as final fallback...");
+                if (pair.local) {
+                    videoSource.src = `/files/${pair.url_mkv}`;
+                } else {
+                    videoSource.src = pair.url_mkv;
+                }
+                videoPlayer.load();
+            } else {
+                videoSource.src = "";
+                videoPlayer.load();
+            }
         }
     }
 
@@ -822,17 +899,68 @@ document.addEventListener('DOMContentLoaded', () => {
     updateUploadedFilesList();
 
     // Handle file uploads
-    const uploadForm = document.getElementById('upload-form');
+    const mcapUploadForm = document.getElementById('mcap-upload-form');
+    const legacyUploadForm = document.getElementById('legacy-upload-form');
     const uploadStatus = document.getElementById('upload-status');
 
-    if (uploadForm) {
-        uploadForm.addEventListener('submit', async (e) => {
+    // Handle MCAP-only upload
+    if (mcapUploadForm) {
+        mcapUploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            uploadStatus.textContent = 'Uploading MCAP file...';
+            uploadStatus.className = 'uploading';
+
+            const formData = new FormData(mcapUploadForm);
+
+            try {
+                const response = await fetch('/upload/mcap', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    uploadStatus.textContent = 'MCAP file uploaded successfully!';
+                    uploadStatus.className = 'success';
+
+                    console.log("MCAP upload result:", result);
+
+                    // Add the new file to our uploaded files list
+                    uploadedFiles.push(result);
+
+                    // Update the UI
+                    updateUploadedFilesList();
+
+                    // Automatically load the newly uploaded file
+                    loadFilePair(result);
+
+                    // Clear the form
+                    mcapUploadForm.reset();
+
+                    // Refresh the file list after a successful upload
+                    fetchFilePairs();
+                } else {
+                    uploadStatus.textContent = `Error: ${result.detail || 'Unknown error'}`;
+                    uploadStatus.className = 'error';
+                }
+            } catch (error) {
+                uploadStatus.textContent = `Upload failed: ${error.message}`;
+                uploadStatus.className = 'error';
+            }
+        });
+    }
+
+    // Handle legacy MCAP+MKV upload
+    if (legacyUploadForm) {
+        legacyUploadForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
             uploadStatus.textContent = 'Uploading files...';
             uploadStatus.className = 'uploading';
 
-            const formData = new FormData(uploadForm);
+            const formData = new FormData(legacyUploadForm);
 
             try {
                 const response = await fetch('/upload', {
@@ -841,27 +969,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 const result = await response.json();
-                const file_pair = result;
 
                 if (response.ok) {
                     uploadStatus.textContent = 'Files uploaded successfully!';
                     uploadStatus.className = 'success';
 
-                    console.log("Upload result:", file_pair);
+                    console.log("Legacy upload result:", result);
 
                     // Add the new file to our uploaded files list
-                    uploadedFiles.push(file_pair);
+                    uploadedFiles.push(result);
 
                     // Update the UI
                     updateUploadedFilesList();
 
                     // Automatically load the newly uploaded file
-                    loadFilePair(file_pair);
-
-                    console.log("Auto-loading newly uploaded file:", file_pair);
+                    loadFilePair(result);
 
                     // Clear the form
-                    uploadForm.reset();
+                    legacyUploadForm.reset();
 
                     // Refresh the file list after a successful upload
                     fetchFilePairs();

@@ -1,10 +1,21 @@
-from typing import Optional
+from typing import List, Optional, Set
 
 from pydantic import BaseModel
 
 
+class MediaReference(BaseModel):
+    """Represents a media reference found in MCAP screen messages"""
+
+    uri: str
+    media_type: str  # "video", "image", "embedded", "remote"
+    is_video: bool = False
+    is_embedded: bool = False
+    is_remote: bool = False
+    file_extension: Optional[str] = None
+
+
 class OWAFile(BaseModel):
-    """Represents an OWA file (MCAP+MKV pair)"""
+    """Represents an OWA MCAP file with flexible media references"""
 
     basename: str
     original_basename: Optional[str] = None
@@ -12,7 +23,14 @@ class OWAFile(BaseModel):
     local: bool
     url: str
     url_mcap: str
-    url_mkv: str
+
+    # Media references found in the MCAP file
+    media_references: List[MediaReference] = []
+    has_external_media: bool = False
+    has_embedded_media: bool = False
+
+    # Legacy fields for backward compatibility
+    url_mkv: Optional[str] = None  # Only set if traditional mkv file exists
 
 
 class DatasetInfo(BaseModel):

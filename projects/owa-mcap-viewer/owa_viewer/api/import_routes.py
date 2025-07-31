@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, UploadFile
 
 from ..config import settings
 from ..models.file import OWAFile
+from ..repositories.file_repository import FileRepository
 from ..services.cache_service import cache_service
 
 logger = logging.getLogger(__name__)
@@ -109,3 +110,83 @@ async def import_file(
         if mkv_save_path.exists():
             mkv_save_path.unlink()
         raise HTTPException(status_code=500, detail=f"Error uploading files: {str(e)}")
+
+
+@router.post("/mcap")
+async def import_mcap_file(mcap_file: UploadFile) -> OWAFile:
+    """
+    Import MCAP file with MediaRef support (no separate video file required)
+
+    Args:
+        mcap_file: MCAP file to import
+
+    Returns:
+        OWAFile object with information about the imported file
+    """
+    # Check file size limits in public hosting mode
+    if settings.PUBLIC_HOSTING_MODE:
+        size_limit = 100 * 1024 * 1024  # 100MB
+
+        if mcap_file.size > size_limit:
+            raise HTTPException(
+                status_code=400,
+                detail="MCAP File size exceeds 100MB limit. Please self-host the viewer for files larger than 100MB. For more info, see https://open-world-agents.github.io/open-world-agents/data/viewer.",
+            )
+
+    # Validate file extension
+    if not mcap_file.filename.endswith(".mcap"):
+        raise HTTPException(status_code=400, detail="File must have .mcap extension")
+
+    # Ensure export path exists
+    export_path = Path(settings.EXPORT_PATH)
+    export_path.mkdir(exist_ok=True, parents=True)
+
+    # Generate a random filename to avoid conflicts
+    mcap_basename = Path(mcap_file.filename).stem
+    random_id = str(uuid.uuid4())
+    random_basename = f"{mcap_basename}_{random_id}"
+    random_mcap_filename = f"{random_basename}.mcap"
+
+    # Save path
+    mcap_save_path = export_path / random_mcap_filename
+
+    try:
+        # Save MCAP file with random name
+        with mcap_save_path.open("wb") as f:
+            shutil.copyfileobj(mcap_file.file, f)
+
+        logger.info(f"Successfully imported MCAP file: {mcap_file.filename} as {random_mcap_filename}")
+
+        # Analyze the MCAP file for media references
+        file_repo = FileRepository()
+        from fsspec.implementations.local import LocalFileSystem
+
+        filesystem = LocalFileSystem()
+
+        media_references, has_external_media, has_embedded_media = file_repo._analyze_mcap_media_references(
+            mcap_save_path, filesystem
+        )
+
+        # Clear the cache for local repository to refresh the file list
+        cache_service.file_list_cache.delete("local")
+
+        # Return success response
+        return OWAFile(
+            basename=random_basename,
+            original_basename=mcap_basename,
+            url=random_basename,
+            size=mcap_file.size,
+            local=True,
+            url_mcap=random_mcap_filename,
+            url_mkv=None,  # No separate MKV file
+            media_references=media_references,
+            has_external_media=has_external_media,
+            has_embedded_media=has_embedded_media,
+        )
+
+    except Exception as e:
+        logger.error(f"Error importing MCAP file: {str(e)}")
+        # Clean up any partially uploaded files
+        if mcap_save_path.exists():
+            mcap_save_path.unlink()
+        raise HTTPException(status_code=500, detail=f"Error uploading MCAP file: {str(e)}")
