@@ -1,40 +1,27 @@
 import numpy as np
 from loguru import logger
 from tqdm import tqdm
-from transformers import AutoImageProcessor, AutoTokenizer
+from transformers import AutoImageProcessor
 
-from owa.data.datasets import load_from_disk, prepare_fsl
-from owa.data.episode_tokenizer import EpisodeTokenizer
+from owa.data.datasets import load_from_disk
 
 # This line is to enable throughput logging from FSLDataset
 logger.enable("owa.data.datasets.fsl_dataset")
 
-# Load event dataset
-event_dataset = load_from_disk("/raid/datasets/owa/data/csgo-event")
-tokenizer = AutoTokenizer.from_pretrained("HuggingFaceTB/SmolVLM2-256M-Video-Instruct")
+# Load FSL dataset (pre-computed)
+dataset = load_from_disk("/raid/datasets/owa/data/csgo-fsl")
 image_processor = AutoImageProcessor.from_pretrained(
     "HuggingFaceTB/SmolVLM2-256M-Video-Instruct", do_image_splitting=False, use_fast=True
 )
 
-event_tokenizer = EpisodeTokenizer(image_token="<image>")
-event_tokenizer.prepare_model(tokenizer=tokenizer)
+# Apply FSL transform for on-the-fly processing
+train_dataset = dataset["train"]
+train_dataset.auto_set_transform(stage="fsl", load_images=True, image_processor=image_processor)
 
-for split, dataset in event_dataset.items():
-    tokenized = event_tokenizer.tokenize_event_dataset(dataset)
-    event_dataset[split] = tokenized
-
-
-dataset = prepare_fsl(
-    event_dataset["train"],
-    image_processor=image_processor,
-    pad_token_id=tokenizer.pad_token_id,
-    max_sequence_length=1024,
-)
-
-for sample in dataset.take(1):
+for sample in train_dataset.take(1):
     print(f"{sample=}")
 
 # take random shuffle
-shuffled_index = np.random.permutation(len(dataset))
+shuffled_index = np.random.permutation(len(train_dataset))
 for i in tqdm(shuffled_index):  # expected: 2.1 it/s
-    sample = dataset[i]
+    sample = train_dataset[int(i)]

@@ -6,8 +6,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import AutoImageProcessor, AutoProcessor
 
-from owa.data.datasets import load_from_disk, prepare_fsl
-from owa.data.episode_tokenizer import EpisodeTokenizer
+from owa.data.datasets import load_from_disk
 
 logger.enable("owa.data.datasets.fsl_dataset")
 
@@ -78,32 +77,19 @@ def main():
     # 1) Initialize Accelerator
     accelerator = Accelerator()
 
-    # 2) Load & tokenize your event dataset
-    print("▶ Loading raw dataset…")
-    event_ds = load_from_disk("/mnt/raid12/datasets/owa/data/super-hexagon-event")
+    # 2) Load FSL dataset (pre-computed)
+    print("▶ Loading FSL dataset…")
+    fsl_ds = load_from_disk("/mnt/raid12/datasets/owa/data/super-hexagon-fsl")
 
-    print("▶ Loading tokenizer…")
+    print("▶ Loading image processor…")
     processor = AutoProcessor.from_pretrained("HuggingFaceTB/SmolVLM2-256M-Video-Instruct", do_image_splitting=False)
     processor.image_processor = AutoImageProcessor.from_pretrained(
         "HuggingFaceTB/SmolVLM2-256M-Video-Instruct", use_fast=True, do_image_splitting=False
     )
 
-    print("▶ Preparing EpisodeTokenizer…")
-    ep_tok = EpisodeTokenizer(image_token="<image>")
-    ep_tok.prepare_model(tokenizer=processor.tokenizer)
-
-    print("▶ Tokenizing splits…")
-    tokenized = {}
-    for split, ds in event_ds.items():
-        tokenized[split] = ep_tok.tokenize_event_dataset(ds)
-
-    # 3) Wrap into your FSLDataset (only train shown here)
-    train_ds = prepare_fsl(
-        tokenized["train"],
-        image_processor=processor.image_processor,
-        pad_token_id=processor.tokenizer.pad_token_id,
-        max_sequence_length=1024,
-    )
+    # 3) Apply FSL transform for on-the-fly processing
+    train_ds = fsl_ds["train"]
+    train_ds.auto_set_transform(stage="fsl", load_images=True, image_processor=processor.image_processor)
     # train_ds = DummyDataset()
 
     # 4) Create a DataLoader

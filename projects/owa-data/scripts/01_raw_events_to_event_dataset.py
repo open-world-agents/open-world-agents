@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Process raw MCAP files to create event datasets."""
 
-import random
 import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 from typing import Dict, List, Optional
 
+import numpy as np
 import typer
 from datasets import Dataset as HFDataset
 from datasets import DatasetDict, Features, Value
@@ -258,7 +258,8 @@ def main(
             raise typer.BadParameter(f"Same files present in train-dir and test-dir: {len(overlap)} files")
     else:
         shuffled = train_files.copy()
-        random.shuffle(shuffled)
+        shuffled_index = np.random.permutation(len(shuffled))
+        shuffled = [shuffled[i] for i in shuffled_index]
         test_count = max(1, int(len(shuffled) * test_percent))
         test_files = shuffled[:test_count]
         train_files = shuffled[test_count:]
