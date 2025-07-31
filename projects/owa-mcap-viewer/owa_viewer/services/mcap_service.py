@@ -5,10 +5,10 @@ from typing import Any, Dict, List
 
 from mcap_owa.highlevel import OWAMcapReader
 
-from ..models.mcap import McapDataRequest, McapMetadata
-from ..services.cache_service import cache_service
-from ..services.file_service import file_service
-from ..utils.exceptions import FileNotFoundError, McapProcessingError
+from ..models import McapDataRequest, McapMetadata
+from ..utils import FileNotFoundError, McapProcessingError
+from .cache_service import CacheService
+from .file_service import FileService
 
 logger = logging.getLogger(__name__)
 
@@ -16,27 +16,22 @@ logger = logging.getLogger(__name__)
 class McapService:
     """Service for handling MCAP file operations"""
 
+    def __init__(self, file_service: FileService, cache_service: CacheService):
+        """Initialize MCAP service with dependencies"""
+        self.file_service = file_service
+        self.cache_service = cache_service
+
     def get_mcap_info(self, mcap_filename: str, local: bool) -> Dict[str, Any]:
-        """
-        Get information about an MCAP file using the owl CLI
-
-        Args:
-            mcap_filename: Path or URL to the MCAP file
-            local: Whether the file is local
-
-        Returns:
-            Dictionary with MCAP info and local flag
-        """
+        """Get information about an MCAP file using the owl CLI"""
         mcap_path, is_temp = None, False
 
         try:
-            mcap_path, is_temp = file_service.get_file_path(mcap_filename, local)
+            mcap_path, is_temp = self.file_service.get_file_path(mcap_filename, local)
             logger.info(f"Getting MCAP info for: {mcap_path}")
 
             try:
                 # Run the `owl mcap info` command
                 output = subprocess.check_output(["owl", "mcap", "info", str(mcap_path)], text=True)
-
                 # Parse only the relevant part of the output
                 output = output[output.find("library:") :]
                 return {"info": output, "local": local}
@@ -47,22 +42,13 @@ class McapService:
 
         finally:
             if is_temp and mcap_path:
-                file_service.cleanup_temp_file(mcap_path)
+                self.file_service.cleanup_temp_file(mcap_path)
 
     def get_mcap_metadata(self, mcap_filename: str, local: bool) -> McapMetadata:
-        """
-        Get metadata for an MCAP file
-
-        Args:
-            mcap_filename: Path or URL to the MCAP file
-            local: Whether the file is local
-
-        Returns:
-            McapMetadata object
-        """
+        """Get metadata for an MCAP file"""
         # Check cache first
         cache_key = f"{'local' if local else 'remote'}:{mcap_filename}"
-        cached_metadata = cache_service.get_metadata(cache_key)
+        cached_metadata = self.cache_service.get_metadata(cache_key)
         if cached_metadata:
             logger.info(f"Using cached metadata for {mcap_filename}")
             return McapMetadata(**cached_metadata)
@@ -71,7 +57,7 @@ class McapService:
         mcap_path, is_temp = None, False
 
         try:
-            mcap_path, is_temp = file_service.get_file_path(mcap_filename, local)
+            mcap_path, is_temp = self.file_service.get_file_path(mcap_filename, local)
             logger.info(f"Building metadata for MCAP file: {mcap_path}")
 
             if not Path(mcap_path).exists():
@@ -86,7 +72,7 @@ class McapService:
                     )
 
                     # Cache the metadata
-                    cache_service.set_metadata(cache_key, metadata.model_dump())
+                    self.cache_service.set_metadata(cache_key, metadata.model_dump())
 
                     logger.info(
                         f"Metadata built for {mcap_path}: {len(metadata.topics)} topics, "
@@ -101,23 +87,15 @@ class McapService:
 
         finally:
             if is_temp and mcap_path:
-                file_service.cleanup_temp_file(mcap_path)
+                self.file_service.cleanup_temp_file(mcap_path)
 
     def get_mcap_data(self, request: McapDataRequest) -> Dict[str, List[Dict[str, Any]]]:
-        """
-        Extract data from MCAP file for specified time range and topics
-
-        Args:
-            request: McapDataRequest with parameters
-
-        Returns:
-            Dictionary mapping topics to lists of messages
-        """
+        """Extract data from MCAP file for specified time range and topics"""
         mcap_path, is_temp = None, False
 
         try:
             # Get the file
-            mcap_path, is_temp = file_service.get_file_path(request.mcap_filename, request.local)
+            mcap_path, is_temp = self.file_service.get_file_path(request.mcap_filename, request.local)
 
             # Get metadata to determine time range if needed
             metadata = self.get_mcap_metadata(request.mcap_filename, request.local)
@@ -155,8 +133,4 @@ class McapService:
 
         finally:
             if is_temp and mcap_path:
-                file_service.cleanup_temp_file(mcap_path)
-
-
-# Create singleton instance
-mcap_service = McapService()
+                self.file_service.cleanup_temp_file(mcap_path)
