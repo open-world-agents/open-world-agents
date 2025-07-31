@@ -21,7 +21,7 @@ python scripts/01_raw_events_to_event_dataset.py \
   --test-dir $MCAP_TEST_DIR \
   --output-dir $EVENT_DATASET_DIR \
   --rate screen=20 --rate mouse=60 \
-  --keep-topic screen --keep-topic keyboard
+  --keep-topic screen --keep-topic keyboard --keep-topic mouse/raw
 
 # 2. (Optional) Event Dataset → Binned Dataset
 python scripts/02_event_dataset_to_binned_dataset.py \
@@ -157,7 +157,7 @@ These scripts demonstrate the full pipeline from event dataset → tokenization 
 
 ### Performance Metrics
 
-To enable logging, set `logger.enable("owa.data.fsl_dataset")` for loguru logger.
+To enable logging, set `logger.enable("owa.data.datasets.fsl_dataset")` for loguru logger.
 
 ```
 FSL[30] | Total: 3.2s/s, 3,274t/s, 44.8i/s, 49.5Mb/s | EMA: 3.0s/s, 3,073t/s, 42.0i/s, 46.5Mb/s
