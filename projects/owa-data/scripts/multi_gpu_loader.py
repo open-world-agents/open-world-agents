@@ -8,7 +8,8 @@ from transformers import AutoImageProcessor, AutoProcessor
 
 from owa.data.datasets import load_from_disk
 
-logger.enable("owa.data.datasets.fsl_dataset")
+# This line is to enable throughput logging from FSLTransform
+logger.enable("owa.data.datasets.transforms")
 
 
 class DummyDataset(torch.utils.data.Dataset):

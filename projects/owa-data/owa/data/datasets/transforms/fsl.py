@@ -2,14 +2,112 @@
 
 import concurrent.futures
 import os
+import time
 import warnings
 from dataclasses import dataclass
 from typing import Any, List, Optional
 
+import numpy as np
 import torch
+from loguru import logger
 
 from owa.msgs.desktop.screen import ScreenCaptured
+
 from .utils import resolve_episode_path
+
+
+class FSLStatLogger:
+    """Performance statistics logger with exponential moving averages."""
+
+    def __init__(self, log_every: int = 10, decay_alpha: float = 0.9):
+        self.log_every = log_every
+        self.decay_alpha = decay_alpha
+        self.count = 0
+        self.start_time = time.time()
+        self.last_log_time = self.start_time
+
+        # Cumulative totals
+        self._totals = {"tokens": 0, "images": 0, "image_bits": 0}
+
+        # Recent metrics (since last log)
+        self._recent = {"tokens": 0, "images": 0, "samples": 0, "image_bits": 0}
+
+        # Exponential moving averages
+        self._emas = {"samples_per_sec": None, "tokens_per_sec": None, "images_per_sec": None, "image_bitrate": None}
+
+    def update(self, count: int, tokens: int, images: int, image_bits: int):
+        self.count += count
+
+        # Update totals and recent metrics
+        for key, value in zip(["tokens", "images", "image_bits"], [tokens, images, image_bits]):
+            self._totals[key] += value
+            self._recent[key] += value
+        self._recent["samples"] += count
+
+        if self.count % self.log_every == 0:
+            self._log_stats()
+
+    def _log_stats(self):
+        current_time = time.time()
+        elapsed_total = current_time - self.start_time
+        elapsed_recent = current_time - self.last_log_time
+
+        # Calculate rates
+        total_rates = self._calculate_rates(self._totals, self.count, elapsed_total)
+        recent_rates = self._calculate_rates(self._recent, self._recent["samples"], elapsed_recent)
+
+        # Update EMAs
+        self._update_emas(recent_rates)
+
+        # Log message
+        ema_str = self._format_ema_string() if self._emas["samples_per_sec"] is not None else ""
+        logger.debug(f"FSL[{self.count}] | Total: {self._format_rates(total_rates)}{ema_str}")
+
+        # Reset recent counters
+        self._recent = {key: 0 for key in self._recent}
+        self.last_log_time = current_time
+
+    def _calculate_rates(self, metrics: dict, samples: int, elapsed: float) -> dict:
+        safe_elapsed = elapsed + 1e-6
+        return {
+            "samples_per_sec": samples / safe_elapsed,
+            "tokens_per_sec": metrics["tokens"] / safe_elapsed,
+            "images_per_sec": metrics["images"] / safe_elapsed,
+            "image_bitrate": metrics["image_bits"] / safe_elapsed,
+        }
+
+    def _update_emas(self, recent_rates: dict):
+        for key, rate in recent_rates.items():
+            if self._emas[key] is None:
+                self._emas[key] = rate
+            else:
+                current_ema = self._emas[key]
+                assert current_ema is not None  # Type hint for mypy
+                self._emas[key] = self.decay_alpha * current_ema + (1 - self.decay_alpha) * rate
+
+    def _format_rates(self, rates: dict) -> str:
+        return (
+            f"{rates['samples_per_sec']:.1f}s/s, {rates['tokens_per_sec']:,.0f}t/s, "
+            f"{rates['images_per_sec']:.1f}i/s, {self._format_bitrate(rates['image_bitrate'])}"
+        )
+
+    def _format_ema_string(self) -> str:
+        # All EMAs should be non-None when this is called
+        assert all(ema is not None for ema in self._emas.values())
+        image_bitrate = self._emas["image_bitrate"]
+        assert image_bitrate is not None  # Type hint for mypy
+        return (
+            f" | EMA: {self._emas['samples_per_sec']:.1f}s/s, "
+            f"{self._emas['tokens_per_sec']:,.0f}t/s, {self._emas['images_per_sec']:.1f}i/s, "
+            f"{self._format_bitrate(image_bitrate)}"
+        )
+
+    @staticmethod
+    def _format_bitrate(bits_per_sec: float) -> str:
+        for unit, threshold in [("Gb/s", 1e9), ("Mb/s", 1e6), ("Kb/s", 1e3)]:
+            if bits_per_sec >= threshold:
+                return f"{bits_per_sec / threshold:.1f}{unit}"
+        return f"{bits_per_sec:.0f}b/s"
 
 
 @dataclass
@@ -36,6 +134,7 @@ class FSLTransform:
 
         self.config = config
         self.is_decoding_server_available = "VIDEO_DECODING_SERVER_URL" in os.environ
+        self.stat_logger = FSLStatLogger()
 
     def __call__(self, batch):
         """Transform batch for FSL stage."""
@@ -51,15 +150,25 @@ class FSLTransform:
             "images": [],
         }
 
+        # Track metrics for logging
+        total_tokens = 0
+        total_images = 0
+        total_image_bits = 0
+
         for i in range(batch_size):
             image_msgs_json = batch["images"][i]
             episode_path = resolve_episode_path(batch["episode_path"][i], self.config.mcap_root_directory)
+
+            # Count tokens for this sample (exclude padding tokens)
+            sample_tokens = len([token for token in batch["input_ids"][i] if token != 0])
+            total_tokens += sample_tokens
 
             # Deserialize ScreenCaptured messages
             image_msgs = [
                 ScreenCaptured.model_validate_json(img_json).resolve_relative_path(episode_path)
                 for img_json in image_msgs_json
             ]
+            total_images += len(image_msgs)
 
             if not self.config.load_images:
                 results["images"].append(image_msgs)
@@ -72,6 +181,10 @@ class FSLTransform:
             # Convert to PIL images
             all_images = [img.to_pil_image() for img in image_msgs]
 
+            # Calculate image bits
+            image_bits = sum(image.width * image.height * 3 for image in all_images)
+            total_image_bits += image_bits
+
             # Process with image processor if available
             if self.config.image_processor is not None and all_images:
                 pixel_values = []
@@ -82,6 +195,9 @@ class FSLTransform:
                 results["images"].append(torch.stack(pixel_values) if pixel_values else torch.empty(0, 3, 224, 224))
             else:
                 results["images"].append(all_images)
+
+        # Update statistics
+        self.stat_logger.update(batch_size, total_tokens, total_images, total_image_bits)
 
         return results
 

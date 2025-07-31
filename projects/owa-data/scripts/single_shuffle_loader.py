@@ -5,8 +5,8 @@ from transformers import AutoImageProcessor
 
 from owa.data.datasets import load_from_disk
 
-# This line is to enable throughput logging from FSLDataset
-logger.enable("owa.data.datasets.fsl_dataset")
+# This line is to enable throughput logging from FSLTransform
+logger.enable("owa.data.datasets.transforms")
 
 # Load FSL dataset (pre-computed)
 dataset = load_from_disk("/raid/datasets/owa/data/csgo-fsl")
