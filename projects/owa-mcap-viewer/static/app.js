@@ -1,4 +1,18 @@
 // static/app.js - complete working version
+
+// Debug: Intercept all fetch requests to track down the null request
+const originalFetch = window.fetch;
+window.fetch = function (...args) {
+    const url = args[0];
+    if (typeof url === 'string' && url.includes('/files/null')) {
+        console.error('INTERCEPTED: Request to /files/null detected!');
+        console.error('Stack trace:', new Error().stack);
+        // Block the request
+        return Promise.reject(new Error('Blocked request to /files/null'));
+    }
+    return originalFetch.apply(this, args);
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     // DOM Elements
     const fileList = document.getElementById('file-list');
@@ -6,6 +20,34 @@ document.addEventListener('DOMContentLoaded', () => {
     const uploadedFileList = document.getElementById('uploaded-file-list');
     const videoPlayer = document.getElementById('video-player');
     const videoSource = document.getElementById('video-source');
+
+    // Debug: Monitor video source changes
+    if (videoSource) {
+        const originalSetAttribute = videoSource.setAttribute;
+        videoSource.setAttribute = function (name, value) {
+            if (name === 'src' && (value === 'null' || value === null || value === undefined)) {
+                console.error('DETECTED: Attempt to set video source to null/invalid value:', value);
+                console.error('Stack trace:', new Error().stack);
+                return; // Block the invalid assignment
+            }
+            return originalSetAttribute.call(this, name, value);
+        };
+
+        // Also monitor direct src property assignment
+        let srcValue = '';
+        Object.defineProperty(videoSource, 'src', {
+            get: function () { return srcValue; },
+            set: function (value) {
+                if (value === 'null' || value === null || value === undefined) {
+                    console.error('DETECTED: Attempt to set video src property to null/invalid value:', value);
+                    console.error('Stack trace:', new Error().stack);
+                    return; // Block the invalid assignment
+                }
+                srcValue = value;
+                originalSetAttribute.call(this, 'src', value);
+            }
+        });
+    }
     const timelineMarker = document.getElementById('timeline-marker');
     const windowInfo = document.getElementById('window-info');
     const keyboardDisplay = document.getElementById('keyboard-display');
@@ -277,9 +319,55 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Helper function to completely reset video element
+    function resetVideoElement() {
+        console.log("Resetting video element completely");
+
+        // Pause and reset playback
+        videoPlayer.pause();
+        videoPlayer.currentTime = 0;
+
+        // Remove all possible source attributes
+        videoSource.removeAttribute('src');
+        videoPlayer.removeAttribute('src');
+        videoPlayer.src = "";
+
+        // Clear any data URLs that might be cached
+        if (videoPlayer.src && videoPlayer.src.startsWith('blob:')) {
+            URL.revokeObjectURL(videoPlayer.src);
+        }
+
+        // Force reload to clear any cached sources
+        videoPlayer.load();
+    }
+
+    // Helper function to safely set video source
+    function safeSetVideoSource(url) {
+        if (!url || url === null || url === "null" || url === undefined || url === "undefined") {
+            console.log("Removing video source - invalid URL:", url);
+            resetVideoElement();
+        } else {
+            console.log("Setting video source to:", url);
+            // Reset first to clear any previous sources
+            resetVideoElement();
+            // Set the new source
+            videoSource.src = url;
+            videoPlayer.load();
+        }
+    }
+
     // Set video source using MediaRef-based approach or legacy fallback
     async function setVideoSource(pair) {
         try {
+            console.log("setVideoSource called with pair:", {
+                basename: pair.basename,
+                url_mkv: pair.url_mkv,
+                has_external_media: pair.has_external_media,
+                media_references_length: pair.media_references?.length || 0
+            });
+
+            // Reset video element completely at the start to prevent any cached requests
+            resetVideoElement();
             // First, try to get primary video from MediaRef
             if (pair.has_external_media || pair.media_references?.length > 0) {
                 console.log("Attempting to load video from MediaRef...");
@@ -289,8 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // For large video files (potentially 10GB+), use direct URL instead of blob
                     // This allows the browser to stream the video efficiently
                     const videoUrl = `/files/primary_video?mcap_filename=${pair.url_mcap}&local=${pair.local}`;
-                    videoSource.src = videoUrl;
-                    videoPlayer.load();
+                    safeSetVideoSource(videoUrl);
                     console.log("Successfully loaded video from MediaRef (streaming)");
                     return;
                 } else {
@@ -302,40 +389,38 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Fallback to legacy MKV file if available
-            if (pair.url_mkv) {
+            if (pair.url_mkv && pair.url_mkv !== null && pair.url_mkv !== "null") {
                 console.log("Falling back to legacy MKV file...");
                 if (pair.local) {
-                    console.log(`Setting video source to: /files/${pair.url_mkv}`);
-                    videoSource.src = `/files/${pair.url_mkv}`;
+                    const mkvUrl = `/files/${pair.url_mkv}`;
+                    console.log(`Setting video source to: ${mkvUrl}`);
+                    safeSetVideoSource(mkvUrl);
                 } else {
                     console.log(`Setting video source to: ${pair.url_mkv}`);
-                    videoSource.src = pair.url_mkv;
+                    safeSetVideoSource(pair.url_mkv);
                 }
-                videoPlayer.load();
                 console.log("Successfully loaded legacy MKV file");
                 return;
             }
 
             // No video source available
             console.warn("No video source available for this MCAP file");
-            videoSource.removeAttribute('src');
-            videoPlayer.load();
+            safeSetVideoSource(null);
 
         } catch (error) {
             console.error("Error setting video source:", error);
 
             // Final fallback to legacy MKV if available
-            if (pair.url_mkv) {
+            if (pair.url_mkv && pair.url_mkv !== null && pair.url_mkv !== "null") {
                 console.log("Error occurred, trying legacy MKV as final fallback...");
                 if (pair.local) {
-                    videoSource.src = `/files/${pair.url_mkv}`;
+                    safeSetVideoSource(`/files/${pair.url_mkv}`);
                 } else {
-                    videoSource.src = pair.url_mkv;
+                    safeSetVideoSource(pair.url_mkv);
                 }
-                videoPlayer.load();
             } else {
-                videoSource.removeAttribute('src');
-                videoPlayer.load();
+                console.log("No valid video source available, removing video src attribute");
+                safeSetVideoSource(null);
             }
         }
     }
@@ -962,6 +1047,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Initialize the application
+    // Reset video element on page load to prevent any cached sources
+    if (videoSource && videoPlayer) {
+        videoSource.removeAttribute('src');
+        videoPlayer.removeAttribute('src');
+        videoPlayer.src = "";
+        console.log("Video element reset on page load");
+    }
+
     fetchFilePairs();
     updateUploadedFilesList();
 

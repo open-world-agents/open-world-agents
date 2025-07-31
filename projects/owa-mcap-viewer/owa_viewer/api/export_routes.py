@@ -156,6 +156,14 @@ async def export_file(file_path: str):
     Returns:
         FileResponse with the requested file
     """
+    # Log all requests to this endpoint for debugging
+    logger.info(f"Legacy file endpoint called with file_path: '{file_path}' (type: {type(file_path)})")
+
+    # Block obviously invalid requests
+    if file_path in ["null", "undefined", "", "None"]:
+        logger.warning(f"Blocking invalid file request: '{file_path}'")
+        raise HTTPException(status_code=400, detail=f"Invalid file path: {file_path}")
+
     try:
         # Use the file service to get the file path
         full_file_path = file_service.file_repository.get_local_file_path(file_path)
