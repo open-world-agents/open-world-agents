@@ -2,6 +2,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // DOM Elements
     const fileList = document.getElementById('file-list');
+    const fileCount = document.getElementById('file-count');
     const uploadedFileList = document.getElementById('uploaded-file-list');
     const videoPlayer = document.getElementById('video-player');
     const videoSource = document.getElementById('video-source');
@@ -40,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Pagination state
     let currentPage = 0;
-    const pageSize = 100;
+    const pageSize = 10; // Reduced for testing - change back to 100 for production
     let allFiles = [];
     let isLoadingFiles = false;
 
@@ -147,6 +148,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('Load More button added');
             } else {
                 console.log('No Load More button needed - fewer files than page size');
+            }
+
+            // Update file count display
+            if (fileCount) {
+                fileCount.textContent = `Showing ${allFiles.length} files${data.length === pageSize ? ' (more available)' : ''}`;
             }
 
             // Automatically load the first file only if no file is currently selected and this is the first load
@@ -287,6 +293,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     videoPlayer.load();
                     console.log("Successfully loaded video from MediaRef (streaming)");
                     return;
+                } else {
+                    console.warn(`MediaRef video request failed: ${videoResponse.status} ${videoResponse.statusText}`);
+                    if (videoResponse.status === 404) {
+                        console.log("No video reference found in MediaRef, trying legacy fallback...");
+                    }
                 }
             }
 
@@ -307,7 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // No video source available
             console.warn("No video source available for this MCAP file");
-            videoSource.src = "";
+            videoSource.removeAttribute('src');
             videoPlayer.load();
 
         } catch (error) {
@@ -323,7 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 videoPlayer.load();
             } else {
-                videoSource.src = "";
+                videoSource.removeAttribute('src');
                 videoPlayer.load();
             }
         }

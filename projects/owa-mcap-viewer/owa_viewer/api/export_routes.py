@@ -48,12 +48,18 @@ async def get_primary_video(
         Primary video URI or error if no video found
     """
     try:
+        logger.info(f"Getting primary video for MCAP: {mcap_filename} (local={local})")
         video_uri = media_service.get_primary_video_reference(mcap_filename, local)
         if video_uri:
+            logger.info(f"Found primary video URI: {video_uri}")
             # Return the media content directly
             return media_service.serve_media_from_reference(mcap_filename, video_uri, local)
         else:
-            raise HTTPException(status_code=404, detail="No video reference found in MCAP file")
+            logger.warning(f"No video reference found in MCAP file: {mcap_filename}")
+            raise HTTPException(status_code=404, detail=f"No video reference found in MCAP file: {mcap_filename}")
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
     except Exception as e:
         logger.error(f"Error getting primary video for {mcap_filename}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error getting primary video: {str(e)}")
@@ -80,6 +86,63 @@ async def validate_media_references(
     except Exception as e:
         logger.error(f"Error validating media references for {mcap_filename}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error validating media references: {str(e)}")
+
+
+@router.get("/debug_screen_messages")
+async def debug_screen_messages(
+    mcap_filename: str = Query(..., description="MCAP filename"),
+    local: bool = Query(True, description="Whether the MCAP file is local"),
+    limit: int = Query(5, description="Number of messages to examine"),
+):
+    """
+    Debug endpoint to examine screen messages in an MCAP file.
+    """
+    try:
+        from mcap_owa.highlevel import OWAMcapReader
+
+        mcap_path, is_temp = media_service.file_service.get_file_path(mcap_filename, local)
+
+        messages_info = []
+        with OWAMcapReader(str(mcap_path)) as reader:
+            count = 0
+            for mcap_msg in reader.iter_messages(topics=["screen"]):
+                if count >= limit:
+                    break
+                count += 1
+
+                screen_data = mcap_msg.decoded
+
+                msg_info = {
+                    "message_index": count,
+                    "timestamp": mcap_msg.log_time,
+                    "has_media_ref": hasattr(screen_data, "media_ref") and screen_data.media_ref is not None,
+                    "has_path": hasattr(screen_data, "path") and screen_data.path is not None,
+                }
+
+                if hasattr(screen_data, "media_ref") and screen_data.media_ref:
+                    media_ref = screen_data.media_ref
+                    msg_info["media_ref"] = {
+                        "uri": getattr(media_ref, "uri", "N/A"),
+                        "is_video": getattr(media_ref, "is_video", False),
+                        "pts_ns": getattr(media_ref, "pts_ns", None),
+                        "is_embedded": getattr(media_ref, "is_embedded", False),
+                    }
+
+                if hasattr(screen_data, "path") and screen_data.path:
+                    msg_info["legacy_path"] = screen_data.path
+                    msg_info["legacy_pts"] = getattr(screen_data, "pts", None)
+
+                messages_info.append(msg_info)
+
+        # Clean up temporary MCAP file if needed
+        if is_temp:
+            media_service.file_service.cleanup_temp_file(mcap_path)
+
+        return {"mcap_filename": mcap_filename, "messages_examined": len(messages_info), "messages": messages_info}
+
+    except Exception as e:
+        logger.error(f"Error debugging screen messages for {mcap_filename}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error debugging screen messages: {str(e)}")
 
 
 @router.get("/{file_path:path}")

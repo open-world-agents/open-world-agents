@@ -207,7 +207,14 @@ class MediaService:
             with OWAMcapReader(str(mcap_path)) as reader:
                 # Look for the first video reference in screen messages
                 # This only reads message metadata, not actual media content
+                messages_checked = 0
+                max_messages_to_check = 10  # Check more messages to find video reference
+
                 for mcap_msg in reader.iter_messages(topics=["screen"]):
+                    if messages_checked >= max_messages_to_check:
+                        break
+                    messages_checked += 1
+
                     screen_data = mcap_msg.decoded
 
                     # Handle both new MediaRef format and legacy format
@@ -216,15 +223,16 @@ class MediaService:
                         if getattr(media_ref, "is_video", False) or getattr(media_ref, "pts_ns", None) is not None:
                             uri = getattr(media_ref, "uri", "")
                             if uri:
+                                logger.info(f"Found video reference in MediaRef: {uri}")
                                 return uri
                     elif hasattr(screen_data, "path") and screen_data.path:
                         # Legacy format
                         pts = getattr(screen_data, "pts", None)
                         if pts is not None:
+                            logger.info(f"Found video reference in legacy format: {screen_data.path}")
                             return screen_data.path
 
-                    # Only check first few messages for performance
-                    break
+                logger.warning(f"No video reference found in first {messages_checked} screen messages")
 
             # Clean up temporary MCAP file if needed
             if is_temp:
