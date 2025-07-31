@@ -160,7 +160,7 @@ class FSLTransform:
             episode_path = resolve_episode_path(batch["episode_path"][i], self.config.mcap_root_directory)
 
             # Count tokens for this sample (exclude padding tokens)
-            sample_tokens = len([token for token in batch["input_ids"][i] if token != 0])
+            sample_tokens = len([token for token in batch["input_ids"][i] if token != self.config.pad_token_id])
             total_tokens += sample_tokens
 
             # Deserialize ScreenCaptured messages
@@ -209,8 +209,6 @@ class FSLTransform:
                 try:
                     future.result(timeout=30)
                 except Exception as e:
-                    import numpy as np
-
                     image_msgs[idx].frame_arr = np.zeros((512, 512, 3), dtype=np.uint8)
                     warnings.warn(f"Failed to load image at index {idx}: {e}. Using placeholder.", UserWarning)
 
