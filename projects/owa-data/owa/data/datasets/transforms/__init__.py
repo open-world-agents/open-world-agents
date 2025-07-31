@@ -10,7 +10,7 @@ from .utils import resolve_episode_path
 def create_transform(stage: str, mcap_root_directory: str, **kwargs):
     """Create a transform function for a given stage."""
     from ..config import DatasetStage
-    
+
     if stage == DatasetStage.EVENT:
         return create_event_transform(mcap_root_directory=mcap_root_directory, **kwargs)
     elif stage == DatasetStage.BINNED:
@@ -25,7 +25,7 @@ def create_transform(stage: str, mcap_root_directory: str, **kwargs):
 
 __all__ = [
     "create_event_transform",
-    "create_binned_transform", 
+    "create_binned_transform",
     "create_tokenized_transform",
     "create_fsl_transform",
     "create_transform",
