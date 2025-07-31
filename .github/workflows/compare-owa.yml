@@ -198,7 +198,7 @@ jobs:
                       `git clone --branch ${targetBranch} https://github.com/open-world-agents/open-world-agents.git /tmp/upstream-pr\n` +
                       "cd /tmp/upstream-pr\n" +
                       `git checkout -b sync-${targetBranch}-$(date +%Y%m%d)\n` +
-                      "rsync -av --delete --exclude='.git' \"\\$OLDPWD/open-world-agents/\" ./\n" +
+                      "rsync -av --delete --exclude='.git' \"$OLDPWD/open-world-agents/\" ./\n" +
                       "git add -A\n" +
                       `git commit -m \"Sync changes from proprietary to ${targetBranch}\"\n` +
                       `git push origin sync-${targetBranch}-$(date +%Y%m%d)\n` +
