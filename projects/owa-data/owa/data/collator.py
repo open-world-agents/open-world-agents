@@ -1,5 +1,9 @@
 import torch
-from transformers import PreTrainedTokenizer
+
+try:
+    from transformers import PreTrainedTokenizer
+except ImportError:
+    PreTrainedTokenizer = None
 
 
 def collate_fn(examples, max_sequence_length: int | None = None, tokenizer: PreTrainedTokenizer | None = None):

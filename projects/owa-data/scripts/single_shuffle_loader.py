@@ -1,17 +1,16 @@
 import numpy as np
-from datasets import load_from_disk
 from loguru import logger
 from tqdm import tqdm
 from transformers import AutoImageProcessor, AutoTokenizer
 
-from owa.data.datasets import FSLDataset
+from owa.data.datasets import load_from_disk, prepare_fsl
 from owa.data.episode_tokenizer import EpisodeTokenizer
 
 # This line is to enable throughput logging from FSLDataset
 logger.enable("owa.data.datasets.fsl_dataset")
 
 # Load event dataset
-event_dataset = load_from_disk("/mnt/raid12/datasets/owa/data/super-hexagon-event")
+event_dataset = load_from_disk("/raid/datasets/owa/data/csgo-event")
 tokenizer = AutoTokenizer.from_pretrained("HuggingFaceTB/SmolVLM2-256M-Video-Instruct")
 image_processor = AutoImageProcessor.from_pretrained(
     "HuggingFaceTB/SmolVLM2-256M-Video-Instruct", do_image_splitting=False, use_fast=True
@@ -25,13 +24,12 @@ for split, dataset in event_dataset.items():
     event_dataset[split] = tokenized
 
 
-dataset = FSLDataset(
+dataset = prepare_fsl(
     event_dataset["train"],
     image_processor=image_processor,
     pad_token_id=tokenizer.pad_token_id,
     max_sequence_length=1024,
 )
-dataset.prepare()
 
 for sample in dataset.take(1):
     print(f"{sample=}")
@@ -39,4 +37,4 @@ for sample in dataset.take(1):
 # take random shuffle
 shuffled_index = np.random.permutation(len(dataset))
 for i in tqdm(shuffled_index):  # expected: 2.1 it/s
-    ...
+    sample = dataset[i]

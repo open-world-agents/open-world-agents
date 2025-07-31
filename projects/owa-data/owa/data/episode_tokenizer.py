@@ -77,7 +77,12 @@ class EpisodeTokenizer:
             total_token_count=len(token_ids),
         )
 
-    def tokenize_event_dataset(self, event_dataset: Dataset, map_kwargs: dict = {"num_proc": 16}) -> Dataset:
+    def tokenize_event_dataset(self, event_dataset: Dataset, map_kwargs: dict = {"num_proc": 32}) -> Dataset:
+        # Check if the input is a Dataset
+        if not isinstance(event_dataset, Dataset):
+            raise ValueError(f"Expected Dataset from `owa.data.datasets`, got {type(event_dataset)}")
+
+        # Tokenize each event in the dataset
         def process_event(event, idx):
             prefix_text = suffix_text = ""
             # Add episode start token
@@ -106,6 +111,7 @@ class EpisodeTokenizer:
                 "total_token_count": tokenized_event["total_token_count"],
             }
 
+        # Tokenize the dataset
         tokenized_dataset = event_dataset.map(
             process_event,
             with_indices=True,
@@ -113,7 +119,24 @@ class EpisodeTokenizer:
             remove_columns=event_dataset.column_names,
             **map_kwargs,
         )
+
+        # Switch back to OWA Dataset from HF Dataset
         tokenized_dataset = Dataset.from_hf_dataset(tokenized_dataset, owa_config=event_dataset.owa_config)
         tokenized_dataset.owa_config.stage = DatasetStage.TOKENIZED
 
         return tokenized_dataset
+
+
+# Inefficient pscan impl
+def pscan(dataset: Dataset, round_n: int = 0, map_kwargs: dict = {"num_proc": 32}):
+    if len(dataset) - 1 <= (1 << round_n):
+        return dataset
+
+    def fn(example, idx):
+        if idx & (1 << round_n):
+            example["cumulative_token_count"] += dataset[idx - (1 << round_n)]["cumulative_token_count"]
+        return example
+
+    dataset = dataset.map(fn, with_indices=True, desc=f"PScan round {round_n}", **map_kwargs)
+    dataset = pscan(dataset, round_n + 1, map_kwargs)
+    return dataset
