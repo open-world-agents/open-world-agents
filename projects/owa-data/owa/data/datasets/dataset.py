@@ -99,17 +99,15 @@ class Dataset(HFDataset, OWADatasetMixin):
 
     @staticmethod
     def load_from_disk(dataset_path: PathLike, storage_options: Optional[dict] = None, **kwargs) -> "Dataset":  # type: ignore[override]
-        # Load HF dataset with remote support
         hf_kwargs = kwargs.copy()
         if storage_options:
             hf_kwargs["storage_options"] = storage_options
-
-        hf_dataset = HFDataset.load_from_disk(dataset_path, **hf_kwargs)
 
         # Try to load OWA config with remote support
         _, config_data, _ = resolve_dataset_path_and_config(dataset_path, storage_options)
         owa_config = DatasetConfig(**config_data)
 
+        hf_dataset = HFDataset.load_from_disk(dataset_path, **hf_kwargs)
         return Dataset.from_hf_dataset(hf_dataset, owa_config=owa_config)
 
 
