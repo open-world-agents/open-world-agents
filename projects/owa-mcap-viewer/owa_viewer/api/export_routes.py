@@ -29,7 +29,7 @@ async def export_file(file_path: str):
         logger.info(f"Serving file: {full_file_path}")
 
         # Determine media type based on file extension
-        media_type = "video/x-matroska" if file_path.endswith(".mkv") else "application/octet-stream"
+        media_type = "video/matroska" if file_path.endswith(".mkv") else "application/octet-stream"
 
         return FileResponse(full_file_path.as_posix(), media_type=media_type)
 
