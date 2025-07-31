@@ -24,254 +24,243 @@ class FSLDatasetConfig:
     pad_token_id: int = 0
     max_sequence_length: int = 8192
     load_images: bool = True
-    # TODO: trim_last_event: bool = True
 
 
 class FSLStatLogger:
-    """Every n-th sample, log the stats."""
+    """Performance statistics logger with exponential moving averages."""
 
-    def __init__(self, log_every=10, decay_alpha=0.9):
+    def __init__(self, log_every: int = 10, decay_alpha: float = 0.9):
         self.log_every = log_every
         self.decay_alpha = decay_alpha
         self.count = 0
-        self.total_tokens = 0
-        self.total_images = 0
-        self.total_episodes = 0
-        self.total_image_bits = 0
         self.start_time = time.time()
         self.last_log_time = self.start_time
-        # Recent metrics
-        self.tokens_since_last_log = 0
-        self.images_since_last_log = 0
-        self.samples_since_last_log = 0
-        self.image_bits_since_last_log = 0
-        # Exponential moving averages - initialize to None
-        self.ema_samples_per_sec = None
-        self.ema_tokens_per_sec = None
-        self.ema_images_per_sec = None
-        self.ema_image_bitrate = None
 
-    def update(self, count, tokens, images, image_bits):
+        # Cumulative totals
+        self._totals = {"tokens": 0, "images": 0, "image_bits": 0}
+
+        # Recent metrics (since last log)
+        self._recent = {"tokens": 0, "images": 0, "samples": 0, "image_bits": 0}
+
+        # Exponential moving averages
+        self._emas = {"samples_per_sec": None, "tokens_per_sec": None, "images_per_sec": None, "image_bitrate": None}
+
+    def update(self, count: int, tokens: int, images: int, image_bits: int):
         self.count += count
-        self.total_tokens += tokens
-        self.total_images += images
-        self.total_image_bits += image_bits
 
-        # Track recent metrics
-        self.samples_since_last_log += count
-        self.tokens_since_last_log += tokens
-        self.images_since_last_log += images
-        self.image_bits_since_last_log += image_bits
+        # Update totals and recent metrics
+        for key, value in zip(["tokens", "images", "image_bits"], [tokens, images, image_bits]):
+            self._totals[key] += value
+            self._recent[key] += value
+        self._recent["samples"] += count
 
         if self.count % self.log_every == 0:
-            current_time = time.time()
-            elapsed_total = current_time - self.start_time
-            elapsed_since_last = current_time - self.last_log_time
+            self._log_stats()
 
-            # Calculate total metrics
-            samples_per_sec_total = self.count / (elapsed_total + 1e-6)
-            tokens_per_sec_total = self.total_tokens / (elapsed_total + 1e-6)
-            images_per_sec_total = self.total_images / (elapsed_total + 1e-6)
-            image_bitrate_total = self.total_image_bits / (elapsed_total + 1e-6)
+    def _log_stats(self):
+        current_time = time.time()
+        elapsed_total = current_time - self.start_time
+        elapsed_recent = current_time - self.last_log_time
 
-            # Calculate recent metrics
-            if elapsed_since_last > 0:
-                samples_per_sec_recent = self.samples_since_last_log / elapsed_since_last
-                tokens_per_sec_recent = self.tokens_since_last_log / elapsed_since_last
-                images_per_sec_recent = self.images_since_last_log / elapsed_since_last
-                image_bitrate_recent = self.image_bits_since_last_log / elapsed_since_last
+        # Calculate rates
+        total_rates = self._calculate_rates(self._totals, self.count, elapsed_total)
+        recent_rates = self._calculate_rates(self._recent, self._recent["samples"], elapsed_recent)
 
-                # Update EMAs - initialize on first update
-                if self.ema_samples_per_sec is None:
-                    self.ema_samples_per_sec = samples_per_sec_recent
-                    self.ema_tokens_per_sec = tokens_per_sec_recent
-                    self.ema_images_per_sec = images_per_sec_recent
-                    self.ema_image_bitrate = image_bitrate_recent
-                else:
-                    # Simple EMA formula: new_ema = alpha * old_ema + (1-alpha) * new_value
-                    self.ema_samples_per_sec = (
-                        self.decay_alpha * self.ema_samples_per_sec + (1 - self.decay_alpha) * samples_per_sec_recent
-                    )
-                    self.ema_tokens_per_sec = (
-                        self.decay_alpha * self.ema_tokens_per_sec + (1 - self.decay_alpha) * tokens_per_sec_recent
-                    )
-                    self.ema_images_per_sec = (
-                        self.decay_alpha * self.ema_images_per_sec + (1 - self.decay_alpha) * images_per_sec_recent
-                    )
-                    self.ema_image_bitrate = (
-                        self.decay_alpha * self.ema_image_bitrate + (1 - self.decay_alpha) * image_bitrate_recent
-                    )
+        # Update EMAs
+        self._update_emas(recent_rates)
 
-            def format_bitrate(bits_per_sec):
-                if bits_per_sec >= 1e9:
-                    return f"{bits_per_sec / 1e9:.1f}Gb/s"
-                if bits_per_sec >= 1e6:
-                    return f"{bits_per_sec / 1e6:.1f}Mb/s"
-                if bits_per_sec >= 1e3:
-                    return f"{bits_per_sec / 1e3:.1f}Kb/s"
-                return f"{bits_per_sec:.0f}b/s"
+        # Log message
+        ema_str = self._format_ema_string() if self._emas["samples_per_sec"] is not None else ""
+        logger.debug(f"FSL[{self.count}] | Total: {self._format_rates(total_rates)}{ema_str}")
 
-            # Format log message
-            ema_str = ""
-            if self.ema_samples_per_sec is not None:
-                ema_str = (
-                    f" | EMA: {self.ema_samples_per_sec:.1f}s/s, "
-                    f"{self.ema_tokens_per_sec:,.0f}t/s, "
-                    f"{self.ema_images_per_sec:.1f}i/s, "
-                    f"{format_bitrate(self.ema_image_bitrate)}"
-                )
+        # Reset recent counters
+        self._recent = {key: 0 for key in self._recent}
+        self.last_log_time = current_time
 
-            logger.debug(
-                f"FSL[{self.count}] | Total: "
-                f"{samples_per_sec_total:.1f}s/s, "
-                f"{tokens_per_sec_total:,.0f}t/s, "
-                f"{images_per_sec_total:.1f}i/s, "
-                f"{format_bitrate(image_bitrate_total)}"
-                f"{ema_str}"
-            )
+    def _calculate_rates(self, metrics: dict, samples: int, elapsed: float) -> dict:
+        safe_elapsed = elapsed + 1e-6
+        return {
+            "samples_per_sec": samples / safe_elapsed,
+            "tokens_per_sec": metrics["tokens"] / safe_elapsed,
+            "images_per_sec": metrics["images"] / safe_elapsed,
+            "image_bitrate": metrics["image_bits"] / safe_elapsed,
+        }
 
-            # Reset recent counters
-            self.tokens_since_last_log = 0
-            self.images_since_last_log = 0
-            self.samples_since_last_log = 0
-            self.image_bits_since_last_log = 0
-            self.last_log_time = current_time
+    def _update_emas(self, recent_rates: dict):
+        for key, rate in recent_rates.items():
+            if self._emas[key] is None:
+                self._emas[key] = rate
+            else:
+                current_ema = self._emas[key]
+                assert current_ema is not None  # Type hint for mypy
+                self._emas[key] = self.decay_alpha * current_ema + (1 - self.decay_alpha) * rate
+
+    def _format_rates(self, rates: dict) -> str:
+        return (
+            f"{rates['samples_per_sec']:.1f}s/s, {rates['tokens_per_sec']:,.0f}t/s, "
+            f"{rates['images_per_sec']:.1f}i/s, {self._format_bitrate(rates['image_bitrate'])}"
+        )
+
+    def _format_ema_string(self) -> str:
+        # All EMAs should be non-None when this is called
+        assert all(ema is not None for ema in self._emas.values())
+        image_bitrate = self._emas["image_bitrate"]
+        assert image_bitrate is not None  # Type hint for mypy
+        return (
+            f" | EMA: {self._emas['samples_per_sec']:.1f}s/s, "
+            f"{self._emas['tokens_per_sec']:,.0f}t/s, {self._emas['images_per_sec']:.1f}i/s, "
+            f"{self._format_bitrate(image_bitrate)}"
+        )
+
+    @staticmethod
+    def _format_bitrate(bits_per_sec: float) -> str:
+        for unit, threshold in [("Gb/s", 1e9), ("Mb/s", 1e6), ("Kb/s", 1e3)]:
+            if bits_per_sec >= threshold:
+                return f"{bits_per_sec / threshold:.1f}{unit}"
+        return f"{bits_per_sec:.0f}b/s"
 
 
 class FSLDataset(TorchDataset):
+    """Fixed Sequence Length dataset for training with tokenized data."""
+
     def __init__(
         self, dataset: Dataset, image_processor=None, config: FSLDatasetConfig = FSLDatasetConfig(), **kwargs
     ):
-        # Check if the input is a Dataset
+        # Validate inputs
         if not isinstance(dataset, Dataset):
             raise ValueError(f"Expected Dataset from `owa.data.datasets`, got {type(dataset)}")
+        if dataset.stage != DatasetStage.TOKENIZED:
+            raise ValueError(f"Expected dataset stage to be TOKENIZED, got {dataset.stage}")
+        if image_processor is not None and "Fast" not in image_processor.__class__.__name__:
+            raise ValueError(
+                "Image processor must be a fast image processor, "
+                "make sure you pass `use_fast` directly to ImageProcessor.from_pretrained"
+            )
 
-        # Initialize dataset
         self.dataset = dataset
         self.image_processor = image_processor
         self.config = FSLDatasetConfig(**(config.__dict__ | kwargs))
         self.stat_logger = FSLStatLogger()
 
-        # Check if the dataset is in TOKENIZED stage
-        if dataset.stage != DatasetStage.TOKENIZED:
-            raise ValueError(f"Expected dataset stage to be TOKENIZED, got {dataset.stage}")
-
-        # Check if the image processor is fast
-        if image_processor is not None and "Fast" not in image_processor.__class__.__name__:
-            raise ValueError(
-                "Image processor must be a fast image processor, make sure you pass `use_fast` directly to ImageProcessor.from_pretrained"
-            )
-
-        # TODO: this line is slow, must cache.
-        # NOTE: MUST cache whole FSLDataset, or load whole cumsum in RAM. If cumsum is loaded partially on RAM data iteration gone very slow
+        # Cache cumulative sum for efficient token indexing
+        # NOTE: Must cache whole cumsum in RAM for fast iteration
         self._cumsum = np.cumsum(self.dataset["total_token_count"])
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> dict:
         start_token_index = idx * self.config.max_sequence_length
+        start_event_index = int(np.searchsorted(self._cumsum, start_token_index, side="left"))
 
-        # self.cumsum[start_event_index-1] < start_token_index <= self._cumsum[start_event_index]
-        start_event_index = np.searchsorted(self._cumsum, start_token_index, side="left")
+        # Collect data from events
+        sequence_data = self._collect_sequence_data(start_event_index)
 
-        # Collect token_ids and images from events
-        texts: list[str] = []
-        all_token_ids: list[int] = []
-        all_image_msgs: list[ScreenCaptured] = []
-        tokens_so_far: int = 0
+        # Process images if needed
+        image_object, image_bits = self._process_images(sequence_data["images"])
+
+        # Pad tokens to max sequence length
+        tokens = sequence_data["tokens"]
+        if len(tokens) < self.config.max_sequence_length:
+            padding_length = self.config.max_sequence_length - len(tokens)
+            tokens.extend([self.config.pad_token_id] * padding_length)
+
+        # Create result
+        result = {
+            "texts": "".join(sequence_data["texts"]),
+            "input_ids": torch.tensor(tokens, dtype=torch.long),
+            "attention_mask": torch.tensor(
+                [1 if token_id != self.config.pad_token_id else 0 for token_id in tokens], dtype=torch.long
+            ),
+            "images": image_object,
+        }
+
+        self.stat_logger.update(1, len(tokens), len(sequence_data["images"]), image_bits)
+        return result
+
+    def _collect_sequence_data(self, start_event_index: int) -> dict:
+        """Collect tokens, texts, and images from events up to max_sequence_length."""
+        texts, all_token_ids, all_image_msgs = [], [], []
+        tokens_so_far = 0
 
         for event_idx in range(start_event_index, len(self.dataset)):
             event = self.dataset[event_idx]
-            texts.append(event["text"])
-            episode_path = resolve_episode_path(event["episode_path"], self.dataset.owa_config.mcap_root_directory)
-            token_ids = event["token_ids"]
-            images = event["images"]
-            total_token_count = event["total_token_count"]
 
-            # If this is the last event and adding all its tokens would exceed max_sequence_length
-            if tokens_so_far + total_token_count > self.config.max_sequence_length:
+            # Check if adding this event would exceed max length
+            if tokens_so_far + event["total_token_count"] > self.config.max_sequence_length:
                 break
 
-            all_token_ids.extend(token_ids)
-            tokens_so_far += total_token_count
+            # Collect event data
+            texts.append(event["text"])
+            all_token_ids.extend(event["token_ids"])
+            tokens_so_far += event["total_token_count"]
 
-            # Deserialize ScreenCaptured from JSON
+            # Process images
+            episode_path = resolve_episode_path(event["episode_path"], self.dataset.owa_config.mcap_root_directory)
             images = [
                 ScreenCaptured.model_validate_json(image_json).resolve_relative_path(episode_path)
-                for image_json in images
+                for image_json in event["images"]
             ]
             all_image_msgs.extend(images)
 
-        if self.config.load_images:
-            # If we have a decoding server, use it to load all images in parallel
-            if is_decoding_server_available:
-                # TODO?: we may need to initialize ThreadPool once but it's initialization only takes 10.3 μs ± 275 ns per loop
-                with concurrent.futures.ThreadPoolExecutor() as executor:
-                    futures = [executor.submit(image.to_pil_image) for image in all_image_msgs]
-                    for idx, future in enumerate(futures):
-                        try:
-                            # screen_captured.frame_arr is cached here so that next time we call to_pil_image, it's fast
-                            future.result(timeout=30)
-                        except Exception as e:
-                            all_image_msgs[idx].frame_arr = np.zeros((512, 512, 3), dtype=np.uint8)
-                            warnings.warn(
-                                f"Failed to load image at index {idx}: {e}. Using placeholder image.",
-                                UserWarning,
-                                stacklevel=2,
-                            )
+        return {"texts": texts, "tokens": all_token_ids, "images": all_image_msgs}
 
-            # Now load the images
-            all_images = [screen_captured.to_pil_image() for screen_captured in all_image_msgs]
-            image_bits = sum(image.width * image.height * 3 for image in all_images)
+    def _process_images(self, image_msgs: list[ScreenCaptured]) -> tuple:
+        """Process images based on configuration and return (image_object, image_bits)."""
+        if not self.config.load_images:
+            return image_msgs, 0
 
-            if self.image_processor is not None:
-                pixel_values = []
-                for image in all_images:
-                    processed = self.image_processor(image, return_tensors="pt")
-                    # (batch_size, max_num_images, 3, max_heights, max_widths) -> (3, height, width)
-                    pixel_value = processed["pixel_values"].squeeze(0).squeeze(0)
-                    assert (processed["pixel_attention_mask"] == 1).all()
-                    pixel_values.append(pixel_value)
-                # NOTE: this line assumes image_processor returns fixed size images.
-                image_object_to_return = torch.stack(pixel_values) if pixel_values else torch.empty(0, 3, 224, 224)
-            else:
-                image_object_to_return = all_images
-        else:
-            image_bits = 0  # No images loaded
-            image_object_to_return = all_image_msgs
+        # Preload images in parallel if decoding server is available
+        if is_decoding_server_available:
+            self._preload_images_parallel(image_msgs)
 
-        # Pad token_ids to max_sequence_length if needed
-        if tokens_so_far < self.config.max_sequence_length:
-            padding_length = self.config.max_sequence_length - tokens_so_far
-            all_token_ids.extend([self.config.pad_token_id] * padding_length)
-            tokens_so_far += padding_length
+        # Convert to PIL images
+        all_images = [screen_captured.to_pil_image() for screen_captured in image_msgs]
+        image_bits = sum(image.width * image.height * 3 for image in all_images)
 
-        assert len(all_token_ids) == self.config.max_sequence_length == tokens_so_far
+        # Process with image processor if available
+        if self.image_processor is not None:
+            return self._process_with_image_processor(all_images), image_bits
 
-        # Return dict with the processed data. TODO?: return `labels` also
-        result = {
-            "texts": "".join(texts),
-            "input_ids": torch.tensor(all_token_ids, dtype=torch.long),
-            "attention_mask": torch.tensor(
-                [1 if token_id != self.config.pad_token_id else 0 for token_id in all_token_ids], dtype=torch.long
-            ),
-            "images": image_object_to_return,
-        }
+        return all_images, image_bits
 
-        self.stat_logger.update(1, tokens_so_far, len(image_object_to_return), image_bits)
+    def _preload_images_parallel(self, image_msgs: list[ScreenCaptured]):
+        """Preload images in parallel using ThreadPoolExecutor."""
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            futures = [executor.submit(image.to_pil_image) for image in image_msgs]
+            for idx, future in enumerate(futures):
+                try:
+                    future.result(timeout=30)
+                except Exception as e:
+                    # Use placeholder image on failure
+                    image_msgs[idx].frame_arr = np.zeros((512, 512, 3), dtype=np.uint8)
+                    warnings.warn(f"Failed to load image at index {idx}: {e}. Using placeholder image.", UserWarning)
 
-        return result
+    def _process_with_image_processor(self, images: list) -> torch.Tensor:
+        """Process images with the configured image processor."""
+        assert self.image_processor is not None  # Should be checked before calling this method
 
-    def take(self, n):
+        pixel_values = []
+        for image in images:
+            processed = self.image_processor(image, return_tensors="pt")
+            # (batch_size, max_num_images, 3, max_heights, max_widths) -> (3, height, width)
+            pixel_value = processed["pixel_values"].squeeze(0).squeeze(0)
+            assert (processed["pixel_attention_mask"] == 1).all()
+            pixel_values.append(pixel_value)
+
+        # NOTE: Assumes image_processor returns fixed size images
+        return torch.stack(pixel_values) if pixel_values else torch.empty(0, 3, 224, 224)
+
+    def take(self, n: int):
+        """Yield first n samples from the dataset."""
         for i in range(n):
             yield self[i]
 
-    def __len__(self):
+    def __len__(self) -> int:
         """Calculate the number of sequences based on total tokens and max_sequence_length."""
         total_tokens = self._cumsum[-1]
         return max(1, total_tokens // self.config.max_sequence_length)
 
 
 def prepare_fsl(
-    tokenized_dataset,
+    tokenized_dataset: Dataset,
     *,
     image_processor=None,
     config: FSLDatasetConfig = FSLDatasetConfig(),
@@ -279,8 +268,7 @@ def prepare_fsl(
     **kwargs,
 ) -> FSLDataset:
     """Prepare FSL dataset from tokenized dataset."""
-    config = FSLDatasetConfig(**(config.__dict__ | kwargs))
     if mcap_root_directory is not None:
         tokenized_dataset.owa_config.mcap_root_directory = mcap_root_directory
-    fsl_dataset = FSLDataset(tokenized_dataset, image_processor, config)
-    return fsl_dataset
+
+    return FSLDataset(tokenized_dataset, image_processor, FSLDatasetConfig(**(config.__dict__ | kwargs)))
