@@ -11,12 +11,17 @@ import typer
 from datasets import Dataset as HFDataset
 from datasets import DatasetDict, Features, Value
 from datasets import DatasetInfo as HFDatasetInfo
+from loguru import logger
 from tqdm import tqdm
 
 from mcap_owa.highlevel import McapMessage, OWAMcapReader
 from owa.data.datasets import Dataset, DatasetConfig, DatasetStage
 from owa.data.interval import Intervals
 from owa.data.interval.selector import All
+
+# Re-enable logging for owa.data
+logger.enable("owa.data")
+
 
 app = typer.Typer(add_completion=False)
 

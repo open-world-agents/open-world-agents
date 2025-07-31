@@ -59,6 +59,12 @@ def precompute_fsl_dataset(
             event_images = list(event["images"])
             event_episode_path = event["episode_path"]
 
+            if len(event_tokens) > config.max_sequence_length:
+                logger.warning(
+                    f"Skipping an event of length {len(event_tokens)} because it is longer than max_sequence_length={config.max_sequence_length}"
+                )
+                continue
+
             # Check if adding this event would exceed max_sequence_length or change the episode
             if len(current_tokens) + len(event_tokens) > config.max_sequence_length or (
                 current_episode_path is not None and current_episode_path != event_episode_path

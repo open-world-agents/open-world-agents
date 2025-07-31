@@ -9,29 +9,12 @@ This script performs the following steps:
 
 The FSL dataset is pre-computed (excluding image loading) and implements proper OWA Dataset
 with transforms for on-the-fly image loading, following the user's preferred approach.
-
-Usage:
-    # Basic usage
-    python scripts/02A_event_to_fsl.py --input-dir /path/to/event/dataset --output-dir /path/to/fsl/dataset
-
-    # With custom parameters
-    python scripts/02A_event_to_fsl.py \
-        --input-dir /path/to/event/dataset \
-        --output-dir /path/to/fsl/dataset \
-        --tokenizer "HuggingFaceTB/SmolVLM2-256M-Video-Instruct" \
-        --max-sequence-length 1024 \
-        --num-proc 16
-
-Note: This is Path A (FSL) - an alternative to 02B_event_dataset_to_binned_dataset.py (Path B).
 """
 
-import sys
 from pathlib import Path
 
-# Add the project root to Python path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 import typer
+from loguru import logger
 from transformers import AutoTokenizer
 
 from owa.data.datasets import DatasetDict, DatasetStage, load_from_disk
@@ -39,6 +22,9 @@ from owa.data.datasets import DatasetDict, DatasetStage, load_from_disk
 # Import FSL functionality directly
 from owa.data.datasets.fsl_dataset import FSLDatasetConfig, precompute_fsl_dataset
 from owa.data.episode_tokenizer import EpisodeTokenizer, EpisodeTokenizerConfig
+
+# Re-enable logging for owa.data
+logger.enable("owa.data")
 
 app = typer.Typer(add_completion=False)
 
