@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from typing import TypedDict
 
-import numpy as np
 from transformers import PreTrainedTokenizer
 
 from mcap_owa.highlevel import McapMessage
