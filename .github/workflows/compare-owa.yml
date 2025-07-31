@@ -171,7 +171,9 @@ jobs:
               body += "**📥 To pull upstream changes:**\n\n" +
                       "**🟢 Non-destructive method (recommended):**\n" +
                       "```bash\n" +
-                      `git subtree pull --prefix=open-world-agents https://github.com/open-world-agents/open-world-agents.git ${targetBranch} --squash\n` +
+                      "# Add owa remote if not already added\n" +
+                      "git remote add owa https://github.com/open-world-agents/open-world-agents.git 2>/dev/null || true\n" +
+                      `git subtree pull --prefix=open-world-agents owa ${targetBranch} --squash\n` +
                       "```\n\n" +
                       "**🔴 Destructive method (overwrites local changes):**\n" +
                       "```bash\n" +
@@ -186,7 +188,9 @@ jobs:
               body += "**📤 To push local changes:**\n\n" +
                       "**🟢 Non-destructive method (recommended):**\n" +
                       "```bash\n" +
-                      `git subtree push --prefix=open-world-agents https://github.com/open-world-agents/open-world-agents.git sync-${targetBranch}-$(date +%Y%m%d)\n` +
+                      "# Add owa remote if not already added\n" +
+                      "git remote add owa https://github.com/open-world-agents/open-world-agents.git 2>/dev/null || true\n" +
+                      `git subtree push --prefix=open-world-agents owa sync-${targetBranch}-$(date +%Y%m%d)\n` +
                       `# Then create a pull request from sync-${targetBranch}-$(date +%Y%m%d) to ${targetBranch}\n` +
                       "```\n\n" +
                       "**🔴 Destructive method (overwrites upstream changes):**\n" +
