@@ -246,6 +246,36 @@ body {
     color: rgba(255, 255, 255, 0.8);
 }
 
+.load-more-btn {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    background-color: #2196F3;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.load-more-btn:hover {
+    background-color: #1976D2;
+}
+
+.loading,
+.error {
+    padding: 10px;
+    text-align: center;
+    font-style: italic;
+    color: #666;
+}
+
+.error {
+    color: #f44336;
+    background-color: #ffebee;
+    border-radius: 4px;
+}
+
 .error {
     color: red;
     padding: 10px;

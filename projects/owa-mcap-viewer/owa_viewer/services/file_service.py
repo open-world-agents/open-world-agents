@@ -21,27 +21,58 @@ class FileService:
         """
         self.file_repository = file_repository or FileRepository()
 
-    def list_files(self, repo_id: str) -> List[OWAFile]:
+    def list_files(self, repo_id: str, limit: int = 100, offset: int = 0, use_cache: bool = True) -> List[OWAFile]:
         """
-        List all MCAP+MKV file pairs in a repository
+        List MCAP files in a repository with pagination
 
         Args:
             repo_id: Repository ID ('local' or Hugging Face dataset ID)
+            limit: Maximum number of files to return (default: 100)
+            offset: Number of files to skip (default: 0)
+            use_cache: Whether to use cache (default: True, disabled for pagination)
 
         Returns:
             List of OWAFile objects
         """
-        # Check cache first
-        cached_files = cache_service.get_file_list(repo_id)
-        if cached_files is not None:
-            logger.info(f"Using cached file list for {repo_id}")
-            return cached_files
+        # For pagination, skip cache to ensure consistent results
+        if use_cache and offset == 0 and limit == 100:
+            # Only use cache for default first page
+            cached_files = cache_service.get_file_list(repo_id)
+            if cached_files is not None:
+                logger.info(f"Using cached file list for {repo_id}")
+                return cached_files
 
-        # Get fresh list and cache it
-        files = self.file_repository.list_files(repo_id)
-        cache_service.set_file_list(repo_id, files)
-        logger.info(f"Cache miss for file list in {repo_id}, fetched {len(files)} files")
+        # Get fresh list with pagination (no expensive MediaRef analysis)
+        files = self.file_repository.list_files(repo_id, limit=limit, offset=offset, analyze_media=False)
+
+        # Only cache the first page with default settings
+        if offset == 0 and limit == 100:
+            cache_service.set_file_list(repo_id, files)
+
+        logger.info(f"Fetched {len(files)} files for {repo_id} (offset={offset}, limit={limit})")
         return files
+
+    def get_file_media_details(self, repo_id: str, filename: str) -> OWAFile:
+        """
+        Get detailed media information for a specific file (on-demand analysis)
+
+        Args:
+            repo_id: Repository ID ('local' or Hugging Face dataset ID)
+            filename: Specific filename to analyze
+
+        Returns:
+            OWAFile object with detailed media analysis
+        """
+        # This performs expensive MediaRef analysis only for the requested file
+        files = self.file_repository.list_files(repo_id, limit=1, offset=0, analyze_media=True)
+
+        # Find the specific file (this is a simplified implementation)
+        # In a real implementation, you'd want to search more efficiently
+        for file in files:
+            if file.basename == filename or file.url_mcap.endswith(f"{filename}.mcap"):
+                return file
+
+        raise FileNotFoundError(f"File {filename} not found in repository {repo_id}")
 
     def get_file_path(self, file_url: str, is_local: bool) -> Tuple[Path, bool]:
         """

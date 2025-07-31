@@ -136,12 +136,17 @@ class FileRepository:
 
         return media_references, has_external_media, has_embedded_media
 
-    def list_files(self, repo_id: str) -> List[OWAFile]:
+    def list_files(
+        self, repo_id: str, limit: int = 100, offset: int = 0, analyze_media: bool = False
+    ) -> List[OWAFile]:
         """
-        List all MCAP files in a repository, analyzing their media references
+        List MCAP files in a repository with pagination and optional media analysis
 
         Args:
             repo_id: Repository ID ('local' or Hugging Face dataset ID)
+            limit: Maximum number of files to return (default: 100)
+            offset: Number of files to skip (default: 0)
+            analyze_media: Whether to analyze MediaRef (expensive, default: False)
 
         Returns:
             List of OWAFile objects
@@ -158,11 +163,21 @@ class FileRepository:
             filesystem: HfFileSystem = fsspec.filesystem(protocol=protocol)
             path = f"datasets/{repo_id}"
 
-        # Find all MCAP files
+        # Find MCAP files with pagination
         files = []
-        # NOTE: local glob skip symlinked directory, which is weird.
-        for mcap_file in filesystem.glob(f"{path}/**/*.mcap"):
-            mcap_file = Path(mcap_file)
+        mcap_files = list(filesystem.glob(f"{path}/**/*.mcap"))
+
+        # Apply pagination
+        start_idx = offset
+        end_idx = min(offset + limit, len(mcap_files))
+        paginated_files = mcap_files[start_idx:end_idx]
+
+        logger.info(
+            f"Processing {len(paginated_files)} MCAP files (offset={offset}, limit={limit}, total={len(mcap_files)})"
+        )
+
+        for mcap_file_path in paginated_files:
+            mcap_file = Path(mcap_file_path)
 
             # Check if MCAP file exists
             if not filesystem.exists(mcap_file.as_posix()):
@@ -201,12 +216,17 @@ class FileRepository:
                     url = f"https://huggingface.co/datasets/{repo_id}/resolve/main/{basename}"
                 local = False
 
-            # Analyze media references in the MCAP file
-            media_references, has_external_media, has_embedded_media = self._analyze_mcap_media_references(
-                mcap_file, filesystem
-            )
+            # Only analyze media references if explicitly requested (expensive operation)
+            media_references = []
+            has_external_media = False
+            has_embedded_media = False
 
-            # Check for legacy MKV file
+            if analyze_media:
+                media_references, has_external_media, has_embedded_media = self._analyze_mcap_media_references(
+                    mcap_file, filesystem
+                )
+
+            # Check for legacy MKV file (quick file existence check)
             mkv_file_path = mcap_file.with_suffix(".mkv")
             url_mkv = None
             mcap_size = filesystem.info(mcap_file.as_posix()).get("size", 0)
@@ -216,6 +236,9 @@ class FileRepository:
                 url_mkv = f"{url}.mkv" if url else f"{mcap_file.stem}.mkv"
                 mkv_size = filesystem.info(mkv_file_path.as_posix()).get("size", 0)
                 total_size += mkv_size
+                # If we have an MKV file, assume external media for display purposes
+                if not analyze_media:
+                    has_external_media = True
 
             files.append(
                 OWAFile(

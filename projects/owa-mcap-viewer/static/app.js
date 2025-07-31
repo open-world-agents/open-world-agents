@@ -38,19 +38,51 @@ document.addEventListener('DOMContentLoaded', () => {
     const DATA_WINDOW_SIZE = 10_000_000_000; // 10 seconds in nanoseconds
     const SEEK_BUFFER = 2_000_000_000; // 2 seconds buffer before current position
 
-    // Fetch list of available file pairs
-    async function fetchFilePairs() {
+    // Pagination state
+    let currentPage = 0;
+    const pageSize = 100;
+    let allFiles = [];
+    let isLoadingFiles = false;
+
+    // Fetch list of available file pairs with pagination
+    async function fetchFilePairs(loadMore = false) {
+        if (isLoadingFiles) return;
+
         try {
-            const response = await fetch(`/api/list_files?repo_id=${repoId}`);
+            isLoadingFiles = true;
+            const offset = loadMore ? allFiles.length : 0;
+
+            if (!loadMore) {
+                // Reset for fresh load
+                allFiles = [];
+                currentPage = 0;
+                fileList.innerHTML = '<div class="loading">Loading files...</div>';
+            }
+
+            const response = await fetch(`/api/list_files?repo_id=${repoId}&limit=${pageSize}&offset=${offset}`);
             const data = await response.json();
 
-            console.log("Available file pairs:", data);
+            console.log(`Fetched ${data.length} files (offset=${offset}):`, data);
 
-            // Check if there's a currently selected file before clearing the list
+            // Remove loading indicator
+            const loadingDiv = fileList.querySelector('.loading');
+            if (loadingDiv) {
+                loadingDiv.remove();
+            }
+
+            // Check if there's a currently selected file before updating the list
             const currentlySelectedId = Array.from(document.querySelectorAll('.file-item.active'))
                 .find(item => item.parentElement === fileList)?.dataset.uniqueId;
 
-            fileList.innerHTML = '';
+            if (!loadMore) {
+                // Clear the file list for fresh load
+                fileList.innerHTML = '';
+                allFiles = [];
+            }
+
+            // Add new files to our collection
+            allFiles.push(...data);
+
             data.forEach((pair, index) => {
                 const item = document.createElement('div');
                 item.className = 'file-item';
@@ -97,14 +129,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // Automatically load the first file only if no file is currently selected
-            if (data.length > 0 && !currentlySelectedId && !currentFile) {
+            // Add "Load More" button if we got a full page of results or if this is a load more operation
+            console.log(`Checking for Load More button: data.length=${data.length}, pageSize=${pageSize}, loadMore=${loadMore}`);
+
+            // Remove any existing load more button first
+            const existingBtn = fileList.querySelector('.load-more-btn');
+            if (existingBtn) {
+                existingBtn.remove();
+            }
+
+            if (data.length === pageSize) {
+                const loadMoreBtn = document.createElement('button');
+                loadMoreBtn.className = 'load-more-btn';
+                loadMoreBtn.textContent = `Load More (${allFiles.length} files loaded)`;
+                loadMoreBtn.addEventListener('click', () => fetchFilePairs(true));
+                fileList.appendChild(loadMoreBtn);
+                console.log('Load More button added');
+            } else {
+                console.log('No Load More button needed - fewer files than page size');
+            }
+
+            // Automatically load the first file only if no file is currently selected and this is the first load
+            if (!loadMore && data.length > 0 && !currentlySelectedId && !currentFile) {
                 console.log("No file is currently selected. Auto-selecting the first file:", data[0].basename);
                 loadFilePair(data[0]);
             }
         } catch (error) {
             console.error("Error fetching file pairs:", error);
-            fileList.innerHTML = '<div class="error">Error loading files. Check console.</div>';
+            if (!loadMore) {
+                fileList.innerHTML = '<div class="error">Error loading files. Check console.</div>';
+            }
+        } finally {
+            isLoadingFiles = false;
         }
     }
 

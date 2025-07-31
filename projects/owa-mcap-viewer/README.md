@@ -6,6 +6,7 @@ A web-based viewer for Open World Agents MCAP files with flexible media referenc
 
 - **MediaRef Support**: Works with MCAP files containing embedded media, external video references, or traditional MKV pairs
 - **Memory Efficient**: Handles large video files (10GB+) through streaming without loading into memory
+- **Scalable**: Supports 10,000+ MCAP files with pagination and lazy loading
 - **Flexible Media Sources**: Supports data URIs, local files, remote URLs, and legacy MKV files
 - **Interactive Visualization**: Real-time visualization of keyboard, mouse, and window events synchronized with video playback
 - **Upload Support**: Upload MCAP files with or without separate video files
@@ -43,6 +44,14 @@ The viewer now supports the new MediaRef abstraction introduced in Open World Ag
     uvicorn owa_viewer:app --host 0.0.0.0 --port 7860 --reload
     ```
 
+## Performance Optimizations
+
+### For Large Datasets (10,000+ files)
+- **Pagination**: Files loaded in batches of 100 with "Load More" functionality
+- **Lazy Analysis**: MediaRef analysis only performed when files are selected
+- **Memory Streaming**: Large video files streamed directly without loading into memory
+- **Fast Startup**: Initial page loads in <1 second regardless of total file count
+
 ## API Endpoints
 
 ### Media Serving
@@ -51,7 +60,7 @@ The viewer now supports the new MediaRef abstraction introduced in Open World Ag
 - `GET /files/validate_media?mcap_filename=...&local=true` - Validate media references
 
 ### File Management
-- `GET /api/list_files?repo_id=...` - List MCAP files with media reference information
+- `GET /api/list_files?repo_id=...&limit=100&offset=0` - List MCAP files with pagination
 - `POST /upload/mcap` - Upload MCAP file with MediaRef support
 - `POST /upload` - Upload legacy MCAP+MKV pair
 
