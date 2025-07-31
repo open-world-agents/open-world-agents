@@ -1,13 +1,12 @@
 import line_profiler
 import torch
 from accelerate import Accelerator
-from datasets import load_from_disk
 from loguru import logger
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import AutoImageProcessor, AutoProcessor
 
-from owa.data.datasets import FSLDataset
+from owa.data.datasets import load_from_disk, prepare_fsl
 from owa.data.episode_tokenizer import EpisodeTokenizer
 
 logger.enable("owa.data.datasets.fsl_dataset")
@@ -99,13 +98,12 @@ def main():
         tokenized[split] = ep_tok.tokenize_event_dataset(ds)
 
     # 3) Wrap into your FSLDataset (only train shown here)
-    train_ds = FSLDataset(
+    train_ds = prepare_fsl(
         tokenized["train"],
         image_processor=processor.image_processor,
         pad_token_id=processor.tokenizer.pad_token_id,
         max_sequence_length=1024,
     )
-    train_ds.prepare()
     # train_ds = DummyDataset()
 
     # 4) Create a DataLoader
