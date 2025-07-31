@@ -53,6 +53,11 @@ jobs:
               });
 
               for (let i = comments.length - 1; i >= 0; i--) {
+                // Skip bot comments to prevent automated triggers
+                if (comments[i].user.type === 'Bot') {
+                  continue;
+                }
+
                 const match = comments[i].body.match(/\/owa-sync(?:\s+(\S+))?/i);
                 if (match) {
                   targetBranch = match[1] || 'main';
