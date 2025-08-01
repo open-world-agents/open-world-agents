@@ -25,7 +25,7 @@ MCAP_CLI_DOWNLOAD_URL_TEMPLATES = {
     "windows-amd64": "https://github.com/foxglove/mcap/releases/download/releases%2Fmcap-cli%2F{version}/mcap-windows-amd64.exe",
 }
 # Current version as fallback
-CURRENT_MCAP_CLI_VERSION = "v0.0.53"
+CURRENT_MCAP_CLI_VERSION = "v0.0.54"
 
 
 def get_mcap_info(file_path: Path) -> dict:
