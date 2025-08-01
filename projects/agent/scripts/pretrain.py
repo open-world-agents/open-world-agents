@@ -126,7 +126,7 @@ def main():
         do_image_splitting=False,
         use_fast=True,
     )
-    tokenizer = processor.tokenizer  # TODO: save this
+    tokenizer = processor.tokenizer
 
     # Set tokenizer model_max_length if needed
     if hasattr(tokenizer, "model_max_length"):
