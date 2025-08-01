@@ -15,7 +15,7 @@ class OWASFTConfig(SFTConfig):
     eval_samples_to_show: int = 16  # Number of samples to show in eval output
 
 
-def compute_metrics(eval_pred: EvalPrediction, compute_result: bool) -> dict:
+def compute_metrics(eval_pred: EvalPrediction, compute_result: bool = False) -> dict:
     """Placeholder metrics function for evaluation.
     Args:
         eval_pred (EvalPrediction): Evaluation predictions
@@ -46,10 +46,6 @@ class OWASFTTrainer(SFTTrainer):
         output = super().evaluation_loop(dataloader, description, prediction_loss_only, ignore_keys, metric_key_prefix)
 
         # Save prediction examples on main process
-        if self.is_world_process_zero():
-            print(
-                f"Saving predictions and ground truth..., {self.args.eval_samples_to_show=}, {self.is_world_process_zero()=}, {self.args.output_dir}, {dir(self.processing_class)=}, {output=}"
-            )
         if self.is_world_process_zero() and self.args.eval_samples_to_show > 0:
             self._save_predictions_and_ground_truth(output)
 
@@ -67,7 +63,7 @@ class OWASFTTrainer(SFTTrainer):
         # Process each sample to calculate metrics and decode text
         data = []
         for i in range(len(predictions)):
-            pred_tokens = predictions[i]
+            pred_tokens = predictions[i].argmax(axis=-1)
             label_tokens = labels[i]
 
             # Filter out padding tokens (-100)
