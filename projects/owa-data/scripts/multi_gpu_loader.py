@@ -1,15 +1,17 @@
+import argparse
+
 import line_profiler
 import torch
 from accelerate import Accelerator
 from loguru import logger
-from torch.utils.data import DataLoader
+from torch.utils.data import ConcatDataset, DataLoader
 from tqdm import tqdm
 from transformers import AutoImageProcessor, AutoProcessor
 
-from owa.data.datasets import load_from_disk, prepare_fsl
-from owa.data.episode_tokenizer import EpisodeTokenizer
+from owa.data.datasets import load_from_disk
 
-logger.enable("owa.data.datasets.fsl_dataset")
+# This line is to enable throughput logging from FSLTransform
+logger.enable("owa.data.datasets.transforms")
 
 
 class DummyDataset(torch.utils.data.Dataset):
@@ -75,43 +77,60 @@ def collate_fn(examples, max_sequence_length: int | None = None, tokenizer=None)
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Multi-GPU FSL dataset loader")
+    parser.add_argument(
+        "datasets",
+        nargs="+",
+        help="List of dataset paths to load (e.g., /path/to/dataset1 /path/to/dataset2)",
+    )
+    parser.add_argument(
+        "--model",
+        default="HuggingFaceTB/SmolVLM2-256M-Video-Instruct",
+        help="Model name for image processor (default: HuggingFaceTB/SmolVLM2-256M-Video-Instruct)",
+    )
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=8,
+        help="Batch size for training (default: 8)",
+    )
+    parser.add_argument(
+        "--num-workers",
+        type=int,
+        default=8,
+        help="Number of data loader workers (default: 8)",
+    )
+
+    args = parser.parse_args()
+
     # 1) Initialize Accelerator
     accelerator = Accelerator()
 
-    # 2) Load & tokenize your event dataset
-    print("▶ Loading raw dataset…")
-    event_ds = load_from_disk("/mnt/raid12/datasets/owa/data/super-hexagon-event")
+    # 2) Load FSL datasets (pre-computed)
+    print("▶ Loading FSL datasets…")
+    train_datasets = []
+    for dataset_path in args.datasets:
+        logger.info(f"Loading dataset from: {dataset_path}")
+        fsl_ds = load_from_disk(dataset_path)
+        train_datasets.append(fsl_ds["train"])
 
-    print("▶ Loading tokenizer…")
-    processor = AutoProcessor.from_pretrained("HuggingFaceTB/SmolVLM2-256M-Video-Instruct", do_image_splitting=False)
-    processor.image_processor = AutoImageProcessor.from_pretrained(
-        "HuggingFaceTB/SmolVLM2-256M-Video-Instruct", use_fast=True, do_image_splitting=False
-    )
+    print("▶ Loading image processor…")
+    processor = AutoProcessor.from_pretrained(args.model, do_image_splitting=False)
+    processor.image_processor = AutoImageProcessor.from_pretrained(args.model, use_fast=True, do_image_splitting=False)
 
-    print("▶ Preparing EpisodeTokenizer…")
-    ep_tok = EpisodeTokenizer(image_token="<image>")
-    ep_tok.prepare_model(tokenizer=processor.tokenizer)
+    # 3) Apply FSL transform for on-the-fly processing and concatenate datasets
+    for train_ds in train_datasets:
+        train_ds.auto_set_transform(stage="fsl", load_images=True, image_processor=processor.image_processor)
 
-    print("▶ Tokenizing splits…")
-    tokenized = {}
-    for split, ds in event_ds.items():
-        tokenized[split] = ep_tok.tokenize_event_dataset(ds)
-
-    # 3) Wrap into your FSLDataset (only train shown here)
-    train_ds = prepare_fsl(
-        tokenized["train"],
-        image_processor=processor.image_processor,
-        pad_token_id=processor.tokenizer.pad_token_id,
-        max_sequence_length=1024,
-    )
+    train_ds = ConcatDataset(train_datasets)
     # train_ds = DummyDataset()
 
     # 4) Create a DataLoader
     train_loader = DataLoader(
         train_ds,
-        batch_size=8,
+        batch_size=args.batch_size,
         shuffle=True,
-        num_workers=8,
+        num_workers=args.num_workers,
         # persistent_workers=True,
         pin_memory=True,
         collate_fn=lambda examples: collate_fn(examples, max_sequence_length=1024, tokenizer=processor.tokenizer),

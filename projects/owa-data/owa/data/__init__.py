@@ -6,6 +6,4 @@ from .encoders import create_encoder
 # Reference: https://loguru.readthedocs.io/en/stable/resources/recipes.html#configuring-loguru-to-be-used-by-a-library-or-an-application
 logger.disable("owa.data")
 
-__all__ = [
-    "create_encoder",
-]
+__all__ = ["create_encoder"]

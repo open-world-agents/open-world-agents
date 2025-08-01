@@ -1,40 +1,57 @@
+import argparse
+
 import numpy as np
 from loguru import logger
+from torch.utils.data import ConcatDataset
 from tqdm import tqdm
-from transformers import AutoImageProcessor, AutoTokenizer
+from transformers import AutoImageProcessor
 
-from owa.data.datasets import load_from_disk, prepare_fsl
-from owa.data.episode_tokenizer import EpisodeTokenizer
+from owa.data.datasets import load_from_disk
 
-# This line is to enable throughput logging from FSLDataset
-logger.enable("owa.data.datasets.fsl_dataset")
-
-# Load event dataset
-event_dataset = load_from_disk("/raid/datasets/owa/data/csgo-event")
-tokenizer = AutoTokenizer.from_pretrained("HuggingFaceTB/SmolVLM2-256M-Video-Instruct")
-image_processor = AutoImageProcessor.from_pretrained(
-    "HuggingFaceTB/SmolVLM2-256M-Video-Instruct", do_image_splitting=False, use_fast=True
-)
-
-event_tokenizer = EpisodeTokenizer(image_token="<image>")
-event_tokenizer.prepare_model(tokenizer=tokenizer)
-
-for split, dataset in event_dataset.items():
-    tokenized = event_tokenizer.tokenize_event_dataset(dataset)
-    event_dataset[split] = tokenized
+# This line is to enable throughput logging from FSLTransform
+logger.enable("owa.data.datasets.transforms")
 
 
-dataset = prepare_fsl(
-    event_dataset["train"],
-    image_processor=image_processor,
-    pad_token_id=tokenizer.pad_token_id,
-    max_sequence_length=1024,
-)
+def main():
+    parser = argparse.ArgumentParser(description="Load and shuffle FSL datasets")
+    parser.add_argument(
+        "datasets",
+        nargs="+",
+        help="List of dataset paths to load (e.g., /path/to/dataset1 /path/to/dataset2)",
+    )
+    parser.add_argument(
+        "--model",
+        default="HuggingFaceTB/SmolVLM2-256M-Video-Instruct",
+        help="Model name for image processor (default: HuggingFaceTB/SmolVLM2-256M-Video-Instruct)",
+    )
 
-for sample in dataset.take(1):
-    print(f"{sample=}")
+    args = parser.parse_args()
 
-# take random shuffle
-shuffled_index = np.random.permutation(len(dataset))
-for i in tqdm(shuffled_index):  # expected: 2.1 it/s
-    sample = dataset[i]
+    # Load image processor
+    image_processor = AutoImageProcessor.from_pretrained(args.model, do_image_splitting=False, use_fast=True)
+
+    # Load and process datasets
+    train_datasets = []
+    for dataset_path in args.datasets:
+        logger.info(f"Loading dataset from: {dataset_path}")
+        dataset = load_from_disk(dataset_path)
+        train_dataset = dataset["train"]
+        train_dataset.auto_set_transform(stage="fsl", load_images=True, image_processor=image_processor)
+        train_datasets.append(train_dataset)
+
+    # Concatenate all datasets
+    train_dataset = ConcatDataset(train_datasets)
+
+    # Print sample for verification
+    for sample in train_dataset:
+        print(f"{sample=}")
+        break
+
+    # Take random shuffle
+    shuffled_index = np.random.permutation(len(train_dataset))
+    for i in tqdm(shuffled_index):  # expected: 2.1 it/s
+        sample = train_dataset[int(i)]
+
+
+if __name__ == "__main__":
+    main()

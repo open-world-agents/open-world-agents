@@ -3,8 +3,10 @@
 Streamlined data processing pipeline for Vision-Language-Action (VLA) model training with 3x training acceleration.
 
 ```
-Raw MCAP Data → Event Dataset → FSLDataset → VLA Training Ready
-     (1)            (2)           (3)        (tokenization-aware packing)
+Raw MCAP Data → Event Dataset → [Path A] FSL Dataset → VLA Training Ready
+     (1)            (2)           (02A)      (3)        (tokenization-aware packing)
+                               → [Path B] Binned Dataset → Traditional Training
+                                 (02B)      (3)           (state-action format)
 ```
 
 ## Quick Start
@@ -13,6 +15,7 @@ Raw MCAP Data → Event Dataset → FSLDataset → VLA Training Ready
 export MCAP_TRAIN_DIR="/mnt/raid12/datasets/owa/mcaps/super-hexagon"
 export MCAP_TEST_DIR="/mnt/raid12/datasets/owa/mcaps/super-hexagon-30s"
 export EVENT_DATASET_DIR="/mnt/raid12/datasets/owa/data/super-hexagon-event"
+export FSL_DATASET_DIR="/mnt/raid12/datasets/owa/data/super-hexagon-fsl"
 export BINNED_DATASET_DIR="/mnt/raid12/datasets/owa/data/super-hexagon-bin"
 
 # 1. Process MCAP → Event Dataset
@@ -23,59 +26,76 @@ python scripts/01_raw_events_to_event_dataset.py \
   --rate screen=20 --rate mouse=60 \
   --keep-topic screen --keep-topic keyboard --keep-topic mouse/raw
 
-# 2. (Optional) Event Dataset → Binned Dataset
-python scripts/02_event_dataset_to_binned_dataset.py \
+# 2A. Path A: Event Dataset → FSL Dataset (for transformer training)
+python scripts/02A_event_to_fsl.py \
+  --input-dir $EVENT_DATASET_DIR \
+  --output-dir $FSL_DATASET_DIR \
+  --tokenizer "HuggingFaceTB/SmolVLM2-256M-Video-Instruct" \
+  --max-sequence-length 1024
+
+# 2B. Path B: Event Dataset → Binned Dataset (for traditional training)
+python scripts/02B_event_dataset_to_binned_dataset.py \
   --input-dir $EVENT_DATASET_DIR \
   --output-dir $BINNED_DATASET_DIR \
   --fps 10 \
   --filter-empty-actions
 
-# 3. Clean Dataset with separate transforms
+# 3. Use the processed datasets
 python -c "
 from owa.data.datasets import load_from_disk
-dataset = load_from_disk('$EVENT_DATASET_DIR')
-print(f'Dataset stage: {dataset.stage}')  # EVENT, BINNED, TOKENIZED, or FSL
 
-# Apply stage-specific transform
-dataset.auto_set_transform(stage='event', encoder_type='hierarchical', load_images=True)
-for sample in dataset['train'].take(3):
-    print(f'{sample=}')
-"
-python -c "
-from owa.data.datasets import load_from_disk
-dataset = load_from_disk('$BINNED_DATASET_DIR')
-print(f'Dataset stage: {dataset.stage}')  # EVENT, BINNED, TOKENIZED, or FSL
-
-# Apply stage-specific transform
-dataset.auto_set_transform(stage='binned', instruction='Complete the computer task')
-for sample in dataset['train'].take(3):
-    print(f'{sample=}')
-"
-
-# 4. FSL (Fixed Sequence Length) approach
-python -c "
-from owa.data.datasets import load_from_disk, prepare_fsl
-from transformers import AutoTokenizer
-from owa.data.episode_tokenizer import EpisodeTokenizer
-
-# Load event dataset and tokenize
+# Original: Use Event Dataset (with transforms)
 event_dataset = load_from_disk('$EVENT_DATASET_DIR')
-tokenizer = AutoTokenizer.from_pretrained('HuggingFaceTB/SmolVLM2-2.2B-Base')
-event_tokenizer = EpisodeTokenizer(image_token='<image>')
-event_tokenizer.prepare_model(tokenizer=tokenizer)
+print(f'Event Dataset stage: {event_dataset.stage}')  # EVENT
 
-# Tokenize each split to create TOKENIZED stage datasets
-tokenized_train = event_tokenizer.tokenize_event_dataset(event_dataset['train'])
+# Apply event transform for on-the-fly processing
+event_dataset['train'].auto_set_transform(stage='event', encoder_type='hierarchical', load_images=True)
+for sample in event_dataset['train'].take(10):
+    print(f'{sample=}')
+"
 
-# Create FSL stage dataset
-fsl_dataset = prepare_fsl(tokenized_train, max_sequence_length=1024, pad_token_id=tokenizer.pad_token_id)
+python -c "
+from owa.data.datasets import load_from_disk
 
-for sample in fsl_dataset.take(3):
+# Path A: Use FSL Dataset
+fsl_dataset = load_from_disk('$FSL_DATASET_DIR')
+print(f'FSL Dataset stage: {fsl_dataset.stage}')  # FSL
+
+# Apply FSL transform for on-the-fly processing
+fsl_dataset['train'].auto_set_transform(stage='fsl', load_images=True)
+for sample in fsl_dataset['train'].take(3):
+    print(f'{sample=}')
+"
+
+python -c "
+from owa.data.datasets import load_from_disk
+
+# Path B: Use Binned Dataset
+binned_dataset = load_from_disk('$BINNED_DATASET_DIR')
+print(f'Binned Dataset stage: {binned_dataset.stage}')  # BINNED
+
+# Apply stage-specific transform
+binned_dataset.auto_set_transform(stage='binned', instruction='Complete the computer task')
+for sample in binned_dataset['train'].take(3):
     print(f'{sample=}')
 "
 ```
 
 ## Data Processing
+
+### Workflow Overview
+
+After creating event datasets from raw MCAP files, you have two processing paths:
+
+- **Path A (02A)**: Event → FSL Dataset - Recommended for transformer-based VLA training
+  - Pre-computes tokenization for 3x training acceleration
+  - Handles sequence packing and padding automatically
+  - Optimized for modern transformer architectures
+
+- **Path B (02B)**: Event → Binned Dataset - For traditional robotics training
+  - Time-binned state-action format
+  - Compatible with existing robotics frameworks
+  - Similar to OpenX, LeRobot, RLDS formats
 
 ### Stage 1: Raw MCAP → Event Dataset
 
@@ -94,10 +114,27 @@ python scripts/01_raw_events_to_event_dataset.py \
 
 **Note**: Brand-new, event-oriented format where each row represents a single event
 
-### Stage 2: Event Dataset → Binned Dataset
+### Stage 2A: Event Dataset → FSL Dataset (Path A)
 
 ```bash
-python scripts/02_event_dataset_to_binned_dataset.py \
+python scripts/02A_event_to_fsl.py \
+  --input-dir $EVENT_DATASET_DIR \
+  --output-dir $FSL_DATASET_DIR \
+  --tokenizer "HuggingFaceTB/SmolVLM2-256M-Video-Instruct" \
+  --max-sequence-length 1024 \
+  --num-proc 32
+```
+
+**Schema**: `input_ids` (sequence), `attention_mask` (sequence), `texts` (string), `images` (sequence), `episode_path` (string)
+
+**Features**: Pre-computed tokenization, fixed sequence length padding, episode boundary handling, efficient training
+
+**Note**: Recommended for transformer-based VLA training with 3x acceleration through sequence packing
+
+### Stage 2B: Event Dataset → Binned Dataset (Path B)
+
+```bash
+python scripts/02B_event_dataset_to_binned_dataset.py \
   --input-dir $EVENT_DATASET_DIR \
   --output-dir $BINNED_DATASET_DIR \
   --fps 10 \
@@ -115,22 +152,26 @@ python scripts/02_event_dataset_to_binned_dataset.py \
 Raw datasets contain binary MCAP messages that need conversion to training-ready format (text + images). Transforms apply on-the-fly conversion using HuggingFace's `set_transform()`.
 
 ```python
-from owa.data.datasets import load_from_disk, create_event_transform, create_binned_transform
+from owa.data.datasets import load_from_disk
 
 # Event Dataset Transform
 dataset = load_from_disk("/path/to/event/dataset")
-transform = create_event_transform(encoder_type="hierarchical", load_images=False)
-dataset["train"].set_transform(transform)
+dataset["train"].auto_set_transform(stage="event", encoder_type="hierarchical", load_images=True)
+
+# FSL Dataset Transform (recommended)
+dataset = load_from_disk("/path/to/fsl/dataset")
+dataset["train"].auto_set_transform(stage="fsl", load_images=True)
 
 # Binned Dataset Transform
 dataset = load_from_disk("/path/to/binned/dataset")
-transform = create_binned_transform(instruction="Complete the computer task")
-dataset["train"].set_transform(transform)
+dataset["train"].auto_set_transform(stage="binned", instruction="Complete the computer task")
 ```
 
 ## FSL (Fixed Sequence Length) Processing
 
 Core component for Fixed Sequence Length processing that prepares tokenized event data for training with sequence handling, padding, and image loading.
+
+**Quick Start**: Use `scripts/02A_event_to_fsl.py` to convert event datasets directly to FSL format with pre-computed tokenization.
 
 ### Goals
 
@@ -157,7 +198,7 @@ These scripts demonstrate the full pipeline from event dataset → tokenization 
 
 ### Performance Metrics
 
-To enable logging, set `logger.enable("owa.data.datasets.fsl_dataset")` for loguru logger.
+To enable logging, set `logger.enable("owa.data.datasets.transforms")` for loguru logger.
 
 ```
 FSL[30] | Total: 3.2s/s, 3,274t/s, 44.8i/s, 49.5Mb/s | EMA: 3.0s/s, 3,073t/s, 42.0i/s, 46.5Mb/s
