@@ -10,16 +10,13 @@
 # [tool.uv]
 # exclude-newer = "2025-08-01T12:00:00Z"
 # ///
+import argparse
 from pathlib import Path
 from tqdm import tqdm
 from rich import print
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
 from owa.core.io.video import VideoReader, VideoWriter
-
-VPT_FOLDER_PATH = Path(
-    "/mnt/raid12/datasets/owa/mcaps/vpt"
-).expanduser()  # NOTE: Change this to your VPT data folder path. We expect paired mp4 and jsonl files for VPT dataset.
 
 
 def process_single_file(mp4_file_path):
@@ -38,14 +35,14 @@ def process_single_file(mp4_file_path):
                 frame_count += 1
 
 
-def main(max_workers: int = None):
+def main(vpt_folder_path: Path, max_workers: int | None = None):
     if max_workers is None:
         max_workers = 10
     print(f"Using {max_workers} worker processes.")
 
-    print(f"Reading {VPT_FOLDER_PATH=} for mp4 files.")
+    print(f"Reading {vpt_folder_path=} for mp4 files.")
 
-    mp4_target_list = [f for f in VPT_FOLDER_PATH.iterdir() if f.suffix == ".mp4" and f.is_file()]
+    mp4_target_list = [f for f in vpt_folder_path.iterdir() if f.suffix == ".mp4" and f.is_file()]
     print(f"We will convert {len(mp4_target_list)=} mp4 files.")
 
     # Use ProcessPoolExecutor for multiprocessing
@@ -61,12 +58,33 @@ def main(max_workers: int = None):
                 mp4_file_path = future_to_file[future]
                 try:
                     future.result()  # Get the result (or raise exception if there was one)
-                    print(f"Successfully converted {mp4_file_path}")
+                    tqdm.write(f"Successfully converted {mp4_file_path}")
                 except Exception as exc:
-                    print(f"File {mp4_file_path} generated an exception: {exc}")
+                    tqdm.write(f"File {mp4_file_path} generated an exception: {exc}")
                 finally:
                     pbar.update(1)
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Convert VPT mp4 files to mkv format with constant frame rate.")
+    parser.add_argument(
+        "vpt_folder_path",
+        type=Path,
+        help="Path to the VPT data folder containing mp4 files. We expect paired mp4 and jsonl files for VPT dataset.",
+    )
+    parser.add_argument(
+        "--max-workers", type=int, default=10, help="Maximum number of worker processes to use (default: 10)"
+    )
+
+    args = parser.parse_args()
+
+    # Expand user path and ensure it's a directory
+    vpt_folder_path = args.vpt_folder_path.expanduser()
+    if not vpt_folder_path.exists():
+        print(f"Error: VPT folder path does not exist: {vpt_folder_path}")
+        exit(1)
+    if not vpt_folder_path.is_dir():
+        print(f"Error: VPT folder path is not a directory: {vpt_folder_path}")
+        exit(1)
+
+    main(vpt_folder_path, args.max_workers)
