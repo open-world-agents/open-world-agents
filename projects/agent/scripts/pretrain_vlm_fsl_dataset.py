@@ -16,7 +16,7 @@
 Pretraining script for Vision-Language Models using FSLDataset.
 
 This script enables pretraining of multimodal models on desktop interaction data
-using the FSLDataset format for efficient sequence packing and tokenization-aware training.
+using pre-computed FSLDataset format for efficient training. Supports multiple datasets.
 
 Example usage:
 # Using config file (recommended):
@@ -24,15 +24,14 @@ accelerate launch --config_file=accelerate_configs/deepspeed_zero1.yaml \
     pretrain_vlm_fsl_dataset.py \
     --config pretrain_training_config.yaml
 
-# Using command line arguments:
+# Using command line arguments with multiple datasets:
 accelerate launch --config_file=accelerate_configs/deepspeed_zero1.yaml \
     pretrain_vlm_fsl_dataset.py \
-    --dataset_path /path/to/event/dataset \
+    --dataset_paths /path/to/fsl/dataset1 /path/to/fsl/dataset2 \
     --model_name_or_path HuggingFaceTB/SmolVLM2-256M-Video-Instruct \
     --output_dir pretrain-smol-vlm-fsl \
     --per_device_train_batch_size 2 \
     --gradient_accumulation_steps 8 \
-    --max_sequence_length 1024 \
     --bf16 \
     --torch_dtype bfloat16 \
     --gradient_checkpointing \
@@ -40,14 +39,17 @@ accelerate launch --config_file=accelerate_configs/deepspeed_zero1.yaml \
     --num_train_epochs 3 \
     --save_steps 1000 \
     --logging_steps 100
+
+
 """
 
 from dataclasses import dataclass, field
-from typing import Optional, cast
+from typing import List, Optional, cast
 
 import torch
 from accelerate import Accelerator
 from loguru import logger  # noqa: F401
+from torch.utils.data import ConcatDataset
 from transformers import AutoImageProcessor, AutoModelForImageTextToText, AutoProcessor
 from trl import (
     ModelConfig,
@@ -59,11 +61,11 @@ from trl import (
     get_quantization_config,
 )
 
-from owa.data.datasets import Dataset, FSLDatasetConfig, load_from_disk, prepare_fsl
+from owa.data.datasets import Dataset, load_from_disk
 from owa.data.episode_tokenizer import EpisodeTokenizer
 
-# This line is to enable throughput logging from FSLDataset
-# logger.enable("owa.data.datasets.fsl_dataset")
+# This line is to enable throughput logging from FSLTransform
+# logger.enable("owa.data.datasets.transforms")
 
 
 @dataclass
@@ -72,18 +74,17 @@ class PretrainScriptArguments(ScriptArguments):
     Arguments for pretraining script using FSLDataset.
     """
 
-    dataset_path: str = field(default="", metadata={"help": "Path to the event dataset directory"})
-    max_sequence_length: int = field(
-        default=1024,
-        metadata={
-            "help": "Maximum sequence length for FSLDataset, note that SFTConfig's max_length/max_seq_length already exists"
-        },
+    dataset_paths: List[str] = field(
+        default_factory=list, metadata={"help": "List of paths to event dataset directories"}
     )
-    streaming: bool = field(default=False, metadata={"help": "Enable streaming mode"})
-    preprocessing_num_workers: Optional[int] = field(
-        default=None,
-        metadata={"help": "The number of processes to use for the preprocessing."},
-    )
+    max_sequence_length: int = field(default=1024, metadata={"help": "Maximum sequence length for FSLDataset"})
+
+
+def limit_dataset(dataset, max_count=1024):
+    """Limit dataset count and convert back to OWA Dataset class."""
+    limited_count = min(len(dataset), max_count)
+    owa_config = dataset.owa_config
+    return Dataset.from_hf_dataset(dataset.select(range(limited_count)), owa_config=owa_config)
 
 
 def collate_fn(examples, max_sequence_length: int | None = None, tokenizer=None):
@@ -201,6 +202,10 @@ def main():
                     f"Model max_position_embeddings: {original_max_pos}, using max_sequence_length: {script_args.max_sequence_length}"
                 )
 
+    # Expand vocab. NOTE: take care of here when you switch model / event encoder
+    episode_tokenizer = EpisodeTokenizer(image_token="<image>")
+    episode_tokenizer.prepare_model(tokenizer=tokenizer, model=model)
+
     # Freeze vision encoder TODO: make this configurable
     # if hasattr(model, "model") and hasattr(model.model, "vision_model"):
     #     for param in model.model.vision_model.parameters():
@@ -216,61 +221,27 @@ def main():
     ################
     # Dataset Preparation
     ################
-    accelerator.print(f"Loading dataset from {script_args.dataset_path}...")
-    event_dataset = load_from_disk(script_args.dataset_path)
-    with training_args.main_process_first(desc="dataset map tokenization"):
-        # Setup episode tokenizer
-        episode_tokenizer = EpisodeTokenizer(image_token="<image>")
-        episode_tokenizer.prepare_model(tokenizer=tokenizer, model=model)
+    train_datasets = []
+    test_datasets = []
 
-        # Tokenize event dataset
-        # Handle both DatasetDict and single Dataset cases
-        if hasattr(event_dataset, "keys") and callable(getattr(event_dataset, "keys")):
-            # DatasetDict case
-            tokenized_datasets = {}
-            for split_name in ["train", "test", "validation"]:
-                if split_name in event_dataset:
-                    dataset = event_dataset[split_name]
-                    # Type cast to help with type checking
-                    if isinstance(dataset, Dataset):
-                        tokenized = episode_tokenizer.tokenize_event_dataset(
-                            dataset, map_kwargs={"num_proc": script_args.preprocessing_num_workers}
-                        )
-                        tokenized_datasets[split_name] = tokenized
-            event_dataset = tokenized_datasets
-        else:
-            # Single Dataset case - assume it's the train split
-            if isinstance(event_dataset, Dataset):
-                tokenized = episode_tokenizer.tokenize_event_dataset(
-                    event_dataset, map_kwargs={"num_proc": script_args.preprocessing_num_workers}
-                )
-                event_dataset = {"train": tokenized}
-            else:
-                raise ValueError(f"Unsupported dataset type: {type(event_dataset)}")
-
-    # Create FSL datasets
-    accelerator.print("Creating FSLDataset...")
-    fsl_config = FSLDatasetConfig(
-        max_sequence_length=script_args.max_sequence_length,
-        pad_token_id=tokenizer.pad_token_id,
-        load_images=True,
-    )
-
-    train_fsl_dataset = prepare_fsl(
-        event_dataset["train"], image_processor=processor.image_processor, config=fsl_config
-    )
-
-    eval_fsl_dataset = None
-    if "test" in event_dataset:
-        test_samples = min(len(event_dataset["test"]), 1024)  # FIXME: remove this
-        owa_config = event_dataset["test"].owa_config
-        # since .select yields HF dataset, we need to wrap it back in our Dataset class
-        event_dataset["test"] = Dataset.from_hf_dataset(
-            event_dataset["test"].select(range(test_samples)), owa_config=owa_config
+    for dataset_path in script_args.dataset_paths:
+        accelerator.print(f"Loading dataset from {dataset_path}...")
+        dataset = load_from_disk(dataset_path)
+        assert dataset.stage == "fsl", f"Expected FSL dataset, got {dataset.stage}"
+        dataset.auto_set_transform(
+            stage="fsl",
+            load_images=True,
+            image_processor=processor.image_processor,
+            pad_token_id=tokenizer.pad_token_id,
         )
-        eval_fsl_dataset = prepare_fsl(
-            event_dataset["test"], image_processor=processor.image_processor, config=fsl_config
-        )
+
+        if "train" in dataset:
+            train_datasets.append(dataset["train"])
+        if "test" in dataset:
+            test_datasets.append(limit_dataset(dataset["test"]))
+
+    train_fsl_dataset = ConcatDataset(train_datasets)
+    eval_fsl_dataset = ConcatDataset(test_datasets) if test_datasets else None
 
     ################
     # Data Collator
@@ -281,11 +252,12 @@ def main():
     # Trainer
     ################
     accelerator.print("Initializing trainer...")
+    # Type cast to suppress warnings - SFTTrainer accepts ConcatDataset
     trainer = SFTTrainer(
         model=model,
         args=training_args,
-        train_dataset=train_fsl_dataset,
-        eval_dataset=eval_fsl_dataset,
+        train_dataset=train_fsl_dataset,  # type: ignore
+        eval_dataset=eval_fsl_dataset,  # type: ignore
         data_collator=data_collator,
         processing_class=processor,
     )

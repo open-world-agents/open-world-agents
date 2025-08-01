@@ -2,14 +2,15 @@
 # This configuration is optimized for pretraining vision-language models on desktop interaction data
 # Comments show: [CUSTOM_VALUE] (default: DEFAULT_VALUE)
 
-output_dir: "/mnt/raid12/scratch/claude/checkpoints/sft_smolvlm_256m_fsl"  # (default: 'trainer_output') - can be overridden via CLI
+output_dir: "/mnt/raid12/scratch/claude/checkpoints/trainer_output"  # (default: 'trainer_output') - can be overridden via CLI
 
 # ============================================================================
 # SCRIPT ARGUMENTS (Custom for FSLDataset pretraining)
 # ============================================================================
-dataset_path: "/mnt/raid12/datasets/owa/data/super-hexagon-event"  # (default: None) - required
-max_sequence_length: 256  # (default: 1024)
-preprocessing_num_workers: 32  # (default: None)
+dataset_paths: # (default: None) - required
+  - "/mnt/raid12/datasets/owa/data/super-hexagon-fsl"
+  - "/mnt/raid12/datasets/owa/data/csgo-fsl"
+max_sequence_length: 1024  # (default: 1024)
 
 # ============================================================================
 # MODEL CONFIGURATION
