@@ -1,3 +1,5 @@
+# Copied from https://github.com/huggingface/trl/blob/main/examples/scripts/sft_vlm_smol_vlm.py
+
 # Copyright 2020-2025 The HuggingFace Team. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,12 +23,12 @@ using pre-computed FSLDataset format for efficient training. Supports multiple d
 Example usage:
 # Using config file (recommended):
 accelerate launch --config_file=accelerate_configs/deepspeed_zero1.yaml \
-    pretrain_vlm_fsl_dataset.py \
-    --config pretrain_training_config.yaml
+    pretrain.py \
+    --config pretrain_config.yaml
 
 # Using command line arguments with multiple datasets:
 accelerate launch --config_file=accelerate_configs/deepspeed_zero1.yaml \
-    pretrain_vlm_fsl_dataset.py \
+    pretrain.py \
     --dataset_paths /path/to/fsl/dataset1 /path/to/fsl/dataset2 \
     --model_name_or_path HuggingFaceTB/SmolVLM2-256M-Video-Instruct \
     --output_dir pretrain-smol-vlm-fsl \
@@ -59,6 +61,8 @@ from trl import (
     get_quantization_config,
 )
 
+from owa.agent.training import OWASFTConfig as SFTConfig
+from owa.agent.training import OWASFTTrainer as SFTTrainer
 from owa.data.collator import collate_fn
 from owa.data.datasets import Dataset, load_from_disk
 from owa.data.episode_tokenizer import EpisodeTokenizer
@@ -79,7 +83,7 @@ class PretrainScriptArguments(ScriptArguments):
     max_sequence_length: int = field(default=1024, metadata={"help": "Maximum sequence length for FSLDataset"})
 
 
-def limit_dataset(dataset, max_count=1024):
+def limit_dataset(dataset, max_count=256):
     """Limit dataset count and convert back to OWA Dataset class."""
     limited_count = min(len(dataset), max_count)
     owa_config = dataset.owa_config

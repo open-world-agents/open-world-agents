@@ -2,13 +2,13 @@
 # This configuration is optimized for pretraining vision-language models on desktop interaction data
 # Comments show: [CUSTOM_VALUE] (default: DEFAULT_VALUE)
 
-output_dir: "/mnt/raid12/scratch/claude/checkpoints/pretrain_smolvlm_256m_csgo-full-nodec"  # (default: 'trainer_output') - can be overridden via CLI
+output_dir: "/mnt/raid12/scratch/claude/checkpoints/pretrain_smolvlm_256m_csgo-nodec"  # (default: 'trainer_output') - can be overridden via CLI
 
 # ============================================================================
 # SCRIPT ARGUMENTS (Custom for FSLDataset pretraining)
 # ============================================================================
 dataset_paths: # (default: None) - required
-  - "/mnt/raid12/datasets/owa/data/csgo-full-event"
+  - "/mnt/raid12/datasets/owa/data/csgo-fsl"
 max_sequence_length: 1024  # (default: 1024)
 
 # ============================================================================
@@ -70,7 +70,7 @@ dataloader_num_workers: 8    # (default: 0)
 # ============================================================================
 do_eval: true  # (default: False)
 eval_strategy: "steps"  # (default: 'no')
-eval_steps: 1000  # (default: None) - used when eval_strategy is 'steps'
+eval_steps: 100  # (default: None) - used when eval_strategy is 'steps'
 per_device_eval_batch_size: 8  # (default: 8)
 
 # ============================================================================
