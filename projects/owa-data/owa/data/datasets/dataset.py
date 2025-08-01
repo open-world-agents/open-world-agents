@@ -82,6 +82,7 @@ class Dataset(HFDataset, OWADatasetMixin):
 
     @classmethod
     def from_hf_dataset(cls, hf_dataset: HFDataset, owa_config: DatasetConfig) -> "Dataset":
+        format_ = hf_dataset.format
         return cls(
             arrow_table=hf_dataset.data,
             info=hf_dataset.info,
@@ -89,7 +90,7 @@ class Dataset(HFDataset, OWADatasetMixin):
             indices_table=hf_dataset._indices,
             fingerprint=hf_dataset._fingerprint,
             owa_config=owa_config,
-        )
+        ).with_format(**format_)
 
     def save_to_disk(self, dataset_path: PathLike, **kwargs) -> None:  # type: ignore[override]
         super().save_to_disk(dataset_path, **kwargs)
