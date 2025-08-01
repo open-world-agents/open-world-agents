@@ -42,6 +42,8 @@ class OWASFTTrainer(SFTTrainer):
         ignore_keys: Optional[list[str]] = None,
         metric_key_prefix: str = "eval",
     ) -> EvalLoopOutput:
+        ignore_keys = ignore_keys or []
+        ignore_keys.append("image_hidden_states")
         # Run standard evaluation
         output = super().evaluation_loop(dataloader, description, prediction_loss_only, ignore_keys, metric_key_prefix)
 
@@ -53,6 +55,7 @@ class OWASFTTrainer(SFTTrainer):
 
     def _save_predictions_and_ground_truth(self, output: EvalLoopOutput):
         """Save predictions and ground truth with per-sample metrics."""
+        assert not isinstance(output.predictions, tuple)
         predictions = output.predictions  # Raw token predictions
         labels = output.label_ids  # Raw token labels
         losses = getattr(output, "losses", None)
@@ -73,7 +76,7 @@ class OWASFTTrainer(SFTTrainer):
 
             # Calculate token-level accuracy
             if len(valid_labels) > 0:
-                token_acc = (valid_preds == valid_labels).float().mean().item()
+                token_acc = (valid_preds == valid_labels).mean().item()
             else:
                 token_acc = 0.0
 
@@ -109,7 +112,6 @@ class OWASFTTrainer(SFTTrainer):
         step = self.state.global_step
         output_dir = os.path.join(self.args.output_dir or "./output", "eval")
         os.makedirs(output_dir, exist_ok=True)
-        print(output_dir, os.path.join(output_dir, f"eval_step_{step}.md"))
 
         # Write evaluation report to markdown file
         with open(os.path.join(output_dir, f"eval_step_{step}.md"), "w") as f:
