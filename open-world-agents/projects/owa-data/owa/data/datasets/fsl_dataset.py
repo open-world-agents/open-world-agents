@@ -1,7 +1,9 @@
 import concurrent.futures
 import os
 import time
+import warnings
 from dataclasses import dataclass
+from typing import Optional
 
 import numpy as np
 import torch
@@ -119,7 +121,7 @@ class FSLStatLogger:
                     f"{format_bitrate(self.ema_image_bitrate)}"
                 )
 
-            logger.info(
+            logger.debug(
                 f"FSL[{self.count}] | Total: "
                 f"{samples_per_sec_total:.1f}s/s, "
                 f"{tokens_per_sec_total:,.0f}t/s, "
@@ -140,30 +142,31 @@ class FSLDataset(TorchDataset):
     def __init__(
         self, dataset: Dataset, image_processor=None, config: FSLDatasetConfig = FSLDatasetConfig(), **kwargs
     ):
+        # Check if the input is a Dataset
+        if not isinstance(dataset, Dataset):
+            raise ValueError(f"Expected Dataset from `owa.data.datasets`, got {type(dataset)}")
+
+        # Initialize dataset
         self.dataset = dataset
         self.image_processor = image_processor
         self.config = FSLDatasetConfig(**(config.__dict__ | kwargs))
         self.stat_logger = FSLStatLogger()
 
+        # Check if the dataset is in TOKENIZED stage
         if dataset.stage != DatasetStage.TOKENIZED:
             raise ValueError(f"Expected dataset stage to be TOKENIZED, got {dataset.stage}")
 
+        # Check if the image processor is fast
         if image_processor is not None and "Fast" not in image_processor.__class__.__name__:
             raise ValueError(
                 "Image processor must be a fast image processor, make sure you pass `use_fast` directly to ImageProcessor.from_pretrained"
             )
 
-    def prepare(self):
-        # TODO?: apply parallel scan
+        # TODO: this line is slow, must cache.
+        # NOTE: MUST cache whole FSLDataset, or load whole cumsum in RAM. If cumsum is loaded partially on RAM data iteration gone very slow
         self._cumsum = np.cumsum(self.dataset["total_token_count"])
 
-    def check_prepared(self):
-        if not hasattr(self, "_cumsum"):
-            raise RuntimeError("Dataset must be prepared before use. Call prepare() first.")
-
     def __getitem__(self, idx):
-        self.check_prepared()
-
         start_token_index = idx * self.config.max_sequence_length
 
         # self.cumsum[start_event_index-1] < start_token_index <= self._cumsum[start_event_index]
@@ -209,7 +212,11 @@ class FSLDataset(TorchDataset):
                             future.result(timeout=5)
                         except Exception as e:
                             all_image_msgs[idx].frame_arr = np.zeros((512, 512, 3), dtype=np.uint8)
-                            logger.error(f"Failed to load image: {e}")
+                            warnings.warn(
+                                f"Failed to load image at index {idx}: {e}. Using placeholder image.",
+                                UserWarning,
+                                stacklevel=2,
+                            )
 
             # Now load the images
             all_images = [screen_captured.to_pil_image() for screen_captured in all_image_msgs]
@@ -259,23 +266,21 @@ class FSLDataset(TorchDataset):
 
     def __len__(self):
         """Calculate the number of sequences based on total tokens and max_sequence_length."""
-        self.check_prepared()
-
         total_tokens = self._cumsum[-1]
         return max(1, total_tokens // self.config.max_sequence_length)
 
 
 def prepare_fsl(
     tokenized_dataset,
-    max_sequence_length: int = 1024,
-    pad_token_id: int = 0,
-    load_images: bool = True,
+    *,
     image_processor=None,
+    config: FSLDatasetConfig = FSLDatasetConfig(),
+    mcap_root_directory: Optional[str] = None,
+    **kwargs,
 ) -> FSLDataset:
     """Prepare FSL dataset from tokenized dataset."""
-    config = FSLDatasetConfig(
-        max_sequence_length=max_sequence_length, pad_token_id=pad_token_id, load_images=load_images
-    )
+    config = FSLDatasetConfig(**(config.__dict__ | kwargs))
+    if mcap_root_directory is not None:
+        tokenized_dataset.owa_config.mcap_root_directory = mcap_root_directory
     fsl_dataset = FSLDataset(tokenized_dataset, image_processor, config)
-    fsl_dataset.prepare()
     return fsl_dataset

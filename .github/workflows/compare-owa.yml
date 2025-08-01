@@ -53,6 +53,11 @@ jobs:
               });
 
               for (let i = comments.length - 1; i >= 0; i--) {
+                // Skip bot comments to prevent automated triggers
+                if (comments[i].user.type === 'Bot') {
+                  continue;
+                }
+
                 const match = comments[i].body.match(/\/owa-sync(?:\s+(\S+))?/i);
                 if (match) {
                   targetBranch = match[1] || 'main';
@@ -166,7 +171,9 @@ jobs:
               body += "**📥 To pull upstream changes:**\n\n" +
                       "**🟢 Non-destructive method (recommended):**\n" +
                       "```bash\n" +
-                      `git subtree pull --prefix=open-world-agents https://github.com/open-world-agents/open-world-agents.git ${targetBranch} --squash\n` +
+                      "# Add owa remote if not already added\n" +
+                      "git remote add owa https://github.com/open-world-agents/open-world-agents.git 2>/dev/null || true\n" +
+                      `git subtree pull --prefix=open-world-agents owa ${targetBranch} --squash\n` +
                       "```\n\n" +
                       "**🔴 Destructive method (overwrites local changes):**\n" +
                       "```bash\n" +
@@ -181,9 +188,10 @@ jobs:
               body += "**📤 To push local changes:**\n\n" +
                       "**🟢 Non-destructive method (recommended):**\n" +
                       "```bash\n" +
-                      "# First, ensure you have a fork of open-world-agents\n" +
-                      `git subtree push --prefix=open-world-agents https://github.com/open-world-agents/open-world-agents.git sync-${targetBranch}-$(date +%Y%m%d)\n` +
-                      `# Then create a pull request from your fork to upstream/${targetBranch}\n` +
+                      "# Add owa remote if not already added\n" +
+                      "git remote add owa https://github.com/open-world-agents/open-world-agents.git 2>/dev/null || true\n" +
+                      `git subtree push --prefix=open-world-agents owa sync-${targetBranch}-$(date +%Y%m%d)\n` +
+                      `# Then create a pull request from sync-${targetBranch}-$(date +%Y%m%d) to ${targetBranch}\n` +
                       "```\n\n" +
                       "**🔴 Destructive method (overwrites upstream changes):**\n" +
                       `1. Download the [\`rsync-patch\` artifact](${summaryUrl}) from this workflow\n` +
@@ -194,10 +202,11 @@ jobs:
                       `git clone --branch ${targetBranch} https://github.com/open-world-agents/open-world-agents.git /tmp/upstream-pr\n` +
                       "cd /tmp/upstream-pr\n" +
                       `git checkout -b sync-${targetBranch}-$(date +%Y%m%d)\n` +
-                      "rsync -av --delete --exclude='.git' ../open-world-agents/ ./\n" +
+                      "rsync -av --delete --exclude='.git' \"$OLDPWD/open-world-agents/\" ./\n" +
                       "git add -A\n" +
                       `git commit -m \"Sync changes from proprietary to ${targetBranch}\"\n` +
                       `git push origin sync-${targetBranch}-$(date +%Y%m%d)\n` +
+                      `# Then create a pull request from sync-${targetBranch}-$(date +%Y%m%d) to ${targetBranch}\n` +
                       "```\n\n";
               }
 
