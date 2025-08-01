@@ -3,7 +3,7 @@ import logging
 import tempfile
 import time
 from pathlib import Path
-from typing import Generic, List, Optional, Tuple, TypeVar
+from typing import Generic, List, Optional, TypeVar
 
 import diskcache
 import fsspec
@@ -225,8 +225,8 @@ class FileRepository:
             raise FileNotFoundError(file_path)
         return full_path
 
-    def download_file(self, url: str) -> Tuple[Path, bool]:
-        """Download a file from a URL to a temporary location"""
+    def download_file(self, url: str) -> Path:
+        """Download a file from a URL and return the path (caller should cache it)"""
         temp_file = tempfile.NamedTemporaryFile(suffix=Path(url).suffix, delete=False)
         temp_path = Path(temp_file.name)
 
@@ -239,7 +239,7 @@ class FileRepository:
                 for chunk in response.iter_content(chunk_size=8192):
                     f.write(chunk)
 
-            return temp_path, True
+            return temp_path
 
         except Exception as e:
             # Clean up temp file on error
