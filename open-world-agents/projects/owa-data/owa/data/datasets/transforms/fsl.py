@@ -28,10 +28,8 @@ class FSLStatLogger:
 
         # Cumulative totals
         self._totals = {"tokens": 0, "images": 0, "image_bits": 0}
-
         # Recent metrics (since last log)
         self._recent = {"tokens": 0, "images": 0, "samples": 0, "image_bits": 0}
-
         # Exponential moving averages
         self._emas = {"samples_per_sec": None, "tokens_per_sec": None, "images_per_sec": None, "image_bitrate": None}
 
@@ -188,7 +186,7 @@ class FSLTransform:
             total_image_bits += image_bits
 
             # Process with image processor if available
-            if self.config.image_processor is not None and all_images:
+            if self.config.image_processor is not None:
                 pixel_values = []
                 for image in all_images:
                     processed = self.config.image_processor(image, return_tensors="pt")
