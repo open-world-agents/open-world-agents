@@ -39,8 +39,6 @@ accelerate launch --config_file=accelerate_configs/deepspeed_zero1.yaml \
     --num_train_epochs 3 \
     --save_steps 1000 \
     --logging_steps 100
-
-
 """
 
 from dataclasses import dataclass, field
