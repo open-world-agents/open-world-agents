@@ -54,8 +54,6 @@ from transformers import AutoImageProcessor, AutoModelForImageTextToText, AutoPr
 from trl import (
     ModelConfig,
     ScriptArguments,
-    SFTConfig,
-    SFTTrainer,
     TrlParser,
     get_kbit_device_map,
     get_quantization_config,
