@@ -3,9 +3,12 @@ from typing import Optional
 
 from torch.utils.data import DataLoader
 from transformers.trainer_utils import EvalLoopOutput, EvalPrediction
+
+# from transformers.utils import add_start_docstrings
 from trl import SFTConfig, SFTTrainer
 
 
+# @add_start_docstrings(SFTConfig.__doc__)
 class OWASFTConfig(SFTConfig):
     batch_eval_metrics: bool = True  # False in SFTConfig
     prediction_loss_only: bool = False  # True in SFTConfig
