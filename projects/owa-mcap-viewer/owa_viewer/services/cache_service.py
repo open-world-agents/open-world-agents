@@ -4,10 +4,9 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from ..config import settings
-from ..repositories.cache_repository import CacheRepository, FileCacheRepository
+from ..repository import CacheRepository, FileCacheRepository
 
 logger = logging.getLogger(__name__)
-
 CLEANUP_PERIOD = min(settings.FILE_CACHE_TTL or 10**9, settings.DEFAULT_CACHE_TTL or 10**9)
 
 
@@ -23,28 +22,11 @@ class CacheService:
         self._stop_cleanup = False
 
     def get_cached_file(self, url: str) -> Optional[Path]:
-        """
-        Get cached file if available
-
-        Args:
-            url: URL of the file
-
-        Returns:
-            Path to cached file if exists, None otherwise
-        """
+        """Get cached file if available"""
         return self.file_cache.get_file_path(url)
 
     def cache_file(self, url: str, file_path: Path) -> Path:
-        """
-        Cache a file
-
-        Args:
-            url: URL or identifier for the file
-            file_path: Path to the file to cache
-
-        Returns:
-            Path to the cached file
-        """
+        """Cache a file"""
         return self.file_cache.store_file(url, file_path)
 
     def get_metadata(self, key: str) -> Optional[Dict[str, Any]]:
@@ -63,7 +45,8 @@ class CacheService:
         """Cache file list"""
         self.file_list_cache.set(repo_id, file_list)
 
-    def clear(self) -> None:
+    def clear_file_lists(self) -> None:
+        """Clear file list cache"""
         self.file_list_cache.clear()
 
     def cleanup_expired(self) -> None:
@@ -75,12 +58,7 @@ class CacheService:
             logger.error(f"Error during cache cleanup: {e}", exc_info=True)
 
     async def start_periodic_cleanup(self, interval_seconds: int = CLEANUP_PERIOD) -> None:
-        """
-        Start periodic cache cleanup in background
-
-        Args:
-            interval_seconds: Time between cleanup operations in seconds
-        """
+        """Start periodic cache cleanup in background"""
         self._stop_cleanup = False
 
         async def cleanup_loop():
@@ -91,7 +69,6 @@ class CacheService:
                     logger.error(f"Error in periodic cache cleanup: {e}", exc_info=True)
                 await asyncio.sleep(interval_seconds)
 
-        # Store the task so it can be cancelled later
         self._cleanup_task = asyncio.create_task(cleanup_loop())
         logger.info(f"Started periodic cache cleanup (every {interval_seconds} seconds)")
 
@@ -106,7 +83,3 @@ class CacheService:
                 pass
             self._cleanup_task = None
             logger.info("Stopped periodic cache cleanup")
-
-
-# Create singleton instance
-cache_service = CacheService()
