@@ -117,6 +117,7 @@ class FSLTransformConfig:
     load_images: bool = True
     mcap_root_directory: Optional[str] = None
     image_processor: Any = None
+    pad_token_id: int = 0
 
 
 class FSLTransform:
@@ -143,9 +144,10 @@ class FSLTransform:
     def transform_batch(self, batch):
         """Transform batch - handles image loading on-the-fly."""
         batch_size = len(batch["input_ids"])
+        # NOTE: these are native lists, need to be converted to tensors
         results = {
-            "input_ids": batch["input_ids"],
-            "attention_mask": batch["attention_mask"],
+            "input_ids": torch.tensor(batch["input_ids"], dtype=torch.long),
+            "attention_mask": torch.tensor(batch["attention_mask"], dtype=torch.long),
             "texts": batch["texts"],
             "images": [],
         }
@@ -192,7 +194,7 @@ class FSLTransform:
                     processed = self.config.image_processor(image, return_tensors="pt")
                     pixel_value = processed["pixel_values"].squeeze(0).squeeze(0)
                     pixel_values.append(pixel_value)
-                results["images"].append(torch.stack(pixel_values) if pixel_values else torch.empty(0, 3, 224, 224))
+                results["images"].append(torch.stack(pixel_values) if pixel_values else torch.empty(0, 3, 512, 512))
             else:
                 results["images"].append(all_images)
 
