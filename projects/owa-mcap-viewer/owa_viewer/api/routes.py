@@ -37,8 +37,12 @@ async def export_file(file_path: str):
     try:
         full_file_path = services.file_service.get_local_file_path(file_path)
         logger.info(f"Serving file: {full_file_path}")
+        MEDIA_TYPE_MAP = {
+            ".mkv": "video/matroska",
+            ".mcap": "application/octet-stream",
+        }
 
-        media_type = "video/matroska" if file_path.endswith(".mkv") else "application/octet-stream"
+        media_type = MEDIA_TYPE_MAP.get(full_file_path.suffix, "application/octet-stream")
         return FileResponse(full_file_path.as_posix(), media_type=media_type)
     except FileNotFoundError:
         logger.error(f"File not found: {file_path}")
