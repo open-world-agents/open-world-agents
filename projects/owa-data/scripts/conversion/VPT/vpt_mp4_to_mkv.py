@@ -4,8 +4,6 @@
 # dependencies = [
 #   "mcap-owa-support==0.5.5",
 #   "owa-core==0.5.5",
-#   "owa-msgs==0.5.5",
-#   "owa-env-desktop==0.5.5",
 #   "tqdm",
 #   "rich",
 # ]
@@ -42,7 +40,7 @@ def process_single_file(mp4_file_path):
 
 def main(max_workers: int = None):
     if max_workers is None:
-        max_workers = 50
+        max_workers = 10
     print(f"Using {max_workers} worker processes.")
 
     print(f"Reading {VPT_FOLDER_PATH=} for mp4 files.")
