@@ -1,0 +1,90 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#   "mcap-owa-support==0.5.5",
+#   "owa-core==0.5.5",
+#   "tqdm",
+#   "rich",
+# ]
+# [tool.uv]
+# exclude-newer = "2025-08-01T12:00:00Z"
+# ///
+import argparse
+from pathlib import Path
+from tqdm import tqdm
+from rich import print
+from concurrent.futures import ProcessPoolExecutor, as_completed
+
+from owa.core.io.video import VideoReader, VideoWriter
+
+
+def process_single_file(mp4_file_path):
+    """Process a single mp4 file and convert it to mkv format."""
+
+    mkv_file_path = mp4_file_path.with_suffix(".mkv")
+
+    # Process VFR to CFR: read with fps sampling, write as CFR
+    target_fps = 20.0
+    with VideoReader(mp4_file_path, force_close=True) as reader:
+        with VideoWriter(mkv_file_path, fps=target_fps, vfr=False) as writer:
+            frame_count = 0
+            for frame in reader.read_frames(fps=target_fps):  # Sample at regular intervals
+                frame_array = frame.to_ndarray(format="rgb24")
+                writer.write_frame(frame_array)
+                frame_count += 1
+
+
+def main(vpt_folder_path: Path, max_workers: int | None = None):
+    if max_workers is None:
+        max_workers = 10
+    print(f"Using {max_workers} worker processes.")
+
+    print(f"Reading {vpt_folder_path=} for mp4 files.")
+
+    mp4_target_list = [f for f in vpt_folder_path.iterdir() if f.suffix == ".mp4" and f.is_file()]
+    print(f"We will convert {len(mp4_target_list)=} mp4 files.")
+
+    # Use ProcessPoolExecutor for multiprocessing
+    with ProcessPoolExecutor(max_workers=max_workers) as executor:
+        # Submit all tasks
+        future_to_file = {
+            executor.submit(process_single_file, mp4_file_path): mp4_file_path for mp4_file_path in mp4_target_list
+        }
+
+        # Process completed tasks with progress bar
+        with tqdm(total=len(mp4_target_list), desc="Converting files") as pbar:
+            for future in as_completed(future_to_file):
+                mp4_file_path = future_to_file[future]
+                try:
+                    future.result()  # Get the result (or raise exception if there was one)
+                    tqdm.write(f"Successfully converted {mp4_file_path}")
+                except Exception as exc:
+                    tqdm.write(f"File {mp4_file_path} generated an exception: {exc}")
+                finally:
+                    pbar.update(1)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Convert VPT mp4 files to mkv format with constant frame rate.")
+    parser.add_argument(
+        "vpt_folder_path",
+        type=Path,
+        help="Path to the VPT data folder containing mp4 files. We expect paired mp4 and jsonl files for VPT dataset.",
+    )
+    parser.add_argument(
+        "--max-workers", type=int, default=10, help="Maximum number of worker processes to use (default: 10)"
+    )
+
+    args = parser.parse_args()
+
+    # Expand user path and ensure it's a directory
+    vpt_folder_path = args.vpt_folder_path.expanduser()
+    if not vpt_folder_path.exists():
+        print(f"Error: VPT folder path does not exist: {vpt_folder_path}")
+        exit(1)
+    if not vpt_folder_path.is_dir():
+        print(f"Error: VPT folder path is not a directory: {vpt_folder_path}")
+        exit(1)
+
+    main(vpt_folder_path, args.max_workers)
