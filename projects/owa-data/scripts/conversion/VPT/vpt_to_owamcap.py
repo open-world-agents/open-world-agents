@@ -29,9 +29,10 @@ from owa.msgs.desktop.mouse import RawMouseEvent
 from owa.msgs.desktop.screen import ScreenCaptured
 from owa.msgs.desktop.window import WindowInfo
 
-VPT_FOLDER_PATH = Path(
-    "/mnt/raid12/datasets/owa/mcaps/vpt"
-).expanduser()  # NOTE: Change this to your VPT data folder path. We expect paired mp4 and jsonl files for VPT dataset.
+VPT_FOLDER_PATH = (
+    Path("/mnt/raid12/datasets/owa/mcaps/vpt").expanduser()
+)  # NOTE: Change this to your VPT data folder path. We expect paired (mp4|mkv) and jsonl files for VPT dataset.
+VPT_MEDIA_EXT = ".mp4"  # ".mkv"
 VPT_TARGET_LIST_FILE = "./vpt_target_files.txt"
 VPT_INTERVAL_TICK_NS = 50_000_000  # 50 ms interval per tick
 VPT_EXPECTED_TICKS = 6000  # 5 minutes of 50ms ticks
@@ -91,17 +92,17 @@ def vpt_generate_target_list_file(
     target_list_file: typing.Union[str, bytes, os.PathLike] = VPT_TARGET_LIST_FILE,
 ):
     """
-    Filter VPT files that have valid jsonl files paired with mp4, and are 5 minutes long.
+    Filter VPT files that have valid jsonl files paired with (mp4|mkv), and are 5 minutes long.
     The list of valid target files is saved to `target_list_file`.
     """
 
-    all_mp4_stems = set([f.stem for f in VPT_FOLDER_PATH.iterdir() if f.suffix == ".mp4" and f.is_file()])
+    all_media_stems = set([f.stem for f in VPT_FOLDER_PATH.iterdir() if f.suffix == VPT_MEDIA_EXT and f.is_file()])
 
     # Get all files with their full path and creation time
     all_jsonl_files = [
         (f, f.stat().st_ctime)
         for f in VPT_FOLDER_PATH.iterdir()
-        if f.suffix == ".jsonl" and f.is_file() and f.stem in all_mp4_stems
+        if f.suffix == ".jsonl" and f.is_file() and f.stem in all_media_stems
     ]
 
     # Sort by creation time (oldest first)
@@ -131,7 +132,7 @@ def process_single_file(jsonl_file_path):
     """Process a single VPT file and convert it to OWAMcap format."""
     # Convert the file to OWAMcap format
     mcap_file_path = jsonl_file_path.with_suffix(".mcap")
-    mp4_file_path = jsonl_file_path.with_suffix(".mp4")
+    media_file_path = jsonl_file_path.with_suffix(VPT_MEDIA_EXT)
 
     # Writing messages to an OWAMcap file
     unix_epoch_ns = 0  # Unix epoch time in nanoseconds (Jan 1, 1970)
@@ -167,7 +168,7 @@ def process_single_file(jsonl_file_path):
             utc_ns=unix_epoch_ns,
             source_shape=(VPT_X_RESOLUTION, VPT_Y_RESOLUTION),
             shape=(VPT_X_RESOLUTION, VPT_Y_RESOLUTION),
-            media_ref=MediaRef(uri=str(mp4_file_path.name), pts_ns=unix_epoch_ns),
+            media_ref=MediaRef(uri=str(media_file_path.name), pts_ns=unix_epoch_ns),
         )
         writer.write_message(event, topic=topic, timestamp=unix_epoch_ns)
 
@@ -181,7 +182,7 @@ def process_single_file(jsonl_file_path):
                 utc_ns=log_time,
                 source_shape=(VPT_X_RESOLUTION, VPT_Y_RESOLUTION),
                 shape=(VPT_X_RESOLUTION, VPT_Y_RESOLUTION),
-                media_ref=MediaRef(uri=str(mp4_file_path.name), pts_ns=log_time),
+                media_ref=MediaRef(uri=str(media_file_path.name), pts_ns=log_time),
             )
             writer.write_message(event, topic=topic, timestamp=log_time)
 
@@ -245,7 +246,8 @@ def process_single_file(jsonl_file_path):
                     elif state_button == 2:  # middle click
                         button_flags = RawMouseEvent.ButtonFlags.RI_MOUSE_MIDDLE_BUTTON_UP
                     else:
-                        raise ValueError(f"Unknown mouse button {state_button} in VPT data.")
+                        print(f"Unknown mouse button {state_button=} in VPT data.")
+                        continue
 
                     event = RawMouseEvent(
                         last_x=0,
@@ -269,7 +271,8 @@ def process_single_file(jsonl_file_path):
                     elif button == 2:  # middle click
                         button_flags = RawMouseEvent.ButtonFlags.RI_MOUSE_MIDDLE_BUTTON_DOWN
                     else:
-                        raise ValueError(f"Unknown mouse button {button} in VPT data.")
+                        print(f"Unknown mouse button {button=} in VPT data.")
+                        continue
 
                     event = RawMouseEvent(
                         last_x=0,
