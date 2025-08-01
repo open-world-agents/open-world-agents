@@ -7,9 +7,13 @@ from typing import Any, Dict, List
 import typer
 from datasets import Dataset as HFDataset
 from datasets import Features, Sequence, Value
+from loguru import logger
 from tqdm import tqdm
 
 from owa.data.datasets import Dataset, DatasetConfig, DatasetDict, DatasetStage, load_from_disk
+
+# Re-enable logging for owa.data
+logger.enable("owa.data")
 
 app = typer.Typer(add_completion=False)
 

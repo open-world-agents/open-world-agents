@@ -1,22 +1,27 @@
 #!/usr/bin/env python3
 """Process raw MCAP files to create event datasets."""
 
-import random
 import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 from typing import Dict, List, Optional
 
+import numpy as np
 import typer
 from datasets import Dataset as HFDataset
 from datasets import DatasetDict, Features, Value
 from datasets import DatasetInfo as HFDatasetInfo
+from loguru import logger
 from tqdm import tqdm
 
 from mcap_owa.highlevel import McapMessage, OWAMcapReader
 from owa.data.datasets import Dataset, DatasetConfig, DatasetStage
 from owa.data.interval import Intervals
 from owa.data.interval.selector import All
+
+# Re-enable logging for owa.data
+logger.enable("owa.data")
+
 
 app = typer.Typer(add_completion=False)
 
@@ -223,7 +228,8 @@ def create_event_dataset(
 def main(
     train_dir: Path = typer.Option(..., "--train-dir", help="Directory containing MCAP files for training"),
     test_dir: Optional[Path] = typer.Option(None, "--test-dir", help="Directory containing MCAP files for testing"),
-    test_percent: float = typer.Option(0.2, "--test_percent", help="Fraction of training files for test set"),
+    test_percent: float = typer.Option(0.1, "--test_percent", help="Fraction of training files for test set"),
+    max_test_files: int = typer.Option(1024, "--max-test-files", help="Maximum number of test files"),
     rate: Optional[List[str]] = typer.Option(None, "--rate", help="Rate-limiting per topic in 'topic=Hz' format"),
     num_workers: int = typer.Option(4, "--num-workers", help="Number of parallel worker processes"),
     output_dir: Optional[Path] = typer.Option(None, "--output-dir", help="Directory to save the dataset"),
@@ -258,8 +264,9 @@ def main(
             raise typer.BadParameter(f"Same files present in train-dir and test-dir: {len(overlap)} files")
     else:
         shuffled = train_files.copy()
-        random.shuffle(shuffled)
-        test_count = max(1, int(len(shuffled) * test_percent))
+        shuffled_index = np.random.permutation(len(shuffled))
+        shuffled = [shuffled[i] for i in shuffled_index]
+        test_count = min(max(1, int(len(shuffled) * test_percent)), max_test_files)
         test_files = shuffled[:test_count]
         train_files = shuffled[test_count:]
 
