@@ -1,7 +1,8 @@
 import json
 import re
 from dataclasses import dataclass, field
-from typing import List, Optional, Set, Tuple
+from fractions import Fraction
+from typing import List, Optional, Set, Tuple, Union
 
 from mcap_owa.highlevel.mcap_msg import McapMessage
 from owa.core.time import TimeUnits
@@ -23,15 +24,15 @@ class HierarchicalEventEncoderConfig(BaseEventEncoderConfig):
     # Mouse delta max ranges: (max_x, max_y) for -max_x to +max_x and -max_y to +max_y
     max_mouse_delta: Tuple[int, int] = (1000, 1000)
     # -1000 to +1000 in 1 pixel unit intervals
-    mouse_delta_bases: List[int] = field(default_factory=lambda: [10, 10, 10])
+    mouse_delta_bases: List[int] = field(default_factory=lambda: [20, 10, 10])
 
 
-def quantize_to_digits(value: float, bases: List[int]) -> List[int]:
+def quantize_to_digits(value: Union[float, Fraction], bases: List[int]) -> List[int]:
     """
     Quantize a normalized value (0.0-1.0) to multi-level digits.
 
     Args:
-        value: Normalized value between 0.0 and 1.0
+        value: Normalized value between 0.0 and 1.0 (can be float or Fraction for precision)
         bases: List of bases for each quantization level (e.g., [16, 16, 16] for 3-level hex)
 
     Returns:
@@ -42,12 +43,23 @@ def quantize_to_digits(value: float, bases: List[int]) -> List[int]:
         [11, 0, 0]  # 0xB00 in hex = 0.6875
     """
     digits = []
-    remaining = max(0.0, min(1.0, value))  # Clamp to [0, 1]
+
+    # Convert to Fraction for exact arithmetic if not already
+    if isinstance(value, Fraction):
+        remaining = value
+    else:
+        remaining = Fraction(value).limit_denominator()
+
+    # Clamp to [0, 1] using fractions
+    remaining = max(Fraction(0), min(Fraction(1), remaining))
 
     for base in bases:
-        digit = int(remaining * base)
+        # Calculate digit using exact arithmetic
+        digit_fraction = remaining * base
+        digit = int(digit_fraction)
         digits.append(digit)
-        remaining = remaining * base - digit
+        # Update remaining using exact subtraction
+        remaining = digit_fraction - digit
 
     return digits
 
@@ -144,12 +156,13 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         dx_clamped = max(-max_x, min(max_x, event.dx))
         dy_clamped = max(-max_y, min(max_y, event.dy))
 
-        norm_dx = (dx_clamped + max_x) / (2 * max_x)
-        norm_dy = (dy_clamped + max_y) / (2 * max_y)
+        # Use fractions for exact normalization to avoid floating-point precision loss
+        norm_dx = Fraction(dx_clamped + max_x) / Fraction(2 * max_x)
+        norm_dy = Fraction(dy_clamped + max_y) / Fraction(2 * max_y)
 
         tokens = ["<MOUSE>"]
 
-        # Quantize deltas to digits
+        # Quantize deltas to digits using exact Fraction values
         digits_dx = quantize_to_digits(norm_dx, self.config.mouse_delta_bases)
         digits_dy = quantize_to_digits(norm_dy, self.config.mouse_delta_bases)
 
@@ -199,9 +212,10 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         norm_dy = digits_to_value(digits_dy, self.config.mouse_delta_bases)
 
         # Convert back to actual delta values using max_mouse_delta tuple (half-ranges)
+        # Use fractions for exact arithmetic to avoid floating-point precision loss
         max_x, max_y = self.config.max_mouse_delta
-        dx = int(round(norm_dx * (2 * max_x) - max_x))
-        dy = int(round(norm_dy * (2 * max_y) - max_y))
+        dx = int(round(float(Fraction(norm_dx) * Fraction(2 * max_x) - Fraction(max_x))))
+        dy = int(round(float(Fraction(norm_dy) * Fraction(2 * max_y) - Fraction(max_y))))
 
         return dx, dy
 

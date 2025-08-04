@@ -10,6 +10,8 @@ import pytest
 from mcap_owa.highlevel.mcap_msg import McapMessage
 from owa.data.encoders.hierarchical_event_encoder import HierarchicalEventEncoder, HierarchicalEventEncoderConfig
 
+MOUSE_TEST_RANGE = 10
+
 
 class TestHierarchicalEncoderConfig:
     """Test configuration sanity and unified semantics."""
@@ -166,6 +168,40 @@ class TestHierarchicalEncoderOperation:
         # Values should be preserved
         assert decoded_data["last_x"] == test_data["last_x"]
         assert decoded_data["last_y"] == test_data["last_y"]
+
+    @pytest.mark.parametrize("delta_x", [x for x in range(-MOUSE_TEST_RANGE, MOUSE_TEST_RANGE + 1)])
+    @pytest.mark.parametrize("delta_y", [y for y in range(-MOUSE_TEST_RANGE, MOUSE_TEST_RANGE + 1)])
+    def test_mouse_delta_precision(self, delta_x, delta_y):
+        """Test that encoder preserves mouse delta precision for specific values."""
+        encoder = HierarchicalEventEncoder()
+
+        # Create test message
+        test_data = {"last_x": delta_x, "last_y": delta_y, "button_flags": 0, "button_data": 0}
+        mouse_msg = McapMessage(
+            topic="mouse/raw",
+            timestamp=1000000000,
+            message=json.dumps(test_data).encode("utf-8"),
+            message_type="desktop/RawMouseEvent",
+        )
+
+        # Encode and decode
+        encoded, images = encoder.encode(mouse_msg)
+        decoded_msg = encoder.decode(encoded, images)
+        decoded_data = json.loads(decoded_msg.message.decode("utf-8"))
+
+        decoded_x = decoded_data["last_x"]
+        decoded_y = decoded_data["last_y"]
+
+        # Calculate errors
+        error_x = abs(decoded_x - delta_x)
+        error_y = abs(decoded_y - delta_y)
+        max_error = max(error_x, error_y)
+
+        # For all movements, expect exact preservation
+        assert max_error == 0, (
+            f"Movement ({delta_x}, {delta_y}) should be preserved within 1 pixel, "
+            f"got ({decoded_x}, {decoded_y}) (max error: {max_error})"
+        )
 
 
 if __name__ == "__main__":
