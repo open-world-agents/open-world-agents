@@ -19,7 +19,7 @@ class TestHierarchicalEncoderConfig:
         config = HierarchicalEventEncoderConfig()
 
         # Both should represent half-ranges
-        assert config.max_timestamp_range_ns == 2_000_000_000  # ±2 seconds
+        assert config.max_timestamp_range_ns == 8_000_000_000  # ±8 seconds
         assert config.max_mouse_delta == (1000, 1000)  # ±1000 x, ±1000 y
 
         # Old attribute should not exist
