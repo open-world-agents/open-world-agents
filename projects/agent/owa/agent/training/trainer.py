@@ -96,7 +96,7 @@ class OWASFTTrainer(SFTTrainer):
             # Extract per-sample loss
             sample_loss = losses[i].item() if losses is not None else None
 
-            # Decode tokens to text. NOTE: `mask` is needed because TokenzerFast can't decode -100. Refer to https://github.com/huggingface/transformers/issues/31110#issuecomment-2137712416
+            # Decode tokens to text. NOTE: `mask` is needed because TokenizerFast can't decode -100. Refer to https://github.com/huggingface/transformers/issues/31110#issuecomment-2137712416
             pred_text = self.processing_class.decode(predictions[mask], skip_special_tokens=False).strip()
             label_text = self.processing_class.decode(shift_labels[mask], skip_special_tokens=False).strip()
 
