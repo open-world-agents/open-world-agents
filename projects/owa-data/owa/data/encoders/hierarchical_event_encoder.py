@@ -16,10 +16,10 @@ from .base_encoder import BaseEventEncoder, BaseEventEncoderConfig
 class HierarchicalEventEncoderConfig(BaseEventEncoderConfig):
     """Configuration for HierarchicalEventEncoder."""
 
-    # -2 to +2 seconds (half-range: 2 seconds)
-    max_timestamp_range_ns: int = 2 * TimeUnits.SECOND
-    # 4 seconds in 10ms intervals
-    timestamp_bases: List[int] = field(default_factory=lambda: [4, 10, 10])
+    # -8 to +8 seconds (half-range: 8 seconds)
+    max_timestamp_range_ns: int = 8 * TimeUnits.SECOND
+    # 16 seconds in 10ms intervals
+    timestamp_bases: List[int] = field(default_factory=lambda: [16, 10, 10])
     # Mouse delta max ranges: (max_x, max_y) for -max_x to +max_x and -max_y to +max_y
     max_mouse_delta: Tuple[int, int] = (1000, 1000)
     # -1000 to +1000 in 1 pixel unit intervals
