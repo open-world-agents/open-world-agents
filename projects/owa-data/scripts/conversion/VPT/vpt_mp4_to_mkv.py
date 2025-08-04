@@ -4,6 +4,7 @@
 # dependencies = [
 #   "mcap-owa-support==0.5.5",
 #   "owa-core==0.5.5",
+#   "opencv-python",
 #   "tqdm",
 #   "rich",
 # ]
@@ -11,12 +12,44 @@
 # exclude-newer = "2025-08-01T12:00:00Z"
 # ///
 import argparse
+import cv2
+import random
 from pathlib import Path
 from tqdm import tqdm
 from rich import print
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
 from owa.core.io.video import VideoReader, VideoWriter
+
+
+def test_target_fps(mp4_file_path):
+    mkv_file_path = mp4_file_path.with_suffix(".mkv")
+
+    print(f"Processing {mp4_file_path=}...")
+
+    cap = cv2.VideoCapture(mp4_file_path)
+    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    cap.release()
+
+    print(f"opencv {frame_count=}")
+
+    with VideoReader(mp4_file_path, force_close=True) as reader:
+        frame_count = 0
+        for frame in reader.read_frames():  # Sample at regular intervals
+            frame_array = frame.to_ndarray(format="rgb24")
+            frame_count += 1
+        print(f"no target_fps {frame_count=}")  # supposed to be 6000 + 1
+
+    # Process VFR to CFR: read with fps sampling, write as CFR
+    target_fps = 20.0
+    with VideoReader(mp4_file_path, force_close=True) as reader:
+        with VideoWriter(mkv_file_path, fps=target_fps, vfr=False) as writer:
+            frame_count = 0
+            for frame in reader.read_frames(fps=target_fps):  # Sample at regular intervals
+                frame_array = frame.to_ndarray(format="rgb24")
+                writer.write_frame(frame_array)
+                frame_count += 1
+            print(f"{target_fps=} {frame_count=} {frame_count/target_fps=}")
 
 
 def process_single_file(mp4_file_path):
@@ -75,6 +108,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--max-workers", type=int, default=10, help="Maximum number of worker processes to use (default: 10)"
     )
+    parser.add_argument("--test", action="store_true", help="Run test_target_fps with a random file from the folder")
 
     args = parser.parse_args()
 
@@ -87,4 +121,20 @@ if __name__ == "__main__":
         print(f"Error: VPT folder path is not a directory: {vpt_folder_path}")
         exit(1)
 
-    main(vpt_folder_path, args.max_workers)
+    # Handle test mode
+    if args.test:
+        # Find all mp4 files in the folder
+        mp4_files = [f for f in vpt_folder_path.iterdir() if f.suffix == ".mp4" and f.is_file()]
+
+        if not mp4_files:
+            print(f"Error: No mp4 files found in {vpt_folder_path}")
+            exit(1)
+
+        # Select a random file
+        random_file = random.choice(mp4_files)
+        print(f"Running test_target_fps with random file: {random_file}")
+
+        # Run the test function
+        test_target_fps(random_file)
+    else:
+        main(vpt_folder_path, args.max_workers)
