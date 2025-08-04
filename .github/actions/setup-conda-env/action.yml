@@ -80,7 +80,7 @@ runs:
       with:
         enableCrossOsArchive: ${{ inputs.os == 'windows' }}
         path: ${{ env.CONDA }}/envs
-        key: conda-env-${{ runner.os }}--${{ runner.arch }}--${{ steps.get-date.outputs.today }}-${{ hashFiles(inputs.environment-file) }}-${{ inputs.cache-number }}${{ inputs.cache-suffix && format('-{0}', inputs.cache-suffix) || '' }}
+        key: conda-env-${{ runner.os }}--${{ runner.arch }}--${{ steps.get-date.outputs.today }}-${{ hashFiles(inputs.environment-file) }}-${{ env.CACHE_NUMBER }}${{ inputs.cache-suffix && format('-{0}', inputs.cache-suffix) || '' }}
       env:
         CACHE_NUMBER: ${{ inputs.cache-number }}
       id: cache-env
