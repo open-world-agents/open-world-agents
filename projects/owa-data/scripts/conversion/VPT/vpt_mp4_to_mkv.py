@@ -68,15 +68,44 @@ def process_single_file(mp4_file_path):
                 frame_count += 1
 
 
-def main(vpt_folder_path: Path, max_workers: int | None = None):
-    if max_workers is None:
-        max_workers = 10
+def main(
+    vpt_folder_path: Path,
+    max_workers: int = 10,
+    shard_index: int | None = None,
+    shard_count: int | None = None,
+):
     print(f"Using {max_workers} worker processes.")
 
     print(f"Reading {vpt_folder_path=} for mp4 files.")
 
-    mp4_target_list = [f for f in vpt_folder_path.iterdir() if f.suffix == ".mp4" and f.is_file()]
-    print(f"We will convert {len(mp4_target_list)=} mp4 files.")
+    mp4_target_list = sorted([f for f in vpt_folder_path.iterdir() if f.suffix == ".mp4" and f.is_file()])
+    print(f"Found {len(mp4_target_list)} total mp4 files.")
+
+    # Apply sharding if specified
+    if shard_index is not None and shard_count is not None:
+        if shard_index < 0 or shard_index >= shard_count:
+            raise ValueError(f"shard_index ({shard_index}) must be between 0 and {shard_count - 1}")
+
+        # Calculate shard boundaries
+        total_files = len(mp4_target_list)
+        files_per_shard = total_files // shard_count
+        remainder = total_files % shard_count
+
+        # Calculate start and end indices for this shard
+        # Distribute remainder files among the first 'remainder' shards, they will have 1 more file than the others
+        if shard_index < remainder:
+            start_idx = shard_index * (files_per_shard + 1)
+            end_idx = start_idx + files_per_shard + 1
+        else:
+            start_idx = remainder * (files_per_shard + 1) + (shard_index - remainder) * files_per_shard
+            end_idx = start_idx + files_per_shard
+
+        mp4_target_list = mp4_target_list[start_idx:end_idx]
+        print(
+            f"Shard {shard_index=}/{shard_count=}: Processing files \[{start_idx=}:{end_idx=}] ({len(mp4_target_list)} files)"
+        )
+    else:
+        print(f"We will convert {len(mp4_target_list)} mp4 files.")
 
     # Use ProcessPoolExecutor for multiprocessing
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
@@ -109,8 +138,31 @@ if __name__ == "__main__":
         "--max-workers", type=int, default=10, help="Maximum number of worker processes to use (default: 10)"
     )
     parser.add_argument("--test", action="store_true", help="Run test_target_fps with a random file from the folder")
+    parser.add_argument(
+        "--shard-index",
+        type=int,
+        help="Index of the current shard (0-based). Must be used together with --shard-count.",
+    )
+    parser.add_argument(
+        "--shard-count",
+        type=int,
+        help="Total number of shards for distributed processing. Must be used together with --shard-index.",
+    )
 
     args = parser.parse_args()
+
+    # Validate sharding arguments
+    if (args.shard_index is None) != (args.shard_count is None):
+        print("Error: --shard-index and --shard-count must be used together or not at all.")
+        exit(1)
+
+    if args.shard_count is not None and args.shard_count <= 0:
+        print("Error: --shard-count must be a positive integer.")
+        exit(1)
+
+    if args.shard_index is not None and (args.shard_index < 0 or args.shard_index >= args.shard_count):
+        print(f"Error: --shard-index must be between 0 and {args.shard_count - 1}.")
+        exit(1)
 
     # Expand user path and ensure it's a directory
     vpt_folder_path = args.vpt_folder_path.expanduser()
@@ -137,4 +189,4 @@ if __name__ == "__main__":
         # Run the test function
         test_target_fps(random_file)
     else:
-        main(vpt_folder_path, args.max_workers)
+        main(vpt_folder_path, args.max_workers, args.shard_index, args.shard_count)
