@@ -192,6 +192,7 @@ class FSLTransform:
                     processed = self.config.image_processor(image, return_tensors="pt")
                     pixel_value = processed["pixel_values"].squeeze(0).squeeze(0)
                     pixel_values.append(pixel_value)
+                # NOTE: SmolVLM2-256M-Video-Instruct expects [num_images, 3, 512, 512]
                 results["images"].append(torch.stack(pixel_values) if pixel_values else torch.empty(0, 3, 512, 512))
             else:
                 results["images"].append(all_images)
