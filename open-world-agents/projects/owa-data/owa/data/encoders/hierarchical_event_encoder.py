@@ -20,11 +20,11 @@ class HierarchicalEventEncoderConfig(BaseEventEncoderConfig):
     timestamp_range_ns: int = 4 * TimeUnits.SECOND
     # 4 seconds in 10ms intervals
     timestamp_bases: List[int] = field(default_factory=lambda: [4, 10, 10])
-    # raw mouse delta quantization bases
+    # -1000 to +1000 in 1 pixel unit intervals
     mouse_delta_bases: List[int] = field(default_factory=lambda: [10, 10, 10])
-    # maximum dx value for normalization
+    # -1000 to +1000
     max_mouse_delta_x: int = 1000
-    # maximum dy value for normalization
+    # -1000 to +1000
     max_mouse_delta_y: int = 1000
 
 
