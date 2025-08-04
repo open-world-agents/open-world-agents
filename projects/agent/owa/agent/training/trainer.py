@@ -56,45 +56,58 @@ class OWASFTTrainer(SFTTrainer):
     def _save_predictions_and_ground_truth(self, output: EvalLoopOutput):
         """Save predictions and ground truth with per-sample metrics."""
         assert not isinstance(output.predictions, tuple)
-        predictions = output.predictions  # Raw token predictions
-        labels = output.label_ids  # Raw token labels
+        logits = output.predictions  # Raw token logits (model predictions)
+        labels = output.label_ids  # Raw token labels (ground truth)
         losses = getattr(output, "losses", None)
 
-        if predictions is None or labels is None or self.processing_class is None:
+        if logits is None or labels is None or self.processing_class is None:
             return
 
         # Process each sample to calculate metrics and decode text
         data = []
-        for i in range(len(predictions)):
-            pred_tokens = predictions[i].argmax(axis=-1)
-            label_tokens = labels[i]
+        for i in range(len(logits)):
+            label = labels[i]
 
-            # Filter out padding tokens (-100)
-            valid_mask = label_tokens != -100
-            valid_preds = pred_tokens[valid_mask]
-            valid_labels = label_tokens[valid_mask]
+            # === Copied from SFTTrainer compute_loss
+            shift_logits = logits[i][..., :-1, :]
+            shift_labels = label[..., 1:]
 
-            # Calculate token-level accuracy
-            if len(valid_labels) > 0:
-                token_acc = (valid_preds == valid_labels).mean().item()
-            else:
-                token_acc = 0.0
+            # Get predictions
+            predictions = shift_logits.argmax(axis=-1)
+
+            # Create mask for non-padding tokens (assuming ignore_index is -100)
+            mask = shift_labels != -100
+
+            # Calculate accuracy only on non-padding tokens
+            correct_predictions = (predictions == shift_labels) & mask
+            total_tokens = mask.sum()
+            correct_tokens = correct_predictions.sum()
+
+            # Gather the correct_tokens and total_tokens across all processes
+            # correct_tokens = self.accelerator.gather_for_metrics(correct_tokens)
+            # total_tokens = self.accelerator.gather_for_metrics(total_tokens)
+
+            # Compute the mean token accuracy and log it
+            total_sum = total_tokens.sum()
+            accuracy = (correct_tokens.sum() / total_sum).item() if total_sum > 0 else 0.0
+
+            # === End copy
 
             # Extract per-sample loss
             sample_loss = losses[i].item() if losses is not None else None
 
-            # Decode tokens to text
-            pred_text = self.processing_class.decode(valid_preds, skip_special_tokens=True).strip()
-            label_text = self.processing_class.decode(valid_labels, skip_special_tokens=True).strip()
+            # Decode tokens to text. NOTE: `mask` is needed because TokenzerFast can't decode -100. Refer to https://github.com/huggingface/transformers/issues/31110#issuecomment-2137712416
+            pred_text = self.processing_class.decode(predictions[mask], skip_special_tokens=False).strip()
+            label_text = self.processing_class.decode(shift_labels[mask], skip_special_tokens=False).strip()
 
             data.append(
                 {
                     "id": i,
                     "prediction": pred_text,
                     "ground_truth": label_text,
-                    "pred_tokens": valid_preds.tolist(),
-                    "gt_tokens": valid_labels.tolist(),
-                    "token_accuracy": round(token_acc, 3),
+                    "pred_tokens": predictions.tolist(),
+                    "gt_tokens": label.tolist(),
+                    "token_accuracy": round(accuracy, 3),
                     "loss": round(sample_loss, 4) if sample_loss is not None else None,
                 }
             )
