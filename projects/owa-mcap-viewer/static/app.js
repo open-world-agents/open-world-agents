@@ -16,12 +16,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // State
     let currentFile = null;
     let currentData = {
-        keyboard: [],
-        mouse: [],
-        screen: [],
-        window: [],
-        "keyboard/state": [],
-        "mouse/state": []
+        "keyboard": [],
+        "mouse/raw": [],
+        "screen": [],
+        "window": [],
+        "keyboard/state": []
     };
     let metadata = null;
     let basePtsTime = 0;
@@ -481,69 +480,72 @@ document.addEventListener('DOMContentLoaded', () => {
         keyboardDisplay.appendChild(eventsSection);
     }
 
-    // Update mouse state display
+    // Update mouse state display using only RawMouseEvent messages
     function updateMouseState(currentTimeNs) {
-        const mouseState = currentData['mouse/state'] || [];
-        const mouseEvents = currentData['mouse'] || [];
+        const mouseRawEvents = currentData['mouse/raw'] || [];
 
-        if (mouseState.length === 0 && mouseEvents.length === 0) {
+        if (mouseRawEvents.length === 0) {
             mouseDisplay.innerHTML = '<div>No mouse data available</div>';
             mouseCursor.style.display = 'none';
             return;
         }
 
-        // Get current state and most recent event
-        const stateEvent = findLastEventBeforeTime(mouseState, currentTimeNs);
-        const lastEvent = findLastEventBeforeTime(mouseEvents, currentTimeNs);
+        // Calculate current mouse position by accumulating deltas from RawMouseEvent messages
+        // Reset position to center and recalculate from all events up to current time
+        let mouseX = 960; // Center of 1920x1080 screen
+        let mouseY = 540;
+        let buttonState = new Set();
 
-        // Use state event for position, but if there's a more recent mouse movement event, use that
-        let currentEvent = stateEvent;
-        if (lastEvent && (!stateEvent || lastEvent.timestamp > stateEvent.timestamp)) {
-            currentEvent = lastEvent;
+        // Process all RawMouseEvent messages up to current time
+        for (const event of mouseRawEvents) {
+            if (event.timestamp > currentTimeNs) break;
+
+            // Accumulate movement deltas (dx and dy are derived from last_x and last_y)
+            const dx = event.last_x || 0;
+            const dy = event.last_y || 0;
+            mouseX += dx;
+            mouseY += dy;
+
+            // Keep mouse position within screen bounds
+            mouseX = Math.max(0, Math.min(1920, mouseX));
+            mouseY = Math.max(0, Math.min(1080, mouseY));
+
+            // Update button state based on button_flags
+            updateButtonStateFromFlags(buttonState, event.button_flags || 0);
         }
 
-        // Get recent click and scroll events (within last 1000ms)
-        const recentSpecialEvents = mouseEvents.filter(event =>
-            (event.event_type === 'click' || event.event_type === 'scroll') &&
+        // Get recent button events (within last 1000ms) for display
+        const recentButtonEvents = mouseRawEvents.filter(event =>
             event.timestamp > currentTimeNs - 1000000000 &&
-            event.timestamp <= currentTimeNs
+            event.timestamp <= currentTimeNs &&
+            event.button_flags && event.button_flags !== 0 // RI_MOUSE_NOP
         );
 
         // Update cursor position and state
-        if (currentEvent) {
-            mouseCursor.style.display = 'block';
+        mouseCursor.style.display = 'block';
 
-            const displayWidth = mouseDisplay.clientWidth;
-            const displayHeight = mouseDisplay.clientHeight;
-            // TODO: Update these values based on actual screen resolution
-            const screenWidth = 1920;
-            const screenHeight = 1080;
+        const displayWidth = mouseDisplay.clientWidth;
+        const displayHeight = mouseDisplay.clientHeight;
+        const screenWidth = 1920;
+        const screenHeight = 1080;
 
-            const x = ((currentEvent.x || 0) / screenWidth) * displayWidth;
-            const y = ((currentEvent.y || 0) / screenHeight) * displayHeight;
+        const x = (mouseX / screenWidth) * displayWidth;
+        const y = (mouseY / screenHeight) * displayHeight;
 
-            mouseCursor.style.left = `${x}px`;
-            mouseCursor.style.top = `${y}px`;
+        mouseCursor.style.left = `${x}px`;
+        mouseCursor.style.top = `${y}px`;
 
-            // Update cursor appearance based on state and event type
-            if (stateEvent && stateEvent.buttons && stateEvent.buttons.length > 0) {
-                // Mouse button is pressed
-                mouseCursor.style.backgroundColor = 'blue';
-                mouseCursor.style.width = '12px';
-                mouseCursor.style.height = '12px';
-            } else if (lastEvent && lastEvent.event_type === 'move') {
-                // Mouse is moving
-                mouseCursor.style.backgroundColor = 'green';
-                mouseCursor.style.width = '10px';
-                mouseCursor.style.height = '10px';
-            } else {
-                // Default state
-                mouseCursor.style.backgroundColor = 'red';
-                mouseCursor.style.width = '10px';
-                mouseCursor.style.height = '10px';
-            }
+        // Update cursor appearance based on button state
+        if (buttonState.size > 0) {
+            // Mouse button is pressed
+            mouseCursor.style.backgroundColor = 'blue';
+            mouseCursor.style.width = '12px';
+            mouseCursor.style.height = '12px';
         } else {
-            mouseCursor.style.display = 'none';
+            // Default state
+            mouseCursor.style.backgroundColor = 'red';
+            mouseCursor.style.width = '10px';
+            mouseCursor.style.height = '10px';
         }
 
         // Clear the mouse display (keeping the cursor)
@@ -562,44 +564,113 @@ document.addEventListener('DOMContentLoaded', () => {
         mouseDisplay.appendChild(cursor);
         mouseCursor = cursor;
 
-        // Add recent special events if any exist
-        if (recentSpecialEvents.length > 0) {
+        // Add recent button events if any exist
+        if (recentButtonEvents.length > 0) {
             const eventsDiv = document.createElement('div');
             eventsDiv.className = 'mouse-events';
             eventsDiv.innerHTML = '<h4>Recent Events</h4>';
 
-            recentSpecialEvents.forEach(event => {
+            recentButtonEvents.forEach(event => {
                 const eventElem = document.createElement('div');
+                eventElem.className = 'mouse-event';
 
-                // Create class based on event type, button, and pressed state
-                let classes = ['mouse-event'];
-                if (event.event_type === 'click' && event.button) {
-                    classes.push(event.button); // 'left', 'right', or 'middle'
-                    classes.push(event.pressed ? 'press' : 'release');
-                } else if (event.event_type === 'scroll') {
-                    classes.push('scroll');
-                }
-                eventElem.className = classes.join(' ');
-
-                // Create event text
-                let eventText = '';
-                if (event.event_type === 'click') {
-                    const buttonText = event.button ? event.button.charAt(0).toUpperCase() + event.button.slice(1) : '';
-                    const actionText = event.pressed ? 'Press' : 'Release';
-                    eventText = `${buttonText} ${actionText} at (${event.x}, ${event.y})`;
-                } else if (event.event_type === 'scroll') {
-                    eventText = `Scroll at (${event.x}, ${event.y})`;
-                    if (event.dx != null || event.dy != null) {
-                        eventText += ` delta: ${event.dx || 0}, ${event.dy || 0}`;
-                    }
-                }
-
+                // Create event text based on button flags
+                const eventText = getButtonEventText(event.button_flags);
                 eventElem.textContent = eventText;
                 eventsDiv.appendChild(eventElem);
             });
 
             mouseDisplay.appendChild(eventsDiv);
         }
+    }
+
+    // Helper function to update button state based on RawMouseEvent button flags
+    function updateButtonStateFromFlags(buttonState, buttonFlags) {
+        // Button flag constants from RawMouseEvent.ButtonFlags
+        const RI_MOUSE_LEFT_BUTTON_DOWN = 0x0001;
+        const RI_MOUSE_LEFT_BUTTON_UP = 0x0002;
+        const RI_MOUSE_RIGHT_BUTTON_DOWN = 0x0004;
+        const RI_MOUSE_RIGHT_BUTTON_UP = 0x0008;
+        const RI_MOUSE_MIDDLE_BUTTON_DOWN = 0x0010;
+        const RI_MOUSE_MIDDLE_BUTTON_UP = 0x0020;
+        const RI_MOUSE_BUTTON_4_DOWN = 0x0040;
+        const RI_MOUSE_BUTTON_4_UP = 0x0080;
+        const RI_MOUSE_BUTTON_5_DOWN = 0x0100;
+        const RI_MOUSE_BUTTON_5_UP = 0x0200;
+
+        // Handle left button
+        if (buttonFlags & RI_MOUSE_LEFT_BUTTON_DOWN) {
+            buttonState.add('left');
+        }
+        if (buttonFlags & RI_MOUSE_LEFT_BUTTON_UP) {
+            buttonState.delete('left');
+        }
+
+        // Handle right button
+        if (buttonFlags & RI_MOUSE_RIGHT_BUTTON_DOWN) {
+            buttonState.add('right');
+        }
+        if (buttonFlags & RI_MOUSE_RIGHT_BUTTON_UP) {
+            buttonState.delete('right');
+        }
+
+        // Handle middle button
+        if (buttonFlags & RI_MOUSE_MIDDLE_BUTTON_DOWN) {
+            buttonState.add('middle');
+        }
+        if (buttonFlags & RI_MOUSE_MIDDLE_BUTTON_UP) {
+            buttonState.delete('middle');
+        }
+
+        // Handle button 4 (X1)
+        if (buttonFlags & RI_MOUSE_BUTTON_4_DOWN) {
+            buttonState.add('x1');
+        }
+        if (buttonFlags & RI_MOUSE_BUTTON_4_UP) {
+            buttonState.delete('x1');
+        }
+
+        // Handle button 5 (X2)
+        if (buttonFlags & RI_MOUSE_BUTTON_5_DOWN) {
+            buttonState.add('x2');
+        }
+        if (buttonFlags & RI_MOUSE_BUTTON_5_UP) {
+            buttonState.delete('x2');
+        }
+    }
+
+    // Helper function to get button event text from button flags
+    function getButtonEventText(buttonFlags) {
+        const events = [];
+
+        // Button flag constants
+        const RI_MOUSE_LEFT_BUTTON_DOWN = 0x0001;
+        const RI_MOUSE_LEFT_BUTTON_UP = 0x0002;
+        const RI_MOUSE_RIGHT_BUTTON_DOWN = 0x0004;
+        const RI_MOUSE_RIGHT_BUTTON_UP = 0x0008;
+        const RI_MOUSE_MIDDLE_BUTTON_DOWN = 0x0010;
+        const RI_MOUSE_MIDDLE_BUTTON_UP = 0x0020;
+        const RI_MOUSE_BUTTON_4_DOWN = 0x0040;
+        const RI_MOUSE_BUTTON_4_UP = 0x0080;
+        const RI_MOUSE_BUTTON_5_DOWN = 0x0100;
+        const RI_MOUSE_BUTTON_5_UP = 0x0200;
+        const RI_MOUSE_WHEEL = 0x0400;
+        const RI_MOUSE_HWHEEL = 0x0800;
+
+        if (buttonFlags & RI_MOUSE_LEFT_BUTTON_DOWN) events.push('Left Press');
+        if (buttonFlags & RI_MOUSE_LEFT_BUTTON_UP) events.push('Left Release');
+        if (buttonFlags & RI_MOUSE_RIGHT_BUTTON_DOWN) events.push('Right Press');
+        if (buttonFlags & RI_MOUSE_RIGHT_BUTTON_UP) events.push('Right Release');
+        if (buttonFlags & RI_MOUSE_MIDDLE_BUTTON_DOWN) events.push('Middle Press');
+        if (buttonFlags & RI_MOUSE_MIDDLE_BUTTON_UP) events.push('Middle Release');
+        if (buttonFlags & RI_MOUSE_BUTTON_4_DOWN) events.push('X1 Press');
+        if (buttonFlags & RI_MOUSE_BUTTON_4_UP) events.push('X1 Release');
+        if (buttonFlags & RI_MOUSE_BUTTON_5_DOWN) events.push('X2 Press');
+        if (buttonFlags & RI_MOUSE_BUTTON_5_UP) events.push('X2 Release');
+        if (buttonFlags & RI_MOUSE_WHEEL) events.push('Wheel');
+        if (buttonFlags & RI_MOUSE_HWHEEL) events.push('Horizontal Wheel');
+
+        return events.length > 0 ? events.join(', ') : `Button Event (${buttonFlags})`;
     }
 
     // Utility function to find the most recent event before a given time
