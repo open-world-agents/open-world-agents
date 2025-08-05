@@ -49,7 +49,7 @@ event_dataset = load_from_disk('$EVENT_DATASET_DIR')
 print(f'Event Dataset stage: {event_dataset.stage}')  # EVENT
 
 # Apply event transform for on-the-fly processing
-event_dataset['train'].auto_set_transform(stage='event', encoder_type='hierarchical', load_images=True)
+event_dataset.auto_set_transform(stage='event', encoder_type='hierarchical', load_images=True)
 for sample in event_dataset['train'].take(10):
     print(f'{sample=}')
 "
@@ -62,7 +62,7 @@ fsl_dataset = load_from_disk('$FSL_DATASET_DIR')
 print(f'FSL Dataset stage: {fsl_dataset.stage}')  # FSL
 
 # Apply FSL transform for on-the-fly processing
-fsl_dataset['train'].auto_set_transform(stage='fsl', load_images=True)
+fsl_dataset.auto_set_transform(stage='fsl', load_images=True)
 for sample in fsl_dataset['train'].take(3):
     print(f'{sample=}')
 "
