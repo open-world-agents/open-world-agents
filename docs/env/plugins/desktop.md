@@ -25,7 +25,7 @@ Mouse, keyboard, window control, and screen capture for desktop automation.
 | **Keyboard** | `desktop/keyboard.press` | Callable | Press/release keys |
 | | `desktop/keyboard.type` | Callable | Type text strings |
 | | `desktop/keyboard.press_repeat` | Callable | Simulate key auto-repeat |
-| | `desktop/keyboard.get_repeat_timing` | Callable | Get Windows keyboard repeat timing |
+| | `desktop/keyboard.get_keyboard_repeat_timing` | Callable | Get Windows keyboard repeat timing |
 | | `desktop/keyboard` | Listener | Monitor keyboard events |
 | | `desktop/keyboard_state` | Listener | Monitor keyboard state changes |
 | **Screen** | `desktop/screen.capture` | Callable | Capture screen (basic) |

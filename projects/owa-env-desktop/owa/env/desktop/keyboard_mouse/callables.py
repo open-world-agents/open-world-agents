@@ -1,6 +1,6 @@
 import sys
 import time
-from typing import Tuple
+from typing import Dict
 
 from pynput.keyboard import Controller as KeyboardController
 from pynput.mouse import Button
@@ -266,22 +266,22 @@ def _get_mouse_registry_values() -> dict:
         return values
 
 
-def get_keyboard_repeat_timing() -> Tuple[float, float]:
+def get_keyboard_repeat_timing(*, return_seconds: bool = True) -> Dict[str, float]:
     """
     Get Windows keyboard repeat delay and repeat rate settings.
 
     Returns:
-        Tuple[float, float]: (repeat_delay_seconds, repeat_rate_seconds)
-            - repeat_delay_seconds: Initial delay before auto-repeat starts
-            - repeat_rate_seconds: Interval between repeated keystrokes
+        Dict[str, float]: Dictionary containing keyboard repeat timing settings
+            - keyboard_delay_seconds: Initial delay before auto-repeat starts
+            - keyboard_rate_seconds: Interval between repeated keystrokes
 
     Raises:
         OSError: If not running on Windows platform
         RuntimeError: If Windows API call fails
 
     Examples:
-        >>> delay, rate = get_keyboard_repeat_timing()
-        >>> print(f"Repeat delay: {delay:.3f}s, Repeat rate: {rate:.3f}s")
+        >>> timing = get_keyboard_repeat_timing()
+        >>> print(f"Repeat delay: {timing['keyboard_delay_seconds']:.3f}s, Repeat rate: {timing['keyboard_rate_seconds']:.3f}s")
     """
     if sys.platform != "win32":
         raise OSError("Keyboard repeat settings are only available on Windows")
@@ -291,13 +291,13 @@ def get_keyboard_repeat_timing() -> Tuple[float, float]:
     SPI_GETKEYBOARDSPEED = 0x000A
 
     # Get keyboard delay (0-3 scale)
-    delay_value = wintypes.UINT(0)
-    if not ctypes.windll.user32.SystemParametersInfoW(SPI_GETKEYBOARDDELAY, 0, ctypes.byref(delay_value), 0):
+    keyboard_delay = wintypes.UINT(0)
+    if not ctypes.windll.user32.SystemParametersInfoW(SPI_GETKEYBOARDDELAY, 0, ctypes.byref(keyboard_delay), 0):
         raise RuntimeError("Failed to get keyboard delay setting from Windows API")
 
     # Get keyboard speed (0-31 scale)
-    speed_value = wintypes.UINT(0)
-    if not ctypes.windll.user32.SystemParametersInfoW(SPI_GETKEYBOARDSPEED, 0, ctypes.byref(speed_value), 0):
+    keyboard_speed = wintypes.UINT(0)
+    if not ctypes.windll.user32.SystemParametersInfoW(SPI_GETKEYBOARDSPEED, 0, ctypes.byref(keyboard_speed), 0):
         raise RuntimeError("Failed to get keyboard speed setting from Windows API")
 
     # Convert to actual time values based on Microsoft documentation
@@ -306,12 +306,15 @@ def get_keyboard_repeat_timing() -> Tuple[float, float]:
     # - KeyboardSpeed: https://learn.microsoft.com/en-us/dotnet/api/system.windows.forms.systeminformation.keyboardspeed
 
     # Delay: 0=250ms, 1=500ms, 2=750ms, 3=1000ms (approximately)
-    delay_seconds = 0.25 + (delay_value.value * 0.25)
+    keyboard_delay_seconds = 0.25 + (keyboard_delay.value * 0.25)
 
     # Speed: 0=~2.5 repetitions/sec, 31=~30 repetitions/sec (from Microsoft docs)
     # Linear interpolation formula (derived): repetitions_per_sec = 2.5 + (speed_value * 27.5 / 31)
     # Where 27.5 = (30 - 2.5) is the range between max and min repetitions per second
-    repetitions_per_sec = 2.5 + (speed_value.value * 27.5 / 31)
-    speed_seconds = 1.0 / repetitions_per_sec
+    repetitions_per_sec = 2.5 + (keyboard_speed.value * 27.5 / 31)
+    keyboard_rate_seconds = 1.0 / repetitions_per_sec
 
-    return (delay_seconds, speed_seconds)
+    if return_seconds:
+        return {"keyboard_delay_seconds": keyboard_delay_seconds, "keyboard_rate_seconds": keyboard_rate_seconds}
+    else:
+        return {"keyboard_delay": keyboard_delay.value, "keyboard_speed": keyboard_speed.value}
