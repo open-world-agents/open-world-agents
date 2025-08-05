@@ -171,10 +171,10 @@ class PointerBallisticsConfig(OWAMessage):
     mouse_speed: int = 1
     mouse_sensitivity: int = 10
     smooth_mouse_x_curve: str = Field(
-        "0000000000000000156e000000000000004001000000000029dc0300000000000000280000000000",
+        default="0000000000000000156e000000000000004001000000000029dc0300000000000000280000000000",
         description="Hex-encoded binary data",
     )
     smooth_mouse_y_curve: str = Field(
-        "0000000000000000fd11010000000000002404000000000000fc12000000000000c0bb0100000000",
+        default="0000000000000000fd11010000000000002404000000000000fc12000000000000c0bb0100000000",
         description="Hex-encoded binary data",
     )
