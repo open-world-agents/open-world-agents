@@ -53,6 +53,43 @@ std_velocity_data = {
 should_quit = False
 
 
+def update_movement_buffer_and_velocity(movement_buffer, current_time, dx=None, dy=None):
+    """
+    Helper function to update movement buffer and calculate velocity.
+
+    Args:
+        movement_buffer: List of movement entries with 'time', 'dx', 'dy' keys
+        current_time: Current timestamp
+        dx: Delta X movement (optional, for adding new movement)
+        dy: Delta Y movement (optional, for adding new movement)
+
+    Returns:
+        tuple: (updated_buffer, velocity, velocity_string)
+    """
+    # Add current movement to buffer if provided
+    if dx is not None and dy is not None:
+        movement_buffer.append({"time": current_time, "dx": dx, "dy": dy})
+
+    # Remove old entries outside the velocity window
+    cutoff_time = current_time - VELOCITY_WINDOW
+    updated_buffer = [entry for entry in movement_buffer if entry["time"] > cutoff_time]
+
+    # Calculate velocity over the window
+    velocity = 0
+    velocity_str = ""
+
+    if len(updated_buffer) >= 2:
+        # Sum all movements in the window
+        total_dx = sum(entry["dx"] for entry in updated_buffer)
+        total_dy = sum(entry["dy"] for entry in updated_buffer)
+
+        # Calculate velocity over the window
+        velocity = ((total_dx / VELOCITY_WINDOW) ** 2 + (total_dy / VELOCITY_WINDOW) ** 2) ** 0.5
+        velocity_str = f" vel={velocity:.0f}px/s"
+
+    return updated_buffer, velocity, velocity_str
+
+
 def on_raw_mouse(event: RawMouseEvent):
     """Raw mouse event handler."""
     global verbose_mode, raw_total, raw_velocity_data
@@ -66,31 +103,16 @@ def on_raw_mouse(event: RawMouseEvent):
 
     # Calculate velocity using movement buffer
     current_time = time.time()
-    velocity_str = ""
 
-    # Add current movement to buffer
-    raw_velocity_data["movement_buffer"].append({"time": current_time, "dx": event.dx, "dy": event.dy})
+    # Update movement buffer and calculate velocity
+    raw_velocity_data["movement_buffer"], velocity, velocity_str = update_movement_buffer_and_velocity(
+        raw_velocity_data["movement_buffer"], current_time, event.dx, event.dy
+    )
 
-    # Remove old entries outside the velocity window
-    cutoff_time = current_time - VELOCITY_WINDOW
-    raw_velocity_data["movement_buffer"] = [
-        entry for entry in raw_velocity_data["movement_buffer"] if entry["time"] > cutoff_time
-    ]
-
-    # Calculate velocity over the window
-    if len(raw_velocity_data["movement_buffer"]) >= 2:
-        # Sum all movements in the window
-        total_dx = sum(entry["dx"] for entry in raw_velocity_data["movement_buffer"])
-        total_dy = sum(entry["dy"] for entry in raw_velocity_data["movement_buffer"])
-
-        # Calculate velocity over the window (no additional smoothing needed)
-        window_velocity = ((total_dx / VELOCITY_WINDOW) ** 2 + (total_dy / VELOCITY_WINDOW) ** 2) ** 0.5
-
-        velocity_str = f" vel={window_velocity:.0f}px/s"
-
-        # Update stats with window velocity
+    # Update stats with calculated velocity
+    if velocity > 0:
         with stats_lock:
-            stats["raw_velocity"] = window_velocity
+            stats["raw_velocity"] = velocity
 
     raw_velocity_data["last_time"] = current_time
     raw_velocity_data["last_update"] = current_time
@@ -114,35 +136,26 @@ def on_std_mouse(event: MouseEvent):
 
         # Calculate velocity for move events using movement buffer
         current_time = time.time()
-        velocity_str = ""
 
-        # Add current position to buffer (convert to movement)
-        if std_velocity_data["last_x"] is not None and std_velocity_data["last_y"] is not None:
+        # Convert position to movement and update buffer
+        if std_velocity_data["last_time"] is not None:
             dx = event.x - std_velocity_data["last_x"]
             dy = event.y - std_velocity_data["last_y"]
 
-            std_velocity_data["movement_buffer"].append({"time": current_time, "dx": dx, "dy": dy})
+            # Update movement buffer and calculate velocity
+            std_velocity_data["movement_buffer"], velocity, velocity_str = update_movement_buffer_and_velocity(
+                std_velocity_data["movement_buffer"], current_time, dx, dy
+            )
 
-        # Remove old entries outside the velocity window
-        cutoff_time = current_time - VELOCITY_WINDOW
-        std_velocity_data["movement_buffer"] = [
-            entry for entry in std_velocity_data["movement_buffer"] if entry["time"] > cutoff_time
-        ]
-
-        # Calculate velocity over the window
-        if len(std_velocity_data["movement_buffer"]) >= 2:
-            # Sum all movements in the window
-            total_dx = sum(entry["dx"] for entry in std_velocity_data["movement_buffer"])
-            total_dy = sum(entry["dy"] for entry in std_velocity_data["movement_buffer"])
-
-            # Calculate velocity over the window (no additional smoothing needed)
-            window_velocity = ((total_dx / VELOCITY_WINDOW) ** 2 + (total_dy / VELOCITY_WINDOW) ** 2) ** 0.5
-
-            velocity_str = f" vel={window_velocity:.0f}px/s"
-
-            # Update stats with window velocity
-            with stats_lock:
-                stats["std_velocity"] = window_velocity
+            # Update stats with calculated velocity
+            if velocity > 0:
+                with stats_lock:
+                    stats["std_velocity"] = velocity
+        else:
+            # First movement, just clean the buffer
+            std_velocity_data["movement_buffer"], _, velocity_str = update_movement_buffer_and_velocity(
+                std_velocity_data["movement_buffer"], current_time
+            )
 
         std_velocity_data["last_time"] = current_time
         std_velocity_data["last_x"] = event.x
@@ -160,41 +173,22 @@ def on_std_mouse(event: MouseEvent):
 def apply_velocity_decay():
     """Apply velocity decay by cleaning old entries from movement buffers."""
     current_time = time.time()
-    cutoff_time = current_time - VELOCITY_WINDOW
 
     # Clean old entries from raw buffer and recalculate velocity
-    raw_velocity_data["movement_buffer"] = [
-        entry for entry in raw_velocity_data["movement_buffer"] if entry["time"] > cutoff_time
-    ]
+    raw_velocity_data["movement_buffer"], raw_velocity, _ = update_movement_buffer_and_velocity(
+        raw_velocity_data["movement_buffer"], current_time
+    )
 
-    # Recalculate raw velocity
-    if len(raw_velocity_data["movement_buffer"]) >= 2:
-        total_dx = sum(entry["dx"] for entry in raw_velocity_data["movement_buffer"])
-        total_dy = sum(entry["dy"] for entry in raw_velocity_data["movement_buffer"])
-        window_velocity = ((total_dx / VELOCITY_WINDOW) ** 2 + (total_dy / VELOCITY_WINDOW) ** 2) ** 0.5
-        with stats_lock:
-            stats["raw_velocity"] = window_velocity
-    else:
-        # No recent movements, velocity is zero
-        with stats_lock:
-            stats["raw_velocity"] = 0
+    with stats_lock:
+        stats["raw_velocity"] = raw_velocity
 
     # Clean old entries from std buffer and recalculate velocity
-    std_velocity_data["movement_buffer"] = [
-        entry for entry in std_velocity_data["movement_buffer"] if entry["time"] > cutoff_time
-    ]
+    std_velocity_data["movement_buffer"], std_velocity, _ = update_movement_buffer_and_velocity(
+        std_velocity_data["movement_buffer"], current_time
+    )
 
-    # Recalculate std velocity
-    if len(std_velocity_data["movement_buffer"]) >= 2:
-        total_dx = sum(entry["dx"] for entry in std_velocity_data["movement_buffer"])
-        total_dy = sum(entry["dy"] for entry in std_velocity_data["movement_buffer"])
-        window_velocity = ((total_dx / VELOCITY_WINDOW) ** 2 + (total_dy / VELOCITY_WINDOW) ** 2) ** 0.5
-        with stats_lock:
-            stats["std_velocity"] = window_velocity
-    else:
-        # No recent movements, velocity is zero
-        with stats_lock:
-            stats["std_velocity"] = 0
+    with stats_lock:
+        stats["std_velocity"] = std_velocity
 
 
 def toggle_verbose():
