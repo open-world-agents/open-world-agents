@@ -14,15 +14,24 @@ Mouse, keyboard, window control, and screen capture for desktop automation.
 | **Mouse** | `desktop/mouse.click` | Callable | Simulate mouse clicks |
 | | `desktop/mouse.move` | Callable | Move cursor to coordinates |
 | | `desktop/mouse.position` | Callable | Get current mouse position |
+| | `desktop/mouse.press` | Callable | Press mouse button |
+| | `desktop/mouse.release` | Callable | Release mouse button |
 | | `desktop/mouse` | Listener | Monitor mouse events |
+| | `desktop/mouse_state` | Listener | Monitor mouse state changes |
 | | `desktop/raw_mouse` | Listener | Raw mouse input (bypasses acceleration) |
 | **Keyboard** | `desktop/keyboard.press` | Callable | Press/release keys |
 | | `desktop/keyboard.type` | Callable | Type text strings |
 | | `desktop/keyboard.press_repeat` | Callable | Simulate key auto-repeat |
 | | `desktop/keyboard` | Listener | Monitor keyboard events |
+| | `desktop/keyboard_state` | Listener | Monitor keyboard state changes |
 | **Screen** | `desktop/screen.capture` | Callable | Capture screen (basic) |
 | **Window** | `desktop/window.get_active_window` | Callable | Get active window info |
 | | `desktop/window.get_window_by_title` | Callable | Find window by title |
+| | `desktop/window.get_pid_by_title` | Callable | Get process ID by window title |
+| | `desktop/window.when_active` | Callable | Wait until window becomes active |
+| | `desktop/window.is_active` | Callable | Check if window is active |
+| | `desktop/window.make_active` | Callable | Activate/focus window |
+| | `desktop/window` | Listener | Monitor window events |
 
 !!! tip "Performance Note"
     For high-performance screen capture, use **[GStreamer Environment](gst.md)** instead (6x faster).
