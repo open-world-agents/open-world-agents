@@ -64,7 +64,7 @@ def quantize_to_digits(value: Union[float, Fraction], bases: List[int]) -> List[
     return digits
 
 
-def digits_to_value(digits: List[int], bases: List[int]) -> float:
+def digits_to_value(digits: List[int], bases: List[int]) -> Fraction:
     """
     Reconstruct normalized value from multi-level digits.
 
@@ -73,16 +73,16 @@ def digits_to_value(digits: List[int], bases: List[int]) -> float:
         bases: List of bases for each quantization level
 
     Returns:
-        Reconstructed normalized value between 0.0 and 1.0
+        Reconstructed normalized value between 0 and 1 as an accurate Fraction
 
     Example:
         >>> digits_to_value([11, 0, 0], [16, 16, 16])
-        0.6875  # 0xB00 in hex
+        Fraction(11, 16)  # 0xB00 in hex = 11/16
     """
     if len(digits) != len(bases):
         raise ValueError(f"Digits length {len(digits)} must match bases length {len(bases)}")
 
-    value = 0.0
+    value = Fraction(0)
     for i in reversed(range(len(digits))):
         digit = digits[i]
         base = bases[i]
@@ -214,8 +214,8 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         # Convert back to actual delta values using max_mouse_delta tuple (half-ranges)
         # Use fractions for exact arithmetic to avoid floating-point precision loss
         max_x, max_y = self.config.max_mouse_delta
-        dx = int(round(float(Fraction(norm_dx) * Fraction(2 * max_x) - Fraction(max_x))))
-        dy = int(round(float(Fraction(norm_dy) * Fraction(2 * max_y) - Fraction(max_y))))
+        dx = int(round(norm_dx * (2 * max_x) - max_x))
+        dy = int(round(norm_dy * (2 * max_y) - max_y))
 
         return dx, dy
 
