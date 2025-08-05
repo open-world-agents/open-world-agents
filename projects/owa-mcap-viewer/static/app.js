@@ -155,7 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Initialize with data from the beginning
             await loadDataForTimeRange(metadata.start_time, null);
 
-            // Process the screen topics to find base time
+            // Process the screen topics to find base time. TODO: more stable base time finding logic. sometime it miss.
             if (currentData.screen && currentData.screen.length > 0) {
                 const firstScreenEvent = currentData.screen[0];
                 console.log("First screen event:", firstScreenEvent);
