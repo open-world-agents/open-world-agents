@@ -1,3 +1,5 @@
+# Copied from https://github.com/huggingface/trl/blob/main/examples/scripts/sft_vlm_smol_vlm.py
+
 # Copyright 2020-2025 The HuggingFace Team. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,23 +18,22 @@
 Pretraining script for Vision-Language Models using FSLDataset.
 
 This script enables pretraining of multimodal models on desktop interaction data
-using the FSLDataset format for efficient sequence packing and tokenization-aware training.
+using pre-computed FSLDataset format for efficient training. Supports multiple datasets.
 
 Example usage:
 # Using config file (recommended):
 accelerate launch --config_file=accelerate_configs/deepspeed_zero1.yaml \
-    pretrain_vlm_fsl_dataset.py \
-    --config pretrain_training_config.yaml
+    pretrain.py \
+    --config pretrain_config.yaml
 
-# Using command line arguments:
+# Using command line arguments with multiple datasets:
 accelerate launch --config_file=accelerate_configs/deepspeed_zero1.yaml \
-    pretrain_vlm_fsl_dataset.py \
-    --dataset_path /path/to/event/dataset \
+    pretrain.py \
+    --dataset_paths /path/to/fsl/dataset1 /path/to/fsl/dataset2 \
     --model_name_or_path HuggingFaceTB/SmolVLM2-256M-Video-Instruct \
     --output_dir pretrain-smol-vlm-fsl \
     --per_device_train_batch_size 2 \
     --gradient_accumulation_steps 8 \
-    --max_sequence_length 1024 \
     --bf16 \
     --torch_dtype bfloat16 \
     --gradient_checkpointing \
@@ -43,27 +44,29 @@ accelerate launch --config_file=accelerate_configs/deepspeed_zero1.yaml \
 """
 
 from dataclasses import dataclass, field
-from typing import Optional, cast
+from typing import List, cast
 
 import torch
 from accelerate import Accelerator
 from loguru import logger  # noqa: F401
+from torch.utils.data import ConcatDataset
 from transformers import AutoImageProcessor, AutoModelForImageTextToText, AutoProcessor
 from trl import (
     ModelConfig,
     ScriptArguments,
-    SFTConfig,
-    SFTTrainer,
     TrlParser,
     get_kbit_device_map,
     get_quantization_config,
 )
 
-from owa.data.datasets import Dataset, FSLDatasetConfig, load_from_disk, prepare_fsl
+from owa.agent.training import OWASFTConfig as SFTConfig
+from owa.agent.training import OWASFTTrainer as SFTTrainer
+from owa.data.collator import collate_fn
+from owa.data.datasets import Dataset, load_from_disk
 from owa.data.episode_tokenizer import EpisodeTokenizer
 
-# This line is to enable throughput logging from FSLDataset
-# logger.enable("owa.data.datasets.fsl_dataset")
+# This line is to enable throughput logging from FSLTransform
+# logger.enable("owa.data.datasets.transforms")
 
 
 @dataclass
@@ -72,67 +75,17 @@ class PretrainScriptArguments(ScriptArguments):
     Arguments for pretraining script using FSLDataset.
     """
 
-    dataset_path: str = field(default="", metadata={"help": "Path to the event dataset directory"})
-    max_sequence_length: int = field(
-        default=1024,
-        metadata={
-            "help": "Maximum sequence length for FSLDataset, note that SFTConfig's max_length/max_seq_length already exists"
-        },
+    dataset_paths: List[str] = field(
+        default_factory=list, metadata={"help": "List of paths to event dataset directories"}
     )
-    streaming: bool = field(default=False, metadata={"help": "Enable streaming mode"})
-    preprocessing_num_workers: Optional[int] = field(
-        default=None,
-        metadata={"help": "The number of processes to use for the preprocessing."},
-    )
+    max_sequence_length: int = field(default=1024, metadata={"help": "Maximum sequence length for FSLDataset"})
 
 
-def collate_fn(examples, max_sequence_length: int | None = None, tokenizer=None):
-    input_ids_list = []
-    attention_mask_list = []
-    pixel_values_list = []
-
-    for example in examples:
-        input_ids_list.append(example["input_ids"])  # [seq_len,]
-        attention_mask_list.append(example["attention_mask"])  # [seq_len,]
-        pixel_values_list.append(example["images"])  # [num_images, channels, height, width]
-        assert isinstance(example["images"], torch.Tensor), f"Expected tensor, got {type(example['images'])}"
-
-    max_num_images = max([len(images) for images in pixel_values_list])
-    # Pad images to max_num_images
-    for idx, images in enumerate(pixel_values_list):
-        if len(images) < max_num_images:
-            # NOTE: Idefics3/SmolVLM expect all-zero image to be a padding image. see: https://github.com/huggingface/transformers/blob/69b158260fcb679ea3bfbc1e6a358545ee53ee28/src/transformers/models/idefics3/modeling_idefics3.py#L693
-            padding = torch.zeros(max_num_images - len(images), *images.shape[1:], dtype=torch.float32)
-            pixel_values_list[idx] = torch.concat([images, padding])
-
-    # Convert to tensors
-    input_ids = torch.stack(input_ids_list)  # [batch_size, seq_len]
-    attention_mask = torch.stack(attention_mask_list)  # [batch_size, seq_len]
-    pixel_values = torch.stack(pixel_values_list)  # [batch_size, max_num_images, 3, max_heights, max_widths]
-
-    if max_sequence_length is not None and input_ids.shape[1] != max_sequence_length:
-        raise ValueError(
-            f"Input ids length ({input_ids.shape[1]}) does not match max_sequence_length ({max_sequence_length})"
-        )
-
-    # NOTE: we shift the labels inside the model, so we don't need to do it here
-    labels = input_ids.clone()
-    if tokenizer is not None:
-        # Ignore padding tokens in the loss computation
-        labels[labels == tokenizer.pad_token_id] = -100
-        # Ignore the image token index in the loss computation
-        labels[labels == tokenizer.image_token_id] = -100
-        assert (labels[attention_mask == 0] == -100).all()
-    else:
-        labels[attention_mask == 0] = -100
-
-    batch = {
-        "input_ids": input_ids,
-        "attention_mask": attention_mask,
-        "labels": labels,
-        "pixel_values": pixel_values,
-    }
-    return batch
+def limit_dataset(dataset, max_count=256):
+    """Limit dataset count and convert back to OWA Dataset class."""
+    limited_count = min(len(dataset), max_count)
+    owa_config = dataset.owa_config
+    return Dataset.from_hf_dataset(dataset.select(range(limited_count)), owa_config=owa_config)
 
 
 def main():
@@ -173,7 +126,7 @@ def main():
         do_image_splitting=False,
         use_fast=True,
     )
-    tokenizer = processor.tokenizer  # TODO: save this
+    tokenizer = processor.tokenizer
 
     # Set tokenizer model_max_length if needed
     if hasattr(tokenizer, "model_max_length"):
@@ -201,6 +154,10 @@ def main():
                     f"Model max_position_embeddings: {original_max_pos}, using max_sequence_length: {script_args.max_sequence_length}"
                 )
 
+    # Expand vocab. NOTE: take care of here when you switch model / event encoder
+    episode_tokenizer = EpisodeTokenizer(image_token="<image>")
+    episode_tokenizer.prepare_model(tokenizer=tokenizer, model=model)
+
     # Freeze vision encoder TODO: make this configurable
     # if hasattr(model, "model") and hasattr(model.model, "vision_model"):
     #     for param in model.model.vision_model.parameters():
@@ -216,61 +173,27 @@ def main():
     ################
     # Dataset Preparation
     ################
-    accelerator.print(f"Loading dataset from {script_args.dataset_path}...")
-    event_dataset = load_from_disk(script_args.dataset_path)
-    with training_args.main_process_first(desc="dataset map tokenization"):
-        # Setup episode tokenizer
-        episode_tokenizer = EpisodeTokenizer(image_token="<image>")
-        episode_tokenizer.prepare_model(tokenizer=tokenizer, model=model)
+    train_datasets = []
+    test_datasets = []
 
-        # Tokenize event dataset
-        # Handle both DatasetDict and single Dataset cases
-        if hasattr(event_dataset, "keys") and callable(getattr(event_dataset, "keys")):
-            # DatasetDict case
-            tokenized_datasets = {}
-            for split_name in ["train", "test", "validation"]:
-                if split_name in event_dataset:
-                    dataset = event_dataset[split_name]
-                    # Type cast to help with type checking
-                    if isinstance(dataset, Dataset):
-                        tokenized = episode_tokenizer.tokenize_event_dataset(
-                            dataset, map_kwargs={"num_proc": script_args.preprocessing_num_workers}
-                        )
-                        tokenized_datasets[split_name] = tokenized
-            event_dataset = tokenized_datasets
-        else:
-            # Single Dataset case - assume it's the train split
-            if isinstance(event_dataset, Dataset):
-                tokenized = episode_tokenizer.tokenize_event_dataset(
-                    event_dataset, map_kwargs={"num_proc": script_args.preprocessing_num_workers}
-                )
-                event_dataset = {"train": tokenized}
-            else:
-                raise ValueError(f"Unsupported dataset type: {type(event_dataset)}")
-
-    # Create FSL datasets
-    accelerator.print("Creating FSLDataset...")
-    fsl_config = FSLDatasetConfig(
-        max_sequence_length=script_args.max_sequence_length,
-        pad_token_id=tokenizer.pad_token_id,
-        load_images=True,
-    )
-
-    train_fsl_dataset = prepare_fsl(
-        event_dataset["train"], image_processor=processor.image_processor, config=fsl_config
-    )
-
-    eval_fsl_dataset = None
-    if "test" in event_dataset:
-        test_samples = min(len(event_dataset["test"]), 1024)  # FIXME: remove this
-        owa_config = event_dataset["test"].owa_config
-        # since .select yields HF dataset, we need to wrap it back in our Dataset class
-        event_dataset["test"] = Dataset.from_hf_dataset(
-            event_dataset["test"].select(range(test_samples)), owa_config=owa_config
+    for dataset_path in script_args.dataset_paths:
+        accelerator.print(f"Loading dataset from {dataset_path}...")
+        dataset = load_from_disk(dataset_path)
+        assert dataset.stage == "fsl", f"Expected FSL dataset, got {dataset.stage}"
+        dataset.auto_set_transform(
+            stage="fsl",
+            load_images=True,
+            image_processor=processor.image_processor,
+            pad_token_id=tokenizer.pad_token_id,
         )
-        eval_fsl_dataset = prepare_fsl(
-            event_dataset["test"], image_processor=processor.image_processor, config=fsl_config
-        )
+
+        if "train" in dataset:
+            train_datasets.append(dataset["train"])
+        if "test" in dataset:
+            test_datasets.append(limit_dataset(dataset["test"]))
+
+    train_fsl_dataset = ConcatDataset(train_datasets)
+    eval_fsl_dataset = ConcatDataset(test_datasets) if test_datasets else None
 
     ################
     # Data Collator
@@ -281,11 +204,12 @@ def main():
     # Trainer
     ################
     accelerator.print("Initializing trainer...")
+    # Type cast to suppress warnings - SFTTrainer accepts ConcatDataset
     trainer = SFTTrainer(
         model=model,
         args=training_args,
-        train_dataset=train_fsl_dataset,
-        eval_dataset=eval_fsl_dataset,
+        train_dataset=train_fsl_dataset,  # type: ignore
+        eval_dataset=eval_fsl_dataset,  # type: ignore
         data_collator=data_collator,
         processing_class=processor,
     )

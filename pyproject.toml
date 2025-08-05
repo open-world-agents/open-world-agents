@@ -29,9 +29,4 @@ bypass-selection = true
 
 [tool.uv.sources]
 owa = { path = "open-world-agents", editable = true }
-agent = { workspace = true }
-
-[tool.uv.workspace]
-members = [
-    "projects/agent",
-]
+agent = { path = "projects/agent", editable = true }

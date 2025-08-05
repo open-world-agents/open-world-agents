@@ -2,14 +2,14 @@
 # This configuration is optimized for pretraining vision-language models on desktop interaction data
 # Comments show: [CUSTOM_VALUE] (default: DEFAULT_VALUE)
 
-output_dir: "/mnt/raid12/scratch/claude/checkpoints/sft_smolvlm_256m_fsl"  # (default: 'trainer_output') - can be overridden via CLI
+output_dir: "/mnt/raid12/scratch/claude/checkpoints/pretrain_smolvlm_256m_csgo-nodec"  # (default: 'trainer_output') - can be overridden via CLI
 
 # ============================================================================
 # SCRIPT ARGUMENTS (Custom for FSLDataset pretraining)
 # ============================================================================
-dataset_path: "/mnt/raid12/datasets/owa/data/super-hexagon-event"  # (default: None) - required
-max_sequence_length: 256  # (default: 1024)
-preprocessing_num_workers: 32  # (default: None)
+dataset_paths: # (default: None) - required
+  - "/mnt/raid12/datasets/owa/data/csgo-fsl"
+max_sequence_length: 1024  # (default: 1024)
 
 # ============================================================================
 # MODEL CONFIGURATION
@@ -22,10 +22,10 @@ trust_remote_code: false  # (default: False)
 # ============================================================================
 # TRAINING HYPERPARAMETERS
 # ============================================================================
-num_train_epochs: 10  # (default: 3.0)
+num_train_epochs: 3  # (default: 3.0)
 per_device_train_batch_size: 8  # (default: 8)
 gradient_accumulation_steps: 1  # (default: 1)
-learning_rate: 4e-5  # (default: 2e-5)
+learning_rate: 3e-4  # (default: 2e-5)
 
 # ============================================================================
 # OPTIMIZATION SETTINGS
@@ -33,8 +33,10 @@ learning_rate: 4e-5  # (default: 2e-5)
 optim: "adamw_torch_fused"  # (default: 'adamw_torch')
 max_grad_norm: 1.0  # (default: 1.0)
 warmup_ratio: 0.03  # (default: 0)
-weight_decay: 0.0  # (default: 0.0)
+weight_decay: 0.1  # (default: 0.0)
 lr_scheduler_type: "cosine"  # (default: 'linear')
+# lr_scheduler_kwargs:
+#   min_lr_rate: 3e-5  # (default: None)
 
 # ============================================================================
 # PRECISION AND PERFORMANCE
@@ -52,7 +54,7 @@ logging_steps: 10  # (default: 10)
 save_strategy: "steps"  # (default: 'steps')
 save_steps: 500  # (default: 500)
 save_total_limit: null  # (default: None) - keep more checkpoints for pretraining
-report_to: ["tensorboard"]  # (default: ['tensorboard'])
+report_to: ["tensorboard", "wandb"]  # (default: ['tensorboard'])
 run_name: null  # (default: None)
 
 # ============================================================================
@@ -67,8 +69,8 @@ dataloader_num_workers: 8    # (default: 0)
 # EVALUATION SETTINGS
 # ============================================================================
 do_eval: true  # (default: False)
-eval_strategy: "epoch"  # (default: 'no')
-eval_steps: null  # (default: None) - used when eval_strategy is 'steps'
+eval_strategy: "steps"  # (default: 'no')
+eval_steps: 100  # (default: None) - used when eval_strategy is 'steps'
 per_device_eval_batch_size: 8  # (default: 8)
 
 # ============================================================================
