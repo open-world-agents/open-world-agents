@@ -170,10 +170,12 @@ class PointerBallisticsConfig(OWAMessage):
     mouse_threshold2: int = 10
     mouse_speed: int = 1
     mouse_sensitivity: int = 10
+    # NOTE: SmoothMouseXCurve has not changed from Windows 7 to 11
     smooth_mouse_x_curve: str = Field(
         default="0000000000000000156e000000000000004001000000000029dc0300000000000000280000000000",
         description="Hex-encoded binary data",
     )
+    # NOTE: SmoothMouseYCurve has changed between Windows 7 and 8. 8~11 are the same and default value is set to Windows 11's value.
     smooth_mouse_y_curve: str = Field(
         default="0000000000000000fd11010000000000002404000000000000fc12000000000000c0bb0100000000",
         description="Hex-encoded binary data",
