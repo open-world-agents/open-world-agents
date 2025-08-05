@@ -21,9 +21,11 @@ if sys.platform == "win32":
 
     # Windows constants
     WM_INPUT = 0x00FF
+    WM_QUIT = 0x0012
     RIM_TYPEMOUSE = 0
     RIDEV_INPUTSINK = 0x00000100
     RID_INPUT = 0x10000003
+    PM_REMOVE = 0x0001
 
     # HID usage constants
     HID_USAGE_PAGE_GENERIC = 0x01
@@ -126,6 +128,10 @@ if sys.platform == "win32":
     GetMessageW = user32.GetMessageW
     GetMessageW.argtypes = [wintypes.LPMSG, wintypes.HWND, wintypes.UINT, wintypes.UINT]
     GetMessageW.restype = wintypes.BOOL
+
+    PeekMessageW = user32.PeekMessageW
+    PeekMessageW.argtypes = [wintypes.LPMSG, wintypes.HWND, wintypes.UINT, wintypes.UINT, wintypes.UINT]
+    PeekMessageW.restype = wintypes.BOOL
 
     TranslateMessage = user32.TranslateMessage
     TranslateMessage.argtypes = [wintypes.LPMSG]
@@ -380,18 +386,19 @@ if sys.platform == "win32":
                 logger.error(f"Error processing mouse data: {e}")
 
         def _message_loop(self) -> None:
-            """Windows message loop."""
+            """High-frequency message loop with non-blocking peek."""
             msg = wintypes.MSG()
             while self.running and not self._stop_event.is_set():
-                bRet = GetMessageW(byref(msg), None, 0, 0)
-                if bRet == 0:  # WM_QUIT
-                    break
-                elif bRet == -1:  # Error
-                    logger.error("Error in message loop")
-                    break
-                else:
+                # Non-blocking peek for messages
+                bRet = PeekMessageW(byref(msg), None, 0, 0, PM_REMOVE)
+                if bRet:
+                    if msg.message == WM_QUIT:
+                        break
                     TranslateMessage(byref(msg))
                     DispatchMessageW(byref(msg))
+                else:
+                    # No messages available, sleep briefly to avoid 100% CPU
+                    time.sleep(0.0001)  # 100 microseconds = 10kHz polling
 
         def _cleanup(self) -> None:
             """Clean up resources."""
