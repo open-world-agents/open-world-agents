@@ -347,7 +347,7 @@ def parse_args():
     parser.add_argument(
         "--vpt-media-ext",
         type=str,
-        default=".mp4",
+        default=".mkv",
         choices=[".mp4", ".mkv"],
         help="Media file extension for VPT dataset",
     )
