@@ -1,5 +1,6 @@
 import sys
 import time
+from typing import Tuple
 
 from pynput.keyboard import Controller as KeyboardController
 from pynput.mouse import Button
@@ -9,6 +10,11 @@ from owa.msgs.desktop.keyboard import KeyboardState
 from owa.msgs.desktop.mouse import MouseState, PointerBallisticsConfig
 
 from ..utils import get_vk_state, vk_to_keycode
+
+# Windows-specific imports for SystemParametersInfo
+if sys.platform == "win32":
+    import ctypes
+    from ctypes import wintypes
 
 mouse_controller = MouseController()
 
@@ -258,3 +264,54 @@ def _get_mouse_registry_values() -> dict:
             values[curve_name] = curve_bytes.hex()
 
         return values
+
+
+def get_keyboard_repeat_timing() -> Tuple[float, float]:
+    """
+    Get Windows keyboard repeat delay and repeat rate settings.
+
+    Returns:
+        Tuple[float, float]: (repeat_delay_seconds, repeat_rate_seconds)
+            - repeat_delay_seconds: Initial delay before auto-repeat starts
+            - repeat_rate_seconds: Interval between repeated keystrokes
+
+    Raises:
+        OSError: If not running on Windows platform
+        RuntimeError: If Windows API call fails
+
+    Examples:
+        >>> delay, rate = get_keyboard_repeat_timing()
+        >>> print(f"Repeat delay: {delay:.3f}s, Repeat rate: {rate:.3f}s")
+    """
+    if sys.platform != "win32":
+        raise OSError("Keyboard repeat settings are only available on Windows")
+
+    # Windows constants
+    SPI_GETKEYBOARDDELAY = 0x0016
+    SPI_GETKEYBOARDSPEED = 0x000A
+
+    # Get keyboard delay (0-3 scale)
+    delay_value = wintypes.UINT(0)
+    if not ctypes.windll.user32.SystemParametersInfoW(SPI_GETKEYBOARDDELAY, 0, ctypes.byref(delay_value), 0):
+        raise RuntimeError("Failed to get keyboard delay setting from Windows API")
+
+    # Get keyboard speed (0-31 scale)
+    speed_value = wintypes.UINT(0)
+    if not ctypes.windll.user32.SystemParametersInfoW(SPI_GETKEYBOARDSPEED, 0, ctypes.byref(speed_value), 0):
+        raise RuntimeError("Failed to get keyboard speed setting from Windows API")
+
+    # Convert to actual time values based on Microsoft documentation
+    # References:
+    # - KeyboardDelay: https://learn.microsoft.com/en-us/dotnet/api/system.windows.forms.systeminformation.keyboarddelay
+    # - KeyboardSpeed: https://learn.microsoft.com/en-us/dotnet/api/system.windows.forms.systeminformation.keyboardspeed
+
+    # Delay: 0=250ms, 1=500ms, 2=750ms, 3=1000ms (approximately)
+    delay_seconds = 0.25 + (delay_value.value * 0.25)
+
+    # Speed: 0=~2.5 repetitions/sec, 31=~30 repetitions/sec (from Microsoft docs)
+    # Linear interpolation formula (derived): repetitions_per_sec = 2.5 + (speed_value * 27.5 / 31)
+    # Where 27.5 = (30 - 2.5) is the range between max and min repetitions per second
+    repetitions_per_sec = 2.5 + (speed_value.value * 27.5 / 31)
+    speed_seconds = 1.0 / repetitions_per_sec
+
+    return (delay_seconds, speed_seconds)
