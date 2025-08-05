@@ -1,6 +1,6 @@
 import sys
 import time
-from typing import Dict
+from typing import Any, Dict
 
 from pynput.keyboard import Controller as KeyboardController
 from pynput.mouse import Button
@@ -14,6 +14,7 @@ from ..utils import get_vk_state, vk_to_keycode
 # Windows-specific imports for SystemParametersInfo
 if sys.platform == "win32":
     import ctypes
+    import winreg
     from ctypes import wintypes
 
 mouse_controller = MouseController()
@@ -247,9 +248,6 @@ def get_pointer_ballistics_config() -> PointerBallisticsConfig:
 
 def _get_mouse_registry_values() -> dict:
     """Get all mouse settings from Windows registry using exact registry variable names."""
-    import winreg
-    from typing import Any
-
     with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Control Panel\Mouse") as key:
         values: dict[str, Any] = {}
 
@@ -266,7 +264,7 @@ def _get_mouse_registry_values() -> dict:
         return values
 
 
-def get_keyboard_repeat_timing(*, return_seconds: bool = True) -> Dict[str, float]:
+def get_keyboard_repeat_timing(*, return_seconds: bool = True) -> Dict[str, float] | Dict[str, int]:
     """
     Get Windows keyboard repeat delay and repeat rate settings.
 
