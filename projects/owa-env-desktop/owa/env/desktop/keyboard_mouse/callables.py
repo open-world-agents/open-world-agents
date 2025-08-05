@@ -1,6 +1,6 @@
 import sys
 import time
-from typing import Any, Dict
+from typing import Any, Dict, Literal, overload
 
 from pynput.keyboard import Controller as KeyboardController
 from pynput.mouse import Button
@@ -264,22 +264,45 @@ def _get_mouse_registry_values() -> dict:
         return values
 
 
+@overload
+def get_keyboard_repeat_timing(*, return_seconds: Literal[True] = True) -> Dict[str, float]: ...
+
+
+@overload
+def get_keyboard_repeat_timing(*, return_seconds: Literal[False]) -> Dict[str, int]: ...
+
+
 def get_keyboard_repeat_timing(*, return_seconds: bool = True) -> Dict[str, float] | Dict[str, int]:
     """
     Get Windows keyboard repeat delay and repeat rate settings.
 
+    Args:
+        return_seconds: If True (default), return timing values in seconds.
+                       If False, return raw Windows API values.
+
     Returns:
-        Dict[str, float]: Dictionary containing keyboard repeat timing settings
-            - keyboard_delay_seconds: Initial delay before auto-repeat starts
-            - keyboard_rate_seconds: Interval between repeated keystrokes
+        When return_seconds=True:
+            Dict[str, float]: Dictionary with timing in seconds
+                - keyboard_delay_seconds: Initial delay before auto-repeat starts
+                - keyboard_rate_seconds: Interval between repeated keystrokes
+
+        When return_seconds=False:
+            Dict[str, int]: Dictionary with raw Windows API values
+                - keyboard_delay: Raw delay value (0-3 scale)
+                - keyboard_speed: Raw speed value (0-31 scale)
 
     Raises:
         OSError: If not running on Windows platform
         RuntimeError: If Windows API call fails
 
     Examples:
+        >>> # Get timing in seconds (default)
         >>> timing = get_keyboard_repeat_timing()
-        >>> print(f"Repeat delay: {timing['keyboard_delay_seconds']:.3f}s, Repeat rate: {timing['keyboard_rate_seconds']:.3f}s")
+        >>> print(f"Delay: {timing['keyboard_delay_seconds']:.3f}s, Rate: {timing['keyboard_rate_seconds']:.3f}s")
+
+        >>> # Get raw Windows API values
+        >>> raw_timing = get_keyboard_repeat_timing(return_seconds=False)
+        >>> print(f"Raw delay: {raw_timing['keyboard_delay']}, Raw speed: {raw_timing['keyboard_speed']}")
     """
     if sys.platform != "win32":
         raise OSError("Keyboard repeat settings are only available on Windows")
