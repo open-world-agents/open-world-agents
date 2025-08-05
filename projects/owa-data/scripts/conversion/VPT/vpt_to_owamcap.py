@@ -10,9 +10,10 @@
 #   "rich",
 # ]
 # [tool.uv]
-# exclude-newer = "2025-07-30T12:00:00Z"
+# exclude-newer = "2025-08-01T12:00:00Z"
 # ///
 
+import argparse
 import json
 import os
 import typing
@@ -29,10 +30,7 @@ from owa.msgs.desktop.mouse import RawMouseEvent
 from owa.msgs.desktop.screen import ScreenCaptured
 from owa.msgs.desktop.window import WindowInfo
 
-VPT_FOLDER_PATH = Path(
-    "/mnt/raid12/datasets/owa/mcaps/vpt"
-).expanduser()  # NOTE: Change this to your VPT data folder path. We expect paired mp4 and jsonl files for VPT dataset.
-VPT_TARGET_LIST_FILE = "./vpt_target_files.txt"
+# Constants for VPT conversion
 VPT_INTERVAL_TICK_NS = 50_000_000  # 50 ms interval per tick
 VPT_EXPECTED_TICKS = 6000  # 5 minutes of 50ms ticks
 VPT_X_RESOLUTION = 1280
@@ -88,26 +86,28 @@ VPT_KEYBOARD_VK_MAPPING = {
 
 
 def vpt_generate_target_list_file(
-    target_list_file: typing.Union[str, bytes, os.PathLike] = VPT_TARGET_LIST_FILE,
+    vpt_folder_path: Path,
+    vpt_media_ext: str,
+    target_list_file: typing.Union[str, bytes, os.PathLike],
 ):
     """
-    Filter VPT files that have valid jsonl files paired with mp4, and are 5 minutes long.
+    Filter VPT files that have valid jsonl files paired with (mp4|mkv), and are 5 minutes long.
     The list of valid target files is saved to `target_list_file`.
     """
 
-    all_mp4_stems = set([f.stem for f in VPT_FOLDER_PATH.iterdir() if f.suffix == ".mp4" and f.is_file()])
+    all_media_stems = set([f.stem for f in vpt_folder_path.iterdir() if f.suffix == vpt_media_ext and f.is_file()])
 
     # Get all files with their full path and creation time
     all_jsonl_files = [
         (f, f.stat().st_ctime)
-        for f in VPT_FOLDER_PATH.iterdir()
-        if f.suffix == ".jsonl" and f.is_file() and f.stem in all_mp4_stems
+        for f in vpt_folder_path.iterdir()
+        if f.suffix == ".jsonl" and f.is_file() and f.stem in all_media_stems
     ]
 
     # Sort by creation time (oldest first)
     all_jsonl_files.sort(key=lambda x: x[1])
 
-    print(f"{len(all_jsonl_files)} files found in {VPT_FOLDER_PATH}.")
+    print(f"{len(all_jsonl_files)} files found in {vpt_folder_path}.")
 
     target_files = []
 
@@ -127,11 +127,11 @@ def vpt_generate_target_list_file(
             f.write(f"{file}\n")
 
 
-def process_single_file(jsonl_file_path):
+def process_single_file(jsonl_file_path, vpt_media_ext):
     """Process a single VPT file and convert it to OWAMcap format."""
     # Convert the file to OWAMcap format
     mcap_file_path = jsonl_file_path.with_suffix(".mcap")
-    mp4_file_path = jsonl_file_path.with_suffix(".mp4")
+    media_file_path = jsonl_file_path.with_suffix(vpt_media_ext)
 
     # Writing messages to an OWAMcap file
     unix_epoch_ns = 0  # Unix epoch time in nanoseconds (Jan 1, 1970)
@@ -167,7 +167,7 @@ def process_single_file(jsonl_file_path):
             utc_ns=unix_epoch_ns,
             source_shape=(VPT_X_RESOLUTION, VPT_Y_RESOLUTION),
             shape=(VPT_X_RESOLUTION, VPT_Y_RESOLUTION),
-            media_ref=MediaRef(uri=str(mp4_file_path), pts_ns=unix_epoch_ns),
+            media_ref=MediaRef(uri=str(media_file_path.name), pts_ns=unix_epoch_ns),
         )
         writer.write_message(event, topic=topic, timestamp=unix_epoch_ns)
 
@@ -181,7 +181,7 @@ def process_single_file(jsonl_file_path):
                 utc_ns=log_time,
                 source_shape=(VPT_X_RESOLUTION, VPT_Y_RESOLUTION),
                 shape=(VPT_X_RESOLUTION, VPT_Y_RESOLUTION),
-                media_ref=MediaRef(uri=str(mp4_file_path), pts_ns=log_time),
+                media_ref=MediaRef(uri=str(media_file_path.name), pts_ns=log_time),
             )
             writer.write_message(event, topic=topic, timestamp=log_time)
 
@@ -245,7 +245,8 @@ def process_single_file(jsonl_file_path):
                     elif state_button == 2:  # middle click
                         button_flags = RawMouseEvent.ButtonFlags.RI_MOUSE_MIDDLE_BUTTON_UP
                     else:
-                        raise ValueError(f"Unknown mouse button {state_button} in VPT data.")
+                        print(f"Unknown mouse button {state_button=} in VPT data.")
+                        continue
 
                     event = RawMouseEvent(
                         last_x=0,
@@ -269,7 +270,8 @@ def process_single_file(jsonl_file_path):
                     elif button == 2:  # middle click
                         button_flags = RawMouseEvent.ButtonFlags.RI_MOUSE_MIDDLE_BUTTON_DOWN
                     else:
-                        raise ValueError(f"Unknown mouse button {button} in VPT data.")
+                        print(f"Unknown mouse button {button=} in VPT data.")
+                        continue
 
                     event = RawMouseEvent(
                         last_x=0,
@@ -280,17 +282,19 @@ def process_single_file(jsonl_file_path):
                     writer.write_message(event, topic=topic, timestamp=log_time)
 
 
-def main(max_workers: int = None):
+def main(
+    vpt_folder_path: Path, vpt_media_ext: str, vpt_target_list_file: str, max_workers: typing.Optional[int] = None
+):
     if max_workers is None:
         max_workers = 50
     print(f"Using {max_workers} worker processes.")
 
-    if not Path(VPT_TARGET_LIST_FILE).exists():
-        print(f"{VPT_TARGET_LIST_FILE=} does not exist. Generating it.")
-        vpt_generate_target_list_file()
-        print(f"{VPT_TARGET_LIST_FILE=} generated.")
+    if not Path(vpt_target_list_file).exists():
+        print(f"{vpt_target_list_file=} does not exist. Generating it.")
+        vpt_generate_target_list_file(vpt_folder_path, vpt_media_ext, vpt_target_list_file)
+        print(f"{vpt_target_list_file=} generated.")
 
-    with open(VPT_TARGET_LIST_FILE, "r") as f:
+    with open(vpt_target_list_file, "r") as f:
         vpt_target_list = [Path(line.strip()) for line in f.readlines()]
         print(f"We will convert {len(vpt_target_list)=} VPT files.")
 
@@ -298,7 +302,7 @@ def main(max_workers: int = None):
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
         # Submit all tasks
         future_to_file = {
-            executor.submit(process_single_file, jsonl_file_path): jsonl_file_path
+            executor.submit(process_single_file, jsonl_file_path, vpt_media_ext): jsonl_file_path
             for jsonl_file_path in vpt_target_list
         }
 
@@ -326,6 +330,48 @@ def read_mcap(file_path="expert.mcap", num_messages=100):
                 break
 
 
+def parse_args():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description="Convert VPT dataset files to OWAMcap format",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+
+    parser.add_argument(
+        "--vpt-folder-path",
+        type=Path,
+        default=Path("/mnt/raid12/datasets/owa/mcaps/vpt").expanduser(),
+        help="Path to VPT data folder containing paired (mp4|mkv) and jsonl files",
+    )
+
+    parser.add_argument(
+        "--vpt-media-ext",
+        type=str,
+        default=".mkv",
+        choices=[".mp4", ".mkv"],
+        help="Media file extension for VPT dataset",
+    )
+
+    parser.add_argument(
+        "--vpt-target-list-file",
+        type=str,
+        default="./vpt_target_files.txt",
+        help="File to store the list of target VPT files to convert",
+    )
+
+    parser.add_argument(
+        "--max-workers", type=int, default=50, help="Maximum number of worker processes for parallel conversion"
+    )
+
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
-    main()
+    args = parse_args()
+    main(
+        vpt_folder_path=args.vpt_folder_path,
+        vpt_media_ext=args.vpt_media_ext,
+        vpt_target_list_file=args.vpt_target_list_file,
+        max_workers=args.max_workers,
+    )
     # read_mcap()
