@@ -16,6 +16,9 @@ Mouse, keyboard, window control, and screen capture for desktop automation.
 | | `desktop/mouse.position` | Callable | Get current mouse position |
 | | `desktop/mouse.press` | Callable | Press mouse button |
 | | `desktop/mouse.release` | Callable | Release mouse button |
+| | `desktop/mouse.scroll` | Callable | Simulate mouse wheel scrolling |
+| | `desktop/mouse.get_state` | Callable | Get current mouse position and buttons |
+| | `desktop/mouse.get_pointer_ballistics_config` | Callable | Get Windows pointer ballistics settings |
 | | `desktop/mouse` | Listener | Monitor mouse events |
 | | `desktop/mouse_state` | Listener | Monitor mouse state changes |
 | | `desktop/raw_mouse` | Listener | Raw mouse input (bypasses acceleration) |
