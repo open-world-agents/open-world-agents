@@ -64,6 +64,17 @@ class OWADatasetMixin:
         self.set_transform(create_transform(stage, mcap_root_directory, **kwargs))
         return stage
 
+    def auto_with_transform(
+        self, stage: Optional[str] = None, mcap_root_directory: Optional[str] = None, **kwargs
+    ) -> "Dataset | DatasetDict":
+        """Set appropriate transform for a dataset based on its stage."""
+        stage = stage or self.stage
+        mcap_root_directory = mcap_root_directory or self.mcap_root_directory
+        if mcap_root_directory is None:
+            raise ValueError("mcap_root_directory must be set")
+
+        return self.with_transform(create_transform(stage, mcap_root_directory, **kwargs))
+
 
 class Dataset(HFDataset, OWADatasetMixin):
     """

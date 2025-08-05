@@ -1,9 +1,10 @@
 import json
 import re
 from dataclasses import dataclass, field
-from typing import List, Optional, Set, Tuple
+from fractions import Fraction
+from typing import List, Optional, Set, Tuple, Union
 
-from mcap_owa.highlevel.reader import McapMessage
+from mcap_owa.highlevel.mcap_msg import McapMessage
 from owa.core.time import TimeUnits
 from owa.msgs.desktop.keyboard import KeyboardEvent
 from owa.msgs.desktop.mouse import RawMouseEvent
@@ -16,24 +17,22 @@ from .base_encoder import BaseEventEncoder, BaseEventEncoderConfig
 class HierarchicalEventEncoderConfig(BaseEventEncoderConfig):
     """Configuration for HierarchicalEventEncoder."""
 
-    # -2 to +2 seconds
-    timestamp_range_ns: int = 4 * TimeUnits.SECOND
-    # 4 seconds in 10ms intervals
-    timestamp_bases: List[int] = field(default_factory=lambda: [4, 10, 10])
-    # raw mouse delta quantization bases
-    mouse_delta_bases: List[int] = field(default_factory=lambda: [10, 10, 10])
-    # maximum dx value for normalization
-    max_mouse_delta_x: int = 1000
-    # maximum dy value for normalization
-    max_mouse_delta_y: int = 1000
+    # -8 to +8 seconds (half-range: 8 seconds)
+    max_timestamp_range_ns: int = 8 * TimeUnits.SECOND
+    # 16 seconds in 10ms intervals
+    timestamp_bases: List[int] = field(default_factory=lambda: [16, 10, 10])
+    # Mouse delta max ranges: (max_x, max_y) for -max_x to +max_x and -max_y to +max_y
+    max_mouse_delta: Tuple[int, int] = (1000, 1000)
+    # -1000 to +1000 in 1 pixel unit intervals
+    mouse_delta_bases: List[int] = field(default_factory=lambda: [20, 10, 10])
 
 
-def quantize_to_digits(value: float, bases: List[int]) -> List[int]:
+def quantize_to_digits(value: Union[float, Fraction], bases: List[int]) -> List[int]:
     """
     Quantize a normalized value (0.0-1.0) to multi-level digits.
 
     Args:
-        value: Normalized value between 0.0 and 1.0
+        value: Normalized value between 0.0 and 1.0 (can be float or Fraction for precision)
         bases: List of bases for each quantization level (e.g., [16, 16, 16] for 3-level hex)
 
     Returns:
@@ -44,12 +43,23 @@ def quantize_to_digits(value: float, bases: List[int]) -> List[int]:
         [11, 0, 0]  # 0xB00 in hex = 0.6875
     """
     digits = []
-    remaining = max(0.0, min(1.0, value))  # Clamp to [0, 1]
+
+    # Convert to Fraction for exact arithmetic if not already
+    if isinstance(value, Fraction):
+        remaining = value
+    else:
+        remaining = Fraction(value).limit_denominator()
+
+    # Clamp to [0, 1] using fractions
+    remaining = max(Fraction(0), min(Fraction(1), remaining))
 
     for base in bases:
-        digit = int(remaining * base)
+        # Calculate digit using exact arithmetic
+        digit_fraction = remaining * base
+        digit = int(digit_fraction)
         digits.append(digit)
-        remaining = remaining * base - digit
+        # Update remaining using exact subtraction
+        remaining = digit_fraction - digit
 
     return digits
 
@@ -122,8 +132,10 @@ class HierarchicalEventEncoder(BaseEventEncoder):
     def _encode_timestamp(self, timestamp_ns: int) -> List[str]:
         """Encode timestamp with multi-level quantization: [<TIMESTAMP>, <digit1>, <digit2>, ...]"""
         # Normalize timestamp to [0, 1] range within the configured range
-        mod_timestamp = timestamp_ns % self.config.timestamp_range_ns
-        norm_timestamp = mod_timestamp / self.config.timestamp_range_ns
+        # max_timestamp_range_ns is half-range, so total range is 2 * max_timestamp_range_ns
+        total_range = 2 * self.config.max_timestamp_range_ns
+        mod_timestamp = timestamp_ns % total_range
+        norm_timestamp = mod_timestamp / total_range
 
         # Quantize to digits
         digits = quantize_to_digits(norm_timestamp, self.config.timestamp_bases)
@@ -138,17 +150,19 @@ class HierarchicalEventEncoder(BaseEventEncoder):
 
     def _encode_mouse(self, event: RawMouseEvent) -> List[str]:
         """Encode raw mouse event with multi-level delta quantization."""
-        # Normalize dx, dy to [0, 1] range using separate max_mouse_delta values
-        # Clamp values to [-max_mouse_delta_x, max_mouse_delta_x] and [-max_mouse_delta_y, max_mouse_delta_y] then normalize to [0, 1]
-        dx_clamped = max(-self.config.max_mouse_delta_x, min(self.config.max_mouse_delta_x, event.dx))
-        dy_clamped = max(-self.config.max_mouse_delta_y, min(self.config.max_mouse_delta_y, event.dy))
+        # Normalize dx, dy to [0, 1] range using max_mouse_delta tuple (half-ranges)
+        # max_mouse_delta contains half-ranges, so clamp to [-max_x, max_x] and [-max_y, max_y]
+        max_x, max_y = self.config.max_mouse_delta
+        dx_clamped = max(-max_x, min(max_x, event.dx))
+        dy_clamped = max(-max_y, min(max_y, event.dy))
 
-        norm_dx = (dx_clamped + self.config.max_mouse_delta_x) / (2 * self.config.max_mouse_delta_x)
-        norm_dy = (dy_clamped + self.config.max_mouse_delta_y) / (2 * self.config.max_mouse_delta_y)
+        # Use fractions for exact normalization to avoid floating-point precision loss
+        norm_dx = Fraction(dx_clamped + max_x) / Fraction(2 * max_x)
+        norm_dy = Fraction(dy_clamped + max_y) / Fraction(2 * max_y)
 
         tokens = ["<MOUSE>"]
 
-        # Quantize deltas to digits
+        # Quantize deltas to digits using exact Fraction values
         digits_dx = quantize_to_digits(norm_dx, self.config.mouse_delta_bases)
         digits_dy = quantize_to_digits(norm_dy, self.config.mouse_delta_bases)
 
@@ -197,9 +211,11 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         norm_dx = digits_to_value(digits_dx, self.config.mouse_delta_bases)
         norm_dy = digits_to_value(digits_dy, self.config.mouse_delta_bases)
 
-        # Convert back to actual delta values using separate max values
-        dx = int(round(norm_dx * (2 * self.config.max_mouse_delta_x) - self.config.max_mouse_delta_x))
-        dy = int(round(norm_dy * (2 * self.config.max_mouse_delta_y) - self.config.max_mouse_delta_y))
+        # Convert back to actual delta values using max_mouse_delta tuple (half-ranges)
+        # Use fractions for exact arithmetic to avoid floating-point precision loss
+        max_x, max_y = self.config.max_mouse_delta
+        dx = int(round(float(Fraction(norm_dx) * Fraction(2 * max_x) - Fraction(max_x))))
+        dy = int(round(float(Fraction(norm_dy) * Fraction(2 * max_y) - Fraction(max_y))))
 
         return dx, dy
 
@@ -253,7 +269,9 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         norm_timestamp = digits_to_value(digits, self.config.timestamp_bases)
 
         # Convert back to nanoseconds
-        return int(norm_timestamp * self.config.timestamp_range_ns)
+        # max_timestamp_range_ns is half-range, so total range is 2 * max_timestamp_range_ns
+        total_range = 2 * self.config.max_timestamp_range_ns
+        return int(norm_timestamp * total_range)
 
     def _decode_keyboard(self, tokens: List[str]) -> KeyboardEvent:
         """Decode keyboard tokens back to KeyboardEvent."""
@@ -295,7 +313,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
                 button_data = int(button_data_match.group(1))
 
         return RawMouseEvent(
-            dx=dx, dy=dy, button_flags=RawMouseEvent.ButtonFlags(button_flags), button_data=button_data
+            last_x=dx, last_y=dy, button_flags=RawMouseEvent.ButtonFlags(button_flags), button_data=button_data
         )
 
     def decode(
@@ -329,8 +347,8 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         elif event_type_token == "<MOUSE>":
             raw_mouse_event = self._decode_mouse(tokens[timestamp_token_count:])
             msg_data = {
-                "dx": raw_mouse_event.dx,
-                "dy": raw_mouse_event.dy,
+                "last_x": raw_mouse_event.last_x,
+                "last_y": raw_mouse_event.last_y,
                 "button_flags": int(raw_mouse_event.button_flags),
                 "button_data": raw_mouse_event.button_data,
             }

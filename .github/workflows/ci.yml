@@ -16,3 +16,29 @@ jobs:
       - uses: astral-sh/ruff-action@v3
       - run: ruff check --fix
       - run: ruff format --check --diff
+
+  test-ubuntu:
+    runs-on: ubuntu-latest
+    name: Pytest on Ubuntu
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Virtual Environment
+        uses: ./.github/actions/setup-venv
+        with:
+          python-version: '3.11'
+
+      - name: Setup uv Environment
+        uses: ./.github/actions/setup-uv
+
+      - name: Install Dependencies
+        run: vuv install --dev
+
+      - name: Run pytest
+        run: pytest open-world-agents/projects/owa-data
