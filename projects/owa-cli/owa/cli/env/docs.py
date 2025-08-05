@@ -10,13 +10,12 @@ import sys
 from typing import Optional
 
 import typer
-from rich.console import Console
 from rich.table import Table
 
 from owa.core.documentation import DocumentationValidator
 from owa.core.documentation.validator import PluginStatus
 
-console = Console()
+from ..console import console
 
 
 def docs(
