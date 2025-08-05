@@ -17,10 +17,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentFile = null;
     let currentData = {
         "keyboard": [],
+        "mouse": [],
         "mouse/raw": [],
         "screen": [],
         "window": [],
-        "keyboard/state": []
+        "keyboard/state": [],
+        "mouse/state": [],
     };
     let metadata = null;
     let basePtsTime = 0;
@@ -482,6 +484,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Update mouse state display using only RawMouseEvent messages
     function updateMouseState(currentTimeNs) {
+        const mouseState = currentData['mouse/state'] || [];
+        const mouseEvents = currentData['mouse'] || [];
         const mouseRawEvents = currentData['mouse/raw'] || [];
 
         if (mouseRawEvents.length === 0) {

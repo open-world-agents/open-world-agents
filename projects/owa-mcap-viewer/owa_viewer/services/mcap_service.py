@@ -88,7 +88,7 @@ class McapService:
         logger.info(f"Fetching MCAP data for time range: {start_time} to {end_time}")
 
         # Define topics we're interested in
-        topics_of_interest = ["keyboard", "screen", "window", "keyboard/state", "mouse/raw"]
+        topics_of_interest = ["keyboard", "mouse", "screen", "window", "keyboard/state", "mouse/state", "mouse/raw"]
 
         # Initialize result structure
         topics_data = {topic: [] for topic in topics_of_interest}
