@@ -706,6 +706,48 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Key Auto-Repeat Functionality">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-windows-auto-repeat-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      How Windows Auto-Repeat Works
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-owas-press_repeat-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using OWA's press_repeat Function
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#differences-from-true-windows-auto-repeat" class="md-nav__link">
+    <span class="md-ellipsis">
+      Differences from True Windows Auto-Repeat
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#technical-details-windows-repeat-count-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      Technical Details: Windows Repeat Count Behavior
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
       </ul>
@@ -887,6 +929,15 @@
   <a href="#owa.env.desktop.keyboard_mouse.callables.release_all_keys" class="md-nav__link">
     <span class="md-ellipsis">
       keyboard.release_all_keys
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#owa.env.desktop.keyboard_mouse.callables.get_keyboard_repeat_timing" class="md-nav__link">
+    <span class="md-ellipsis">
+      keyboard.get_keyboard_repeat_timing
     </span>
   </a>
   
@@ -2025,6 +2076,48 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Key Auto-Repeat Functionality">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-windows-auto-repeat-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      How Windows Auto-Repeat Works
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-owas-press_repeat-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using OWA's press_repeat Function
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#differences-from-true-windows-auto-repeat" class="md-nav__link">
+    <span class="md-ellipsis">
+      Differences from True Windows Auto-Repeat
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#technical-details-windows-repeat-count-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      Technical Details: Windows Repeat Count Behavior
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
       </ul>
@@ -2206,6 +2299,15 @@
   <a href="#owa.env.desktop.keyboard_mouse.callables.release_all_keys" class="md-nav__link">
     <span class="md-ellipsis">
       keyboard.release_all_keys
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#owa.env.desktop.keyboard_mouse.callables.get_keyboard_repeat_timing" class="md-nav__link">
+    <span class="md-ellipsis">
+      keyboard.get_keyboard_repeat_timing
     </span>
   </a>
   
@@ -2425,9 +2527,45 @@
 </tr>
 <tr>
 <td></td>
+<td><code>desktop/mouse.press</code></td>
+<td>Callable</td>
+<td>Press mouse button</td>
+</tr>
+<tr>
+<td></td>
+<td><code>desktop/mouse.release</code></td>
+<td>Callable</td>
+<td>Release mouse button</td>
+</tr>
+<tr>
+<td></td>
+<td><code>desktop/mouse.scroll</code></td>
+<td>Callable</td>
+<td>Simulate mouse wheel scrolling</td>
+</tr>
+<tr>
+<td></td>
+<td><code>desktop/mouse.get_state</code></td>
+<td>Callable</td>
+<td>Get current mouse position and buttons</td>
+</tr>
+<tr>
+<td></td>
+<td><code>desktop/mouse.get_pointer_ballistics_config</code></td>
+<td>Callable</td>
+<td>Get Windows pointer ballistics settings</td>
+</tr>
+<tr>
+<td></td>
 <td><code>desktop/mouse</code></td>
 <td>Listener</td>
 <td>Monitor mouse events</td>
+</tr>
+<tr>
+<td></td>
+<td><code>desktop/mouse_state</code></td>
+<td>Listener</td>
+<td>Monitor mouse state changes</td>
 </tr>
 <tr>
 <td></td>
@@ -2455,9 +2593,21 @@
 </tr>
 <tr>
 <td></td>
+<td><code>desktop/keyboard.get_keyboard_repeat_timing</code></td>
+<td>Callable</td>
+<td>Get Windows keyboard repeat timing</td>
+</tr>
+<tr>
+<td></td>
 <td><code>desktop/keyboard</code></td>
 <td>Listener</td>
 <td>Monitor keyboard events</td>
+</tr>
+<tr>
+<td></td>
+<td><code>desktop/keyboard_state</code></td>
+<td>Listener</td>
+<td>Monitor keyboard state changes</td>
 </tr>
 <tr>
 <td><strong>Screen</strong></td>
@@ -2476,6 +2626,36 @@
 <td><code>desktop/window.get_window_by_title</code></td>
 <td>Callable</td>
 <td>Find window by title</td>
+</tr>
+<tr>
+<td></td>
+<td><code>desktop/window.get_pid_by_title</code></td>
+<td>Callable</td>
+<td>Get process ID by window title</td>
+</tr>
+<tr>
+<td></td>
+<td><code>desktop/window.when_active</code></td>
+<td>Callable</td>
+<td>Wait until window becomes active</td>
+</tr>
+<tr>
+<td></td>
+<td><code>desktop/window.is_active</code></td>
+<td>Callable</td>
+<td>Check if window is active</td>
+</tr>
+<tr>
+<td></td>
+<td><code>desktop/window.make_active</code></td>
+<td>Callable</td>
+<td>Activate/focus window</td>
+</tr>
+<tr>
+<td></td>
+<td><code>desktop/window</code></td>
+<td>Listener</td>
+<td>Monitor window events</td>
 </tr>
 </tbody>
 </table>
@@ -2559,10 +2739,48 @@
 <h3 id="raw-mouse-input">Raw Mouse Input<a class="headerlink" href="#raw-mouse-input" title="Permanent link">&para;</a></h3>
 <p>Raw mouse input capture is available to separate mouse position movement from game's center-locking and from user interactions. This enables access to unfiltered mouse movement data directly from the hardware, bypassing Windows pointer acceleration and game cursor manipulation.</p>
 <h3 id="key-auto-repeat-functionality">Key Auto-Repeat Functionality<a class="headerlink" href="#key-auto-repeat-functionality" title="Permanent link">&para;</a></h3>
+<p>Key auto-repeat is a Windows feature where holding down a key generates multiple key events after an initial delay. When a user presses and holds a key, Windows first waits for the <strong>repeat delay</strong> period, then generates repeated <code>WM_KEYDOWN</code> messages at intervals determined by the <strong>repeat rate</strong>.</p>
+<h4 id="how-windows-auto-repeat-works">How Windows Auto-Repeat Works<a class="headerlink" href="#how-windows-auto-repeat-works" title="Permanent link">&para;</a></h4>
+<ol>
+<li><strong>Initial Key Press</strong>: First <code>WM_KEYDOWN</code> message is sent immediately with repeat count = 1</li>
+<li><strong>Repeat Delay</strong>: System waits for the configured delay (typically 250-1000ms)</li>
+<li><strong>Repeated Events</strong>: Additional <code>WM_KEYDOWN</code> messages are sent at the repeat rate interval (typically 30ms)</li>
+<li><strong>Repeat Count</strong>: Each repeated message includes an incremented repeat count in the message parameters</li>
+</ol>
+<p><strong>System Configuration</strong>: Windows allows users to configure auto-repeat behavior through:
+- <strong>Repeat Delay</strong>: Time before auto-repeat begins (0-3 scale, maps to 250ms-1000ms, default: 500ms)
+- <strong>Repeat Rate</strong>: Frequency of repeated characters (0-31 scale, maps to ~30ms-500ms intervals, default: 30ms)</p>
+<p>These settings can be accessed programmatically via <code>SystemParametersInfo</code> with <code>SPI_GETKEYBOARDDELAY</code> and <code>SPI_GETKEYBOARDSPEED</code> parameters.</p>
+<p><strong>References</strong>:
+- <a href="https://learn.microsoft.com/en-us/windows/win32/inputdev/about-keyboard-input#keyboard-repeat-delay-and-repeat-rate">Keyboard Repeat Delay and Repeat Rate</a> - Microsoft documentation on keyboard repeat behavior
+- <a href="https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-systemparametersinfoa">SystemParametersInfo Function</a> - Windows API for keyboard repeat parameters</p>
+<h4 id="using-owas-press_repeat-function">Using OWA's press_repeat Function<a class="headerlink" href="#using-owas-press_repeat-function" title="Permanent link">&para;</a></h4>
 <p>For simulating key auto-repeat behavior, use the dedicated function:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">CALLABLES</span><span class="p">[</span><span class="s2">&quot;desktop/keyboard.press_repeat&quot;</span><span class="p">](</span><span class="n">key</span><span class="p">,</span> <span class="n">press_time</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">initial_delay</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">repeat_delay</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.033</span><span class="p">)</span>
 </code></pre></div>
-<p>This function handles the complexity of simulating hardware auto-repeat, with configurable initial delay before repeating starts and the interval between repeated keypresses.</p>
+<p><strong>Parameters:</strong>
+- <code>key</code>: The key to press and repeat
+- <code>press_time</code>: Total duration to hold the key (seconds)
+- <code>initial_delay</code>: Time before repeating starts (default: 0.5s, matches Windows default)
+- <code>repeat_delay</code>: Interval between repeated keypresses (default: 0.033s ≈ 30ms, matches Windows default)</p>
+<h4 id="differences-from-true-windows-auto-repeat">Differences from True Windows Auto-Repeat<a class="headerlink" href="#differences-from-true-windows-auto-repeat" title="Permanent link">&para;</a></h4>
+<p>The <code>press_repeat</code> function <strong>approximates</strong> Windows auto-repeat behavior but isn't identical:</p>
+<p><strong>OS Auto-Repeat vs OWA Implementation:</strong>
+- <strong>OS Auto-Repeat</strong>: <code>WM_KEYDOWN</code> messages include repeat flag (bit 30) and repeat count
+- <strong>OWA Implementation</strong>: Multiple <code>WM_KEYDOWN</code> messages without repeat flags (each appears as individual key press)</p>
+<p>The difference is small and commonly ignored by applications, making this approach effective for most automation scenarios.</p>
+<p><strong>Why the difference exists</strong>: Windows provides repeat detection through <code>WM_KEYDOWN</code> message parameters, but pynput does not expose these Windows-specific details. Since the primary use case is <strong>triggering</strong> repeat behavior rather than detecting it, this limitation doesn't affect the functionality.</p>
+<p><strong>Reference</strong>: <a href="https://learn.microsoft.com/en-us/windows/win32/inputdev/wm-keydown">WM_KEYDOWN Message</a> - Official Windows documentation for key press events and message parameters</p>
+<h4 id="technical-details-windows-repeat-count-behavior">Technical Details: Windows Repeat Count Behavior<a class="headerlink" href="#technical-details-windows-repeat-count-behavior" title="Permanent link">&para;</a></h4>
+<p>The <code>WM_KEYDOWN</code> repeat count (bits 0-15) behaves differently than many developers expect:</p>
+<ul>
+<li><strong>Not cumulative</strong>: Each message contains the repeat count since the last processed <code>WM_KEYDOWN</code>, not a running total</li>
+<li><strong>Usually 1</strong>: In typical applications with fast message processing, the repeat count is almost always 1</li>
+<li><strong>Higher values possible</strong>: Only occurs when message processing is slow enough for multiple repeats to queue up</li>
+</ul>
+<p><strong>Example</strong>: If you hold a key and your message loop processes messages quickly, you'll receive multiple <code>WM_KEYDOWN</code> messages each with repeat count = 1. Only when processing is delayed (e.g., by adding <code>Sleep(1000)</code> in the handler) will you see higher repeat counts like 20-30.</p>
+<p>This design allows responsive applications to process key events immediately rather than waiting for the key release.</p>
+<p><strong>Reference</strong>: <a href="https://stackoverflow.com/questions/44897991/wm-keydown-repeat-count">WM_KEYDOWN repeat count behavior explained</a> - Stack Overflow discussion with practical examples</p>
 <div class="admonition info">
 <p class="admonition-title">Implementation</p>
 <p>See <a href="https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-env-desktop">owa-env-desktop source</a> for detailed implementation.</p>
@@ -2760,35 +2978,35 @@ result = callable_func(your_arguments)</code></pre>
 
             <details class="quote">
               <summary>Source code in <code>projects/owa-env-desktop/owa/env/desktop/keyboard_mouse/callables.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-16">16</a></span>
-<span class="normal"><a href="#__codelineno-0-17">17</a></span>
-<span class="normal"><a href="#__codelineno-0-18">18</a></span>
-<span class="normal"><a href="#__codelineno-0-19">19</a></span>
-<span class="normal"><a href="#__codelineno-0-20">20</a></span>
-<span class="normal"><a href="#__codelineno-0-21">21</a></span>
-<span class="normal"><a href="#__codelineno-0-22">22</a></span>
-<span class="normal"><a href="#__codelineno-0-23">23</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-23">23</a></span>
 <span class="normal"><a href="#__codelineno-0-24">24</a></span>
 <span class="normal"><a href="#__codelineno-0-25">25</a></span>
 <span class="normal"><a href="#__codelineno-0-26">26</a></span>
 <span class="normal"><a href="#__codelineno-0-27">27</a></span>
 <span class="normal"><a href="#__codelineno-0-28">28</a></span>
 <span class="normal"><a href="#__codelineno-0-29">29</a></span>
-<span class="normal"><a href="#__codelineno-0-30">30</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-16" name="__codelineno-0-16"></a><span class="k">def</span><span class="w"> </span><span class="nf">click</span><span class="p">(</span><span class="n">button</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Button</span><span class="p">,</span> <span class="n">count</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-17" name="__codelineno-0-17"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-18" name="__codelineno-0-18"></a><span class="sd">    Simulate a mouse click.</span>
-<a id="__codelineno-0-19" name="__codelineno-0-19"></a>
-<a id="__codelineno-0-20" name="__codelineno-0-20"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-21" name="__codelineno-0-21"></a><span class="sd">        button: Mouse button to click. Can be &quot;left&quot;, &quot;middle&quot;, &quot;right&quot; or a Button enum.</span>
-<a id="__codelineno-0-22" name="__codelineno-0-22"></a><span class="sd">        count: Number of clicks to perform.</span>
-<a id="__codelineno-0-23" name="__codelineno-0-23"></a>
-<a id="__codelineno-0-24" name="__codelineno-0-24"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-25" name="__codelineno-0-25"></a><span class="sd">        &gt;&gt;&gt; click(&quot;left&quot;, 1)  # Single left click</span>
-<a id="__codelineno-0-26" name="__codelineno-0-26"></a><span class="sd">        &gt;&gt;&gt; click(&quot;right&quot;, 2)  # Double right click</span>
-<a id="__codelineno-0-27" name="__codelineno-0-27"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-28" name="__codelineno-0-28"></a>    <span class="k">if</span> <span class="n">button</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;left&quot;</span><span class="p">,</span> <span class="s2">&quot;middle&quot;</span><span class="p">,</span> <span class="s2">&quot;right&quot;</span><span class="p">):</span>
-<a id="__codelineno-0-29" name="__codelineno-0-29"></a>        <span class="n">button</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">Button</span><span class="p">,</span> <span class="n">button</span><span class="p">)</span>
-<a id="__codelineno-0-30" name="__codelineno-0-30"></a>    <span class="k">return</span> <span class="n">mouse_controller</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="n">button</span><span class="p">,</span> <span class="n">count</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-30">30</a></span>
+<span class="normal"><a href="#__codelineno-0-31">31</a></span>
+<span class="normal"><a href="#__codelineno-0-32">32</a></span>
+<span class="normal"><a href="#__codelineno-0-33">33</a></span>
+<span class="normal"><a href="#__codelineno-0-34">34</a></span>
+<span class="normal"><a href="#__codelineno-0-35">35</a></span>
+<span class="normal"><a href="#__codelineno-0-36">36</a></span>
+<span class="normal"><a href="#__codelineno-0-37">37</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-23" name="__codelineno-0-23"></a><span class="k">def</span><span class="w"> </span><span class="nf">click</span><span class="p">(</span><span class="n">button</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Button</span><span class="p">,</span> <span class="n">count</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-24" name="__codelineno-0-24"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-25" name="__codelineno-0-25"></a><span class="sd">    Simulate a mouse click.</span>
+<a id="__codelineno-0-26" name="__codelineno-0-26"></a>
+<a id="__codelineno-0-27" name="__codelineno-0-27"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-28" name="__codelineno-0-28"></a><span class="sd">        button: Mouse button to click. Can be &quot;left&quot;, &quot;middle&quot;, &quot;right&quot; or a Button enum.</span>
+<a id="__codelineno-0-29" name="__codelineno-0-29"></a><span class="sd">        count: Number of clicks to perform.</span>
+<a id="__codelineno-0-30" name="__codelineno-0-30"></a>
+<a id="__codelineno-0-31" name="__codelineno-0-31"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="sd">        &gt;&gt;&gt; click(&quot;left&quot;, 1)  # Single left click</span>
+<a id="__codelineno-0-33" name="__codelineno-0-33"></a><span class="sd">        &gt;&gt;&gt; click(&quot;right&quot;, 2)  # Double right click</span>
+<a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-35" name="__codelineno-0-35"></a>    <span class="k">if</span> <span class="n">button</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;left&quot;</span><span class="p">,</span> <span class="s2">&quot;middle&quot;</span><span class="p">,</span> <span class="s2">&quot;right&quot;</span><span class="p">):</span>
+<a id="__codelineno-0-36" name="__codelineno-0-36"></a>        <span class="n">button</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">Button</span><span class="p">,</span> <span class="n">button</span><span class="p">)</span>
+<a id="__codelineno-0-37" name="__codelineno-0-37"></a>    <span class="k">return</span> <span class="n">mouse_controller</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="n">button</span><span class="p">,</span> <span class="n">count</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2864,29 +3082,29 @@ result = callable_func(your_arguments)</code></pre>
 
             <details class="quote">
               <summary>Source code in <code>projects/owa-env-desktop/owa/env/desktop/keyboard_mouse/callables.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-33">33</a></span>
-<span class="normal"><a href="#__codelineno-0-34">34</a></span>
-<span class="normal"><a href="#__codelineno-0-35">35</a></span>
-<span class="normal"><a href="#__codelineno-0-36">36</a></span>
-<span class="normal"><a href="#__codelineno-0-37">37</a></span>
-<span class="normal"><a href="#__codelineno-0-38">38</a></span>
-<span class="normal"><a href="#__codelineno-0-39">39</a></span>
-<span class="normal"><a href="#__codelineno-0-40">40</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-40">40</a></span>
 <span class="normal"><a href="#__codelineno-0-41">41</a></span>
 <span class="normal"><a href="#__codelineno-0-42">42</a></span>
 <span class="normal"><a href="#__codelineno-0-43">43</a></span>
-<span class="normal"><a href="#__codelineno-0-44">44</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-33" name="__codelineno-0-33"></a><span class="k">def</span><span class="w"> </span><span class="nf">mouse_move</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-35" name="__codelineno-0-35"></a><span class="sd">    Move the mouse cursor to specified coordinates.</span>
-<a id="__codelineno-0-36" name="__codelineno-0-36"></a>
-<a id="__codelineno-0-37" name="__codelineno-0-37"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="sd">        x: X coordinate to move to.</span>
-<a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">        y: Y coordinate to move to.</span>
-<a id="__codelineno-0-40" name="__codelineno-0-40"></a>
-<a id="__codelineno-0-41" name="__codelineno-0-41"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-42" name="__codelineno-0-42"></a><span class="sd">        &gt;&gt;&gt; mouse_move(100, 200)  # Move mouse to position (100, 200)</span>
-<a id="__codelineno-0-43" name="__codelineno-0-43"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-44" name="__codelineno-0-44"></a>    <span class="k">return</span> <span class="n">mouse_controller</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-44">44</a></span>
+<span class="normal"><a href="#__codelineno-0-45">45</a></span>
+<span class="normal"><a href="#__codelineno-0-46">46</a></span>
+<span class="normal"><a href="#__codelineno-0-47">47</a></span>
+<span class="normal"><a href="#__codelineno-0-48">48</a></span>
+<span class="normal"><a href="#__codelineno-0-49">49</a></span>
+<span class="normal"><a href="#__codelineno-0-50">50</a></span>
+<span class="normal"><a href="#__codelineno-0-51">51</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-40" name="__codelineno-0-40"></a><span class="k">def</span><span class="w"> </span><span class="nf">mouse_move</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-41" name="__codelineno-0-41"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-42" name="__codelineno-0-42"></a><span class="sd">    Move the mouse cursor to specified coordinates.</span>
+<a id="__codelineno-0-43" name="__codelineno-0-43"></a>
+<a id="__codelineno-0-44" name="__codelineno-0-44"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-45" name="__codelineno-0-45"></a><span class="sd">        x: X coordinate to move to.</span>
+<a id="__codelineno-0-46" name="__codelineno-0-46"></a><span class="sd">        y: Y coordinate to move to.</span>
+<a id="__codelineno-0-47" name="__codelineno-0-47"></a>
+<a id="__codelineno-0-48" name="__codelineno-0-48"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-49" name="__codelineno-0-49"></a><span class="sd">        &gt;&gt;&gt; mouse_move(100, 200)  # Move mouse to position (100, 200)</span>
+<a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-51" name="__codelineno-0-51"></a>    <span class="k">return</span> <span class="n">mouse_controller</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2939,29 +3157,29 @@ result = callable_func(your_arguments)</code></pre>
 
             <details class="quote">
               <summary>Source code in <code>projects/owa-env-desktop/owa/env/desktop/keyboard_mouse/callables.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-47">47</a></span>
-<span class="normal"><a href="#__codelineno-0-48">48</a></span>
-<span class="normal"><a href="#__codelineno-0-49">49</a></span>
-<span class="normal"><a href="#__codelineno-0-50">50</a></span>
-<span class="normal"><a href="#__codelineno-0-51">51</a></span>
-<span class="normal"><a href="#__codelineno-0-52">52</a></span>
-<span class="normal"><a href="#__codelineno-0-53">53</a></span>
-<span class="normal"><a href="#__codelineno-0-54">54</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-54">54</a></span>
 <span class="normal"><a href="#__codelineno-0-55">55</a></span>
 <span class="normal"><a href="#__codelineno-0-56">56</a></span>
 <span class="normal"><a href="#__codelineno-0-57">57</a></span>
-<span class="normal"><a href="#__codelineno-0-58">58</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-47" name="__codelineno-0-47"></a><span class="k">def</span><span class="w"> </span><span class="nf">mouse_position</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
-<a id="__codelineno-0-48" name="__codelineno-0-48"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-49" name="__codelineno-0-49"></a><span class="sd">    Get the current mouse cursor position.</span>
-<a id="__codelineno-0-50" name="__codelineno-0-50"></a>
-<a id="__codelineno-0-51" name="__codelineno-0-51"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="sd">        Tuple of (x, y) coordinates of the mouse cursor.</span>
-<a id="__codelineno-0-53" name="__codelineno-0-53"></a>
-<a id="__codelineno-0-54" name="__codelineno-0-54"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-55" name="__codelineno-0-55"></a><span class="sd">        &gt;&gt;&gt; x, y = mouse_position()</span>
-<a id="__codelineno-0-56" name="__codelineno-0-56"></a><span class="sd">        &gt;&gt;&gt; print(f&quot;Mouse is at ({x}, {y})&quot;)</span>
-<a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-58" name="__codelineno-0-58"></a>    <span class="k">return</span> <span class="n">mouse_controller</span><span class="o">.</span><span class="n">position</span>
+<span class="normal"><a href="#__codelineno-0-58">58</a></span>
+<span class="normal"><a href="#__codelineno-0-59">59</a></span>
+<span class="normal"><a href="#__codelineno-0-60">60</a></span>
+<span class="normal"><a href="#__codelineno-0-61">61</a></span>
+<span class="normal"><a href="#__codelineno-0-62">62</a></span>
+<span class="normal"><a href="#__codelineno-0-63">63</a></span>
+<span class="normal"><a href="#__codelineno-0-64">64</a></span>
+<span class="normal"><a href="#__codelineno-0-65">65</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-54" name="__codelineno-0-54"></a><span class="k">def</span><span class="w"> </span><span class="nf">mouse_position</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+<a id="__codelineno-0-55" name="__codelineno-0-55"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-56" name="__codelineno-0-56"></a><span class="sd">    Get the current mouse cursor position.</span>
+<a id="__codelineno-0-57" name="__codelineno-0-57"></a>
+<a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-59" name="__codelineno-0-59"></a><span class="sd">        Tuple of (x, y) coordinates of the mouse cursor.</span>
+<a id="__codelineno-0-60" name="__codelineno-0-60"></a>
+<a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-62" name="__codelineno-0-62"></a><span class="sd">        &gt;&gt;&gt; x, y = mouse_position()</span>
+<a id="__codelineno-0-63" name="__codelineno-0-63"></a><span class="sd">        &gt;&gt;&gt; print(f&quot;Mouse is at ({x}, {y})&quot;)</span>
+<a id="__codelineno-0-64" name="__codelineno-0-64"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-65" name="__codelineno-0-65"></a>    <span class="k">return</span> <span class="n">mouse_controller</span><span class="o">.</span><span class="n">position</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3021,27 +3239,27 @@ result = callable_func(your_arguments)</code></pre>
 
             <details class="quote">
               <summary>Source code in <code>projects/owa-env-desktop/owa/env/desktop/keyboard_mouse/callables.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-61">61</a></span>
-<span class="normal"><a href="#__codelineno-0-62">62</a></span>
-<span class="normal"><a href="#__codelineno-0-63">63</a></span>
-<span class="normal"><a href="#__codelineno-0-64">64</a></span>
-<span class="normal"><a href="#__codelineno-0-65">65</a></span>
-<span class="normal"><a href="#__codelineno-0-66">66</a></span>
-<span class="normal"><a href="#__codelineno-0-67">67</a></span>
-<span class="normal"><a href="#__codelineno-0-68">68</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-68">68</a></span>
 <span class="normal"><a href="#__codelineno-0-69">69</a></span>
 <span class="normal"><a href="#__codelineno-0-70">70</a></span>
-<span class="normal"><a href="#__codelineno-0-71">71</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="k">def</span><span class="w"> </span><span class="nf">mouse_press</span><span class="p">(</span><span class="n">button</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Button</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-62" name="__codelineno-0-62"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-63" name="__codelineno-0-63"></a><span class="sd">    Press and hold a mouse button.</span>
-<a id="__codelineno-0-64" name="__codelineno-0-64"></a>
-<a id="__codelineno-0-65" name="__codelineno-0-65"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-66" name="__codelineno-0-66"></a><span class="sd">        button: Mouse button to press. Can be &quot;left&quot;, &quot;middle&quot;, &quot;right&quot; or a Button enum.</span>
-<a id="__codelineno-0-67" name="__codelineno-0-67"></a>
-<a id="__codelineno-0-68" name="__codelineno-0-68"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-69" name="__codelineno-0-69"></a><span class="sd">        &gt;&gt;&gt; mouse_press(&quot;left&quot;)  # Press and hold left mouse button</span>
-<a id="__codelineno-0-70" name="__codelineno-0-70"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-71" name="__codelineno-0-71"></a>    <span class="k">return</span> <span class="n">mouse_controller</span><span class="o">.</span><span class="n">press</span><span class="p">(</span><span class="n">button</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-71">71</a></span>
+<span class="normal"><a href="#__codelineno-0-72">72</a></span>
+<span class="normal"><a href="#__codelineno-0-73">73</a></span>
+<span class="normal"><a href="#__codelineno-0-74">74</a></span>
+<span class="normal"><a href="#__codelineno-0-75">75</a></span>
+<span class="normal"><a href="#__codelineno-0-76">76</a></span>
+<span class="normal"><a href="#__codelineno-0-77">77</a></span>
+<span class="normal"><a href="#__codelineno-0-78">78</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-68" name="__codelineno-0-68"></a><span class="k">def</span><span class="w"> </span><span class="nf">mouse_press</span><span class="p">(</span><span class="n">button</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Button</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-69" name="__codelineno-0-69"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-70" name="__codelineno-0-70"></a><span class="sd">    Press and hold a mouse button.</span>
+<a id="__codelineno-0-71" name="__codelineno-0-71"></a>
+<a id="__codelineno-0-72" name="__codelineno-0-72"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-73" name="__codelineno-0-73"></a><span class="sd">        button: Mouse button to press. Can be &quot;left&quot;, &quot;middle&quot;, &quot;right&quot; or a Button enum.</span>
+<a id="__codelineno-0-74" name="__codelineno-0-74"></a>
+<a id="__codelineno-0-75" name="__codelineno-0-75"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-76" name="__codelineno-0-76"></a><span class="sd">        &gt;&gt;&gt; mouse_press(&quot;left&quot;)  # Press and hold left mouse button</span>
+<a id="__codelineno-0-77" name="__codelineno-0-77"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-78" name="__codelineno-0-78"></a>    <span class="k">return</span> <span class="n">mouse_controller</span><span class="o">.</span><span class="n">press</span><span class="p">(</span><span class="n">button</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3101,27 +3319,27 @@ result = callable_func(your_arguments)</code></pre>
 
             <details class="quote">
               <summary>Source code in <code>projects/owa-env-desktop/owa/env/desktop/keyboard_mouse/callables.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-74">74</a></span>
-<span class="normal"><a href="#__codelineno-0-75">75</a></span>
-<span class="normal"><a href="#__codelineno-0-76">76</a></span>
-<span class="normal"><a href="#__codelineno-0-77">77</a></span>
-<span class="normal"><a href="#__codelineno-0-78">78</a></span>
-<span class="normal"><a href="#__codelineno-0-79">79</a></span>
-<span class="normal"><a href="#__codelineno-0-80">80</a></span>
-<span class="normal"><a href="#__codelineno-0-81">81</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-81">81</a></span>
 <span class="normal"><a href="#__codelineno-0-82">82</a></span>
 <span class="normal"><a href="#__codelineno-0-83">83</a></span>
-<span class="normal"><a href="#__codelineno-0-84">84</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-74" name="__codelineno-0-74"></a><span class="k">def</span><span class="w"> </span><span class="nf">mouse_release</span><span class="p">(</span><span class="n">button</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Button</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-75" name="__codelineno-0-75"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-76" name="__codelineno-0-76"></a><span class="sd">    Release a previously pressed mouse button.</span>
-<a id="__codelineno-0-77" name="__codelineno-0-77"></a>
-<a id="__codelineno-0-78" name="__codelineno-0-78"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-79" name="__codelineno-0-79"></a><span class="sd">        button: Mouse button to release. Can be &quot;left&quot;, &quot;middle&quot;, &quot;right&quot; or a Button enum.</span>
-<a id="__codelineno-0-80" name="__codelineno-0-80"></a>
-<a id="__codelineno-0-81" name="__codelineno-0-81"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-82" name="__codelineno-0-82"></a><span class="sd">        &gt;&gt;&gt; mouse_release(&quot;left&quot;)  # Release left mouse button</span>
-<a id="__codelineno-0-83" name="__codelineno-0-83"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-84" name="__codelineno-0-84"></a>    <span class="k">return</span> <span class="n">mouse_controller</span><span class="o">.</span><span class="n">release</span><span class="p">(</span><span class="n">button</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-84">84</a></span>
+<span class="normal"><a href="#__codelineno-0-85">85</a></span>
+<span class="normal"><a href="#__codelineno-0-86">86</a></span>
+<span class="normal"><a href="#__codelineno-0-87">87</a></span>
+<span class="normal"><a href="#__codelineno-0-88">88</a></span>
+<span class="normal"><a href="#__codelineno-0-89">89</a></span>
+<span class="normal"><a href="#__codelineno-0-90">90</a></span>
+<span class="normal"><a href="#__codelineno-0-91">91</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-81" name="__codelineno-0-81"></a><span class="k">def</span><span class="w"> </span><span class="nf">mouse_release</span><span class="p">(</span><span class="n">button</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Button</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-82" name="__codelineno-0-82"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-83" name="__codelineno-0-83"></a><span class="sd">    Release a previously pressed mouse button.</span>
+<a id="__codelineno-0-84" name="__codelineno-0-84"></a>
+<a id="__codelineno-0-85" name="__codelineno-0-85"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-86" name="__codelineno-0-86"></a><span class="sd">        button: Mouse button to release. Can be &quot;left&quot;, &quot;middle&quot;, &quot;right&quot; or a Button enum.</span>
+<a id="__codelineno-0-87" name="__codelineno-0-87"></a>
+<a id="__codelineno-0-88" name="__codelineno-0-88"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-89" name="__codelineno-0-89"></a><span class="sd">        &gt;&gt;&gt; mouse_release(&quot;left&quot;)  # Release left mouse button</span>
+<a id="__codelineno-0-90" name="__codelineno-0-90"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-91" name="__codelineno-0-91"></a>    <span class="k">return</span> <span class="n">mouse_controller</span><span class="o">.</span><span class="n">release</span><span class="p">(</span><span class="n">button</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3230,35 +3448,35 @@ result = callable_func(your_arguments)</code></pre>
 
             <details class="quote">
               <summary>Source code in <code>projects/owa-env-desktop/owa/env/desktop/keyboard_mouse/callables.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-87"> 87</a></span>
-<span class="normal"><a href="#__codelineno-0-88"> 88</a></span>
-<span class="normal"><a href="#__codelineno-0-89"> 89</a></span>
-<span class="normal"><a href="#__codelineno-0-90"> 90</a></span>
-<span class="normal"><a href="#__codelineno-0-91"> 91</a></span>
-<span class="normal"><a href="#__codelineno-0-92"> 92</a></span>
-<span class="normal"><a href="#__codelineno-0-93"> 93</a></span>
-<span class="normal"><a href="#__codelineno-0-94"> 94</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-94"> 94</a></span>
 <span class="normal"><a href="#__codelineno-0-95"> 95</a></span>
 <span class="normal"><a href="#__codelineno-0-96"> 96</a></span>
 <span class="normal"><a href="#__codelineno-0-97"> 97</a></span>
 <span class="normal"><a href="#__codelineno-0-98"> 98</a></span>
 <span class="normal"><a href="#__codelineno-0-99"> 99</a></span>
 <span class="normal"><a href="#__codelineno-0-100">100</a></span>
-<span class="normal"><a href="#__codelineno-0-101">101</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-87" name="__codelineno-0-87"></a><span class="k">def</span><span class="w"> </span><span class="nf">mouse_scroll</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">dx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">dy</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-88" name="__codelineno-0-88"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-89" name="__codelineno-0-89"></a><span class="sd">    Simulate mouse wheel scrolling.</span>
-<a id="__codelineno-0-90" name="__codelineno-0-90"></a>
-<a id="__codelineno-0-91" name="__codelineno-0-91"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-92" name="__codelineno-0-92"></a><span class="sd">        x: X coordinate where scrolling occurs.</span>
-<a id="__codelineno-0-93" name="__codelineno-0-93"></a><span class="sd">        y: Y coordinate where scrolling occurs.</span>
-<a id="__codelineno-0-94" name="__codelineno-0-94"></a><span class="sd">        dx: Horizontal scroll amount.</span>
-<a id="__codelineno-0-95" name="__codelineno-0-95"></a><span class="sd">        dy: Vertical scroll amount.</span>
-<a id="__codelineno-0-96" name="__codelineno-0-96"></a>
-<a id="__codelineno-0-97" name="__codelineno-0-97"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-98" name="__codelineno-0-98"></a><span class="sd">        &gt;&gt;&gt; mouse_scroll(100, 100, 0, 3)  # Scroll up 3 units at position (100, 100)</span>
-<a id="__codelineno-0-99" name="__codelineno-0-99"></a><span class="sd">        &gt;&gt;&gt; mouse_scroll(100, 100, 0, -3)  # Scroll down 3 units</span>
-<a id="__codelineno-0-100" name="__codelineno-0-100"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-101" name="__codelineno-0-101"></a>    <span class="k">return</span> <span class="n">mouse_controller</span><span class="o">.</span><span class="n">scroll</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">dx</span><span class="p">,</span> <span class="n">dy</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-101">101</a></span>
+<span class="normal"><a href="#__codelineno-0-102">102</a></span>
+<span class="normal"><a href="#__codelineno-0-103">103</a></span>
+<span class="normal"><a href="#__codelineno-0-104">104</a></span>
+<span class="normal"><a href="#__codelineno-0-105">105</a></span>
+<span class="normal"><a href="#__codelineno-0-106">106</a></span>
+<span class="normal"><a href="#__codelineno-0-107">107</a></span>
+<span class="normal"><a href="#__codelineno-0-108">108</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-94" name="__codelineno-0-94"></a><span class="k">def</span><span class="w"> </span><span class="nf">mouse_scroll</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">dx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">dy</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-95" name="__codelineno-0-95"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-96" name="__codelineno-0-96"></a><span class="sd">    Simulate mouse wheel scrolling.</span>
+<a id="__codelineno-0-97" name="__codelineno-0-97"></a>
+<a id="__codelineno-0-98" name="__codelineno-0-98"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-99" name="__codelineno-0-99"></a><span class="sd">        x: X coordinate where scrolling occurs.</span>
+<a id="__codelineno-0-100" name="__codelineno-0-100"></a><span class="sd">        y: Y coordinate where scrolling occurs.</span>
+<a id="__codelineno-0-101" name="__codelineno-0-101"></a><span class="sd">        dx: Horizontal scroll amount.</span>
+<a id="__codelineno-0-102" name="__codelineno-0-102"></a><span class="sd">        dy: Vertical scroll amount.</span>
+<a id="__codelineno-0-103" name="__codelineno-0-103"></a>
+<a id="__codelineno-0-104" name="__codelineno-0-104"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-105" name="__codelineno-0-105"></a><span class="sd">        &gt;&gt;&gt; mouse_scroll(100, 100, 0, 3)  # Scroll up 3 units at position (100, 100)</span>
+<a id="__codelineno-0-106" name="__codelineno-0-106"></a><span class="sd">        &gt;&gt;&gt; mouse_scroll(100, 100, 0, -3)  # Scroll down 3 units</span>
+<a id="__codelineno-0-107" name="__codelineno-0-107"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-108" name="__codelineno-0-108"></a>    <span class="k">return</span> <span class="n">mouse_controller</span><span class="o">.</span><span class="n">scroll</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">dx</span><span class="p">,</span> <span class="n">dy</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3311,14 +3529,7 @@ result = callable_func(your_arguments)</code></pre>
 
             <details class="quote">
               <summary>Source code in <code>projects/owa-env-desktop/owa/env/desktop/keyboard_mouse/callables.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-178">178</a></span>
-<span class="normal"><a href="#__codelineno-0-179">179</a></span>
-<span class="normal"><a href="#__codelineno-0-180">180</a></span>
-<span class="normal"><a href="#__codelineno-0-181">181</a></span>
-<span class="normal"><a href="#__codelineno-0-182">182</a></span>
-<span class="normal"><a href="#__codelineno-0-183">183</a></span>
-<span class="normal"><a href="#__codelineno-0-184">184</a></span>
-<span class="normal"><a href="#__codelineno-0-185">185</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-185">185</a></span>
 <span class="normal"><a href="#__codelineno-0-186">186</a></span>
 <span class="normal"><a href="#__codelineno-0-187">187</a></span>
 <span class="normal"><a href="#__codelineno-0-188">188</a></span>
@@ -3330,26 +3541,33 @@ result = callable_func(your_arguments)</code></pre>
 <span class="normal"><a href="#__codelineno-0-194">194</a></span>
 <span class="normal"><a href="#__codelineno-0-195">195</a></span>
 <span class="normal"><a href="#__codelineno-0-196">196</a></span>
-<span class="normal"><a href="#__codelineno-0-197">197</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-178" name="__codelineno-0-178"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_mouse_state</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">MouseState</span><span class="p">:</span>
-<a id="__codelineno-0-179" name="__codelineno-0-179"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-180" name="__codelineno-0-180"></a><span class="sd">    Get the current mouse state including position and pressed buttons.</span>
-<a id="__codelineno-0-181" name="__codelineno-0-181"></a>
-<a id="__codelineno-0-182" name="__codelineno-0-182"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-183" name="__codelineno-0-183"></a><span class="sd">        MouseState object containing current mouse position and pressed buttons.</span>
-<a id="__codelineno-0-184" name="__codelineno-0-184"></a>
-<a id="__codelineno-0-185" name="__codelineno-0-185"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-186" name="__codelineno-0-186"></a><span class="sd">        &gt;&gt;&gt; state = get_mouse_state()</span>
-<a id="__codelineno-0-187" name="__codelineno-0-187"></a><span class="sd">        &gt;&gt;&gt; print(f&quot;Mouse at ({state.x}, {state.y}), buttons: {state.buttons}&quot;)</span>
-<a id="__codelineno-0-188" name="__codelineno-0-188"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-189" name="__codelineno-0-189"></a>    <span class="n">position</span> <span class="o">=</span> <span class="n">mouse_controller</span><span class="o">.</span><span class="n">position</span>
-<a id="__codelineno-0-190" name="__codelineno-0-190"></a>    <span class="k">if</span> <span class="n">position</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-191" name="__codelineno-0-191"></a>        <span class="n">position</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># Fallback if position cannot be retrieved</span>
-<a id="__codelineno-0-192" name="__codelineno-0-192"></a>    <span class="n">mouse_buttons</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
-<a id="__codelineno-0-193" name="__codelineno-0-193"></a>    <span class="n">buttons</span> <span class="o">=</span> <span class="n">get_vk_state</span><span class="p">()</span>
-<a id="__codelineno-0-194" name="__codelineno-0-194"></a>    <span class="k">for</span> <span class="n">button</span><span class="p">,</span> <span class="n">vk</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;left&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;right&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;middle&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">}</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-<a id="__codelineno-0-195" name="__codelineno-0-195"></a>        <span class="k">if</span> <span class="n">vk</span> <span class="ow">in</span> <span class="n">buttons</span><span class="p">:</span>
-<a id="__codelineno-0-196" name="__codelineno-0-196"></a>            <span class="n">mouse_buttons</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">button</span><span class="p">)</span>
-<a id="__codelineno-0-197" name="__codelineno-0-197"></a>    <span class="k">return</span> <span class="n">MouseState</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">position</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">y</span><span class="o">=</span><span class="n">position</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">buttons</span><span class="o">=</span><span class="n">mouse_buttons</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-197">197</a></span>
+<span class="normal"><a href="#__codelineno-0-198">198</a></span>
+<span class="normal"><a href="#__codelineno-0-199">199</a></span>
+<span class="normal"><a href="#__codelineno-0-200">200</a></span>
+<span class="normal"><a href="#__codelineno-0-201">201</a></span>
+<span class="normal"><a href="#__codelineno-0-202">202</a></span>
+<span class="normal"><a href="#__codelineno-0-203">203</a></span>
+<span class="normal"><a href="#__codelineno-0-204">204</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-185" name="__codelineno-0-185"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_mouse_state</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">MouseState</span><span class="p">:</span>
+<a id="__codelineno-0-186" name="__codelineno-0-186"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-187" name="__codelineno-0-187"></a><span class="sd">    Get the current mouse state including position and pressed buttons.</span>
+<a id="__codelineno-0-188" name="__codelineno-0-188"></a>
+<a id="__codelineno-0-189" name="__codelineno-0-189"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-190" name="__codelineno-0-190"></a><span class="sd">        MouseState object containing current mouse position and pressed buttons.</span>
+<a id="__codelineno-0-191" name="__codelineno-0-191"></a>
+<a id="__codelineno-0-192" name="__codelineno-0-192"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-193" name="__codelineno-0-193"></a><span class="sd">        &gt;&gt;&gt; state = get_mouse_state()</span>
+<a id="__codelineno-0-194" name="__codelineno-0-194"></a><span class="sd">        &gt;&gt;&gt; print(f&quot;Mouse at ({state.x}, {state.y}), buttons: {state.buttons}&quot;)</span>
+<a id="__codelineno-0-195" name="__codelineno-0-195"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-196" name="__codelineno-0-196"></a>    <span class="n">position</span> <span class="o">=</span> <span class="n">mouse_controller</span><span class="o">.</span><span class="n">position</span>
+<a id="__codelineno-0-197" name="__codelineno-0-197"></a>    <span class="k">if</span> <span class="n">position</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-198" name="__codelineno-0-198"></a>        <span class="n">position</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># Fallback if position cannot be retrieved</span>
+<a id="__codelineno-0-199" name="__codelineno-0-199"></a>    <span class="n">mouse_buttons</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+<a id="__codelineno-0-200" name="__codelineno-0-200"></a>    <span class="n">buttons</span> <span class="o">=</span> <span class="n">get_vk_state</span><span class="p">()</span>
+<a id="__codelineno-0-201" name="__codelineno-0-201"></a>    <span class="k">for</span> <span class="n">button</span><span class="p">,</span> <span class="n">vk</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;left&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;right&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;middle&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">}</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+<a id="__codelineno-0-202" name="__codelineno-0-202"></a>        <span class="k">if</span> <span class="n">vk</span> <span class="ow">in</span> <span class="n">buttons</span><span class="p">:</span>
+<a id="__codelineno-0-203" name="__codelineno-0-203"></a>            <span class="n">mouse_buttons</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">button</span><span class="p">)</span>
+<a id="__codelineno-0-204" name="__codelineno-0-204"></a>    <span class="k">return</span> <span class="n">MouseState</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">position</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">y</span><span class="o">=</span><span class="n">position</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">buttons</span><span class="o">=</span><span class="n">mouse_buttons</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3379,14 +3597,7 @@ result = callable_func(your_arguments)</code></pre>
 
             <details class="quote">
               <summary>Source code in <code>projects/owa-env-desktop/owa/env/desktop/keyboard_mouse/callables.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-226">226</a></span>
-<span class="normal"><a href="#__codelineno-0-227">227</a></span>
-<span class="normal"><a href="#__codelineno-0-228">228</a></span>
-<span class="normal"><a href="#__codelineno-0-229">229</a></span>
-<span class="normal"><a href="#__codelineno-0-230">230</a></span>
-<span class="normal"><a href="#__codelineno-0-231">231</a></span>
-<span class="normal"><a href="#__codelineno-0-232">232</a></span>
-<span class="normal"><a href="#__codelineno-0-233">233</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-233">233</a></span>
 <span class="normal"><a href="#__codelineno-0-234">234</a></span>
 <span class="normal"><a href="#__codelineno-0-235">235</a></span>
 <span class="normal"><a href="#__codelineno-0-236">236</a></span>
@@ -3399,29 +3610,20 @@ result = callable_func(your_arguments)</code></pre>
 <span class="normal"><a href="#__codelineno-0-243">243</a></span>
 <span class="normal"><a href="#__codelineno-0-244">244</a></span>
 <span class="normal"><a href="#__codelineno-0-245">245</a></span>
-<span class="normal"><a href="#__codelineno-0-246">246</a></span>
-<span class="normal"><a href="#__codelineno-0-247">247</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-226" name="__codelineno-0-226"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_pointer_ballistics_config</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">PointerBallisticsConfig</span><span class="p">:</span>
-<a id="__codelineno-0-227" name="__codelineno-0-227"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get Windows pointer ballistics configuration for WM_MOUSEMOVE reconstruction.</span>
-<a id="__codelineno-0-228" name="__codelineno-0-228"></a>
-<a id="__codelineno-0-229" name="__codelineno-0-229"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-230" name="__codelineno-0-230"></a><span class="sd">        # Check whether Enhance pointer precision is enabled</span>
-<a id="__codelineno-0-231" name="__codelineno-0-231"></a><span class="sd">        &gt;&gt;&gt; is_mouse_acceleration_enabled = get_pointer_ballistics_config().mouse_speed</span>
-<a id="__codelineno-0-232" name="__codelineno-0-232"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-233" name="__codelineno-0-233"></a>    <span class="n">defaults</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-0-234" name="__codelineno-0-234"></a>        <span class="s2">&quot;MouseThreshold1&quot;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>
-<a id="__codelineno-0-235" name="__codelineno-0-235"></a>        <span class="s2">&quot;MouseThreshold2&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
-<a id="__codelineno-0-236" name="__codelineno-0-236"></a>        <span class="s2">&quot;MouseSpeed&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-<a id="__codelineno-0-237" name="__codelineno-0-237"></a>        <span class="s2">&quot;MouseSensitivity&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
-<a id="__codelineno-0-238" name="__codelineno-0-238"></a>    <span class="p">}</span>
-<a id="__codelineno-0-239" name="__codelineno-0-239"></a>
+<span class="normal"><a href="#__codelineno-0-246">246</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-233" name="__codelineno-0-233"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_pointer_ballistics_config</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">PointerBallisticsConfig</span><span class="p">:</span>
+<a id="__codelineno-0-234" name="__codelineno-0-234"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get Windows pointer ballistics configuration for WM_MOUSEMOVE reconstruction.</span>
+<a id="__codelineno-0-235" name="__codelineno-0-235"></a>
+<a id="__codelineno-0-236" name="__codelineno-0-236"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-237" name="__codelineno-0-237"></a><span class="sd">        # Check whether Enhance pointer precision is enabled</span>
+<a id="__codelineno-0-238" name="__codelineno-0-238"></a><span class="sd">        &gt;&gt;&gt; is_mouse_acceleration_enabled = get_pointer_ballistics_config().mouse_speed</span>
+<a id="__codelineno-0-239" name="__codelineno-0-239"></a><span class="sd">    &quot;&quot;&quot;</span>
 <a id="__codelineno-0-240" name="__codelineno-0-240"></a>    <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">!=</span> <span class="s2">&quot;win32&quot;</span><span class="p">:</span>
-<a id="__codelineno-0-241" name="__codelineno-0-241"></a>        <span class="k">return</span> <span class="n">PointerBallisticsConfig</span><span class="p">(</span><span class="o">**</span><span class="n">defaults</span><span class="p">)</span>
+<a id="__codelineno-0-241" name="__codelineno-0-241"></a>        <span class="k">return</span> <span class="n">PointerBallisticsConfig</span><span class="p">()</span>  <span class="c1"># Return default values</span>
 <a id="__codelineno-0-242" name="__codelineno-0-242"></a>
 <a id="__codelineno-0-243" name="__codelineno-0-243"></a>    <span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-0-244" name="__codelineno-0-244"></a>        <span class="n">config</span> <span class="o">=</span> <span class="n">_get_mouse_registry_values</span><span class="p">()</span>
-<a id="__codelineno-0-245" name="__codelineno-0-245"></a>        <span class="k">return</span> <span class="n">PointerBallisticsConfig</span><span class="p">(</span><span class="o">**</span><span class="n">config</span><span class="p">)</span>
-<a id="__codelineno-0-246" name="__codelineno-0-246"></a>    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-<a id="__codelineno-0-247" name="__codelineno-0-247"></a>        <span class="k">return</span> <span class="n">PointerBallisticsConfig</span><span class="p">(</span><span class="o">**</span><span class="n">defaults</span><span class="p">)</span>
+<a id="__codelineno-0-244" name="__codelineno-0-244"></a>        <span class="k">return</span> <span class="n">PointerBallisticsConfig</span><span class="p">(</span><span class="o">**</span><span class="n">_get_mouse_registry_values</span><span class="p">())</span>
+<a id="__codelineno-0-245" name="__codelineno-0-245"></a>    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+<a id="__codelineno-0-246" name="__codelineno-0-246"></a>        <span class="k">return</span> <span class="n">PointerBallisticsConfig</span><span class="p">()</span>  <span class="c1"># Return default values</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3482,31 +3684,31 @@ result = callable_func(your_arguments)</code></pre>
 
             <details class="quote">
               <summary>Source code in <code>projects/owa-env-desktop/owa/env/desktop/keyboard_mouse/callables.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-107">107</a></span>
-<span class="normal"><a href="#__codelineno-0-108">108</a></span>
-<span class="normal"><a href="#__codelineno-0-109">109</a></span>
-<span class="normal"><a href="#__codelineno-0-110">110</a></span>
-<span class="normal"><a href="#__codelineno-0-111">111</a></span>
-<span class="normal"><a href="#__codelineno-0-112">112</a></span>
-<span class="normal"><a href="#__codelineno-0-113">113</a></span>
-<span class="normal"><a href="#__codelineno-0-114">114</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-114">114</a></span>
 <span class="normal"><a href="#__codelineno-0-115">115</a></span>
 <span class="normal"><a href="#__codelineno-0-116">116</a></span>
 <span class="normal"><a href="#__codelineno-0-117">117</a></span>
 <span class="normal"><a href="#__codelineno-0-118">118</a></span>
-<span class="normal"><a href="#__codelineno-0-119">119</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-107" name="__codelineno-0-107"></a><span class="k">def</span><span class="w"> </span><span class="nf">press</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-108" name="__codelineno-0-108"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-109" name="__codelineno-0-109"></a><span class="sd">    Press and hold a keyboard key.</span>
-<a id="__codelineno-0-110" name="__codelineno-0-110"></a>
-<a id="__codelineno-0-111" name="__codelineno-0-111"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-112" name="__codelineno-0-112"></a><span class="sd">        key: Key to press. Can be a string (e.g., &#39;a&#39;, &#39;enter&#39;) or virtual key code.</span>
-<a id="__codelineno-0-113" name="__codelineno-0-113"></a>
-<a id="__codelineno-0-114" name="__codelineno-0-114"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-115" name="__codelineno-0-115"></a><span class="sd">        &gt;&gt;&gt; press(&#39;a&#39;)  # Press and hold the &#39;a&#39; key</span>
-<a id="__codelineno-0-116" name="__codelineno-0-116"></a><span class="sd">        &gt;&gt;&gt; press(65)  # Press and hold the &#39;a&#39; key using virtual key code</span>
-<a id="__codelineno-0-117" name="__codelineno-0-117"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-118" name="__codelineno-0-118"></a>    <span class="n">key</span> <span class="o">=</span> <span class="n">vk_to_keycode</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">else</span> <span class="n">key</span>
-<a id="__codelineno-0-119" name="__codelineno-0-119"></a>    <span class="k">return</span> <span class="n">keyboard_controller</span><span class="o">.</span><span class="n">press</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-119">119</a></span>
+<span class="normal"><a href="#__codelineno-0-120">120</a></span>
+<span class="normal"><a href="#__codelineno-0-121">121</a></span>
+<span class="normal"><a href="#__codelineno-0-122">122</a></span>
+<span class="normal"><a href="#__codelineno-0-123">123</a></span>
+<span class="normal"><a href="#__codelineno-0-124">124</a></span>
+<span class="normal"><a href="#__codelineno-0-125">125</a></span>
+<span class="normal"><a href="#__codelineno-0-126">126</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-114" name="__codelineno-0-114"></a><span class="k">def</span><span class="w"> </span><span class="nf">press</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-115" name="__codelineno-0-115"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-116" name="__codelineno-0-116"></a><span class="sd">    Press and hold a keyboard key.</span>
+<a id="__codelineno-0-117" name="__codelineno-0-117"></a>
+<a id="__codelineno-0-118" name="__codelineno-0-118"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-119" name="__codelineno-0-119"></a><span class="sd">        key: Key to press. Can be a string (e.g., &#39;a&#39;, &#39;enter&#39;) or virtual key code.</span>
+<a id="__codelineno-0-120" name="__codelineno-0-120"></a>
+<a id="__codelineno-0-121" name="__codelineno-0-121"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-122" name="__codelineno-0-122"></a><span class="sd">        &gt;&gt;&gt; press(&#39;a&#39;)  # Press and hold the &#39;a&#39; key</span>
+<a id="__codelineno-0-123" name="__codelineno-0-123"></a><span class="sd">        &gt;&gt;&gt; press(65)  # Press and hold the &#39;a&#39; key using virtual key code</span>
+<a id="__codelineno-0-124" name="__codelineno-0-124"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-125" name="__codelineno-0-125"></a>    <span class="n">key</span> <span class="o">=</span> <span class="n">vk_to_keycode</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">else</span> <span class="n">key</span>
+<a id="__codelineno-0-126" name="__codelineno-0-126"></a>    <span class="k">return</span> <span class="n">keyboard_controller</span><span class="o">.</span><span class="n">press</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3567,31 +3769,31 @@ result = callable_func(your_arguments)</code></pre>
 
             <details class="quote">
               <summary>Source code in <code>projects/owa-env-desktop/owa/env/desktop/keyboard_mouse/callables.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-122">122</a></span>
-<span class="normal"><a href="#__codelineno-0-123">123</a></span>
-<span class="normal"><a href="#__codelineno-0-124">124</a></span>
-<span class="normal"><a href="#__codelineno-0-125">125</a></span>
-<span class="normal"><a href="#__codelineno-0-126">126</a></span>
-<span class="normal"><a href="#__codelineno-0-127">127</a></span>
-<span class="normal"><a href="#__codelineno-0-128">128</a></span>
-<span class="normal"><a href="#__codelineno-0-129">129</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-129">129</a></span>
 <span class="normal"><a href="#__codelineno-0-130">130</a></span>
 <span class="normal"><a href="#__codelineno-0-131">131</a></span>
 <span class="normal"><a href="#__codelineno-0-132">132</a></span>
 <span class="normal"><a href="#__codelineno-0-133">133</a></span>
-<span class="normal"><a href="#__codelineno-0-134">134</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-122" name="__codelineno-0-122"></a><span class="k">def</span><span class="w"> </span><span class="nf">release</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-123" name="__codelineno-0-123"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-124" name="__codelineno-0-124"></a><span class="sd">    Release a previously pressed keyboard key.</span>
-<a id="__codelineno-0-125" name="__codelineno-0-125"></a>
-<a id="__codelineno-0-126" name="__codelineno-0-126"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-127" name="__codelineno-0-127"></a><span class="sd">        key: Key to release. Can be a string (e.g., &#39;a&#39;, &#39;enter&#39;) or virtual key code.</span>
-<a id="__codelineno-0-128" name="__codelineno-0-128"></a>
-<a id="__codelineno-0-129" name="__codelineno-0-129"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-130" name="__codelineno-0-130"></a><span class="sd">        &gt;&gt;&gt; release(&#39;a&#39;)  # Release the &#39;a&#39; key</span>
-<a id="__codelineno-0-131" name="__codelineno-0-131"></a><span class="sd">        &gt;&gt;&gt; release(65)  # Release the &#39;a&#39; key using virtual key code</span>
-<a id="__codelineno-0-132" name="__codelineno-0-132"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-133" name="__codelineno-0-133"></a>    <span class="n">key</span> <span class="o">=</span> <span class="n">vk_to_keycode</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">else</span> <span class="n">key</span>
-<a id="__codelineno-0-134" name="__codelineno-0-134"></a>    <span class="k">return</span> <span class="n">keyboard_controller</span><span class="o">.</span><span class="n">release</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-134">134</a></span>
+<span class="normal"><a href="#__codelineno-0-135">135</a></span>
+<span class="normal"><a href="#__codelineno-0-136">136</a></span>
+<span class="normal"><a href="#__codelineno-0-137">137</a></span>
+<span class="normal"><a href="#__codelineno-0-138">138</a></span>
+<span class="normal"><a href="#__codelineno-0-139">139</a></span>
+<span class="normal"><a href="#__codelineno-0-140">140</a></span>
+<span class="normal"><a href="#__codelineno-0-141">141</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-129" name="__codelineno-0-129"></a><span class="k">def</span><span class="w"> </span><span class="nf">release</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-130" name="__codelineno-0-130"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-131" name="__codelineno-0-131"></a><span class="sd">    Release a previously pressed keyboard key.</span>
+<a id="__codelineno-0-132" name="__codelineno-0-132"></a>
+<a id="__codelineno-0-133" name="__codelineno-0-133"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-134" name="__codelineno-0-134"></a><span class="sd">        key: Key to release. Can be a string (e.g., &#39;a&#39;, &#39;enter&#39;) or virtual key code.</span>
+<a id="__codelineno-0-135" name="__codelineno-0-135"></a>
+<a id="__codelineno-0-136" name="__codelineno-0-136"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-137" name="__codelineno-0-137"></a><span class="sd">        &gt;&gt;&gt; release(&#39;a&#39;)  # Release the &#39;a&#39; key</span>
+<a id="__codelineno-0-138" name="__codelineno-0-138"></a><span class="sd">        &gt;&gt;&gt; release(65)  # Release the &#39;a&#39; key using virtual key code</span>
+<a id="__codelineno-0-139" name="__codelineno-0-139"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-140" name="__codelineno-0-140"></a>    <span class="n">key</span> <span class="o">=</span> <span class="n">vk_to_keycode</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">else</span> <span class="n">key</span>
+<a id="__codelineno-0-141" name="__codelineno-0-141"></a>    <span class="k">return</span> <span class="n">keyboard_controller</span><span class="o">.</span><span class="n">release</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3652,29 +3854,29 @@ result = callable_func(your_arguments)</code></pre>
 
             <details class="quote">
               <summary>Source code in <code>projects/owa-env-desktop/owa/env/desktop/keyboard_mouse/callables.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-137">137</a></span>
-<span class="normal"><a href="#__codelineno-0-138">138</a></span>
-<span class="normal"><a href="#__codelineno-0-139">139</a></span>
-<span class="normal"><a href="#__codelineno-0-140">140</a></span>
-<span class="normal"><a href="#__codelineno-0-141">141</a></span>
-<span class="normal"><a href="#__codelineno-0-142">142</a></span>
-<span class="normal"><a href="#__codelineno-0-143">143</a></span>
-<span class="normal"><a href="#__codelineno-0-144">144</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-144">144</a></span>
 <span class="normal"><a href="#__codelineno-0-145">145</a></span>
 <span class="normal"><a href="#__codelineno-0-146">146</a></span>
 <span class="normal"><a href="#__codelineno-0-147">147</a></span>
-<span class="normal"><a href="#__codelineno-0-148">148</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-137" name="__codelineno-0-137"></a><span class="k">def</span><span class="w"> </span><span class="nf">keyboard_type</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-138" name="__codelineno-0-138"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-139" name="__codelineno-0-139"></a><span class="sd">    Type a string of characters.</span>
-<a id="__codelineno-0-140" name="__codelineno-0-140"></a>
-<a id="__codelineno-0-141" name="__codelineno-0-141"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-142" name="__codelineno-0-142"></a><span class="sd">        text: Text string to type.</span>
-<a id="__codelineno-0-143" name="__codelineno-0-143"></a>
-<a id="__codelineno-0-144" name="__codelineno-0-144"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-145" name="__codelineno-0-145"></a><span class="sd">        &gt;&gt;&gt; keyboard_type(&quot;Hello, World!&quot;)  # Types the text</span>
-<a id="__codelineno-0-146" name="__codelineno-0-146"></a><span class="sd">        &gt;&gt;&gt; keyboard_type(&quot;user@example.com&quot;)  # Types an email address</span>
-<a id="__codelineno-0-147" name="__codelineno-0-147"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-148" name="__codelineno-0-148"></a>    <span class="k">return</span> <span class="n">keyboard_controller</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-148">148</a></span>
+<span class="normal"><a href="#__codelineno-0-149">149</a></span>
+<span class="normal"><a href="#__codelineno-0-150">150</a></span>
+<span class="normal"><a href="#__codelineno-0-151">151</a></span>
+<span class="normal"><a href="#__codelineno-0-152">152</a></span>
+<span class="normal"><a href="#__codelineno-0-153">153</a></span>
+<span class="normal"><a href="#__codelineno-0-154">154</a></span>
+<span class="normal"><a href="#__codelineno-0-155">155</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-144" name="__codelineno-0-144"></a><span class="k">def</span><span class="w"> </span><span class="nf">keyboard_type</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-145" name="__codelineno-0-145"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-146" name="__codelineno-0-146"></a><span class="sd">    Type a string of characters.</span>
+<a id="__codelineno-0-147" name="__codelineno-0-147"></a>
+<a id="__codelineno-0-148" name="__codelineno-0-148"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-149" name="__codelineno-0-149"></a><span class="sd">        text: Text string to type.</span>
+<a id="__codelineno-0-150" name="__codelineno-0-150"></a>
+<a id="__codelineno-0-151" name="__codelineno-0-151"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-152" name="__codelineno-0-152"></a><span class="sd">        &gt;&gt;&gt; keyboard_type(&quot;Hello, World!&quot;)  # Types the text</span>
+<a id="__codelineno-0-153" name="__codelineno-0-153"></a><span class="sd">        &gt;&gt;&gt; keyboard_type(&quot;user@example.com&quot;)  # Types an email address</span>
+<a id="__codelineno-0-154" name="__codelineno-0-154"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-155" name="__codelineno-0-155"></a>    <span class="k">return</span> <span class="n">keyboard_controller</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3727,29 +3929,29 @@ result = callable_func(your_arguments)</code></pre>
 
             <details class="quote">
               <summary>Source code in <code>projects/owa-env-desktop/owa/env/desktop/keyboard_mouse/callables.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-200">200</a></span>
-<span class="normal"><a href="#__codelineno-0-201">201</a></span>
-<span class="normal"><a href="#__codelineno-0-202">202</a></span>
-<span class="normal"><a href="#__codelineno-0-203">203</a></span>
-<span class="normal"><a href="#__codelineno-0-204">204</a></span>
-<span class="normal"><a href="#__codelineno-0-205">205</a></span>
-<span class="normal"><a href="#__codelineno-0-206">206</a></span>
-<span class="normal"><a href="#__codelineno-0-207">207</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-207">207</a></span>
 <span class="normal"><a href="#__codelineno-0-208">208</a></span>
 <span class="normal"><a href="#__codelineno-0-209">209</a></span>
 <span class="normal"><a href="#__codelineno-0-210">210</a></span>
-<span class="normal"><a href="#__codelineno-0-211">211</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-200" name="__codelineno-0-200"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_keyboard_state</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">KeyboardState</span><span class="p">:</span>
-<a id="__codelineno-0-201" name="__codelineno-0-201"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-202" name="__codelineno-0-202"></a><span class="sd">    Get the current keyboard state including pressed keys.</span>
-<a id="__codelineno-0-203" name="__codelineno-0-203"></a>
-<a id="__codelineno-0-204" name="__codelineno-0-204"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-205" name="__codelineno-0-205"></a><span class="sd">        KeyboardState object containing currently pressed keys.</span>
-<a id="__codelineno-0-206" name="__codelineno-0-206"></a>
-<a id="__codelineno-0-207" name="__codelineno-0-207"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-208" name="__codelineno-0-208"></a><span class="sd">        &gt;&gt;&gt; state = get_keyboard_state()</span>
-<a id="__codelineno-0-209" name="__codelineno-0-209"></a><span class="sd">        &gt;&gt;&gt; print(f&quot;Pressed keys: {state.buttons}&quot;)</span>
-<a id="__codelineno-0-210" name="__codelineno-0-210"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-211" name="__codelineno-0-211"></a>    <span class="k">return</span> <span class="n">KeyboardState</span><span class="p">(</span><span class="n">buttons</span><span class="o">=</span><span class="n">get_vk_state</span><span class="p">())</span>
+<span class="normal"><a href="#__codelineno-0-211">211</a></span>
+<span class="normal"><a href="#__codelineno-0-212">212</a></span>
+<span class="normal"><a href="#__codelineno-0-213">213</a></span>
+<span class="normal"><a href="#__codelineno-0-214">214</a></span>
+<span class="normal"><a href="#__codelineno-0-215">215</a></span>
+<span class="normal"><a href="#__codelineno-0-216">216</a></span>
+<span class="normal"><a href="#__codelineno-0-217">217</a></span>
+<span class="normal"><a href="#__codelineno-0-218">218</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-207" name="__codelineno-0-207"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_keyboard_state</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">KeyboardState</span><span class="p">:</span>
+<a id="__codelineno-0-208" name="__codelineno-0-208"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-209" name="__codelineno-0-209"></a><span class="sd">    Get the current keyboard state including pressed keys.</span>
+<a id="__codelineno-0-210" name="__codelineno-0-210"></a>
+<a id="__codelineno-0-211" name="__codelineno-0-211"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-212" name="__codelineno-0-212"></a><span class="sd">        KeyboardState object containing currently pressed keys.</span>
+<a id="__codelineno-0-213" name="__codelineno-0-213"></a>
+<a id="__codelineno-0-214" name="__codelineno-0-214"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-215" name="__codelineno-0-215"></a><span class="sd">        &gt;&gt;&gt; state = get_keyboard_state()</span>
+<a id="__codelineno-0-216" name="__codelineno-0-216"></a><span class="sd">        &gt;&gt;&gt; print(f&quot;Pressed keys: {state.buttons}&quot;)</span>
+<a id="__codelineno-0-217" name="__codelineno-0-217"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-218" name="__codelineno-0-218"></a>    <span class="k">return</span> <span class="n">KeyboardState</span><span class="p">(</span><span class="n">buttons</span><span class="o">=</span><span class="n">get_vk_state</span><span class="p">())</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3863,14 +4065,7 @@ result = callable_func(your_arguments)</code></pre>
 
             <details class="quote">
               <summary>Source code in <code>projects/owa-env-desktop/owa/env/desktop/keyboard_mouse/callables.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-151">151</a></span>
-<span class="normal"><a href="#__codelineno-0-152">152</a></span>
-<span class="normal"><a href="#__codelineno-0-153">153</a></span>
-<span class="normal"><a href="#__codelineno-0-154">154</a></span>
-<span class="normal"><a href="#__codelineno-0-155">155</a></span>
-<span class="normal"><a href="#__codelineno-0-156">156</a></span>
-<span class="normal"><a href="#__codelineno-0-157">157</a></span>
-<span class="normal"><a href="#__codelineno-0-158">158</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-158">158</a></span>
 <span class="normal"><a href="#__codelineno-0-159">159</a></span>
 <span class="normal"><a href="#__codelineno-0-160">160</a></span>
 <span class="normal"><a href="#__codelineno-0-161">161</a></span>
@@ -3887,31 +4082,38 @@ result = callable_func(your_arguments)</code></pre>
 <span class="normal"><a href="#__codelineno-0-172">172</a></span>
 <span class="normal"><a href="#__codelineno-0-173">173</a></span>
 <span class="normal"><a href="#__codelineno-0-174">174</a></span>
-<span class="normal"><a href="#__codelineno-0-175">175</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-151" name="__codelineno-0-151"></a><span class="k">def</span><span class="w"> </span><span class="nf">press_repeat_key</span><span class="p">(</span>
-<a id="__codelineno-0-152" name="__codelineno-0-152"></a>    <span class="n">key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">int</span><span class="p">,</span> <span class="n">press_time</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">initial_delay</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">repeat_delay</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.033</span>
-<a id="__codelineno-0-153" name="__codelineno-0-153"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-154" name="__codelineno-0-154"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-155" name="__codelineno-0-155"></a><span class="sd">    Simulate the behavior of holding a key down with auto-repeat.</span>
-<a id="__codelineno-0-156" name="__codelineno-0-156"></a>
-<a id="__codelineno-0-157" name="__codelineno-0-157"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-158" name="__codelineno-0-158"></a><span class="sd">        key: Key to press repeatedly. Can be a string or virtual key code.</span>
-<a id="__codelineno-0-159" name="__codelineno-0-159"></a><span class="sd">        press_time: Total time to hold the key down in seconds.</span>
-<a id="__codelineno-0-160" name="__codelineno-0-160"></a><span class="sd">        initial_delay: Initial delay before auto-repeat starts (default: 0.5s).</span>
-<a id="__codelineno-0-161" name="__codelineno-0-161"></a><span class="sd">        repeat_delay: Delay between repeated key presses (default: 0.033s).</span>
-<a id="__codelineno-0-162" name="__codelineno-0-162"></a>
-<a id="__codelineno-0-163" name="__codelineno-0-163"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-164" name="__codelineno-0-164"></a><span class="sd">        &gt;&gt;&gt; press_repeat_key(&#39;a&#39;, 2.0)  # Hold &#39;a&#39; key for 2 seconds with auto-repeat</span>
-<a id="__codelineno-0-165" name="__codelineno-0-165"></a><span class="sd">        &gt;&gt;&gt; press_repeat_key(&#39;space&#39;, 1.5, 0.3, 0.05)  # Custom timing for space key</span>
-<a id="__codelineno-0-166" name="__codelineno-0-166"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-167" name="__codelineno-0-167"></a>    <span class="n">key</span> <span class="o">=</span> <span class="n">vk_to_keycode</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">else</span> <span class="n">key</span>
-<a id="__codelineno-0-168" name="__codelineno-0-168"></a>    <span class="n">repeat_time</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="p">(</span><span class="n">press_time</span> <span class="o">-</span> <span class="n">initial_delay</span><span class="p">)</span> <span class="o">//</span> <span class="n">repeat_delay</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-175">175</a></span>
+<span class="normal"><a href="#__codelineno-0-176">176</a></span>
+<span class="normal"><a href="#__codelineno-0-177">177</a></span>
+<span class="normal"><a href="#__codelineno-0-178">178</a></span>
+<span class="normal"><a href="#__codelineno-0-179">179</a></span>
+<span class="normal"><a href="#__codelineno-0-180">180</a></span>
+<span class="normal"><a href="#__codelineno-0-181">181</a></span>
+<span class="normal"><a href="#__codelineno-0-182">182</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-158" name="__codelineno-0-158"></a><span class="k">def</span><span class="w"> </span><span class="nf">press_repeat_key</span><span class="p">(</span>
+<a id="__codelineno-0-159" name="__codelineno-0-159"></a>    <span class="n">key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">int</span><span class="p">,</span> <span class="n">press_time</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">initial_delay</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">repeat_delay</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.033</span>
+<a id="__codelineno-0-160" name="__codelineno-0-160"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-161" name="__codelineno-0-161"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-162" name="__codelineno-0-162"></a><span class="sd">    Simulate the behavior of holding a key down with auto-repeat.</span>
+<a id="__codelineno-0-163" name="__codelineno-0-163"></a>
+<a id="__codelineno-0-164" name="__codelineno-0-164"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-165" name="__codelineno-0-165"></a><span class="sd">        key: Key to press repeatedly. Can be a string or virtual key code.</span>
+<a id="__codelineno-0-166" name="__codelineno-0-166"></a><span class="sd">        press_time: Total time to hold the key down in seconds.</span>
+<a id="__codelineno-0-167" name="__codelineno-0-167"></a><span class="sd">        initial_delay: Initial delay before auto-repeat starts (default: 0.5s).</span>
+<a id="__codelineno-0-168" name="__codelineno-0-168"></a><span class="sd">        repeat_delay: Delay between repeated key presses (default: 0.033s).</span>
 <a id="__codelineno-0-169" name="__codelineno-0-169"></a>
-<a id="__codelineno-0-170" name="__codelineno-0-170"></a>    <span class="n">keyboard_controller</span><span class="o">.</span><span class="n">press</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-<a id="__codelineno-0-171" name="__codelineno-0-171"></a>    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">initial_delay</span><span class="p">)</span>
-<a id="__codelineno-0-172" name="__codelineno-0-172"></a>    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">repeat_time</span><span class="p">)):</span>
-<a id="__codelineno-0-173" name="__codelineno-0-173"></a>        <span class="n">keyboard_controller</span><span class="o">.</span><span class="n">press</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-<a id="__codelineno-0-174" name="__codelineno-0-174"></a>        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">repeat_delay</span><span class="p">)</span>
-<a id="__codelineno-0-175" name="__codelineno-0-175"></a>    <span class="n">keyboard_controller</span><span class="o">.</span><span class="n">release</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<a id="__codelineno-0-170" name="__codelineno-0-170"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-171" name="__codelineno-0-171"></a><span class="sd">        &gt;&gt;&gt; press_repeat_key(&#39;a&#39;, 2.0)  # Hold &#39;a&#39; key for 2 seconds with auto-repeat</span>
+<a id="__codelineno-0-172" name="__codelineno-0-172"></a><span class="sd">        &gt;&gt;&gt; press_repeat_key(&#39;space&#39;, 1.5, 0.3, 0.05)  # Custom timing for space key</span>
+<a id="__codelineno-0-173" name="__codelineno-0-173"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-174" name="__codelineno-0-174"></a>    <span class="n">key</span> <span class="o">=</span> <span class="n">vk_to_keycode</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">else</span> <span class="n">key</span>
+<a id="__codelineno-0-175" name="__codelineno-0-175"></a>    <span class="n">repeat_time</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="p">(</span><span class="n">press_time</span> <span class="o">-</span> <span class="n">initial_delay</span><span class="p">)</span> <span class="o">//</span> <span class="n">repeat_delay</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-0-176" name="__codelineno-0-176"></a>
+<a id="__codelineno-0-177" name="__codelineno-0-177"></a>    <span class="n">keyboard_controller</span><span class="o">.</span><span class="n">press</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<a id="__codelineno-0-178" name="__codelineno-0-178"></a>    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">initial_delay</span><span class="p">)</span>
+<a id="__codelineno-0-179" name="__codelineno-0-179"></a>    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">repeat_time</span><span class="p">)):</span>
+<a id="__codelineno-0-180" name="__codelineno-0-180"></a>        <span class="n">keyboard_controller</span><span class="o">.</span><span class="n">press</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<a id="__codelineno-0-181" name="__codelineno-0-181"></a>        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">repeat_delay</span><span class="p">)</span>
+<a id="__codelineno-0-182" name="__codelineno-0-182"></a>    <span class="n">keyboard_controller</span><span class="o">.</span><span class="n">release</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3940,25 +4142,306 @@ result = callable_func(your_arguments)</code></pre>
 
             <details class="quote">
               <summary>Source code in <code>projects/owa-env-desktop/owa/env/desktop/keyboard_mouse/callables.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-214">214</a></span>
-<span class="normal"><a href="#__codelineno-0-215">215</a></span>
-<span class="normal"><a href="#__codelineno-0-216">216</a></span>
-<span class="normal"><a href="#__codelineno-0-217">217</a></span>
-<span class="normal"><a href="#__codelineno-0-218">218</a></span>
-<span class="normal"><a href="#__codelineno-0-219">219</a></span>
-<span class="normal"><a href="#__codelineno-0-220">220</a></span>
-<span class="normal"><a href="#__codelineno-0-221">221</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-221">221</a></span>
 <span class="normal"><a href="#__codelineno-0-222">222</a></span>
-<span class="normal"><a href="#__codelineno-0-223">223</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-214" name="__codelineno-0-214"></a><span class="k">def</span><span class="w"> </span><span class="nf">release_all_keys</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-215" name="__codelineno-0-215"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-216" name="__codelineno-0-216"></a><span class="sd">    Release all currently pressed keys on the keyboard.</span>
-<a id="__codelineno-0-217" name="__codelineno-0-217"></a>
-<a id="__codelineno-0-218" name="__codelineno-0-218"></a><span class="sd">    Examples:</span>
-<a id="__codelineno-0-219" name="__codelineno-0-219"></a><span class="sd">        &gt;&gt;&gt; release_all_keys()  # Release all pressed keys</span>
-<a id="__codelineno-0-220" name="__codelineno-0-220"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-221" name="__codelineno-0-221"></a>    <span class="n">keyboard_state</span><span class="p">:</span> <span class="n">KeyboardState</span> <span class="o">=</span> <span class="n">get_keyboard_state</span><span class="p">()</span>
-<a id="__codelineno-0-222" name="__codelineno-0-222"></a>    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keyboard_state</span><span class="o">.</span><span class="n">buttons</span><span class="p">:</span>
-<a id="__codelineno-0-223" name="__codelineno-0-223"></a>        <span class="n">release</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-223">223</a></span>
+<span class="normal"><a href="#__codelineno-0-224">224</a></span>
+<span class="normal"><a href="#__codelineno-0-225">225</a></span>
+<span class="normal"><a href="#__codelineno-0-226">226</a></span>
+<span class="normal"><a href="#__codelineno-0-227">227</a></span>
+<span class="normal"><a href="#__codelineno-0-228">228</a></span>
+<span class="normal"><a href="#__codelineno-0-229">229</a></span>
+<span class="normal"><a href="#__codelineno-0-230">230</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-221" name="__codelineno-0-221"></a><span class="k">def</span><span class="w"> </span><span class="nf">release_all_keys</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-222" name="__codelineno-0-222"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-223" name="__codelineno-0-223"></a><span class="sd">    Release all currently pressed keys on the keyboard.</span>
+<a id="__codelineno-0-224" name="__codelineno-0-224"></a>
+<a id="__codelineno-0-225" name="__codelineno-0-225"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-226" name="__codelineno-0-226"></a><span class="sd">        &gt;&gt;&gt; release_all_keys()  # Release all pressed keys</span>
+<a id="__codelineno-0-227" name="__codelineno-0-227"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-228" name="__codelineno-0-228"></a>    <span class="n">keyboard_state</span><span class="p">:</span> <span class="n">KeyboardState</span> <span class="o">=</span> <span class="n">get_keyboard_state</span><span class="p">()</span>
+<a id="__codelineno-0-229" name="__codelineno-0-229"></a>    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keyboard_state</span><span class="o">.</span><span class="n">buttons</span><span class="p">:</span>
+<a id="__codelineno-0-230" name="__codelineno-0-230"></a>        <span class="n">release</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+<h4 id="owa.env.desktop.keyboard_mouse.callables.get_keyboard_repeat_timing" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">keyboard.get_keyboard_repeat_timing</span>
+
+
+<a href="#owa.env.desktop.keyboard_mouse.callables.get_keyboard_repeat_timing" class="headerlink" title="Permanent link">&para;</a></h4>
+          <div class="doc-overloads">
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_keyboard_repeat_timing</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="o">*</span><span class="p">,</span> <span class="n">return_seconds</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="typing.Literal" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a></span><span class="p">[</span><span class="kc">True</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="typing.Dict" href="https://docs.python.org/3/library/typing.html#typing.Dict">Dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></span><span class="p">]</span>
+</code></pre></div><div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_keyboard_repeat_timing</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="o">*</span><span class="p">,</span> <span class="n">return_seconds</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="typing.Literal" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a></span><span class="p">[</span><span class="kc">False</span><span class="p">]</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="typing.Dict" href="https://docs.python.org/3/library/typing.html#typing.Dict">Dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span><span class="p">]</span>
+</code></pre></div>          </div>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_keyboard_repeat_timing</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="o">*</span><span class="p">,</span> <span class="n">return_seconds</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">True</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="typing.Dict" href="https://docs.python.org/3/library/typing.html#typing.Dict">Dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></span><span class="p">]</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" title="typing.Dict" href="https://docs.python.org/3/library/typing.html#typing.Dict">Dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span><span class="p">]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Get Windows keyboard repeat delay and repeat rate settings.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>return_seconds</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If True (default), return timing values in seconds.
+           If False, return raw Windows API values.</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" title="typing.Dict" href="https://docs.python.org/3/library/typing.html#typing.Dict">Dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a>] | <a class="autorefs autorefs-external" title="typing.Dict" href="https://docs.python.org/3/library/typing.html#typing.Dict">Dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>When return_seconds=True:
+Dict[str, float]: Dictionary with timing in seconds
+    - keyboard_delay_seconds: Initial delay before auto-repeat starts
+    - keyboard_rate_seconds: Interval between repeated keystrokes</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" title="typing.Dict" href="https://docs.python.org/3/library/typing.html#typing.Dict">Dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a>] | <a class="autorefs autorefs-external" title="typing.Dict" href="https://docs.python.org/3/library/typing.html#typing.Dict">Dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>When return_seconds=False:
+Dict[str, int]: Dictionary with raw Windows API values
+    - keyboard_delay: Raw delay value (0-3 scale)
+    - keyboard_speed: Raw speed value (0-31 scale)</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#OSError">OSError</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If not running on Windows platform</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#RuntimeError">RuntimeError</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If Windows API call fails</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Examples:</span></p>
+    <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Get timing in seconds (default)</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">timing</span> <span class="o">=</span> <span class="n">get_keyboard_repeat_timing</span><span class="p">()</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Delay: </span><span class="si">{</span><span class="n">timing</span><span class="p">[</span><span class="s1">&#39;keyboard_delay_seconds&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">s, Rate: </span><span class="si">{</span><span class="n">timing</span><span class="p">[</span><span class="s1">&#39;keyboard_rate_seconds&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">s&quot;</span><span class="p">)</span>
+</code></pre></div>
+    <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Get raw Windows API values</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">raw_timing</span> <span class="o">=</span> <span class="n">get_keyboard_repeat_timing</span><span class="p">(</span><span class="n">return_seconds</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Raw delay: </span><span class="si">{</span><span class="n">raw_timing</span><span class="p">[</span><span class="s1">&#39;keyboard_delay&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">, Raw speed: </span><span class="si">{</span><span class="n">raw_timing</span><span class="p">[</span><span class="s1">&#39;keyboard_speed&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+
+            <details class="quote">
+              <summary>Source code in <code>projects/owa-env-desktop/owa/env/desktop/keyboard_mouse/callables.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-275">275</a></span>
+<span class="normal"><a href="#__codelineno-0-276">276</a></span>
+<span class="normal"><a href="#__codelineno-0-277">277</a></span>
+<span class="normal"><a href="#__codelineno-0-278">278</a></span>
+<span class="normal"><a href="#__codelineno-0-279">279</a></span>
+<span class="normal"><a href="#__codelineno-0-280">280</a></span>
+<span class="normal"><a href="#__codelineno-0-281">281</a></span>
+<span class="normal"><a href="#__codelineno-0-282">282</a></span>
+<span class="normal"><a href="#__codelineno-0-283">283</a></span>
+<span class="normal"><a href="#__codelineno-0-284">284</a></span>
+<span class="normal"><a href="#__codelineno-0-285">285</a></span>
+<span class="normal"><a href="#__codelineno-0-286">286</a></span>
+<span class="normal"><a href="#__codelineno-0-287">287</a></span>
+<span class="normal"><a href="#__codelineno-0-288">288</a></span>
+<span class="normal"><a href="#__codelineno-0-289">289</a></span>
+<span class="normal"><a href="#__codelineno-0-290">290</a></span>
+<span class="normal"><a href="#__codelineno-0-291">291</a></span>
+<span class="normal"><a href="#__codelineno-0-292">292</a></span>
+<span class="normal"><a href="#__codelineno-0-293">293</a></span>
+<span class="normal"><a href="#__codelineno-0-294">294</a></span>
+<span class="normal"><a href="#__codelineno-0-295">295</a></span>
+<span class="normal"><a href="#__codelineno-0-296">296</a></span>
+<span class="normal"><a href="#__codelineno-0-297">297</a></span>
+<span class="normal"><a href="#__codelineno-0-298">298</a></span>
+<span class="normal"><a href="#__codelineno-0-299">299</a></span>
+<span class="normal"><a href="#__codelineno-0-300">300</a></span>
+<span class="normal"><a href="#__codelineno-0-301">301</a></span>
+<span class="normal"><a href="#__codelineno-0-302">302</a></span>
+<span class="normal"><a href="#__codelineno-0-303">303</a></span>
+<span class="normal"><a href="#__codelineno-0-304">304</a></span>
+<span class="normal"><a href="#__codelineno-0-305">305</a></span>
+<span class="normal"><a href="#__codelineno-0-306">306</a></span>
+<span class="normal"><a href="#__codelineno-0-307">307</a></span>
+<span class="normal"><a href="#__codelineno-0-308">308</a></span>
+<span class="normal"><a href="#__codelineno-0-309">309</a></span>
+<span class="normal"><a href="#__codelineno-0-310">310</a></span>
+<span class="normal"><a href="#__codelineno-0-311">311</a></span>
+<span class="normal"><a href="#__codelineno-0-312">312</a></span>
+<span class="normal"><a href="#__codelineno-0-313">313</a></span>
+<span class="normal"><a href="#__codelineno-0-314">314</a></span>
+<span class="normal"><a href="#__codelineno-0-315">315</a></span>
+<span class="normal"><a href="#__codelineno-0-316">316</a></span>
+<span class="normal"><a href="#__codelineno-0-317">317</a></span>
+<span class="normal"><a href="#__codelineno-0-318">318</a></span>
+<span class="normal"><a href="#__codelineno-0-319">319</a></span>
+<span class="normal"><a href="#__codelineno-0-320">320</a></span>
+<span class="normal"><a href="#__codelineno-0-321">321</a></span>
+<span class="normal"><a href="#__codelineno-0-322">322</a></span>
+<span class="normal"><a href="#__codelineno-0-323">323</a></span>
+<span class="normal"><a href="#__codelineno-0-324">324</a></span>
+<span class="normal"><a href="#__codelineno-0-325">325</a></span>
+<span class="normal"><a href="#__codelineno-0-326">326</a></span>
+<span class="normal"><a href="#__codelineno-0-327">327</a></span>
+<span class="normal"><a href="#__codelineno-0-328">328</a></span>
+<span class="normal"><a href="#__codelineno-0-329">329</a></span>
+<span class="normal"><a href="#__codelineno-0-330">330</a></span>
+<span class="normal"><a href="#__codelineno-0-331">331</a></span>
+<span class="normal"><a href="#__codelineno-0-332">332</a></span>
+<span class="normal"><a href="#__codelineno-0-333">333</a></span>
+<span class="normal"><a href="#__codelineno-0-334">334</a></span>
+<span class="normal"><a href="#__codelineno-0-335">335</a></span>
+<span class="normal"><a href="#__codelineno-0-336">336</a></span>
+<span class="normal"><a href="#__codelineno-0-337">337</a></span>
+<span class="normal"><a href="#__codelineno-0-338">338</a></span>
+<span class="normal"><a href="#__codelineno-0-339">339</a></span>
+<span class="normal"><a href="#__codelineno-0-340">340</a></span>
+<span class="normal"><a href="#__codelineno-0-341">341</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-275" name="__codelineno-0-275"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_keyboard_repeat_timing</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">return_seconds</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+<a id="__codelineno-0-276" name="__codelineno-0-276"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-277" name="__codelineno-0-277"></a><span class="sd">    Get Windows keyboard repeat delay and repeat rate settings.</span>
+<a id="__codelineno-0-278" name="__codelineno-0-278"></a>
+<a id="__codelineno-0-279" name="__codelineno-0-279"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-280" name="__codelineno-0-280"></a><span class="sd">        return_seconds: If True (default), return timing values in seconds.</span>
+<a id="__codelineno-0-281" name="__codelineno-0-281"></a><span class="sd">                       If False, return raw Windows API values.</span>
+<a id="__codelineno-0-282" name="__codelineno-0-282"></a>
+<a id="__codelineno-0-283" name="__codelineno-0-283"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-284" name="__codelineno-0-284"></a><span class="sd">        When return_seconds=True:</span>
+<a id="__codelineno-0-285" name="__codelineno-0-285"></a><span class="sd">            Dict[str, float]: Dictionary with timing in seconds</span>
+<a id="__codelineno-0-286" name="__codelineno-0-286"></a><span class="sd">                - keyboard_delay_seconds: Initial delay before auto-repeat starts</span>
+<a id="__codelineno-0-287" name="__codelineno-0-287"></a><span class="sd">                - keyboard_rate_seconds: Interval between repeated keystrokes</span>
+<a id="__codelineno-0-288" name="__codelineno-0-288"></a>
+<a id="__codelineno-0-289" name="__codelineno-0-289"></a><span class="sd">        When return_seconds=False:</span>
+<a id="__codelineno-0-290" name="__codelineno-0-290"></a><span class="sd">            Dict[str, int]: Dictionary with raw Windows API values</span>
+<a id="__codelineno-0-291" name="__codelineno-0-291"></a><span class="sd">                - keyboard_delay: Raw delay value (0-3 scale)</span>
+<a id="__codelineno-0-292" name="__codelineno-0-292"></a><span class="sd">                - keyboard_speed: Raw speed value (0-31 scale)</span>
+<a id="__codelineno-0-293" name="__codelineno-0-293"></a>
+<a id="__codelineno-0-294" name="__codelineno-0-294"></a><span class="sd">    Raises:</span>
+<a id="__codelineno-0-295" name="__codelineno-0-295"></a><span class="sd">        OSError: If not running on Windows platform</span>
+<a id="__codelineno-0-296" name="__codelineno-0-296"></a><span class="sd">        RuntimeError: If Windows API call fails</span>
+<a id="__codelineno-0-297" name="__codelineno-0-297"></a>
+<a id="__codelineno-0-298" name="__codelineno-0-298"></a><span class="sd">    Examples:</span>
+<a id="__codelineno-0-299" name="__codelineno-0-299"></a><span class="sd">        &gt;&gt;&gt; # Get timing in seconds (default)</span>
+<a id="__codelineno-0-300" name="__codelineno-0-300"></a><span class="sd">        &gt;&gt;&gt; timing = get_keyboard_repeat_timing()</span>
+<a id="__codelineno-0-301" name="__codelineno-0-301"></a><span class="sd">        &gt;&gt;&gt; print(f&quot;Delay: {timing[&#39;keyboard_delay_seconds&#39;]:.3f}s, Rate: {timing[&#39;keyboard_rate_seconds&#39;]:.3f}s&quot;)</span>
+<a id="__codelineno-0-302" name="__codelineno-0-302"></a>
+<a id="__codelineno-0-303" name="__codelineno-0-303"></a><span class="sd">        &gt;&gt;&gt; # Get raw Windows API values</span>
+<a id="__codelineno-0-304" name="__codelineno-0-304"></a><span class="sd">        &gt;&gt;&gt; raw_timing = get_keyboard_repeat_timing(return_seconds=False)</span>
+<a id="__codelineno-0-305" name="__codelineno-0-305"></a><span class="sd">        &gt;&gt;&gt; print(f&quot;Raw delay: {raw_timing[&#39;keyboard_delay&#39;]}, Raw speed: {raw_timing[&#39;keyboard_speed&#39;]}&quot;)</span>
+<a id="__codelineno-0-306" name="__codelineno-0-306"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-307" name="__codelineno-0-307"></a>    <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">!=</span> <span class="s2">&quot;win32&quot;</span><span class="p">:</span>
+<a id="__codelineno-0-308" name="__codelineno-0-308"></a>        <span class="k">raise</span> <span class="ne">OSError</span><span class="p">(</span><span class="s2">&quot;Keyboard repeat settings are only available on Windows&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-309" name="__codelineno-0-309"></a>
+<a id="__codelineno-0-310" name="__codelineno-0-310"></a>    <span class="c1"># Windows constants</span>
+<a id="__codelineno-0-311" name="__codelineno-0-311"></a>    <span class="n">SPI_GETKEYBOARDDELAY</span> <span class="o">=</span> <span class="mh">0x0016</span>
+<a id="__codelineno-0-312" name="__codelineno-0-312"></a>    <span class="n">SPI_GETKEYBOARDSPEED</span> <span class="o">=</span> <span class="mh">0x000A</span>
+<a id="__codelineno-0-313" name="__codelineno-0-313"></a>
+<a id="__codelineno-0-314" name="__codelineno-0-314"></a>    <span class="c1"># Get keyboard delay (0-3 scale)</span>
+<a id="__codelineno-0-315" name="__codelineno-0-315"></a>    <span class="n">keyboard_delay</span> <span class="o">=</span> <span class="n">wintypes</span><span class="o">.</span><span class="n">UINT</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<a id="__codelineno-0-316" name="__codelineno-0-316"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">windll</span><span class="o">.</span><span class="n">user32</span><span class="o">.</span><span class="n">SystemParametersInfoW</span><span class="p">(</span><span class="n">SPI_GETKEYBOARDDELAY</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">byref</span><span class="p">(</span><span class="n">keyboard_delay</span><span class="p">),</span> <span class="mi">0</span><span class="p">):</span>
+<a id="__codelineno-0-317" name="__codelineno-0-317"></a>        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Failed to get keyboard delay setting from Windows API&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-318" name="__codelineno-0-318"></a>
+<a id="__codelineno-0-319" name="__codelineno-0-319"></a>    <span class="c1"># Get keyboard speed (0-31 scale)</span>
+<a id="__codelineno-0-320" name="__codelineno-0-320"></a>    <span class="n">keyboard_speed</span> <span class="o">=</span> <span class="n">wintypes</span><span class="o">.</span><span class="n">UINT</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<a id="__codelineno-0-321" name="__codelineno-0-321"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">windll</span><span class="o">.</span><span class="n">user32</span><span class="o">.</span><span class="n">SystemParametersInfoW</span><span class="p">(</span><span class="n">SPI_GETKEYBOARDSPEED</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">byref</span><span class="p">(</span><span class="n">keyboard_speed</span><span class="p">),</span> <span class="mi">0</span><span class="p">):</span>
+<a id="__codelineno-0-322" name="__codelineno-0-322"></a>        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Failed to get keyboard speed setting from Windows API&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-323" name="__codelineno-0-323"></a>
+<a id="__codelineno-0-324" name="__codelineno-0-324"></a>    <span class="c1"># Convert to actual time values based on Microsoft documentation</span>
+<a id="__codelineno-0-325" name="__codelineno-0-325"></a>    <span class="c1"># References:</span>
+<a id="__codelineno-0-326" name="__codelineno-0-326"></a>    <span class="c1"># - KeyboardDelay: https://learn.microsoft.com/en-us/dotnet/api/system.windows.forms.systeminformation.keyboarddelay</span>
+<a id="__codelineno-0-327" name="__codelineno-0-327"></a>    <span class="c1"># - KeyboardSpeed: https://learn.microsoft.com/en-us/dotnet/api/system.windows.forms.systeminformation.keyboardspeed</span>
+<a id="__codelineno-0-328" name="__codelineno-0-328"></a>
+<a id="__codelineno-0-329" name="__codelineno-0-329"></a>    <span class="c1"># Delay: 0=250ms, 1=500ms, 2=750ms, 3=1000ms (approximately)</span>
+<a id="__codelineno-0-330" name="__codelineno-0-330"></a>    <span class="n">keyboard_delay_seconds</span> <span class="o">=</span> <span class="mf">0.25</span> <span class="o">+</span> <span class="p">(</span><span class="n">keyboard_delay</span><span class="o">.</span><span class="n">value</span> <span class="o">*</span> <span class="mf">0.25</span><span class="p">)</span>
+<a id="__codelineno-0-331" name="__codelineno-0-331"></a>
+<a id="__codelineno-0-332" name="__codelineno-0-332"></a>    <span class="c1"># Speed: 0=~2.5 repetitions/sec, 31=~30 repetitions/sec (from Microsoft docs)</span>
+<a id="__codelineno-0-333" name="__codelineno-0-333"></a>    <span class="c1"># Linear interpolation formula (derived): repetitions_per_sec = 2.5 + (speed_value * 27.5 / 31)</span>
+<a id="__codelineno-0-334" name="__codelineno-0-334"></a>    <span class="c1"># Where 27.5 = (30 - 2.5) is the range between max and min repetitions per second</span>
+<a id="__codelineno-0-335" name="__codelineno-0-335"></a>    <span class="n">repetitions_per_sec</span> <span class="o">=</span> <span class="mf">2.5</span> <span class="o">+</span> <span class="p">(</span><span class="n">keyboard_speed</span><span class="o">.</span><span class="n">value</span> <span class="o">*</span> <span class="mf">27.5</span> <span class="o">/</span> <span class="mi">31</span><span class="p">)</span>
+<a id="__codelineno-0-336" name="__codelineno-0-336"></a>    <span class="n">keyboard_rate_seconds</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">repetitions_per_sec</span>
+<a id="__codelineno-0-337" name="__codelineno-0-337"></a>
+<a id="__codelineno-0-338" name="__codelineno-0-338"></a>    <span class="k">if</span> <span class="n">return_seconds</span><span class="p">:</span>
+<a id="__codelineno-0-339" name="__codelineno-0-339"></a>        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;keyboard_delay_seconds&quot;</span><span class="p">:</span> <span class="n">keyboard_delay_seconds</span><span class="p">,</span> <span class="s2">&quot;keyboard_rate_seconds&quot;</span><span class="p">:</span> <span class="n">keyboard_rate_seconds</span><span class="p">}</span>
+<a id="__codelineno-0-340" name="__codelineno-0-340"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-341" name="__codelineno-0-341"></a>        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;keyboard_delay&quot;</span><span class="p">:</span> <span class="n">keyboard_delay</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="s2">&quot;keyboard_speed&quot;</span><span class="p">:</span> <span class="n">keyboard_speed</span><span class="o">.</span><span class="n">value</span><span class="p">}</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -5375,7 +5858,7 @@ about the currently active window, including title, position, and handle.</p>
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="July 7, 2025 09:11:42 UTC">July 7, 2025 09:11:42</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="August 5, 2025 10:35:38 UTC">August 5, 2025 10:35:38</span>
   </span>
 
     
