@@ -130,7 +130,7 @@ class TestMcapRegistryIntegration:
 
             # Verify that message type matches the registry type
             kb_msg = messages[0]
-            assert kb_msg.message_type == KeyboardEvent._type.default
+            assert kb_msg.message_type == KeyboardEvent._type
 
             # Verify that decoded message is instance of the correct class
             decoded = kb_msg.decoded
@@ -164,7 +164,7 @@ class TestMcapRegistryIntegration:
             # Verify we can get the class
             MessageClass = MESSAGES[message_type]
             assert hasattr(MessageClass, "_type")
-            assert MessageClass._type.default == message_type
+            assert MessageClass._type == message_type
 
     def test_registry_message_filtering(self, tmp_path):
         """Test filtering MCAP messages by schema type from registry."""
