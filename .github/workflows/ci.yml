@@ -82,6 +82,9 @@ jobs:
 
       - name: Run pytest
         run: pytest
+      
+      - name: Run pytest on owa-data
+        run: pytest projects/owa-data
 
   test-windows:
     runs-on: windows-latest
