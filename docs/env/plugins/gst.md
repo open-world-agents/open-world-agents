@@ -18,6 +18,8 @@ High-performance screen capture and multimedia processing (**6x faster** than al
 |-----------|------|-------------|
 | `gst/screen` | Listener | Real-time screen capture with callbacks |
 | `gst/screen_capture` | Runnable | On-demand screen capture |
+| `gst/omnimodal.appsink_recorder` | Listener | Omnimodal recording with appsink |
+| `gst/omnimodal.subprocess_recorder` | Runnable | Omnimodal recording via subprocess |
 
 ## Performance
 

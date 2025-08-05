@@ -1,5 +1,6 @@
 import sys
 import time
+from typing import Any, Dict, Literal, overload
 
 from pynput.keyboard import Controller as KeyboardController
 from pynput.mouse import Button
@@ -9,6 +10,12 @@ from owa.msgs.desktop.keyboard import KeyboardState
 from owa.msgs.desktop.mouse import MouseState, PointerBallisticsConfig
 
 from ..utils import get_vk_state, vk_to_keycode
+
+# Windows-specific imports for SystemParametersInfo
+if sys.platform == "win32":
+    import ctypes
+    import winreg
+    from ctypes import wintypes
 
 mouse_controller = MouseController()
 
@@ -230,57 +237,105 @@ def get_pointer_ballistics_config() -> PointerBallisticsConfig:
         # Check whether Enhance pointer precision is enabled
         >>> is_mouse_acceleration_enabled = get_pointer_ballistics_config().mouse_speed
     """
-    defaults = {
-        "MouseThreshold1": 6,
-        "MouseThreshold2": 10,
-        "MouseSpeed": 1,
-        "MouseSensitivity": 10,
-    }
-
     if sys.platform != "win32":
-        return PointerBallisticsConfig(**defaults)
+        return PointerBallisticsConfig()  # Return default values
 
     try:
-        config = _get_mouse_registry_values()
-        return PointerBallisticsConfig(**config)
+        return PointerBallisticsConfig(**_get_mouse_registry_values())
     except Exception:
-        return PointerBallisticsConfig(**defaults)
+        return PointerBallisticsConfig()  # Return default values
 
 
 def _get_mouse_registry_values() -> dict:
     """Get all mouse settings from Windows registry using exact registry variable names."""
-    import base64
-    import winreg
-    from typing import Any
+    with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Control Panel\Mouse") as key:
+        values: dict[str, Any] = {}
 
-    defaults = {
-        "MouseThreshold1": 6,
-        "MouseThreshold2": 10,
-        "MouseSpeed": 1,
-        "MouseSensitivity": 10,
-    }
+        # Get integer values using exact registry names
+        for reg_name in ["MouseThreshold1", "MouseThreshold2", "MouseSpeed", "MouseSensitivity"]:
+            reg_value, _ = winreg.QueryValueEx(key, reg_name)
+            values[reg_name] = int(reg_value)
 
-    try:
-        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Control Panel\Mouse") as key:
-            values: dict[str, Any] = {}
+        # Get binary curve data using exact registry names
+        for curve_name in ["SmoothMouseXCurve", "SmoothMouseYCurve"]:
+            curve_bytes, _ = winreg.QueryValueEx(key, curve_name)
+            values[curve_name] = curve_bytes.hex()
 
-            # Get integer values using exact registry names
-            for reg_name in ["MouseThreshold1", "MouseThreshold2", "MouseSpeed", "MouseSensitivity"]:
-                try:
-                    reg_value, _ = winreg.QueryValueEx(key, reg_name)
-                    values[reg_name] = int(reg_value)
-                except (FileNotFoundError, ValueError):
-                    values[reg_name] = defaults[reg_name]
+        return values
 
-            # Get binary curve data using exact registry names
-            for curve_name in ["SmoothMouseXCurve", "SmoothMouseYCurve"]:
-                try:
-                    curve_bytes, _ = winreg.QueryValueEx(key, curve_name)
-                    values[curve_name] = base64.b64encode(curve_bytes).decode("ascii")
-                except FileNotFoundError:
-                    values[curve_name] = None
 
-            return values
+@overload
+def get_keyboard_repeat_timing(*, return_seconds: Literal[True] = True) -> Dict[str, float]: ...
 
-    except Exception:
-        return defaults
+
+@overload
+def get_keyboard_repeat_timing(*, return_seconds: Literal[False]) -> Dict[str, int]: ...
+
+
+def get_keyboard_repeat_timing(*, return_seconds: bool = True) -> Dict[str, float] | Dict[str, int]:
+    """
+    Get Windows keyboard repeat delay and repeat rate settings.
+
+    Args:
+        return_seconds: If True (default), return timing values in seconds.
+                       If False, return raw Windows API values.
+
+    Returns:
+        When return_seconds=True:
+            Dict[str, float]: Dictionary with timing in seconds
+                - keyboard_delay_seconds: Initial delay before auto-repeat starts
+                - keyboard_rate_seconds: Interval between repeated keystrokes
+
+        When return_seconds=False:
+            Dict[str, int]: Dictionary with raw Windows API values
+                - keyboard_delay: Raw delay value (0-3 scale)
+                - keyboard_speed: Raw speed value (0-31 scale)
+
+    Raises:
+        OSError: If not running on Windows platform
+        RuntimeError: If Windows API call fails
+
+    Examples:
+        >>> # Get timing in seconds (default)
+        >>> timing = get_keyboard_repeat_timing()
+        >>> print(f"Delay: {timing['keyboard_delay_seconds']:.3f}s, Rate: {timing['keyboard_rate_seconds']:.3f}s")
+
+        >>> # Get raw Windows API values
+        >>> raw_timing = get_keyboard_repeat_timing(return_seconds=False)
+        >>> print(f"Raw delay: {raw_timing['keyboard_delay']}, Raw speed: {raw_timing['keyboard_speed']}")
+    """
+    if sys.platform != "win32":
+        raise OSError("Keyboard repeat settings are only available on Windows")
+
+    # Windows constants
+    SPI_GETKEYBOARDDELAY = 0x0016
+    SPI_GETKEYBOARDSPEED = 0x000A
+
+    # Get keyboard delay (0-3 scale)
+    keyboard_delay = wintypes.UINT(0)
+    if not ctypes.windll.user32.SystemParametersInfoW(SPI_GETKEYBOARDDELAY, 0, ctypes.byref(keyboard_delay), 0):
+        raise RuntimeError("Failed to get keyboard delay setting from Windows API")
+
+    # Get keyboard speed (0-31 scale)
+    keyboard_speed = wintypes.UINT(0)
+    if not ctypes.windll.user32.SystemParametersInfoW(SPI_GETKEYBOARDSPEED, 0, ctypes.byref(keyboard_speed), 0):
+        raise RuntimeError("Failed to get keyboard speed setting from Windows API")
+
+    # Convert to actual time values based on Microsoft documentation
+    # References:
+    # - KeyboardDelay: https://learn.microsoft.com/en-us/dotnet/api/system.windows.forms.systeminformation.keyboarddelay
+    # - KeyboardSpeed: https://learn.microsoft.com/en-us/dotnet/api/system.windows.forms.systeminformation.keyboardspeed
+
+    # Delay: 0=250ms, 1=500ms, 2=750ms, 3=1000ms (approximately)
+    keyboard_delay_seconds = 0.25 + (keyboard_delay.value * 0.25)
+
+    # Speed: 0=~2.5 repetitions/sec, 31=~30 repetitions/sec (from Microsoft docs)
+    # Linear interpolation formula (derived): repetitions_per_sec = 2.5 + (speed_value * 27.5 / 31)
+    # Where 27.5 = (30 - 2.5) is the range between max and min repetitions per second
+    repetitions_per_sec = 2.5 + (keyboard_speed.value * 27.5 / 31)
+    keyboard_rate_seconds = 1.0 / repetitions_per_sec
+
+    if return_seconds:
+        return {"keyboard_delay_seconds": keyboard_delay_seconds, "keyboard_rate_seconds": keyboard_rate_seconds}
+    else:
+        return {"keyboard_delay": keyboard_delay.value, "keyboard_speed": keyboard_speed.value}

@@ -9,6 +9,7 @@ from enum import IntFlag
 from typing import Literal, TypeAlias
 
 from pydantic import ConfigDict, Field
+from pydantic.alias_generators import to_pascal
 
 from owa.core.message import OWAMessage
 
@@ -151,12 +152,31 @@ class RawMouseEvent(OWAMessage):
 class PointerBallisticsConfig(OWAMessage):
     """Windows pointer ballistics configuration for WM_MOUSEMOVE reconstruction."""
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, alias_generator=to_pascal, extra="forbid")
+    """
+    Going to migrate on pydantic v3.
+
+    !!! warning
+        `populate_by_name` usage is not recommended in v2.11+ and will be deprecated in v3.
+        Instead, you should use the [`validate_by_name`][pydantic.config.ConfigDict.validate_by_name] configuration setting.
+
+        When `validate_by_name=True` and `validate_by_alias=True`, this is strictly equivalent to the
+        previous behavior of `populate_by_name=True`.
+    """
+
     _type = "desktop/PointerBallisticsConfig"
 
-    mouse_threshold1: int = Field(alias="MouseThreshold1")
-    mouse_threshold2: int = Field(alias="MouseThreshold2")
-    mouse_speed: int = Field(alias="MouseSpeed")
-    mouse_sensitivity: int = Field(alias="MouseSensitivity")
-    smooth_mouse_x_curve: str | None = Field(default=None, alias="SmoothMouseXCurve")
-    smooth_mouse_y_curve: str | None = Field(default=None, alias="SmoothMouseYCurve")
+    mouse_threshold1: int = 6
+    mouse_threshold2: int = 10
+    mouse_speed: int = 1
+    mouse_sensitivity: int = 10
+    # NOTE: SmoothMouseXCurve has not changed from Windows 7 to 11
+    smooth_mouse_x_curve: str = Field(
+        default="0000000000000000156e000000000000004001000000000029dc0300000000000000280000000000",
+        description="Hex-encoded binary data",
+    )
+    # NOTE: SmoothMouseYCurve has changed between Windows 7 and 8. 8~11 are the same and default value is set to Windows 11's value.
+    smooth_mouse_y_curve: str = Field(
+        default="0000000000000000fd11010000000000002404000000000000fc12000000000000c0bb0100000000",
+        description="Hex-encoded binary data",
+    )
