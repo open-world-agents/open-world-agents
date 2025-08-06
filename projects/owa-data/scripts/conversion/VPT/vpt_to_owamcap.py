@@ -23,7 +23,7 @@ from typing import Optional, Union
 from rich import print
 from tqdm import tqdm
 
-from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
+from mcap_owa.highlevel import OWAMcapWriter
 from owa.env.desktop.constants import VK
 from owa.msgs.desktop.keyboard import KeyboardEvent
 from owa.msgs.desktop.mouse import RawMouseEvent
@@ -72,22 +72,22 @@ def vpt_generate_target_list_file(
 ):
     """Filter VPT files with valid jsonl files paired with media files and are 5 minutes long."""
     media_stems = {f.stem for f in vpt_folder_path.iterdir() if f.suffix == vpt_media_ext and f.is_file()}
-
-    jsonl_files = [
-        (f, f.stat().st_ctime)
-        for f in vpt_folder_path.iterdir()
-        if f.suffix == ".jsonl" and f.is_file() and f.stem in media_stems
-    ]
-    jsonl_files.sort(key=lambda x: x[1])  # Sort by creation time
+    jsonl_files = sorted(
+        [
+            (f, f.stat().st_ctime)
+            for f in vpt_folder_path.iterdir()
+            if f.suffix == ".jsonl" and f.is_file() and f.stem in media_stems
+        ],
+        key=lambda x: x[1],
+    )
 
     print(f"{len(jsonl_files)} files found in {vpt_folder_path}.")
 
     target_files = []
     for file_path, _ in tqdm(jsonl_files):
         try:
-            with open(file_path, "r") as f:
-                if len(f.readlines()) == VPT_EXPECTED_TICKS:
-                    target_files.append(file_path)
+            if len(file_path.read_text().splitlines()) == VPT_EXPECTED_TICKS:
+                target_files.append(file_path)
         except Exception as e:
             print(f"Error reading {file_path}: {e}")
 
@@ -163,10 +163,9 @@ def process_single_file(jsonl_file_path, vpt_media_ext):
     media_file_path = jsonl_file_path.with_suffix(vpt_media_ext)
 
     try:
-        with open(jsonl_file_path, "r") as f:
-            lines = [line.strip() for line in f.readlines()]
-            assert len(lines) == VPT_EXPECTED_TICKS, f"Expected {VPT_EXPECTED_TICKS} lines, got {len(lines)}"
-            ticks = [json.loads(line) for line in lines]
+        lines = jsonl_file_path.read_text().strip().splitlines()
+        assert len(lines) == VPT_EXPECTED_TICKS, f"Expected {VPT_EXPECTED_TICKS} lines, got {len(lines)}"
+        ticks = [json.loads(line) for line in lines]
     except Exception as e:
         print(f"Error reading {jsonl_file_path}: {e}")
         return
@@ -231,15 +230,6 @@ def main(vpt_folder_path: Path, vpt_media_ext: str, vpt_target_list_file: str, m
                     print(f"Error converting {file_path}: {exc}")
                 finally:
                     pbar.update(1)
-
-
-def read_mcap(file_path: str = "expert.mcap", num_messages: int = 100):
-    """Read and display messages from an OWAMcap file."""
-    with OWAMcapReader(file_path) as reader:
-        for i, mcap_msg in enumerate(reader.iter_messages()):
-            if i >= num_messages:
-                break
-            print(f"Topic: {mcap_msg.topic}, Timestamp: {mcap_msg.timestamp}, Message: {mcap_msg.decoded}")
 
 
 def parse_args():
