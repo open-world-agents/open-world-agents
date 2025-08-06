@@ -310,7 +310,8 @@ class HierarchicalEventEncoder(BaseEventEncoder):
             button_data_token = tokens[button_flags_idx + 1]
             button_data_match = re.match(r"<(-?\d+)>", button_data_token)
             if button_data_match:
-                button_data = int(button_data_match.group(1))
+                # Multiply by 120 to restore original button_data value (reverse of encoding division)
+                button_data = int(button_data_match.group(1)) * 120
 
         return RawMouseEvent(
             last_x=dx, last_y=dy, button_flags=RawMouseEvent.ButtonFlags(button_flags), button_data=button_data

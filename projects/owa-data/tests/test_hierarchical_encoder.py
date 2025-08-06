@@ -84,6 +84,7 @@ class TestHierarchicalEncoderOperation:
         assert decoded_data["last_x"] == original_data["last_x"]
         assert decoded_data["last_y"] == original_data["last_y"]
         assert decoded_data["button_flags"] == original_data["button_flags"]
+        assert decoded_data["button_data"] == original_data["button_data"]
 
     def test_keyboard_encoding_roundtrip(self, encoder):
         """Test keyboard event encoding/decoding preserves data."""
