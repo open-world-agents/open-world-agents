@@ -1,7 +1,7 @@
 """Event resampling implementations for OWA data processing."""
 
 from abc import ABC, abstractmethod
-from typing import Dict, List
+from typing import List
 
 from mcap_owa.highlevel import McapMessage
 from owa.msgs.desktop.mouse import RawMouseEvent
