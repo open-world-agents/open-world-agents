@@ -80,4 +80,4 @@ class McapMessage(BaseModel, Generic[T]):
 
     def __repr__(self) -> str:
         message_repr = repr(self.message[:32]) + "..." if len(self.message) > 32 else repr(self.message)
-        return f"McapMessage(topic={self.topic!r}, timestamp={self.timestamp}, message_type={self.message_type!r}, message={message_repr!r})"
+        return f"McapMessage(topic={self.topic!r}, timestamp={self.timestamp}, message_type={self.message_type!r}, message={message_repr})"
