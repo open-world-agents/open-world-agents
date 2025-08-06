@@ -24,7 +24,7 @@ class MediaRef(BaseModel):
         ...,
         description="URI(data:image/png;base64,... | file:///path | http[s]://...) or posix file path(/absolute/path | relative/path)",
     )
-    pts_ns: Optional[int] = Field(None, description="Video frame timestamp in nanoseconds")
+    pts_ns: Optional[int] = Field(default=None, description="Video frame timestamp in nanoseconds")
 
     @property
     def is_embedded(self) -> bool:
@@ -113,16 +113,16 @@ class ScreenCaptured(OWAMessage):
     model_config = {"arbitrary_types_allowed": True, "extra": "forbid"}
 
     # Essential fields only
-    utc_ns: Optional[int] = Field(None, description="Time since epoch as nanoseconds")
+    utc_ns: Optional[int] = Field(default=None, description="Time since epoch as nanoseconds")
     source_shape: Optional[Tuple[int, int]] = Field(
-        None, description="Original source dimensions before any processing (width, height)"
+        default=None, description="Original source dimensions before any processing (width, height)"
     )
     shape: Optional[Tuple[int, int]] = Field(
-        None, description="Current frame dimensions after any processing (width, height)"
+        default=None, description="Current frame dimensions after any processing (width, height)"
     )
-    media_ref: Optional[MediaRef] = Field(None, description="Structured media reference")
+    media_ref: Optional[MediaRef] = Field(default=None, description="Structured media reference")
     frame_arr: SkipJsonSchema[Optional[np.ndarray]] = Field(
-        None, exclude=True, description="BGRA frame as numpy array (in-memory only)"
+        default=None, exclude=True, description="BGRA frame as numpy array (in-memory only)"
     )
 
     @model_validator(mode="after")

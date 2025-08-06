@@ -8,7 +8,7 @@ following the domain-based message naming convention for better organization.
 from enum import IntFlag
 from typing import Literal, TypeAlias
 
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field, field_validator
 from pydantic.alias_generators import to_pascal
 
 from owa.core.message import OWAMessage
@@ -131,6 +131,17 @@ class RawMouseEvent(OWAMessage):
 
     # Timing
     timestamp: int | None = None
+
+    @field_validator("button_flags")
+    @classmethod
+    def validate_button_flags(cls, v: ButtonFlags) -> ButtonFlags:
+        """Validate that button_flags is within 3-digit hex range (0x000 to 0xFFF)."""
+        flag_value = int(v)
+        if flag_value > 0xFFF:
+            raise ValueError(
+                f"Mouse button_flags value {flag_value:#x} is outside valid 3-digit hex range [0x000, 0xFFF]"
+            )
+        return v
 
     @property
     def dx(self) -> int:

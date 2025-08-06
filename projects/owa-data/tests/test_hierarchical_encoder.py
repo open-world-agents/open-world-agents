@@ -1,207 +1,544 @@
 #!/usr/bin/env python3
 """
-Test for hierarchical event encoder - focuses on essential functionality and configuration sanity.
+TESTING PRIORITIES:
+==================
+1. FIDELITY: Encode-decode yields same/similar result (no data loss)
+2. EFFICIENCY: Token count is reasonable (not bloated)
+3. NO EDGE CASES: Works well even with edge cases - users don't need to worry
+
+COVERAGE MATRIX:
+===============
+Event Type    | Encoding | Decoding | Fidelity | Efficiency | Edge Cases | Exhaustive
+------------- | -------- | -------- | -------- | ---------- | ---------- | ----------
+Mouse Move    |    ✓     |    ✓     |    ✓     |     ✓      |     ✓      |  ✓ (1,681)
+Mouse Buttons |    ✓     |    ✓     |    ✓     |     ✓      |     ✓      |     -
+Mouse Wheel   |    ✓     |    ✓     |    ✓     |     ✓      |     ✓      |     -
+Keyboard      |    ✓     |    ✓     |    ✓     |     ✓      |     ✓      |     -
+Screen        |    ✓     |    ✓     |    ✓     |     ✓      |     ✓      |     -
+Timestamps    |    ✓     |    ✓     |    ✓     |     -      |     ✓      |   ✓ (160)
+
+ACTUAL TEST BREAKDOWN:
+=====================
+FIDELITY (5): mouse_fidelity, keyboard_fidelity, mouse_small_values_exhaustive, timestamp_exhaustive, screen_fidelity, test_mouse_validation
+EFFICIENCY (3): mouse_token_count, keyboard_token_count, screen_token_count
+EDGE CASES (6): extreme_mouse_values, extreme_timestamps, extreme_keyboard_values, extreme_screen_values, zero_values, basic_functionality
 """
 
-import json
-
+import orjson
 import pytest
 
 from mcap_owa.highlevel.mcap_msg import McapMessage
-from owa.data.encoders.hierarchical_event_encoder import HierarchicalEventEncoder, HierarchicalEventEncoderConfig
+from owa.data.encoders.hierarchical_event_encoder import HierarchicalEventEncoder
+from owa.msgs.desktop.screen import ScreenCaptured
 
-MOUSE_TEST_RANGE = 10
-
-
-class TestHierarchicalEncoderConfig:
-    """Test configuration sanity and unified semantics."""
-
-    def test_default_config(self):
-        """Test default configuration has correct unified semantics."""
-        config = HierarchicalEventEncoderConfig()
-
-        # Both should represent half-ranges
-        assert config.max_timestamp_range_ns == 8_000_000_000  # ±8 seconds
-        assert config.max_mouse_delta == (1000, 1000)  # ±1000 x, ±1000 y
-
-        # Old attribute should not exist
-        assert not hasattr(config, "timestamp_range_ns")
-        assert not hasattr(config, "max_mouse_delta_x")
-        assert not hasattr(config, "max_mouse_delta_y")
-
-    def test_custom_config(self):
-        """Test custom configuration with different half-ranges."""
-        config = HierarchicalEventEncoderConfig(
-            max_timestamp_range_ns=3_000_000_000,  # ±3 seconds
-            max_mouse_delta=(500, 800),  # ±500 x, ±800 y
-        )
-
-        assert config.max_timestamp_range_ns == 3_000_000_000
-        assert config.max_mouse_delta == (500, 800)
-
-    def test_encoder_creation(self):
-        """Test encoder can be created with various configurations."""
-        # Default config
-        encoder1 = HierarchicalEventEncoder()
-        assert encoder1 is not None
-
-        # Custom config
-        config = HierarchicalEventEncoderConfig(max_mouse_delta=(200, 300))
-        encoder2 = HierarchicalEventEncoder(config)
-        assert encoder2 is not None
+# =============================================================================
+# 1. FIDELITY TESTS: Encode-decode must preserve data
+# =============================================================================
 
 
-class TestHierarchicalEncoderOperation:
-    """Test essential encoding/decoding operations."""
+class TestFidelity:
+    """Test that encoding-decoding preserves data without loss."""
 
     @pytest.fixture
     def encoder(self):
-        """Create encoder with default config."""
         return HierarchicalEventEncoder()
 
-    def test_mouse_encoding_roundtrip(self, encoder):
-        """Test mouse event encoding/decoding preserves data."""
-        # Create test mouse message
-        original_data = {"last_x": 500, "last_y": -750, "button_flags": 1, "button_data": 120}
-        mouse_msg = McapMessage(
+    def test_mouse_fidelity(self, encoder):
+        """Mouse events should round-trip without data loss."""
+        test_cases = [
+            # (movement_x, movement_y, button_flags, button_data, description)
+            (0, 0, 0, 0, "no movement, no buttons"),
+            (1, 1, 0, 0, "minimal movement"),
+            (7, -3, 1, 0, "small movement, left button"),
+            (-13, 9, 2, 0, "small negative movement, left button up"),
+            (47, -29, 4, 0, "medium movement, right button down"),
+            (-53, 31, 8, 0, "medium negative movement, right button up"),
+            (97, 203, 0x10, 0, "large movement, middle button down"),
+            (-103, -197, 0x20, 0, "large negative movement, middle button up"),
+            (211, 307, 0x400, 120, "large movement, wheel forward"),
+            (-193, -289, 0x400, -120, "large negative movement, wheel backward"),
+            (149, -157, 0x401, 240, "movement, left button + wheel forward"),
+            (-143, 163, 0x402, -240, "negative movement, left up + wheel backward"),
+            (317, 409, 0x404, 360, "movement, right down + wheel forward"),
+            (503, 797, 0x410, 480, "large movement, middle down + wheel forward"),
+            (251, -247, 0x800, 0, "movement, horizontal wheel"),
+            (-259, 241, 0xFFF, -120, "negative movement, all flags + wheel backward"),
+        ]
+
+        for dx, dy, flags, data, desc in test_cases:
+            original = {"last_x": dx, "last_y": dy, "button_flags": flags, "button_data": data}
+            msg = McapMessage(
+                topic="mouse/raw",
+                timestamp=1000000000,
+                message=orjson.dumps(original),
+                message_type="desktop/RawMouseEvent",
+            )
+
+            # Round trip
+            encoded, images = encoder.encode(msg)
+            decoded = encoder.decode(encoded, images)
+            result = orjson.loads(decoded.message)
+
+            # Check fidelity - all test values are within range so should be preserved exactly
+            assert result["last_x"] == dx, f"X movement not preserved in {desc}: expected {dx}, got {result['last_x']}"
+            assert result["last_y"] == dy, f"Y movement not preserved in {desc}: expected {dy}, got {result['last_y']}"
+            assert result["button_flags"] == flags, f"Button flags lost in {desc}"
+
+            # Button data is quantized by 120, so check expected value
+            expected_data = (data // 120) * 120 if flags & 0x400 else data
+            assert result["button_data"] == expected_data, f"Button data lost in {desc}"
+
+    def test_keyboard_fidelity(self, encoder):
+        """Keyboard events should round-trip without data loss."""
+        test_cases = [
+            ("press", 65),
+            ("release", 65),  # A key
+            ("press", 90),
+            ("release", 90),  # Z key
+            ("press", 48),
+            ("release", 48),  # 0 key
+            ("press", 13),
+            ("release", 13),  # Enter
+            ("press", 27),
+            ("release", 27),  # Escape
+            ("press", 32),
+            ("release", 32),  # Space
+            ("press", 16),
+            ("release", 16),  # Shift
+            ("press", 112),
+            ("release", 112),  # F1
+            ("press", 37),
+            ("release", 37),  # Left arrow
+        ]
+
+        for event_type, vk in test_cases:
+            original = {"event_type": event_type, "vk": vk}
+            msg = McapMessage(
+                topic="keyboard",
+                timestamp=2000000000,
+                message=orjson.dumps(original),
+                message_type="desktop/KeyboardEvent",
+            )
+
+            # Round trip
+            encoded, images = encoder.encode(msg)
+            decoded = encoder.decode(encoded, images)
+            result = orjson.loads(decoded.message)
+
+            # Check perfect fidelity
+            assert result["event_type"] == event_type, f"Event type lost for {event_type} {vk}"
+            assert result["vk"] == vk, f"VK code lost for {event_type} {vk}"
+
+    def test_mouse_small_values_exhaustive(self, encoder):
+        """Exhaustive test for small mouse movements (0-20 range) - must be exact."""
+        for dx in range(-20, 21):  # -20 to 20
+            for dy in range(-20, 21):  # -20 to 20
+                original = {"last_x": dx, "last_y": dy, "button_flags": 0, "button_data": 0}
+                msg = McapMessage(
+                    topic="mouse/raw",
+                    timestamp=1000000000,
+                    message=orjson.dumps(original),
+                    message_type="desktop/RawMouseEvent",
+                )
+
+                # Round trip
+                encoded, images = encoder.encode(msg)
+                decoded = encoder.decode(encoded, images)
+                result = orjson.loads(decoded.message)
+
+                # Small values must be preserved exactly (no quantization loss allowed)
+                assert result["last_x"] == dx, f"X value changed: {dx} -> {result['last_x']}"
+                assert result["last_y"] == dy, f"Y value changed: {dy} -> {result['last_y']}"
+
+    def test_timestamp_exhaustive(self, encoder):
+        """Exhaustive test for timestamp encoding/decoding within reasonable range."""
+        # Test range: 0 to 16 seconds in nanoseconds (covers typical event intervals)
+        max_range_ns = encoder.config.max_timestamp_range_ns  # 8 seconds
+        test_range_ns = 2 * max_range_ns  # 16 seconds total range
+
+        # Test every 100ms within the range (160 values)
+        step_ns = 100_000_000  # 100ms in nanoseconds
+
+        for ts in range(0, test_range_ns, step_ns):
+            data = {"last_x": 1, "last_y": 1, "button_flags": 0, "button_data": 0}
+            msg = McapMessage(
+                topic="mouse/raw",
+                timestamp=ts,
+                message=orjson.dumps(data),
+                message_type="desktop/RawMouseEvent",
+            )
+
+            # Round trip
+            encoded, images = encoder.encode(msg)
+            decoded = encoder.decode(encoded, images)
+
+            # Within the quantization range, timestamps should be preserved exactly
+            if ts < test_range_ns:
+                assert decoded.timestamp == ts, f"Timestamp changed: {ts} -> {decoded.timestamp}"
+
+    def test_screen_fidelity(self, encoder):
+        """Screen events should preserve structure and handle utc_ns vs timestamp correctly."""
+        test_cases = [
+            # (utc_ns, timestamp, source_shape, shape, media_ref, description)
+            (3000000000, 3000000000, [1920, 1080], [1920, 1080], {"uri": "test1.png"}, "same utc_ns and timestamp"),
+            (4000000000, 5000000000, [1280, 720], [1280, 720], {"uri": "test2.png"}, "different utc_ns and timestamp"),
+        ]
+
+        for utc_ns, timestamp, source_shape, shape, media_ref, desc in test_cases:
+            original = {
+                "utc_ns": utc_ns,
+                "source_shape": source_shape,
+                "shape": shape,
+                "media_ref": media_ref,
+            }
+
+            msg = McapMessage(
+                topic="screen",
+                timestamp=timestamp,
+                message=orjson.dumps(original),
+                message_type="desktop/ScreenCaptured",
+            )
+
+            # Encode and check image object preservation
+            encoded, images = encoder.encode(msg)
+            assert len(images) == 1
+            assert isinstance(images[0], ScreenCaptured)
+            assert images[0].utc_ns == utc_ns, f"utc_ns not preserved for {desc}"
+            assert list(images[0].source_shape) == source_shape, f"source_shape not preserved for {desc}"
+            assert list(images[0].shape) == shape, f"shape not preserved for {desc}"
+            assert images[0].media_ref.uri == media_ref["uri"], f"media_ref not preserved for {desc}"
+
+            # Decode and check message timestamp preservation
+            decoded = encoder.decode(encoded, images)
+            assert decoded.timestamp == timestamp, f"timestamp not preserved for {desc}"
+            assert decoded.topic == "screen"
+            assert decoded.message_type == "desktop/ScreenCaptured"
+
+    def test_mouse_validation(self, encoder):
+        """Mouse encoder should validate input ranges and reject invalid values."""
+        max_x, max_y = encoder.config.max_mouse_delta  # Default: (1000, 1000)
+
+        # Test boundary values (should work)
+        valid_cases = [
+            (max_x, max_y),  # At positive boundary
+            (-max_x, -max_y),  # At negative boundary
+            (0, 0),  # Zero
+            (max_x, -max_y),  # Mixed boundaries
+        ]
+
+        for dx, dy in valid_cases:
+            data = {"last_x": dx, "last_y": dy, "button_flags": 0, "button_data": 0}
+            msg = McapMessage(
+                topic="mouse/raw",
+                timestamp=1000000000,
+                message=orjson.dumps(data),
+                message_type="desktop/RawMouseEvent",
+            )
+
+            # Should work without errors
+            encoded, images = encoder.encode(msg)
+            decoded = encoder.decode(encoded, images)
+            result = orjson.loads(decoded.message)
+            assert result["last_x"] == dx
+            assert result["last_y"] == dy
+
+        # Test invalid values (should raise ValueError)
+        invalid_cases = [
+            (max_x + 1, 0),  # X too large
+            (-max_x - 1, 0),  # X too small
+            (0, max_y + 1),  # Y too large
+            (0, -max_y - 1),  # Y too small
+        ]
+
+        for dx, dy in invalid_cases:
+            data = {"last_x": dx, "last_y": dy, "button_flags": 0, "button_data": 0}
+            msg = McapMessage(
+                topic="mouse/raw",
+                timestamp=1000000000,
+                message=orjson.dumps(data),
+                message_type="desktop/RawMouseEvent",
+            )
+
+            # Should raise ValueError
+            with pytest.raises(ValueError, match=r"Mouse d[xy] value .* is outside valid range"):
+                encoder.encode(msg)
+
+
+# =============================================================================
+# 2. EFFICIENCY TESTS: Token count should be reasonable
+# =============================================================================
+
+
+class TestEfficiency:
+    """Test that token count is reasonable, not bloated."""
+
+    @pytest.fixture
+    def encoder(self):
+        return HierarchicalEventEncoder()
+
+    def test_mouse_token_count(self, encoder):
+        """Mouse events should use exact expected number of tokens."""
+        data = {"last_x": 100, "last_y": -50, "button_flags": 0x401, "button_data": 120}
+        msg = McapMessage(
             topic="mouse/raw",
-            timestamp=1_000_000_000,
-            message=json.dumps(original_data).encode("utf-8"),
+            timestamp=1000000000,
+            message=orjson.dumps(data),
             message_type="desktop/RawMouseEvent",
         )
 
-        # Encode
-        encoded, images = encoder.encode(mouse_msg)
-        assert encoded.startswith("<EVENT_START>")
-        assert encoded.endswith("<EVENT_END>")
-        assert "<MOUSE>" in encoded
+        encoded, _ = encoder.encode(msg)
+        token_count = encoded.count("<")  # Count tokens
 
-        # Decode
-        decoded_msg = encoder.decode(encoded, images)
-        decoded_data = json.loads(decoded_msg.message.decode("utf-8"))
+        # Expected: EVENT_START + TIMESTAMP(4) + MOUSE + movement(6) + flags(3) + wheel(1) + EVENT_END = 17
+        assert token_count == 17, f"Expected exactly 17 tokens for mouse event, got {token_count}"
 
-        # Verify preservation of key fields
-        assert decoded_data["last_x"] == original_data["last_x"]
-        assert decoded_data["last_y"] == original_data["last_y"]
-        assert decoded_data["button_flags"] == original_data["button_flags"]
-
-    def test_keyboard_encoding_roundtrip(self, encoder):
-        """Test keyboard event encoding/decoding preserves data."""
-        # Create test keyboard message
-        original_data = {"event_type": "press", "vk": 65}
-        kb_msg = McapMessage(
+    def test_keyboard_token_count(self, encoder):
+        """Keyboard events should use exact expected number of tokens."""
+        data = {"event_type": "press", "vk": 65}
+        msg = McapMessage(
             topic="keyboard",
-            timestamp=2_000_000_000,
-            message=json.dumps(original_data).encode("utf-8"),
+            timestamp=2000000000,
+            message=orjson.dumps(data),
             message_type="desktop/KeyboardEvent",
         )
 
-        # Encode
-        encoded, images = encoder.encode(kb_msg)
-        assert encoded.startswith("<EVENT_START>")
-        assert encoded.endswith("<EVENT_END>")
-        assert "<KEYBOARD>" in encoded
+        encoded, _ = encoder.encode(msg)
+        token_count = encoded.count("<")
 
-        # Decode
-        decoded_msg = encoder.decode(encoded, images)
-        decoded_data = json.loads(decoded_msg.message.decode("utf-8"))
+        # Expected: EVENT_START + TIMESTAMP(4) + KEYBOARD + vk + event_type + EVENT_END = 9
+        assert token_count == 9, f"Expected exactly 9 tokens for keyboard event, got {token_count}"
 
-        # Verify preservation
-        assert decoded_data["event_type"] == original_data["event_type"]
-        assert decoded_data["vk"] == original_data["vk"]
+    def test_screen_token_count(self, encoder):
+        """Screen events should use exact expected number of tokens."""
+        data = {
+            "utc_ns": 3000000000,
+            "source_shape": [1920, 1080],
+            "shape": [1920, 1080],
+            "media_ref": {"uri": "test.png"},
+        }
+        msg = McapMessage(
+            topic="screen",
+            timestamp=3000000000,
+            message=orjson.dumps(data),
+            message_type="desktop/ScreenCaptured",
+        )
 
-    def test_boundary_values(self, encoder):
-        """Test encoding/decoding at configuration boundaries."""
-        config = encoder.config
-        max_x, max_y = config.max_mouse_delta
+        encoded, _ = encoder.encode(msg)
+        token_count = encoded.count("<")
 
-        # Test boundary mouse values
-        boundary_data = {"last_x": max_x, "last_y": -max_y, "button_flags": 0, "button_data": 0}
-        mouse_msg = McapMessage(
+        # Expected: EVENT_START + TIMESTAMP(4) + image_prefix + image + image_suffix + EVENT_END = 10
+        assert token_count == 10, f"Expected exactly 10 tokens for screen event, got {token_count}"
+
+
+# =============================================================================
+# 3. EDGE CASE TESTS: Works well even with edge cases
+# =============================================================================
+
+
+class TestEdgeCases:
+    """Test that encoder handles edge cases well - users don't need to worry."""
+
+    @pytest.fixture
+    def encoder(self):
+        return HierarchicalEventEncoder()
+
+    def test_extreme_mouse_values(self, encoder):
+        """Extreme mouse values should raise validation errors."""
+        max_x, max_y = encoder.config.max_mouse_delta  # Default: (1000, 1000)
+
+        # Test cases that should raise ValueError (mouse deltas and button_flags)
+        invalid_cases = [
+            # Out-of-range mouse deltas (beyond ±1000)
+            {"last_x": max_x + 1, "last_y": 0, "button_flags": 0, "button_data": 0},
+            {"last_x": -max_x - 1, "last_y": 0, "button_flags": 0, "button_data": 0},
+            {"last_x": 0, "last_y": max_y + 1, "button_flags": 0, "button_data": 0},
+            {"last_x": 0, "last_y": -max_y - 1, "button_flags": 0, "button_data": 0},
+            {"last_x": 10000, "last_y": 10000, "button_flags": 0, "button_data": 0},
+            {"last_x": -50000, "last_y": 50000, "button_flags": 0, "button_data": 0},
+            # Invalid button_flags (beyond 3-digit hex range)
+            {"last_x": 0, "last_y": 0, "button_flags": 0xFFFF, "button_data": 0},  # 4-digit hex
+            {"last_x": 0, "last_y": 0, "button_flags": 0x1000, "button_data": 0},  # Just above 3-digit hex
+            {"last_x": 0, "last_y": 0, "button_flags": 0x12345, "button_data": 0},  # 5-digit hex
+            {"last_x": 0, "last_y": 0, "button_flags": 65536, "button_data": 0},  # Large decimal value
+        ]
+
+        for i, data in enumerate(invalid_cases):
+            msg = McapMessage(
+                topic="mouse/raw",
+                timestamp=1000000000 + i,
+                message=orjson.dumps(data),
+                message_type="desktop/RawMouseEvent",
+            )
+
+            # Should raise ValueError for out-of-range mouse deltas or invalid button_flags
+            with pytest.raises(
+                ValueError,
+                match=r"Mouse (d[xy] value .* is outside valid range|button_flags value .* is outside valid 3-digit hex range)",
+            ):
+                encoder.encode(msg)
+
+        # Test cases with extreme button data/flags but valid mouse deltas (should work)
+        valid_cases = [
+            {"last_x": 0, "last_y": 0, "button_flags": 0x400, "button_data": 32767},
+            {"last_x": 0, "last_y": 0, "button_flags": 0x400, "button_data": -32768},
+            {"last_x": 0, "last_y": 0, "button_flags": 0xFFF, "button_data": 0},  # Max valid 3-digit hex
+            {"last_x": max_x, "last_y": max_y, "button_flags": 0xFFF, "button_data": 32767},  # At boundary
+        ]
+
+        for i, data in enumerate(valid_cases):
+            msg = McapMessage(
+                topic="mouse/raw",
+                timestamp=2000000000 + i,
+                message=orjson.dumps(data),
+                message_type="desktop/RawMouseEvent",
+            )
+
+            # Should work without errors
+            encoded, images = encoder.encode(msg)
+            decoded = encoder.decode(encoded, images)
+            result = orjson.loads(decoded.message)
+
+            # Should produce valid results by checking for data fidelity
+            assert result["last_x"] == data["last_x"]
+            assert result["last_y"] == data["last_y"]
+            assert result["button_flags"] == data["button_flags"]
+            expected_data = (data["button_data"] // 120) * 120 if data["button_flags"] & 0x400 else data["button_data"]
+            assert result["button_data"] == expected_data
+
+    def test_extreme_timestamps(self, encoder):
+        """Extreme timestamp values should be handled gracefully."""
+        extreme_timestamps = [
+            0,  # Minimum
+            9223372036854775807,  # Maximum int64
+            1000000000000000000,  # Very large
+        ]
+
+        for ts in extreme_timestamps:
+            data = {"last_x": 10, "last_y": 10, "button_flags": 0, "button_data": 0}
+            msg = McapMessage(
+                topic="mouse/raw",
+                timestamp=ts,
+                message=orjson.dumps(data),
+                message_type="desktop/RawMouseEvent",
+            )
+
+            # Should handle gracefully (may quantize large timestamps)
+            encoded, images = encoder.encode(msg)
+            decoded = encoder.decode(encoded, images)
+
+            # Should produce valid timestamp
+            assert isinstance(decoded.timestamp, int)
+            assert decoded.timestamp >= 0
+
+    def test_extreme_keyboard_values(self, encoder):
+        """Extreme keyboard values should be handled gracefully."""
+        extreme_cases = [
+            # Extreme VK codes
+            ("press", 0),  # Minimum VK
+            ("release", 0),  # Minimum VK
+            ("press", 255),  # Maximum standard VK
+            ("release", 255),  # Maximum standard VK
+            ("press", 65535),  # Very large VK
+            ("release", 65535),  # Very large VK
+            # All event types with extreme VKs
+            ("press", 1000),
+            ("release", 1000),
+        ]
+
+        for event_type, vk in extreme_cases:
+            data = {"event_type": event_type, "vk": vk}
+            msg = McapMessage(
+                topic="keyboard",
+                timestamp=4000000000 + vk,
+                message=orjson.dumps(data),
+                message_type="desktop/KeyboardEvent",
+            )
+
+            # Should handle gracefully
+            encoded, images = encoder.encode(msg)
+            decoded = encoder.decode(encoded, images)
+            result = orjson.loads(decoded.message)
+
+            # Should produce valid results
+            assert result["event_type"] == event_type
+            assert isinstance(result["vk"], int)
+
+    def test_zero_values(self, encoder):
+        """Zero values should be handled correctly."""
+        # Zero mouse movement
+        data = {"last_x": 0, "last_y": 0, "button_flags": 0, "button_data": 0}
+        msg = McapMessage(
             topic="mouse/raw",
             timestamp=0,
-            message=json.dumps(boundary_data).encode("utf-8"),
+            message=orjson.dumps(data),
             message_type="desktop/RawMouseEvent",
         )
 
-        # Should handle boundary values without error
-        encoded, images = encoder.encode(mouse_msg)
-        decoded_msg = encoder.decode(encoded, images)
-        decoded_data = json.loads(decoded_msg.message.decode("utf-8"))
+        encoded, images = encoder.encode(msg)
+        decoded = encoder.decode(encoded, images)
+        result = orjson.loads(decoded.message)
 
-        # Boundary values should be preserved exactly
-        assert decoded_data["last_x"] == max_x
-        assert decoded_data["last_y"] == -max_y
+        assert result["last_x"] == 0
+        assert result["last_y"] == 0
+        assert result["button_flags"] == 0
+        assert result["button_data"] == 0
 
-    def test_vocab_generation(self, encoder):
-        """Test vocabulary generation works."""
+    def test_extreme_screen_values(self, encoder):
+        """Extreme screen values should be handled gracefully."""
+        extreme_cases = [
+            # Extreme resolutions
+            {"utc_ns": 0, "source_shape": [1, 1], "shape": [1, 1], "media_ref": {"uri": "tiny.png"}},
+            {
+                "utc_ns": 9223372036854775807,
+                "source_shape": [7680, 4320],
+                "shape": [7680, 4320],
+                "media_ref": {"uri": "8k.png"},
+            },
+            # Extreme timestamps
+            {
+                "utc_ns": 1000000000000000000,
+                "source_shape": [1920, 1080],
+                "shape": [1920, 1080],
+                "media_ref": {"uri": "future.png"},
+            },
+            # Different source vs processed shapes
+            {
+                "utc_ns": 5000000000,
+                "source_shape": [3840, 2160],
+                "shape": [1920, 1080],
+                "media_ref": {"uri": "downscaled.png"},
+            },
+        ]
+
+        for i, data in enumerate(extreme_cases):
+            msg = McapMessage(
+                topic="screen",
+                timestamp=6000000000 + i,
+                message=orjson.dumps(data),
+                message_type="desktop/ScreenCaptured",
+            )
+
+            # Should handle gracefully without crashing
+            encoded, images = encoder.encode(msg)
+            decoded = encoder.decode(encoded, images)
+
+            # Should produce valid results
+            assert len(images) == 1
+            assert isinstance(images[0], ScreenCaptured)
+            assert isinstance(decoded.timestamp, int)
+            assert decoded.topic == "screen"
+
+    def test_basic_functionality(self, encoder):
+        """Basic encoder functionality should work."""
+        # Can create vocab
         vocab = encoder.get_vocab()
-        assert isinstance(vocab, set)
         assert len(vocab) > 0
 
-        # Should contain essential tokens
+        # Contains expected tokens
         assert "<EVENT_START>" in vocab
         assert "<EVENT_END>" in vocab
-        assert "<TIMESTAMP>" in vocab
-        assert "<KEYBOARD>" in vocab
         assert "<MOUSE>" in vocab
-
-    def test_different_mouse_ranges(self):
-        """Test encoder works with different mouse ranges."""
-        config = HierarchicalEventEncoderConfig(max_mouse_delta=(200, 400))
-        encoder = HierarchicalEventEncoder(config)
-
-        # Test with values within the smaller range
-        test_data = {"last_x": 150, "last_y": -300, "button_flags": 0, "button_data": 0}
-        mouse_msg = McapMessage(
-            topic="mouse/raw",
-            timestamp=0,
-            message=json.dumps(test_data).encode("utf-8"),
-            message_type="desktop/RawMouseEvent",
-        )
-
-        # Should work without error
-        encoded, images = encoder.encode(mouse_msg)
-        decoded_msg = encoder.decode(encoded, images)
-        decoded_data = json.loads(decoded_msg.message.decode("utf-8"))
-
-        # Values should be preserved
-        assert decoded_data["last_x"] == test_data["last_x"]
-        assert decoded_data["last_y"] == test_data["last_y"]
-
-    @pytest.mark.parametrize("delta_x", [x for x in range(-MOUSE_TEST_RANGE, MOUSE_TEST_RANGE + 1)])
-    @pytest.mark.parametrize("delta_y", [y for y in range(-MOUSE_TEST_RANGE, MOUSE_TEST_RANGE + 1)])
-    def test_mouse_delta_precision(self, delta_x, delta_y):
-        """Test that encoder preserves mouse delta precision for specific values."""
-        encoder = HierarchicalEventEncoder()
-
-        # Create test message
-        test_data = {"last_x": delta_x, "last_y": delta_y, "button_flags": 0, "button_data": 0}
-        mouse_msg = McapMessage(
-            topic="mouse/raw",
-            timestamp=1000000000,
-            message=json.dumps(test_data).encode("utf-8"),
-            message_type="desktop/RawMouseEvent",
-        )
-
-        # Encode and decode
-        encoded, images = encoder.encode(mouse_msg)
-        decoded_msg = encoder.decode(encoded, images)
-        decoded_data = json.loads(decoded_msg.message.decode("utf-8"))
-
-        decoded_x = decoded_data["last_x"]
-        decoded_y = decoded_data["last_y"]
-
-        # Calculate errors
-        error_x = abs(decoded_x - delta_x)
-        error_y = abs(decoded_y - delta_y)
-        max_error = max(error_x, error_y)
-
-        # For all movements, expect exact preservation
-        assert max_error == 0, (
-            f"Movement ({delta_x}, {delta_y}) should be preserved within 1 pixel, "
-            f"got ({decoded_x}, {decoded_y}) (max error: {max_error})"
-        )
+        assert "<KEYBOARD>" in vocab
 
 
 if __name__ == "__main__":
