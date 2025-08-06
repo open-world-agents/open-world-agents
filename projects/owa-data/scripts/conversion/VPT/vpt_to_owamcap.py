@@ -2,15 +2,15 @@
 # /// script
 # requires-python = ">=3.11"
 # dependencies = [
-#   "mcap-owa-support==0.5.5",
-#   "owa-core==0.5.5",
-#   "owa-msgs==0.5.5",
-#   "owa-env-desktop==0.5.5",
+#   "mcap-owa-support==0.5.6",
+#   "owa-core==0.5.6",
+#   "owa-msgs==0.5.6",
+#   "owa-env-desktop==0.5.6",
 #   "tqdm",
 #   "rich",
 # ]
 # [tool.uv]
-# exclude-newer = "2025-08-01T12:00:00Z"
+# exclude-newer = "2025-08-06T12:00:00Z"
 # ///
 
 import argparse
@@ -161,13 +161,12 @@ def process_single_file(jsonl_file_path, vpt_media_ext):
 
         ## SCREEN EVENT
         topic = "screen"
-        from owa.msgs.desktop.screen import MediaRef
 
         event = ScreenCaptured(
             utc_ns=unix_epoch_ns,
             source_shape=(VPT_X_RESOLUTION, VPT_Y_RESOLUTION),
             shape=(VPT_X_RESOLUTION, VPT_Y_RESOLUTION),
-            media_ref=MediaRef(uri=str(media_file_path.name), pts_ns=unix_epoch_ns),
+            media_ref=dict(uri=str(media_file_path.name), pts_ns=unix_epoch_ns),
         )
         writer.write_message(event, topic=topic, timestamp=unix_epoch_ns)
 
@@ -181,7 +180,7 @@ def process_single_file(jsonl_file_path, vpt_media_ext):
                 utc_ns=log_time,
                 source_shape=(VPT_X_RESOLUTION, VPT_Y_RESOLUTION),
                 shape=(VPT_X_RESOLUTION, VPT_Y_RESOLUTION),
-                media_ref=MediaRef(uri=str(media_file_path.name), pts_ns=log_time),
+                media_ref=dict(uri=str(media_file_path.name), pts_ns=log_time),
             )
             writer.write_message(event, topic=topic, timestamp=log_time)
 
