@@ -1,4 +1,3 @@
-import json
 import re
 from dataclasses import dataclass, field
 from fractions import Fraction
@@ -382,29 +381,39 @@ class HierarchicalEventEncoder(BaseEventEncoder):
                 message_type="desktop/RawMouseEvent",
                 message=orjson.dumps(msg_data),
             )
-        elif event_type_token == self.config.image_token_prefix:
-            # Check if we have enough tokens for the full image token sequence
-            if (
-                len(tokens) < timestamp_token_count + 3
-                or tokens[timestamp_token_count + 1] != self.config.image_token
-                or tokens[timestamp_token_count + 2] != self.config.image_token_suffix
-            ):
-                raise ValueError(
-                    f"Invalid image token sequence: expected prefix, token, suffix but got {tokens[timestamp_token_count : timestamp_token_count + 3]}"
+        else:
+            # Check if this is the start of an image token sequence
+            # Parse the image_token_prefix to get individual tokens
+            prefix_tokens = re.findall(r"<[^>]*>", self.config.image_token_prefix)
+
+            if prefix_tokens and event_type_token == prefix_tokens[0]:
+                # This looks like the start of an image sequence
+                expected_tokens = (
+                    prefix_tokens + [self.config.image_token] + re.findall(r"<[^>]*>", self.config.image_token_suffix)
                 )
 
-            if not images:
-                raise ValueError("Screen event requires image data but none provided")
-            image_data = images[0]
-            msg = image_data.model_dump_json(exclude={"frame_arr"})
-            return McapMessage(
-                topic="screen",
-                timestamp=timestamp_ns,
-                message_type="desktop/ScreenCaptured",
-                message=msg.encode("utf-8"),
-            )
-        else:
-            raise ValueError(f"Unknown event type token: {event_type_token}")
+                if len(tokens) < timestamp_token_count + len(expected_tokens):
+                    raise ValueError("Not enough tokens for image sequence")
+
+                # Verify the complete image token sequence
+                actual_tokens = tokens[timestamp_token_count : timestamp_token_count + len(expected_tokens)]
+                if actual_tokens != expected_tokens:
+                    raise ValueError(
+                        f"Invalid image token sequence: expected {expected_tokens} but got {actual_tokens}"
+                    )
+
+                if not images:
+                    raise ValueError("Screen event requires image data but none provided")
+                image_data = images[0]
+                msg = image_data.model_dump_json(exclude={"frame_arr"})
+                return McapMessage(
+                    topic="screen",
+                    timestamp=timestamp_ns,
+                    message_type="desktop/ScreenCaptured",
+                    message=msg.encode("utf-8"),
+                )
+            else:
+                raise ValueError(f"Unknown event type token: {event_type_token}")
 
     def get_vocab(self) -> Set[str]:
         """Get all tokens in the vocabulary."""

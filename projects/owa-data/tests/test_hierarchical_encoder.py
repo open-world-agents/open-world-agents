@@ -5,6 +5,23 @@ TESTING PRIORITIES:
 1. FIDELITY: Encode-decode yields same/similar result (no data loss)
 2. EFFICIENCY: Token count is reasonable (not bloated)
 3. NO EDGE CASES: Works well even with edge cases - users don't need to worry
+
+COVERAGE MATRIX:
+===============
+Event Type    | Encoding | Decoding | Fidelity | Efficiency | Edge Cases | Exhaustive
+------------- | -------- | -------- | -------- | ---------- | ---------- | ----------
+Mouse Move    |    ✓     |    ✓     |    ✓     |     ✓      |     ✓      |  ✓ (1,681)
+Mouse Buttons |    ✓     |    ✓     |    ✓     |     ✓      |     ✓      |     -
+Mouse Wheel   |    ✓     |    ✓     |    ✓     |     ✓      |     ✓      |     -
+Keyboard      |    ✓     |    ✓     |    ✓     |     ✓      |     ✓      |     -
+Screen        |    ✓     |    ✓     |    ✓     |     ✓      |     ✓      |     -
+Timestamps    |    ✓     |    ✓     |    ✓     |     -      |     ✓      |   ✓ (160)
+
+ACTUAL TEST BREAKDOWN:
+=====================
+FIDELITY (5): mouse_fidelity, keyboard_fidelity, mouse_small_values_exhaustive, timestamp_exhaustive, screen_fidelity
+EFFICIENCY (3): mouse_token_count, keyboard_token_count, screen_token_count
+EDGE CASES (6): extreme_mouse_values, extreme_timestamps, extreme_keyboard_values, extreme_screen_values, zero_values, basic_functionality
 """
 
 import json
@@ -141,31 +158,71 @@ class TestFidelity:
                 assert result["last_x"] == dx, f"X value changed: {dx} -> {result['last_x']}"
                 assert result["last_y"] == dy, f"Y value changed: {dy} -> {result['last_y']}"
 
+    def test_timestamp_exhaustive(self, encoder):
+        """Exhaustive test for timestamp encoding/decoding within reasonable range."""
+        # Test range: 0 to 16 seconds in nanoseconds (covers typical event intervals)
+        max_range_ns = encoder.config.max_timestamp_range_ns  # 8 seconds
+        test_range_ns = 2 * max_range_ns  # 16 seconds total range
+
+        # Test every 100ms within the range (160 values)
+        step_ns = 100_000_000  # 100ms in nanoseconds
+
+        for ts in range(0, test_range_ns, step_ns):
+            data = {"last_x": 1, "last_y": 1, "button_flags": 0, "button_data": 0}
+            msg = McapMessage(
+                topic="mouse/raw",
+                timestamp=ts,
+                message=json.dumps(data).encode("utf-8"),
+                message_type="desktop/RawMouseEvent",
+            )
+
+            # Round trip
+            encoded, images = encoder.encode(msg)
+            decoded = encoder.decode(encoded, images)
+
+            # Within the quantization range, timestamps should be preserved exactly
+            if ts < test_range_ns:
+                assert decoded.timestamp == ts, f"Timestamp changed: {ts} -> {decoded.timestamp}"
+
     def test_screen_fidelity(self, encoder):
-        """Screen events should preserve structure."""
+        """Screen events should preserve structure and handle utc_ns vs timestamp correctly."""
         from owa.msgs.desktop.screen import ScreenCaptured
 
-        original = {
-            "utc_ns": 3000000000,
-            "source_shape": [1920, 1080],
-            "shape": [1920, 1080],
-            "media_ref": {"uri": "test.png"},
-        }
+        test_cases = [
+            # (utc_ns, timestamp, source_shape, shape, media_ref, description)
+            (3000000000, 3000000000, [1920, 1080], [1920, 1080], {"uri": "test1.png"}, "same utc_ns and timestamp"),
+            (4000000000, 5000000000, [1280, 720], [1280, 720], {"uri": "test2.png"}, "different utc_ns and timestamp"),
+        ]
 
-        msg = McapMessage(
-            topic="screen",
-            timestamp=3000000000,
-            message=json.dumps(original).encode("utf-8"),
-            message_type="desktop/ScreenCaptured",
-        )
+        for utc_ns, timestamp, source_shape, shape, media_ref, desc in test_cases:
+            original = {
+                "utc_ns": utc_ns,
+                "source_shape": source_shape,
+                "shape": shape,
+                "media_ref": media_ref,
+            }
 
-        # Encode (should produce image object)
-        encoded, images = encoder.encode(msg)
+            msg = McapMessage(
+                topic="screen",
+                timestamp=timestamp,
+                message=json.dumps(original).encode("utf-8"),
+                message_type="desktop/ScreenCaptured",
+            )
 
-        # Check that we get a ScreenCaptured object back
-        assert len(images) == 1
-        assert isinstance(images[0], ScreenCaptured)
-        assert images[0].utc_ns == 3000000000
+            # Encode and check image object preservation
+            encoded, images = encoder.encode(msg)
+            assert len(images) == 1
+            assert isinstance(images[0], ScreenCaptured)
+            assert images[0].utc_ns == utc_ns, f"utc_ns not preserved for {desc}"
+            assert list(images[0].source_shape) == source_shape, f"source_shape not preserved for {desc}"
+            assert list(images[0].shape) == shape, f"shape not preserved for {desc}"
+            assert images[0].media_ref.uri == media_ref["uri"], f"media_ref not preserved for {desc}"
+
+            # Decode and check message timestamp preservation
+            decoded = encoder.decode(encoded, images)
+            assert decoded.timestamp == timestamp, f"timestamp not preserved for {desc}"
+            assert decoded.topic == "screen"
+            assert decoded.message_type == "desktop/ScreenCaptured"
 
 
 # =============================================================================
@@ -363,6 +420,53 @@ class TestEdgeCases:
         assert result["last_y"] == 0
         assert result["button_flags"] == 0
         assert result["button_data"] == 0
+
+    def test_extreme_screen_values(self, encoder):
+        """Extreme screen values should be handled gracefully."""
+        from owa.msgs.desktop.screen import ScreenCaptured
+
+        extreme_cases = [
+            # Extreme resolutions
+            {"utc_ns": 0, "source_shape": [1, 1], "shape": [1, 1], "media_ref": {"uri": "tiny.png"}},
+            {
+                "utc_ns": 9223372036854775807,
+                "source_shape": [7680, 4320],
+                "shape": [7680, 4320],
+                "media_ref": {"uri": "8k.png"},
+            },
+            # Extreme timestamps
+            {
+                "utc_ns": 1000000000000000000,
+                "source_shape": [1920, 1080],
+                "shape": [1920, 1080],
+                "media_ref": {"uri": "future.png"},
+            },
+            # Different source vs processed shapes
+            {
+                "utc_ns": 5000000000,
+                "source_shape": [3840, 2160],
+                "shape": [1920, 1080],
+                "media_ref": {"uri": "downscaled.png"},
+            },
+        ]
+
+        for i, data in enumerate(extreme_cases):
+            msg = McapMessage(
+                topic="screen",
+                timestamp=6000000000 + i,
+                message=json.dumps(data).encode("utf-8"),
+                message_type="desktop/ScreenCaptured",
+            )
+
+            # Should handle gracefully without crashing
+            encoded, images = encoder.encode(msg)
+            decoded = encoder.decode(encoded, images)
+
+            # Should produce valid results
+            assert len(images) == 1
+            assert isinstance(images[0], ScreenCaptured)
+            assert isinstance(decoded.timestamp, int)
+            assert decoded.topic == "screen"
 
     def test_basic_functionality(self, encoder):
         """Basic encoder functionality should work."""
