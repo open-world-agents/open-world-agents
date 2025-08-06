@@ -33,14 +33,7 @@ class DropResampler(EventResampler):
         """Add event if enough time has passed."""
         if (mcap_msg.timestamp - self.last_emitted_timestamp) >= self.min_interval_ns:
             self.last_emitted_timestamp = mcap_msg.timestamp
-            self.ready_events.append(
-                McapMessage(
-                    topic=mcap_msg.topic,
-                    timestamp=mcap_msg.timestamp,
-                    message=mcap_msg.message,
-                    message_type=mcap_msg.message_type,
-                )
-            )
+            self.ready_events.append(mcap_msg)
 
     def pop_event(self) -> List[McapMessage]:
         """Pop all ready events."""
@@ -57,14 +50,7 @@ class PassThroughResampler(EventResampler):
 
     def add_event(self, mcap_msg: McapMessage) -> None:
         """Add all events without filtering."""
-        self.ready_events.append(
-            McapMessage(
-                topic=mcap_msg.topic,
-                timestamp=mcap_msg.timestamp,
-                message=mcap_msg.message,
-                message_type=mcap_msg.message_type,
-            )
-        )
+        self.ready_events.append(mcap_msg)
 
     def pop_event(self) -> List[McapMessage]:
         """Pop all ready events."""
