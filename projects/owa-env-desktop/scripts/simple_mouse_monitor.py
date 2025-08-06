@@ -39,7 +39,7 @@ raw_total = {"dx": 0, "dy": 0}
 std_total = {"x": 0, "y": 0}
 
 # Velocity tracking with time window
-VELOCITY_WINDOW = 0.1  # Time window for velocity calculation (100ms)
+VELOCITY_WINDOW = 1  # Time window for velocity calculation (seconds)
 raw_velocity_data = {"last_time": None, "last_update": None, "movement_buffer": []}
 std_velocity_data = {
     "last_time": None,
