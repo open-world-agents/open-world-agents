@@ -147,14 +147,19 @@ class HierarchicalEventEncoder(BaseEventEncoder):
 
     def _encode_mouse(self, event: RawMouseEvent) -> List[str]:
         """
-        Encode raw mouse event as: <MOUSE><dx0><dy0><dx1><dy1><flag0><flag1><flag2><optional_button_data>
+        Encode raw mouse event as: <MOUSE><dx0><dy0><dx1><dy1>...<flag0><flag1><flag2><optional_button_data>
 
         Each flag is encoded as a hex digit (0-15).
         """
-        # Normalize dx, dy to [0, 1] range using max_mouse_delta tuple (half-ranges)
+        # Validate mouse delta values are within acceptable range
         max_x, max_y = self.config.max_mouse_delta
-        dx_clamped = max(-max_x, min(max_x, event.dx))
-        dy_clamped = max(-max_y, min(max_y, event.dy))
+        if not (-max_x <= event.dx <= max_x):
+            raise ValueError(f"Mouse dx value {event.dx} is outside valid range [-{max_x}, {max_x}]")
+        if not (-max_y <= event.dy <= max_y):
+            raise ValueError(f"Mouse dy value {event.dy} is outside valid range [-{max_y}, {max_y}]")
+
+        dx_clamped = event.dx
+        dy_clamped = event.dy
 
         # Use fractions for exact normalization to avoid floating-point precision loss
         norm_dx = Fraction(dx_clamped + max_x) / Fraction(2 * max_x)

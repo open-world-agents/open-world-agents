@@ -19,7 +19,7 @@ Timestamps    |    ✓     |    ✓     |    ✓     |     -      |     ✓     
 
 ACTUAL TEST BREAKDOWN:
 =====================
-FIDELITY (5): mouse_fidelity, keyboard_fidelity, mouse_small_values_exhaustive, timestamp_exhaustive, screen_fidelity
+FIDELITY (5): mouse_fidelity, keyboard_fidelity, mouse_small_values_exhaustive, timestamp_exhaustive, screen_fidelity, test_mouse_validation
 EFFICIENCY (3): mouse_token_count, keyboard_token_count, screen_token_count
 EDGE CASES (6): extreme_mouse_values, extreme_timestamps, extreme_keyboard_values, extreme_screen_values, zero_values, basic_functionality
 """
@@ -79,17 +79,9 @@ class TestFidelity:
             decoded = encoder.decode(encoded, images)
             result = json.loads(decoded.message.decode("utf-8"))
 
-            # Check fidelity - values within range must be exact, out-of-range values get clamped
-            max_x, max_y = encoder.config.max_mouse_delta
-            expected_x = max(-max_x, min(max_x, dx))  # Clamp to range
-            expected_y = max(-max_y, min(max_y, dy))  # Clamp to range
-
-            assert result["last_x"] == expected_x, (
-                f"X movement incorrect in {desc}: expected {expected_x}, got {result['last_x']}"
-            )
-            assert result["last_y"] == expected_y, (
-                f"Y movement incorrect in {desc}: expected {expected_y}, got {result['last_y']}"
-            )
+            # Check fidelity - all test values are within range so should be preserved exactly
+            assert result["last_x"] == dx, f"X movement not preserved in {desc}: expected {dx}, got {result['last_x']}"
+            assert result["last_y"] == dy, f"Y movement not preserved in {desc}: expected {dy}, got {result['last_y']}"
             assert result["button_flags"] == flags, f"Button flags lost in {desc}"
 
             # Button data is quantized by 120, so check expected value
@@ -224,6 +216,55 @@ class TestFidelity:
             assert decoded.topic == "screen"
             assert decoded.message_type == "desktop/ScreenCaptured"
 
+    def test_mouse_validation(self, encoder):
+        """Mouse encoder should validate input ranges and reject invalid values."""
+        max_x, max_y = encoder.config.max_mouse_delta  # Default: (1000, 1000)
+
+        # Test boundary values (should work)
+        valid_cases = [
+            (max_x, max_y),  # At positive boundary
+            (-max_x, -max_y),  # At negative boundary
+            (0, 0),  # Zero
+            (max_x, -max_y),  # Mixed boundaries
+        ]
+
+        for dx, dy in valid_cases:
+            data = {"last_x": dx, "last_y": dy, "button_flags": 0, "button_data": 0}
+            msg = McapMessage(
+                topic="mouse/raw",
+                timestamp=1000000000,
+                message=json.dumps(data).encode("utf-8"),
+                message_type="desktop/RawMouseEvent",
+            )
+
+            # Should work without errors
+            encoded, images = encoder.encode(msg)
+            decoded = encoder.decode(encoded, images)
+            result = json.loads(decoded.message.decode("utf-8"))
+            assert result["last_x"] == dx
+            assert result["last_y"] == dy
+
+        # Test invalid values (should raise ValueError)
+        invalid_cases = [
+            (max_x + 1, 0),  # X too large
+            (-max_x - 1, 0),  # X too small
+            (0, max_y + 1),  # Y too large
+            (0, -max_y - 1),  # Y too small
+        ]
+
+        for dx, dy in invalid_cases:
+            data = {"last_x": dx, "last_y": dy, "button_flags": 0, "button_data": 0}
+            msg = McapMessage(
+                topic="mouse/raw",
+                timestamp=1000000000,
+                message=json.dumps(data).encode("utf-8"),
+                message_type="desktop/RawMouseEvent",
+            )
+
+            # Should raise ValueError
+            with pytest.raises(ValueError, match=r"Mouse d[xy] value .* is outside valid range"):
+                encoder.encode(msg)
+
 
 # =============================================================================
 # 2. EFFICIENCY TESTS: Token count should be reasonable
@@ -304,27 +345,21 @@ class TestEdgeCases:
         return HierarchicalEventEncoder()
 
     def test_extreme_mouse_values(self, encoder):
-        """Extreme mouse values should be handled gracefully."""
-        edge_cases = [
-            # Extreme movements
+        """Extreme mouse values should raise validation errors."""
+        max_x, max_y = encoder.config.max_mouse_delta  # Default: (1000, 1000)
+
+        # Test cases that should raise ValueError due to out-of-range mouse deltas
+        invalid_cases = [
+            # Extreme movements (beyond ±1000)
+            {"last_x": max_x + 1, "last_y": 0, "button_flags": 0, "button_data": 0},
+            {"last_x": -max_x - 1, "last_y": 0, "button_flags": 0, "button_data": 0},
+            {"last_x": 0, "last_y": max_y + 1, "button_flags": 0, "button_data": 0},
+            {"last_x": 0, "last_y": -max_y - 1, "button_flags": 0, "button_data": 0},
             {"last_x": 10000, "last_y": 10000, "button_flags": 0, "button_data": 0},
-            {"last_x": -10000, "last_y": -10000, "button_flags": 0, "button_data": 0},
-            {"last_x": 50000, "last_y": -50000, "button_flags": 0, "button_data": 0},
-            {"last_x": -100000, "last_y": 100000, "button_flags": 0, "button_data": 0},
-            # Extreme button data
-            {"last_x": 0, "last_y": 0, "button_flags": 0x400, "button_data": 32767},
-            {"last_x": 0, "last_y": 0, "button_flags": 0x400, "button_data": -32768},
-            {"last_x": 0, "last_y": 0, "button_flags": 0x400, "button_data": 100000},
-            {"last_x": 0, "last_y": 0, "button_flags": 0x400, "button_data": -100000},
-            # Maximum flag values
-            {"last_x": 0, "last_y": 0, "button_flags": 0xFFF, "button_data": 0},
-            {"last_x": 0, "last_y": 0, "button_flags": 0xFFFF, "button_data": 0},  # Beyond 3-digit hex
-            # Combined extremes
-            {"last_x": 99999, "last_y": -99999, "button_flags": 0xFFF, "button_data": 32767},
-            {"last_x": -99999, "last_y": 99999, "button_flags": 0xFFF, "button_data": -32768},
+            {"last_x": -50000, "last_y": 50000, "button_flags": 0, "button_data": 0},
         ]
 
-        for i, data in enumerate(edge_cases):
+        for i, data in enumerate(invalid_cases):
             msg = McapMessage(
                 topic="mouse/raw",
                 timestamp=1000000000 + i,
@@ -332,12 +367,33 @@ class TestEdgeCases:
                 message_type="desktop/RawMouseEvent",
             )
 
-            # Should handle gracefully without crashing
+            # Should raise ValueError for out-of-range values
+            with pytest.raises(ValueError, match=r"Mouse d[xy] value .* is outside valid range"):
+                encoder.encode(msg)
+
+        # Test cases with extreme button data/flags but valid mouse deltas (should work)
+        valid_cases = [
+            {"last_x": 0, "last_y": 0, "button_flags": 0x400, "button_data": 32767},
+            {"last_x": 0, "last_y": 0, "button_flags": 0x400, "button_data": -32768},
+            {"last_x": 0, "last_y": 0, "button_flags": 0xFFF, "button_data": 0},
+            {"last_x": 0, "last_y": 0, "button_flags": 0xFFFF, "button_data": 0},  # Beyond 3-digit hex
+            {"last_x": max_x, "last_y": max_y, "button_flags": 0xFFF, "button_data": 32767},  # At boundary
+        ]
+
+        for i, data in enumerate(valid_cases):
+            msg = McapMessage(
+                topic="mouse/raw",
+                timestamp=2000000000 + i,
+                message=json.dumps(data).encode("utf-8"),
+                message_type="desktop/RawMouseEvent",
+            )
+
+            # Should work without errors
             encoded, images = encoder.encode(msg)
             decoded = encoder.decode(encoded, images)
             result = json.loads(decoded.message.decode("utf-8"))
 
-            # Should produce valid results (may be clamped/quantized)
+            # Should produce valid results
             assert isinstance(result["last_x"], int)
             assert isinstance(result["last_y"], int)
             assert isinstance(result["button_flags"], int)
