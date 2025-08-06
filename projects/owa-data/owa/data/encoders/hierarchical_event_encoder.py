@@ -111,10 +111,6 @@ def _generate_vocab(
     # Numbers 0-255 for various parameters
     vocab.extend(f"<{i}>" for i in range(256))
 
-    # Action types and mouse buttons
-    vocab.extend(["<press>", "<release>", "<move>", "<click>", "<scroll>"])
-    vocab.extend(["<left>", "<right>", "<middle>", "<unknown>"])
-
     # Negative numbers for scroll deltas
     vocab.extend(f"<{i}>" for i in range(-10, 11))
 
