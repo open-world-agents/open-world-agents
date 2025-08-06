@@ -24,8 +24,7 @@ EFFICIENCY (3): mouse_token_count, keyboard_token_count, screen_token_count
 EDGE CASES (6): extreme_mouse_values, extreme_timestamps, extreme_keyboard_values, extreme_screen_values, zero_values, basic_functionality
 """
 
-import json
-
+import orjson
 import pytest
 
 from mcap_owa.highlevel.mcap_msg import McapMessage
@@ -71,14 +70,14 @@ class TestFidelity:
             msg = McapMessage(
                 topic="mouse/raw",
                 timestamp=1000000000,
-                message=json.dumps(original).encode("utf-8"),
+                message=orjson.dumps(original),
                 message_type="desktop/RawMouseEvent",
             )
 
             # Round trip
             encoded, images = encoder.encode(msg)
             decoded = encoder.decode(encoded, images)
-            result = json.loads(decoded.message.decode("utf-8"))
+            result = orjson.loads(decoded.message)
 
             # Check fidelity - all test values are within range so should be preserved exactly
             assert result["last_x"] == dx, f"X movement not preserved in {desc}: expected {dx}, got {result['last_x']}"
@@ -117,14 +116,14 @@ class TestFidelity:
             msg = McapMessage(
                 topic="keyboard",
                 timestamp=2000000000,
-                message=json.dumps(original).encode("utf-8"),
+                message=orjson.dumps(original),
                 message_type="desktop/KeyboardEvent",
             )
 
             # Round trip
             encoded, images = encoder.encode(msg)
             decoded = encoder.decode(encoded, images)
-            result = json.loads(decoded.message.decode("utf-8"))
+            result = orjson.loads(decoded.message)
 
             # Check perfect fidelity
             assert result["event_type"] == event_type, f"Event type lost for {event_type} {vk}"
@@ -138,14 +137,14 @@ class TestFidelity:
                 msg = McapMessage(
                     topic="mouse/raw",
                     timestamp=1000000000,
-                    message=json.dumps(original).encode("utf-8"),
+                    message=orjson.dumps(original),
                     message_type="desktop/RawMouseEvent",
                 )
 
                 # Round trip
                 encoded, images = encoder.encode(msg)
                 decoded = encoder.decode(encoded, images)
-                result = json.loads(decoded.message.decode("utf-8"))
+                result = orjson.loads(decoded.message)
 
                 # Small values must be preserved exactly (no quantization loss allowed)
                 assert result["last_x"] == dx, f"X value changed: {dx} -> {result['last_x']}"
@@ -165,7 +164,7 @@ class TestFidelity:
             msg = McapMessage(
                 topic="mouse/raw",
                 timestamp=ts,
-                message=json.dumps(data).encode("utf-8"),
+                message=orjson.dumps(data),
                 message_type="desktop/RawMouseEvent",
             )
 
@@ -196,7 +195,7 @@ class TestFidelity:
             msg = McapMessage(
                 topic="screen",
                 timestamp=timestamp,
-                message=json.dumps(original).encode("utf-8"),
+                message=orjson.dumps(original),
                 message_type="desktop/ScreenCaptured",
             )
 
@@ -232,14 +231,14 @@ class TestFidelity:
             msg = McapMessage(
                 topic="mouse/raw",
                 timestamp=1000000000,
-                message=json.dumps(data).encode("utf-8"),
+                message=orjson.dumps(data),
                 message_type="desktop/RawMouseEvent",
             )
 
             # Should work without errors
             encoded, images = encoder.encode(msg)
             decoded = encoder.decode(encoded, images)
-            result = json.loads(decoded.message.decode("utf-8"))
+            result = orjson.loads(decoded.message)
             assert result["last_x"] == dx
             assert result["last_y"] == dy
 
@@ -256,7 +255,7 @@ class TestFidelity:
             msg = McapMessage(
                 topic="mouse/raw",
                 timestamp=1000000000,
-                message=json.dumps(data).encode("utf-8"),
+                message=orjson.dumps(data),
                 message_type="desktop/RawMouseEvent",
             )
 
@@ -283,7 +282,7 @@ class TestEfficiency:
         msg = McapMessage(
             topic="mouse/raw",
             timestamp=1000000000,
-            message=json.dumps(data).encode("utf-8"),
+            message=orjson.dumps(data),
             message_type="desktop/RawMouseEvent",
         )
 
@@ -299,7 +298,7 @@ class TestEfficiency:
         msg = McapMessage(
             topic="keyboard",
             timestamp=2000000000,
-            message=json.dumps(data).encode("utf-8"),
+            message=orjson.dumps(data),
             message_type="desktop/KeyboardEvent",
         )
 
@@ -320,7 +319,7 @@ class TestEfficiency:
         msg = McapMessage(
             topic="screen",
             timestamp=3000000000,
-            message=json.dumps(data).encode("utf-8"),
+            message=orjson.dumps(data),
             message_type="desktop/ScreenCaptured",
         )
 
@@ -367,7 +366,7 @@ class TestEdgeCases:
             msg = McapMessage(
                 topic="mouse/raw",
                 timestamp=1000000000 + i,
-                message=json.dumps(data).encode("utf-8"),
+                message=orjson.dumps(data),
                 message_type="desktop/RawMouseEvent",
             )
 
@@ -390,14 +389,14 @@ class TestEdgeCases:
             msg = McapMessage(
                 topic="mouse/raw",
                 timestamp=2000000000 + i,
-                message=json.dumps(data).encode("utf-8"),
+                message=orjson.dumps(data),
                 message_type="desktop/RawMouseEvent",
             )
 
             # Should work without errors
             encoded, images = encoder.encode(msg)
             decoded = encoder.decode(encoded, images)
-            result = json.loads(decoded.message.decode("utf-8"))
+            result = orjson.loads(decoded.message)
 
             # Should produce valid results by checking for data fidelity
             assert result["last_x"] == data["last_x"]
@@ -419,7 +418,7 @@ class TestEdgeCases:
             msg = McapMessage(
                 topic="mouse/raw",
                 timestamp=ts,
-                message=json.dumps(data).encode("utf-8"),
+                message=orjson.dumps(data),
                 message_type="desktop/RawMouseEvent",
             )
 
@@ -451,14 +450,14 @@ class TestEdgeCases:
             msg = McapMessage(
                 topic="keyboard",
                 timestamp=4000000000 + vk,
-                message=json.dumps(data).encode("utf-8"),
+                message=orjson.dumps(data),
                 message_type="desktop/KeyboardEvent",
             )
 
             # Should handle gracefully
             encoded, images = encoder.encode(msg)
             decoded = encoder.decode(encoded, images)
-            result = json.loads(decoded.message.decode("utf-8"))
+            result = orjson.loads(decoded.message)
 
             # Should produce valid results
             assert result["event_type"] == event_type
@@ -471,13 +470,13 @@ class TestEdgeCases:
         msg = McapMessage(
             topic="mouse/raw",
             timestamp=0,
-            message=json.dumps(data).encode("utf-8"),
+            message=orjson.dumps(data),
             message_type="desktop/RawMouseEvent",
         )
 
         encoded, images = encoder.encode(msg)
         decoded = encoder.decode(encoded, images)
-        result = json.loads(decoded.message.decode("utf-8"))
+        result = orjson.loads(decoded.message)
 
         assert result["last_x"] == 0
         assert result["last_y"] == 0
@@ -515,7 +514,7 @@ class TestEdgeCases:
             msg = McapMessage(
                 topic="screen",
                 timestamp=6000000000 + i,
-                message=json.dumps(data).encode("utf-8"),
+                message=orjson.dumps(data),
                 message_type="desktop/ScreenCaptured",
             )
 
