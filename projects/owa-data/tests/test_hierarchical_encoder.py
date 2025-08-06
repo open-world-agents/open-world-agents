@@ -30,6 +30,7 @@ import pytest
 
 from mcap_owa.highlevel.mcap_msg import McapMessage
 from owa.data.encoders.hierarchical_event_encoder import HierarchicalEventEncoder
+from owa.msgs.desktop.screen import ScreenCaptured
 
 # =============================================================================
 # 1. FIDELITY TESTS: Encode-decode must preserve data
@@ -178,8 +179,6 @@ class TestFidelity:
 
     def test_screen_fidelity(self, encoder):
         """Screen events should preserve structure and handle utc_ns vs timestamp correctly."""
-        from owa.msgs.desktop.screen import ScreenCaptured
-
         test_cases = [
             # (utc_ns, timestamp, source_shape, shape, media_ref, description)
             (3000000000, 3000000000, [1920, 1080], [1920, 1080], {"uri": "test1.png"}, "same utc_ns and timestamp"),
@@ -348,15 +347,20 @@ class TestEdgeCases:
         """Extreme mouse values should raise validation errors."""
         max_x, max_y = encoder.config.max_mouse_delta  # Default: (1000, 1000)
 
-        # Test cases that should raise ValueError due to out-of-range mouse deltas
+        # Test cases that should raise ValueError (mouse deltas and button_flags)
         invalid_cases = [
-            # Extreme movements (beyond ±1000)
+            # Out-of-range mouse deltas (beyond ±1000)
             {"last_x": max_x + 1, "last_y": 0, "button_flags": 0, "button_data": 0},
             {"last_x": -max_x - 1, "last_y": 0, "button_flags": 0, "button_data": 0},
             {"last_x": 0, "last_y": max_y + 1, "button_flags": 0, "button_data": 0},
             {"last_x": 0, "last_y": -max_y - 1, "button_flags": 0, "button_data": 0},
             {"last_x": 10000, "last_y": 10000, "button_flags": 0, "button_data": 0},
             {"last_x": -50000, "last_y": 50000, "button_flags": 0, "button_data": 0},
+            # Invalid button_flags (beyond 3-digit hex range)
+            {"last_x": 0, "last_y": 0, "button_flags": 0xFFFF, "button_data": 0},  # 4-digit hex
+            {"last_x": 0, "last_y": 0, "button_flags": 0x1000, "button_data": 0},  # Just above 3-digit hex
+            {"last_x": 0, "last_y": 0, "button_flags": 0x12345, "button_data": 0},  # 5-digit hex
+            {"last_x": 0, "last_y": 0, "button_flags": 65536, "button_data": 0},  # Large decimal value
         ]
 
         for i, data in enumerate(invalid_cases):
@@ -367,16 +371,18 @@ class TestEdgeCases:
                 message_type="desktop/RawMouseEvent",
             )
 
-            # Should raise ValueError for out-of-range values
-            with pytest.raises(ValueError, match=r"Mouse d[xy] value .* is outside valid range"):
+            # Should raise ValueError for out-of-range mouse deltas or invalid button_flags
+            with pytest.raises(
+                ValueError,
+                match=r"Mouse (d[xy] value .* is outside valid range|button_flags value .* is outside valid 3-digit hex range)",
+            ):
                 encoder.encode(msg)
 
         # Test cases with extreme button data/flags but valid mouse deltas (should work)
         valid_cases = [
             {"last_x": 0, "last_y": 0, "button_flags": 0x400, "button_data": 32767},
             {"last_x": 0, "last_y": 0, "button_flags": 0x400, "button_data": -32768},
-            {"last_x": 0, "last_y": 0, "button_flags": 0xFFF, "button_data": 0},
-            {"last_x": 0, "last_y": 0, "button_flags": 0xFFFF, "button_data": 0},  # Beyond 3-digit hex
+            {"last_x": 0, "last_y": 0, "button_flags": 0xFFF, "button_data": 0},  # Max valid 3-digit hex
             {"last_x": max_x, "last_y": max_y, "button_flags": 0xFFF, "button_data": 32767},  # At boundary
         ]
 
@@ -393,11 +399,12 @@ class TestEdgeCases:
             decoded = encoder.decode(encoded, images)
             result = json.loads(decoded.message.decode("utf-8"))
 
-            # Should produce valid results
-            assert isinstance(result["last_x"], int)
-            assert isinstance(result["last_y"], int)
-            assert isinstance(result["button_flags"], int)
-            assert isinstance(result["button_data"], int)
+            # Should produce valid results by checking for data fidelity
+            assert result["last_x"] == data["last_x"]
+            assert result["last_y"] == data["last_y"]
+            assert result["button_flags"] == data["button_flags"]
+            expected_data = (data["button_data"] // 120) * 120 if data["button_flags"] & 0x400 else data["button_data"]
+            assert result["button_data"] == expected_data
 
     def test_extreme_timestamps(self, encoder):
         """Extreme timestamp values should be handled gracefully."""
@@ -479,8 +486,6 @@ class TestEdgeCases:
 
     def test_extreme_screen_values(self, encoder):
         """Extreme screen values should be handled gracefully."""
-        from owa.msgs.desktop.screen import ScreenCaptured
-
         extreme_cases = [
             # Extreme resolutions
             {"utc_ns": 0, "source_shape": [1, 1], "shape": [1, 1], "media_ref": {"uri": "tiny.png"}},

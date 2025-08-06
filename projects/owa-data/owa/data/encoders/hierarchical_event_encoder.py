@@ -177,6 +177,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
 
         # Encode button flags as hex digits (0-15)
         flag_value = int(event.button_flags)
+
         # Convert to hex and pad to 3 digits, then split into individual hex digits
         hex_str = f"{flag_value:03x}"  # 3 hex digits, e.g., "401" for 0x401
         for hex_digit in hex_str:
@@ -244,12 +245,10 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         if mcap_message.topic == "keyboard":
             keyboard_event = KeyboardEvent(**msg_data)
             event_tokens = base_tokens + self._encode_keyboard(keyboard_event)
-            encoded_event = f"<EVENT_START>{''.join(event_tokens)}<EVENT_END>"
         elif mcap_message.topic == "mouse" or mcap_message.topic == "mouse/raw":
             raw_mouse_event = RawMouseEvent(**msg_data)
             mouse_tokens = self._encode_mouse(raw_mouse_event)
             event_tokens = base_tokens + mouse_tokens
-            encoded_event = f"<EVENT_START>{''.join(event_tokens)}<EVENT_END>"
         elif mcap_message.topic == "screen":
             screen_event = ScreenCaptured(**msg_data)
             event_tokens = base_tokens + [
@@ -257,11 +256,11 @@ class HierarchicalEventEncoder(BaseEventEncoder):
                 self.config.image_token,
                 self.config.image_token_suffix,
             ]
-            encoded_event = f"<EVENT_START>{''.join(event_tokens)}<EVENT_END>"
             images.append(screen_event)
         else:
             raise ValueError(f"Unsupported event type: {mcap_message.topic}")
 
+        encoded_event = f"<EVENT_START>{''.join(event_tokens)}<EVENT_END>"
         return encoded_event, images
 
     def _decode_timestamp(self, tokens: List[str]) -> int:
