@@ -79,4 +79,5 @@ class McapMessage(BaseModel, Generic[T]):
             raise ValueError(f"Could not generate decode function for message type '{self.message_type}'")
 
     def __repr__(self) -> str:
-        return f"McapMessage(topic={self.topic}, timestamp={self.timestamp}, message_type={self.message_type})"
+        message_repr = repr(self.message[:32]) + "..." if len(self.message) > 32 else repr(self.message)
+        return f"McapMessage(topic={self.topic!r}, timestamp={self.timestamp}, message_type={self.message_type!r}, message={message_repr!r})"
