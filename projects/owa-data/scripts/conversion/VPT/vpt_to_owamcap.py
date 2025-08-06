@@ -16,9 +16,9 @@
 import argparse
 import json
 import os
-import typing
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
+from typing import Optional, Union
 
 from rich import print
 from tqdm import tqdm
@@ -27,40 +27,15 @@ from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
 from owa.env.desktop.constants import VK
 from owa.msgs.desktop.keyboard import KeyboardEvent
 from owa.msgs.desktop.mouse import RawMouseEvent
-from owa.msgs.desktop.screen import ScreenCaptured
+from owa.msgs.desktop.screen import MediaRef, ScreenCaptured
 from owa.msgs.desktop.window import WindowInfo
 
-# Constants for VPT conversion
-VPT_INTERVAL_TICK_NS = 50_000_000  # 50 ms interval per tick
-VPT_EXPECTED_TICKS = 6000  # 5 minutes of 50ms ticks
-VPT_X_RESOLUTION = 1280
-VPT_Y_RESOLUTION = 720
+# Constants
+VPT_INTERVAL_TICK_NS = 50_000_000  # 50ms per tick
+VPT_EXPECTED_TICKS = 6000  # 5 minutes
+VPT_X_RESOLUTION, VPT_Y_RESOLUTION = 1280, 720
 
-
-# ref: https://github.com/openai/Video-Pre-Training/blob/4ea1e8e0eddcdd5ae3cc88621a80c434f22b7f3d/run_inverse_dynamics_model.py#L17
-VPT_KEYBOARD_BUTTON_MAPPING = {
-    "key.keyboard.escape": "ESC",
-    "key.keyboard.s": "back",
-    "key.keyboard.q": "drop",
-    "key.keyboard.w": "forward",
-    "key.keyboard.1": "hotbar.1",
-    "key.keyboard.2": "hotbar.2",
-    "key.keyboard.3": "hotbar.3",
-    "key.keyboard.4": "hotbar.4",
-    "key.keyboard.5": "hotbar.5",
-    "key.keyboard.6": "hotbar.6",
-    "key.keyboard.7": "hotbar.7",
-    "key.keyboard.8": "hotbar.8",
-    "key.keyboard.9": "hotbar.9",
-    "key.keyboard.e": "inventory",
-    "key.keyboard.space": "jump",
-    "key.keyboard.a": "left",
-    "key.keyboard.d": "right",
-    "key.keyboard.left.shift": "sneak",
-    "key.keyboard.left.control": "sprint",
-    "key.keyboard.f": "swapHands",
-}
-
+# VK mapping for keyboard events
 VPT_KEYBOARD_VK_MAPPING = {
     "key.keyboard.escape": VK.ESCAPE,
     "key.keyboard.s": VK.KEY_S,
@@ -84,249 +59,187 @@ VPT_KEYBOARD_VK_MAPPING = {
     "key.keyboard.f": VK.KEY_F,
 }
 
+# Mouse button mappings
+MOUSE_BUTTON_FLAGS = {
+    0: (RawMouseEvent.ButtonFlags.RI_MOUSE_LEFT_BUTTON_DOWN, RawMouseEvent.ButtonFlags.RI_MOUSE_LEFT_BUTTON_UP),
+    1: (RawMouseEvent.ButtonFlags.RI_MOUSE_RIGHT_BUTTON_DOWN, RawMouseEvent.ButtonFlags.RI_MOUSE_RIGHT_BUTTON_UP),
+    2: (RawMouseEvent.ButtonFlags.RI_MOUSE_MIDDLE_BUTTON_DOWN, RawMouseEvent.ButtonFlags.RI_MOUSE_MIDDLE_BUTTON_UP),
+}
+
 
 def vpt_generate_target_list_file(
-    vpt_folder_path: Path,
-    vpt_media_ext: str,
-    target_list_file: typing.Union[str, bytes, os.PathLike],
+    vpt_folder_path: Path, vpt_media_ext: str, target_list_file: Union[str, os.PathLike]
 ):
-    """
-    Filter VPT files that have valid jsonl files paired with (mp4|mkv), and are 5 minutes long.
-    The list of valid target files is saved to `target_list_file`.
-    """
+    """Filter VPT files with valid jsonl files paired with media files and are 5 minutes long."""
+    media_stems = {f.stem for f in vpt_folder_path.iterdir() if f.suffix == vpt_media_ext and f.is_file()}
 
-    all_media_stems = set([f.stem for f in vpt_folder_path.iterdir() if f.suffix == vpt_media_ext and f.is_file()])
-
-    # Get all files with their full path and creation time
-    all_jsonl_files = [
+    jsonl_files = [
         (f, f.stat().st_ctime)
         for f in vpt_folder_path.iterdir()
-        if f.suffix == ".jsonl" and f.is_file() and f.stem in all_media_stems
+        if f.suffix == ".jsonl" and f.is_file() and f.stem in media_stems
     ]
+    jsonl_files.sort(key=lambda x: x[1])  # Sort by creation time
 
-    # Sort by creation time (oldest first)
-    all_jsonl_files.sort(key=lambda x: x[1])
-
-    print(f"{len(all_jsonl_files)} files found in {vpt_folder_path}.")
+    print(f"{len(jsonl_files)} files found in {vpt_folder_path}.")
 
     target_files = []
-
-    for file_name_jsonl, _ in tqdm(all_jsonl_files):
+    for file_path, _ in tqdm(jsonl_files):
         try:
-            with open(file_name_jsonl, "r") as f:  # jsonl file
-                lines = f.readlines()  # Read non-empty lines
-                if len(lines) == VPT_EXPECTED_TICKS:
-                    target_files.append(file_name_jsonl)
+            with open(file_path, "r") as f:
+                if len(f.readlines()) == VPT_EXPECTED_TICKS:
+                    target_files.append(file_path)
         except Exception as e:
-            print(f"Error reading {file_name_jsonl}. Skipping. Error: {e}")
+            print(f"Error reading {file_path}: {e}")
 
-    print(f"{len(target_files)=}")
+    print(f"Found {len(target_files)} valid target files")
+    Path(target_list_file).write_text("\n".join(str(f) for f in target_files) + "\n")
 
-    with open(target_list_file, "w") as f:
-        for file in target_files:
-            f.write(f"{file}\n")
+
+def create_screen_event(media_file_name: str, timestamp: int) -> ScreenCaptured:
+    """Create a screen capture event."""
+    return ScreenCaptured(
+        utc_ns=timestamp,
+        source_shape=(VPT_X_RESOLUTION, VPT_Y_RESOLUTION),
+        shape=(VPT_X_RESOLUTION, VPT_Y_RESOLUTION),
+        media_ref=MediaRef(uri=media_file_name, pts_ns=timestamp),
+    )
+
+
+def create_mouse_event(dx: int, dy: int, button_flags, timestamp: int) -> RawMouseEvent:
+    """Create a mouse event."""
+    return RawMouseEvent(last_x=dx, last_y=dy, button_flags=button_flags, timestamp=timestamp)
+
+
+def handle_keyboard_events(writer, current_keys: list, keyboard_state: set, timestamp: int):
+    """Handle keyboard press/release events."""
+    # Release keys not in current tick
+    for key in list(keyboard_state):
+        if key not in current_keys:
+            keyboard_state.remove(key)
+            if key in VPT_KEYBOARD_VK_MAPPING:
+                event = KeyboardEvent(event_type="release", vk=VPT_KEYBOARD_VK_MAPPING[key])
+                writer.write_message(event, topic="keyboard", timestamp=timestamp)
+
+    # Press new keys
+    for key in current_keys:
+        if key in VPT_KEYBOARD_VK_MAPPING and key not in keyboard_state:
+            keyboard_state.add(key)
+            event = KeyboardEvent(event_type="press", vk=VPT_KEYBOARD_VK_MAPPING[key])
+            writer.write_message(event, topic="keyboard", timestamp=timestamp)
+
+
+def handle_mouse_events(writer, tick_data: dict, button_state: set, timestamp: int):
+    """Handle mouse movement and button events."""
+    dx, dy = int(round(tick_data["mouse"]["dx"])), int(round(tick_data["mouse"]["dy"]))
+
+    # Handle mouse movement
+    if dx != 0 or dy != 0:
+        event = create_mouse_event(dx, dy, RawMouseEvent.ButtonFlags.RI_MOUSE_NOP, timestamp)
+        writer.write_message(event, topic="mouse/raw", timestamp=timestamp)
+
+    # Handle button events
+    current_buttons = tick_data["mouse"]["buttons"]
+
+    # Release buttons
+    for button in list(button_state):
+        if button not in current_buttons and button in MOUSE_BUTTON_FLAGS:
+            button_state.remove(button)
+            _, up_flag = MOUSE_BUTTON_FLAGS[button]
+            event = create_mouse_event(0, 0, up_flag, timestamp)
+            writer.write_message(event, topic="mouse/raw", timestamp=timestamp)
+
+    # Press buttons
+    for button in current_buttons:
+        if button not in button_state and button in MOUSE_BUTTON_FLAGS:
+            button_state.add(button)
+            down_flag, _ = MOUSE_BUTTON_FLAGS[button]
+            event = create_mouse_event(0, 0, down_flag, timestamp)
+            writer.write_message(event, topic="mouse/raw", timestamp=timestamp)
 
 
 def process_single_file(jsonl_file_path, vpt_media_ext):
     """Process a single VPT file and convert it to OWAMcap format."""
-    # Convert the file to OWAMcap format
     mcap_file_path = jsonl_file_path.with_suffix(".mcap")
     media_file_path = jsonl_file_path.with_suffix(vpt_media_ext)
 
-    # Writing messages to an OWAMcap file
-    unix_epoch_ns = 0  # Unix epoch time in nanoseconds (Jan 1, 1970)
-
     try:
-        with open(jsonl_file_path, "r") as f:  # jsonl file
-            lines = [line.strip() for line in f.readlines()]  # Read non-empty lines
-            assert len(lines) == VPT_EXPECTED_TICKS, (
-                f"File {jsonl_file_path} does not have {VPT_EXPECTED_TICKS=} lines. It has {len(lines)} lines."
-            )
+        with open(jsonl_file_path, "r") as f:
+            lines = [line.strip() for line in f.readlines()]
+            assert len(lines) == VPT_EXPECTED_TICKS, f"Expected {VPT_EXPECTED_TICKS} lines, got {len(lines)}"
             ticks = [json.loads(line) for line in lines]
     except Exception as e:
-        print(f"Error reading {jsonl_file_path}. Skipping. Error: {e}")
+        print(f"Error reading {jsonl_file_path}: {e}")
         return
 
     with OWAMcapWriter(mcap_file_path) as writer:
-        topic = "window"
-        event = WindowInfo(
+        unix_epoch_ns = 0
+
+        # Write window info
+        window_event = WindowInfo(
             title=f"VPT-{mcap_file_path}",
-            rect=[0, 0, VPT_X_RESOLUTION, VPT_Y_RESOLUTION],
+            rect=(0, 0, VPT_X_RESOLUTION, VPT_Y_RESOLUTION),
             hWnd=-1,
         )
-        writer.write_message(event, topic=topic, timestamp=unix_epoch_ns)
+        writer.write_message(window_event, topic="window", timestamp=unix_epoch_ns)
 
-        keyboard_state = set()
-        button_state = set()
+        # Write initial screen event
+        screen_event = create_screen_event(media_file_path.name, unix_epoch_ns)
+        writer.write_message(screen_event, topic="screen", timestamp=unix_epoch_ns)
 
-        ## SCREEN EVENT
-        topic = "screen"
+        keyboard_state, button_state = set(), set()
 
-        event = ScreenCaptured(
-            utc_ns=unix_epoch_ns,
-            source_shape=(VPT_X_RESOLUTION, VPT_Y_RESOLUTION),
-            shape=(VPT_X_RESOLUTION, VPT_Y_RESOLUTION),
-            media_ref=dict(uri=str(media_file_path.name), pts_ns=unix_epoch_ns),
-        )
-        writer.write_message(event, topic=topic, timestamp=unix_epoch_ns)
-
+        # Process each tick
         for i, tick in enumerate(ticks):
-            # milli_timestamp = tick["milli"] # we don't use this value of VPT since it seems inaccurate
             log_time = unix_epoch_ns + ((i + 1) * VPT_INTERVAL_TICK_NS)
 
-            ## SCREEN EVENT
-            topic = "screen"
-            event = ScreenCaptured(
-                utc_ns=log_time,
-                source_shape=(VPT_X_RESOLUTION, VPT_Y_RESOLUTION),
-                shape=(VPT_X_RESOLUTION, VPT_Y_RESOLUTION),
-                media_ref=dict(uri=str(media_file_path.name), pts_ns=log_time),
-            )
-            writer.write_message(event, topic=topic, timestamp=log_time)
+            # Write screen event
+            screen_event = create_screen_event(media_file_path.name, log_time)
+            writer.write_message(screen_event, topic="screen", timestamp=log_time)
 
-            ## KEYBOARD EVENT
-            current_tick_keys = tick["keyboard"]["keys"]
-
-            # NOTE: we suppose the keys are pressed/released in the fastest observable timing of tick.
-
-            # release keys that are not in the current tick
-            for state_key in list(keyboard_state):
-                if state_key not in current_tick_keys:
-                    keyboard_state.remove(state_key)
-                    topic = "keyboard"
-                    event = KeyboardEvent(event_type="release", vk=VPT_KEYBOARD_VK_MAPPING[state_key])
-                    writer.write_message(event, topic=topic, timestamp=log_time)
-
-            # press keys that are in the current tick, and not already pressed
-            for key in current_tick_keys:
-                if key not in VPT_KEYBOARD_VK_MAPPING:
-                    continue  # skip keys that are not in the mapping
-                else:
-                    if key in keyboard_state:
-                        continue  # already pressed
-                    else:
-                        keyboard_state.add(key)
-                        topic = "keyboard"
-                        event = KeyboardEvent(event_type="press", vk=VPT_KEYBOARD_VK_MAPPING[key])
-                        writer.write_message(event, topic=topic, timestamp=log_time)
-
-            ## MOUSE EVENT
-            dx = tick["mouse"]["dx"]
-            dy = tick["mouse"]["dy"]
-
-            # NOTE: we suppose the mouse coordinates are integer values
-            dx = int(round(dx))
-            dy = int(round(dy))
-
-            if dx != 0 or dy != 0:
-                topic = "mouse/raw"
-                event = RawMouseEvent(
-                    last_x=dx,
-                    last_y=dy,
-                    button_flags=RawMouseEvent.ButtonFlags.RI_MOUSE_NOP,
-                    timestamp=log_time,
-                )
-                writer.write_message(event, topic=topic, timestamp=log_time)
-
-            # mouse buttons : https://github.com/openai/Video-Pre-Training/blob/4ea1e8e0eddcdd5ae3cc88621a80c434f22b7f3d/run_inverse_dynamics_model.py#L114-L123
-            # 0 : left click, 1 : right click, 2 : middle click
-            current_tick_buttons = tick["mouse"]["buttons"]
-
-            # release buttons that are not in the current tick
-            for state_button in list(button_state):
-                if state_button not in current_tick_buttons:
-                    button_state.remove(state_button)
-                    topic = "mouse/raw"
-                    if state_button == 0:  # left click
-                        button_flags = RawMouseEvent.ButtonFlags.RI_MOUSE_LEFT_BUTTON_UP
-                    elif state_button == 1:  # right click
-                        button_flags = RawMouseEvent.ButtonFlags.RI_MOUSE_RIGHT_BUTTON_UP
-                    elif state_button == 2:  # middle click
-                        button_flags = RawMouseEvent.ButtonFlags.RI_MOUSE_MIDDLE_BUTTON_UP
-                    else:
-                        print(f"Unknown mouse button {state_button=} in VPT data.")
-                        continue
-
-                    event = RawMouseEvent(
-                        last_x=0,
-                        last_y=0,
-                        button_flags=button_flags,
-                        timestamp=log_time,
-                    )
-                    writer.write_message(event, topic=topic, timestamp=log_time)
-
-            # press buttons that are in the current tick, and not already pressed
-            for button in current_tick_buttons:
-                if button in button_state:
-                    continue  # already pressed
-                else:
-                    button_state.add(button)
-                    topic = "mouse/raw"
-                    if button == 0:  # left click
-                        button_flags = RawMouseEvent.ButtonFlags.RI_MOUSE_LEFT_BUTTON_DOWN
-                    elif button == 1:  # right click
-                        button_flags = RawMouseEvent.ButtonFlags.RI_MOUSE_RIGHT_BUTTON_DOWN
-                    elif button == 2:  # middle click
-                        button_flags = RawMouseEvent.ButtonFlags.RI_MOUSE_MIDDLE_BUTTON_DOWN
-                    else:
-                        print(f"Unknown mouse button {button=} in VPT data.")
-                        continue
-
-                    event = RawMouseEvent(
-                        last_x=0,
-                        last_y=0,
-                        button_flags=button_flags,
-                        timestamp=log_time,
-                    )
-                    writer.write_message(event, topic=topic, timestamp=log_time)
+            # Handle keyboard and mouse events
+            handle_keyboard_events(writer, tick["keyboard"]["keys"], keyboard_state, log_time)
+            handle_mouse_events(writer, tick, button_state, log_time)
 
 
-def main(
-    vpt_folder_path: Path, vpt_media_ext: str, vpt_target_list_file: str, max_workers: typing.Optional[int] = None
-):
-    if max_workers is None:
-        max_workers = 50
+def main(vpt_folder_path: Path, vpt_media_ext: str, vpt_target_list_file: str, max_workers: Optional[int] = None):
+    """Main function to convert VPT files to OWAMcap format."""
+    max_workers = max_workers or 50
     print(f"Using {max_workers} worker processes.")
 
+    # Generate target list if it doesn't exist
     if not Path(vpt_target_list_file).exists():
-        print(f"{vpt_target_list_file=} does not exist. Generating it.")
+        print(f"Generating target list file: {vpt_target_list_file}")
         vpt_generate_target_list_file(vpt_folder_path, vpt_media_ext, vpt_target_list_file)
-        print(f"{vpt_target_list_file=} generated.")
 
-    with open(vpt_target_list_file, "r") as f:
-        vpt_target_list = [Path(line.strip()) for line in f.readlines()]
-        print(f"We will convert {len(vpt_target_list)=} VPT files.")
+    # Load target files
+    target_files = [Path(line.strip()) for line in Path(vpt_target_list_file).read_text().splitlines()]
+    print(f"Converting {len(target_files)} VPT files.")
 
-    # Use ProcessPoolExecutor for multiprocessing
+    # Process files in parallel
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
-        # Submit all tasks
-        future_to_file = {
-            executor.submit(process_single_file, jsonl_file_path, vpt_media_ext): jsonl_file_path
-            for jsonl_file_path in vpt_target_list
+        futures = {
+            executor.submit(process_single_file, file_path, vpt_media_ext): file_path for file_path in target_files
         }
 
-        # Process completed tasks with progress bar
-        with tqdm(total=len(vpt_target_list), desc="Converting files") as pbar:
-            for future in as_completed(future_to_file):
-                jsonl_file_path = future_to_file[future]
+        with tqdm(total=len(target_files), desc="Converting files") as pbar:
+            for future in as_completed(futures):
+                file_path = futures[future]
                 try:
-                    future.result()  # Get the result (or raise exception if there was one)
-                    print(f"Successfully converted {jsonl_file_path}")
+                    future.result()
+                    print(f"Successfully converted {file_path}")
                 except Exception as exc:
-                    print(f"File {jsonl_file_path} generated an exception: {exc}")
+                    print(f"Error converting {file_path}: {exc}")
                 finally:
                     pbar.update(1)
 
 
-def read_mcap(file_path="expert.mcap", num_messages=100):
-    # Reading messages from an OWAMcap file
-    cnt = 0
+def read_mcap(file_path: str = "expert.mcap", num_messages: int = 100):
+    """Read and display messages from an OWAMcap file."""
     with OWAMcapReader(file_path) as reader:
-        for mcap_msg in reader.iter_messages():
-            print(f"Topic: {mcap_msg.topic}, Timestamp: {mcap_msg.timestamp}, Message: {mcap_msg.decoded}")
-            cnt += 1
-            if cnt > num_messages:
+        for i, mcap_msg in enumerate(reader.iter_messages()):
+            if i >= num_messages:
                 break
+            print(f"Topic: {mcap_msg.topic}, Timestamp: {mcap_msg.timestamp}, Message: {mcap_msg.decoded}")
 
 
 def parse_args():
@@ -335,14 +248,12 @@ def parse_args():
         description="Convert VPT dataset files to OWAMcap format",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-
     parser.add_argument(
         "--vpt-folder-path",
         type=Path,
         default=Path("/mnt/raid12/datasets/owa/mcaps/vpt").expanduser(),
-        help="Path to VPT data folder containing paired (mp4|mkv) and jsonl files",
+        help="Path to VPT data folder containing paired media and jsonl files",
     )
-
     parser.add_argument(
         "--vpt-media-ext",
         type=str,
@@ -350,27 +261,18 @@ def parse_args():
         choices=[".mp4", ".mkv"],
         help="Media file extension for VPT dataset",
     )
-
     parser.add_argument(
         "--vpt-target-list-file",
         type=str,
         default="./vpt_target_files.txt",
         help="File to store the list of target VPT files to convert",
     )
-
     parser.add_argument(
         "--max-workers", type=int, default=50, help="Maximum number of worker processes for parallel conversion"
     )
-
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_args()
-    main(
-        vpt_folder_path=args.vpt_folder_path,
-        vpt_media_ext=args.vpt_media_ext,
-        vpt_target_list_file=args.vpt_target_list_file,
-        max_workers=args.max_workers,
-    )
-    # read_mcap()
+    main(args.vpt_folder_path, args.vpt_media_ext, args.vpt_target_list_file, args.max_workers)
