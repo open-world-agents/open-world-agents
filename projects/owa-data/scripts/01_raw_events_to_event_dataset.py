@@ -207,7 +207,7 @@ def main(
     train_dir: Path = typer.Option(..., "--train-dir", help="Directory containing MCAP files for training"),
     test_dir: Optional[Path] = typer.Option(None, "--test-dir", help="Directory containing MCAP files for testing"),
     test_percent: float = typer.Option(0.1, "--test_percent", help="Fraction of training files for test set"),
-    max_test_files: int = typer.Option(1024, "--max-test-files", help="Maximum number of test files"),
+    max_test_files: int = typer.Option(32, "--max-test-files", help="Maximum number of test files"),
     rate: Optional[List[str]] = typer.Option(None, "--rate", help="Rate-limiting per topic in 'topic=Hz' format"),
     num_workers: int = typer.Option(4, "--num-workers", help="Number of parallel worker processes"),
     output_dir: Optional[Path] = typer.Option(None, "--output-dir", help="Directory to save the dataset"),
