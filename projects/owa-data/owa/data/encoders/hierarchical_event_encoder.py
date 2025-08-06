@@ -1,4 +1,5 @@
 import re
+import warnings
 from dataclasses import dataclass, field
 from fractions import Fraction
 from typing import List, Optional, Set, Tuple, Union
@@ -151,15 +152,15 @@ class HierarchicalEventEncoder(BaseEventEncoder):
 
         Each flag is encoded as a hex digit (0-15).
         """
-        # Validate mouse delta values are within acceptable range
+        # Warn if mouse delta values are outside acceptable range
         max_x, max_y = self.config.max_mouse_delta
         if not (-max_x <= event.dx <= max_x):
-            raise ValueError(f"Mouse dx value {event.dx} is outside valid range [-{max_x}, {max_x}]")
+            warnings.warn(f"Mouse dx value {event.dx} is outside valid range [-{max_x}, {max_x}]. Clamping.")
         if not (-max_y <= event.dy <= max_y):
-            raise ValueError(f"Mouse dy value {event.dy} is outside valid range [-{max_y}, {max_y}]")
+            warnings.warn(f"Mouse dy value {event.dy} is outside valid range [-{max_y}, {max_y}]. Clamping.")
 
-        dx_clamped = event.dx
-        dy_clamped = event.dy
+        dx_clamped = min(max(event.dx, -max_x), max_x)
+        dy_clamped = min(max(event.dy, -max_y), max_y)
 
         # Use fractions for exact normalization to avoid floating-point precision loss
         norm_dx = Fraction(dx_clamped + max_x) / Fraction(2 * max_x)

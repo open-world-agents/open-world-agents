@@ -215,7 +215,7 @@ class TestFidelity:
             assert decoded.message_type == "desktop/ScreenCaptured"
 
     def test_mouse_validation(self, encoder):
-        """Mouse encoder should validate input ranges and reject invalid values."""
+        """Mouse encoder should validate input ranges and warn for invalid delta values."""
         max_x, max_y = encoder.config.max_mouse_delta  # Default: (1000, 1000)
 
         # Test boundary values (should work)
@@ -242,7 +242,7 @@ class TestFidelity:
             assert result["last_x"] == dx
             assert result["last_y"] == dy
 
-        # Test invalid values (should raise ValueError)
+        # Test invalid values (should issue warnings and clamp values)
         invalid_cases = [
             (max_x + 1, 0),  # X too large
             (-max_x - 1, 0),  # X too small
@@ -259,9 +259,14 @@ class TestFidelity:
                 message_type="desktop/RawMouseEvent",
             )
 
-            # Should raise ValueError
-            with pytest.raises(ValueError, match=r"Mouse d[xy] value .* is outside valid range"):
-                encoder.encode(msg)
+            # Should issue warning and work (with clamping)
+            with pytest.warns(UserWarning, match=r"Mouse d[xy] value .* is outside valid range"):
+                encoded, images = encoder.encode(msg)
+                decoded = encoder.decode(encoded, images)
+                result = orjson.loads(decoded.message)
+                # Values should be clamped to valid range
+                assert -max_x <= result["last_x"] <= max_x
+                assert -max_y <= result["last_y"] <= max_y
 
 
 # =============================================================================
@@ -343,26 +348,20 @@ class TestEdgeCases:
         return HierarchicalEventEncoder()
 
     def test_extreme_mouse_values(self, encoder):
-        """Extreme mouse values should raise validation errors."""
+        """Extreme mouse values should issue warnings for deltas and raise errors for button_flags."""
         max_x, max_y = encoder.config.max_mouse_delta  # Default: (1000, 1000)
 
-        # Test cases that should raise ValueError (mouse deltas and button_flags)
-        invalid_cases = [
-            # Out-of-range mouse deltas (beyond ±1000)
+        # Test cases with out-of-range mouse deltas (should warn and clamp)
+        invalid_delta_cases = [
             {"last_x": max_x + 1, "last_y": 0, "button_flags": 0, "button_data": 0},
             {"last_x": -max_x - 1, "last_y": 0, "button_flags": 0, "button_data": 0},
             {"last_x": 0, "last_y": max_y + 1, "button_flags": 0, "button_data": 0},
             {"last_x": 0, "last_y": -max_y - 1, "button_flags": 0, "button_data": 0},
             {"last_x": 10000, "last_y": 10000, "button_flags": 0, "button_data": 0},
             {"last_x": -50000, "last_y": 50000, "button_flags": 0, "button_data": 0},
-            # Invalid button_flags (beyond 3-digit hex range)
-            {"last_x": 0, "last_y": 0, "button_flags": 0xFFFF, "button_data": 0},  # 4-digit hex
-            {"last_x": 0, "last_y": 0, "button_flags": 0x1000, "button_data": 0},  # Just above 3-digit hex
-            {"last_x": 0, "last_y": 0, "button_flags": 0x12345, "button_data": 0},  # 5-digit hex
-            {"last_x": 0, "last_y": 0, "button_flags": 65536, "button_data": 0},  # Large decimal value
         ]
 
-        for i, data in enumerate(invalid_cases):
+        for i, data in enumerate(invalid_delta_cases):
             msg = McapMessage(
                 topic="mouse/raw",
                 timestamp=1000000000 + i,
@@ -370,11 +369,33 @@ class TestEdgeCases:
                 message_type="desktop/RawMouseEvent",
             )
 
-            # Should raise ValueError for out-of-range mouse deltas or invalid button_flags
-            with pytest.raises(
-                ValueError,
-                match=r"Mouse (d[xy] value .* is outside valid range|button_flags value .* is outside valid 3-digit hex range)",
-            ):
+            # Should warn for out-of-range mouse deltas and work (with clamping)
+            with pytest.warns(UserWarning, match=r"Mouse d[xy] value .* is outside valid range"):
+                encoded, images = encoder.encode(msg)
+                decoded = encoder.decode(encoded, images)
+                result = orjson.loads(decoded.message)
+                # Values should be clamped to valid range
+                assert -max_x <= result["last_x"] <= max_x
+                assert -max_y <= result["last_y"] <= max_y
+
+        # Test cases with invalid button_flags (should still raise ValueError)
+        invalid_button_cases = [
+            {"last_x": 0, "last_y": 0, "button_flags": 0xFFFF, "button_data": 0},  # 4-digit hex
+            {"last_x": 0, "last_y": 0, "button_flags": 0x1000, "button_data": 0},  # Just above 3-digit hex
+            {"last_x": 0, "last_y": 0, "button_flags": 0x12345, "button_data": 0},  # 5-digit hex
+            {"last_x": 0, "last_y": 0, "button_flags": 65536, "button_data": 0},  # Large decimal value
+        ]
+
+        for i, data in enumerate(invalid_button_cases):
+            msg = McapMessage(
+                topic="mouse/raw",
+                timestamp=1000000000 + i + 100,
+                message=orjson.dumps(data),
+                message_type="desktop/RawMouseEvent",
+            )
+
+            # Should raise ValueError for invalid button_flags
+            with pytest.raises(ValueError, match=r"Mouse button_flags value .* is outside valid 3-digit hex range"):
                 encoder.encode(msg)
 
         # Test cases with extreme button data/flags but valid mouse deltas (should work)
