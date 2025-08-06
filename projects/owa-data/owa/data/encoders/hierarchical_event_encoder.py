@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from fractions import Fraction
 from typing import List, Optional, Set, Tuple, Union
 
+import orjson
+
 from mcap_owa.highlevel.mcap_msg import McapMessage
 from owa.core.time import TimeUnits
 from owa.msgs.desktop.keyboard import KeyboardEvent
@@ -145,9 +147,12 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         return ["<KEYBOARD>", f"<{event.vk}>", f"<{event.event_type}>"]
 
     def _encode_mouse(self, event: RawMouseEvent) -> List[str]:
-        """Encode raw mouse event with multi-level delta quantization."""
+        """
+        Encode raw mouse event as: <MOUSE><dx0><dy0><dx1><dy1><flag0><flag1><flag2><optional_button_data>
+
+        Each flag is encoded as a hex digit (0-15).
+        """
         # Normalize dx, dy to [0, 1] range using max_mouse_delta tuple (half-ranges)
-        # max_mouse_delta contains half-ranges, so clamp to [-max_x, max_x] and [-max_y, max_y]
         max_x, max_y = self.config.max_mouse_delta
         dx_clamped = max(-max_x, min(max_x, event.dx))
         dy_clamped = max(-max_y, min(max_y, event.dy))
@@ -166,8 +171,12 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         for digit_dx, digit_dy in zip(digits_dx, digits_dy):
             tokens.extend([f"<{digit_dx}>", f"<{digit_dy}>"])
 
-        # Add button flags as a single token
-        tokens.append(f"<{int(event.button_flags)}>")
+        # Encode button flags as hex digits (0-15)
+        flag_value = int(event.button_flags)
+        # Convert to hex and pad to 3 digits, then split into individual hex digits
+        hex_str = f"{flag_value:03x}"  # 3 hex digits, e.g., "401" for 0x401
+        for hex_digit in hex_str:
+            tokens.append(f"<{int(hex_digit, 16)}>")  # Convert hex char to int (0-15)
 
         # Add button data if non-zero (for wheel events)
         if event.button_data != 0:
@@ -184,7 +193,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         """Decode quantized mouse deltas."""
         delta_tokens = tokens[1:]  # Skip <MOUSE>
 
-        # Extract delta digit pairs (before button flags)
+        # Extract delta digit pairs
         expected_delta_tokens = len(self.config.mouse_delta_bases) * 2
         if len(delta_tokens) < expected_delta_tokens:
             raise ValueError(f"Expected at least {expected_delta_tokens} delta tokens")
@@ -208,7 +217,6 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         norm_dy = digits_to_value(digits_dy, self.config.mouse_delta_bases)
 
         # Convert back to actual delta values using max_mouse_delta tuple (half-ranges)
-        # Use fractions for exact arithmetic to avoid floating-point precision loss
         max_x, max_y = self.config.max_mouse_delta
         dx = int(round(norm_dx * (2 * max_x) - max_x))
         dy = int(round(norm_dy * (2 * max_y) - max_y))
@@ -219,34 +227,38 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         """Encode a single McapMessage object to hierarchical token format."""
         mcap_message = mcap_message if isinstance(mcap_message, McapMessage) else McapMessage(**mcap_message)
 
-        tokens = self._encode_timestamp(mcap_message.timestamp)
+        base_tokens = self._encode_timestamp(mcap_message.timestamp)
         images = []
 
         # Parse message content
         try:
-            msg_data = json.loads(
-                mcap_message.message.decode("utf-8")
-                if isinstance(mcap_message.message, bytes)
-                else mcap_message.message
-            )
-        except (json.JSONDecodeError, TypeError) as e:
+            msg_data = orjson.loads(mcap_message.message.decode("utf-8"))
+        except (orjson.JSONDecodeError, TypeError) as e:
             raise ValueError(f"Failed to parse message content: {e}")
 
         # Encode based on event type
         if mcap_message.topic == "keyboard":
             keyboard_event = KeyboardEvent(**msg_data)
-            tokens.extend(self._encode_keyboard(keyboard_event))
+            event_tokens = base_tokens + self._encode_keyboard(keyboard_event)
+            encoded_event = f"<EVENT_START>{''.join(event_tokens)}<EVENT_END>"
         elif mcap_message.topic == "mouse" or mcap_message.topic == "mouse/raw":
             raw_mouse_event = RawMouseEvent(**msg_data)
-            tokens.extend(self._encode_mouse(raw_mouse_event))
+            mouse_tokens = self._encode_mouse(raw_mouse_event)
+            event_tokens = base_tokens + mouse_tokens
+            encoded_event = f"<EVENT_START>{''.join(event_tokens)}<EVENT_END>"
         elif mcap_message.topic == "screen":
             screen_event = ScreenCaptured(**msg_data)
-            tokens.extend([self.config.image_token_prefix, self.config.image_token, self.config.image_token_suffix])
+            event_tokens = base_tokens + [
+                self.config.image_token_prefix,
+                self.config.image_token,
+                self.config.image_token_suffix,
+            ]
+            encoded_event = f"<EVENT_START>{''.join(event_tokens)}<EVENT_END>"
             images.append(screen_event)
         else:
             raise ValueError(f"Unsupported event type: {mcap_message.topic}")
 
-        return f"<EVENT_START>{''.join(tokens)}<EVENT_END>", images
+        return encoded_event, images
 
     def _decode_timestamp(self, tokens: List[str]) -> int:
         """Decode timestamp tokens back to nanoseconds."""
@@ -287,23 +299,34 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         # Decode deltas
         dx, dy = self._decode_mouse_deltas(tokens)
 
-        # Extract button flags
+        # Extract button flags from hex digits
         delta_token_count = len(self.config.mouse_delta_bases) * 2
-        button_flags_idx = 1 + delta_token_count
+        flag_start_idx = 1 + delta_token_count
 
-        if len(tokens) <= button_flags_idx:
-            raise ValueError("Missing button flags token")
+        if len(tokens) < flag_start_idx + 3:
+            raise ValueError("Missing flag tokens")
 
-        button_flags_token = tokens[button_flags_idx]
-        button_flags_match = re.match(r"<(\d+)>", button_flags_token)
-        if not button_flags_match:
-            raise ValueError(f"Invalid button flags token: {button_flags_token}")
-        button_flags = int(button_flags_match.group(1))
+        # Extract 3 hex digits for flags
+        hex_digits = []
+        for i in range(3):
+            flag_token = tokens[flag_start_idx + i]
+            flag_match = re.match(r"<(\d+)>", flag_token)
+            if not flag_match:
+                raise ValueError(f"Invalid flag token: {flag_token}")
+            digit = int(flag_match.group(1))
+            if digit > 15:
+                raise ValueError(f"Invalid hex digit: {digit}")
+            hex_digits.append(f"{digit:x}")
+
+        # Reconstruct flag value from hex digits
+        hex_str = "".join(hex_digits)
+        button_flags = int(hex_str, 16)
 
         # Extract button data if present
         button_data = 0
-        if len(tokens) > button_flags_idx + 1:
-            button_data_token = tokens[button_flags_idx + 1]
+        button_data_idx = flag_start_idx + 3
+        if len(tokens) > button_data_idx:
+            button_data_token = tokens[button_data_idx]
             button_data_match = re.match(r"<(-?\d+)>", button_data_token)
             if button_data_match:
                 # Multiply by 120 to restore original button_data value (reverse of encoding division)
@@ -339,7 +362,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
                 topic="keyboard",
                 timestamp=timestamp_ns,
                 message_type="desktop/KeyboardEvent",
-                message=json.dumps(msg_data).encode("utf-8"),
+                message=orjson.dumps(msg_data),
             )
         elif event_type_token == "<MOUSE>":
             raw_mouse_event = self._decode_mouse(tokens[timestamp_token_count:])
@@ -357,7 +380,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
                 topic="mouse/raw",
                 timestamp=timestamp_ns,
                 message_type="desktop/RawMouseEvent",
-                message=json.dumps(msg_data).encode("utf-8"),
+                message=orjson.dumps(msg_data),
             )
         elif event_type_token == self.config.image_token_prefix:
             # Check if we have enough tokens for the full image token sequence
