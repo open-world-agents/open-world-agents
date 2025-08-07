@@ -48,6 +48,8 @@ def process_raw_events_file(
     rate_settings: Dict[str, float],
     keep_topics: Optional[List[str]] = None,
     mcap_root_directory: Optional[str] = None,
+    time_shift_seconds: Optional[float] = None,
+    action_topics: Optional[List[str]] = None,
 ) -> List[Dict]:
     """
     Process a single MCAP file to extract raw events, applying rate-limiting
@@ -57,6 +59,8 @@ def process_raw_events_file(
         episode_path: Path to the MCAP file (string).
         rate_settings: Mapping from topic name to desired rate in Hz.
         keep_topics: Optional list of topics to keep. If None, all topics are kept.
+        time_shift_seconds: Time shift in seconds to add to action topics (mouse, keyboard).
+        action_topics: List of topics to apply time shift to.
 
     Returns:
         List of event dictionaries with keys: episode_path, topic, timestamp_ns, message_type, mcap_message.
@@ -97,6 +101,7 @@ def process_raw_events_file(
                 stored_episode_path = episode_path
                 if mcap_root_directory:
                     try:
+                        # Convert episode_path to relative path
                         stored_episode_path = str(Path(episode_path).relative_to(mcap_root_directory))
                     except ValueError:
                         # If path is not relative to mcap_root_directory, store absolute path
@@ -112,7 +117,24 @@ def process_raw_events_file(
                     }
                 )
 
-    return events
+    if time_shift_seconds is None:
+        return events
+    else:
+        if action_topics is None:
+            return events
+
+        # Convert time shift to nanoseconds
+        time_shift_ns = int(time_shift_seconds * 1e9)
+
+        # Apply time shift to action topics
+        for event in events:
+            if event["topic"] in action_topics:
+                event["timestamp_ns"] += time_shift_ns
+
+        # Sort events based on timestamp_ns
+        events.sort(key=lambda e: e["timestamp_ns"])
+
+        return events
 
 
 def generate_event_examples(
@@ -121,6 +143,8 @@ def generate_event_examples(
     keep_topics: Optional[List[str]] = None,
     num_workers: int = 4,
     mcap_root_directory: Optional[str] = None,
+    time_shift_seconds: Optional[float] = None,
+    action_topics: Optional[List[str]] = None,
 ):
     """
     Generator function that yields event examples by processing each raw events file
@@ -131,6 +155,8 @@ def generate_event_examples(
         rate_settings: Mapping from topic to desired rate (Hz).
         keep_topics: Optional list of topics to keep. If None, all topics are kept.
         num_workers: Number of parallel worker processes.
+        time_shift_seconds: Time shift in seconds to add to action topics.
+        action_topics: List of topics to apply time shift to.
 
     Yields:
         Individual event dictionaries suitable for Hugging Face Dataset.
@@ -138,7 +164,15 @@ def generate_event_examples(
     total_files = len(episode_paths)
     with ProcessPoolExecutor(max_workers=num_workers) as executor:
         future_to_path = {
-            executor.submit(process_raw_events_file, fp, rate_settings, keep_topics, mcap_root_directory): fp
+            executor.submit(
+                process_raw_events_file, 
+                fp, 
+                rate_settings, 
+                keep_topics, 
+                mcap_root_directory, 
+                time_shift_seconds,
+                action_topics,
+            ): fp
             for fp in episode_paths
         }
         with tqdm(total=total_files, desc="Processing files", unit="file") as pbar:
@@ -162,6 +196,8 @@ def create_event_dataset(
     num_workers: int = 4,
     split: str = "train",
     mcap_root_directory: Optional[str] = None,
+    time_shift_seconds: Optional[float] = None,
+    action_topics: Optional[List[str]] = None,
 ) -> Dataset:
     """
     Create a Hugging Face event dataset from the given MCAP file paths by streaming
@@ -172,6 +208,8 @@ def create_event_dataset(
         rate_settings: Mapping from topic to rate (Hz) to apply drop-only downsampling.
         keep_topics: Optional list of topics to keep. If None, all topics are kept.
         num_workers: Number of worker processes for parallel file processing.
+        time_shift_seconds: Time shift in seconds to add to action topics.
+        action_topics: List of topics to apply time shift to.
 
     Returns:
         A Hugging Face Dataset containing the combined events.
@@ -197,6 +235,8 @@ def create_event_dataset(
             "keep_topics": keep_topics,
             "num_workers": num_workers,
             "mcap_root_directory": mcap_root_directory,
+            "time_shift_seconds": time_shift_seconds,  # Add this parameter
+            "action_topics": action_topics,
         },
         features=features,
         split=split,
@@ -236,6 +276,12 @@ def main(
     keep_topic: Optional[List[str]] = typer.Option(
         None, "--keep-topic", help="Topics to keep (default: screen, keyboard, mouse/raw)"
     ),
+    time_shift: Optional[float] = typer.Option(
+        None, "--time-shift", help="Time shift in seconds to add to action topics"
+    ),
+    action_topic: Optional[List[str]] = typer.Option(
+        None, "--action-topic", help="Topics to apply time shift (default: keyboard, mouse/raw)"
+    ),
 ):
     """Generate event dataset from raw MCAP files."""
 
@@ -246,6 +292,9 @@ def main(
     # Parse rate settings or use defaults
     rate_settings = parse_rate_argument(rate) if rate else {"mouse/raw": 60.0, "screen": 20.0}
     topics_to_keep = keep_topic if keep_topic else ["screen", "keyboard", "mouse/raw"]
+
+    # Define action topics that should be time-shifted
+    action_topics = action_topic if action_topic else ["keyboard", "mouse/raw"]
 
     # Gather MCAP files
     train_files = sorted(train_dir.glob("*.mcap"))
@@ -271,6 +320,10 @@ def main(
         train_files = shuffled[test_count:]
 
     print(f"Processing {len(train_files)} train files, {len(test_files)} test files with {num_workers} workers")
+    if time_shift is not None and action_topics:
+        print(f"Applying {time_shift}s time shift to action topics: {action_topics}")
+    else:
+        print("No time shift applied")
 
     # Confirm if no output directory
     if not output_dir:
@@ -280,10 +333,10 @@ def main(
     # Create event datasets
     mcap_root_directory = str(train_dir)
     train_dataset = create_event_dataset(
-        train_files, rate_settings, topics_to_keep, num_workers, "train", mcap_root_directory
+        train_files, rate_settings, topics_to_keep, num_workers, "train", mcap_root_directory, time_shift, action_topics
     )
     test_dataset = create_event_dataset(
-        test_files, rate_settings, topics_to_keep, num_workers, "test", mcap_root_directory
+        test_files, rate_settings, topics_to_keep, num_workers, "test", mcap_root_directory, time_shift, action_topics
     )
 
     # Combine into DatasetDict
