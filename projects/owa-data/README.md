@@ -22,7 +22,8 @@ python scripts/01_raw_events_to_event_dataset.py \
   --train-dir $MCAP_TRAIN_DIR \
   --output-dir $EVENT_DATASET_DIR \
   --rate screen=10 --rate mouse/raw=20 \
-  --keep-topic screen --keep-topic keyboard --keep-topic mouse/raw
+  --keep-topic screen --keep-topic keyboard --keep-topic mouse/raw \
+  --num-workers 4
 
 # 2A. Path A: Event Dataset → FSL Dataset (for transformer training)
 python scripts/02A_event_to_fsl.py \
