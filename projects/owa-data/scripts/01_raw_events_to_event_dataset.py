@@ -134,11 +134,11 @@ def generate_event_examples(
     with ProcessPoolExecutor(max_workers=num_workers) as executor:
         future_to_path = {
             executor.submit(
-                process_raw_events_file, 
-                fp, 
-                rate_settings, 
-                keep_topics, 
-                mcap_root_directory, 
+                process_raw_events_file,
+                fp,
+                rate_settings,
+                keep_topics,
+                mcap_root_directory,
                 time_shift_seconds,
                 action_topics,
             ): fp
@@ -303,7 +303,14 @@ def main(
     # Create event datasets
     mcap_root_directory = str(train_dir)
     train_dataset = create_event_dataset(
-        train_files, rate_settings, topics_to_keep, num_workers, "train", mcap_root_directory, time_shift, action_topics
+        train_files,
+        rate_settings,
+        topics_to_keep,
+        num_workers,
+        "train",
+        mcap_root_directory,
+        time_shift,
+        action_topics,
     )
     test_dataset = create_event_dataset(
         test_files, rate_settings, topics_to_keep, num_workers, "test", mcap_root_directory, time_shift, action_topics
