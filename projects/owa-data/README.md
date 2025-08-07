@@ -13,7 +13,7 @@ Raw MCAP Data → Event Dataset → [Path A] FSL Dataset → VLA Training Ready
 ```bash
 # Set variables
 export MCAP_TRAIN_DIR="/mnt/raid12/datasets/owa/mcaps/csgo"
-export EVENT_DATASET_DIR="/mnt/raid12/datasets/owa/data/csgo-event-tmp"
+export EVENT_DATASET_DIR="/mnt/raid12/datasets/owa/data/csgo-event"
 export FSL_DATASET_DIR="/mnt/raid12/datasets/owa/data/csgo-fsl"
 export BINNED_DATASET_DIR="/mnt/raid12/datasets/owa/data/csgo-bin"
 

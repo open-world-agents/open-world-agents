@@ -32,26 +32,40 @@ The conversion script (`convert_to_owamcap.py`) transforms the dataset into OWAM
 
 ### Output Format (OWAMcap)
 - **ScreenCaptured** messages with external video references or embedded frames
-- **RawMouseEvent** messages for mouse movements and clicks
-- **KeyboardEvent** messages for key presses and releases
-- **KeyboardState** messages for current pressed keys
+- **RawMouseEvent** messages for mouse movements and clicks (state-change based)
+- **KeyboardEvent** messages for key presses and releases (state-change based)
 - **WindowInfo** messages for CS:GO window context
+
+**Event Handling**: Uses state-change approach - events only generated when input state changes, not every frame.
 
 ## Usage
 
-1. Ensure you have uv installed. You can install uv using `pip install uv`.
+The script uses Typer CLI with multiple commands. Ensure you have `uv` installed.
 
-2. Run the conversion script:
+### Convert Command
 ```bash
-uv run convert_to_owamcap.py /mnt/raid12/datasets/CounterStrike_Deathmatch /mnt/raid12/datasets/owa/mcaps/csgo
+# Basic conversion
+uv run convert_to_owamcap.py convert INPUT_DIR OUTPUT_DIR
+
+# With options
+uv run convert_to_owamcap.py convert INPUT_DIR OUTPUT_DIR \
+  --max-files 100 \
+  --storage-mode external_mkv \
+  --workers 8 \
+  --subset dm_july2021
 ```
 
-3. Verify the conversion:
+### Verify Command
 ```bash
-uv run convert_to_owamcap.py verify /mnt/raid12/datasets/owa/mcaps/csgo 
+uv run convert_to_owamcap.py verify OUTPUT_DIR
 ```
 
-For detailed CLI arguments, run `uv run convert_to_owamcap.py --help`.
+### Help
+```bash
+uv run convert_to_owamcap.py --help
+uv run convert_to_owamcap.py convert --help
+uv run convert_to_owamcap.py verify --help
+```
 
 ## Action Mapping
 
@@ -139,22 +153,17 @@ The original dataset uses **non-uniform quantization** for mouse movement, which
 ## Execution Output
 
 ```sh
-$ uv run convert_to_owamcap.py /mnt/raid12/datasets/CounterStrike_Deathmatch /mnt/raid12/datasets/owa/mcaps/csgo --workers 24                                                                                                                   ✹
-Found 5765 HDF5 files to convert
-Using 24 parallel workers
-ERROR converting hdf5_dm_july2021_expert_90.hdf5: Failed to read HDF5 file /mnt/raid12/datasets/CounterStrike_Deathmatch/dataset_dm_expert_dust2/hdf5_dm_july2021_expert_90.hdf5: Unable to synchronously open file (truncated file: eof = 54820857, sblock->base_addr = 0, stored_eof = 128406464)
-ERROR converting hdf5_dm_july2021_expert_96.hdf5: Failed to read HDF5 file /mnt/raid12/datasets/CounterStrike_Deathmatch/dataset_dm_expert_dust2/hdf5_dm_july2021_expert_96.hdf5: Unable to synchronously open file (truncated file: eof = 78839801, sblock->base_addr = 0, stored_eof = 128406464)
-Converting files: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 5765/5765 [31:20<00:00,  3.07file/s, Completed: hdf5_dm_july2021_999.hdf5]
+$ uv run convert_to_owamcap.py convert /mnt/raid12/datasets/CounterStrike_Deathmatch /mnt/raid12/datasets/owa/mcaps/csgo --workers 24
+Converting 5765 files using 24 workers
+Converting files: 100%|████████████████████████████████████████████| 5765/5765 [31:20<00:00, 3.07file/s]
 
-=== Conversion Summary ===
-Converted: 5763/5765 files
-Failed: 2 files
-Total time: 1880.3 seconds
-Output directory: /mnt/raid12/datasets/owa/mcaps/csgo
+✅ Converted: 5763/5765 files
+❌ Failed: 2 files
+⏱️  Time: 1880.3s
 
-Failed files:
-  hdf5_dm_july2021_expert_90.hdf5: Failed to read HDF5 file /mnt/raid12/datasets/CounterStrike_Deathmatch/dataset_dm_expert_dust2/hdf5_dm_july2021_expert_90.hdf5: Unable to synchronously open file (truncated file: eof = 54820857, sblock->base_addr = 0, stored_eof = 128406464)
-  hdf5_dm_july2021_expert_96.hdf5: Failed to read HDF5 file /mnt/raid12/datasets/CounterStrike_Deathmatch/dataset_dm_expert_dust2/hdf5_dm_july2021_expert_96.hdf5: Unable to synchronously open file (truncated file: eof = 78839801, sblock->base_addr = 0, stored_eof = 128406464)
+❌ Failed files:
+  hdf5_dm_july2021_expert_90.hdf5: Failed to read HDF5 file (truncated file)
+  hdf5_dm_july2021_expert_96.hdf5: Failed to read HDF5 file (truncated file)
 ```
 
 ## References
