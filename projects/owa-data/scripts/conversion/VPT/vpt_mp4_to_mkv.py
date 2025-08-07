@@ -108,8 +108,8 @@ def main(
                     pbar.update(1)
 
 
-def _validate_args(args: argparse.Namespace) -> None:
-    """Validate command line arguments."""
+def _validate_args(args: argparse.Namespace) -> Path:
+    """Validate command line arguments and return the validated folder path."""
     # Validate sharding arguments
     if (args.shard_index is None) != (args.shard_count is None):
         raise SystemExit("Error: --shard-index and --shard-count must be used together")
@@ -120,14 +120,14 @@ def _validate_args(args: argparse.Namespace) -> None:
     if args.shard_index is not None and not (0 <= args.shard_index < args.shard_count):
         raise SystemExit(f"Error: --shard-index must be between 0 and {args.shard_count - 1}")
 
-    # Validate folder path
+    # Validate and return folder path
     folder_path = args.vpt_folder_path.expanduser()
     if not folder_path.exists():
         raise SystemExit(f"Error: Path does not exist: {folder_path}")
     if not folder_path.is_dir():
         raise SystemExit(f"Error: Path is not a directory: {folder_path}")
 
-    args.vpt_folder_path = folder_path
+    return folder_path
 
 
 def _run_test(folder_path: Path) -> None:
@@ -150,9 +150,9 @@ if __name__ == "__main__":
     parser.add_argument("--shard-count", type=int, help="Total number of shards (use with --shard-index)")
 
     args = parser.parse_args()
-    _validate_args(args)
+    vpt_folder_path = _validate_args(args)
 
     if args.test:
-        _run_test(args.vpt_folder_path)
+        _run_test(vpt_folder_path)
     else:
-        main(args.vpt_folder_path, args.max_workers, args.shard_index, args.shard_count)
+        main(vpt_folder_path, args.max_workers, args.shard_index, args.shard_count)
