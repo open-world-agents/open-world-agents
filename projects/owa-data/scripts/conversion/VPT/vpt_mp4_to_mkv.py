@@ -48,7 +48,7 @@ def test_target_fps(mp4_file_path: Path) -> None:
             for frame in reader.read_frames(fps=TARGET_FPS):
                 writer.write_frame(frame.to_ndarray(format="rgb24"))
                 frame_count += 1
-            print(f"{TARGET_FPS=} {frame_count=} duration={frame_count/TARGET_FPS:.2f}s")
+            print(f"{TARGET_FPS=} {frame_count=} duration={frame_count / TARGET_FPS:.2f}s")
 
 
 def process_single_file(mp4_file_path: Path) -> None:
