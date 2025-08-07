@@ -12,18 +12,16 @@ Raw MCAP Data → Event Dataset → [Path A] FSL Dataset → VLA Training Ready
 ## Quick Start
 ```bash
 # Set variables
-export MCAP_TRAIN_DIR="/mnt/raid12/datasets/owa/mcaps/super-hexagon"
-export MCAP_TEST_DIR="/mnt/raid12/datasets/owa/mcaps/super-hexagon-30s"
-export EVENT_DATASET_DIR="/mnt/raid12/datasets/owa/data/super-hexagon-event"
-export FSL_DATASET_DIR="/mnt/raid12/datasets/owa/data/super-hexagon-fsl"
-export BINNED_DATASET_DIR="/mnt/raid12/datasets/owa/data/super-hexagon-bin"
+export MCAP_TRAIN_DIR="/mnt/raid12/datasets/owa/mcaps/csgo"
+export EVENT_DATASET_DIR="/mnt/raid12/datasets/owa/data/csgo-event"
+export FSL_DATASET_DIR="/mnt/raid12/datasets/owa/data/csgo-fsl"
+export BINNED_DATASET_DIR="/mnt/raid12/datasets/owa/data/csgo-bin"
 
 # 1. Process MCAP → Event Dataset
 python scripts/01_raw_events_to_event_dataset.py \
   --train-dir $MCAP_TRAIN_DIR \
-  --test-dir $MCAP_TEST_DIR \
   --output-dir $EVENT_DATASET_DIR \
-  --rate screen=20 --rate mouse=60 \
+  --rate screen=10 --rate mouse/raw=20 \
   --keep-topic screen --keep-topic keyboard --keep-topic mouse/raw
 
 # 2A. Path A: Event Dataset → FSL Dataset (for transformer training)
