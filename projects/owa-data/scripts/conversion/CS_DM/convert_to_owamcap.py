@@ -17,7 +17,7 @@
 import argparse
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 import cv2
 import h5py
@@ -44,7 +44,7 @@ CSGO_WINDOW_TITLE = "Counter-Strike: Global Offensive"
 FRAME_RATE = 16
 FRAME_DURATION_NS = int(1e9 / FRAME_RATE)
 
-# CS:GO key mappings from original dataset
+# CS:GO key mappings
 KEYS = {
     "w": 0x57,
     "a": 0x41,
@@ -59,284 +59,256 @@ KEYS = {
     "r": 0x52,
 }
 
+# Mouse button mappings
+MOUSE_BUTTONS = {
+    "left": (RawMouseEvent.ButtonFlags.RI_MOUSE_LEFT_BUTTON_DOWN, RawMouseEvent.ButtonFlags.RI_MOUSE_LEFT_BUTTON_UP),
+    "right": (
+        RawMouseEvent.ButtonFlags.RI_MOUSE_RIGHT_BUTTON_DOWN,
+        RawMouseEvent.ButtonFlags.RI_MOUSE_RIGHT_BUTTON_UP,
+    ),
+}
+
 
 def decode_actions(action_vector: np.ndarray) -> Dict:
     """Decode 51-dimensional action vector."""
-    actions = {
-        "keys_pressed": [],
-        "mouse_left_click": False,
-        "mouse_right_click": False,
-        "mouse_dx": 0,
-        "mouse_dy": 0,
-    }
-
     # Keys (indices 0-10)
     key_names = ["w", "a", "s", "d", "space", "ctrl", "shift", "1", "2", "3", "r"]
-    for i, pressed in enumerate(action_vector[:11]):
-        if pressed > 0.5 and i < len(key_names):
-            actions["keys_pressed"].append(key_names[i])
+    keys_pressed = [
+        key_names[i] for i, pressed in enumerate(action_vector[:11]) if pressed > 0.5 and i < len(key_names)
+    ]
 
     # Mouse clicks (indices 11-12)
-    actions["mouse_left_click"] = action_vector[11] > 0.5
-    actions["mouse_right_click"] = action_vector[12] > 0.5
+    mouse_left_click = action_vector[11] > 0.5
+    mouse_right_click = action_vector[12] > 0.5
 
     # Mouse movement (indices 13-35 for X, 36-50 for Y)
-    mouse_x = [-1000, -500, -300, -200, -100, -60, -30, -20, -10, -4, -2, 0, 2, 4, 10, 20, 30, 60, 100, 200, 300, 500, 1000]  # fmt: skip
-    mouse_y = [-200, -100, -50, -20, -10, -4, -2, 0, 2, 4, 10, 20, 50, 100, 200]  # fmt: skip
+    mouse_x_values = [
+        -1000,
+        -500,
+        -300,
+        -200,
+        -100,
+        -60,
+        -30,
+        -20,
+        -10,
+        -4,
+        -2,
+        0,
+        2,
+        4,
+        10,
+        20,
+        30,
+        60,
+        100,
+        200,
+        300,
+        500,
+        1000,
+    ]
+    mouse_y_values = [-200, -100, -50, -20, -10, -4, -2, 0, 2, 4, 10, 20, 50, 100, 200]
 
+    mouse_dx = mouse_dy = 0
     x_idx = np.argmax(action_vector[13:36])
     if action_vector[13 + x_idx] > 0.5:
-        actions["mouse_dx"] = int(mouse_x[x_idx])
+        mouse_dx = int(mouse_x_values[x_idx])
 
     y_idx = np.argmax(action_vector[36:51])
     if action_vector[36 + y_idx] > 0.5:
-        actions["mouse_dy"] = int(mouse_y[y_idx])
+        mouse_dy = int(mouse_y_values[y_idx])
 
-    return actions
+    return {
+        "keys_pressed": keys_pressed,
+        "mouse_left_click": mouse_left_click,
+        "mouse_right_click": mouse_right_click,
+        "mouse_dx": mouse_dx,
+        "mouse_dy": mouse_dy,
+    }
 
 
-def create_video_from_frames(
-    frames: List[np.ndarray], output_path: Path, fps: int = FRAME_RATE, video_format: Optional[str] = None
-) -> None:
+def handle_keyboard_events(writer: OWAMcapWriter, current_keys: List[str], keyboard_state: Set[str], timestamp: int):
+    """Handle keyboard press/release events using state-change approach."""
+    # Release keys not in current frame
+    for key in list(keyboard_state):
+        if key not in current_keys:
+            keyboard_state.remove(key)
+            if key in KEYS:
+                event = KeyboardEvent(event_type="release", vk=KEYS[key], timestamp=timestamp)
+                writer.write_message(event, topic="keyboard", timestamp=timestamp)
+
+    # Press new keys
+    for key in current_keys:
+        if key in KEYS and key not in keyboard_state:
+            keyboard_state.add(key)
+            event = KeyboardEvent(event_type="press", vk=KEYS[key], timestamp=timestamp)
+            writer.write_message(event, topic="keyboard", timestamp=timestamp)
+
+
+def handle_mouse_events(writer: OWAMcapWriter, action: Dict, button_state: Set[str], timestamp: int):
+    """Handle mouse movement and button events using state-change approach."""
+    # Handle mouse movement
+    if action["mouse_dx"] != 0 or action["mouse_dy"] != 0:
+        event = RawMouseEvent(
+            last_x=action["mouse_dx"],
+            last_y=action["mouse_dy"],
+            button_flags=RawMouseEvent.ButtonFlags.RI_MOUSE_NOP,
+            timestamp=timestamp,
+        )
+        writer.write_message(event, topic="mouse/raw", timestamp=timestamp)
+
+    # Handle button state changes
+    current_buttons = set()
+    if action["mouse_left_click"]:
+        current_buttons.add("left")
+    if action["mouse_right_click"]:
+        current_buttons.add("right")
+
+    # Release buttons
+    for button in list(button_state):
+        if button not in current_buttons and button in MOUSE_BUTTONS:
+            button_state.remove(button)
+            _, up_flag = MOUSE_BUTTONS[button]
+            event = RawMouseEvent(last_x=0, last_y=0, button_flags=up_flag, timestamp=timestamp)
+            writer.write_message(event, topic="mouse/raw", timestamp=timestamp)
+
+    # Press buttons
+    for button in current_buttons:
+        if button not in button_state and button in MOUSE_BUTTONS:
+            button_state.add(button)
+            down_flag, _ = MOUSE_BUTTONS[button]
+            event = RawMouseEvent(last_x=0, last_y=0, button_flags=down_flag, timestamp=timestamp)
+            writer.write_message(event, topic="mouse/raw", timestamp=timestamp)
+
+
+def create_video_from_frames(frames: List[np.ndarray], output_path: Path, video_format: str = "mkv") -> None:
     """Create video file from frames."""
     if not frames:
         raise ValueError("No frames provided")
 
-    # Auto-detect format from file extension if not provided
-    if video_format is None:
-        video_format = output_path.suffix.lstrip(".").lower()
-        if video_format not in ["mkv", "mp4"]:
-            video_format = "mkv"  # Default fallback
-
     # Ensure correct extension
-    if video_format == "mkv" and not output_path.suffix == ".mkv":
-        output_path = output_path.with_suffix(".mkv")
-    elif video_format == "mp4" and not output_path.suffix == ".mp4":
-        output_path = output_path.with_suffix(".mp4")
-
+    output_path = output_path.with_suffix(f".{video_format}")
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    try:
-        with VideoWriter(output_path, fps=float(fps), vfr=False) as writer:
-            for frame in frames:
-                writer.write_frame(frame)
-    except Exception as e:
-        raise RuntimeError(f"Failed to create video {output_path}: {e}")
+    with VideoWriter(output_path, fps=float(FRAME_RATE), vfr=False) as writer:
+        for frame in frames:
+            writer.write_frame(frame)
+
+
+def load_hdf5_data(hdf5_path: Path, max_frames: Optional[int] = None) -> Tuple[List[np.ndarray], List[Dict]]:
+    """Load frames and actions from HDF5 file."""
+    frames, actions = [], []
+
+    with h5py.File(hdf5_path, "r") as f:
+        frame_keys = [k for k in f.keys() if k.startswith("frame_") and k.endswith("_x")]
+        num_frames = min(len(frame_keys), max_frames) if max_frames else len(frame_keys)
+
+        if num_frames == 0:
+            raise ValueError("No frame data found in HDF5 file")
+
+        for i in range(num_frames):
+            frame_key, action_key = f"frame_{i}_x", f"frame_{i}_y"
+
+            if frame_key not in f or action_key not in f:
+                raise KeyError(f"Missing data for frame {i}")
+
+            frame = np.array(f[frame_key])
+            action_vector = np.array(f[action_key])
+
+            if frame.shape != (150, 280, 3):
+                raise ValueError(f"Invalid frame shape at {i}: {frame.shape}")
+            if action_vector.shape != (51,):
+                raise ValueError(f"Invalid action shape at {i}: {action_vector.shape}")
+
+            frames.append(frame)
+            actions.append(decode_actions(action_vector))
+
+    return frames, actions
 
 
 def convert_hdf5_to_owamcap(
     hdf5_path: Path, output_dir: Path, storage_mode: str = "external_mkv", max_frames: Optional[int] = None
 ) -> Path:
     """Convert HDF5 file to OWAMcap format."""
-
-    # Validate input
     if not hdf5_path.exists():
         raise FileNotFoundError(f"Input file not found: {hdf5_path}")
 
     output_dir.mkdir(parents=True, exist_ok=True)
     mcap_path = output_dir / f"{hdf5_path.stem}.mcap"
 
-    # Setup video path if needed
+    # Load data
+    frames, actions = load_hdf5_data(hdf5_path, max_frames)
+
+    # Create video if external storage
     video_path = None
     if storage_mode.startswith("external_"):
         video_format = storage_mode.split("_")[1]
         video_path = output_dir / f"{hdf5_path.stem}.{video_format}"
-
-    frames, actions = [], []
-
-    # Load HDF5 data
-    try:
-        with h5py.File(hdf5_path, "r") as f:
-            frame_keys = [k for k in f.keys() if k.startswith("frame_") and k.endswith("_x")]
-            num_frames = min(len(frame_keys), max_frames) if max_frames else len(frame_keys)
-
-            if num_frames == 0:
-                raise ValueError("No frame data found in HDF5 file")
-
-            for i in range(num_frames):
-                frame_key, action_key = f"frame_{i}_x", f"frame_{i}_y"
-
-                if frame_key not in f or action_key not in f:
-                    raise KeyError(f"Missing data for frame {i}")
-
-                frame = np.array(f[frame_key])
-                action_vector = np.array(f[action_key])
-
-                if frame.shape != (150, 280, 3):
-                    raise ValueError(f"Invalid frame shape at {i}: {frame.shape}")
-                if action_vector.shape != (51,):
-                    raise ValueError(f"Invalid action shape at {i}: {action_vector.shape}")
-
-                frames.append(frame)
-                actions.append(decode_actions(action_vector))
-
-    except Exception as e:
-        raise RuntimeError(f"Failed to read HDF5 file {hdf5_path}: {e}")
-
-    # Create video if needed
-    if video_path:
-        video_format = storage_mode.split("_")[1]
-        create_video_from_frames(frames, video_path, video_format=video_format)
+        create_video_from_frames(frames, video_path, video_format)
 
     # Create MCAP file
+    with OWAMcapWriter(str(mcap_path)) as writer:
+        keyboard_state: Set[str] = set()
+        button_state: Set[str] = set()
+        last_window_time = -1
 
-    try:
-        with OWAMcapWriter(str(mcap_path)) as writer:
-            last_window_time = -1
-            prev_keys = set()
-            prev_left_click = prev_right_click = False
+        for frame_idx, (frame, action) in enumerate(zip(frames, actions)):
+            timestamp_ns = frame_idx * FRAME_DURATION_NS
 
-            for frame_idx, (frame, action) in enumerate(zip(frames, actions)):
-                timestamp_ns = frame_idx * FRAME_DURATION_NS
+            # Write window info every second
+            current_time_seconds = timestamp_ns // 1_000_000_000
+            if current_time_seconds > last_window_time:
+                window_msg = WindowInfo(
+                    title=CSGO_WINDOW_TITLE, rect=(0, 0, CSGO_RESOLUTION[0], CSGO_RESOLUTION[1]), hWnd=1
+                )
+                writer.write_message(window_msg, topic="window", timestamp=timestamp_ns)
+                last_window_time = current_time_seconds
 
-                # Write window info every second
-                current_time_seconds = timestamp_ns // 1_000_000_000
-                if current_time_seconds > last_window_time:
-                    window_msg = WindowInfo(title=CSGO_WINDOW_TITLE, rect=(0, 0, CSGO_RESOLUTION[0], CSGO_RESOLUTION[1]), hWnd=1)  # fmt: skip
-                    writer.write_message(window_msg, topic="window", timestamp=timestamp_ns)
-                    last_window_time = current_time_seconds
+            # Write screen capture
+            if storage_mode.startswith("external_"):
+                screen_msg = ScreenCaptured(
+                    utc_ns=timestamp_ns,
+                    source_shape=CSGO_RESOLUTION,
+                    shape=CSGO_RESOLUTION,
+                    media_ref={"uri": str(video_path.name), "pts_ns": timestamp_ns},
+                )
+            else:
+                frame_bgra = cv2.cvtColor(frame, cv2.COLOR_RGB2BGRA)
+                screen_msg = ScreenCaptured(
+                    utc_ns=timestamp_ns, source_shape=CSGO_RESOLUTION, shape=CSGO_RESOLUTION, frame_arr=frame_bgra
+                )
+                screen_msg.embed_as_data_uri(format="png")
 
-                # Write screen capture
-                if storage_mode.startswith("external_"):
-                    screen_msg = ScreenCaptured(utc_ns=timestamp_ns, source_shape=CSGO_RESOLUTION, shape=CSGO_RESOLUTION, media_ref={"uri": str(video_path.name), "pts_ns": timestamp_ns})  # fmt: skip
-                else:
-                    frame_bgra = cv2.cvtColor(frame, cv2.COLOR_RGB2BGRA)
-                    screen_msg = ScreenCaptured(
-                        utc_ns=timestamp_ns, source_shape=CSGO_RESOLUTION, shape=CSGO_RESOLUTION, frame_arr=frame_bgra
-                    )
-                    screen_msg.embed_as_data_uri(format="png")
+            writer.write_message(screen_msg, topic="screen", timestamp=timestamp_ns)
 
-                writer.write_message(screen_msg, topic="screen", timestamp=timestamp_ns)
-
-                # Handle keyboard events
-                current_keys = set(action["keys_pressed"])
-
-                # Release previous keys
-                for key in prev_keys:
-                    if key in KEYS:
-                        kb_event = KeyboardEvent(event_type="release", vk=KEYS[key], timestamp=timestamp_ns)
-                        writer.write_message(kb_event, topic="keyboard", timestamp=timestamp_ns)
-
-                # Press current keys
-                for key in current_keys:
-                    if key in KEYS:
-                        kb_event = KeyboardEvent(event_type="press", vk=KEYS[key], timestamp=timestamp_ns)
-                        writer.write_message(kb_event, topic="keyboard", timestamp=timestamp_ns)
-
-                prev_keys = current_keys
-
-                # Handle mouse movement
-                if action["mouse_dx"] != 0 or action["mouse_dy"] != 0:
-                    raw_mouse_event = RawMouseEvent(
-                        last_x=action["mouse_dx"],
-                        last_y=action["mouse_dy"],
-                        button_flags=RawMouseEvent.ButtonFlags.RI_MOUSE_NOP,
-                        timestamp=timestamp_ns,
-                    )
-                    writer.write_message(raw_mouse_event, topic="mouse/raw", timestamp=timestamp_ns)
-
-                # Handle mouse clicks
-                current_left_click = action["mouse_left_click"]
-                current_right_click = action["mouse_right_click"]
-
-                # Release previous clicks
-                if prev_left_click:
-                    raw_mouse_event = RawMouseEvent(
-                        last_x=action["mouse_dx"],
-                        last_y=action["mouse_dy"],
-                        button_flags=RawMouseEvent.ButtonFlags.RI_MOUSE_LEFT_BUTTON_UP,
-                        timestamp=timestamp_ns,
-                    )
-                    writer.write_message(raw_mouse_event, topic="mouse/raw", timestamp=timestamp_ns)
-
-                if prev_right_click:
-                    raw_mouse_event = RawMouseEvent(
-                        last_x=action["mouse_dx"],
-                        last_y=action["mouse_dy"],
-                        button_flags=RawMouseEvent.ButtonFlags.RI_MOUSE_RIGHT_BUTTON_UP,
-                        timestamp=timestamp_ns,
-                    )
-                    writer.write_message(raw_mouse_event, topic="mouse/raw", timestamp=timestamp_ns)
-
-                # Press current clicks
-                if current_left_click:
-                    raw_mouse_event = RawMouseEvent(
-                        last_x=action["mouse_dx"],
-                        last_y=action["mouse_dy"],
-                        button_flags=RawMouseEvent.ButtonFlags.RI_MOUSE_LEFT_BUTTON_DOWN,
-                        timestamp=timestamp_ns,
-                    )
-                    writer.write_message(raw_mouse_event, topic="mouse/raw", timestamp=timestamp_ns)
-
-                if current_right_click:
-                    raw_mouse_event = RawMouseEvent(
-                        last_x=action["mouse_dx"],
-                        last_y=action["mouse_dy"],
-                        button_flags=RawMouseEvent.ButtonFlags.RI_MOUSE_RIGHT_BUTTON_DOWN,
-                        timestamp=timestamp_ns,
-                    )
-                    writer.write_message(raw_mouse_event, topic="mouse/raw", timestamp=timestamp_ns)
-
-                prev_left_click = current_left_click
-                prev_right_click = current_right_click
-
-    except Exception as e:
-        raise RuntimeError(f"Failed to create MCAP file {mcap_path}: {e}")
+            # Handle input events using state-change approach
+            handle_keyboard_events(writer, action["keys_pressed"], keyboard_state, timestamp_ns)
+            handle_mouse_events(writer, action, button_state, timestamp_ns)
 
     return mcap_path
 
 
 def convert_single_file(args_tuple: Tuple[Path, Path, str, Optional[int]]) -> Tuple[bool, Path, Optional[str]]:
-    """
-    Wrapper function for parallel processing of a single HDF5 file.
-
-    Args:
-        args_tuple: (hdf5_path, output_dir, storage_mode, max_frames)
-
-    Returns:
-        (success, result_path, error_message)
-    """
+    """Wrapper function for parallel processing of a single HDF5 file."""
     hdf5_path, output_dir, storage_mode, max_frames = args_tuple
 
     try:
         mcap_path = convert_hdf5_to_owamcap(hdf5_path, output_dir, storage_mode, max_frames)
         return True, mcap_path, None
     except Exception as e:
-        # cleanup both mcap and video file
+        # Cleanup files on failure
         mcap_path = output_dir / f"{hdf5_path.stem}.mcap"
-        video_path = output_dir / f"{hdf5_path.stem}.mp4"
+        video_extensions = [".mp4", ".mkv"]
+
         if mcap_path.exists():
             mcap_path.unlink()
-        if video_path.exists():
-            video_path.unlink()
+
+        for ext in video_extensions:
+            video_path = output_dir / f"{hdf5_path.stem}{ext}"
+            if video_path.exists():
+                video_path.unlink()
+
         return False, hdf5_path, str(e)
-
-
-def setup_argument_parser() -> argparse.ArgumentParser:
-    """Setup and return the argument parser."""
-    parser = argparse.ArgumentParser(description="Convert CS:GO dataset to OWAMcap format")
-
-    # Required arguments
-    parser.add_argument("input_dir", type=Path, help="Input directory containing HDF5 files")
-    parser.add_argument("output_dir", type=Path, help="Output directory for OWAMcap files")
-
-    # Optional arguments
-    parser.add_argument("--max-files", type=int, help="Maximum number of files to convert")
-    parser.add_argument("--max-frames", type=int, help="Maximum frames per file to convert")
-    parser.add_argument(
-        "--storage-mode",
-        choices=["external_mkv", "external_mp4", "embedded"],
-        default="external_mkv",
-        help="How to store screen frames",
-    )
-    parser.add_argument(
-        "--subset",
-        choices=["dm_july2021", "aim_expert", "dm_expert_dust2", "dm_expert_othermaps"],
-        help="Convert specific subset only",
-    )
-    parser.add_argument("--workers", type=int, default=4, help="Number of parallel workers (default: 4)")
-
-    return parser
 
 
 def find_hdf5_files(input_dir: Path, subset: Optional[str] = None) -> List[Path]:
@@ -346,32 +318,22 @@ def find_hdf5_files(input_dir: Path, subset: Optional[str] = None) -> List[Path]
         if not subset_dir.exists():
             raise FileNotFoundError(f"Subset directory {subset_dir} does not exist")
         return sorted(subset_dir.glob("*.hdf5"))
-    else:
-        return sorted(input_dir.rglob("*.hdf5"))
+    return sorted(input_dir.rglob("*.hdf5"))
 
 
 def process_files_parallel(
     hdf5_files: List[Path], output_dir: Path, storage_mode: str, max_frames: Optional[int], workers: int
 ) -> Tuple[List[Path], List[Tuple[Path, str]]]:
-    """
-    Process HDF5 files in parallel using joblib.
-
-    Returns:
-        (converted_files, failed_files)
-    """
-    converted_files = []
-    failed_files = []
-
-    # Create conversion tasks
+    """Process HDF5 files in parallel using joblib."""
     conversion_tasks = [
         delayed(convert_single_file)((hdf5_file, output_dir, storage_mode, max_frames)) for hdf5_file in hdf5_files
     ]
 
-    # Execute tasks in parallel with streaming results
     parallel_executor = Parallel(n_jobs=workers, verbose=0, return_as="generator")
     results_stream = parallel_executor(conversion_tasks)
 
-    # Process results as they complete
+    converted_files, failed_files = [], []
+
     with tqdm(total=len(hdf5_files), desc="Converting files", unit="file") as pbar:
         for (success, result_path, error), hdf5_file in zip(results_stream, hdf5_files):
             pbar.set_postfix_str(f"Completed: {hdf5_file.name}")
@@ -388,19 +350,32 @@ def process_files_parallel(
 
 
 def main():
-    parser = setup_argument_parser()
+    parser = argparse.ArgumentParser(description="Convert CS:GO dataset to OWAMcap format")
+    parser.add_argument("input_dir", type=Path, help="Input directory containing HDF5 files")
+    parser.add_argument("output_dir", type=Path, help="Output directory for OWAMcap files")
+    parser.add_argument("--max-files", type=int, help="Maximum number of files to convert")
+    parser.add_argument("--max-frames", type=int, help="Maximum frames per file to convert")
+    parser.add_argument(
+        "--storage-mode",
+        choices=["external_mkv", "external_mp4", "embedded"],
+        default="external_mkv",
+        help="How to store screen frames",
+    )
+    parser.add_argument(
+        "--subset",
+        choices=["dm_july2021", "aim_expert", "dm_expert_dust2", "dm_expert_othermaps"],
+        help="Convert specific subset only",
+    )
+    parser.add_argument("--workers", type=int, default=4, help="Number of parallel workers")
 
     args = parser.parse_args()
 
-    # Validate input directory
+    # Validate input
     if not args.input_dir.exists():
         print(f"ERROR: Input directory {args.input_dir} does not exist")
         return 1
 
-    # Create output directory
-    args.output_dir.mkdir(parents=True, exist_ok=True)
-
-    # Find HDF5 files
+    # Find files
     try:
         hdf5_files = find_hdf5_files(args.input_dir, args.subset)
     except FileNotFoundError as e:
@@ -408,62 +383,55 @@ def main():
         return 1
 
     if not hdf5_files:
-        print("ERROR: No HDF5 files found in input directory")
+        print("ERROR: No HDF5 files found")
         return 1
 
-    # Limit number of files if specified
+    # Limit files if specified
     if args.max_files:
         hdf5_files = hdf5_files[: args.max_files]
 
-    print(f"Found {len(hdf5_files)} HDF5 files to convert")
-    print(f"Using {args.workers} parallel workers")
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+
+    print(f"Converting {len(hdf5_files)} files using {args.workers} workers")
 
     # Convert files
     start_time = time.time()
-
-    # Process files in parallel using joblib with streaming results
     converted_files, failed_files = process_files_parallel(
         hdf5_files, args.output_dir, args.storage_mode, args.max_frames, args.workers
     )
 
     # Summary
     elapsed_time = time.time() - start_time
-    print("\n=== Conversion Summary ===")
-    print(f"Converted: {len(converted_files)}/{len(hdf5_files)} files")
+    print(f"\nConverted: {len(converted_files)}/{len(hdf5_files)} files")
     print(f"Failed: {len(failed_files)} files")
-    print(f"Total time: {elapsed_time:.1f} seconds")
-    print(f"Output directory: {args.output_dir}")
+    print(f"Time: {elapsed_time:.1f}s")
 
     if failed_files:
         print("\nFailed files:")
-        for file_path, error in failed_files:
+        for file_path, error in failed_files[:5]:  # Show first 5 failures
             print(f"  {file_path.name}: {error}")
+        if len(failed_files) > 5:
+            print(f"  ... and {len(failed_files) - 5} more")
 
     return 0
 
 
 def verify_conversion(output_dir: Path) -> None:
-    """Enhanced verification of converted files."""
+    """Verify converted MCAP files."""
     mcap_files = list(output_dir.glob("*.mcap"))
     if not mcap_files:
         print("No MCAP files found for verification")
         return
 
-    print("\n=== Verification ===")
-    print(f"Found {len(mcap_files)} MCAP files")
-
-    total_size = sum(f.stat().st_size for f in mcap_files)
-    print(f"Total size: {total_size / 1024 / 1024:.1f} MB")
+    print(f"Verifying {len(mcap_files)} MCAP files...")
+    total_size = sum(f.stat().st_size for f in mcap_files) / (1024 * 1024)
+    print(f"Total size: {total_size:.1f} MB")
 
     valid_files = 0
     invalid_files = []
 
-    # Check all files with enhanced validation
-    with tqdm(mcap_files, desc="Verifying files", unit="file") as pbar:
+    with tqdm(mcap_files, desc="Verifying", unit="file") as pbar:
         for mcap_file in pbar:
-            # Update progress bar to show current file
-            pbar.set_postfix_str(f"Checking: {mcap_file.name}")
-
             try:
                 from mcap_owa.highlevel import OWAMcapReader
 
@@ -472,50 +440,34 @@ def verify_conversion(output_dir: Path) -> None:
                     timestamps = []
 
                     for message in reader.iter_messages():
-                        topic = message.topic
-                        if topic in message_counts:
-                            message_counts[topic] += 1
+                        if message.topic in message_counts:
+                            message_counts[message.topic] += 1
                         timestamps.append(message.timestamp)
 
-                    # Calculate duration
-                    if timestamps:
-                        duration_ns = max(timestamps) - min(timestamps)
-                        duration_s = duration_ns / 1e9
-                    else:
-                        duration_s = 0
-
                     # Validation criteria
+                    duration_s = (max(timestamps) - min(timestamps)) / 1e9 if timestamps else 0
                     screen_mouse_count = message_counts["screen"] + message_counts["mouse/raw"]
                     is_valid = duration_s > 60 and screen_mouse_count > 1000
 
                     if is_valid:
                         valid_files += 1
                     else:
-                        invalid_files.append(
-                            {
-                                "file": mcap_file.name,
-                                "duration": duration_s,
-                                "screen_mouse": screen_mouse_count,
-                                "messages": message_counts,
-                            }
-                        )
+                        invalid_files.append((mcap_file.name, duration_s, screen_mouse_count))
 
             except Exception as e:
-                invalid_files.append({"file": mcap_file.name, "error": str(e)})
+                invalid_files.append((mcap_file.name, f"ERROR: {e}"))
 
-    print("\nValidation Results:")
-    print(f"  Valid files: {valid_files}/{len(mcap_files)} ({valid_files / len(mcap_files) * 100:.1f}%)")
-    print(f"  Invalid files: {len(invalid_files)}")
+    print(f"Valid: {valid_files}/{len(mcap_files)} ({valid_files / len(mcap_files) * 100:.1f}%)")
 
     if invalid_files:
-        print("\nInvalid files (showing first 10):")
-        for item in invalid_files[:10]:
-            if "error" in item:
-                print(f"  {item['file']}: ERROR - {item['error']}")
-            else:
-                print(f"  {item['file']}: {item['duration']:.1f}s, {item['screen_mouse']} screen/mouse msgs")
-
-    print("\nCriteria: >60s duration AND >1000 screen/mouse messages")
+        print(f"Invalid files ({len(invalid_files)}):")
+        for item in invalid_files[:5]:
+            if isinstance(item[1], str):  # Error case
+                print(f"  {item[0]}: {item[1]}")
+            else:  # Duration/count case
+                print(f"  {item[0]}: {item[1]:.1f}s, {item[2]} msgs")
+        if len(invalid_files) > 5:
+            print(f"  ... and {len(invalid_files) - 5} more")
 
 
 if __name__ == "__main__":
