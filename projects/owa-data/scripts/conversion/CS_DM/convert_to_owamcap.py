@@ -247,9 +247,9 @@ def convert_hdf5_to_owamcap(
         create_video_from_frames(frames, video_path, video_format)
 
     # Create MCAP file
+    keyboard_state: Set[str] = set()
+    button_state: Set[str] = set()
     with OWAMcapWriter(str(mcap_path)) as writer:
-        keyboard_state: Set[str] = set()
-        button_state: Set[str] = set()
         last_window_time = -1
 
         for frame_idx, (frame, action) in enumerate(zip(frames, actions)):
