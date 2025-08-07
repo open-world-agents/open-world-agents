@@ -9,34 +9,34 @@
 #   "owa-msgs==0.5.6",
 #   "tqdm",
 #   "joblib",
+#   "typer",
+#   "opencv-python",
 # ]
 # [tool.uv]
 # exclude-newer = "2025-08-06T12:00:00Z"
 # ///
 
-import argparse
 import time
+from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Annotated, Dict, List, Optional, Set, Tuple
 
 import cv2
 import h5py
 import numpy as np
+import typer
 from joblib import Parallel, delayed
 from tqdm import tqdm
 
 from mcap_owa.highlevel import OWAMcapWriter
-from owa.core import MESSAGES
 from owa.core.io.video import VideoWriter
+from owa.msgs.desktop.keyboard import KeyboardEvent
+from owa.msgs.desktop.mouse import RawMouseEvent
+from owa.msgs.desktop.screen import ScreenCaptured
+from owa.msgs.desktop.window import WindowInfo
 
 # Alias print to tqdm.write for better progress bar display
 print = tqdm.write
-
-# OWA message types
-ScreenCaptured = MESSAGES["desktop/ScreenCaptured"]
-RawMouseEvent = MESSAGES["desktop/RawMouseEvent"]
-KeyboardEvent = MESSAGES["desktop/KeyboardEvent"]
-WindowInfo = MESSAGES["desktop/WindowInfo"]
 
 # CS:GO dataset constants
 CSGO_RESOLUTION = (280, 150)
@@ -349,83 +349,91 @@ def process_files_parallel(
     return converted_files, failed_files
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Convert CS:GO dataset to OWAMcap format")
-    parser.add_argument("input_dir", type=Path, help="Input directory containing HDF5 files")
-    parser.add_argument("output_dir", type=Path, help="Output directory for OWAMcap files")
-    parser.add_argument("--max-files", type=int, help="Maximum number of files to convert")
-    parser.add_argument("--max-frames", type=int, help="Maximum frames per file to convert")
-    parser.add_argument(
-        "--storage-mode",
-        choices=["external_mkv", "external_mp4", "embedded"],
-        default="external_mkv",
-        help="How to store screen frames",
-    )
-    parser.add_argument(
-        "--subset",
-        choices=["dm_july2021", "aim_expert", "dm_expert_dust2", "dm_expert_othermaps"],
-        help="Convert specific subset only",
-    )
-    parser.add_argument("--workers", type=int, default=4, help="Number of parallel workers")
+# Create Typer app
+app = typer.Typer(help="Convert CS:GO dataset to OWAMcap format")
 
-    args = parser.parse_args()
+
+class StorageMode(str, Enum):
+    external_mkv = "external_mkv"
+    external_mp4 = "external_mp4"
+    embedded = "embedded"
+
+
+class Subset(str, Enum):
+    dm_july2021 = "dm_july2021"
+    aim_expert = "aim_expert"
+    dm_expert_dust2 = "dm_expert_dust2"
+    dm_expert_othermaps = "dm_expert_othermaps"
+
+
+@app.command()
+def convert(
+    input_dir: Annotated[Path, typer.Argument(help="Input directory containing HDF5 files")],
+    output_dir: Annotated[Path, typer.Argument(help="Output directory for OWAMcap files")],
+    max_files: Annotated[Optional[int], typer.Option(help="Maximum number of files to convert")] = None,
+    max_frames: Annotated[Optional[int], typer.Option(help="Maximum frames per file to convert")] = None,
+    storage_mode: Annotated[StorageMode, typer.Option(help="How to store screen frames")] = StorageMode.external_mkv,
+    subset: Annotated[Optional[Subset], typer.Option(help="Convert specific subset only")] = None,
+    workers: Annotated[int, typer.Option(help="Number of parallel workers")] = 4,
+):
+    """Convert CS:GO HDF5 files to OWAMcap format."""
 
     # Validate input
-    if not args.input_dir.exists():
-        print(f"ERROR: Input directory {args.input_dir} does not exist")
-        return 1
+    if not input_dir.exists():
+        typer.echo(f"ERROR: Input directory {input_dir} does not exist", err=True)
+        raise typer.Exit(1)
 
     # Find files
     try:
-        hdf5_files = find_hdf5_files(args.input_dir, args.subset)
+        subset_str = subset.value if subset else None
+        hdf5_files = find_hdf5_files(input_dir, subset_str)
     except FileNotFoundError as e:
-        print(f"ERROR: {e}")
-        return 1
+        typer.echo(f"ERROR: {e}", err=True)
+        raise typer.Exit(1)
 
     if not hdf5_files:
-        print("ERROR: No HDF5 files found")
-        return 1
+        typer.echo("ERROR: No HDF5 files found", err=True)
+        raise typer.Exit(1)
 
     # Limit files if specified
-    if args.max_files:
-        hdf5_files = hdf5_files[: args.max_files]
+    if max_files:
+        hdf5_files = hdf5_files[:max_files]
 
-    args.output_dir.mkdir(parents=True, exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-    print(f"Converting {len(hdf5_files)} files using {args.workers} workers")
+    typer.echo(f"Converting {len(hdf5_files)} files using {workers} workers")
 
     # Convert files
     start_time = time.time()
     converted_files, failed_files = process_files_parallel(
-        hdf5_files, args.output_dir, args.storage_mode, args.max_frames, args.workers
+        hdf5_files, output_dir, storage_mode.value, max_frames, workers
     )
 
     # Summary
     elapsed_time = time.time() - start_time
-    print(f"\nConverted: {len(converted_files)}/{len(hdf5_files)} files")
-    print(f"Failed: {len(failed_files)} files")
-    print(f"Time: {elapsed_time:.1f}s")
+    typer.echo(f"\n✅ Converted: {len(converted_files)}/{len(hdf5_files)} files")
+    typer.echo(f"❌ Failed: {len(failed_files)} files")
+    typer.echo(f"⏱️  Time: {elapsed_time:.1f}s")
 
     if failed_files:
-        print("\nFailed files:")
+        typer.echo("\n❌ Failed files:")
         for file_path, error in failed_files[:5]:  # Show first 5 failures
-            print(f"  {file_path.name}: {error}")
+            typer.echo(f"  {file_path.name}: {error}")
         if len(failed_files) > 5:
-            print(f"  ... and {len(failed_files) - 5} more")
-
-    return 0
+            typer.echo(f"  ... and {len(failed_files) - 5} more")
 
 
-def verify_conversion(output_dir: Path) -> None:
+@app.command()
+def verify(output_dir: Annotated[Path, typer.Argument(help="Output directory containing MCAP files to verify")]):
     """Verify converted MCAP files."""
     mcap_files = list(output_dir.glob("*.mcap"))
     if not mcap_files:
-        print("No MCAP files found for verification")
+        typer.echo("No MCAP files found for verification")
         return
 
-    print(f"Verifying {len(mcap_files)} MCAP files...")
+    typer.echo(f"Verifying {len(mcap_files)} MCAP files...")
     total_size = sum(f.stat().st_size for f in mcap_files) / (1024 * 1024)
-    print(f"Total size: {total_size:.1f} MB")
+    typer.echo(f"Total size: {total_size:.1f} MB")
 
     valid_files = 0
     invalid_files = []
@@ -457,26 +465,18 @@ def verify_conversion(output_dir: Path) -> None:
             except Exception as e:
                 invalid_files.append((mcap_file.name, f"ERROR: {e}"))
 
-    print(f"Valid: {valid_files}/{len(mcap_files)} ({valid_files / len(mcap_files) * 100:.1f}%)")
+    typer.echo(f"✅ Valid: {valid_files}/{len(mcap_files)} ({valid_files / len(mcap_files) * 100:.1f}%)")
 
     if invalid_files:
-        print(f"Invalid files ({len(invalid_files)}):")
+        typer.echo(f"❌ Invalid files ({len(invalid_files)}):")
         for item in invalid_files[:5]:
             if isinstance(item[1], str):  # Error case
-                print(f"  {item[0]}: {item[1]}")
+                typer.echo(f"  {item[0]}: {item[1]}")
             else:  # Duration/count case
-                print(f"  {item[0]}: {item[1]:.1f}s, {item[2]} msgs")
+                typer.echo(f"  {item[0]}: {item[1]:.1f}s, {item[2]} msgs")
         if len(invalid_files) > 5:
-            print(f"  ... and {len(invalid_files) - 5} more")
+            typer.echo(f"  ... and {len(invalid_files) - 5} more")
 
 
 if __name__ == "__main__":
-    import sys
-
-    if len(sys.argv) > 1 and sys.argv[1] == "verify":
-        if len(sys.argv) < 3:
-            print("Usage: python convert_to_owamcap.py verify <output_dir>")
-            sys.exit(1)
-        verify_conversion(Path(sys.argv[2]))
-    else:
-        exit(main())
+    app()
