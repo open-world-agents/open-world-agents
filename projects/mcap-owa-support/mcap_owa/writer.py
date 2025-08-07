@@ -62,7 +62,7 @@ class Writer:
         if isinstance(output, Path):
             output = output.as_posix()
 
-        self.__writer = McapWriter(
+        self._writer = McapWriter(
             output=output,
             chunk_size=chunk_size,
             compression=compression,
@@ -70,7 +70,7 @@ class Writer:
         )
         self.__schema_ids: Dict[str, int] = {}
         self.__channel_ids: Dict[str, int] = {}
-        self.__writer.start(profile="owa", library=_library_identifier())
+        self._writer.start(profile="owa", library=_library_identifier())
         self.__finished = False
 
     def finish(self):
@@ -78,7 +78,7 @@ class Writer:
         Finishes writing to the MCAP stream. This must be called before the stream is closed.
         """
         if not self.__finished:
-            self.__writer.finish()
+            self._writer.finish()
             self.__finished = True
 
     def write_message(
@@ -107,7 +107,7 @@ class Writer:
             else:
                 # Fallback to class name as schema
                 schema_data = message.__class__.__name__.encode()
-            schema_id = self.__writer.register_schema(
+            schema_id = self._writer.register_schema(
                 name=message._type,
                 data=schema_data,
                 encoding=SchemaEncoding.JSONSchema,
@@ -116,7 +116,7 @@ class Writer:
         schema_id = self.__schema_ids[message._type]
 
         if topic not in self.__channel_ids:
-            channel_id = self.__writer.register_channel(
+            channel_id = self._writer.register_channel(
                 topic=topic,
                 message_encoding="json",
                 schema_id=schema_id,
@@ -125,13 +125,13 @@ class Writer:
         channel_id = self.__channel_ids[topic]
 
         # Type check for message
-        scheme_for_channel = self.__writer.__channels[channel_id].schema_id
+        scheme_for_channel = self._writer.__channels[channel_id].schema_id
         assert scheme_for_channel == schema_id, (
             f"Schema ID Mismatch Error:\n"
             f"-------------------------\n"
             f"Channel (ID: {channel_id}):\n"
             f"  Schema ID:   {scheme_for_channel}\n"
-            f"  Schema Name: {self.__writer.__schemas[scheme_for_channel].name}\n\n"
+            f"  Schema Name: {self._writer.__schemas[scheme_for_channel].name}\n\n"
             f"Message (Type: {message._type}):\n"
             f"  Schema ID:   {schema_id}\n"
             f"  Schema Name: {message._type}\n\n"
@@ -146,7 +146,7 @@ class Writer:
         if publish_time is None:
             publish_time = log_time
 
-        self.__writer.add_message(
+        self._writer.add_message(
             channel_id=channel_id,
             log_time=log_time,
             publish_time=publish_time,

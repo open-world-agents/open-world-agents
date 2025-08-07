@@ -62,7 +62,7 @@ VPT_TARGET_LIST_FILE = "./vpt_target_files.txt"
 
 ```bash
 cd projects/owa-data/scripts/conversion/VPT
-python vpt_to_owamcap.py
+uv run vpt_to_owamcap.py
 ```
 
 ## Output

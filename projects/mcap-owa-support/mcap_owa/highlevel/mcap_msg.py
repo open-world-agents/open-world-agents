@@ -1,18 +1,25 @@
 import functools
-from typing import Any
+from typing import Generic, TypeVar
 
 from mcap.records import Channel, Message, Schema
+
+# Import here to avoid circular imports
+from owa.core.message import BaseMessage
 from pydantic import BaseModel
 
 from mcap_owa.decode_utils import get_decode_function
 
+# TypeVar for the decoded message type, bounded by BaseMessage
+T = TypeVar("T", bound=BaseMessage)
 
-class McapMessage(BaseModel):
+
+class McapMessage(BaseModel, Generic[T]):
     """
     A wrapper around MCAP message data that provides lazy evaluation of high-level properties.
 
-    This class stores the 4 core fields (topic, timestamp, message, message_type) directly
-    and provides convenient access to decoded content.
+    Supports generic type annotations for type safety:
+        msg: McapMessage[KeyboardEvent] = reader.get_message()
+        event = msg.decoded  # Type: KeyboardEvent
     """
 
     topic: str
@@ -58,11 +65,11 @@ class McapMessage(BaseModel):
         )
 
     @functools.cached_property
-    def decoded(self) -> Any:
+    def decoded(self) -> T:
         """
         Get the decoded message content. This is lazily evaluated.
 
-        :return: Decoded message content
+        :return: Decoded message content of type T
         """
         # Use automatic decode function generation
         decode_fn = get_decode_function(self.message_type, **self._decode_args)
@@ -72,4 +79,5 @@ class McapMessage(BaseModel):
             raise ValueError(f"Could not generate decode function for message type '{self.message_type}'")
 
     def __repr__(self) -> str:
-        return f"McapMessage(topic={self.topic}, timestamp={self.timestamp}, message_type={self.message_type})"
+        message_repr = repr(self.message[:32]) + "..." if len(self.message) > 32 else repr(self.message)
+        return f"McapMessage(topic={self.topic!r}, timestamp={self.timestamp}, message_type={self.message_type!r}, message={message_repr})"
