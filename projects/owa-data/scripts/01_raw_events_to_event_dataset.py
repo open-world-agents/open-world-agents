@@ -117,24 +117,18 @@ def process_raw_events_file(
                     }
                 )
 
-    if time_shift_seconds is None:
+    if time_shift_seconds is None or not action_topics:
         return events
-    else:
-        if action_topics is None:
-            return events
 
-        # Convert time shift to nanoseconds
-        time_shift_ns = int(time_shift_seconds * 1e9)
+    action_topics_set = set(action_topics)
+    time_shift_ns = int(time_shift_seconds * 1e9)
 
-        # Apply time shift to action topics
-        for event in events:
-            if event["topic"] in action_topics:
-                event["timestamp_ns"] += time_shift_ns
+    for event in events:
+        if event["topic"] in action_topics_set:
+            event["timestamp_ns"] += time_shift_ns
 
-        # Sort events based on timestamp_ns
-        events.sort(key=lambda e: e["timestamp_ns"])
-
-        return events
+    events.sort(key=lambda e: e["timestamp_ns"])
+    return events
 
 
 def generate_event_examples(
