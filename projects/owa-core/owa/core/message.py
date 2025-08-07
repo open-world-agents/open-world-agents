@@ -10,7 +10,7 @@ import importlib.util
 import io
 import warnings
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Self
+from typing import Any, ClassVar, Dict, Self
 
 from pydantic import BaseModel, model_validator
 from pydantic.fields import ModelPrivateAttr
@@ -25,7 +25,7 @@ class BaseMessage(ABC):
     OWA framework.
     """
 
-    _type: str
+    _type: ClassVar[str]
 
     @abstractmethod
     def serialize(self, buffer: io.BytesIO) -> None:
@@ -76,7 +76,7 @@ class OWAMessage(BaseModel, BaseMessage):
 
     # _type is defined as a class attribute, not a Pydantic field
     # Subclasses should override this
-    _type: str
+    _type: ClassVar[str]
 
     def serialize(self, buffer: io.BytesIO) -> None:
         """

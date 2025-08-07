@@ -44,4 +44,4 @@ class OWAMcapWriter(_Writer):
             name: Name/key for the metadata
             data: Metadata as Dict[str, str]
         """
-        self._Writer__writer.add_metadata(name=name, data=data)
+        self._writer.add_metadata(name=name, data=data)

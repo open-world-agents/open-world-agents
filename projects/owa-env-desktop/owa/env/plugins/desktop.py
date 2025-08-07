@@ -46,6 +46,7 @@ plugin_spec = PluginSpec(
             "keyboard.get_state": "owa.env.desktop.keyboard_mouse.callables:get_keyboard_state",
             "keyboard.press_repeat": "owa.env.desktop.keyboard_mouse.callables:press_repeat_key",
             "keyboard.release_all_keys": "owa.env.desktop.keyboard_mouse.callables:release_all_keys",
+            "keyboard.get_keyboard_repeat_timing": "owa.env.desktop.keyboard_mouse.callables:get_keyboard_repeat_timing",
             # Window management
             "window.get_active_window": "owa.env.desktop.window.callables:get_active_window",
             "window.get_window_by_title": "owa.env.desktop.window.callables:get_window_by_title",

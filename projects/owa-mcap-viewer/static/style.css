@@ -210,6 +210,30 @@ body {
     /* Light Green */
 }
 
+/* Raw mouse events */
+.mouse-event.raw {
+    background-color: #e8f4fd;
+    /* Light Blue for raw events */
+}
+
+/* Mouse position display */
+.mouse-position {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 5px 10px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    font-size: 12px;
+}
+
+.mouse-position h4 {
+    margin: 0 0 5px 0;
+    font-size: 12px;
+    color: #666;
+}
+
 #file-list {
     margin-top: 10px;
 }

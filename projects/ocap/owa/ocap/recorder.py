@@ -22,27 +22,25 @@ event_queue = Queue()
 MCAP_LOCATION = None
 
 
+def _collect_environment_metadata() -> dict:
+    """Collect environment metadata that applies to the entire session."""
+    metadata = {}
+    metadata["pointer_ballistics_config"] = CALLABLES["desktop/mouse.get_pointer_ballistics_config"]().model_dump(
+        by_alias=True
+    )
+    metadata["keyboard_repeat_timing"] = CALLABLES["desktop/keyboard.get_keyboard_repeat_timing"](return_seconds=False)
+    return metadata
+
+
 def _record_environment_metadata(writer: OWAMcapWriter) -> None:
-    """Record environment configuration as MCAP metadata.
-
-    This function captures recording environment information that applies to the
-    entire session, such as system configuration, hardware settings, etc.
-
-    Args:
-        writer: The MCAP writer to store metadata in
-    """
-    # Record pointer ballistics configuration
+    """Record environment configuration as MCAP metadata."""
     try:
-        ballistics_config = CALLABLES["desktop/mouse.get_pointer_ballistics_config"]()
-
-        # Convert to Dict[str, str] as required by MCAP
-        metadata_dict = ballistics_config.model_dump(by_alias=True)
-        metadata_str_dict = {str(key): str(value) for key, value in metadata_dict.items()}
-
-        writer.write_metadata("pointer_ballistics_config", metadata_str_dict)
-        logger.debug("Recorded pointer ballistics configuration as metadata")
+        metadata = _collect_environment_metadata()
+        for name, data in metadata.items():
+            data = {str(key): str(value) for key, value in data.items()}  # mcap writer requires str keys and values
+            writer.write_metadata(name, data)
     except Exception as e:
-        logger.warning(f"Failed to record pointer ballistics configuration: {e}")
+        logger.warning(f"Failed to record environment metadata: {e}")
 
     # TODO: Add more environment metadata here:
     # - System information (OS version, hardware specs)

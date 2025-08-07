@@ -3,14 +3,13 @@ from pathlib import Path
 
 import typer
 import yaml
-from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from rich.tree import Tree
 
 from owa.core.plugin_spec import PluginSpec
 
-console = Console()
+from ..console import console
 
 
 def _detect_input_type(spec_input: str) -> str:
