@@ -127,6 +127,7 @@ def handle_keyboard_events(writer, current_keys: list, keyboard_state: set, time
             event = KeyboardEvent(event_type="press", vk=VPT_KEYBOARD_VK_MAPPING[key], timestamp=timestamp)
             writer.write_message(event, topic="keyboard", timestamp=timestamp)
 
+
 def handle_mouse_events(writer, tick_data: dict, button_state: set, timestamp: int):
     """Handle mouse movement and button events."""
     dx, dy = int(round(tick_data["mouse"]["dx"])), int(round(tick_data["mouse"]["dy"]))
