@@ -117,16 +117,15 @@ def handle_keyboard_events(writer, current_keys: list, keyboard_state: set, time
         if key not in current_keys:
             keyboard_state.remove(key)
             if key in VPT_KEYBOARD_VK_MAPPING:
-                event = KeyboardEvent(event_type="release", vk=VPT_KEYBOARD_VK_MAPPING[key])
+                event = KeyboardEvent(event_type="release", vk=VPT_KEYBOARD_VK_MAPPING[key], timestamp=timestamp)
                 writer.write_message(event, topic="keyboard", timestamp=timestamp)
 
     # Press new keys
     for key in current_keys:
         if key in VPT_KEYBOARD_VK_MAPPING and key not in keyboard_state:
             keyboard_state.add(key)
-            event = KeyboardEvent(event_type="press", vk=VPT_KEYBOARD_VK_MAPPING[key])
+            event = KeyboardEvent(event_type="press", vk=VPT_KEYBOARD_VK_MAPPING[key], timestamp=timestamp)
             writer.write_message(event, topic="keyboard", timestamp=timestamp)
-
 
 def handle_mouse_events(writer, tick_data: dict, button_state: set, timestamp: int):
     """Handle mouse movement and button events."""
