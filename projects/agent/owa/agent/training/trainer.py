@@ -68,7 +68,7 @@ class OWASFTTrainer(SFTTrainer):
         for i in range(len(logits)):
             label = labels[i]
 
-            # === Copied from SFTTrainer compute_loss
+            # ===== Copied from SFTTrainer compute_loss() =====
             shift_logits = logits[i][..., :-1, :]
             shift_labels = label[..., 1:]
 
@@ -90,8 +90,7 @@ class OWASFTTrainer(SFTTrainer):
             # Compute the mean token accuracy and log it
             total_sum = total_tokens.sum()
             accuracy = (correct_tokens.sum() / total_sum).item() if total_sum > 0 else 0.0
-
-            # === End copy
+            # ===== End copy from SFTTrainer compute_loss() =====
 
             # Extract per-sample loss
             sample_loss = losses[i].item() if losses is not None else None
