@@ -37,9 +37,8 @@ class JSONEventEncoder(BaseEventEncoder):
                 raise ValueError(f"Expected ScreenCaptured object, got {type(screen_event)}")
             images.append(screen_event)
 
-            # Replace message with image token
-            image_token = f"{self.config.image_token_prefix}{self.config.image_token}{self.config.image_token_suffix}"
-            mcap_message.message = image_token.encode("utf-8")
+            # Replace message with simple image placeholder - EpisodeTokenizer handles prefix/suffix/repetition
+            mcap_message.message = self.config.fake_image_placeholder.encode("utf-8")
 
         return f"<EVENT_START>{mcap_message.model_dump_json()}<EVENT_END>", images
 
@@ -56,13 +55,10 @@ class JSONEventEncoder(BaseEventEncoder):
             raise ValueError(f"Failed to parse JSON content: {e}")
 
         # Handle screen events with image data
-        expected_image_token = (
-            f"{self.config.image_token_prefix}{self.config.image_token}{self.config.image_token_suffix}"
-        )
         if (
             event_dict.get("topic") == "screen"
             and event_dict.get("message_type") == "desktop/ScreenCaptured"
-            and event_dict.get("message") == expected_image_token
+            and event_dict.get("message") == self.config.fake_image_placeholder
         ):
             if not images:
                 raise ValueError("Screen event requires image data but none provided")
@@ -71,7 +67,7 @@ class JSONEventEncoder(BaseEventEncoder):
 
         return McapMessage(
             topic=event_dict["topic"],
-            timestamp=event_dict["timestamp_ns"],
+            timestamp=event_dict["timestamp"],
             message_type=event_dict["message_type"],
             message=event_dict["message"].encode("utf-8")
             if isinstance(event_dict["message"], str)
@@ -79,5 +75,9 @@ class JSONEventEncoder(BaseEventEncoder):
         )
 
     def get_vocab(self) -> Set[str]:
-        """Get all tokens in the vocabulary."""
-        return {self.config.image_token, self.config.image_token_prefix, self.config.image_token_suffix}
+        """Get all tokens in the vocabulary.
+
+        Note: fake_image_placeholder is NOT included as it's not a real token,
+        just an internal placeholder used during encoding.
+        """
+        return set()  # No real tokens in JSON encoder vocab
