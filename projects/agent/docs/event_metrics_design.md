@@ -1,7 +1,23 @@
 # Event Metrics Evaluation System
 
 ## Overview
-Compares predicted vs ground truth events using MSE/RMSE for continuous values and accuracy for discrete values.
+Compares predicted vs ground truth events using IQMPE for continuous values and accuracy for discrete values.
+
+Metric for continuous values:
+- IQMPE(Interquartile Mean Percent Error): robust to outliers, scale-invariant
+  - Calculates percent error for each sample: |predicted - ground_truth| / |ground_truth| * 100
+  - Uses only the middle 50% of samples (25th to 75th percentile) to eliminate outliers
+  - Takes the mean of the remaining percent errors
+
+Additional precision metrics:
+- Precision Accuracy: measures sequential digit-level accuracy
+  - p1: first digit matches exactly
+  - p2: first AND second digits match exactly
+  - p3: first AND second AND third digits match exactly
+  - If any earlier digit is wrong, all subsequent precision levels are 0
+  - Example: `<0><2><5>` vs `<3><2><5>` → p1=0, p2=0, p3=0 (first digit wrong)
+  - Example: `<2><2><5>` vs `<2><2><7>` → p1=1, p2=1, p3=0 (third digit wrong)
+  - See `open-world-agents/projects/owa-data/owa/data/encoders/hierarchical_event_encoder.py` for encoding details
 
 ## Metric Structure
 
@@ -19,13 +35,33 @@ Each event pair `(predicted_event[i], ground_truth_event[i])` is evaluated:
 
             "predicted_type": str,              # e.g., "mouse/raw", "keyboard"
             "ground_truth_type": str,
-            "timestamp_error_ms": float | None, # None if not comparable
+            "timestamp_percent_error": float | None, # None if not comparable
+            "timestamp_precision_match": {      # None if not comparable
+                "p1": bool,                     # 1st digit matches
+                "p2": bool,                     # 1st AND 2nd digits match
+                "p3": bool,                     # 1st AND 2nd AND 3rd digits match
+            } | None,
 
             # Event-specific metrics (nested by type, only if comparable)
             "mouse_metrics": {                  # Only present for comparable mouse events
-                "dx_error": float,
-                "dy_error": float,
-                "euclidean_error": float,
+                "dx_percent_error": float,
+                "dx_precision_match": {
+                    "p1": bool,                 # 1st digit matches
+                    "p2": bool,                 # 1st AND 2nd digits match
+                    "p3": bool,                 # 1st AND 2nd AND 3rd digits match
+                },
+                "dy_percent_error": float,
+                "dy_precision_match": {
+                    "p1": bool,                 # 1st digit matches
+                    "p2": bool,                 # 1st AND 2nd digits match
+                    "p3": bool,                 # 1st AND 2nd AND 3rd digits match
+                },
+                "euclidean_percent_error": float,
+                "euclidean_precision_match": {
+                    "p1": bool,                 # 1st digit matches
+                    "p2": bool,                 # 1st AND 2nd digits match
+                    "p3": bool,                 # 1st AND 2nd AND 3rd digits match
+                },
                 "loss": float,
             } | None,
 
@@ -56,21 +92,41 @@ Each event pair `(predicted_event[i], ground_truth_event[i])` is evaluated:
 
     # Overall continuous metrics (aggregated across comparable events only)
     "timestamp_metrics": {
-        "mse_ms": float,                    # MSE across comparable events
-        "rmse_ms": float,                   # RMSE across comparable events
+        "iqmpe": float,                     # IQMPE across comparable events
+        "precision_accuracy": {
+            "p1": float,                    # Fraction with 1st digit correct
+            "p2": float,                    # Fraction with 1st AND 2nd digits correct
+            "p3": float,                    # Fraction with 1st AND 2nd AND 3rd digits correct
+        },
         "count": int,                       # Number of comparable events with timestamps
     },
 
     # Per-event-type continuous metrics (aggregated within comparable events of each type)
     "mouse_metrics": {
-        "timestamp_mse_ms": float,          # MSE across comparable mouse events
-        "timestamp_rmse_ms": float,         # RMSE across comparable mouse events
-        "dx_mse": float,                    # MSE across comparable mouse events
-        "dy_mse": float,                    # MSE across comparable mouse events
-        "dx_rmse": float,                   # RMSE across comparable mouse events
-        "dy_rmse": float,                   # RMSE across comparable mouse events
-        "euclidean_mse": float,             # MSE of euclidean distance
-        "euclidean_rmse": float,            # RMSE of euclidean distance
+        "timestamp_iqmpe": float,           # IQMPE across comparable mouse events
+        "timestamp_precision_accuracy": {
+            "p1": float,                    # Fraction with 1st digit correct
+            "p2": float,                    # Fraction with 1st AND 2nd digits correct
+            "p3": float,                    # Fraction with 1st AND 2nd AND 3rd digits correct
+        },
+        "dx_iqmpe": float,                  # IQMPE across comparable mouse events
+        "dx_precision_accuracy": {
+            "p1": float,                    # Fraction with 1st digit correct
+            "p2": float,                    # Fraction with 1st AND 2nd digits correct
+            "p3": float,                    # Fraction with 1st AND 2nd AND 3rd digits correct
+        },
+        "dy_iqmpe": float,                  # IQMPE across comparable mouse events
+        "dy_precision_accuracy": {
+            "p1": float,                    # Fraction with 1st digit correct
+            "p2": float,                    # Fraction with 1st AND 2nd digits correct
+            "p3": float,                    # Fraction with 1st AND 2nd AND 3rd digits correct
+        },
+        "euclidean_iqmpe": float,           # IQMPE of euclidean distance
+        "euclidean_precision_accuracy": {
+            "p1": float,                    # Fraction with 1st digit correct
+            "p2": float,                    # Fraction with 1st AND 2nd digits correct
+            "p3": float,                    # Fraction with 1st AND 2nd AND 3rd digits correct
+        },
         "loss": float,                      # Total loss across comparable mouse events
         "comparable_count": int,            # Number of comparable mouse events
         "total_count": int,                 # Total number of mouse events (including non-comparable)
@@ -78,8 +134,12 @@ Each event pair `(predicted_event[i], ground_truth_event[i])` is evaluated:
 
     # Per-event-type discrete metrics (aggregated within comparable events of each type)
     "keyboard_metrics": {
-        "timestamp_mse_ms": float,          # MSE across comparable keyboard events
-        "timestamp_rmse_ms": float,         # RMSE across comparable keyboard events
+        "timestamp_iqmpe": float,           # IQMPE across comparable keyboard events
+        "timestamp_precision_accuracy": {
+            "p1": float,                    # Fraction with 1st digit correct
+            "p2": float,                    # Fraction with 1st AND 2nd digits correct
+            "p3": float,                    # Fraction with 1st AND 2nd AND 3rd digits correct
+        },
         "vk_accuracy": float,               # Accuracy across comparable keyboard events
         "action_accuracy": float,           # Accuracy across comparable keyboard events
         "combined_accuracy": float,         # Both VK and action correct
@@ -89,8 +149,12 @@ Each event pair `(predicted_event[i], ground_truth_event[i])` is evaluated:
     },
 
     "screen_metrics": {
-        "timestamp_mse_ms": float,          # MSE across comparable screen events
-        "timestamp_rmse_ms": float,         # RMSE across comparable screen events
+        "timestamp_iqmpe": float,           # IQMPE across comparable screen events
+        "timestamp_precision_accuracy": {
+            "p1": float,                    # Fraction with 1st digit correct
+            "p2": float,                    # Fraction with 1st AND 2nd digits correct
+            "p3": float,                    # Fraction with 1st AND 2nd AND 3rd digits correct
+        },
         "loss": float,                      # Total loss across comparable screen events
         "comparable_count": int,            # Number of comparable screen events
         "total_count": int,                 # Total number of screen events (including non-comparable)
@@ -109,7 +173,8 @@ metrics = compute_metrics_for_event(prediction_string, ground_truth_string)
 # Access sequence-level metrics
 print(f"Type accuracy: {metrics['type_accuracy']:.2f}")
 print(f"Comparable rate: {metrics['comparable_rate']:.2f}")
-print(f"Mouse RMSE: {metrics['mouse_metrics']['euclidean_rmse']:.2f}px")
+print(f"Mouse IQMPE: {metrics['mouse_metrics']['euclidean_iqmpe']:.2f}%")
+print(f"Mouse precision (1st digit): {metrics['mouse_metrics']['euclidean_precision_accuracy']['p1']:.2f}")
 print(f"Keyboard accuracy: {metrics['keyboard_metrics']['vk_accuracy']:.2f}")
 
 # Access per-event details
@@ -119,7 +184,10 @@ for event in metrics['event_comparisons']:
 
 ## Key Features
 
-- **MSE/RMSE** for continuous values (timestamps, mouse positions)
+- **IQMPE (Interquartile Mean Percent Error)** for continuous values (timestamps, mouse positions)
+  - Robust to outliers by using only middle 50% of data
+  - Scale-invariant through percent error calculation
+- **Precision Accuracy** for continuous values with sequential digit-level matching (p1 ≥ p2 ≥ p3)
 - **Accuracy** for discrete values (event types, keyboard keys)
 - **Comparability tracking** before computing metrics
 - **Error handling** for sequence length mismatch and decode failures
