@@ -7,7 +7,7 @@ ensuring consistency across different encoding strategies.
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List, Optional, Set, Tuple
+from typing import List, Literal, Optional, Set, Tuple, Union, overload
 
 from mcap_owa.highlevel import McapMessage
 from owa.msgs.desktop.screen import ScreenCaptured
@@ -15,9 +15,8 @@ from owa.msgs.desktop.screen import ScreenCaptured
 
 @dataclass
 class BaseEventEncoderConfig:
-    image_token: str = "<image>"
-    image_token_prefix: str = "<fake_token_around_image><global-img>"
-    image_token_suffix: str = "<fake_token_around_image>"
+    # Placeholder token for screen events - actual image processing happens in EpisodeTokenizer
+    fake_image_placeholder: str = "<fake_image_placeholder>"
 
 
 class BaseEventEncoder(ABC):
@@ -65,15 +64,57 @@ class BaseEventEncoder(ABC):
             all_images.append(images)
         return all_tokens, all_images
 
+    @overload
     def decode_batch(
-        self, encoded_batch: List[str], all_images: Optional[List[List[ScreenCaptured]]] = None
-    ) -> List[McapMessage]:
-        """Decode a batch of encoded data."""
+        self,
+        encoded_batch: List[str],
+        all_images: Optional[List[List[ScreenCaptured]]] = None,
+        *,
+        suppress_errors: Literal[False] = False,
+    ) -> List[McapMessage]: ...
+
+    @overload
+    def decode_batch(
+        self,
+        encoded_batch: List[str],
+        all_images: Optional[List[List[ScreenCaptured]]] = None,
+        *,
+        suppress_errors: Literal[True],
+    ) -> List[Optional[McapMessage]]: ...
+
+    def decode_batch(
+        self,
+        encoded_batch: List[str],
+        all_images: Optional[List[List[ScreenCaptured]]] = None,
+        *,
+        suppress_errors: bool = False,
+    ) -> Union[List[McapMessage], List[Optional[McapMessage]]]:
+        """
+        Decode a batch of encoded data.
+
+        Args:
+            encoded_batch: List of encoded event strings
+            all_images: Optional list of images for each event
+            suppress_errors: If True, return None for invalid events instead of raising exceptions
+
+        Returns:
+            List of McapMessage objects, or List of Optional[McapMessage] if suppress_errors=True
+        """
         if all_images is None:
-            all_images = [[] for _ in encoded_batch]
+            all_images = [None] * len(encoded_batch)
         if len(encoded_batch) != len(all_images):
             raise ValueError("Length mismatch between encoded data and images")
-        return [self.decode(data, images) for data, images in zip(encoded_batch, all_images)]
+
+        if suppress_errors:
+            results = []
+            for data, images in zip(encoded_batch, all_images):
+                try:
+                    results.append(self.decode(data, images))
+                except Exception:
+                    results.append(None)
+            return results
+        else:
+            return [self.decode(data, images) for data, images in zip(encoded_batch, all_images)]
 
     @abstractmethod
     def get_vocab(self) -> Set[str]:

@@ -93,21 +93,19 @@ def digits_to_value(digits: List[int], bases: List[int]) -> Fraction:
     return value
 
 
-def _generate_vocab(
-    image_token: str = "<image>",
-    image_token_prefix: str = "<fake_token_around_image><global-img>",
-    image_token_suffix: str = "<fake_token_around_image>",
-) -> Set[str]:
-    """Generate the hierarchical token vocabulary."""
+def _generate_vocab() -> Set[str]:
+    """Generate the hierarchical token vocabulary.
+
+    Note: fake_image_placeholder is NOT included in vocab as it's not a real token,
+    just an internal placeholder used during encoding.
+    """
     vocab = [
         "<EVENT_START>",
         "<EVENT_END>",
         "<TIMESTAMP>",
         "<KEYBOARD>",
         "<MOUSE>",
-        image_token,
-        image_token_prefix,
-        image_token_suffix,
+        # fake_image_placeholder deliberately excluded - it's not a real token
     ]
 
     # Numbers 0-255 for various parameters
@@ -252,11 +250,8 @@ class HierarchicalEventEncoder(BaseEventEncoder):
             event_tokens = base_tokens + mouse_tokens
         elif mcap_message.topic == "screen":
             screen_event = ScreenCaptured(**msg_data)
-            event_tokens = base_tokens + [
-                self.config.image_token_prefix,
-                self.config.image_token,
-                self.config.image_token_suffix,
-            ]
+            # Insert a single placeholder token - EpisodeTokenizer will handle prefix/suffix/repetition
+            event_tokens = base_tokens + [self.config.fake_image_placeholder]
             images.append(screen_event)
         else:
             raise ValueError(f"Unsupported event type: {mcap_message.topic}")
@@ -386,40 +381,22 @@ class HierarchicalEventEncoder(BaseEventEncoder):
                 message_type="desktop/RawMouseEvent",
                 message=orjson.dumps(msg_data),
             )
+        elif event_type_token == self.config.fake_image_placeholder:
+            # Simple image token - EpisodeTokenizer handles prefix/suffix/repetition
+            if not images:
+                warnings.warn("No image data provided for screen event", UserWarning)
+                images = [ScreenCaptured(utc_ns=timestamp_ns, media_ref={"uri": "placeholder"})]
+            image_data = images[0]
+            msg = image_data.model_dump_json(exclude={"frame_arr"})
+            return McapMessage(
+                topic="screen",
+                timestamp=timestamp_ns,
+                message_type="desktop/ScreenCaptured",
+                message=msg.encode("utf-8"),
+            )
         else:
-            # Check if this is the start of an image token sequence
-            # Parse the image_token_prefix to get individual tokens
-            prefix_tokens = re.findall(r"<[^>]*>", self.config.image_token_prefix)
-
-            if prefix_tokens and event_type_token == prefix_tokens[0]:
-                # This looks like the start of an image sequence
-                expected_tokens = (
-                    prefix_tokens + [self.config.image_token] + re.findall(r"<[^>]*>", self.config.image_token_suffix)
-                )
-
-                if len(tokens) < timestamp_token_count + len(expected_tokens):
-                    raise ValueError("Not enough tokens for image sequence")
-
-                # Verify the complete image token sequence
-                actual_tokens = tokens[timestamp_token_count : timestamp_token_count + len(expected_tokens)]
-                if actual_tokens != expected_tokens:
-                    raise ValueError(
-                        f"Invalid image token sequence: expected {expected_tokens} but got {actual_tokens}"
-                    )
-
-                if not images:
-                    raise ValueError("Screen event requires image data but none provided")
-                image_data = images[0]
-                msg = image_data.model_dump_json(exclude={"frame_arr"})
-                return McapMessage(
-                    topic="screen",
-                    timestamp=timestamp_ns,
-                    message_type="desktop/ScreenCaptured",
-                    message=msg.encode("utf-8"),
-                )
-            else:
-                raise ValueError(f"Unknown event type token: {event_type_token}")
+            raise ValueError(f"Unknown event type token: {event_type_token}")
 
     def get_vocab(self) -> Set[str]:
         """Get all tokens in the vocabulary."""
-        return _generate_vocab(self.config.image_token, self.config.image_token_prefix, self.config.image_token_suffix)
+        return _generate_vocab()
