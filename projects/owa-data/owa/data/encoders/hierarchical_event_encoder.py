@@ -48,26 +48,26 @@ class HierarchicalEventEncoderConfig(BaseEventEncoderConfig):
 
 def quantize_to_digits(value: int, bases: List[int]) -> List[int]:
     """
-    Quantize an integer to multi-level digits.
+    Quantize an integer to multi-level digits using modulo operations.
+
+    Accepts any integer value. Negative values and values exceeding the base range
+    are handled naturally through modulo arithmetic.
 
     Args:
         value: Integer to quantize
         bases: List of bases for each quantization level
-               For signed representation, add [2] at the front of bases
+               For signed representation, add [2] to front of bases
 
     Returns:
         List of digits (len(bases) total)
 
     Examples:
-        # Unsigned representation
         >>> quantize_to_digits(64, [10, 10, 10])
-        [0, 6, 4]  # 64 -> <0><6><4>
-
-        # Signed representation
-        >>> quantize_to_digits(64, [2, 10, 10, 10])
-        [0, 0, 6, 4]  # 64 -> <0><0><6><4> (positive)
-        >>> quantize_to_digits(2000 + (-3), [2, 10, 10, 10])
-        [1, 9, 9, 7]  # -3 -> <1><9><9><7> (negative, 2000-3=1997)
+        [0, 6, 4]
+        >>> quantize_to_digits(1234, [10, 10, 10])
+        [2, 3, 4]  # Values exceeding range wrap via modulo
+        >>> quantize_to_digits(-3, [2, 10, 10, 10])
+        [1, 9, 9, 7]  # Negative with signed: add [2] at front for sign bit
     """
     # Convert to digits
     digits = []
