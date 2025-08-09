@@ -294,8 +294,8 @@ class TestEfficiency:
         encoded, _ = encoder.encode(msg)
         token_count = encoded.count("<")  # Count tokens
 
-        # Expected: EVENT_START + TIMESTAMP(4) + MOUSE + movement(6) + flags(3) + wheel(1) + EVENT_END = 17
-        assert token_count == 17, f"Expected exactly 17 tokens for mouse event, got {token_count}"
+        # Expected: EVENT_START + timestamp(3) + MOUSE + movement(6) + flags(3) + wheel(1) + EVENT_END = 16
+        assert token_count == 16, f"Expected exactly 16 tokens for mouse event, got {token_count}"
 
     def test_keyboard_token_count(self, encoder):
         """Keyboard events should use exact expected number of tokens."""
@@ -310,8 +310,8 @@ class TestEfficiency:
         encoded, _ = encoder.encode(msg)
         token_count = encoded.count("<")
 
-        # Expected: EVENT_START + TIMESTAMP(4) + KEYBOARD + vk + event_type + EVENT_END = 9
-        assert token_count == 9, f"Expected exactly 9 tokens for keyboard event, got {token_count}"
+        # Expected: EVENT_START + timestamp(3) + KEYBOARD + vk + event_type + EVENT_END = 8
+        assert token_count == 8, f"Expected exactly 8 tokens for keyboard event, got {token_count}"
 
     def test_screen_token_count(self, encoder):
         """Screen events should use exact expected number of tokens."""
@@ -331,9 +331,9 @@ class TestEfficiency:
         encoded, _ = encoder.encode(msg)
         token_count = encoded.count("<")
 
-        # Expected: EVENT_START + TIMESTAMP(4) + fake_image_placeholder + EVENT_END = 7
+        # Expected: EVENT_START + timestamp(3) + fake_image_placeholder + EVENT_END = 6
         # (simplified: no prefix/suffix in encoder, just single <fake_image_placeholder> token)
-        assert token_count == 7, f"Expected exactly 7 tokens for screen event, got {token_count}"
+        assert token_count == 6, f"Expected exactly 6 tokens for screen event, got {token_count}"
 
 
 # =============================================================================

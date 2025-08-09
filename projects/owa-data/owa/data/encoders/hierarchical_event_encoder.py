@@ -102,7 +102,6 @@ def _generate_vocab() -> Set[str]:
     vocab = [
         "<EVENT_START>",
         "<EVENT_END>",
-        "<TIMESTAMP>",
         "<KEYBOARD>",
         "<MOUSE>",
         # fake_image_placeholder deliberately excluded - it's not a real token
@@ -112,7 +111,7 @@ def _generate_vocab() -> Set[str]:
     vocab.extend(f"<{i}>" for i in range(256))
 
     # Negative numbers for scroll deltas
-    vocab.extend(f"<{i}>" for i in range(-10, 11))
+    vocab.extend(f"<{i}>" for i in range(-10, 10 + 1))
 
     return set(vocab)
 
@@ -126,7 +125,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         self.config = HierarchicalEventEncoderConfig(**(config.__dict__ | kwargs))
 
     def _encode_timestamp(self, timestamp_ns: int) -> List[str]:
-        """Encode timestamp with multi-level quantization: [<TIMESTAMP>, <digit1>, <digit2>, ...]"""
+        """Encode timestamp with multi-level quantization: [<digit1>, <digit2>, ...]"""
         # Normalize timestamp to [0, 1] range within the configured range
         # max_timestamp_range_ns is half-range, so total range is 2 * max_timestamp_range_ns
         total_range = 2 * self.config.max_timestamp_range_ns
@@ -136,8 +135,8 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         # Quantize to digits
         digits = quantize_to_digits(norm_timestamp, self.config.timestamp_bases)
 
-        # Create tokens
-        tokens = ["<TIMESTAMP>"] + [f"<{digit}>" for digit in digits]
+        # Create tokens (no <TIMESTAMP> prefix)
+        tokens = [f"<{digit}>" for digit in digits]
         return tokens
 
     def _encode_keyboard(self, event: KeyboardEvent) -> List[str]:
@@ -189,6 +188,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
             if button_data >= 32768:
                 button_data -= 65536
             button_data //= 120
+            assert button_data in range(-10, 10 + 1)
             tokens.append(f"<{button_data}>")
 
         return tokens
@@ -261,12 +261,12 @@ class HierarchicalEventEncoder(BaseEventEncoder):
 
     def _decode_timestamp(self, tokens: List[str]) -> int:
         """Decode timestamp tokens back to nanoseconds."""
-        if len(tokens) != len(self.config.timestamp_bases) + 1 or tokens[0] != "<TIMESTAMP>":
+        if len(tokens) != len(self.config.timestamp_bases):
             raise ValueError(f"Invalid timestamp tokens: {tokens}")
 
         # Parse digits from tokens
         digits = []
-        for i in range(1, len(tokens)):
+        for i in range(len(tokens)):
             digit_match = re.match(r"<(\d+)>", tokens[i])
             if not digit_match:
                 raise ValueError(f"Invalid timestamp digit token: {tokens[i]}")
@@ -347,7 +347,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         token_content = encoded_data[len("<EVENT_START>") : -len("<EVENT_END>")].strip()
         tokens = re.findall(r"<[^>]*>", token_content) if token_content else []
 
-        timestamp_token_count = len(self.config.timestamp_bases) + 1
+        timestamp_token_count = len(self.config.timestamp_bases)
         if len(tokens) < timestamp_token_count + 1:
             raise ValueError("Token sequence too short")
 
