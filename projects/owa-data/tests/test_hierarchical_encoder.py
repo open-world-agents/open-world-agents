@@ -215,15 +215,14 @@ class TestFidelity:
 
     def test_mouse_validation(self, encoder):
         """Mouse encoder should validate input ranges and warn for invalid delta values."""
-        max_delta = encoder.config.max_mouse_delta  # Default: 1000
-        max_delta_minus_one = max_delta - 1
+        min_delta, max_delta = encoder.config.mouse_delta_range
 
         # Test boundary values (should work)
         valid_cases = [
-            (max_delta_minus_one, max_delta_minus_one),  # At positive boundary
-            (-max_delta_minus_one, -max_delta_minus_one),  # At negative boundary
+            (max_delta, max_delta),  # At positive boundary
+            (min_delta, min_delta),  # At negative boundary
             (0, 0),  # Zero
-            (max_delta_minus_one, -max_delta_minus_one),  # Mixed boundaries
+            (max_delta, min_delta),  # Mixed boundaries
         ]
 
         for dx, dy in valid_cases:
@@ -244,10 +243,10 @@ class TestFidelity:
 
         # Test invalid values (should issue warnings and clamp values)
         invalid_cases = [
-            (max_delta, 0),  # X too large
-            (-max_delta, 0),  # X too small
-            (0, max_delta),  # Y too large
-            (0, -max_delta),  # Y too small
+            (max_delta + 1, 0),  # X too large
+            (min_delta - 1, 0),  # X too small
+            (0, max_delta + 1),  # Y too large
+            (0, min_delta - 1),  # Y too small
         ]
 
         for dx, dy in invalid_cases:
@@ -265,8 +264,8 @@ class TestFidelity:
                 decoded = encoder.decode(encoded, images)
                 result = orjson.loads(decoded.message)
                 # Values should be clamped to valid range
-                assert -max_delta <= result["last_x"] <= max_delta
-                assert -max_delta <= result["last_y"] <= max_delta
+                assert min_delta <= result["last_x"] <= max_delta
+                assert min_delta <= result["last_y"] <= max_delta
 
 
 # =============================================================================
@@ -294,8 +293,8 @@ class TestEfficiency:
         encoded, _ = encoder.encode(msg)
         token_count = encoded.count("<")  # Count tokens
 
-        # Expected: EVENT_START + timestamp(3) + MOUSE + movement(8) + flags(3) + wheel(1) + EVENT_END = 16
-        assert token_count == 18, f"Expected exactly 16 tokens for mouse event, got {token_count}"
+        # Expected: EVENT_START + timestamp(3) + MOUSE + movement(8) + flags(3) + wheel(2) + EVENT_END = 19
+        assert token_count == 19, f"Expected exactly 19 tokens for mouse event, got {token_count}"
 
     def test_keyboard_token_count(self, encoder):
         """Keyboard events should use exact expected number of tokens."""
@@ -350,14 +349,14 @@ class TestEdgeCases:
 
     def test_extreme_mouse_values(self, encoder):
         """Extreme mouse values should issue warnings for deltas and raise errors for button_flags."""
-        max_delta = encoder.config.max_mouse_delta  # Default: 1000
+        min_delta, max_delta = encoder.config.mouse_delta_range
 
         # Test cases with out-of-range mouse deltas (should warn and clamp)
         invalid_delta_cases = [
-            {"last_x": max_delta, "last_y": 0, "button_flags": 0, "button_data": 0},
-            {"last_x": -max_delta, "last_y": 0, "button_flags": 0, "button_data": 0},
-            {"last_x": 0, "last_y": max_delta, "button_flags": 0, "button_data": 0},
-            {"last_x": 0, "last_y": -max_delta, "button_flags": 0, "button_data": 0},
+            {"last_x": max_delta + 1, "last_y": 0, "button_flags": 0, "button_data": 0},
+            {"last_x": min_delta - 1, "last_y": 0, "button_flags": 0, "button_data": 0},
+            {"last_x": 0, "last_y": max_delta + 1, "button_flags": 0, "button_data": 0},
+            {"last_x": 0, "last_y": min_delta - 1, "button_flags": 0, "button_data": 0},
             {"last_x": 10000, "last_y": 10000, "button_flags": 0, "button_data": 0},
             {"last_x": -50000, "last_y": 50000, "button_flags": 0, "button_data": 0},
         ]
@@ -376,8 +375,8 @@ class TestEdgeCases:
                 decoded = encoder.decode(encoded, images)
                 result = orjson.loads(decoded.message)
                 # Values should be clamped to valid range
-                assert -max_delta <= result["last_x"] <= max_delta
-                assert -max_delta <= result["last_y"] <= max_delta
+                assert min_delta <= result["last_x"] <= max_delta
+                assert min_delta <= result["last_y"] <= max_delta
 
         # Test cases with invalid button_flags (should still raise ValueError)
         invalid_button_cases = [
@@ -399,18 +398,46 @@ class TestEdgeCases:
             with pytest.raises(ValueError, match=r"Mouse button_flags value .* is outside valid 3-digit hex range"):
                 encoder.encode(msg)
 
-        # Test cases with extreme button data/flags but valid mouse deltas (should work)
+        # Get valid scroll range from encoder config
+        min_scroll, max_scroll = encoder.config.mouse_scroll_range
+
+        # Test cases with extreme scroll values (should raise ValueError)
+        invalid_scroll_cases = [
+            {"last_x": 0, "last_y": 0, "button_flags": 0x400, "button_data": (max_scroll + 1) * 120},  # Just above max
+            {"last_x": 0, "last_y": 0, "button_flags": 0x400, "button_data": (min_scroll - 1) * 120},  # Just below min
+            {"last_x": 0, "last_y": 0, "button_flags": 0x400, "button_data": 32767},  # Very large value
+        ]
+
+        for i, data in enumerate(invalid_scroll_cases):
+            msg = McapMessage(
+                topic="mouse/raw",
+                timestamp=2000000000 + i,
+                message=orjson.dumps(data),
+                message_type="desktop/RawMouseEvent",
+            )
+
+            # Should raise ValueError for invalid scroll values
+            with pytest.raises(ValueError, match=r"Mouse scroll value .* is outside valid range"):
+                encoder.encode(msg)
+
+        # Test cases with valid scroll values and flags (should work)
+        min_delta_mouse, max_delta_mouse = encoder.config.mouse_delta_range
         valid_cases = [
-            {"last_x": 0, "last_y": 0, "button_flags": 0x400, "button_data": 32767},
-            {"last_x": 0, "last_y": 0, "button_flags": 0x400, "button_data": -32768},
+            {"last_x": 0, "last_y": 0, "button_flags": 0x400, "button_data": max_scroll * 120},  # Max valid scroll
+            {"last_x": 0, "last_y": 0, "button_flags": 0x400, "button_data": min_scroll * 120},  # Min valid scroll
             {"last_x": 0, "last_y": 0, "button_flags": 0xFFF, "button_data": 0},  # Max valid 3-digit hex
-            {"last_x": max_delta, "last_y": max_delta, "button_flags": 0xFFF, "button_data": 32767},  # At boundary
+            {
+                "last_x": max_delta_mouse,
+                "last_y": max_delta_mouse,
+                "button_flags": 0xFFF,
+                "button_data": 0,
+            },  # At valid boundary
         ]
 
         for i, data in enumerate(valid_cases):
             msg = McapMessage(
                 topic="mouse/raw",
-                timestamp=2000000000 + i,
+                timestamp=3000000000 + i,
                 message=orjson.dumps(data),
                 message_type="desktop/RawMouseEvent",
             )

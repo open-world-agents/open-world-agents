@@ -22,10 +22,28 @@ class HierarchicalEventEncoderConfig(BaseEventEncoderConfig):
     timestamp_unit_ns: int = 10 * TimeUnits.MSECOND
     # 16 seconds in 10ms intervals
     timestamp_bases: List[int] = field(default_factory=lambda: [16, 10, 10])
-    # Mouse delta max range
-    max_mouse_delta: int = 1000
-    # -1000 to +1000 in 1 pixel unit intervals
+    # Mouse delta encoding bases
     mouse_delta_bases: List[int] = field(default_factory=lambda: [10, 10, 10])
+    # Mouse scroll encoding bases
+    mouse_scroll_bases: List[int] = field(default_factory=lambda: [10])
+
+    def _signed_range(self, bases: List[int]) -> Tuple[int, int]:
+        """Calculate signed range from bases."""
+        total_range = 1
+        for base in bases:
+            total_range *= base
+        min_val, max_val = -total_range, total_range - 1
+        return min_val, max_val
+
+    @property
+    def mouse_delta_range(self) -> Tuple[int, int]:
+        """Calculate valid mouse delta range from bases."""
+        return self._signed_range(self.mouse_delta_bases)
+
+    @property
+    def mouse_scroll_range(self) -> Tuple[int, int]:
+        """Calculate valid mouse scroll range from bases."""
+        return self._signed_range(self.mouse_scroll_bases)
 
 
 def quantize_to_digits(value: int, bases: List[int]) -> List[int]:
@@ -125,12 +143,8 @@ def _generate_vocab() -> Set[str]:
         # fake_image_placeholder deliberately excluded - it's not a real token
     ]
 
-    # Numbers 0-255 for various parameters
+    # Numbers 0-255 for various parameters. TODO: verify this is enough
     vocab.extend(f"<{i}>" for i in range(256))
-
-    # Negative numbers for scroll deltas
-    vocab.extend(f"<{i}>" for i in range(-10, 10 + 1))
-
     return set(vocab)
 
 
@@ -165,10 +179,10 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         Each flag is encoded as a hex digit (0-15).
         """
         # Warn if mouse delta values are outside acceptable range
-        max_delta = self.config.max_mouse_delta
-        if not (-max_delta < event.dx < max_delta) or not (-max_delta < event.dy < max_delta):
+        min_delta, max_delta = self.config.mouse_delta_range
+        if not (min_delta <= event.dx <= max_delta) or not (min_delta <= event.dy <= max_delta):
             warnings.warn(
-                f"Mouse delta value ({event.dx},{event.dy}) is outside valid range [-{max_delta}, {max_delta}]. Clamping."
+                f"Mouse delta value ({event.dx},{event.dy}) is outside valid range ({min_delta}, {max_delta}). Clamping."
             )
 
         tokens = ["<MOUSE>"]
@@ -197,8 +211,18 @@ class HierarchicalEventEncoder(BaseEventEncoder):
             if button_data >= 32768:
                 button_data -= 65536
             button_data //= 120
-            assert button_data in range(-10, 10 + 1)
-            tokens.append(f"<{button_data}>")
+
+            # Validate scroll range
+            min_scroll, max_scroll = self.config.mouse_scroll_range
+            if not (min_scroll <= button_data <= max_scroll):
+                raise ValueError(
+                    f"Mouse scroll value {button_data} is outside valid range [{min_scroll}, {max_scroll}]"
+                )
+
+            # Use signed bases for scroll encoding
+            signed_bases = [2] + self.config.mouse_scroll_bases
+            digits = quantize_to_digits(button_data, signed_bases)
+            tokens.extend(f"<{digit}>" for digit in digits)
 
         return tokens
 
@@ -331,11 +355,26 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         button_data = 0
         button_data_idx = flag_start_idx + 3
         if len(tokens) > button_data_idx:
-            button_data_token = tokens[button_data_idx]
-            button_data_match = re.match(r"<(-?\d+)>", button_data_token)
-            if button_data_match:
-                # Multiply by 120 to restore original button_data value (reverse of encoding division)
-                button_data = int(button_data_match.group(1)) * 120
+            signed_bases = [2] + self.config.mouse_scroll_bases
+            expected_tokens = len(signed_bases)
+
+            # Validate exact token count
+            if len(tokens) != button_data_idx + expected_tokens:
+                raise ValueError(
+                    f"Invalid scroll token count: expected {expected_tokens}, got {len(tokens) - button_data_idx}"
+                )
+
+            # Parse scroll tokens
+            digits = []
+            for i in range(expected_tokens):
+                token = tokens[button_data_idx + i]
+                match = re.match(r"<(\d+)>", token)
+                if not match:
+                    raise ValueError(f"Invalid scroll token: {token}")
+                digits.append(int(match.group(1)))
+
+            scroll_value = digits_to_value(digits, signed_bases, signed=True)
+            button_data = scroll_value * 120
 
         return RawMouseEvent(
             last_x=dx, last_y=dy, button_flags=RawMouseEvent.ButtonFlags(button_flags), button_data=button_data
