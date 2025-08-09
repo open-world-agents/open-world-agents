@@ -230,7 +230,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         """Decode quantized mouse deltas."""
         delta_tokens = tokens[1:]  # Skip <MOUSE>
 
-        # Check for enough tokens (at least 2 pairs of deltas + 2 flag digits)
+        # Check for enough tokens: 2 pairs of deltas (dx, dy) with sign bits. Flag digits are handled separately.
         expected_delta_tokens = len(self.config.mouse_delta_bases) * 2 + 2
         if len(delta_tokens) < expected_delta_tokens:
             raise ValueError(f"Expected at least {expected_delta_tokens} delta tokens")
