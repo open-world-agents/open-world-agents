@@ -1,7 +1,8 @@
+import re
 from dataclasses import dataclass
 from typing import TypedDict
 
-from transformers import PreTrainedTokenizer
+from transformers.tokenization_utils import PreTrainedTokenizer
 
 from mcap_owa.highlevel import McapMessage
 from owa.data.encoders import create_encoder
@@ -13,9 +14,12 @@ from .datasets import Dataset, DatasetStage
 @dataclass
 class EpisodeTokenizerConfig:
     encoder_type: str = "hierarchical"
-    image_token_length: int = 64
-    image_token: str = "<image>"
+    # Internal placeholder token used by encoders (not a real token, not in vocab)
+    fake_image_placeholder: str = "<fake_image_placeholder>"
+    # Real image token that will be repeated in the final tokenized sequence
     image_token_prefix: str = "<fake_token_around_image><global-img>"
+    image_token: str = "<image>"
+    image_token_length: int = 64
     image_token_suffix: str = "<fake_token_around_image>"
     episode_start_token: str = "<EPISODE_START>"
     episode_end_token: str = "<EPISODE_END>"
@@ -33,13 +37,12 @@ class EpisodeTokenizer:
         self.config = EpisodeTokenizerConfig(**(config.__dict__ | kwargs))
         self.encoder = create_encoder(
             self.config.encoder_type,
-            image_token=self.config.image_token,
-            image_token_prefix=self.config.image_token_prefix,
-            image_token_suffix=self.config.image_token_suffix,
+            fake_image_placeholder=self.config.fake_image_placeholder,
         )
         self.is_prepared = False
 
     def get_vocab(self) -> set[str]:
+        # NOTE: fake_image_placeholder is NOT included as it's not a real token
         return self.encoder.get_vocab() | {
             self.config.image_token,
             self.config.image_token_prefix,
@@ -49,7 +52,7 @@ class EpisodeTokenizer:
         }
 
     def prepare_model(self, *, tokenizer: PreTrainedTokenizer, model=None):
-        tokenizer.add_tokens(sorted(self.get_vocab()))  # note: set is unordered in python
+        tokenizer.add_tokens(sorted(self.get_vocab()))  # NOTE: set is unordered in python
         if model is not None:
             model.resize_token_embeddings(len(tokenizer))
         self.tokenizer = tokenizer
@@ -60,14 +63,10 @@ class EpisodeTokenizer:
             raise RuntimeError("EpisodeTokenizer must be prepared by `prepare_model` before tokenizing")
 
         encoded_text, images = self.encoder.encode(mcap_msg)
-        # Replace the image token sequence with repeated image tokens
-        # First, create the pattern to search for
-        image_token_pattern = (
-            f"{self.config.image_token_prefix}{self.config.image_token}{self.config.image_token_suffix}"
-        )
-        # Replace with prefix + repeated tokens + suffix
+        # Replace fake image placeholder with prefix + repeated real image tokens + suffix
+        # EventEncoder outputs fake_image_placeholder, we convert to real image tokens
         replacement = f"{self.config.image_token_prefix}{self.config.image_token * self.config.image_token_length}{self.config.image_token_suffix}"
-        encoded_text = encoded_text.replace(image_token_pattern, replacement)
+        encoded_text = encoded_text.replace(self.config.fake_image_placeholder, replacement)
         token_ids = self.tokenizer.encode(encoded_text, add_special_tokens=False)
 
         return TokenizedEvent(
@@ -76,6 +75,44 @@ class EpisodeTokenizer:
             images=images,
             total_token_count=len(token_ids),
         )
+
+    def decode(
+        self, input_ids_or_text: list[int] | str, *, suppress_errors: bool = False
+    ) -> list[McapMessage] | list[McapMessage | None]:
+        """Decode token IDs or tokenized text back to the original McapMessage format."""
+        # Step 1: Convert token IDs back to text (if input is token IDs)
+        if isinstance(input_ids_or_text, list):
+            if not self.is_prepared:
+                raise RuntimeError("EpisodeTokenizer must be prepared by `prepare_model` before decoding")
+            # Input is token IDs
+            text = self.tokenizer.decode(input_ids_or_text, skip_special_tokens=False)
+        elif isinstance(input_ids_or_text, str):
+            # Input is already text
+            text = input_ids_or_text
+        else:
+            raise ValueError(
+                f"Input must be either list[int] (token IDs) or str (text), got {type(input_ids_or_text)}"
+            )
+
+        # Step 2: Remove episode start/end tokens if present
+        if text.startswith(self.config.episode_start_token):
+            text = text[len(self.config.episode_start_token) :]
+        if text.endswith(self.config.episode_end_token):
+            text = text[: -len(self.config.episode_end_token)]
+
+        # Step 3: Convert repeated image token sequences back to fake_image_placeholder
+        # Pattern: prefix + (image_token * image_token_length) + suffix -> fake_image_placeholder
+        assert self.config.image_token not in text, (
+            f"Image token {self.config.image_token} found in text, note that EpisodeTokenizer.decode is intended to be called on evaluation only. (since image tokens are replaced as -100 they're skipped on eval time)"
+        )
+        repeated_image_pattern = f"{self.config.image_token_prefix}{self.config.image_token_suffix}"
+        text = text.replace(repeated_image_pattern, self.config.fake_image_placeholder)
+
+        # Parse all events between <EVENT_START> and <EVENT_END> tokens
+        events = re.findall(r"<EVENT_START>.*?<EVENT_END>", text)
+
+        # Step 4: Use the encoder's decode method to reconstruct the original message
+        return self.encoder.decode_batch(events, suppress_errors=suppress_errors)
 
     def tokenize_event_dataset(self, event_dataset: Dataset, map_kwargs: dict = {"num_proc": 32}) -> Dataset:
         # Check if the input is a Dataset

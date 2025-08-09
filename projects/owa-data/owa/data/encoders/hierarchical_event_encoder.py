@@ -1,9 +1,12 @@
-import json
 import re
+import warnings
 from dataclasses import dataclass, field
-from typing import List, Optional, Set, Tuple
+from fractions import Fraction
+from typing import List, Optional, Set, Tuple, Union
 
-from mcap_owa.highlevel.reader import McapMessage
+import orjson
+
+from mcap_owa.highlevel.mcap_msg import McapMessage
 from owa.core.time import TimeUnits
 from owa.msgs.desktop.keyboard import KeyboardEvent
 from owa.msgs.desktop.mouse import RawMouseEvent
@@ -16,24 +19,22 @@ from .base_encoder import BaseEventEncoder, BaseEventEncoderConfig
 class HierarchicalEventEncoderConfig(BaseEventEncoderConfig):
     """Configuration for HierarchicalEventEncoder."""
 
-    # -2 to +2 seconds
-    timestamp_range_ns: int = 4 * TimeUnits.SECOND
-    # 4 seconds in 10ms intervals
-    timestamp_bases: List[int] = field(default_factory=lambda: [4, 10, 10])
-    # raw mouse delta quantization bases
-    mouse_delta_bases: List[int] = field(default_factory=lambda: [10, 10, 10])
-    # maximum dx value for normalization
-    max_mouse_delta_x: int = 1000
-    # maximum dy value for normalization
-    max_mouse_delta_y: int = 1000
+    # -8 to +8 seconds (half-range: 8 seconds)
+    max_timestamp_range_ns: int = 8 * TimeUnits.SECOND
+    # 16 seconds in 10ms intervals
+    timestamp_bases: List[int] = field(default_factory=lambda: [16, 10, 10])
+    # Mouse delta max ranges: (max_x, max_y) for -max_x to +max_x and -max_y to +max_y
+    max_mouse_delta: Tuple[int, int] = (1000, 1000)
+    # -1000 to +1000 in 1 pixel unit intervals
+    mouse_delta_bases: List[int] = field(default_factory=lambda: [20, 10, 10])
 
 
-def quantize_to_digits(value: float, bases: List[int]) -> List[int]:
+def quantize_to_digits(value: Union[float, Fraction], bases: List[int]) -> List[int]:
     """
     Quantize a normalized value (0.0-1.0) to multi-level digits.
 
     Args:
-        value: Normalized value between 0.0 and 1.0
+        value: Normalized value between 0.0 and 1.0 (can be float or Fraction for precision)
         bases: List of bases for each quantization level (e.g., [16, 16, 16] for 3-level hex)
 
     Returns:
@@ -44,17 +45,28 @@ def quantize_to_digits(value: float, bases: List[int]) -> List[int]:
         [11, 0, 0]  # 0xB00 in hex = 0.6875
     """
     digits = []
-    remaining = max(0.0, min(1.0, value))  # Clamp to [0, 1]
+
+    # Convert to Fraction for exact arithmetic if not already
+    if isinstance(value, Fraction):
+        remaining = value
+    else:
+        remaining = Fraction(value).limit_denominator()
+
+    # Clamp to [0, 1] using fractions
+    remaining = max(Fraction(0), min(Fraction(1), remaining))
 
     for base in bases:
-        digit = int(remaining * base)
+        # Calculate digit using exact arithmetic
+        digit_fraction = remaining * base
+        digit = int(digit_fraction)
         digits.append(digit)
-        remaining = remaining * base - digit
+        # Update remaining using exact subtraction
+        remaining = digit_fraction - digit
 
     return digits
 
 
-def digits_to_value(digits: List[int], bases: List[int]) -> float:
+def digits_to_value(digits: List[int], bases: List[int]) -> Fraction:
     """
     Reconstruct normalized value from multi-level digits.
 
@@ -63,16 +75,16 @@ def digits_to_value(digits: List[int], bases: List[int]) -> float:
         bases: List of bases for each quantization level
 
     Returns:
-        Reconstructed normalized value between 0.0 and 1.0
+        Reconstructed normalized value between 0 and 1 as an accurate Fraction
 
     Example:
         >>> digits_to_value([11, 0, 0], [16, 16, 16])
-        0.6875  # 0xB00 in hex
+        Fraction(11, 16)  # 0xB00 in hex = 11/16
     """
     if len(digits) != len(bases):
         raise ValueError(f"Digits length {len(digits)} must match bases length {len(bases)}")
 
-    value = 0.0
+    value = Fraction(0)
     for i in reversed(range(len(digits))):
         digit = digits[i]
         base = bases[i]
@@ -81,29 +93,23 @@ def digits_to_value(digits: List[int], bases: List[int]) -> float:
     return value
 
 
-def _generate_vocab(
-    image_token: str = "<image>",
-    image_token_prefix: str = "<fake_token_around_image><global-img>",
-    image_token_suffix: str = "<fake_token_around_image>",
-) -> Set[str]:
-    """Generate the hierarchical token vocabulary."""
+def _generate_vocab() -> Set[str]:
+    """Generate the hierarchical token vocabulary.
+
+    Note: fake_image_placeholder is NOT included in vocab as it's not a real token,
+    just an internal placeholder used during encoding.
+    """
     vocab = [
         "<EVENT_START>",
         "<EVENT_END>",
         "<TIMESTAMP>",
         "<KEYBOARD>",
         "<MOUSE>",
-        image_token,
-        image_token_prefix,
-        image_token_suffix,
+        # fake_image_placeholder deliberately excluded - it's not a real token
     ]
 
     # Numbers 0-255 for various parameters
     vocab.extend(f"<{i}>" for i in range(256))
-
-    # Action types and mouse buttons
-    vocab.extend(["<press>", "<release>", "<move>", "<click>", "<scroll>"])
-    vocab.extend(["<left>", "<right>", "<middle>", "<unknown>"])
 
     # Negative numbers for scroll deltas
     vocab.extend(f"<{i}>" for i in range(-10, 11))
@@ -122,8 +128,10 @@ class HierarchicalEventEncoder(BaseEventEncoder):
     def _encode_timestamp(self, timestamp_ns: int) -> List[str]:
         """Encode timestamp with multi-level quantization: [<TIMESTAMP>, <digit1>, <digit2>, ...]"""
         # Normalize timestamp to [0, 1] range within the configured range
-        mod_timestamp = timestamp_ns % self.config.timestamp_range_ns
-        norm_timestamp = mod_timestamp / self.config.timestamp_range_ns
+        # max_timestamp_range_ns is half-range, so total range is 2 * max_timestamp_range_ns
+        total_range = 2 * self.config.max_timestamp_range_ns
+        mod_timestamp = timestamp_ns % total_range
+        norm_timestamp = mod_timestamp / total_range
 
         # Quantize to digits
         digits = quantize_to_digits(norm_timestamp, self.config.timestamp_bases)
@@ -137,18 +145,28 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         return ["<KEYBOARD>", f"<{event.vk}>", f"<{event.event_type}>"]
 
     def _encode_mouse(self, event: RawMouseEvent) -> List[str]:
-        """Encode raw mouse event with multi-level delta quantization."""
-        # Normalize dx, dy to [0, 1] range using separate max_mouse_delta values
-        # Clamp values to [-max_mouse_delta_x, max_mouse_delta_x] and [-max_mouse_delta_y, max_mouse_delta_y] then normalize to [0, 1]
-        dx_clamped = max(-self.config.max_mouse_delta_x, min(self.config.max_mouse_delta_x, event.dx))
-        dy_clamped = max(-self.config.max_mouse_delta_y, min(self.config.max_mouse_delta_y, event.dy))
+        """
+        Encode raw mouse event as: <MOUSE><dx0><dy0><dx1><dy1>...<flag0><flag1><flag2><optional_button_data>
 
-        norm_dx = (dx_clamped + self.config.max_mouse_delta_x) / (2 * self.config.max_mouse_delta_x)
-        norm_dy = (dy_clamped + self.config.max_mouse_delta_y) / (2 * self.config.max_mouse_delta_y)
+        Each flag is encoded as a hex digit (0-15).
+        """
+        # Warn if mouse delta values are outside acceptable range
+        max_x, max_y = self.config.max_mouse_delta
+        if not (-max_x <= event.dx <= max_x):
+            warnings.warn(f"Mouse dx value {event.dx} is outside valid range [-{max_x}, {max_x}]. Clamping.")
+        if not (-max_y <= event.dy <= max_y):
+            warnings.warn(f"Mouse dy value {event.dy} is outside valid range [-{max_y}, {max_y}]. Clamping.")
+
+        dx_clamped = min(max(event.dx, -max_x), max_x)
+        dy_clamped = min(max(event.dy, -max_y), max_y)
+
+        # Use fractions for exact normalization to avoid floating-point precision loss
+        norm_dx = Fraction(dx_clamped + max_x) / Fraction(2 * max_x)
+        norm_dy = Fraction(dy_clamped + max_y) / Fraction(2 * max_y)
 
         tokens = ["<MOUSE>"]
 
-        # Quantize deltas to digits
+        # Quantize deltas to digits using exact Fraction values
         digits_dx = quantize_to_digits(norm_dx, self.config.mouse_delta_bases)
         digits_dy = quantize_to_digits(norm_dy, self.config.mouse_delta_bases)
 
@@ -156,8 +174,13 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         for digit_dx, digit_dy in zip(digits_dx, digits_dy):
             tokens.extend([f"<{digit_dx}>", f"<{digit_dy}>"])
 
-        # Add button flags as a single token
-        tokens.append(f"<{int(event.button_flags)}>")
+        # Encode button flags as hex digits (0-15)
+        flag_value = int(event.button_flags)
+
+        # Convert to hex and pad to 3 digits, then split into individual hex digits
+        hex_str = f"{flag_value:03x}"  # 3 hex digits, e.g., "401" for 0x401
+        for hex_digit in hex_str:
+            tokens.append(f"<{int(hex_digit, 16)}>")  # Convert hex char to int (0-15)
 
         # Add button data if non-zero (for wheel events)
         if event.button_data != 0:
@@ -174,7 +197,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         """Decode quantized mouse deltas."""
         delta_tokens = tokens[1:]  # Skip <MOUSE>
 
-        # Extract delta digit pairs (before button flags)
+        # Extract delta digit pairs
         expected_delta_tokens = len(self.config.mouse_delta_bases) * 2
         if len(delta_tokens) < expected_delta_tokens:
             raise ValueError(f"Expected at least {expected_delta_tokens} delta tokens")
@@ -197,9 +220,10 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         norm_dx = digits_to_value(digits_dx, self.config.mouse_delta_bases)
         norm_dy = digits_to_value(digits_dy, self.config.mouse_delta_bases)
 
-        # Convert back to actual delta values using separate max values
-        dx = int(round(norm_dx * (2 * self.config.max_mouse_delta_x) - self.config.max_mouse_delta_x))
-        dy = int(round(norm_dy * (2 * self.config.max_mouse_delta_y) - self.config.max_mouse_delta_y))
+        # Convert back to actual delta values using max_mouse_delta tuple (half-ranges)
+        max_x, max_y = self.config.max_mouse_delta
+        dx = int(round(norm_dx * (2 * max_x) - max_x))
+        dy = int(round(norm_dy * (2 * max_y) - max_y))
 
         return dx, dy
 
@@ -207,34 +231,33 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         """Encode a single McapMessage object to hierarchical token format."""
         mcap_message = mcap_message if isinstance(mcap_message, McapMessage) else McapMessage(**mcap_message)
 
-        tokens = self._encode_timestamp(mcap_message.timestamp)
+        base_tokens = self._encode_timestamp(mcap_message.timestamp)
         images = []
 
         # Parse message content
         try:
-            msg_data = json.loads(
-                mcap_message.message.decode("utf-8")
-                if isinstance(mcap_message.message, bytes)
-                else mcap_message.message
-            )
-        except (json.JSONDecodeError, TypeError) as e:
+            msg_data = orjson.loads(mcap_message.message.decode("utf-8"))
+        except (orjson.JSONDecodeError, TypeError) as e:
             raise ValueError(f"Failed to parse message content: {e}")
 
         # Encode based on event type
         if mcap_message.topic == "keyboard":
             keyboard_event = KeyboardEvent(**msg_data)
-            tokens.extend(self._encode_keyboard(keyboard_event))
+            event_tokens = base_tokens + self._encode_keyboard(keyboard_event)
         elif mcap_message.topic == "mouse" or mcap_message.topic == "mouse/raw":
             raw_mouse_event = RawMouseEvent(**msg_data)
-            tokens.extend(self._encode_mouse(raw_mouse_event))
+            mouse_tokens = self._encode_mouse(raw_mouse_event)
+            event_tokens = base_tokens + mouse_tokens
         elif mcap_message.topic == "screen":
             screen_event = ScreenCaptured(**msg_data)
-            tokens.extend([self.config.image_token_prefix, self.config.image_token, self.config.image_token_suffix])
+            # Insert a single placeholder token - EpisodeTokenizer will handle prefix/suffix/repetition
+            event_tokens = base_tokens + [self.config.fake_image_placeholder]
             images.append(screen_event)
         else:
             raise ValueError(f"Unsupported event type: {mcap_message.topic}")
 
-        return f"<EVENT_START>{''.join(tokens)}<EVENT_END>", images
+        encoded_event = f"<EVENT_START>{''.join(event_tokens)}<EVENT_END>"
+        return encoded_event, images
 
     def _decode_timestamp(self, tokens: List[str]) -> int:
         """Decode timestamp tokens back to nanoseconds."""
@@ -253,7 +276,9 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         norm_timestamp = digits_to_value(digits, self.config.timestamp_bases)
 
         # Convert back to nanoseconds
-        return int(norm_timestamp * self.config.timestamp_range_ns)
+        # max_timestamp_range_ns is half-range, so total range is 2 * max_timestamp_range_ns
+        total_range = 2 * self.config.max_timestamp_range_ns
+        return int(norm_timestamp * total_range)
 
     def _decode_keyboard(self, tokens: List[str]) -> KeyboardEvent:
         """Decode keyboard tokens back to KeyboardEvent."""
@@ -273,29 +298,41 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         # Decode deltas
         dx, dy = self._decode_mouse_deltas(tokens)
 
-        # Extract button flags
+        # Extract button flags from hex digits
         delta_token_count = len(self.config.mouse_delta_bases) * 2
-        button_flags_idx = 1 + delta_token_count
+        flag_start_idx = 1 + delta_token_count
 
-        if len(tokens) <= button_flags_idx:
-            raise ValueError("Missing button flags token")
+        if len(tokens) < flag_start_idx + 3:
+            raise ValueError("Missing flag tokens")
 
-        button_flags_token = tokens[button_flags_idx]
-        button_flags_match = re.match(r"<(\d+)>", button_flags_token)
-        if not button_flags_match:
-            raise ValueError(f"Invalid button flags token: {button_flags_token}")
-        button_flags = int(button_flags_match.group(1))
+        # Extract 3 hex digits for flags
+        hex_digits = []
+        for i in range(3):
+            flag_token = tokens[flag_start_idx + i]
+            flag_match = re.match(r"<(\d+)>", flag_token)
+            if not flag_match:
+                raise ValueError(f"Invalid flag token: {flag_token}")
+            digit = int(flag_match.group(1))
+            if digit > 15:
+                raise ValueError(f"Invalid hex digit: {digit}")
+            hex_digits.append(f"{digit:x}")
+
+        # Reconstruct flag value from hex digits
+        hex_str = "".join(hex_digits)
+        button_flags = int(hex_str, 16)
 
         # Extract button data if present
         button_data = 0
-        if len(tokens) > button_flags_idx + 1:
-            button_data_token = tokens[button_flags_idx + 1]
+        button_data_idx = flag_start_idx + 3
+        if len(tokens) > button_data_idx:
+            button_data_token = tokens[button_data_idx]
             button_data_match = re.match(r"<(-?\d+)>", button_data_token)
             if button_data_match:
-                button_data = int(button_data_match.group(1))
+                # Multiply by 120 to restore original button_data value (reverse of encoding division)
+                button_data = int(button_data_match.group(1)) * 120
 
         return RawMouseEvent(
-            dx=dx, dy=dy, button_flags=RawMouseEvent.ButtonFlags(button_flags), button_data=button_data
+            last_x=dx, last_y=dy, button_flags=RawMouseEvent.ButtonFlags(button_flags), button_data=button_data
         )
 
     def decode(
@@ -324,13 +361,13 @@ class HierarchicalEventEncoder(BaseEventEncoder):
                 topic="keyboard",
                 timestamp=timestamp_ns,
                 message_type="desktop/KeyboardEvent",
-                message=json.dumps(msg_data).encode("utf-8"),
+                message=orjson.dumps(msg_data),
             )
         elif event_type_token == "<MOUSE>":
             raw_mouse_event = self._decode_mouse(tokens[timestamp_token_count:])
             msg_data = {
-                "dx": raw_mouse_event.dx,
-                "dy": raw_mouse_event.dy,
+                "last_x": raw_mouse_event.last_x,
+                "last_y": raw_mouse_event.last_y,
                 "button_flags": int(raw_mouse_event.button_flags),
                 "button_data": raw_mouse_event.button_data,
             }
@@ -342,21 +379,13 @@ class HierarchicalEventEncoder(BaseEventEncoder):
                 topic="mouse/raw",
                 timestamp=timestamp_ns,
                 message_type="desktop/RawMouseEvent",
-                message=json.dumps(msg_data).encode("utf-8"),
+                message=orjson.dumps(msg_data),
             )
-        elif event_type_token == self.config.image_token_prefix:
-            # Check if we have enough tokens for the full image token sequence
-            if (
-                len(tokens) < timestamp_token_count + 3
-                or tokens[timestamp_token_count + 1] != self.config.image_token
-                or tokens[timestamp_token_count + 2] != self.config.image_token_suffix
-            ):
-                raise ValueError(
-                    f"Invalid image token sequence: expected prefix, token, suffix but got {tokens[timestamp_token_count : timestamp_token_count + 3]}"
-                )
-
+        elif event_type_token == self.config.fake_image_placeholder:
+            # Simple image token - EpisodeTokenizer handles prefix/suffix/repetition
             if not images:
-                raise ValueError("Screen event requires image data but none provided")
+                warnings.warn("No image data provided for screen event", UserWarning)
+                images = [ScreenCaptured(utc_ns=timestamp_ns, media_ref={"uri": "placeholder"})]
             image_data = images[0]
             msg = image_data.model_dump_json(exclude={"frame_arr"})
             return McapMessage(
@@ -370,4 +399,4 @@ class HierarchicalEventEncoder(BaseEventEncoder):
 
     def get_vocab(self) -> Set[str]:
         """Get all tokens in the vocabulary."""
-        return _generate_vocab(self.config.image_token, self.config.image_token_prefix, self.config.image_token_suffix)
+        return _generate_vocab()

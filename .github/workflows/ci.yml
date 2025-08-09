@@ -82,6 +82,14 @@ jobs:
 
       - name: Run pytest
         run: pytest
+      
+      - name: Install owa-data
+        run: vuv pip install -e projects/owa-data
+        env:
+          UV_TORCH_BACKEND: "cpu"
+      
+      - name: Run pytest on owa-data
+        run: pytest projects/owa-data
 
   test-windows:
     runs-on: windows-latest

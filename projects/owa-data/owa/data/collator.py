@@ -7,6 +7,7 @@ except ImportError:
 
 
 def collate_fn(examples, max_sequence_length: int | None = None, tokenizer: PreTrainedTokenizer | None = None):
+    """Collate function for FSL Dataset, for use with Idefics3/SmolVLM2."""
     input_ids_list = []
     attention_mask_list = []
     pixel_values_list = []
@@ -28,9 +29,7 @@ def collate_fn(examples, max_sequence_length: int | None = None, tokenizer: PreT
     # Convert to tensors
     input_ids = torch.stack(input_ids_list)  # [batch_size, seq_len]
     attention_mask = torch.stack(attention_mask_list)  # [batch_size, seq_len]
-    pixel_values = (
-        torch.stack(pixel_values_list) if pixel_values_list else torch.empty(input_ids.shape[0], 0, 3, 224, 224)
-    )  # [batch_size, max_num_images, 3, max_heights, max_widths]
+    pixel_values = torch.stack(pixel_values_list)  # [batch_size, max_num_images, 3, max_heights, max_widths]
 
     if max_sequence_length is not None and input_ids.shape[1] != max_sequence_length:
         raise ValueError(

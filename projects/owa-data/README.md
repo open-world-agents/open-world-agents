@@ -12,19 +12,18 @@ Raw MCAP Data → Event Dataset → [Path A] FSL Dataset → VLA Training Ready
 ## Quick Start
 ```bash
 # Set variables
-export MCAP_TRAIN_DIR="/mnt/raid12/datasets/owa/mcaps/super-hexagon"
-export MCAP_TEST_DIR="/mnt/raid12/datasets/owa/mcaps/super-hexagon-30s"
-export EVENT_DATASET_DIR="/mnt/raid12/datasets/owa/data/super-hexagon-event"
-export FSL_DATASET_DIR="/mnt/raid12/datasets/owa/data/super-hexagon-fsl"
-export BINNED_DATASET_DIR="/mnt/raid12/datasets/owa/data/super-hexagon-bin"
+export MCAP_TRAIN_DIR="/mnt/raid12/datasets/owa/mcaps/csgo"
+export EVENT_DATASET_DIR="/mnt/raid12/datasets/owa/data/csgo-event"
+export FSL_DATASET_DIR="/mnt/raid12/datasets/owa/data/csgo-fsl"
+export BINNED_DATASET_DIR="/mnt/raid12/datasets/owa/data/csgo-bin"
 
 # 1. Process MCAP → Event Dataset
 python scripts/01_raw_events_to_event_dataset.py \
   --train-dir $MCAP_TRAIN_DIR \
-  --test-dir $MCAP_TEST_DIR \
   --output-dir $EVENT_DATASET_DIR \
-  --rate screen=20 --rate mouse=60 \
-  --keep-topic screen --keep-topic keyboard --keep-topic mouse/raw
+  --rate screen=10 --rate mouse/raw=20 \
+  --keep-topic screen --keep-topic keyboard --keep-topic mouse/raw \
+  --num-workers 4
 
 # 2A. Path A: Event Dataset → FSL Dataset (for transformer training)
 python scripts/02A_event_to_fsl.py \
@@ -49,7 +48,7 @@ event_dataset = load_from_disk('$EVENT_DATASET_DIR')
 print(f'Event Dataset stage: {event_dataset.stage}')  # EVENT
 
 # Apply event transform for on-the-fly processing
-event_dataset['train'].auto_set_transform(stage='event', encoder_type='hierarchical', load_images=True)
+event_dataset.auto_set_transform(stage='event', encoder_type='hierarchical', load_images=True)
 for sample in event_dataset['train'].take(10):
     print(f'{sample=}')
 "
@@ -62,7 +61,7 @@ fsl_dataset = load_from_disk('$FSL_DATASET_DIR')
 print(f'FSL Dataset stage: {fsl_dataset.stage}')  # FSL
 
 # Apply FSL transform for on-the-fly processing
-fsl_dataset['train'].auto_set_transform(stage='fsl', load_images=True)
+fsl_dataset.auto_set_transform(stage='fsl', load_images=True)
 for sample in fsl_dataset['train'].take(3):
     print(f'{sample=}')
 "
