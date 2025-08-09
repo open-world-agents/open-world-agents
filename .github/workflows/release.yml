@@ -29,6 +29,9 @@ jobs:
           cache-number: '0'
           cache-suffix: 'release-ocap' # same as job name
           environment-file: 'projects/ocap/environment.yml'
+      
+      - name: Install conda packages to owa env
+        run: mamba install -y -n owa ffmpeg micromamba
 
       - name: Setup uv
         uses: ./.github/actions/setup-uv
