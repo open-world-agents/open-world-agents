@@ -28,7 +28,7 @@ jobs:
           os: windows
           cache-number: '0'
           cache-suffix: 'release-ocap' # same as job name
-          environment-file: 'projects/owa-env-gst/environment.yml'
+          environment-file: 'projects/ocap/environment.yml'
 
       - name: Setup uv
         uses: ./.github/actions/setup-uv

@@ -331,8 +331,9 @@ class TestEfficiency:
         encoded, _ = encoder.encode(msg)
         token_count = encoded.count("<")
 
-        # Expected: EVENT_START + TIMESTAMP(4) + image_prefix + image + image_suffix + EVENT_END = 10
-        assert token_count == 10, f"Expected exactly 10 tokens for screen event, got {token_count}"
+        # Expected: EVENT_START + TIMESTAMP(4) + fake_image_placeholder + EVENT_END = 7
+        # (simplified: no prefix/suffix in encoder, just single <fake_image_placeholder> token)
+        assert token_count == 7, f"Expected exactly 7 tokens for screen event, got {token_count}"
 
 
 # =============================================================================
