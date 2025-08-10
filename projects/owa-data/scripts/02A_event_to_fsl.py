@@ -41,6 +41,7 @@ def main(
     encoder_type: str = typer.Option("hierarchical", "--encoder-type", help="Encoder type for episode tokenizer"),
     image_token: str = typer.Option("<image>", "--image-token", help="Image token string"),
     num_proc: int = typer.Option(32, "--num-proc", help="Number of processes for tokenization"),
+    fsl_workers: int = typer.Option(4, "--fsl-workers", help="Number of workers for FSL processing"),
 ):
     """Convert event dataset to FSL dataset format."""
     print(f"Loading event dataset from: {input_dir}")
@@ -105,7 +106,7 @@ def main(
 
         # Step 2: Create FSL dataset
         print("Creating FSL dataset from tokenized events...")
-        fsl_dataset = precompute_fsl_dataset(tokenized_dataset, config=fsl_config)
+        fsl_dataset = precompute_fsl_dataset(tokenized_dataset, config=fsl_config, num_workers=fsl_workers)
         print(f"Created {len(fsl_dataset):,} FSL sequences for {split_name} split")
 
         processed_datasets[split_name] = fsl_dataset
