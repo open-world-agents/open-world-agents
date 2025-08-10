@@ -1,8 +1,7 @@
 import re
 import warnings
 from dataclasses import dataclass, field
-from fractions import Fraction
-from typing import List, Optional, Set, Tuple, Union
+from typing import List, Optional, Set, Tuple
 
 import orjson
 
@@ -19,78 +18,115 @@ from .base_encoder import BaseEventEncoder, BaseEventEncoderConfig
 class HierarchicalEventEncoderConfig(BaseEventEncoderConfig):
     """Configuration for HierarchicalEventEncoder."""
 
-    # -8 to +8 seconds (half-range: 8 seconds)
-    max_timestamp_range_ns: int = 8 * TimeUnits.SECOND
+    # Minimal timestamp unit (default: 10ms)
+    timestamp_unit_ns: int = 10 * TimeUnits.MSECOND
     # 16 seconds in 10ms intervals
     timestamp_bases: List[int] = field(default_factory=lambda: [16, 10, 10])
-    # Mouse delta max ranges: (max_x, max_y) for -max_x to +max_x and -max_y to +max_y
-    max_mouse_delta: Tuple[int, int] = (1000, 1000)
-    # -1000 to +1000 in 1 pixel unit intervals
+    # Mouse delta encoding bases
     mouse_delta_bases: List[int] = field(default_factory=lambda: [20, 10, 10])
+    # Mouse scroll encoding bases
+    mouse_scroll_bases: List[int] = field(default_factory=lambda: [10])
+
+    def _signed_range(self, bases: List[int]) -> Tuple[int, int]:
+        """Calculate signed range from bases."""
+        total_range = 1
+        for base in bases:
+            total_range *= base
+        min_val, max_val = -total_range, total_range - 1
+        return min_val, max_val
+
+    @property
+    def mouse_delta_range(self) -> Tuple[int, int]:
+        """Calculate valid mouse delta range from bases."""
+        return self._signed_range(self.mouse_delta_bases)
+
+    @property
+    def mouse_scroll_range(self) -> Tuple[int, int]:
+        """Calculate valid mouse scroll range from bases."""
+        return self._signed_range(self.mouse_scroll_bases)
 
 
-def quantize_to_digits(value: Union[float, Fraction], bases: List[int]) -> List[int]:
+def quantize_to_digits(value: int, bases: List[int]) -> List[int]:
     """
-    Quantize a normalized value (0.0-1.0) to multi-level digits.
+    Quantize an integer to multi-level digits using modulo operations.
+
+    Accepts any integer value. Negative values and values exceeding the base range
+    are handled naturally through modulo arithmetic.
 
     Args:
-        value: Normalized value between 0.0 and 1.0 (can be float or Fraction for precision)
-        bases: List of bases for each quantization level (e.g., [16, 16, 16] for 3-level hex)
+        value: Integer to quantize
+        bases: List of bases for each quantization level
+               For signed representation, add [2] to front of bases
 
     Returns:
-        List of digits for each level
+        List of digits (len(bases) total)
 
-    Example:
-        >>> quantize_to_digits(0.6875, [16, 16, 16])
-        [11, 0, 0]  # 0xB00 in hex = 0.6875
+    Examples:
+        >>> quantize_to_digits(64, [10, 10, 10])
+        [0, 6, 4]
+        >>> quantize_to_digits(1234, [10, 10, 10])
+        [2, 3, 4]  # Values exceeding range wrap via modulo
+        >>> quantize_to_digits(-3, [2, 10, 10, 10])
+        [1, 9, 9, 7]  # Negative with signed: add [2] at front for sign bit
     """
+    # Convert to digits
     digits = []
-
-    # Convert to Fraction for exact arithmetic if not already
-    if isinstance(value, Fraction):
-        remaining = value
-    else:
-        remaining = Fraction(value).limit_denominator()
-
-    # Clamp to [0, 1] using fractions
-    remaining = max(Fraction(0), min(Fraction(1), remaining))
-
-    for base in bases:
-        # Calculate digit using exact arithmetic
-        digit_fraction = remaining * base
-        digit = int(digit_fraction)
-        digits.append(digit)
-        # Update remaining using exact subtraction
-        remaining = digit_fraction - digit
+    remaining = value
+    for base in reversed(bases):
+        digit = remaining % base
+        digits.insert(0, digit)
+        remaining //= base
 
     return digits
 
 
-def digits_to_value(digits: List[int], bases: List[int]) -> Fraction:
+def digits_to_value(digits: List[int], bases: List[int], *, signed: bool | None = None) -> int:
     """
-    Reconstruct normalized value from multi-level digits.
+    Reconstruct integer from digits.
 
     Args:
-        digits: List of digits for each level
+        digits: List of digits (len(bases) total)
         bases: List of bases for each quantization level
+        signed: Whether the value is signed
+                If None, infer from bases (signed if bases[0] == 2)
 
     Returns:
-        Reconstructed normalized value between 0 and 1 as an accurate Fraction
+        Reconstructed integer
 
-    Example:
-        >>> digits_to_value([11, 0, 0], [16, 16, 16])
-        Fraction(11, 16)  # 0xB00 in hex = 11/16
+    Examples:
+        # Unsigned representation
+        >>> digits_to_value([0, 6, 4], [10, 10, 10])
+        64  # <0><6><4> -> 64
+
+        # Signed representation
+        >>> digits_to_value([0, 0, 6, 4], [2, 10, 10, 10])
+        64  # <0><0><6><4> -> 64 (positive)
+        >>> digits_to_value([1, 9, 9, 7], [2, 10, 10, 10])
+        -3  # <1><9><9><7> -> -3 (negative, 1997-2000=-3)
     """
     if len(digits) != len(bases):
         raise ValueError(f"Digits length {len(digits)} must match bases length {len(bases)}")
 
-    value = Fraction(0)
-    for i in reversed(range(len(digits))):
-        digit = digits[i]
-        base = bases[i]
-        value = (value + digit) / base
+    if signed is None:
+        signed = bases[0] == 2
 
-    return value
+    # Reconstruct the encoded value from digits
+    encoded_value = 0
+    for digit, base in zip(digits, bases):
+        encoded_value = encoded_value * base + digit
+
+    if signed:
+        # Calculate total range for signed conversion
+        total_range = 1
+        for base in bases:
+            total_range *= base
+        # For signed representation, if encoded_value >= total_range//2, it's negative
+        if encoded_value >= total_range // 2:
+            return encoded_value - total_range
+        else:
+            return encoded_value
+    else:
+        return encoded_value
 
 
 def _generate_vocab() -> Set[str]:
@@ -102,18 +138,13 @@ def _generate_vocab() -> Set[str]:
     vocab = [
         "<EVENT_START>",
         "<EVENT_END>",
-        "<TIMESTAMP>",
         "<KEYBOARD>",
         "<MOUSE>",
         # fake_image_placeholder deliberately excluded - it's not a real token
     ]
 
-    # Numbers 0-255 for various parameters
+    # Numbers 0-255 for various parameters. TODO: verify this is enough
     vocab.extend(f"<{i}>" for i in range(256))
-
-    # Negative numbers for scroll deltas
-    vocab.extend(f"<{i}>" for i in range(-10, 11))
-
     return set(vocab)
 
 
@@ -126,18 +157,15 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         self.config = HierarchicalEventEncoderConfig(**(config.__dict__ | kwargs))
 
     def _encode_timestamp(self, timestamp_ns: int) -> List[str]:
-        """Encode timestamp with multi-level quantization: [<TIMESTAMP>, <digit1>, <digit2>, ...]"""
-        # Normalize timestamp to [0, 1] range within the configured range
-        # max_timestamp_range_ns is half-range, so total range is 2 * max_timestamp_range_ns
-        total_range = 2 * self.config.max_timestamp_range_ns
-        mod_timestamp = timestamp_ns % total_range
-        norm_timestamp = mod_timestamp / total_range
+        """Encode timestamp with multi-level quantization: [<digit1>, <digit2>, ...]"""
+        # Convert to timestamp units (e.g., 10ms units)
+        timestamp_units = timestamp_ns // self.config.timestamp_unit_ns
 
-        # Quantize to digits
-        digits = quantize_to_digits(norm_timestamp, self.config.timestamp_bases)
+        # Quantize to digits using integer approach
+        digits = quantize_to_digits(timestamp_units, self.config.timestamp_bases)
 
         # Create tokens
-        tokens = ["<TIMESTAMP>"] + [f"<{digit}>" for digit in digits]
+        tokens = [f"<{digit}>" for digit in digits]
         return tokens
 
     def _encode_keyboard(self, event: KeyboardEvent) -> List[str]:
@@ -151,24 +179,18 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         Each flag is encoded as a hex digit (0-15).
         """
         # Warn if mouse delta values are outside acceptable range
-        max_x, max_y = self.config.max_mouse_delta
-        if not (-max_x <= event.dx <= max_x):
-            warnings.warn(f"Mouse dx value {event.dx} is outside valid range [-{max_x}, {max_x}]. Clamping.")
-        if not (-max_y <= event.dy <= max_y):
-            warnings.warn(f"Mouse dy value {event.dy} is outside valid range [-{max_y}, {max_y}]. Clamping.")
-
-        dx_clamped = min(max(event.dx, -max_x), max_x)
-        dy_clamped = min(max(event.dy, -max_y), max_y)
-
-        # Use fractions for exact normalization to avoid floating-point precision loss
-        norm_dx = Fraction(dx_clamped + max_x) / Fraction(2 * max_x)
-        norm_dy = Fraction(dy_clamped + max_y) / Fraction(2 * max_y)
+        min_delta, max_delta = self.config.mouse_delta_range
+        if not (min_delta <= event.dx <= max_delta) or not (min_delta <= event.dy <= max_delta):
+            warnings.warn(
+                f"Mouse delta value ({event.dx},{event.dy}) is outside valid range ({min_delta}, {max_delta}). Clamping."
+            )
 
         tokens = ["<MOUSE>"]
 
-        # Quantize deltas to digits using exact Fraction values
-        digits_dx = quantize_to_digits(norm_dx, self.config.mouse_delta_bases)
-        digits_dy = quantize_to_digits(norm_dy, self.config.mouse_delta_bases)
+        # Use signed bases (add [2] to front for sign bit)
+        signed_bases = [2] + self.config.mouse_delta_bases
+        digits_dx = quantize_to_digits(event.dx, signed_bases)
+        digits_dy = quantize_to_digits(event.dy, signed_bases)
 
         # Interleave dx,dy digit pairs
         for digit_dx, digit_dy in zip(digits_dx, digits_dy):
@@ -189,7 +211,18 @@ class HierarchicalEventEncoder(BaseEventEncoder):
             if button_data >= 32768:
                 button_data -= 65536
             button_data //= 120
-            tokens.append(f"<{button_data}>")
+
+            # Validate scroll range
+            min_scroll, max_scroll = self.config.mouse_scroll_range
+            if not (min_scroll <= button_data <= max_scroll):
+                raise ValueError(
+                    f"Mouse scroll value {button_data} is outside valid range [{min_scroll}, {max_scroll}]"
+                )
+
+            # Use signed bases for scroll encoding
+            signed_bases = [2] + self.config.mouse_scroll_bases
+            digits = quantize_to_digits(button_data, signed_bases)
+            tokens.extend(f"<{digit}>" for digit in digits)
 
         return tokens
 
@@ -197,8 +230,8 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         """Decode quantized mouse deltas."""
         delta_tokens = tokens[1:]  # Skip <MOUSE>
 
-        # Extract delta digit pairs
-        expected_delta_tokens = len(self.config.mouse_delta_bases) * 2
+        # Check for enough tokens: 2 pairs of deltas (dx, dy) with sign bits. Flag digits are handled separately.
+        expected_delta_tokens = len(self.config.mouse_delta_bases) * 2 + 2
         if len(delta_tokens) < expected_delta_tokens:
             raise ValueError(f"Expected at least {expected_delta_tokens} delta tokens")
 
@@ -216,14 +249,12 @@ class HierarchicalEventEncoder(BaseEventEncoder):
             digits_dx.append(int(dx_match.group(1)))
             digits_dy.append(int(dy_match.group(1)))
 
-        # Reconstruct normalized deltas from digits
-        norm_dx = digits_to_value(digits_dx, self.config.mouse_delta_bases)
-        norm_dy = digits_to_value(digits_dy, self.config.mouse_delta_bases)
+        # Use signed bases (add [2] to front for sign bit)
+        signed_bases = [2] + self.config.mouse_delta_bases
 
-        # Convert back to actual delta values using max_mouse_delta tuple (half-ranges)
-        max_x, max_y = self.config.max_mouse_delta
-        dx = int(round(norm_dx * (2 * max_x) - max_x))
-        dy = int(round(norm_dy * (2 * max_y) - max_y))
+        # Reconstruct signed deltas from digits
+        dx = digits_to_value(digits_dx, signed_bases, signed=True)
+        dy = digits_to_value(digits_dy, signed_bases, signed=True)
 
         return dx, dy
 
@@ -261,24 +292,23 @@ class HierarchicalEventEncoder(BaseEventEncoder):
 
     def _decode_timestamp(self, tokens: List[str]) -> int:
         """Decode timestamp tokens back to nanoseconds."""
-        if len(tokens) != len(self.config.timestamp_bases) + 1 or tokens[0] != "<TIMESTAMP>":
+        if len(tokens) != len(self.config.timestamp_bases):
             raise ValueError(f"Invalid timestamp tokens: {tokens}")
 
         # Parse digits from tokens
         digits = []
-        for i in range(1, len(tokens)):
+        for i in range(len(tokens)):
             digit_match = re.match(r"<(\d+)>", tokens[i])
             if not digit_match:
                 raise ValueError(f"Invalid timestamp digit token: {tokens[i]}")
             digits.append(int(digit_match.group(1)))
 
-        # Reconstruct normalized timestamp
-        norm_timestamp = digits_to_value(digits, self.config.timestamp_bases)
+        # Reconstruct timestamp units using integer approach
+        timestamp_units = digits_to_value(digits, self.config.timestamp_bases, signed=False)
 
         # Convert back to nanoseconds
-        # max_timestamp_range_ns is half-range, so total range is 2 * max_timestamp_range_ns
-        total_range = 2 * self.config.max_timestamp_range_ns
-        return int(norm_timestamp * total_range)
+        timestamp_ns = timestamp_units * self.config.timestamp_unit_ns
+        return timestamp_ns
 
     def _decode_keyboard(self, tokens: List[str]) -> KeyboardEvent:
         """Decode keyboard tokens back to KeyboardEvent."""
@@ -299,7 +329,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         dx, dy = self._decode_mouse_deltas(tokens)
 
         # Extract button flags from hex digits
-        delta_token_count = len(self.config.mouse_delta_bases) * 2
+        delta_token_count = len(self.config.mouse_delta_bases) * 2 + 2
         flag_start_idx = 1 + delta_token_count
 
         if len(tokens) < flag_start_idx + 3:
@@ -325,11 +355,26 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         button_data = 0
         button_data_idx = flag_start_idx + 3
         if len(tokens) > button_data_idx:
-            button_data_token = tokens[button_data_idx]
-            button_data_match = re.match(r"<(-?\d+)>", button_data_token)
-            if button_data_match:
-                # Multiply by 120 to restore original button_data value (reverse of encoding division)
-                button_data = int(button_data_match.group(1)) * 120
+            signed_bases = [2] + self.config.mouse_scroll_bases
+            expected_tokens = len(signed_bases)
+
+            # Validate exact token count
+            if len(tokens) != button_data_idx + expected_tokens:
+                raise ValueError(
+                    f"Invalid scroll token count: expected {expected_tokens}, got {len(tokens) - button_data_idx}"
+                )
+
+            # Parse scroll tokens
+            digits = []
+            for i in range(expected_tokens):
+                token = tokens[button_data_idx + i]
+                match = re.match(r"<(\d+)>", token)
+                if not match:
+                    raise ValueError(f"Invalid scroll token: {token}")
+                digits.append(int(match.group(1)))
+
+            scroll_value = digits_to_value(digits, signed_bases, signed=True)
+            button_data = scroll_value * 120
 
         return RawMouseEvent(
             last_x=dx, last_y=dy, button_flags=RawMouseEvent.ButtonFlags(button_flags), button_data=button_data
@@ -347,7 +392,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         token_content = encoded_data[len("<EVENT_START>") : -len("<EVENT_END>")].strip()
         tokens = re.findall(r"<[^>]*>", token_content) if token_content else []
 
-        timestamp_token_count = len(self.config.timestamp_bases) + 1
+        timestamp_token_count = len(self.config.timestamp_bases)
         if len(tokens) < timestamp_token_count + 1:
             raise ValueError("Token sequence too short")
 
