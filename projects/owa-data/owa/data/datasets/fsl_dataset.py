@@ -8,12 +8,15 @@ from loguru import logger
 
 from .config import DatasetConfig, DatasetStage
 from .dataset import Dataset
+
+
 @dataclass
 class FSLDatasetConfig:
     """Configuration for FSL dataset processing."""
 
     pad_token_id: int = 0
     max_sequence_length: int = 8192
+
 
 def _process_events_to_sequences(dataset: HFDataset, config: FSLDatasetConfig) -> HFDataset:
     """Process events into FSL sequences."""
@@ -74,8 +77,10 @@ def _process_events_to_sequences(dataset: HFDataset, config: FSLDatasetConfig) -
 
     return HFDataset.from_generator(sequence_generator)
 
+
 def _process_batch_to_sequences(batch, config: FSLDatasetConfig):
     """Process a batch of events into FSL sequences using datasets.map."""
+
     def pad_sequence(tokens, texts, images, episode_path):
         padded_tokens = tokens + [config.pad_token_id] * (config.max_sequence_length - len(tokens))
         attention_mask = [1] * len(tokens) + [0] * (config.max_sequence_length - len(tokens))
@@ -206,7 +211,9 @@ def precompute_fsl_dataset(
         Pre-computed FSL dataset
     """
     config = FSLDatasetConfig(**(config.__dict__ | kwargs))
-    logger.info(f"Pre-computing FSL sequences using datasets.map with batch_size={batch_size:,}, num_workers={num_workers}")
+    logger.info(
+        f"Pre-computing FSL sequences using datasets.map with batch_size={batch_size:,}, num_workers={num_workers}"
+    )
 
     def process_batch(batch):
         return _process_batch_to_sequences(batch, config)
