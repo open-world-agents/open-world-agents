@@ -23,7 +23,7 @@ class HierarchicalEventEncoderConfig(BaseEventEncoderConfig):
     # 16 seconds in 10ms intervals
     timestamp_bases: List[int] = field(default_factory=lambda: [16, 10, 10])
     # Mouse delta encoding bases
-    mouse_delta_bases: List[int] = field(default_factory=lambda: [10, 10, 10])
+    mouse_delta_bases: List[int] = field(default_factory=lambda: [20, 10, 10])
     # Mouse scroll encoding bases
     mouse_scroll_bases: List[int] = field(default_factory=lambda: [10])
 

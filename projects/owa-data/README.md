@@ -30,7 +30,8 @@ python scripts/02A_event_to_fsl.py \
   --input-dir $EVENT_DATASET_DIR \
   --output-dir $FSL_DATASET_DIR \
   --tokenizer "HuggingFaceTB/SmolVLM2-256M-Video-Instruct" \
-  --max-sequence-length 1024
+  --max-sequence-length 1024 \
+  --fsl-workers 4
 
 # 2B. Path B: Event Dataset → Binned Dataset (for traditional training)
 python scripts/02B_event_dataset_to_binned_dataset.py \
