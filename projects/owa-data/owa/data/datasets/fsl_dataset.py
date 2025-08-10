@@ -49,7 +49,7 @@ def _process_events_to_sequences(dataset: HFDataset, config: FSLDatasetConfig) -
 
             if len(event_tokens) > config.max_sequence_length:
                 logger.warning(
-                    f"Skipping an event of length {len(event_tokens)} because it is longer than max_sequence_length={config.max_sequence_length}"
+                    f"Skipping an event of {len(event_tokens)=} because it is longer than {config.max_sequence_length=}"
                 )
                 continue
 
@@ -103,6 +103,9 @@ def _process_batch_to_sequences(batch, config: FSLDatasetConfig):
         event_episode_path = batch["episode_path"][i]
 
         if len(event_tokens) > config.max_sequence_length:
+            logger.warning(
+                f"Skipping an event of {len(event_tokens)=} because it is longer than {config.max_sequence_length=}"
+            )
             continue
 
         if len(current_tokens) + len(event_tokens) > config.max_sequence_length or (
