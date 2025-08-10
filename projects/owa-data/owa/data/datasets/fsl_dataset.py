@@ -169,7 +169,7 @@ def precompute_fsl_dataset_legacy(
     if num_workers == 0:
         hf_dataset = _process_events_to_sequences(tokenized_dataset, config)
     else:
-        num_shards = min(num_workers, math.ceil(len(tokenized_dataset) / chunk_size))
+        num_shards = math.ceil(len(tokenized_dataset) / chunk_size)
         hf_datasets = []
 
         with ProcessPoolExecutor(max_workers=num_workers) as executor:
