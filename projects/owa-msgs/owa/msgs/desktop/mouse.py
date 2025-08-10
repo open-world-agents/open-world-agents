@@ -177,10 +177,14 @@ class PointerBallisticsConfig(OWAMessage):
 
     _type = "desktop/PointerBallisticsConfig"
 
-    mouse_threshold1: int = 6
-    mouse_threshold2: int = 10
-    mouse_speed: int = 1
-    mouse_sensitivity: int = 10
+    mouse_threshold1: int = Field(default=6, description="Deprecated from Windows XP.")
+    mouse_threshold2: int = Field(default=10, description="Deprecated from Windows XP.")
+    mouse_speed: int = Field(
+        default=1, description="Whether Enhance pointer precision is enabled. 0: disabled, 1: enabled."
+    )
+    mouse_sensitivity: int = Field(
+        default=10, description="Determine speed coefficient. Note that this value has non-linear conversion formula."
+    )
     # NOTE: SmoothMouseXCurve has not changed from Windows 7 to 11
     smooth_mouse_x_curve: str = Field(
         default="0000000000000000156e000000000000004001000000000029dc0300000000000000280000000000",
