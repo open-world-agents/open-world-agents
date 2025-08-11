@@ -81,7 +81,7 @@ class PretrainScriptArguments(ScriptArguments):
     max_sequence_length: int = field(default=1024, metadata={"help": "Maximum sequence length for FSLDataset"})
 
 
-def limit_dataset(dataset, max_count=256):
+def limit_dataset(dataset, max_count=64):
     """Limit dataset count and convert back to OWA Dataset class."""
     limited_count = min(len(dataset), max_count)
     owa_config = dataset.owa_config

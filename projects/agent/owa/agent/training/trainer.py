@@ -1,6 +1,8 @@
 import os
 from typing import Optional
 
+# import dill as pickle
+# import torch
 from torch.utils.data import DataLoader
 from transformers.trainer_utils import EvalLoopOutput, EvalPrediction
 
@@ -120,24 +122,29 @@ class OWASFTTrainer(SFTTrainer):
             else None
         )
 
-        # Create output directory and save results
+        # Save evaluation results
         step = self.state.global_step
         output_dir = os.path.join(self.args.output_dir or "./output", "eval")
         os.makedirs(output_dir, exist_ok=True)
 
-        # Write evaluation report to markdown file
+        # NOTE: since saved output is too large I disabled this feature. e.g. for 256 sample output is 256*1024*50257*4 = 52GB
+        # Save complete evaluation output. Without pickle argument `OverflowError: serializing a string larger than 4 GiB requires pickle protocol 4 or higher` raised
+        # torch.save(
+        #     {"logits": logits[: self.args.eval_samples_to_show], "labels": labels[: self.args.eval_samples_to_show]},
+        #     os.path.join(output_dir, f"eval_step_{step}.pt"),
+        #     pickle_module=pickle,
+        #     pickle_protocol=pickle.DEFAULT_PROTOCOL,
+        # )
+
+        # Save markdown
         with open(os.path.join(output_dir, f"eval_step_{step}.md"), "w") as f:
-            f.write(f"# Step {step}\n\n")
-            f.write(f"**Token Accuracy:** {avg_token_acc:.1%}\n")
+            f.write(f"# Step {step}\n\n**Token Accuracy:** {avg_token_acc:.1%}\n")
             if avg_loss is not None:
                 f.write(f"**Average Loss:** {avg_loss:.3f}\n")
             f.write("\n")
 
-            # Write sample predictions and ground truth
             for d in data[: self.args.eval_samples_to_show]:
                 loss_str = f" | Loss: {d['loss']:.3f}" if d["loss"] is not None else ""
                 f.write(f"## {d['id']} | Acc: {d['token_accuracy']:.1%}{loss_str}\n")
-                f.write(f"**Pred:** {d['prediction']}\n")
-                f.write(f"**True:** {d['ground_truth']}\n")
-                f.write(f"**Pred Tokens:** {d['pred_tokens']}\n")
-                f.write(f"**GT Tokens:** {d['gt_tokens']}\n\n")
+                f.write(f"**Pred:** {d['prediction']}\n**True:** {d['ground_truth']}\n")
+                f.write(f"**Pred Tokens:** {d['pred_tokens']}\n**GT Tokens:** {d['gt_tokens']}\n\n")
