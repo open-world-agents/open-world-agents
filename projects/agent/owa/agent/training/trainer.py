@@ -105,7 +105,7 @@ class OWASFTTrainer(SFTTrainer):
                     "prediction": pred_text,
                     "ground_truth": label_text,
                     "pred_tokens": predictions.tolist(),
-                    "gt_tokens": label.tolist(),
+                    "gt_tokens": shift_labels.tolist(),
                     "token_accuracy": round(accuracy, 3),
                     "loss": round(sample_loss, 4) if sample_loss is not None else None,
                 }
