@@ -139,6 +139,8 @@ def _generate_vocab() -> Set[str]:
         "<EVENT_START>",
         "<EVENT_END>",
         "<KEYBOARD>",
+        "<press>",
+        "<release>",
         "<MOUSE>",
         # fake_image_placeholder deliberately excluded - it's not a real token
     ]

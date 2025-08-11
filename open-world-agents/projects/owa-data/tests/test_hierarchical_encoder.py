@@ -588,6 +588,8 @@ class TestEdgeCases:
         assert "<EVENT_END>" in vocab
         assert "<MOUSE>" in vocab
         assert "<KEYBOARD>" in vocab
+        assert "<press>" in vocab
+        assert "<release>" in vocab
 
 
 if __name__ == "__main__":
