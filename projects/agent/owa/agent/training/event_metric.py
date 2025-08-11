@@ -9,6 +9,10 @@ from mcap_owa.highlevel.mcap_msg import McapMessage
 from owa.data.encoders import create_encoder
 from owa.data.episode_tokenizer import EpisodeTokenizerConfig
 
+# Disable logger by default for library usage. If needed logger.enable("owa.agent.training.event_metric")
+logger.disable("owa.agent.training.event_metric")
+
+# TODO: make these configurable, load and save
 episode_tokenizer_config = EpisodeTokenizerConfig(encoder_type="hierarchical")
 event_encoder = create_encoder("hierarchical")
 
@@ -47,6 +51,7 @@ def compute_single_event_metrics(
     event_pred = event_encoder.decode_batch([event_pred_text], suppress_errors=True)[0]
     event_gt = event_encoder.decode_batch([event_gt_text], suppress_errors=True)[0]
 
+    # e.g. <EVENT_START><3><5><0><MOUSE><1><1><19><19><9><9><8><6><0><0><0><EVENT_END>
     logger.debug(f"{event_pred_text=}, {event_gt_text=}")
 
     # Handle invalid schema cases
