@@ -1,403 +1,307 @@
-import math
-from typing import Any, Dict, List, Optional
-
-import orjson
+import numpy as np
+import numpy.typing as npt
+import torch
+import torch.nn.functional as F
+from loguru import logger
+from transformers.tokenization_utils import PreTrainedTokenizer
 
 from mcap_owa.highlevel.mcap_msg import McapMessage
-from owa.data.episode_tokenizer import EpisodeTokenizer
+from owa.data.encoders import create_encoder
+from owa.data.episode_tokenizer import EpisodeTokenizerConfig
+
+episode_tokenizer_config = EpisodeTokenizerConfig(encoder_type="hierarchical")
+event_encoder = create_encoder("hierarchical")
 
 
-def _get_event_type(message: Optional[McapMessage]) -> Optional[str]:
-    """Get the event type from a decoded message."""
-    if message is None:
-        return None
-    return message.topic
+def compute_single_event_metrics(
+    *,
+    event_pred_logits: npt.NDArray[np.float32],
+    event_pred_tokens: npt.NDArray[np.int64],
+    event_gt_tokens: npt.NDArray[np.int64],
+    tokenizer: PreTrainedTokenizer,
+) -> dict:
+    """Compute metrics for a single event comparison."""
+    metrics = {}
 
+    # Cross entropy loss
+    metrics["loss_sum"] = metrics["loss_mean"] = F.cross_entropy(
+        torch.tensor(event_pred_logits), torch.tensor(event_gt_tokens), reduction="sum"
+    ).item()
 
-def _compare_events(
-    pred_msg: Optional[McapMessage],
-    gt_msg: Optional[McapMessage],
-    position: int,
-) -> Dict[str, Any]:
-    """Compare two events and return detailed comparison metrics."""
-    comparison = {
-        "position": position,
-        "comparable": False,
-        "comparison_status": "invalid_format",
-        "predicted_type": _get_event_type(pred_msg),
-        "ground_truth_type": _get_event_type(gt_msg),
-        "timestamp_error_ms": None,
-        "mouse_metrics": None,
-        "keyboard_metrics": None,
-        "screen_metrics": None,
-    }
+    # Token-level accuracy
+    mask = event_gt_tokens != -100
+    event_pred_tokens_masked = event_pred_tokens[mask]
+    event_gt_tokens_masked = event_gt_tokens[mask]
+    metrics["accuracy"] = (event_pred_tokens_masked == event_gt_tokens_masked).mean().item()
 
-    # Check if both events are valid
-    if pred_msg is None or gt_msg is None:
-        if pred_msg is None and gt_msg is None:
-            comparison["comparison_status"] = "both_invalid"
-        elif pred_msg is None:
-            comparison["comparison_status"] = "predicted_invalid"
-        else:
-            comparison["comparison_status"] = "ground_truth_invalid"
-        return comparison
+    # Decode tokens to text
+    event_pred_text = tokenizer.decode(event_pred_tokens_masked, skip_special_tokens=False)
+    event_gt_text = tokenizer.decode(event_gt_tokens_masked, skip_special_tokens=False)
 
-    # Check if event types match
-    if pred_msg.topic != gt_msg.topic:
-        comparison["comparison_status"] = "type_mismatch"
-        return comparison
+    # Replace image tokens with fake image placeholder
+    repeated_image_pattern = f"{episode_tokenizer_config.image_token_prefix}{episode_tokenizer_config.image_token_suffix}"  # fmt: skip
+    event_pred_text = event_pred_text.replace(repeated_image_pattern, episode_tokenizer_config.fake_image_placeholder)
+    event_gt_text = event_gt_text.replace(repeated_image_pattern, episode_tokenizer_config.fake_image_placeholder)
 
-    # Events are comparable
-    comparison["comparable"] = True
-    comparison["comparison_status"] = "valid"
+    # Decode text to structured events
+    event_pred = event_encoder.decode_batch([event_pred_text], suppress_errors=True)[0]
+    event_gt = event_encoder.decode_batch([event_gt_text], suppress_errors=True)[0]
 
-    # Calculate timestamp error
-    timestamp_error_ns = abs(pred_msg.timestamp - gt_msg.timestamp)
-    comparison["timestamp_error_ms"] = timestamp_error_ns / 1_000_000
+    logger.debug(f"{event_pred_text=}, {event_gt_text=}")
 
-    # Calculate event-specific metrics
-    if pred_msg.topic in ["mouse", "mouse/raw"]:
-        comparison["mouse_metrics"] = _compare_mouse_events(pred_msg, gt_msg)
-    elif pred_msg.topic == "keyboard":
-        comparison["keyboard_metrics"] = _compare_keyboard_events(pred_msg, gt_msg)
-    elif pred_msg.topic == "screen":
-        comparison["screen_metrics"] = _compare_screen_events(pred_msg, gt_msg)
-
-    return comparison
-
-
-def _compare_mouse_events(pred_msg: McapMessage, gt_msg: McapMessage) -> Dict[str, Any]:
-    """Compare mouse events and return metrics."""
-
-    pred_data = orjson.loads(pred_msg.message)
-    gt_data = orjson.loads(gt_msg.message)
-
-    # Extract mouse deltas
-    pred_dx = pred_data.get("last_x", 0)
-    pred_dy = pred_data.get("last_y", 0)
-    gt_dx = gt_data.get("last_x", 0)
-    gt_dy = gt_data.get("last_y", 0)
-
-    # Calculate errors
-    dx_error = abs(pred_dx - gt_dx)
-    dy_error = abs(pred_dy - gt_dy)
-    euclidean_error = math.sqrt(dx_error**2 + dy_error**2)
-
-    return {
-        "dx_error": float(dx_error),
-        "dy_error": float(dy_error),
-        "euclidean_error": float(euclidean_error),
-    }
-
-
-def _compare_keyboard_events(pred_msg: McapMessage, gt_msg: McapMessage) -> Dict[str, Any]:
-    """Compare keyboard events and return metrics."""
-    pred_data = orjson.loads(pred_msg.message)
-    gt_data = orjson.loads(gt_msg.message)
-
-    # Extract keyboard data
-    pred_vk = pred_data.get("vk", 0)
-    pred_action = pred_data.get("event_type", "")
-    gt_vk = gt_data.get("vk", 0)
-    gt_action = gt_data.get("event_type", "")
-
-    # Calculate matches
-    vk_match = pred_vk == gt_vk
-    action_match = pred_action == gt_action
-    combined_match = vk_match and action_match
-
-    # Calculate loss (0 if match, 1 if no match)
-    loss = 0.0 if combined_match else 1.0
-
-    return {
-        "vk_match": vk_match,
-        "action_match": action_match,
-        "combined_match": combined_match,
-        "loss": loss,
-    }
-
-
-def _compare_screen_events(pred_msg: McapMessage, gt_msg: McapMessage) -> Dict[str, Any]:
-    """Compare screen events and return metrics."""
-    # For screen events, we mainly compare timestamps
-    # The loss is 0 if timestamps match exactly, 1 otherwise
-    timestamp_match = pred_msg.timestamp == gt_msg.timestamp
-    loss = 0.0 if timestamp_match else 1.0
-
-    return {
-        "loss": loss,
-    }
-
-
-def _init_mouse_metrics() -> Dict[str, Any]:
-    """Initialize empty mouse metrics structure."""
-    return {
-        "timestamp_mse_ms": 0.0,
-        "timestamp_rmse_ms": 0.0,
-        "dx_mse": 0.0,
-        "dy_mse": 0.0,
-        "dx_rmse": 0.0,
-        "dy_rmse": 0.0,
-        "euclidean_mse": 0.0,
-        "euclidean_rmse": 0.0,
-        "loss": 0.0,
-        "comparable_count": 0,
-        "total_count": 0,
-    }
-
-
-def _init_keyboard_metrics() -> Dict[str, Any]:
-    """Initialize empty keyboard metrics structure."""
-    return {
-        "timestamp_mse_ms": 0.0,
-        "timestamp_rmse_ms": 0.0,
-        "vk_accuracy": 0.0,
-        "action_accuracy": 0.0,
-        "combined_accuracy": 0.0,
-        "loss": 0.0,
-        "comparable_count": 0,
-        "total_count": 0,
-    }
-
-
-def _init_screen_metrics() -> Dict[str, Any]:
-    """Initialize empty screen metrics structure."""
-    return {
-        "timestamp_mse_ms": 0.0,
-        "timestamp_rmse_ms": 0.0,
-        "loss": 0.0,
-        "comparable_count": 0,
-        "total_count": 0,
-    }
-
-
-def _calculate_sequence_metrics(
-    event_comparisons: List[Dict[str, Any]],
-    pred_messages: List[Optional[McapMessage]],
-    gt_messages: List[Optional[McapMessage]],
-) -> Dict[str, Any]:
-    """Calculate sequence-level aggregated metrics."""
-    # Basic counts (count both real messages and pseudo-messages)
-    predicted_count = len([msg for msg in pred_messages if msg is not None])
-    ground_truth_count = len([msg for msg in gt_messages if msg is not None])
-    count_accuracy = 1.0 if predicted_count == ground_truth_count else 0.0
-
-    # Count comparable events
-    comparable_events = [comp for comp in event_comparisons if comp["comparable"]]
-    comparable_rate = len(comparable_events) / len(event_comparisons) if event_comparisons else 0.0
-
-    # Initialize metrics structure
-    metrics = {
-        "predicted_count": predicted_count,
-        "ground_truth_count": ground_truth_count,
-        "count_accuracy": count_accuracy,
-        "comparable_rate": comparable_rate,
-        "timestamp_metrics": {"mse_ms": 0.0, "rmse_ms": 0.0, "count": 0},
-        "mouse_metrics": _init_mouse_metrics(),
-        "keyboard_metrics": _init_keyboard_metrics(),
-        "screen_metrics": _init_screen_metrics(),
-    }
-
-    if not comparable_events:
+    # Handle invalid schema cases
+    if event_pred is None or event_gt is None:
+        metrics["comparable"] = False
+        metrics["comparison_status"] = "invalid_schema"
         return metrics
 
-    # Calculate timestamp metrics across all comparable events
-    timestamp_errors = [
-        comp["timestamp_error_ms"] for comp in comparable_events if comp["timestamp_error_ms"] is not None
-    ]
-    if timestamp_errors:
-        timestamp_mse = sum(error**2 for error in timestamp_errors) / len(timestamp_errors)
-        metrics["timestamp_metrics"] = {
-            "mse_ms": timestamp_mse,
-            "rmse_ms": math.sqrt(timestamp_mse),
-            "count": len(timestamp_errors),
-        }
+    # Determine event types with graceful handling
+    pred_type = _determine_event_type(event_pred)
+    gt_type = _determine_event_type(event_gt)
 
-    # Calculate per-event-type metrics
-    _calculate_mouse_sequence_metrics(comparable_events, metrics["mouse_metrics"])
-    _calculate_keyboard_sequence_metrics(comparable_events, metrics["keyboard_metrics"])
-    _calculate_screen_sequence_metrics(comparable_events, metrics["screen_metrics"])
+    # Add type information and type-specific metrics
+    metrics["pred_type"] = pred_type
+    metrics["gt_type"] = gt_type
+    metrics[f"{pred_type}_loss_sum"] = metrics["loss_sum"]
+    metrics[f"{pred_type}_loss_mean"] = metrics["loss_mean"]
+    metrics[f"{pred_type}_accuracy"] = metrics["accuracy"]
+
+    # Check type compatibility
+    if pred_type != gt_type:
+        metrics["comparable"] = False
+        metrics["comparison_status"] = "type_mismatch"
+        return metrics
+
+    metrics["comparable"] = True
+    metrics["comparison_status"] = "valid"
+
+    # TODO: do not hard-code these
+    metrics["timestamp_loss_sum"] = metrics["timestamp_loss_mean"] = F.cross_entropy(
+        torch.tensor(event_pred_logits[1:4]), torch.tensor(event_gt_tokens[1:4]), reduction="sum"
+    ).item()
+    metrics["timestamp_accuracy"] = (event_pred_tokens_masked[1:4] == event_gt_tokens_masked[1:4]).mean().item()
+    metrics[f"{pred_type}_timestamp_loss_sum"] = metrics["timestamp_loss_sum"]
+    metrics[f"{pred_type}_timestamp_loss_mean"] = metrics["timestamp_loss_mean"]
+    metrics[f"{pred_type}_timestamp_accuracy"] = metrics["timestamp_accuracy"]
+
+    if gt_type in ("mouse_nop", "mouse_op"):
+        # TODO: do not hard-code these
+        metrics[f"{pred_type}_movement_p1_loss_sum"] = metrics[f"{pred_type}_movement_p1_loss_mean"] = F.cross_entropy(
+            torch.tensor(event_pred_logits[5 : 5 + (1) * 2]),
+            torch.tensor(event_gt_tokens[5 : 5 + (1) * 2]),
+            reduction="sum",
+        ).item()
+        metrics[f"{pred_type}_movement_p2_loss_sum"] = metrics[f"{pred_type}_movement_p2_loss_mean"] = F.cross_entropy(
+            torch.tensor(event_pred_logits[5 : 5 + (1 + 1) * 2]),
+            torch.tensor(event_gt_tokens[5 : 5 + (1 + 1) * 2]),
+            reduction="sum",
+        ).item()
+        metrics[f"{pred_type}_movement_p3_loss_sum"] = metrics[f"{pred_type}_movement_p3_loss_mean"] = F.cross_entropy(
+            torch.tensor(event_pred_logits[5 : 5 + (1 + 1 + 1) * 2]),
+            torch.tensor(event_gt_tokens[5 : 5 + (1 + 1 + 1) * 2]),
+            reduction="sum",
+        ).item()
+        metrics[f"{pred_type}_movement_p4_loss_sum"] = metrics[f"{pred_type}_movement_p4_loss_mean"] = F.cross_entropy(
+            torch.tensor(event_pred_logits[5 : 5 + (1 + 1 + 1 + 1) * 2]),
+            torch.tensor(event_gt_tokens[5 : 5 + (1 + 1 + 1 + 1) * 2]),
+            reduction="sum",
+        ).item()
+        metrics[f"{pred_type}_movement_p1_accuracy"] = (
+            (event_pred_tokens_masked[5 : 5 + (1) * 2] == event_gt_tokens_masked[5 : 5 + (1) * 2]).mean().item()
+        )
+        metrics[f"{pred_type}_movement_p2_accuracy"] = (
+            (event_pred_tokens_masked[5 : 5 + (1 + 1) * 2] == event_gt_tokens_masked[5 : 5 + (1 + 1) * 2])
+            .mean()
+            .item()
+        )
+        metrics[f"{pred_type}_movement_p3_accuracy"] = (
+            (event_pred_tokens_masked[5 : 5 + (1 + 1 + 1) * 2] == event_gt_tokens_masked[5 : 5 + (1 + 1 + 1) * 2])
+            .mean()
+            .item()
+        )
+        metrics[f"{pred_type}_movement_p4_accuracy"] = (
+            (
+                event_pred_tokens_masked[5 : 5 + (1 + 1 + 1 + 1) * 2]
+                == event_gt_tokens_masked[5 : 5 + (1 + 1 + 1 + 1) * 2]
+            )
+            .mean()
+            .item()
+        )
+        metrics[f"{pred_type}_dx_pe"] = (
+            (event_pred.decoded.dx - event_gt.decoded.dx) / event_gt.decoded.dx if event_gt.decoded.dx else 0
+        )
+        metrics[f"{pred_type}_dy_pe"] = (
+            (event_pred.decoded.dy - event_gt.decoded.dy) / event_gt.decoded.dy if event_gt.decoded.dy else 0
+        )
+        metrics[f"{pred_type}_euclidean_pe"] = (
+            (
+                np.linalg.norm(
+                    [event_pred.decoded.dx, event_pred.decoded.dy]
+                    - np.array([event_gt.decoded.dx, event_gt.decoded.dy])
+                )
+                / np.linalg.norm([event_gt.decoded.dx, event_gt.decoded.dy])
+            ).item()
+            if np.linalg.norm([event_gt.decoded.dx, event_gt.decoded.dy])
+            else 0
+        )
+
+    if gt_type == "mouse_op":
+        metrics["mouse_op_button_flags_loss_sum"] = metrics["mouse_op_button_flags_loss_mean"] = F.cross_entropy(
+            torch.tensor(event_pred_logits[13 : 13 + 3]), torch.tensor(event_gt_tokens[13 : 13 + 3]), reduction="sum"
+        ).item()
+        metrics["mouse_op_button_flags_accuracy"] = event_pred.decoded.button_flags == event_gt.decoded.button_flags
+        if event_gt.decoded.button_data != 0:
+            metrics["mouse_op_button_data_loss_sum"] = metrics["mouse_op_button_data_loss_mean"] = F.cross_entropy(
+                torch.tensor(event_pred_logits[16 : 16 + 1]),
+                torch.tensor(event_gt_tokens[16 : 16 + 1]),
+                reduction="sum",
+            ).item()
+            metrics["mouse_op_button_data_accuracy"] = event_pred.decoded.button_data == event_gt.decoded.button_data
+
+    if gt_type == "keyboard":
+        metrics["keyboard_action_loss_sum"] = metrics["keyboard_action_loss_mean"] = F.cross_entropy(
+            torch.tensor(event_pred_logits[5 : 5 + 2]), torch.tensor(event_gt_tokens[5 : 5 + 2]), reduction="sum"
+        ).item()
+        metrics["keyboard_action_accuracy"] = (event_pred.decoded.vk == event_gt.decoded.vk) and (
+            event_pred.decoded.event_type == event_gt.decoded.event_type
+        )
 
     return metrics
 
 
-def _calculate_mouse_sequence_metrics(comparable_events: List[Dict[str, Any]], mouse_metrics: Dict[str, Any]) -> None:
-    """Calculate aggregated mouse metrics from comparable events."""
-    mouse_events = [
-        comp
-        for comp in comparable_events
-        if comp["predicted_type"] in ["mouse", "mouse/raw"] and comp["mouse_metrics"] is not None
-    ]
-
-    if not mouse_events:
-        return
-
-    # Extract individual metrics
-    timestamp_errors = [comp["timestamp_error_ms"] for comp in mouse_events if comp["timestamp_error_ms"] is not None]
-    dx_errors = [comp["mouse_metrics"]["dx_error"] for comp in mouse_events]
-    dy_errors = [comp["mouse_metrics"]["dy_error"] for comp in mouse_events]
-    euclidean_errors = [comp["mouse_metrics"]["euclidean_error"] for comp in mouse_events]
-
-    # Calculate MSE and RMSE
-    if timestamp_errors:
-        timestamp_mse = sum(error**2 for error in timestamp_errors) / len(timestamp_errors)
-        mouse_metrics["timestamp_mse_ms"] = timestamp_mse
-        mouse_metrics["timestamp_rmse_ms"] = math.sqrt(timestamp_mse)
-
-    if dx_errors:
-        dx_mse = sum(error**2 for error in dx_errors) / len(dx_errors)
-        mouse_metrics["dx_mse"] = dx_mse
-        mouse_metrics["dx_rmse"] = math.sqrt(dx_mse)
-
-    if dy_errors:
-        dy_mse = sum(error**2 for error in dy_errors) / len(dy_errors)
-        mouse_metrics["dy_mse"] = dy_mse
-        mouse_metrics["dy_rmse"] = math.sqrt(dy_mse)
-
-    if euclidean_errors:
-        euclidean_mse = sum(error**2 for error in euclidean_errors) / len(euclidean_errors)
-        mouse_metrics["euclidean_mse"] = euclidean_mse
-        mouse_metrics["euclidean_rmse"] = math.sqrt(euclidean_mse)
-
-    mouse_metrics["comparable_count"] = len(mouse_events)
-    # Note: total_count would need to be calculated from all events, not just comparable ones
+def _determine_event_type(event: McapMessage) -> str:
+    """Determine the event type from a decoded event object."""
+    event_type = event.topic
+    # Handle mouse events with special categorization
+    if event_type == "mouse/raw":
+        if event.decoded.button_flags != 0:
+            return "mouse_op"
+        else:
+            return "mouse_nop"
+    # Handle other event types - can be extended here
+    if event_type in ["keyboard", "screen"]:
+        return event_type
+    raise ValueError(f"Unknown event type: {event_type}")
 
 
-def _calculate_keyboard_sequence_metrics(
-    comparable_events: List[Dict[str, Any]], keyboard_metrics: Dict[str, Any]
-) -> None:
-    """Calculate aggregated keyboard metrics from comparable events."""
-    keyboard_events = [
-        comp
-        for comp in comparable_events
-        if comp["predicted_type"] == "keyboard" and comp["keyboard_metrics"] is not None
-    ]
+def aggregate_event_metrics(metric_list: list) -> dict:
+    """Aggregate metrics across all events."""
+    if not metric_list:
+        return {}
 
-    if not keyboard_events:
-        return
+    # Collect all unique metric keys from all events
+    all_metric_keys = set()
+    for metric in metric_list:
+        all_metric_keys.update(metric.keys())
 
-    # Extract individual metrics
-    timestamp_errors = [
-        comp["timestamp_error_ms"] for comp in keyboard_events if comp["timestamp_error_ms"] is not None
-    ]
-    vk_matches = [comp["keyboard_metrics"]["vk_match"] for comp in keyboard_events]
-    action_matches = [comp["keyboard_metrics"]["action_match"] for comp in keyboard_events]
-    combined_matches = [comp["keyboard_metrics"]["combined_match"] for comp in keyboard_events]
+    # Define aggregation strategies for different metric types
+    # Keys that should be summed
+    sum_metrics = {"loss_sum"}
 
-    # Calculate metrics
-    if timestamp_errors:
-        timestamp_mse = sum(error**2 for error in timestamp_errors) / len(timestamp_errors)
-        keyboard_metrics["timestamp_mse_ms"] = timestamp_mse
-        keyboard_metrics["timestamp_rmse_ms"] = math.sqrt(timestamp_mse)
+    # Keys that should be averaged (normalized by number of events)
+    average_metrics = {"comparable", "loss_mean"}
 
-    if vk_matches:
-        keyboard_metrics["vk_accuracy"] = sum(vk_matches) / len(vk_matches)
+    # Keys that end with specific suffixes should be summed
+    sum_suffix_patterns = {"_loss_sum"}
 
-    if action_matches:
-        keyboard_metrics["action_accuracy"] = sum(action_matches) / len(action_matches)
+    # Keys that end with specific suffixes should be averaged (only when present)
+    average_suffix_patterns = {"_accuracy", "_loss_mean"}
 
-    if combined_matches:
-        keyboard_metrics["combined_accuracy"] = sum(combined_matches) / len(combined_matches)
+    # Keys that end with specific suffixes should be IQM. TODO: verify whether IQM is good aggregator
+    iqm_suffix_patterns = {"_pe"}
 
-    keyboard_metrics["comparable_count"] = len(keyboard_events)
+    # Keys that should be ignored in aggregation (metadata)
+    ignore_metrics = {"pred_type", "gt_type", "comparison_status"}
 
+    aggregated_metrics = {}
 
-def _calculate_screen_sequence_metrics(
-    comparable_events: List[Dict[str, Any]], screen_metrics: Dict[str, Any]
-) -> None:
-    """Calculate aggregated screen metrics from comparable events."""
-    screen_events = [
-        comp for comp in comparable_events if comp["predicted_type"] == "screen" and comp["screen_metrics"] is not None
-    ]
+    for key in sorted(all_metric_keys):
+        if key in ignore_metrics:
+            continue
 
-    if not screen_events:
-        return
+        # Collect values for this key from all metrics that have it
+        values = [metric[key] for metric in metric_list if key in metric]
 
-    # Extract individual metrics
-    timestamp_errors = [comp["timestamp_error_ms"] for comp in screen_events if comp["timestamp_error_ms"] is not None]
+        if not values:  # Skip if no values found
+            continue
 
-    # Calculate metrics
-    if timestamp_errors:
-        timestamp_mse = sum(error**2 for error in timestamp_errors) / len(timestamp_errors)
-        screen_metrics["timestamp_mse_ms"] = timestamp_mse
-        screen_metrics["timestamp_rmse_ms"] = math.sqrt(timestamp_mse)
+        # Determine aggregation strategy
+        if key in average_metrics:
+            aggregated_metrics[key] = sum(values) / len(metric_list)
+        elif key in sum_metrics:
+            aggregated_metrics[key] = sum(values)
+        elif any(key.endswith(suffix) for suffix in sum_suffix_patterns):
+            aggregated_metrics[key] = sum(values)
+        elif any(key.endswith(suffix) for suffix in average_suffix_patterns):
+            # Only include accuracy metrics if they are actually present
+            aggregated_metrics[key] = sum(values) / len(values)
+        elif any(key.endswith(suffix) for suffix in iqm_suffix_patterns):
+            interquartile_values = np.percentile(values, [25, 75])
+            aggregated_metrics[key] = np.mean(interquartile_values).item()
 
-    screen_metrics["comparable_count"] = len(screen_events)
+    return aggregated_metrics
 
 
-def compute_metrics_for_event(prediction: str, ground_truth: str) -> dict:
-    """Compute metrics for a single prediction."""
+def compute_metrics_for_events(
+    *,
+    logits: npt.NDArray[np.float32],
+    labels: npt.NDArray[np.int64],
+    tokenizer: PreTrainedTokenizer,
+) -> dict:
+    """Given shifted predictions and labels, compute metrics."""
+    predictions = logits.argmax(axis=-1)
+    # TODO: EMA-like metrics which considers tokens given sufficient context is easier to predict.
+    sequence_length = predictions.shape[0]  # noqa: F841
 
-    episode_tokenizer = EpisodeTokenizer()
-    pred_messages = episode_tokenizer.decode(prediction, suppress_errors=True)
-    gt_messages = episode_tokenizer.decode(ground_truth, suppress_errors=True)
+    # If the first token is not <EVENT_START>, add it.
+    event_start_token_id = tokenizer.convert_tokens_to_ids("<EVENT_START>")
+    event_end_token_id = tokenizer.convert_tokens_to_ids("<EVENT_END>")
+    if labels[0] != event_start_token_id:
+        predictions = np.insert(predictions, 0, event_start_token_id)
+        labels = np.insert(labels, 0, event_start_token_id)
 
-    # Skip first events since model can't expect it's timestamp
-    pred_messages = pred_messages[1:]
-    gt_messages = gt_messages[1:]
+    # Extract event boundaries
+    where_start = np.where(labels == event_start_token_id)[0]
+    where_end = np.where(labels == event_end_token_id)[0] + 1
+    assert len(where_start) == len(where_end), (
+        f"Number of <EVENT_START> and <EVENT_END> must be equal, found {len(where_start)} starts and {len(where_end)} ends."
+    )
 
-    print(pred_messages)
-    print(gt_messages)
+    metric_list = []
 
-    # Pad shorter sequence with None values
-    max_len = max(len(pred_messages), len(gt_messages))
-    pred_messages.extend([None] * (max_len - len(pred_messages)))
-    gt_messages.extend([None] * (max_len - len(gt_messages)))
+    for start, end in zip(where_start, where_end):
+        event_pred_logits = logits[start:end]
+        event_pred_tokens = predictions[start:end]
+        event_gt_tokens = labels[start:end]
 
-    # Compare events pairwise
-    event_comparisons = []
-    for i, (pred_msg, gt_msg) in enumerate(zip(pred_messages, gt_messages)):
-        comparison = _compare_events(pred_msg, gt_msg, i)
-        event_comparisons.append(comparison)
+        # Compute metrics for this single event
+        metrics = compute_single_event_metrics(
+            event_pred_logits=event_pred_logits,
+            event_pred_tokens=event_pred_tokens,
+            event_gt_tokens=event_gt_tokens,
+            tokenizer=tokenizer,
+        )
 
-    # Calculate sequence-level metrics
-    sequence_metrics = _calculate_sequence_metrics(event_comparisons, pred_messages, gt_messages)
+        metric_list.append(metrics)
 
-    return {"event_comparisons": event_comparisons, **sequence_metrics}
+    metrics = aggregate_event_metrics(metric_list)
+    return metrics
 
 
 if __name__ == "__main__":
-    PRED = "<EVENT_START><TIMESTAMP><7><8><0><MOUSE><9><10><0><0><0><0><0><0><0><EVENT_END><EVENT_START><TIMESTAMP><2><1><2><fake_token_around_image><global-img><fake_token_around_image><EVENT_END><EVENT_START><TIMESTAMP><2><1><2><MOUSE><10><10><0><0><0><0><0><0><0><EVENT_END><EVENT_START><TIMESTAMP><2><1><5><fake_token_around_image><global-img><fake_token_around_image><EVENT_END><EVENT_START><TIMESTAMP><2><3><7><fake_token_around_image><global-img><fake_token_around_image><EVENT_END><EVENT_START><TIMESTAMP><2><5><0><fake_token_around_image><global-img><fake_token_around_image><EVENT_END><EVENT_START><TIMESTAMP><2><6><2><fake_token_around_image><global-img><fake_token_around_image><EVENT_END><EVENT_START><TIMESTAMP><2><7><5><fake_token_around_image><global-img><fake_token_around_image><EVENT_END><EVENT_START><TIMESTAMP><2><8><7><fake_token_around_image><global-img><fake_token_around_image><EVENT_END><EVENT_START><TIMESTAMP><2><8><3><MOUSE><10><10><0><0><2><0><0><0><0><EVENT_END><EVENT_START><TIMESTAMP><3><0><0><fake_token_around_image><global-img><fake_token_around_image><EVENT_END><EVENT_START><TIMESTAMP><3><0><0><MOUSE><10><10><0><0><0><0><0><0><0><EVENT_END><EVENT_START><TIMESTAMP><3><0><6><MOUSE><10><10><0><0><0><0><0><0><0><EVENT_END><EVENT_START><TIMESTAMP><3><1><2><fake_token_around_image><global-img><fake_token_around_image><EVENT_END><EVENT_START><TIMESTAMP><3><1><2><MOUSE><10><10><2><0><0><0><0><0><0><EVENT_END><EVENT_START><TIMESTAMP><3><1><8><MOUSE><10><10><0><9><0><8><0><0><0><EVENT_END><EVENT_START><TIMESTAMP><3><2><5><fake_token_around_image><global-img><fake_token_around_image><EVENT_END><EVENT_START><TIMESTAMP><3><2><5><MOUSE><10><9><3><9><0><6><0><0><0><EVENT_END><EVENT_START><TIMESTAMP><3><3><1><MOUSE><65><press><EVENT_END><EVENT_START><TIMESTAMP><3><3><1><MOUSE><10><9><0><0><0><0><0><0><0><EVENT_END><EVENT_START><TIMESTAMP><3><3><7><fake_token_around_image><global-img><fake_token_around_image><EVENT_END><EVENT_START><TIMESTAMP><3><3><7><MOUSE><10><10><3><9><0><8><0><0><0><EVENT_END><EVENT_START><TIMESTAMP><3><4><3><MOUSE><10><9><0><9><0><6><0><0><0><EVENT_END>"
-    TRUE = "<EVENT_START><TIMESTAMP><2><0><6><MOUSE><10><10><1><0><0><2><0><0><0><EVENT_END><EVENT_START><TIMESTAMP><2><1><2><fake_token_around_image><global-img><fake_token_around_image><EVENT_END><EVENT_START><TIMESTAMP><2><1><2><MOUSE><10><10><0><0><2><0><0><0><0><EVENT_END><EVENT_START><TIMESTAMP><2><2><5><fake_token_around_image><global-img><fake_token_around_image><EVENT_END><EVENT_START><TIMESTAMP><2><3><7><fake_token_around_image><global-img><fake_token_around_image><EVENT_END><EVENT_START><TIMESTAMP><2><5><0><fake_token_around_image><global-img><fake_token_around_image><EVENT_END><EVENT_START><TIMESTAMP><2><6><2><fake_token_around_image><global-img><fake_token_around_image><EVENT_END><EVENT_START><TIMESTAMP><2><7><5><fake_token_around_image><global-img><fake_token_around_image><EVENT_END><EVENT_START><TIMESTAMP><2><8><7><fake_token_around_image><global-img><fake_token_around_image><EVENT_END><EVENT_START><TIMESTAMP><2><9><3><MOUSE><10><10><0><0><4><0><0><0><0><EVENT_END><EVENT_START><TIMESTAMP><3><0><0><fake_token_around_image><global-img><fake_token_around_image><EVENT_END><EVENT_START><TIMESTAMP><3><0><0><MOUSE><10><10><1><0><0><0><0><0><0><EVENT_END><EVENT_START><TIMESTAMP><3><0><6><MOUSE><10><10><2><0><0><0><0><0><0><EVENT_END><EVENT_START><TIMESTAMP><3><1><2><fake_token_around_image><global-img><fake_token_around_image><EVENT_END><EVENT_START><TIMESTAMP><3><1><2><MOUSE><10><10><1><0><0><0><0><0><0><EVENT_END><EVENT_START><TIMESTAMP><3><1><8><MOUSE><10><9><1><9><0><8><0><0><0><EVENT_END><EVENT_START><TIMESTAMP><3><2><5><fake_token_around_image><global-img><fake_token_around_image><EVENT_END><EVENT_START><TIMESTAMP><3><2><5><MOUSE><10><9><1><9><0><8><0><0><0><EVENT_END><EVENT_START><TIMESTAMP><3><3><1><KEYBOARD><65><release><EVENT_END><EVENT_START><TIMESTAMP><3><3><1><MOUSE><10><10><1><0><0><0><0><0><0><EVENT_END><EVENT_START><TIMESTAMP><3><3><7><fake_token_around_image><global-img><fake_token_around_image><EVENT_END><EVENT_START><TIMESTAMP><3><3><7><MOUSE><10><9><1><9><0><8><0><0><0><EVENT_END><EVENT_START><TIMESTAMP><3><4><3><MOUSE><10><9><1><9><0><8><0><0><0><EVENT_END>"
+    import dill as pickle
+    from transformers import AutoTokenizer
 
-    print("Computing event metrics...")
-    metrics = compute_metrics_for_event(PRED, TRUE)
+    tokenizer = AutoTokenizer.from_pretrained(
+        "/mnt/raid12/scratch/claude/checkpoints/pretrain_smolvlm-256m_csgo_0811_legacy"
+    )
 
-    print("\n=== Event Metrics Results ===")
-    print(f"Predicted events: {metrics['predicted_count']}")
-    print(f"Ground truth events: {metrics['ground_truth_count']}")
-    print(f"Count accuracy: {metrics['count_accuracy']:.2f}")
-    print(f"Comparable rate: {metrics['comparable_rate']:.2f}")
+    outputs = torch.load(
+        "/mnt/raid12/scratch/claude/checkpoints/pretrain_smolvlm-256m_csgo_0811/eval/output.pt", pickle_module=pickle
+    )
+    logits, labels = outputs["logits"], outputs["labels"]
+    logits = logits[:, :-1]
+    labels = labels[1:]
 
-    print("\n=== Timestamp Metrics ===")
-    ts = metrics["timestamp_metrics"]
-    print(f"MSE: {ts['mse_ms']:.2f}ms, RMSE: {ts['rmse_ms']:.2f}ms (n={ts['count']})")
-
-    print("\n=== Mouse Metrics ===")
-    mouse = metrics["mouse_metrics"]
-    print(f"Comparable events: {mouse['comparable_count']}")
-    print(f"dx RMSE: {mouse['dx_rmse']:.2f}, dy RMSE: {mouse['dy_rmse']:.2f}")
-    print(f"Euclidean RMSE: {mouse['euclidean_rmse']:.2f}")
-
-    print("\n=== Keyboard Metrics ===")
-    kb = metrics["keyboard_metrics"]
-    print(f"Comparable events: {kb['comparable_count']}")
-    if kb["comparable_count"] > 0:
-        print(f"VK accuracy: {kb['vk_accuracy']:.2f}")
-        print(f"Action accuracy: {kb['action_accuracy']:.2f}")
-        print(f"Combined accuracy: {kb['combined_accuracy']:.2f}")
-
-    print("\n=== Screen Metrics ===")
-    screen = metrics["screen_metrics"]
-    print(f"Comparable events: {screen['comparable_count']}")
-
-    print("\n=== Sample Event Comparisons ===")
-    for i, comp in enumerate(metrics["event_comparisons"][:5]):
-        status = comp["comparison_status"]
-        pred_type = comp["predicted_type"] or "None"
-        gt_type = comp["ground_truth_type"] or "None"
-        print(f"Event {i}: {status} - {pred_type} vs {gt_type}")
-        if comp["timestamp_error_ms"] is not None:
-            print(f"  Timestamp error: {comp['timestamp_error_ms']:.2f}ms")
-
-    print("\nEvent metrics computation completed successfully!")
+    metric = compute_metrics_for_events(logits=logits, labels=labels, tokenizer=tokenizer)
+    print(metric)

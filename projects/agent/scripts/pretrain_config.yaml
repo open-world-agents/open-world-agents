@@ -2,7 +2,7 @@
 # This configuration is optimized for pretraining vision-language models on desktop interaction data
 # Comments show: [CUSTOM_VALUE] (default: DEFAULT_VALUE)
 
-output_dir: "/mnt/raid12/scratch/claude/checkpoints/pretrain_smolvlm-256m_csgo_0811"  # (default: 'trainer_output') - can be overridden via CLI
+output_dir: "/mnt/raid12/scratch/claude/checkpoints/pretrain_smolvlm-256m_csgo_0811-01"  # (default: 'trainer_output') - can be overridden via CLI
 
 # ============================================================================
 # SCRIPT ARGUMENTS (Custom for FSLDataset pretraining)
