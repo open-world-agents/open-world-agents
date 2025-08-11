@@ -22,7 +22,7 @@ trust_remote_code: false  # (default: False)
 # ============================================================================
 # TRAINING HYPERPARAMETERS
 # ============================================================================
-num_train_epochs: 1  # (default: 3.0)
+num_train_epochs: 0.12  # (default: 3.0)
 per_device_train_batch_size: 8  # (default: 8)
 gradient_accumulation_steps: 1  # (default: 1)
 learning_rate: 3e-4  # (default: 2e-5)
