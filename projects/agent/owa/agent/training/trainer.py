@@ -1,8 +1,7 @@
 import os
 from typing import Optional, cast
 
-# import dill as pickle
-# import torch
+import torch
 from torch.utils.data import DataLoader
 from transformers.tokenization_utils import PreTrainedTokenizer
 from transformers.trainer_utils import EvalLoopOutput, EvalPrediction
@@ -206,14 +205,13 @@ class OWASFTTrainer(SFTTrainer):
         output_dir = os.path.join(self.args.output_dir or "./output", "eval")
         os.makedirs(output_dir, exist_ok=True)
 
-        # NOTE: since saved output is too large I disabled this feature. e.g. for 256 sample output is 256*1024*50257*4 = 52GB
+        # NOTE: since saved output is too large I save only first sample. e.g. for 256 sample output is 256*1024*50257*4 = 52GB
         # Save complete evaluation output. Without pickle argument `OverflowError: serializing a string larger than 4 GiB requires pickle protocol 4 or higher` raised
-        # torch.save(
-        #     {"logits": logits[: self.args.eval_samples_to_show], "labels": labels[: self.args.eval_samples_to_show]},
-        #     os.path.join(output_dir, f"eval_step_{step}.pt"),
-        #     pickle_module=pickle,
-        #     pickle_protocol=pickle.DEFAULT_PROTOCOL,
-        # )
+        torch.save(
+            {"logits": logits[:1], "labels": labels[:1]},
+            os.path.join(output_dir, f"eval_step_{step}.pt"),
+            pickle_protocol=4,
+        )
 
         # Save markdown with event metrics
         with open(os.path.join(output_dir, f"eval_step_{step}.md"), "w") as f:
