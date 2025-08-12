@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    branches: [main, fix/deps-vc]
+    branches: [main]
   pull_request:
     types:
       - opened
