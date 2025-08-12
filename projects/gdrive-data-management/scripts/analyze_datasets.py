@@ -22,7 +22,8 @@ from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskPr
 
 # Import functions from reference files
 import sys
-sys.path.append('reference')
+
+sys.path.append("reference")
 
 from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
 from owa.cli.mcap.migrate import MigrationOrchestrator
@@ -76,13 +77,13 @@ def migrate_mcap(input_file: Path, output_file: Path, target_version: str = "0.5
 def extract_window_names_robust(mcap_path: Path) -> Dict[str, List[int]]:
     """Extract all unique window names and their timestamps from an MCAP file."""
     window_data = {}
-    
+
     with OWAMcapReader(mcap_path, decode_args={"return_dict": True}) as reader:
         for mcap_msg in reader.iter_messages(topics=["window"]):
             try:
                 decoded = mcap_msg.decoded
                 window_title = None
-                
+
                 if isinstance(decoded, dict):
                     window_title = decoded.get("title", "")
                 elif hasattr(decoded, "title"):
@@ -91,18 +92,19 @@ def extract_window_names_robust(mcap_path: Path) -> Dict[str, List[int]]:
                     decoded_str = str(decoded)
                     if "title" in decoded_str:
                         import re
+
                         match = re.search(r"title['\"]?\s*[:=]\s*['\"]([^'\"]+)['\"]", decoded_str)
                         if match:
                             window_title = match.group(1)
-                
+
                 if window_title:
                     if window_title not in window_data:
                         window_data[window_title] = []
                     window_data[window_title].append(mcap_msg.timestamp)
-                    
+
             except Exception:
                 continue
-    
+
     return window_data
 
 
@@ -110,7 +112,7 @@ def get_most_active_window(window_data: Dict[str, List[int]]) -> Optional[str]:
     """Get the window with the most activations."""
     if not window_data:
         return None
-    
+
     return max(window_data.keys(), key=lambda w: len(window_data[w]))
 
 
@@ -140,7 +142,7 @@ def sanitize_mcap_file(file_path: Path, keep_window: str, output_path: Path) -> 
         with OWAMcapReader(file_path) as reader, OWAMcapWriter(temp_path) as writer:
             for mcap_msg in reader.iter_messages():
                 total_messages += 1
-                
+
                 if mcap_msg.topic == "window":
                     if hasattr(mcap_msg.decoded, "title"):
                         window_title = mcap_msg.decoded.title
@@ -148,7 +150,7 @@ def sanitize_mcap_file(file_path: Path, keep_window: str, output_path: Path) -> 
                         window_title = mcap_msg.decoded.get("title", "")
                     else:
                         window_title = ""
-                    
+
                     keep_current_events = keep_window.lower() in window_title.lower()
 
                 if keep_current_events:
@@ -192,40 +194,44 @@ def detect_activity_gaps(mcap_path: Path, gap_threshold_seconds: int = 60) -> Li
                 try:
                     # Calculate relative time from start of recording
                     relative_time_s = (msg.timestamp - recording_start_time) / 1e9
-                    activity_events.append({
-                        'timestamp': msg.timestamp,
-                        'time_s': relative_time_s,
-                    })
+                    activity_events.append(
+                        {
+                            "timestamp": msg.timestamp,
+                            "time_s": relative_time_s,
+                        }
+                    )
                 except Exception:
                     continue
 
     if not activity_events:
         return []
 
-    activity_events.sort(key=lambda x: x['timestamp'])
+    activity_events.sort(key=lambda x: x["timestamp"])
 
     gaps = []
     gap_threshold_ns = gap_threshold_seconds * 1e9
 
     for i in range(1, len(activity_events)):
-        prev_event = activity_events[i-1]
+        prev_event = activity_events[i - 1]
         curr_event = activity_events[i]
 
-        gap_ns = curr_event['timestamp'] - prev_event['timestamp']
+        gap_ns = curr_event["timestamp"] - prev_event["timestamp"]
         gap_seconds = gap_ns / 1e9
 
         if gap_ns > gap_threshold_ns:
-            start_time_s = prev_event['time_s']
-            end_time_s = curr_event['time_s']
+            start_time_s = prev_event["time_s"]
+            end_time_s = curr_event["time_s"]
 
-            gaps.append({
-                'start_time': start_time_s,
-                'end_time': end_time_s,
-                'gap_duration': gap_seconds,
-                'start_timestamp': format_timestamp(start_time_s),
-                'end_timestamp': format_timestamp(end_time_s),
-                'gap_description': f"{format_timestamp(start_time_s)} - {format_timestamp(end_time_s)} ({gap_seconds:.0f}s)"
-            })
+            gaps.append(
+                {
+                    "start_time": start_time_s,
+                    "end_time": end_time_s,
+                    "gap_duration": gap_seconds,
+                    "start_timestamp": format_timestamp(start_time_s),
+                    "end_timestamp": format_timestamp(end_time_s),
+                    "gap_description": f"{format_timestamp(start_time_s)} - {format_timestamp(end_time_s)} ({gap_seconds:.0f}s)",
+                }
+            )
 
     return gaps
 
@@ -235,10 +241,10 @@ def get_video_duration_from_mkv(mcap_path: Path) -> float:
     import subprocess
 
     # Find the paired MKV file
-    mkv_path = mcap_path.with_suffix('.mkv')
+    mkv_path = mcap_path.with_suffix(".mkv")
     if not mkv_path.exists():
         # Try without _mig suffix if it exists
-        if mcap_path.stem.endswith('_mig'):
+        if mcap_path.stem.endswith("_mig"):
             base_name = mcap_path.stem[:-4]  # Remove _mig
             mkv_path = mcap_path.parent / f"{base_name}.mkv"
 
@@ -248,10 +254,7 @@ def get_video_duration_from_mkv(mcap_path: Path) -> float:
 
     try:
         # Use ffprobe to get video duration
-        cmd = [
-            'ffprobe', '-v', 'quiet', '-show_entries', 'format=duration',
-            '-of', 'csv=p=0', str(mkv_path)
-        ]
+        cmd = ["ffprobe", "-v", "quiet", "-show_entries", "format=duration", "-of", "csv=p=0", str(mkv_path)]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
         if result.returncode == 0 and result.stdout.strip():
             return float(result.stdout.strip())
@@ -282,8 +285,8 @@ def init_database(db_path: Path):
     """Initialize the SQLite database."""
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    
-    cursor.execute('''
+
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS dataset_analysis (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_email TEXT NOT NULL,
@@ -302,8 +305,8 @@ def init_database(db_path: Path):
             analysis_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(user_email, file_name)
         )
-    ''')
-    
+    """)
+
     conn.commit()
     conn.close()
 
@@ -317,10 +320,13 @@ def needs_processing(db_path: Path, user_email: str, file_name: str, target_vers
     cursor = conn.cursor()
 
     try:
-        cursor.execute('''
+        cursor.execute(
+            """
             SELECT migrated_version, available FROM dataset_analysis
             WHERE user_email = ? AND file_name = ?
-        ''', (user_email, file_name))
+        """,
+            (user_email, file_name),
+        )
 
         result = cursor.fetchone()
         if not result:
@@ -350,10 +356,19 @@ def needs_processing(db_path: Path, user_email: str, file_name: str, target_vers
         conn.close()
 
 
-def log_to_database(db_path: Path, user_email: str, file_name: str, game_name: str = None,
-                   duration: float = 0, gaps: List[dict] = None, sanitized: bool = False,
-                   original_version: str = None, migrated_version: str = None,
-                   available: bool = True, error_message: str = None):
+def log_to_database(
+    db_path: Path,
+    user_email: str,
+    file_name: str,
+    game_name: str = None,
+    duration: float = 0,
+    gaps: List[dict] = None,
+    sanitized: bool = False,
+    original_version: str = None,
+    migrated_version: str = None,
+    available: bool = True,
+    error_message: str = None,
+):
     """Log analysis results to database."""
     import json
 
@@ -363,28 +378,46 @@ def log_to_database(db_path: Path, user_email: str, file_name: str, game_name: s
     if gaps is None:
         gaps = []
 
-    total_gap_duration = sum(gap['gap_duration'] for gap in gaps) if gaps else 0
+    total_gap_duration = sum(gap["gap_duration"] for gap in gaps) if gaps else 0
     accepted_duration = duration - total_gap_duration if duration > 0 else 0
 
     # Convert gaps to JSON for storage
     gap_timeline = json.dumps(gaps) if gaps else None
 
-    cursor.execute('''
+    cursor.execute(
+        """
         INSERT OR REPLACE INTO dataset_analysis
         (user_email, file_name, game_name, duration_seconds, detected_gaps,
          total_gap_duration, accepted_duration, gap_timeline, sanitized, original_version,
          migrated_version, available, error_message)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (user_email, file_name, game_name, duration, len(gaps),
-          total_gap_duration, accepted_duration, gap_timeline, sanitized, original_version,
-          migrated_version, available, error_message))
+    """,
+        (
+            user_email,
+            file_name,
+            game_name,
+            duration,
+            len(gaps),
+            total_gap_duration,
+            accepted_duration,
+            gap_timeline,
+            sanitized,
+            original_version,
+            migrated_version,
+            available,
+            error_message,
+        ),
+    )
 
     conn.commit()
     conn.close()
 
 
-def analyze_datasets(dataset_root: str = "/mnt/raid12/datasets/owa_game_dataset",
-                    db_path: str = "/mnt/raid12/datasets/owa_game_dataset/dataset_analysis.db", target_version: str = "0.5.5"):
+def analyze_datasets(
+    dataset_root: str = "/mnt/raid12/datasets/owa_game_dataset",
+    db_path: str = "/mnt/raid12/datasets/owa_game_dataset/dataset_analysis.db",
+    target_version: str = "0.5.5",
+):
     """Main function to analyze all datasets."""
     console = Console()
     dataset_path = Path(dataset_root)
@@ -416,12 +449,12 @@ def analyze_datasets(dataset_root: str = "/mnt/raid12/datasets/owa_game_dataset"
         # Extract user and file info
         parts = mcap_file.parts
         dataset_root_parts = dataset_path.parts
-        relative_parts = parts[len(dataset_root_parts):]
+        relative_parts = parts[len(dataset_root_parts) :]
         user_email = relative_parts[0] if relative_parts else "unknown"
 
         # Get base file name (remove _mig suffix if present)
         file_stem = mcap_file.stem
-        if file_stem.endswith('_mig'):
+        if file_stem.endswith("_mig"):
             base_name = file_stem[:-4]  # Remove _mig suffix
         else:
             base_name = file_stem
@@ -448,7 +481,7 @@ def analyze_datasets(dataset_root: str = "/mnt/raid12/datasets/owa_game_dataset"
     if not mcap_files:
         console.print("[blue]All files are already processed with the target version![/blue]")
         return
-    
+
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
@@ -456,19 +489,18 @@ def analyze_datasets(dataset_root: str = "/mnt/raid12/datasets/owa_game_dataset"
         TaskProgressColumn(),
         console=console,
     ) as progress:
-        
         task = progress.add_task("Analyzing datasets...", total=len(mcap_files))
-        
+
         for mcap_file in mcap_files:
             # Extract user and file info first (needed for error logging)
             parts = mcap_file.parts
             dataset_root_parts = dataset_path.parts
-            relative_parts = parts[len(dataset_root_parts):]
+            relative_parts = parts[len(dataset_root_parts) :]
             user_email = relative_parts[0] if relative_parts else "unknown"
 
             # Get base file name (remove _mig suffix if present)
             file_stem = mcap_file.stem
-            if file_stem.endswith('_mig'):
+            if file_stem.endswith("_mig"):
                 base_name = file_stem[:-4]  # Remove _mig suffix
             else:
                 base_name = file_stem
@@ -516,14 +548,27 @@ def analyze_datasets(dataset_root: str = "/mnt/raid12/datasets/owa_game_dataset"
                     if migration_success:
                         migrated_file = migrated_path
                         migrated_version = target_version
-                        console.print(f"[green]Migrated: {migrated_path} ({original_version} → {target_version})[/green]")
+                        console.print(
+                            f"[green]Migrated: {migrated_path} ({original_version} → {target_version})[/green]"
+                        )
                     else:
                         error_msg = f"Migration failed from version {original_version} to {target_version}"
                         console.print(f"[red]Migration failed for {mcap_file.name}[/red]")
 
                         # Log as failed dataset
-                        log_to_database(db_path, user_email, base_name, None, 0, None, False,
-                                      original_version, None, False, error_msg)
+                        log_to_database(
+                            db_path,
+                            user_email,
+                            base_name,
+                            None,
+                            0,
+                            None,
+                            False,
+                            original_version,
+                            None,
+                            False,
+                            error_msg,
+                        )
                         progress.advance(task)
                         continue
 
@@ -536,11 +581,22 @@ def analyze_datasets(dataset_root: str = "/mnt/raid12/datasets/owa_game_dataset"
                     console.print(f"[red]No window data found for {mcap_file}[/red]")
 
                     # Log as failed dataset
-                    log_to_database(db_path, user_email, base_name, None, 0, None, False,
-                                  original_version, migrated_version, False, error_msg)
+                    log_to_database(
+                        db_path,
+                        user_email,
+                        base_name,
+                        None,
+                        0,
+                        None,
+                        False,
+                        original_version,
+                        migrated_version,
+                        False,
+                        error_msg,
+                    )
                     progress.advance(task)
                     continue
-                
+
                 # Step 3: Check if we need to sanitize (more than 1 window)
                 needs_sanitization = len(window_data) > 1
                 final_analysis_file = migrated_file
@@ -563,17 +619,38 @@ def analyze_datasets(dataset_root: str = "/mnt/raid12/datasets/owa_game_dataset"
                     gaps = detect_activity_gaps(final_analysis_file)
 
                     # Step 5: Log to database (use original file info but analysis from processed file)
-                    log_to_database(db_path, user_email, base_name, most_active_window,
-                                  duration, gaps, needs_sanitization, original_version,
-                                  migrated_version, True, None)
+                    log_to_database(
+                        db_path,
+                        user_email,
+                        base_name,
+                        most_active_window,
+                        duration,
+                        gaps,
+                        needs_sanitization,
+                        original_version,
+                        migrated_version,
+                        True,
+                        None,
+                    )
 
                 except Exception as analysis_error:
                     error_msg = f"Analysis failed: {str(analysis_error)}"
                     console.print(f"[red]Analysis failed for {mcap_file.name}: {analysis_error}[/red]")
 
                     # Log as failed dataset
-                    log_to_database(db_path, user_email, base_name, most_active_window, 0, None,
-                                  needs_sanitization, original_version, migrated_version, False, error_msg)
+                    log_to_database(
+                        db_path,
+                        user_email,
+                        base_name,
+                        most_active_window,
+                        0,
+                        None,
+                        needs_sanitization,
+                        original_version,
+                        migrated_version,
+                        False,
+                        error_msg,
+                    )
 
                 progress.advance(task)
 
@@ -582,23 +659,27 @@ def analyze_datasets(dataset_root: str = "/mnt/raid12/datasets/owa_game_dataset"
                 console.print(f"[red]Error processing {mcap_file}: {e}[/red]")
 
                 # Log as failed dataset
-                log_to_database(db_path, user_email, base_name, None, 0, None, False,
-                              original_version, None, False, error_msg)
+                log_to_database(
+                    db_path, user_email, base_name, None, 0, None, False, original_version, None, False, error_msg
+                )
                 progress.advance(task)
-    
+
     console.print(f"[green]Analysis complete! Results saved to {db_path}[/green]")
 
 
 if __name__ == "__main__":
     import argparse
-    
+
     parser = argparse.ArgumentParser(description="Analyze OWA game datasets")
-    parser.add_argument("--dataset-root", default="/mnt/raid12/datasets/owa_game_dataset",
-                       help="Root directory of the dataset")
-    parser.add_argument("--db-path", default="/mnt/raid12/datasets/owa_game_dataset/dataset_analysis.db",
-                       help="Path to SQLite database file")
-    parser.add_argument("--target-version", default="0.5.5",
-                       help="Target MCAP version for migration (default: 0.5.5)")
+    parser.add_argument(
+        "--dataset-root", default="/mnt/raid12/datasets/owa_game_dataset", help="Root directory of the dataset"
+    )
+    parser.add_argument(
+        "--db-path",
+        default="/mnt/raid12/datasets/owa_game_dataset/dataset_analysis.db",
+        help="Path to SQLite database file",
+    )
+    parser.add_argument("--target-version", default="0.5.5", help="Target MCAP version for migration (default: 0.5.5)")
 
     args = parser.parse_args()
     analyze_datasets(args.dataset_root, args.db_path, args.target_version)
