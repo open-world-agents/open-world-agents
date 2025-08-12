@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Error - OWA Dataset Viewer{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-exclamation-triangle"></i> Error
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-danger">
+                    <h6>Something went wrong</h6>
+                    <p class="mb-0">{{ error }}</p>
+                </div>
+                
+                <div class="mt-4">
+                    <h6>Troubleshooting Steps:</h6>
+                    <ul>
+                        <li>Make sure the <code>dataset_analysis.db</code> file exists in the parent directory</li>
+                        <li>Verify that the database was created by running <code>analyze_datasets.py</code></li>
+                        <li>Check that the database file has proper read permissions</li>
+                        <li>Ensure the Flask application has access to the database file</li>
+                    </ul>
+                </div>
+                
+                <div class="mt-4">
+                    <a href="{{ url_for('index') }}" class="btn btn-primary">
+                        <i class="bi bi-arrow-clockwise"></i> Try Again
+                    </a>
+                    <a href="#" onclick="window.location.reload()" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh Page
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center mt-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="bi bi-info-circle"></i> Database Setup Instructions</h6>
+            </div>
+            <div class="card-body">
+                <p>If you haven't created the database yet, follow these steps:</p>
+                
+                <ol>
+                    <li>
+                        <strong>Run the analysis script:</strong>
+                        <pre class="bg-light p-2 rounded"><code>python analyze_datasets.py --dataset-root /path/to/dataset --db-path dataset_analysis.db</code></pre>
+                    </li>
+                    <li>
+                        <strong>Verify the database was created:</strong>
+                        <pre class="bg-light p-2 rounded"><code>ls -la dataset_analysis.db</code></pre>
+                    </li>
+                    <li>
+                        <strong>Start the web server:</strong>
+                        <pre class="bg-light p-2 rounded"><code>cd website && python app.py</code></pre>
+                    </li>
+                </ol>
+                
+                <div class="alert alert-info mt-3">
+                    <strong>Note:</strong> The web application expects the database file to be located at <code>../dataset_analysis.db</code> relative to the website directory.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

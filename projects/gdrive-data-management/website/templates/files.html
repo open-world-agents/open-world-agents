@@ -1,0 +1,445 @@
+{% extends "base.html" %}
+
+{% block title %}Files - OWA Dataset Viewer{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="bi bi-file-earmark-text"></i> Dataset Files
+        </h1>
+    </div>
+</div>
+
+<!-- Search and Filters -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" class="form-control" id="searchInput" 
+                   placeholder="Search by user, file name, or game...">
+            <button class="btn btn-outline-secondary" type="button" onclick="searchFiles()">
+                Search
+            </button>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="btn-group w-100" role="group">
+            <button type="button" class="btn btn-outline-primary" onclick="exportData()">
+                <i class="bi bi-download"></i> Export
+            </button>
+            <button type="button" class="btn btn-outline-secondary" onclick="refreshFiles()">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Files Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-table"></i> Files List</h5>
+                <div>
+                    <span class="badge bg-secondary" id="totalCount">Loading...</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover" id="filesTable">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Status</th>
+                                <th>User</th>
+                                <th>File Name</th>
+                                <th>Game</th>
+                                <th>Duration</th>
+                                <th>Accepted</th>
+                                <th>Efficiency</th>
+                                <th>Gaps</th>
+                                <th>Sanitized</th>
+                                <th>Original Ver</th>
+                                <th>Target Ver</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="filesTableBody">
+                            <tr>
+                                <td colspan="12" class="text-center">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                <nav aria-label="Files pagination" id="paginationNav" style="display: none;">
+                    <ul class="pagination justify-content-center" id="pagination">
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- File Details Modal -->
+<div class="modal fade" id="fileModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">File Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="fileModalBody">
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let currentPage = 1;
+let currentSearch = '';
+let currentSort = 'analysis_date';
+let currentOrder = 'DESC';
+let currentFilesData = [];
+
+// Load files on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadFiles();
+    
+    // Enter key search
+    document.getElementById('searchInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            searchFiles();
+        }
+    });
+});
+
+function loadFiles(page = 1) {
+    currentPage = page;
+    
+    const params = new URLSearchParams({
+        page: page,
+        per_page: 50,
+        search: currentSearch,
+        sort_by: currentSort,
+        sort_order: currentOrder
+    });
+    
+    fetch(`/api/files?${params}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showError(data.error);
+                return;
+            }
+            
+            currentFilesData = data.files;
+            displayFiles(data.files);
+            updatePagination(data);
+            document.getElementById('totalCount').textContent = `${data.total_count} files`;
+        })
+        .catch(error => {
+            showError('Error loading files: ' + error.message);
+        });
+}
+
+function displayFiles(files) {
+    const tbody = document.getElementById('filesTableBody');
+    
+    if (files.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="12" class="text-center text-muted">No files found</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = files.map(file => `
+        <tr onclick="showFileDetails(${file.id})" style="cursor: pointer;" class="${file.available ? '' : 'table-danger'}">
+            <td>
+                ${file.available ?
+                    '<i class="bi bi-check-circle text-success" title="Available"></i>' :
+                    `<i class="bi bi-x-circle text-danger" title="Failed: ${file.error_message || 'Unknown error'}"></i>`
+                }
+            </td>
+            <td>
+                <span class="text-truncate d-inline-block" style="max-width: 150px;"
+                      title="${file.user_email}">
+                    ${file.user_email}
+                </span>
+            </td>
+            <td>
+                <span class="text-truncate d-inline-block" style="max-width: 200px;" 
+                      title="${file.file_name}">
+                    ${file.file_name}
+                </span>
+            </td>
+            <td>
+                <span class="text-truncate d-inline-block" style="max-width: 150px;" 
+                      title="${file.game_name || 'Unknown'}">
+                    ${file.game_name || 'Unknown'}
+                </span>
+            </td>
+            <td>${file.duration_minutes}m</td>
+            <td>${file.accepted_minutes}m</td>
+            <td>
+                <span class="badge bg-${getEfficiencyColor(file.efficiency)}">
+                    ${file.efficiency}%
+                </span>
+            </td>
+            <td>
+                ${file.detected_gaps || 0}
+                ${file.gap_duration_minutes > 0 ? `<small class="text-muted">(${file.gap_duration_minutes}m)</small>` : ''}
+            </td>
+            <td>
+                ${file.sanitized ? '<i class="bi bi-check-circle text-success"></i>' : '<i class="bi bi-x-circle text-muted"></i>'}
+            </td>
+            <td>
+                <small class="text-muted">${file.original_version || 'Unknown'}</small>
+            </td>
+            <td>
+                <small class="text-muted">${file.migrated_version || 'N/A'}</small>
+            </td>
+            <td>
+                <small>${new Date(file.analysis_date).toLocaleDateString()}</small>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function getEfficiencyColor(efficiency) {
+    if (efficiency >= 80) return 'success';
+    if (efficiency >= 60) return 'warning';
+    return 'danger';
+}
+
+function updatePagination(data) {
+    const nav = document.getElementById('paginationNav');
+    const pagination = document.getElementById('pagination');
+    
+    if (data.total_pages <= 1) {
+        nav.style.display = 'none';
+        return;
+    }
+    
+    nav.style.display = 'block';
+    
+    let html = '';
+    
+    // Previous button
+    html += `
+        <li class="page-item ${data.page <= 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="loadFiles(${data.page - 1})">Previous</a>
+        </li>
+    `;
+    
+    // Page numbers
+    const startPage = Math.max(1, data.page - 2);
+    const endPage = Math.min(data.total_pages, data.page + 2);
+    
+    if (startPage > 1) {
+        html += '<li class="page-item"><a class="page-link" href="#" onclick="loadFiles(1)">1</a></li>';
+        if (startPage > 2) {
+            html += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+        }
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        html += `
+            <li class="page-item ${i === data.page ? 'active' : ''}">
+                <a class="page-link" href="#" onclick="loadFiles(${i})">${i}</a>
+            </li>
+        `;
+    }
+    
+    if (endPage < data.total_pages) {
+        if (endPage < data.total_pages - 1) {
+            html += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+        }
+        html += `<li class="page-item"><a class="page-link" href="#" onclick="loadFiles(${data.total_pages})">${data.total_pages}</a></li>`;
+    }
+    
+    // Next button
+    html += `
+        <li class="page-item ${data.page >= data.total_pages ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="loadFiles(${data.page + 1})">Next</a>
+        </li>
+    `;
+    
+    pagination.innerHTML = html;
+}
+
+function searchFiles() {
+    currentSearch = document.getElementById('searchInput').value;
+    currentPage = 1;
+    loadFiles();
+}
+
+function refreshFiles() {
+    loadFiles(currentPage);
+}
+
+function showFileDetails(fileId) {
+    // Find the file data from the current files list
+    const file = currentFilesData.find(f => f.id === fileId);
+    if (!file) {
+        document.getElementById('fileModalBody').innerHTML = `
+            <div class="alert alert-danger">File details not found.</div>
+        `;
+        new bootstrap.Modal(document.getElementById('fileModal')).show();
+        return;
+    }
+
+    let gapsHtml = '';
+    if (file.gaps_detail && file.gaps_detail.length > 0) {
+        gapsHtml = `
+            <h6>Gap Timeline Details:</h6>
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Gap #</th>
+                            <th>Timeline</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${file.gaps_detail.map((gap, index) => `
+                            <tr>
+                                <td>${index + 1}</td>
+                                <td><code>${gap.gap_description || gap.start_timestamp + ' - ' + gap.end_timestamp}</code></td>
+                                <td>${gap.gap_duration.toFixed(0)}s</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    } else {
+        gapsHtml = '<p class="text-muted">No gaps detected in this recording.</p>';
+    }
+
+    document.getElementById('fileModalBody').innerHTML = `
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <h6>${file.user_email}</h6>
+                <p class="text-muted">${file.file_name}</p>
+            </div>
+            <div class="col-md-6">
+                <span class="badge ${file.available ? 'bg-success' : 'bg-danger'}">
+                    ${file.available ? 'Available' : 'Failed'}
+                </span>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-3">
+                <strong>Game:</strong><br>
+                <span class="text-muted">${file.game_name || 'Unknown'}</span>
+            </div>
+            <div class="col-md-3">
+                <strong>Duration:</strong><br>
+                <span class="text-muted">${file.duration_minutes}m</span>
+            </div>
+            <div class="col-md-3">
+                <strong>Efficiency:</strong><br>
+                <span class="badge bg-${getEfficiencyColor(file.efficiency)}">${file.efficiency}%</span>
+            </div>
+            <div class="col-md-3">
+                <strong>Gaps:</strong><br>
+                <span class="text-muted">${file.detected_gaps || 0} (${file.gap_duration_minutes}m)</span>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <strong>Original File Version:</strong><br>
+                <span class="text-muted">${file.original_version || 'Unknown'}</span>
+                <small class="text-muted d-block">Version of ${file.file_name}.mcap</small>
+            </div>
+            <div class="col-md-6">
+                <strong>Target Version:</strong><br>
+                <span class="text-muted">${file.migrated_version || 'N/A'}</span>
+                <small class="text-muted d-block">Version after migration</small>
+            </div>
+        </div>
+
+        ${file.error_message ? `
+            <div class="alert alert-danger">
+                <strong>Error:</strong> ${file.error_message}
+            </div>
+        ` : ''}
+
+        ${gapsHtml}
+    `;
+
+    new bootstrap.Modal(document.getElementById('fileModal')).show();
+}
+
+function exportData() {
+    // Create CSV export
+    const params = new URLSearchParams({
+        search: currentSearch,
+        sort_by: currentSort,
+        sort_order: currentOrder,
+        per_page: 10000  // Get all results for export
+    });
+    
+    fetch(`/api/files?${params}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showError(data.error);
+                return;
+            }
+            
+            const csv = convertToCSV(data.files);
+            downloadCSV(csv, 'owa_dataset_files.csv');
+        })
+        .catch(error => {
+            showError('Error exporting data: ' + error.message);
+        });
+}
+
+function convertToCSV(files) {
+    const headers = ['User', 'File Name', 'Game', 'Duration (min)', 'Accepted (min)', 'Efficiency (%)', 'Gaps', 'Gap Duration (min)', 'Sanitized', 'Version', 'Analysis Date'];
+    
+    const rows = files.map(file => [
+        file.user_email,
+        file.file_name,
+        file.game_name || 'Unknown',
+        file.duration_minutes,
+        file.accepted_minutes,
+        file.efficiency,
+        file.detected_gaps || 0,
+        file.gap_duration_minutes,
+        file.sanitized ? 'Yes' : 'No',
+        file.original_version || 'Unknown',
+        file.analysis_date
+    ]);
+    
+    return [headers, ...rows].map(row => 
+        row.map(field => `"${String(field).replace(/"/g, '""')}"`).join(',')
+    ).join('\n');
+}
+
+function downloadCSV(csv, filename) {
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
+function showError(message) {
+    const tbody = document.getElementById('filesTableBody');
+    tbody.innerHTML = `<tr><td colspan="12" class="text-center text-danger">${message}</td></tr>`;
+}
+</script>
+{% endblock %}
