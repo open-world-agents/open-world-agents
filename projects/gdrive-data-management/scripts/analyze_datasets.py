@@ -10,18 +10,15 @@ This script:
 """
 
 import sqlite3
-import glob
-import os
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Optional
 from contextlib import contextmanager
 import warnings
 
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
-from rich.table import Table
 
 # Import functions from reference files
 import sys
@@ -103,7 +100,7 @@ def extract_window_names_robust(mcap_path: Path) -> Dict[str, List[int]]:
                         window_data[window_title] = []
                     window_data[window_title].append(mcap_msg.timestamp)
                     
-            except Exception as e:
+            except Exception:
                 continue
     
     return window_data

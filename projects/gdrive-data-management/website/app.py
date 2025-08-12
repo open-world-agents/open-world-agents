@@ -6,8 +6,6 @@ A Flask web application to view and analyze the dataset_analysis.db database.
 
 import sqlite3
 import os
-from datetime import datetime
-from pathlib import Path
 from flask import Flask, render_template, jsonify, request
 import json
 
@@ -184,7 +182,8 @@ def api_files():
                 try:
                     import json
                     file['gaps_detail'] = json.loads(file['gap_timeline'])
-                except:
+                except Exception as e:
+                    print(f"Warning: Could not parse gap timeline for {file.get('file_name')}: {e}")
                     file['gaps_detail'] = []
             else:
                 file['gaps_detail'] = []

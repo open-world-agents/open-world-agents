@@ -10,10 +10,8 @@ This script:
 """
 
 import shutil
-import tempfile
 from pathlib import Path
-from typing import Optional, Tuple
-import re
+from typing import Optional
 
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
@@ -166,7 +164,7 @@ def filter_datasets(
         return
     
     # Second pass: copy files to filtered directory
-    console.print(f"[blue]Copying compatible files to filtered directory[/blue]")
+    console.print("[blue]Copying compatible files to filtered directory[/blue]")
 
     successful_copies = 0
     failed_copies = 0
@@ -228,7 +226,7 @@ def filter_datasets(
                 progress.advance(copy_task)
 
     # Final summary
-    console.print(f"\n[bold]Copy Summary[/bold]")
+    console.print("\n[bold]Copy Summary[/bold]")
     console.print(f"[green]MCAP files copied successfully: {successful_copies}[/green]")
     console.print(f"[red]MCAP files failed: {failed_copies}[/red]")
     console.print(f"[green]MKV files copied: {copied_mkvs}[/green]")
