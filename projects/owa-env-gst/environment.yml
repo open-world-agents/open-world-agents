@@ -7,3 +7,6 @@ channels:
 dependencies:
   - python=3.11
   - open-world-agents::gstreamer-bundle
+  - vc=14.3=h2b53caa_30
+  - vc14_runtime=14.44.35208=h818238b_30
+  - vs2015_runtime=14.44.35208=h38c0c73_30
