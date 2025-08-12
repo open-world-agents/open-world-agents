@@ -258,7 +258,7 @@ def compute_metrics_for_events(
     # TODO: EMA-like metrics which considers tokens given sufficient context is easier to predict.
     sequence_length = predictions.shape[0]  # noqa: F841
 
-    # If the first token is not <EVENT_START>, add it.
+    # Since logits/labels is shifted-by-1, if the first token is not <EVENT_START>, add it.
     event_start_token_id = tokenizer.convert_tokens_to_ids("<EVENT_START>")
     event_end_token_id = tokenizer.convert_tokens_to_ids("<EVENT_END>")
     if labels[0] != event_start_token_id:
