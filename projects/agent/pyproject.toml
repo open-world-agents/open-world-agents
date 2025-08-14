@@ -6,19 +6,19 @@ readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.11"
 dependencies = [
-    "accelerate>=1.9.0",
+    "accelerate>=1.10.0",
     "datasets>=4.0.0",
-    "deepspeed>=0.17.3",
+    "deepspeed==0.17.4",
     "num2words>=0.5.14",
-    "owa-core>=0.5.3",
+    "owa-core>=0.5.6",
     "owa-data>=0.1.0",
-    "owa-msgs>=0.5.3",
+    "owa-msgs>=0.5.6",
     "tensorboard>=2.19.0",
-    "torch>=2.7.1",
-    "torchvision>=0.22.1",
+    "torch==2.8.0",
+    "torchvision>=0.23.0",
     "tqdm>=4.67.1",
-    "transformers==4.53.3",
-    "trl>=0.20.0",
+    "transformers==4.55.2",
+    "trl==0.21.0",
     "wandb>=0.21.0",
 ]
 
