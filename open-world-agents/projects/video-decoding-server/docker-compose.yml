@@ -13,6 +13,8 @@ services:
     volumes:
       - ./model_repository:/app/models
       - ${DATA_DIR}:${DATA_DIR}
+    environment:
+      - VIDEO_BACKEND=pyav
     stdin_open: true
     tty: true
     healthcheck:
@@ -26,10 +28,10 @@ services:
         # CPU Strategy: Match CPU count with instance_group count (1:1 ratio)
         limits:
           cpus: '32.0' # 2x of reservation to leave margin
-          memory: 16G
+          memory: 32G
         reservations:
           cpus: '16.0' # Same as instace_group count
-          memory: 8G
+          memory: 16G
         # GPU support (uncomment if needed)
         #   devices:
         #     - driver: "nvidia"
