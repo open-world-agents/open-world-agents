@@ -11,7 +11,7 @@ from transformers import AutoImageProcessor, AutoProcessor
 from owa.data.datasets import load_from_disk
 
 # This line is to enable throughput logging from FSLTransform
-logger.enable("owa.data.datasets.transforms")
+# logger.enable("owa.data.datasets.transforms")
 
 
 class DummyDataset(torch.utils.data.Dataset):
@@ -120,7 +120,12 @@ def main():
 
     # 3) Apply FSL transform for on-the-fly processing and concatenate datasets
     for train_ds in train_datasets:
-        train_ds.auto_set_transform(stage="fsl", load_images=True, image_processor=processor.image_processor)
+        train_ds.auto_set_transform(
+            stage="fsl",
+            load_images=True,
+            image_processor=processor.image_processor,
+            mcap_root_directory=None,
+        )
 
     train_ds = ConcatDataset(train_datasets)
     # train_ds = DummyDataset()
@@ -131,6 +136,7 @@ def main():
         batch_size=args.batch_size,
         shuffle=True,
         num_workers=args.num_workers,
+        prefetch_factor=2,
         # persistent_workers=True,
         pin_memory=True,
         collate_fn=lambda examples: collate_fn(examples, max_sequence_length=1024, tokenizer=processor.tokenizer),

@@ -24,16 +24,33 @@ class _CacheContext:
     def __init__(self):
         self._cache: dict[VideoPathType, "MockedInputContainer"] = {}
         self._lock = threading.RLock()
+        self._thread_id = threading.get_ident()  # Track the thread that created this cache
 
     def __enter__(self) -> dict[VideoPathType, "MockedInputContainer"]:
         """Enter context manager and return locked cache."""
         self._lock.acquire()
+        self._check_thread_safety()
         return self._cache
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Exit context manager and release lock."""
         self._lock.release()
         return False  # Don't suppress exceptions
+
+    def _check_thread_safety(self):
+        """Check if we're in a different thread and clear cache if needed."""
+        current_thread_id = threading.get_ident()
+        if current_thread_id != self._thread_id:
+            logger.info(f"Thread change detected (from {self._thread_id} to {current_thread_id}), clearing cache")
+            # Clear the cache since PyAV/FFmpeg objects are not thread-safe
+            # Don't close containers as they may still be in use - just clear the cache
+            self._cache.clear()
+            self._thread_id = current_thread_id
+            gc.collect()
+
+            # Huge performance degradation observed when accessing cache from different threads.
+            # Prefer to crash rather than introduce hard-to-debug issues.
+            raise RuntimeError("Thread change detected, cannot access cache")
 
 
 # Global cache context instance
