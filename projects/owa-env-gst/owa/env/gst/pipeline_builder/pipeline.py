@@ -70,7 +70,7 @@ def appsink_recorder_pipeline(
         # in here, conversion to NV12 is required for nvd3d11h265enc to prevent alpha channel ignoring.
         # also, usage of mfh264enc is avoided to prevent forceful odd-to-even resize.
         # Related issue: https://gitlab.freedesktop.org/gstreamer/gstreamer/-/issues/4124
-        screen_src |= "t. ! queue ! d3d11convert ! video/x-raw(memory:D3D11Memory),format=NV12 ! nvd3d11h265enc ! h265parse ! queue ! mux."
+        screen_src |= 't. ! queue ! d3d11convert ! video/x-raw(memory:D3D11Memory),format=NV12 ! nvd3d11h265enc ! h265parse ! capssetter caps="video/x-h265, pixel-aspect-ratio=1/1" join=true replace=false ! queue ! mux.'
         src |= screen_src
 
     if record_audio:
