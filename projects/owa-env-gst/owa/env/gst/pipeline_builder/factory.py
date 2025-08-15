@@ -40,9 +40,9 @@ class ElementFactory:
             "window-capture-mode": "client",
             # wgc is slower than dxgi in d3d11 implmenetation, but capable of specific window capture
             # TODO: upgrade gstreamer & support d3d12 plugins. low-framerate issue in wgc is resolved in d3d12 version. https://discourse.gstreamer.org/t/d3d11screencapturesrc-vs-d3d12screencapturesrc/2080
-            "capture-api": "wgc",
+            # "capture-api": "wgc",
             # "capture-api": "dxgi",
-            "show-border": False,
+            "show-border": True,
         }
         if window_name is not None:
             from owa.core import get_component
@@ -65,7 +65,9 @@ class ElementFactory:
             Element("d3d11screencapturesrc", properties)
             >> Element("videorate", {"drop-only": "true"})
             >> Element("d3d11scale")
-            >> ElementFactory.capsfilter(caps="video/x-raw(memory:D3D11Memory)" + framerate + size + ",pixel-aspect-ratio=1/1")
+            >> ElementFactory.capsfilter(
+                caps="video/x-raw(memory:D3D11Memory)" + framerate + size + ",pixel-aspect-ratio=1/1"
+            )
         )
 
     @staticmethod
