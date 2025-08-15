@@ -47,7 +47,7 @@ class OWASFTTrainer(SFTTrainer):
         metric_key_prefix: str = "eval",
     ) -> EvalLoopOutput:
         ignore_keys = ignore_keys or []
-        ignore_keys.append("image_hidden_states")
+        ignore_keys += ["past_key_values", "image_hidden_states"]
         # Run standard evaluation
         output = super().evaluation_loop(dataloader, description, prediction_loss_only, ignore_keys, metric_key_prefix)
 

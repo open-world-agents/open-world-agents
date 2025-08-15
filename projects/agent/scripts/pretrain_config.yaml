@@ -2,19 +2,19 @@
 # This configuration is optimized for pretraining vision-language models on desktop interaction data
 # Comments show: [CUSTOM_VALUE] (default: DEFAULT_VALUE)
 
-output_dir: "/mnt/raid12/scratch/claude/checkpoints/owa/smolvlm-256m_vpt_0811-00"  # (default: 'trainer_output') - can be overridden via CLI
+output_dir: "/mnt/harbor/users/claude/checkpoints/owa/InternVL3-1B-hf_vpt_0815-00"  # (default: 'trainer_output') - can be overridden via CLI
 
 # ============================================================================
 # SCRIPT ARGUMENTS (Custom for FSLDataset pretraining)
 # ============================================================================
 dataset_paths: # (default: None) - required
-  - "/mnt/raid12/datasets/owa/data/vpt-fsl"
-max_sequence_length: 1024  # (default: 1024)
+  - "/mnt/raid12/datasets/owa/data/vpt-fsl-internvl3"
+max_sequence_length: 4096  # (default: 1024)
 
 # ============================================================================
 # MODEL CONFIGURATION
 # ============================================================================
-model_name_or_path: "HuggingFaceTB/SmolVLM2-256M-Video-Instruct"  # (default: None)
+model_name_or_path: "OpenGVLab/InternVL3-1B-hf"  # (default: None)
 torch_dtype: "bfloat16"  # (default: None)
 attn_implementation: "flash_attention_2"  # (default: None)
 trust_remote_code: false  # (default: False)
