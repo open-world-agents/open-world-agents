@@ -10,6 +10,7 @@ dependencies = [
     "huggingface_hub>=0.20.0",
     "rich>=13.7.0",
     "typer>=0.15.1",
+    "jsonargparse>=4.32.1",
     "tqdm>=4.67.1",
     "webdataset>=1.0.2",
     "tritonclient[http]>=2.59.0",
