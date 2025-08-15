@@ -71,7 +71,7 @@ dataloader_num_workers: 8    # (default: 0)
 do_eval: true  # (default: False)
 eval_strategy: "steps"  # (default: 'no')
 eval_steps: 0.1  # (default: None) - used when eval_strategy is 'steps'
-per_device_eval_batch_size: 8  # (default: 8)
+per_device_eval_batch_size: 1  # (default: 8)
 
 # ============================================================================
 # DISTRIBUTED TRAINING SETTINGS
