@@ -54,13 +54,15 @@ from transformers import AutoImageProcessor, AutoModelForImageTextToText, AutoPr
 from trl import (
     ModelConfig,
     ScriptArguments,
+    SFTConfig,
+    SFTTrainer,
     TrlParser,
     get_kbit_device_map,
     get_quantization_config,
 )
 
-from owa.agent.training import OWASFTConfig as SFTConfig
-from owa.agent.training import OWASFTTrainer as SFTTrainer
+# from owa.agent.training import OWASFTConfig as SFTConfig
+# from owa.agent.training import OWASFTTrainer as SFTTrainer
 from owa.data.collator import detect_model_type, get_collate_fn
 from owa.data.datasets import Dataset, load_from_disk
 from owa.data.episode_tokenizer import EpisodeTokenizer
