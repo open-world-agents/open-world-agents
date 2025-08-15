@@ -53,7 +53,7 @@ def main(cfg: Config):
     print(f"Tokenizer: {cfg.tokenizer_name}")
     print(f"Max sequence length: {cfg.fsl_dataset.max_sequence_length}")
 
-    print(f"Episode tokenizer cfg:")
+    print("Episode tokenizer cfg:")
     print(f"  - Image token: {cfg.episode_tokenizer.image_token}")
     print(f"  - Image token length: {cfg.episode_tokenizer.image_token_length}")
     print(f"  - Image token prefix: {cfg.episode_tokenizer.image_token_prefix}")
@@ -90,7 +90,7 @@ def main(cfg: Config):
 
     # Configure FSL dataset
     cfg.fsl_dataset.pad_token_id = tokenizer.pad_token_id
-    print(f"FSL dataset cfg:")
+    print("FSL dataset cfg:")
     print(f"  - Pad token ID: {cfg.fsl_dataset.pad_token_id}")
     print(f"  - Max sequence length: {cfg.fsl_dataset.max_sequence_length}")
 
