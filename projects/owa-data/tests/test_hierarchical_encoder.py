@@ -43,7 +43,7 @@ class TestFidelity:
     def encoder(self):
         return HierarchicalEventEncoder()
 
-    def test_mouse_fidelity(self, encoder):
+    def test_mouse_fidelity(self, encoder, subtests):
         """Mouse events should round-trip without data loss."""
         test_cases = [
             # (movement_x, movement_y, button_flags, button_data, description)
@@ -66,29 +66,34 @@ class TestFidelity:
         ]
 
         for dx, dy, flags, data, desc in test_cases:
-            original = {"last_x": dx, "last_y": dy, "button_flags": flags, "button_data": data}
-            msg = McapMessage(
-                topic="mouse/raw",
-                timestamp=1000000000,
-                message=orjson.dumps(original),
-                message_type="desktop/RawMouseEvent",
-            )
+            with subtests.test(dx=dx, dy=dy, flags=flags, data=data, desc=desc):
+                original = {"last_x": dx, "last_y": dy, "button_flags": flags, "button_data": data}
+                msg = McapMessage(
+                    topic="mouse/raw",
+                    timestamp=1000000000,
+                    message=orjson.dumps(original),
+                    message_type="desktop/RawMouseEvent",
+                )
 
-            # Round trip
-            encoded, images = encoder.encode(msg)
-            decoded = encoder.decode(encoded, images)
-            result = orjson.loads(decoded.message)
+                # Round trip
+                encoded, images = encoder.encode(msg)
+                decoded = encoder.decode(encoded, images)
+                result = orjson.loads(decoded.message)
 
-            # Check fidelity - all test values are within range so should be preserved exactly
-            assert result["last_x"] == dx, f"X movement not preserved in {desc}: expected {dx}, got {result['last_x']}"
-            assert result["last_y"] == dy, f"Y movement not preserved in {desc}: expected {dy}, got {result['last_y']}"
-            assert result["button_flags"] == flags, f"Button flags lost in {desc}"
+                # Check fidelity - all test values are within range so should be preserved exactly
+                assert result["last_x"] == dx, (
+                    f"X movement not preserved in {desc}: expected {dx}, got {result['last_x']}"
+                )
+                assert result["last_y"] == dy, (
+                    f"Y movement not preserved in {desc}: expected {dy}, got {result['last_y']}"
+                )
+                assert result["button_flags"] == flags, f"Button flags lost in {desc}"
 
-            # Button data is quantized by 120, so check expected value
-            expected_data = (data // 120) * 120 if flags & 0x400 else data
-            assert result["button_data"] == expected_data, f"Button data lost in {desc}"
+                # Button data is quantized by 120, so check expected value
+                expected_data = (data // 120) * 120 if flags & 0x400 else data
+                assert result["button_data"] == expected_data, f"Button data lost in {desc}"
 
-    def test_keyboard_fidelity(self, encoder):
+    def test_keyboard_fidelity(self, encoder, subtests):
         """Keyboard events should round-trip without data loss."""
         test_cases = [
             ("press", 65),
@@ -112,33 +117,13 @@ class TestFidelity:
         ]
 
         for event_type, vk in test_cases:
-            original = {"event_type": event_type, "vk": vk}
-            msg = McapMessage(
-                topic="keyboard",
-                timestamp=2000000000,
-                message=orjson.dumps(original),
-                message_type="desktop/KeyboardEvent",
-            )
-
-            # Round trip
-            encoded, images = encoder.encode(msg)
-            decoded = encoder.decode(encoded, images)
-            result = orjson.loads(decoded.message)
-
-            # Check perfect fidelity
-            assert result["event_type"] == event_type, f"Event type lost for {event_type} {vk}"
-            assert result["vk"] == vk, f"VK code lost for {event_type} {vk}"
-
-    def test_mouse_small_values_exhaustive(self, encoder):
-        """Exhaustive test for small mouse movements (0-20 range) - must be exact."""
-        for dx in range(-20, 21):  # -20 to 20
-            for dy in range(-20, 21):  # -20 to 20
-                original = {"last_x": dx, "last_y": dy, "button_flags": 0, "button_data": 0}
+            with subtests.test(event_type=event_type, vk=vk):
+                original = {"event_type": event_type, "vk": vk}
                 msg = McapMessage(
-                    topic="mouse/raw",
-                    timestamp=1000000000,
+                    topic="keyboard",
+                    timestamp=2000000000,
                     message=orjson.dumps(original),
-                    message_type="desktop/RawMouseEvent",
+                    message_type="desktop/KeyboardEvent",
                 )
 
                 # Round trip
@@ -146,11 +131,33 @@ class TestFidelity:
                 decoded = encoder.decode(encoded, images)
                 result = orjson.loads(decoded.message)
 
-                # Small values must be preserved exactly (no quantization loss allowed)
-                assert result["last_x"] == dx, f"X value changed: {dx} -> {result['last_x']}"
-                assert result["last_y"] == dy, f"Y value changed: {dy} -> {result['last_y']}"
+                # Check perfect fidelity
+                assert result["event_type"] == event_type, f"Event type lost for {event_type} {vk}"
+                assert result["vk"] == vk, f"VK code lost for {event_type} {vk}"
 
-    def test_timestamp_exhaustive(self, encoder):
+    def test_mouse_small_values_exhaustive(self, encoder, subtests):
+        """Exhaustive test for small mouse movements (0-20 range) - must be exact."""
+        for dx in range(-20, 21):  # -20 to 20
+            for dy in range(-20, 21):  # -20 to 20
+                with subtests.test(dx=dx, dy=dy):
+                    original = {"last_x": dx, "last_y": dy, "button_flags": 0, "button_data": 0}
+                    msg = McapMessage(
+                        topic="mouse/raw",
+                        timestamp=1000000000,
+                        message=orjson.dumps(original),
+                        message_type="desktop/RawMouseEvent",
+                    )
+
+                    # Round trip
+                    encoded, images = encoder.encode(msg)
+                    decoded = encoder.decode(encoded, images)
+                    result = orjson.loads(decoded.message)
+
+                    # Small values must be preserved exactly (no quantization loss allowed)
+                    assert result["last_x"] == dx, f"X value changed: {dx} -> {result['last_x']}"
+                    assert result["last_y"] == dy, f"Y value changed: {dy} -> {result['last_y']}"
+
+    def test_timestamp_exhaustive(self, encoder, subtests):
         """Exhaustive test for timestamp encoding/decoding within reasonable range."""
         # Test range: 0 to 16 seconds in nanoseconds (covers typical event intervals)
         test_range_ns = 16 * 10**9  # 16 seconds total range
@@ -159,23 +166,24 @@ class TestFidelity:
         step_ns = 100_000_000  # 100ms in nanoseconds
 
         for ts in range(0, test_range_ns, step_ns):
-            data = {"last_x": 1, "last_y": 1, "button_flags": 0, "button_data": 0}
-            msg = McapMessage(
-                topic="mouse/raw",
-                timestamp=ts,
-                message=orjson.dumps(data),
-                message_type="desktop/RawMouseEvent",
-            )
+            with subtests.test(timestamp=ts):
+                data = {"last_x": 1, "last_y": 1, "button_flags": 0, "button_data": 0}
+                msg = McapMessage(
+                    topic="mouse/raw",
+                    timestamp=ts,
+                    message=orjson.dumps(data),
+                    message_type="desktop/RawMouseEvent",
+                )
 
-            # Round trip
-            encoded, images = encoder.encode(msg)
-            decoded = encoder.decode(encoded, images)
+                # Round trip
+                encoded, images = encoder.encode(msg)
+                decoded = encoder.decode(encoded, images)
 
-            # Within the quantization range, timestamps should be preserved exactly
-            if ts < test_range_ns:
-                assert decoded.timestamp == ts, f"Timestamp changed: {ts} -> {decoded.timestamp}"
+                # Within the quantization range, timestamps should be preserved exactly
+                if ts < test_range_ns:
+                    assert decoded.timestamp == ts, f"Timestamp changed: {ts} -> {decoded.timestamp}"
 
-    def test_screen_fidelity(self, encoder):
+    def test_screen_fidelity(self, encoder, subtests):
         """Screen events should preserve structure and handle utc_ns vs timestamp correctly."""
         test_cases = [
             # (utc_ns, timestamp, source_shape, shape, media_ref, description)
@@ -184,36 +192,37 @@ class TestFidelity:
         ]
 
         for utc_ns, timestamp, source_shape, shape, media_ref, desc in test_cases:
-            original = {
-                "utc_ns": utc_ns,
-                "source_shape": source_shape,
-                "shape": shape,
-                "media_ref": media_ref,
-            }
+            with subtests.test(utc_ns=utc_ns, timestamp=timestamp, desc=desc):
+                original = {
+                    "utc_ns": utc_ns,
+                    "source_shape": source_shape,
+                    "shape": shape,
+                    "media_ref": media_ref,
+                }
 
-            msg = McapMessage(
-                topic="screen",
-                timestamp=timestamp,
-                message=orjson.dumps(original),
-                message_type="desktop/ScreenCaptured",
-            )
+                msg = McapMessage(
+                    topic="screen",
+                    timestamp=timestamp,
+                    message=orjson.dumps(original),
+                    message_type="desktop/ScreenCaptured",
+                )
 
-            # Encode and check image object preservation
-            encoded, images = encoder.encode(msg)
-            assert len(images) == 1
-            assert isinstance(images[0], ScreenCaptured)
-            assert images[0].utc_ns == utc_ns, f"utc_ns not preserved for {desc}"
-            assert list(images[0].source_shape) == source_shape, f"source_shape not preserved for {desc}"
-            assert list(images[0].shape) == shape, f"shape not preserved for {desc}"
-            assert images[0].media_ref.uri == media_ref["uri"], f"media_ref not preserved for {desc}"
+                # Encode and check image object preservation
+                encoded, images = encoder.encode(msg)
+                assert len(images) == 1
+                assert isinstance(images[0], ScreenCaptured)
+                assert images[0].utc_ns == utc_ns, f"utc_ns not preserved for {desc}"
+                assert list(images[0].source_shape) == source_shape, f"source_shape not preserved for {desc}"
+                assert list(images[0].shape) == shape, f"shape not preserved for {desc}"
+                assert images[0].media_ref.uri == media_ref["uri"], f"media_ref not preserved for {desc}"
 
-            # Decode and check message timestamp preservation
-            decoded = encoder.decode(encoded, images)
-            assert decoded.timestamp == timestamp, f"timestamp not preserved for {desc}"
-            assert decoded.topic == "screen"
-            assert decoded.message_type == "desktop/ScreenCaptured"
+                # Decode and check message timestamp preservation
+                decoded = encoder.decode(encoded, images)
+                assert decoded.timestamp == timestamp, f"timestamp not preserved for {desc}"
+                assert decoded.topic == "screen"
+                assert decoded.message_type == "desktop/ScreenCaptured"
 
-    def test_mouse_validation(self, encoder):
+    def test_mouse_validation(self, encoder, subtests):
         """Mouse encoder should validate input ranges and warn for invalid delta values."""
         min_delta, max_delta = encoder.config.mouse_delta_range
 
@@ -226,20 +235,21 @@ class TestFidelity:
         ]
 
         for dx, dy in valid_cases:
-            data = {"last_x": dx, "last_y": dy, "button_flags": 0, "button_data": 0}
-            msg = McapMessage(
-                topic="mouse/raw",
-                timestamp=1000000000,
-                message=orjson.dumps(data),
-                message_type="desktop/RawMouseEvent",
-            )
+            with subtests.test(case="valid", dx=dx, dy=dy):
+                data = {"last_x": dx, "last_y": dy, "button_flags": 0, "button_data": 0}
+                msg = McapMessage(
+                    topic="mouse/raw",
+                    timestamp=1000000000,
+                    message=orjson.dumps(data),
+                    message_type="desktop/RawMouseEvent",
+                )
 
-            # Should work without errors
-            encoded, images = encoder.encode(msg)
-            decoded = encoder.decode(encoded, images)
-            result = orjson.loads(decoded.message)
-            assert result["last_x"] == dx
-            assert result["last_y"] == dy
+                # Should work without errors
+                encoded, images = encoder.encode(msg)
+                decoded = encoder.decode(encoded, images)
+                result = orjson.loads(decoded.message)
+                assert result["last_x"] == dx
+                assert result["last_y"] == dy
 
         # Test invalid values (should issue warnings and clamp values)
         invalid_cases = [
@@ -250,22 +260,23 @@ class TestFidelity:
         ]
 
         for dx, dy in invalid_cases:
-            data = {"last_x": dx, "last_y": dy, "button_flags": 0, "button_data": 0}
-            msg = McapMessage(
-                topic="mouse/raw",
-                timestamp=1000000000,
-                message=orjson.dumps(data),
-                message_type="desktop/RawMouseEvent",
-            )
+            with subtests.test(case="invalid", dx=dx, dy=dy):
+                data = {"last_x": dx, "last_y": dy, "button_flags": 0, "button_data": 0}
+                msg = McapMessage(
+                    topic="mouse/raw",
+                    timestamp=1000000000,
+                    message=orjson.dumps(data),
+                    message_type="desktop/RawMouseEvent",
+                )
 
-            # Should issue warning and work (with clamping)
-            with pytest.warns(UserWarning, match=r"Mouse delta value .* is outside valid range"):
-                encoded, images = encoder.encode(msg)
-                decoded = encoder.decode(encoded, images)
-                result = orjson.loads(decoded.message)
-                # Values should be clamped to valid range
-                assert min_delta <= result["last_x"] <= max_delta
-                assert min_delta <= result["last_y"] <= max_delta
+                # Should issue warning and work (with clamping)
+                with pytest.warns(UserWarning, match=r"Mouse delta value .* is outside valid range"):
+                    encoded, images = encoder.encode(msg)
+                    decoded = encoder.decode(encoded, images)
+                    result = orjson.loads(decoded.message)
+                    # Values should be clamped to valid range
+                    assert min_delta <= result["last_x"] <= max_delta
+                    assert min_delta <= result["last_y"] <= max_delta
 
 
 # =============================================================================
@@ -347,7 +358,7 @@ class TestEdgeCases:
     def encoder(self):
         return HierarchicalEventEncoder()
 
-    def test_extreme_mouse_values(self, encoder):
+    def test_extreme_mouse_values(self, encoder, subtests):
         """Extreme mouse values should issue warnings for deltas and raise errors for button_flags."""
         min_delta, max_delta = encoder.config.mouse_delta_range
 
@@ -362,21 +373,22 @@ class TestEdgeCases:
         ]
 
         for i, data in enumerate(invalid_delta_cases):
-            msg = McapMessage(
-                topic="mouse/raw",
-                timestamp=1000000000 + i,
-                message=orjson.dumps(data),
-                message_type="desktop/RawMouseEvent",
-            )
+            with subtests.test(case="invalid_delta", index=i, data=data):
+                msg = McapMessage(
+                    topic="mouse/raw",
+                    timestamp=1000000000 + i,
+                    message=orjson.dumps(data),
+                    message_type="desktop/RawMouseEvent",
+                )
 
-            # Should warn for out-of-range mouse deltas and work (with clamping)
-            with pytest.warns(UserWarning, match=r"Mouse delta value .* is outside valid range"):
-                encoded, images = encoder.encode(msg)
-                decoded = encoder.decode(encoded, images)
-                result = orjson.loads(decoded.message)
-                # Values should be clamped to valid range
-                assert min_delta <= result["last_x"] <= max_delta
-                assert min_delta <= result["last_y"] <= max_delta
+                # Should warn for out-of-range mouse deltas and work (with clamping)
+                with pytest.warns(UserWarning, match=r"Mouse delta value .* is outside valid range"):
+                    encoded, images = encoder.encode(msg)
+                    decoded = encoder.decode(encoded, images)
+                    result = orjson.loads(decoded.message)
+                    # Values should be clamped to valid range
+                    assert min_delta <= result["last_x"] <= max_delta
+                    assert min_delta <= result["last_y"] <= max_delta
 
         # Test cases with invalid button_flags (should still raise ValueError)
         invalid_button_cases = [
@@ -387,16 +399,19 @@ class TestEdgeCases:
         ]
 
         for i, data in enumerate(invalid_button_cases):
-            msg = McapMessage(
-                topic="mouse/raw",
-                timestamp=1000000000 + i + 100,
-                message=orjson.dumps(data),
-                message_type="desktop/RawMouseEvent",
-            )
+            with subtests.test(case="invalid_button", index=i, data=data):
+                msg = McapMessage(
+                    topic="mouse/raw",
+                    timestamp=1000000000 + i + 100,
+                    message=orjson.dumps(data),
+                    message_type="desktop/RawMouseEvent",
+                )
 
-            # Should raise ValueError for invalid button_flags
-            with pytest.raises(ValueError, match=r"Mouse button_flags value .* is outside valid 3-digit hex range"):
-                encoder.encode(msg)
+                # Should raise ValueError for invalid button_flags
+                with pytest.raises(
+                    ValueError, match=r"Mouse button_flags value .* is outside valid 3-digit hex range"
+                ):
+                    encoder.encode(msg)
 
         # Get valid scroll range from encoder config
         min_scroll, max_scroll = encoder.config.mouse_scroll_range
@@ -409,16 +424,17 @@ class TestEdgeCases:
         ]
 
         for i, data in enumerate(invalid_scroll_cases):
-            msg = McapMessage(
-                topic="mouse/raw",
-                timestamp=2000000000 + i,
-                message=orjson.dumps(data),
-                message_type="desktop/RawMouseEvent",
-            )
+            with subtests.test(case="invalid_scroll", index=i, data=data):
+                msg = McapMessage(
+                    topic="mouse/raw",
+                    timestamp=2000000000 + i,
+                    message=orjson.dumps(data),
+                    message_type="desktop/RawMouseEvent",
+                )
 
-            # Should raise ValueError for invalid scroll values
-            with pytest.raises(ValueError, match=r"Mouse scroll value .* is outside valid range"):
-                encoder.encode(msg)
+                # Should raise ValueError for invalid scroll values
+                with pytest.raises(ValueError, match=r"Mouse scroll value .* is outside valid range"):
+                    encoder.encode(msg)
 
         # Test cases with valid scroll values and flags (should work)
         min_delta_mouse, max_delta_mouse = encoder.config.mouse_delta_range
@@ -435,26 +451,29 @@ class TestEdgeCases:
         ]
 
         for i, data in enumerate(valid_cases):
-            msg = McapMessage(
-                topic="mouse/raw",
-                timestamp=3000000000 + i,
-                message=orjson.dumps(data),
-                message_type="desktop/RawMouseEvent",
-            )
+            with subtests.test(case="valid", index=i, data=data):
+                msg = McapMessage(
+                    topic="mouse/raw",
+                    timestamp=3000000000 + i,
+                    message=orjson.dumps(data),
+                    message_type="desktop/RawMouseEvent",
+                )
 
-            # Should work without errors
-            encoded, images = encoder.encode(msg)
-            decoded = encoder.decode(encoded, images)
-            result = orjson.loads(decoded.message)
+                # Should work without errors
+                encoded, images = encoder.encode(msg)
+                decoded = encoder.decode(encoded, images)
+                result = orjson.loads(decoded.message)
 
-            # Should produce valid results by checking for data fidelity
-            assert result["last_x"] == data["last_x"]
-            assert result["last_y"] == data["last_y"]
-            assert result["button_flags"] == data["button_flags"]
-            expected_data = (data["button_data"] // 120) * 120 if data["button_flags"] & 0x400 else data["button_data"]
-            assert result["button_data"] == expected_data
+                # Should produce valid results by checking for data fidelity
+                assert result["last_x"] == data["last_x"]
+                assert result["last_y"] == data["last_y"]
+                assert result["button_flags"] == data["button_flags"]
+                expected_data = (
+                    (data["button_data"] // 120) * 120 if data["button_flags"] & 0x400 else data["button_data"]
+                )
+                assert result["button_data"] == expected_data
 
-    def test_extreme_timestamps(self, encoder):
+    def test_extreme_timestamps(self, encoder, subtests):
         """Extreme timestamp values should be handled gracefully."""
         extreme_timestamps = [
             0,  # Minimum
@@ -463,23 +482,24 @@ class TestEdgeCases:
         ]
 
         for ts in extreme_timestamps:
-            data = {"last_x": 10, "last_y": 10, "button_flags": 0, "button_data": 0}
-            msg = McapMessage(
-                topic="mouse/raw",
-                timestamp=ts,
-                message=orjson.dumps(data),
-                message_type="desktop/RawMouseEvent",
-            )
+            with subtests.test(timestamp=ts):
+                data = {"last_x": 10, "last_y": 10, "button_flags": 0, "button_data": 0}
+                msg = McapMessage(
+                    topic="mouse/raw",
+                    timestamp=ts,
+                    message=orjson.dumps(data),
+                    message_type="desktop/RawMouseEvent",
+                )
 
-            # Should handle gracefully (may quantize large timestamps)
-            encoded, images = encoder.encode(msg)
-            decoded = encoder.decode(encoded, images)
+                # Should handle gracefully (may quantize large timestamps)
+                encoded, images = encoder.encode(msg)
+                decoded = encoder.decode(encoded, images)
 
-            # Should produce valid timestamp
-            assert isinstance(decoded.timestamp, int)
-            assert decoded.timestamp >= 0
+                # Should produce valid timestamp
+                assert isinstance(decoded.timestamp, int)
+                assert decoded.timestamp >= 0
 
-    def test_extreme_keyboard_values(self, encoder):
+    def test_extreme_keyboard_values(self, encoder, subtests):
         """Extreme keyboard values should be handled gracefully."""
         extreme_cases = [
             # Extreme VK codes
@@ -495,22 +515,23 @@ class TestEdgeCases:
         ]
 
         for event_type, vk in extreme_cases:
-            data = {"event_type": event_type, "vk": vk}
-            msg = McapMessage(
-                topic="keyboard",
-                timestamp=4000000000 + vk,
-                message=orjson.dumps(data),
-                message_type="desktop/KeyboardEvent",
-            )
+            with subtests.test(event_type=event_type, vk=vk):
+                data = {"event_type": event_type, "vk": vk}
+                msg = McapMessage(
+                    topic="keyboard",
+                    timestamp=4000000000 + vk,
+                    message=orjson.dumps(data),
+                    message_type="desktop/KeyboardEvent",
+                )
 
-            # Should handle gracefully
-            encoded, images = encoder.encode(msg)
-            decoded = encoder.decode(encoded, images)
-            result = orjson.loads(decoded.message)
+                # Should handle gracefully
+                encoded, images = encoder.encode(msg)
+                decoded = encoder.decode(encoded, images)
+                result = orjson.loads(decoded.message)
 
-            # Should produce valid results
-            assert result["event_type"] == event_type
-            assert isinstance(result["vk"], int)
+                # Should produce valid results
+                assert result["event_type"] == event_type
+                assert isinstance(result["vk"], int)
 
     def test_zero_values(self, encoder):
         """Zero values should be handled correctly."""
@@ -532,7 +553,7 @@ class TestEdgeCases:
         assert result["button_flags"] == 0
         assert result["button_data"] == 0
 
-    def test_extreme_screen_values(self, encoder):
+    def test_extreme_screen_values(self, encoder, subtests):
         """Extreme screen values should be handled gracefully."""
         extreme_cases = [
             # Extreme resolutions
@@ -560,22 +581,23 @@ class TestEdgeCases:
         ]
 
         for i, data in enumerate(extreme_cases):
-            msg = McapMessage(
-                topic="screen",
-                timestamp=6000000000 + i,
-                message=orjson.dumps(data),
-                message_type="desktop/ScreenCaptured",
-            )
+            with subtests.test(index=i, utc_ns=data["utc_ns"], uri=data["media_ref"]["uri"]):
+                msg = McapMessage(
+                    topic="screen",
+                    timestamp=6000000000 + i,
+                    message=orjson.dumps(data),
+                    message_type="desktop/ScreenCaptured",
+                )
 
-            # Should handle gracefully without crashing
-            encoded, images = encoder.encode(msg)
-            decoded = encoder.decode(encoded, images)
+                # Should handle gracefully without crashing
+                encoded, images = encoder.encode(msg)
+                decoded = encoder.decode(encoded, images)
 
-            # Should produce valid results
-            assert len(images) == 1
-            assert isinstance(images[0], ScreenCaptured)
-            assert isinstance(decoded.timestamp, int)
-            assert decoded.topic == "screen"
+                # Should produce valid results
+                assert len(images) == 1
+                assert isinstance(images[0], ScreenCaptured)
+                assert isinstance(decoded.timestamp, int)
+                assert decoded.topic == "screen"
 
     def test_basic_functionality(self, encoder):
         """Basic encoder functionality should work."""
