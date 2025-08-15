@@ -65,9 +65,7 @@ class ElementFactory:
             Element("d3d11screencapturesrc", properties)
             >> Element("videorate", {"drop-only": "true"})
             >> Element("d3d11scale")
-            >> ElementFactory.capsfilter(
-                caps="video/x-raw(memory:D3D11Memory)" + framerate + size + ",pixel-aspect-ratio=1/1"
-            )
+            >> ElementFactory.capsfilter(caps="video/x-raw(memory:D3D11Memory)" + framerate + size)
         )
 
     @staticmethod
