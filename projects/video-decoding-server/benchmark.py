@@ -62,12 +62,10 @@ def extract_frames_api(
     ]
 
     # Convert to numpy arrays
-    video_path_data = np.array([path.encode() for path in video_paths], dtype=np.object_)
-    time_sec_data = np.array(time_secs, dtype=np.float32)
+    # Convert to numpy arrays and reshape
+    video_path_data = np.array([path.encode() for path in video_paths], dtype=np.object_).reshape(batch_size, 1)
+    time_sec_data = np.array(time_secs, dtype=np.float32).reshape(batch_size, 1)
 
-    # Add dummy dimension
-    video_path_data = video_path_data[:, np.newaxis]
-    time_sec_data = time_sec_data[:, np.newaxis]
 
     inputs[0].set_data_from_numpy(video_path_data)
     inputs[1].set_data_from_numpy(time_sec_data)
