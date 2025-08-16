@@ -254,16 +254,17 @@ class VideoReader:
         """Yield frames at specific time points."""
         queries = sorted([(s, i) for i, s in enumerate(seconds)])
         frames: list[av.VideoFrame] = [None] * len(queries)  # type: ignore
-        start_pts, end_pts = queries[0][0], queries[-1][0]
+        start_pts = queries[0][0]
         found = 0
 
-        for frame in self.read_frames(start_pts, end_pts):
+        for frame in self.read_frames(start_pts):  # do not specify end_pts to avoid early termination
             while found < len(queries) and frame.time >= queries[found][0]:
                 frames[queries[found][1]] = frame
                 found += 1
             if found >= len(queries):
                 break
 
+        assert all(f is not None for f in frames)
         return frames
 
     def _yield_frame_range(self, start_pts, end_pts):
