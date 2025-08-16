@@ -116,10 +116,12 @@ def _explicit_cleanup(container: Optional["MockedInputContainer" | PathLike] = N
             _explicit_cleanup(cont)
     else:
         with get_cache_context() as cache:
-            if isinstance(container, (str, bytes)) or hasattr(container, "__fspath__"):
+            if isinstance(container, PathLike):
                 container = cache.get(container)
                 if container is None:
                     return
+            # At this point, container must be MockedInputContainer
+            assert isinstance(container, MockedInputContainer), f"Expected MockedInputContainer, got {type(container)}"
             logger.info(f"Cleaning up cached video container for {container.file_path}")
             container._container.close()
             cache.pop(container.file_path, None)
