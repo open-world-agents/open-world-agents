@@ -169,7 +169,7 @@ class TritonPythonModel:
             except Exception as e:
                 error_msg = f"Failed to process request: {str(e)}"
                 responses.append(self._create_error_response(error_msg))
-                logger.error(f"Error processing request: {traceback.format_exc()!r}")
+                logger.error(f"Error processing request:\n{traceback.format_exc()}")
 
         return responses
 
