@@ -216,7 +216,6 @@ class VideoReader:
             keep_av_open: Keep AV container open in cache instead of forcing closure
         """
         self.video_path = _normalize_video_path(video_path)
-        self.keep_av_open = keep_av_open
         self.container = cached_av.open(self.video_path, "r", keep_av_open=keep_av_open)
 
     def read_frames(
