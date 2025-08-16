@@ -12,11 +12,11 @@
 # exclude-newer = "2025-08-01T12:00:00Z"
 # ///
 import argparse
-import cv2
 import random
-from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from pathlib import Path
 
+import cv2
 from rich import print
 from tqdm import tqdm
 
@@ -37,12 +37,12 @@ def test_target_fps(mp4_file_path: Path) -> None:
     print(f"opencv {frame_count=}")
 
     # VideoReader without target fps
-    with VideoReader(mp4_file_path, force_close=True) as reader:
+    with VideoReader(mp4_file_path, keep_av_open=True) as reader:
         frame_count = sum(1 for _ in reader.read_frames())
         print(f"no target_fps {frame_count=}")
 
     # Convert VFR to CFR
-    with VideoReader(mp4_file_path, force_close=True) as reader:
+    with VideoReader(mp4_file_path, keep_av_open=True) as reader:
         with VideoWriter(mkv_file_path, fps=TARGET_FPS, vfr=False) as writer:
             frame_count = 0
             for frame in reader.read_frames(fps=TARGET_FPS):
@@ -55,7 +55,7 @@ def process_single_file(mp4_file_path: Path) -> None:
     """Convert a single mp4 file to mkv format with constant frame rate."""
     mkv_file_path = mp4_file_path.with_suffix(".mkv")
 
-    with VideoReader(mp4_file_path, force_close=True) as reader:
+    with VideoReader(mp4_file_path, keep_av_open=True) as reader:
         with VideoWriter(mkv_file_path, fps=TARGET_FPS, vfr=False) as writer:
             for frame in reader.read_frames(fps=TARGET_FPS):
                 writer.write_frame(frame.to_ndarray(format="rgb24"))

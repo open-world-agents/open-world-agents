@@ -47,14 +47,14 @@ def load_image_as_bgra(path_or_uri: str) -> np.ndarray:
         raise ValueError(f"Failed to load image from {path_or_uri}: {e}") from e
 
 
-def load_video_frame_as_bgra(path_or_url: str, pts_ns: int, force_close: bool = False) -> np.ndarray:
+def load_video_frame_as_bgra(path_or_url: str, pts_ns: int, keep_av_open: bool = False) -> np.ndarray:
     """
     Load video frame and return as BGRA numpy array.
 
     Args:
         path_or_url: File path or URL to video
         pts_ns: Presentation timestamp in nanoseconds
-        force_close: Force complete closure instead of using cache
+        keep_av_open: Keep AV container open in cache instead of forcing closure
 
     Returns:
         BGRA numpy array
@@ -77,7 +77,7 @@ def load_video_frame_as_bgra(path_or_url: str, pts_ns: int, force_close: bool = 
         # Use VideoReader
         pts_fraction = Fraction(pts_ns, TimeUnits.SECOND)
 
-        with VideoReader(path_or_url, force_close=force_close) as reader:
+        with VideoReader(path_or_url, keep_av_open=keep_av_open) as reader:
             frame = reader.read_frame(pts=pts_fraction)
             rgb_array = frame.to_ndarray(format="rgb24")
             return cv2.cvtColor(rgb_array, cv2.COLOR_RGB2BGRA)

@@ -560,7 +560,7 @@ class TestScreenCaptured:
 
     @pytest.mark.network
     def test_remote_video_caching_behavior(self):
-        """Test remote video frame caching and force_close functionality."""
+        """Test remote video frame caching and keep_av_open functionality."""
         test_url = "https://www.sample-videos.com/video321/mp4/240/big_buck_bunny_240p_2mb.mp4"
         pts_ns = 1_000_000_000  # 1 second
 
@@ -578,9 +578,9 @@ class TestScreenCaptured:
         assert np.array_equal(frame_arr, frame_arr2), "Subsequent calls should return cached frame"
         assert frame_arr2 is screen_msg.frame_arr, "Should return same object reference"
 
-        # === Test Force Close Parameter ===
-        frame_arr3 = screen_msg.load_frame_array(force_close=True)
-        assert frame_arr3.shape == frame_arr.shape, "Force close should return same shape"
+        # === Test Keep AV Open Parameter ===
+        frame_arr3 = screen_msg.load_frame_array(keep_av_open=True)
+        assert frame_arr3.shape == frame_arr.shape, "Keep AV open should return same shape"
 
     def test_remote_serialization_roundtrip(self):
         """Test JSON serialization with remote media reference."""

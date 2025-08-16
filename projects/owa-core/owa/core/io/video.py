@@ -209,14 +209,14 @@ class VideoReader:
     Supports both local video files and remote URLs (HTTP/HTTPS).
     """
 
-    def __init__(self, video_path: PathLike, force_close: bool = False):
+    def __init__(self, video_path: PathLike, keep_av_open: bool = False):
         """
         Args:
             video_path: Input video file path or URL (HTTP/HTTPS)
-            force_close: Force complete closure instead of using cache
+            keep_av_open: Keep AV container open in cache instead of forcing closure
         """
         self.video_path = _normalize_video_path(video_path)
-        self.force_close = force_close
+        self.keep_av_open = keep_av_open
         self.container = cached_av.open(self.video_path, "r")
 
     def read_frames(
@@ -305,7 +305,7 @@ class VideoReader:
     def close(self) -> None:
         """Release container reference or force close."""
         self.container.close()
-        if self.force_close:
+        if not self.keep_av_open:
             cached_av.cleanup_cache(self.container)
 
     def __enter__(self) -> "VideoReader":

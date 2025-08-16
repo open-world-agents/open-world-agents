@@ -149,7 +149,7 @@ class ScreenCaptured(OWAMessage):
         return super().model_dump_json(**kwargs)
 
     # Core methods
-    def load_frame_array(self, force_close: bool = False) -> np.ndarray:
+    def load_frame_array(self, keep_av_open: bool = False) -> np.ndarray:
         """Load frame data from media reference as BGRA numpy array."""
         if self.frame_arr is not None:
             return self.frame_arr
@@ -159,7 +159,7 @@ class ScreenCaptured(OWAMessage):
 
         # Load based on media type
         if self.media_ref.is_video:
-            self.frame_arr = load_video_frame_as_bgra(self.media_ref.uri, self.media_ref.pts_ns, force_close)
+            self.frame_arr = load_video_frame_as_bgra(self.media_ref.uri, self.media_ref.pts_ns, keep_av_open)
         else:
             self.frame_arr = load_image_as_bgra(self.media_ref.uri)
 
