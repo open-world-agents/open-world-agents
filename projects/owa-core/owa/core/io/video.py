@@ -217,7 +217,7 @@ class VideoReader:
         """
         self.video_path = _normalize_video_path(video_path)
         self.keep_av_open = keep_av_open
-        self.container = cached_av.open(self.video_path, "r")
+        self.container = cached_av.open(self.video_path, "r", keep_av_open=keep_av_open)
 
     def read_frames(
         self, start_pts: SECOND_TYPE = 0.0, end_pts: Optional[SECOND_TYPE] = None, fps: Optional[float] = None
@@ -303,10 +303,8 @@ class VideoReader:
         raise ValueError(f"Frame not found at {float(pts):.2f}s in {self.video_path}")
 
     def close(self) -> None:
-        """Release container reference or force close."""
+        """Release container reference."""
         self.container.close()
-        if not self.keep_av_open:
-            cached_av.cleanup_cache(self.container)
 
     def __enter__(self) -> "VideoReader":
         return self

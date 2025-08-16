@@ -61,18 +61,25 @@ def get_cache_context():
 
 
 @overload
-def open(file: PathLike, mode: Literal["r"], **kwargs) -> "MockedInputContainer": ...
+def open(file: PathLike, mode: Literal["r"], *, keep_av_open: bool = False, **kwargs) -> "MockedInputContainer": ...
 
 
 @overload
 def open(file: PathLike, mode: Literal["w"], **kwargs) -> av.container.OutputContainer: ...
 
 
-def open(file: PathLike, mode: Literal["r", "w"], **kwargs):
-    """Open video file with caching for read mode, direct av.open for write mode."""
+def open(file: PathLike, mode: Literal["r", "w"], *, keep_av_open: bool = False, **kwargs):
+    """Open video file with caching for read mode, direct av.open for write mode.
+
+    Args:
+        file: Path to video file
+        mode: Open mode ('r' for read, 'w' for write)
+        keep_av_open: If True, keep container in cache when closed. If False, force cleanup.
+        **kwargs: Additional arguments passed to av.open for write mode
+    """
     if mode == "r":
         _implicit_cleanup()
-        return _retrieve_cache(file)
+        return _retrieve_cache(file, keep_av_open=keep_av_open)
     else:
         return av.open(file, mode, **kwargs)
 
@@ -82,7 +89,7 @@ def cleanup_cache(container: Optional["MockedInputContainer" | PathLike] = None)
     _explicit_cleanup(container=container)
 
 
-def _retrieve_cache(file: PathLike):
+def _retrieve_cache(file: PathLike, *, keep_av_open: bool = False):
     """Get or create cached container and update usage tracking."""
     with get_cache_context() as cache:
         if file not in cache:
@@ -93,6 +100,7 @@ def _retrieve_cache(file: PathLike):
         container = cache[file]
         container.refs += 1
         container.last_used = time.time()
+        container.keep_av_open = keep_av_open  # Set the cache preference
         return container
 
 
@@ -155,15 +163,20 @@ class MockedInputContainer(InputContainerMixin):
         self._container: av.container.InputContainer = av.open(file, "r")
         self.refs = 0  # Reference count for tracking usage
         self.last_used = time.time()
+        self.keep_av_open = False  # Default to not keeping open
 
     def __enter__(self) -> "MockedInputContainer":
         return self
 
     def close(self):
-        """Decrement reference count and cleanup if no longer referenced."""
+        """Decrement reference count and cleanup if no longer referenced or if keep_av_open=False."""
         self.refs = max(0, self.refs - 1)
         if self.refs == 0:
             logger.info(f"Ref count reached 0 for cached video container for {self.file_path}")
+            # If keep_av_open is False, force cleanup immediately
+            if not self.keep_av_open:
+                logger.info(f"Force cleaning up cached video container for {self.file_path} (keep_av_open=False)")
+                _explicit_cleanup(self)
 
 
 __all__ = ["open", "cleanup_cache"]
