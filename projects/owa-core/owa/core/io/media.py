@@ -47,7 +47,7 @@ def load_image_as_bgra(path_or_uri: str) -> np.ndarray:
         raise ValueError(f"Failed to load image from {path_or_uri}: {e}") from e
 
 
-def load_video_frame_as_bgra(path_or_url: str, pts_ns: int, keep_av_open: bool = False) -> np.ndarray:
+def load_video_frame_as_bgra(path_or_url: str, pts_ns: int, *, keep_av_open: bool = False) -> np.ndarray:
     """
     Load video frame and return as BGRA numpy array.
 

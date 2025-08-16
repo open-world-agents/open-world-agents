@@ -149,7 +149,7 @@ class ScreenCaptured(OWAMessage):
         return super().model_dump_json(**kwargs)
 
     # Core methods
-    def load_frame_array(self, keep_av_open: bool = False) -> np.ndarray:
+    def load_frame_array(self, *, keep_av_open: bool = False) -> np.ndarray:
         """Load frame data from media reference as BGRA numpy array."""
         if self.frame_arr is not None:
             return self.frame_arr
@@ -159,7 +159,9 @@ class ScreenCaptured(OWAMessage):
 
         # Load based on media type
         if self.media_ref.is_video:
-            self.frame_arr = load_video_frame_as_bgra(self.media_ref.uri, self.media_ref.pts_ns, keep_av_open)
+            self.frame_arr = load_video_frame_as_bgra(
+                self.media_ref.uri, self.media_ref.pts_ns, keep_av_open=keep_av_open
+            )
         else:
             self.frame_arr = load_image_as_bgra(self.media_ref.uri)
 
@@ -180,19 +182,19 @@ class ScreenCaptured(OWAMessage):
         self.media_ref = MediaRef(uri=f"data:image/{format};base64,{base64_data}")
         return self
 
-    def to_rgb_array(self) -> np.ndarray:
+    def to_rgb_array(self, *, keep_av_open: bool = False) -> np.ndarray:
         """Return frame as RGB numpy array."""
-        bgra_array = self.load_frame_array()
+        bgra_array = self.load_frame_array(keep_av_open=keep_av_open)
         return cv2.cvtColor(bgra_array, cv2.COLOR_BGRA2RGB)
 
-    def to_pil_image(self):
+    def to_pil_image(self, *, keep_av_open: bool = False):
         """Convert frame to PIL Image."""
         try:
             from PIL import Image
         except ImportError as e:
             raise ImportError("Pillow required for PIL conversion") from e
 
-        rgb_array = self.to_rgb_array()
+        rgb_array = self.to_rgb_array(keep_av_open=keep_av_open)
         return Image.fromarray(rgb_array, mode="RGB")
 
     def resolve_relative_path(self, base_path: str) -> Self:

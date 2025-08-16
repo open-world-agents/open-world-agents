@@ -209,7 +209,7 @@ class VideoReader:
     Supports both local video files and remote URLs (HTTP/HTTPS).
     """
 
-    def __init__(self, video_path: PathLike, keep_av_open: bool = False):
+    def __init__(self, video_path: PathLike, *, keep_av_open: bool = False):
         """
         Args:
             video_path: Input video file path or URL (HTTP/HTTPS)

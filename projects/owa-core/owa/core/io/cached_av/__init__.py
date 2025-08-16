@@ -39,16 +39,17 @@ class _CacheContext:
         """Check if we're in a different thread and clear cache if needed."""
         current_thread_id = threading.get_ident()
         if current_thread_id != self._thread_id:
+            # Huge performance degradation observed when accessing cache from different threads.
+            # Prefer to crash rather than introduce hard-to-debug issues.
+            if len(self._cache) > 0:
+                raise RuntimeError("Thread change detected, cannot access cache")
+
             logger.info(f"Thread change detected (from {self._thread_id} to {current_thread_id}), clearing cache")
             # Clear the cache since PyAV/FFmpeg objects are not thread-safe
             # Don't close containers as they may still be in use - just clear the cache
             self._cache.clear()
             self._thread_id = current_thread_id
             gc.collect()
-
-            # Huge performance degradation observed when accessing cache from different threads.
-            # Prefer to crash rather than introduce hard-to-debug issues.
-            raise RuntimeError("Thread change detected, cannot access cache")
 
 
 # Global cache context instance
