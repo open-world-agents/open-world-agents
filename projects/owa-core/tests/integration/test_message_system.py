@@ -71,30 +71,17 @@ class TestMessageSystemIntegration:
         assert MESSAGES["desktop/WindowInfo"] is WindowInfo
         assert MESSAGES["desktop/ScreenCaptured"] is ScreenCaptured
 
-    def test_backward_compatibility(self):
-        """Test backward compatibility with legacy message imports."""
-        # Test legacy imports work with deprecation warnings
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
+    def test_message_registry_access(self):
+        """Test that messages can be accessed via the registry."""
+        # Test registry access works
+        RegistryKeyboardEvent = MESSAGES["desktop/KeyboardEvent"]
 
-            # Import the class (this should trigger warning)
-            from owa.env.desktop.msg import KeyboardEvent as LegacyKeyboardEvent
+        # Create instance via registry
+        event = RegistryKeyboardEvent(event_type="press", vk=65)
 
-            # Create instance (this should also trigger warning)
-            event = LegacyKeyboardEvent(event_type="press", vk=65)
-
-            # Should have issued deprecation warning (at least one)
-            assert len(w) >= 1
-            deprecation_warnings = [warning for warning in w if issubclass(warning.category, DeprecationWarning)]
-            assert len(deprecation_warnings) >= 1
-            assert "deprecated" in str(deprecation_warnings[0].message)
-
-            # Should create new-style message
-            assert event.event_type == "press"
-
-            # Should be same class as registry version
-            RegistryKeyboardEvent = MESSAGES["desktop/KeyboardEvent"]
-            assert type(event) is RegistryKeyboardEvent
+        # Should create new-style message
+        assert event.event_type == "press"
+        assert event.vk == 65
 
     def test_message_schema_consistency(self):
         """Test that message schemas are consistent across access methods."""
@@ -104,19 +91,8 @@ class TestMessageSystemIntegration:
         # Get message via direct import
         from owa.msgs.desktop.keyboard import KeyboardEvent as DirectKeyboardEvent
 
-        # Get message via legacy import (with warnings suppressed)
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            from owa.env.desktop.msg import KeyboardEvent as LegacyKeyboardEvent
-
         # All should be the same class
         assert RegistryKeyboardEvent is DirectKeyboardEvent
-
-        # Legacy should create instances of the same class
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            legacy_event = LegacyKeyboardEvent(event_type="press", vk=65)
-        assert type(legacy_event) is RegistryKeyboardEvent
 
         # Schemas should be identical
         registry_schema = RegistryKeyboardEvent.get_schema()
