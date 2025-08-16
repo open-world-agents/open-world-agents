@@ -15,6 +15,7 @@ import av
 import numpy as np
 from loguru import logger
 
+from ..utils.typing import PathLike
 from . import cached_av
 
 # Constants
@@ -23,7 +24,6 @@ DUPLICATE_TOLERANCE_SECOND: Fraction = Fraction(1, 120)
 # Type aliases
 SECOND_TYPE = Union[float, Fraction]
 PTSUnit = Literal["pts", "sec"]
-VideoPathType = Union[str, os.PathLike, Path]  # Supports both local paths and URLs
 
 # Garbage collection counters for PyAV reference cycles
 # Reference: https://github.com/pytorch/vision/blob/428a54c96e82226c0d2d8522e9cbfdca64283da0/torchvision/io/video.py#L53-L55
@@ -31,7 +31,7 @@ _CALLED_TIMES = 0
 GC_COLLECTION_INTERVAL = 10
 
 
-def _normalize_video_path(video_path: VideoPathType) -> Union[str, Path]:
+def _normalize_video_path(video_path: PathLike) -> Union[str, Path]:
     """
     Normalize video path for use with PyAV.
 
@@ -209,15 +209,15 @@ class VideoReader:
     Supports both local video files and remote URLs (HTTP/HTTPS).
     """
 
-    def __init__(self, video_path: VideoPathType, force_close: bool = False):
+    def __init__(self, video_path: PathLike, *, keep_av_open: bool = False):
         """
         Args:
             video_path: Input video file path or URL (HTTP/HTTPS)
-            force_close: Force complete closure instead of using cache
+            keep_av_open: Keep AV container open in cache instead of forcing closure
         """
         self.video_path = _normalize_video_path(video_path)
-        self.force_close = force_close
-        self.container = cached_av.open(self.video_path, "r")
+        self.keep_av_open = keep_av_open
+        self.container = cached_av.open(self.video_path, "r", keep_av_open=keep_av_open)
 
     def read_frames(
         self, start_pts: SECOND_TYPE = 0.0, end_pts: Optional[SECOND_TYPE] = None, fps: Optional[float] = None
@@ -237,21 +237,45 @@ class VideoReader:
 
         end_pts = float(end_pts) if end_pts is not None else float("inf")
 
-        # Seek to start position
-        timestamp_ts = int(av.time_base * float(start_pts))
-        self.container.seek(timestamp_ts)
-
         if fps is None:
             # Yield all frames in interval
-            yield from self._yield_all_frames(float(start_pts), end_pts)
+            yield from self._yield_frame_range(float(start_pts), end_pts)
         else:
             # Sample at specified fps
             if fps <= 0:
                 raise ValueError("fps must be positive")
-            yield from self._yield_sampled_frames(float(start_pts), end_pts, fps)
+            yield from self._yield_frame_rated(float(start_pts), end_pts, fps)
 
-    def _yield_all_frames(self, start_pts, end_pts):
+    def read_frames_at(self, seconds: list[float]) -> list[av.VideoFrame]:
+        """Return frames at specific time points."""
+        if not seconds:
+            return []
+
+        queries = sorted([(s, i) for i, s in enumerate(seconds)])
+        frames: list[av.VideoFrame] = [None] * len(queries)  # type: ignore
+        start_pts = queries[0][0]
+        found = 0
+
+        for frame in self.read_frames(start_pts):  # do not specify end_pts to avoid early termination
+            while found < len(queries) and frame.time >= queries[found][0]:
+                frames[queries[found][1]] = frame
+                found += 1
+            if found >= len(queries):
+                break
+
+        if any(f is None for f in frames):
+            missing_seconds = [s for i, s in enumerate(seconds) if frames[i] is None]
+            raise ValueError(f"Could not find frames for the following timestamps: {missing_seconds}")
+
+        return frames
+
+    def _yield_frame_range(self, start_pts, end_pts):
         """Yield all frames in time range."""
+        # Seek to start position
+        timestamp_ts = int(av.time_base * start_pts)
+        self.container.seek(timestamp_ts)
+
+        # Yield frames in interval
         for frame in self.container.decode(video=0):
             if frame.time is None:
                 raise ValueError("Frame time is None")
@@ -261,29 +285,16 @@ class VideoReader:
                 break
             yield frame
 
-    def _yield_sampled_frames(self, start_pts, end_pts, fps):
-        """Yield frames sampled at specified fps."""
+    def _yield_frame_rated(self, start_pts, end_pts, fps):
+        """Yield frames sampled at specified fps with proper VFR gap handling."""
         interval = 1.0 / fps
         next_time = start_pts
-        video_stream = self.container.streams.video[0]
 
-        for frame in self.container.decode(video=0):
-            if frame.time is None:
-                raise ValueError("Frame time is None")
-            if frame.time < start_pts:
+        for frame in self._yield_frame_range(start_pts, end_pts):
+            if frame.time < next_time:
                 continue
-            if frame.time > end_pts:
-                break
-
-            if frame.time + 1e-8 >= next_time:
-                frame.duration = interval / video_stream.time_base
-                yield frame
-                next_time += interval
-
-                # Handle VFR gaps
-                if frame.time > next_time:
-                    missed = int((frame.time - next_time) // interval) + 1
-                    next_time += missed * interval
+            yield frame
+            next_time += interval
 
     def read_frame(self, pts: SECOND_TYPE = 0.0) -> av.VideoFrame:
         """Read single frame at or after given timestamp."""
@@ -292,10 +303,8 @@ class VideoReader:
         raise ValueError(f"Frame not found at {float(pts):.2f}s in {self.video_path}")
 
     def close(self) -> None:
-        """Release container reference or force close."""
+        """Release container reference."""
         self.container.close()
-        if self.force_close:
-            cached_av.cleanup_cache(self.container)
 
     def __enter__(self) -> "VideoReader":
         return self

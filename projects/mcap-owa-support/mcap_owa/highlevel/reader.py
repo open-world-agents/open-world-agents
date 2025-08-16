@@ -2,19 +2,17 @@ import functools
 import io
 import re
 import warnings
-from pathlib import Path
-from typing import Iterable, Iterator, Optional, TypeAlias, Union
+from typing import Iterable, Iterator, Optional
 
 import requests
 from mcap.reader import McapReader, make_reader
+from owa.core.utils.typing import PathLike
 from packaging import version
 from packaging.specifiers import SpecifierSet
 
 from .. import __version__
 from ..decoder import DecoderFactory
 from .mcap_msg import McapMessage
-
-PathType: TypeAlias = Union[str, Path]
 
 
 class OWAMcapReader:
@@ -25,7 +23,7 @@ class OWAMcapReader:
     in an MCAP file, with support for both local filesystem paths and remote HTTP/HTTPS URLs.
     """
 
-    def __init__(self, file_path: PathType, *, decode_args: dict = {}):
+    def __init__(self, file_path: PathLike, *, decode_args: dict = {}):
         """
         Initialize an OWA MCAP reader.
 
