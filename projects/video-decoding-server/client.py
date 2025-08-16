@@ -25,8 +25,7 @@ def extract_frame(requests: Tuple[str, float], server_url: str = "127.0.0.1:8000
     """
     client = httpclient.InferenceServerClient(url=server_url)
 
-    video_paths = [str(requests[0])]
-    time_secs = [requests[1]]
+    video_path, time_sec = requests
 
     inputs = [
         httpclient.InferInput("video_path", [1, 1], "BYTES"),
@@ -34,12 +33,8 @@ def extract_frame(requests: Tuple[str, float], server_url: str = "127.0.0.1:8000
     ]
 
     # Convert to numpy arrays
-    video_path_data = np.array([path.encode() for path in video_paths], dtype=np.object_)
-    time_sec_data = np.array(time_secs, dtype=np.float32)
-
-    # Add dummy dimension
-    video_path_data = video_path_data[:, np.newaxis]
-    time_sec_data = time_sec_data[:, np.newaxis]
+    video_path_data = np.array([[video_path.encode()]], dtype=np.object_)
+    time_sec_data = np.array([[time_sec]], dtype=np.float32)
 
     inputs[0].set_data_from_numpy(video_path_data)
     inputs[1].set_data_from_numpy(time_sec_data)
