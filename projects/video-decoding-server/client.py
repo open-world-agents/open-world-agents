@@ -5,7 +5,7 @@ Simple client for video frame extraction using Triton Inference Server.
 
 import argparse
 import sys
-from typing import List, Tuple, Union
+from typing import Tuple
 
 import cv2
 import numpy as np
