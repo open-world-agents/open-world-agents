@@ -247,7 +247,10 @@ class VideoReader:
             yield from self._yield_frame_rated(float(start_pts), end_pts, fps)
 
     def read_frames_at(self, seconds: list[float]) -> list[av.VideoFrame]:
-        """Yield frames at specific time points."""
+        """Return frames at specific time points."""
+        if not seconds:
+            return []
+
         queries = sorted([(s, i) for i, s in enumerate(seconds)])
         frames: list[av.VideoFrame] = [None] * len(queries)  # type: ignore
         start_pts = queries[0][0]
@@ -260,7 +263,10 @@ class VideoReader:
             if found >= len(queries):
                 break
 
-        assert all(f is not None for f in frames)
+        if any(f is None for f in frames):
+            missing_seconds = [s for i, s in enumerate(seconds) if frames[i] is None]
+            raise ValueError(f"Could not find frames for the following timestamps: {missing_seconds}")
+
         return frames
 
     def _yield_frame_range(self, start_pts, end_pts):
