@@ -7,6 +7,8 @@ TODO: batch process for more efficient processing
 import gc
 import json
 import os
+import traceback
+from typing import Generator, Tuple
 
 import numpy as np
 import triton_python_backend_utils as pb_utils
@@ -125,35 +127,49 @@ class TritonPythonModel:
         # Initialize the video reader
         self.video_reader = VideoReader(backend)
 
+        # Log batch configuration
+        max_batch_size = self.model_config.get("max_batch_size", 0)
+        logger.info(f"Video decoder initialized with max_batch_size: {max_batch_size}, backend: {backend}")
+
+    def _process_request(self, request) -> Generator[Tuple[str, float], None, None]:
+        """Extract video path and timestamp from a single request."""
+        video_path_tensor = pb_utils.get_input_tensor_by_name(request, "video_path")
+        time_sec_tensor = pb_utils.get_input_tensor_by_name(request, "time_sec")
+
+        video_path = video_path_tensor.as_numpy().squeeze(axis=-1)
+        time_sec = time_sec_tensor.as_numpy().squeeze(axis=-1)
+
+        for i in range(video_path.shape[0]):
+            yield video_path[i].decode("utf-8"), float(time_sec[i])
+
+    def _create_response(self, frame_array):
+        """Create a response tensor from frame array."""
+        output_tensor = pb_utils.Tensor("frame", frame_array.astype(self.output_dtype))
+        return pb_utils.InferenceResponse(output_tensors=[output_tensor])
+
+    def _create_error_response(self, error_msg):
+        """Create an error response."""
+        error = pb_utils.TritonError(error_msg)
+        return pb_utils.InferenceResponse(output_tensors=[], error=error)
+
     def execute(self, requests):
-        """
-        Process inference requests.
-        """
+        """Process inference requests with batch processing."""
+        batch_size = len(requests)
+        logger.info(f"Processing batch of {batch_size} requests")
+
         responses = []
-
         for request in requests:
-            # Get input tensors
-            video_path_tensor = pb_utils.get_input_tensor_by_name(request, "video_path")
-            time_sec_tensor = pb_utils.get_input_tensor_by_name(request, "time_sec")
-
-            # Convert input tensors to Python types
-            video_path = video_path_tensor.as_numpy()[0].decode("utf-8")
-            time_sec = float(time_sec_tensor.as_numpy()[0])
-
             try:
-                # Extract frame from video
-                frame_array = self.video_reader.get_frame_at_time(video_path, time_sec)
-
-                # Create output tensor
-                output_tensor = pb_utils.Tensor("frame", frame_array.astype(self.output_dtype))
-
-                # Create and append response
-                responses.append(pb_utils.InferenceResponse(output_tensors=[output_tensor]))
-
+                frames = []
+                for video_path, time_sec in self._process_request(request):  # batch processing
+                    frame_array = self.video_reader.get_frame_at_time(video_path, time_sec)
+                    frames.append(frame_array)
+                frames = np.stack(frames, axis=0)
+                responses.append(self._create_response(frames))
             except Exception as e:
-                error = pb_utils.TritonError(str(e))
-                responses.append(pb_utils.InferenceResponse(output_tensors=[], error=error))
-                logger.error(f"Failed to process the request(s), message: {str(e)}")
+                error_msg = f"Failed to process request: {str(e)}"
+                responses.append(self._create_error_response(error_msg))
+                logger.error(f"Error processing request: {traceback.format_exc()!r}")
 
         return responses
 

@@ -1,6 +1,6 @@
 name: "video_decoder"
 backend: "python"
-max_batch_size: 0
+max_batch_size: 8
 
 input [
   {
@@ -25,11 +25,11 @@ output [
 
 instance_group [
   {
-    count: 24
+    count: 16
     kind: KIND_CPU
   }
 ]
 
 dynamic_batching {
-  max_queue_delay_microseconds: 100
+  max_queue_delay_microseconds: 5000
 }
