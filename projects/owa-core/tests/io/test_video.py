@@ -26,7 +26,7 @@ def test_video_writer_vfr(tmp_path):
     assert video_path.exists(), "VFR video file should be created"
 
     # Strict VFR timestamp verification
-    with VideoReader(video_path, keep_av_open=True) as reader:
+    with VideoReader(video_path) as reader:
         read_timestamps = []
         frame_colors = []
         for frame in reader.read_frames():
@@ -111,7 +111,7 @@ def test_video_writer_cfr(tmp_path):
     assert video_path.exists(), "CFR video file should be created"
 
     # Verify CFR timestamps are regular
-    with VideoReader(video_path, keep_av_open=True) as reader:
+    with VideoReader(video_path) as reader:
         read_timestamps = []
         for frame in reader.read_frames():
             read_timestamps.append(frame.time)
@@ -146,7 +146,7 @@ def test_video_reader(tmp_path):
             writer.write_frame(img, pts=sec, pts_unit="sec")
 
     # Test frame iteration and properties
-    with VideoReader(video_path, keep_av_open=True) as reader:
+    with VideoReader(video_path) as reader:
         frame_count = 0
         for frame in reader.read_frames(start_pts=Fraction(1, 6)):  # Start at ~0.167s (frame 5)
             frame_array = frame.to_ndarray(format="rgb24")
@@ -180,7 +180,7 @@ def test_video_processing_pipeline(tmp_path):
 
     # Process VFR to CFR: read with fps sampling, write as CFR
     target_fps = 15.0
-    with VideoReader(vfr_input, keep_av_open=True) as reader:
+    with VideoReader(vfr_input) as reader:
         with VideoWriter(cfr_output, fps=target_fps, vfr=False) as writer:
             frame_count = 0
             for frame in reader.read_frames(fps=target_fps):  # Sample at regular intervals
@@ -193,7 +193,7 @@ def test_video_processing_pipeline(tmp_path):
 
         # Compare VFR input vs CFR output timing characteristics
         def get_timing_stats(video_path):
-            with VideoReader(video_path, keep_av_open=True) as reader:
+            with VideoReader(video_path) as reader:
                 timestamps = []
                 for frame in reader.read_frames():
                     timestamps.append(frame.time)
@@ -317,13 +317,13 @@ def test_video_reader_path_type_handling(tmp_path):
         writer.write_frame(img)
 
     # Test with Path object
-    with VideoReader(video_path, keep_av_open=True) as reader:
+    with VideoReader(video_path) as reader:
         assert isinstance(reader.video_path, Path)
         frame = reader.read_frame(pts=0.0)
         assert frame is not None
 
     # Test with string path
-    with VideoReader(str(video_path), keep_av_open=True) as reader:
+    with VideoReader(str(video_path)) as reader:
         assert isinstance(reader.video_path, Path)
         frame = reader.read_frame(pts=0.0)
         assert frame is not None
