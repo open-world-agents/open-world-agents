@@ -15,6 +15,7 @@ import av
 import numpy as np
 from loguru import logger
 
+from ..utils.typing import PathLike
 from . import cached_av
 
 # Constants
@@ -23,7 +24,6 @@ DUPLICATE_TOLERANCE_SECOND: Fraction = Fraction(1, 120)
 # Type aliases
 SECOND_TYPE = Union[float, Fraction]
 PTSUnit = Literal["pts", "sec"]
-VideoPathType = Union[str, os.PathLike, Path]  # Supports both local paths and URLs
 
 # Garbage collection counters for PyAV reference cycles
 # Reference: https://github.com/pytorch/vision/blob/428a54c96e82226c0d2d8522e9cbfdca64283da0/torchvision/io/video.py#L53-L55
@@ -31,7 +31,7 @@ _CALLED_TIMES = 0
 GC_COLLECTION_INTERVAL = 10
 
 
-def _normalize_video_path(video_path: VideoPathType) -> Union[str, Path]:
+def _normalize_video_path(video_path: PathLike) -> Union[str, Path]:
     """
     Normalize video path for use with PyAV.
 
@@ -209,7 +209,7 @@ class VideoReader:
     Supports both local video files and remote URLs (HTTP/HTTPS).
     """
 
-    def __init__(self, video_path: VideoPathType, force_close: bool = False):
+    def __init__(self, video_path: PathLike, force_close: bool = False):
         """
         Args:
             video_path: Input video file path or URL (HTTP/HTTPS)

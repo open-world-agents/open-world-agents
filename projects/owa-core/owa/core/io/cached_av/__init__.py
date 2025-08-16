@@ -4,29 +4,27 @@ import os
 import sys
 import threading
 import time
-from pathlib import Path
-from typing import Literal, Optional, Union, overload
+from typing import Literal, Optional, overload
 
 import av
 import av.container
 from loguru import logger
 
+from ...utils.typing import PathLike
 from .input_container_mixin import InputContainerMixin
 
 DEFAULT_CACHE_SIZE = int(os.environ.get("AV_CACHE_SIZE", 10))
-
-VideoPathType = Union[str, os.PathLike, Path]
 
 
 class _CacheContext:
     """Context manager for thread-safe access to video container cache."""
 
     def __init__(self):
-        self._cache: dict[VideoPathType, "MockedInputContainer"] = {}
+        self._cache: dict[PathLike, "MockedInputContainer"] = {}
         self._lock = threading.RLock()
         self._thread_id = threading.get_ident()  # Track the thread that created this cache
 
-    def __enter__(self) -> dict[VideoPathType, "MockedInputContainer"]:
+    def __enter__(self) -> dict[PathLike, "MockedInputContainer"]:
         """Enter context manager and return locked cache."""
         self._lock.acquire()
         self._check_thread_safety()
@@ -63,14 +61,14 @@ def get_cache_context():
 
 
 @overload
-def open(file: VideoPathType, mode: Literal["r"], **kwargs) -> "MockedInputContainer": ...
+def open(file: PathLike, mode: Literal["r"], **kwargs) -> "MockedInputContainer": ...
 
 
 @overload
-def open(file: VideoPathType, mode: Literal["w"], **kwargs) -> av.container.OutputContainer: ...
+def open(file: PathLike, mode: Literal["w"], **kwargs) -> av.container.OutputContainer: ...
 
 
-def open(file: VideoPathType, mode: Literal["r", "w"], **kwargs):
+def open(file: PathLike, mode: Literal["r", "w"], **kwargs):
     """Open video file with caching for read mode, direct av.open for write mode."""
     if mode == "r":
         _implicit_cleanup()
@@ -79,12 +77,12 @@ def open(file: VideoPathType, mode: Literal["r", "w"], **kwargs):
         return av.open(file, mode, **kwargs)
 
 
-def cleanup_cache(container: Optional["MockedInputContainer" | VideoPathType] = None):
+def cleanup_cache(container: Optional["MockedInputContainer" | PathLike] = None):
     """Manually cleanup cached containers."""
     _explicit_cleanup(container=container)
 
 
-def _retrieve_cache(file: VideoPathType):
+def _retrieve_cache(file: PathLike):
     """Get or create cached container and update usage tracking."""
     with get_cache_context() as cache:
         if file not in cache:
@@ -98,7 +96,7 @@ def _retrieve_cache(file: VideoPathType):
         return container
 
 
-def _explicit_cleanup(container: Optional["MockedInputContainer" | VideoPathType] = None):
+def _explicit_cleanup(container: Optional["MockedInputContainer" | PathLike] = None):
     """Force cleanup of specific container or all containers."""
     if container is None:
         # Get a snapshot of containers to avoid modification during iteration
@@ -110,7 +108,7 @@ def _explicit_cleanup(container: Optional["MockedInputContainer" | VideoPathType
             _explicit_cleanup(cont)
     else:
         with get_cache_context() as cache:
-            if isinstance(container, VideoPathType):
+            if isinstance(container, (str, bytes)) or hasattr(container, "__fspath__"):
                 container = cache.get(container)
                 if container is None:
                     return
@@ -152,7 +150,7 @@ def _implicit_cleanup():
 class MockedInputContainer(InputContainerMixin):
     """Wrapper for av.InputContainer that tracks references and usage for caching."""
 
-    def __init__(self, file: VideoPathType):
+    def __init__(self, file: PathLike):
         self.file_path = file
         self._container: av.container.InputContainer = av.open(file, "r")
         self.refs = 0  # Reference count for tracking usage
