@@ -237,10 +237,6 @@ class VideoReader:
 
         end_pts = float(end_pts) if end_pts is not None else float("inf")
 
-        # Seek to start position
-        timestamp_ts = int(av.time_base * float(start_pts))
-        self.container.seek(timestamp_ts)
-
         if fps is None:
             # Yield all frames in interval
             yield from self._yield_frame_range(float(start_pts), end_pts)
@@ -269,7 +265,11 @@ class VideoReader:
 
     def _yield_frame_range(self, start_pts, end_pts):
         """Yield all frames in time range."""
-        self.container.seek(int(av.time_base * start_pts))
+        # Seek to start position
+        timestamp_ts = int(av.time_base * start_pts)
+        self.container.seek(timestamp_ts)
+
+        # Yield frames in interval
         for frame in self.container.decode(video=0):
             if frame.time is None:
                 raise ValueError("Frame time is None")
