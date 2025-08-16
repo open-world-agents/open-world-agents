@@ -243,15 +243,32 @@ class VideoReader:
 
         if fps is None:
             # Yield all frames in interval
-            yield from self._yield_all_frames(float(start_pts), end_pts)
+            yield from self._yield_frame_range(float(start_pts), end_pts)
         else:
             # Sample at specified fps
             if fps <= 0:
                 raise ValueError("fps must be positive")
-            yield from self._yield_sampled_frames(float(start_pts), end_pts, fps)
+            yield from self._yield_frame_rated(float(start_pts), end_pts, fps)
 
-    def _yield_all_frames(self, start_pts, end_pts):
+    def read_frames_at(self, seconds: list[float]) -> list[av.VideoFrame]:
+        """Yield frames at specific time points."""
+        queries = sorted([(s, i) for i, s in enumerate(seconds)])
+        frames: list[av.VideoFrame] = [None] * len(queries)  # type: ignore
+        start_pts, end_pts = queries[0][0], queries[-1][0]
+        found = 0
+
+        for frame in self.read_frames(start_pts, end_pts):
+            while found < len(queries) and frame.time >= queries[found][0]:
+                frames[queries[found][1]] = frame
+                found += 1
+            if found >= len(queries):
+                break
+
+        return frames
+
+    def _yield_frame_range(self, start_pts, end_pts):
         """Yield all frames in time range."""
+        self.container.seek(int(av.time_base * start_pts))
         for frame in self.container.decode(video=0):
             if frame.time is None:
                 raise ValueError("Frame time is None")
@@ -261,29 +278,16 @@ class VideoReader:
                 break
             yield frame
 
-    def _yield_sampled_frames(self, start_pts, end_pts, fps):
-        """Yield frames sampled at specified fps."""
+    def _yield_frame_rated(self, start_pts, end_pts, fps):
+        """Yield frames sampled at specified fps with proper VFR gap handling."""
         interval = 1.0 / fps
         next_time = start_pts
-        video_stream = self.container.streams.video[0]
 
-        for frame in self.container.decode(video=0):
-            if frame.time is None:
-                raise ValueError("Frame time is None")
-            if frame.time < start_pts:
+        for frame in self._yield_frame_range(start_pts, end_pts):
+            if frame.time < next_time:
                 continue
-            if frame.time > end_pts:
-                break
-
-            if frame.time + 1e-8 >= next_time:
-                frame.duration = interval / video_stream.time_base
-                yield frame
-                next_time += interval
-
-                # Handle VFR gaps
-                if frame.time > next_time:
-                    missed = int((frame.time - next_time) // interval) + 1
-                    next_time += missed * interval
+            yield frame
+            next_time += interval
 
     def read_frame(self, pts: SECOND_TYPE = 0.0) -> av.VideoFrame:
         """Read single frame at or after given timestamp."""
