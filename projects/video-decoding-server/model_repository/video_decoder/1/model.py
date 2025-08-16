@@ -136,11 +136,11 @@ class TritonPythonModel:
         video_path_tensor = pb_utils.get_input_tensor_by_name(request, "video_path")
         time_sec_tensor = pb_utils.get_input_tensor_by_name(request, "time_sec")
 
-        video_path = video_path_tensor.as_numpy().squeeze(axis=-1)
-        time_sec = time_sec_tensor.as_numpy().squeeze(axis=-1)
+        video_paths = video_path_tensor.as_numpy().squeeze(axis=-1)
+        time_secs = time_sec_tensor.as_numpy().squeeze(axis=-1)
 
-        for i in range(video_path.shape[0]):
-            yield video_path[i].decode("utf-8"), float(time_sec[i])
+        for video_path, time_sec in zip(video_paths, time_secs):
+            yield video_path.decode("utf-8"), float(time_sec)
 
     def _create_response(self, frame_array):
         """Create a response tensor from frame array."""
