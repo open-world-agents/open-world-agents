@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from owa.core.io.video import VideoWriter, cached_av
+from owa.core.io.video import VideoWriter
 from owa.core.time import TimeUnits
 from owa.msgs.desktop.screen import MediaRef, ScreenCaptured
 
@@ -49,8 +49,6 @@ def sample_video_file(tmp_path):
         writer.write_frame(final_frame, pts=final_timestamp, pts_unit="sec")
 
     yield video_path, timestamps
-
-    cached_av.cleanup_cache(video_path)
 
 
 @pytest.fixture
