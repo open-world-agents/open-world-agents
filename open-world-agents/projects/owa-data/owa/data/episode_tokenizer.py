@@ -13,6 +13,8 @@ from .datasets import Dataset, DatasetStage
 
 @dataclass
 class EpisodeTokenizerConfig:
+    """Configuration for EpisodeTokenizer."""
+
     encoder_type: str = "hierarchical"
     # Internal placeholder token used by encoders (not a real token, not in vocab)
     fake_image_placeholder: str = "<fake_image_placeholder>"
