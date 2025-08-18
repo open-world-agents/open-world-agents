@@ -266,9 +266,16 @@ def fix_mkv_metadata(mkv_path: Path) -> Path:
         # Duration is N/A, create fixed version
         print(f"Fixing metadata for {mkv_path.name}...")
         fix_cmd = [
-            "ffmpeg", "-v", "quiet", "-i", str(mkv_path),
-            "-c", "copy", "-avoid_negative_ts", "make_zero",
-            str(fixed_path)
+            "ffmpeg",
+            "-v",
+            "quiet",
+            "-i",
+            str(mkv_path),
+            "-c",
+            "copy",
+            "-avoid_negative_ts",
+            "make_zero",
+            str(fixed_path),
         ]
 
         fix_result = subprocess.run(fix_cmd, capture_output=True, text=True, timeout=600)

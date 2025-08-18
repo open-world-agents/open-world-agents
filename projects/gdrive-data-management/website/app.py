@@ -41,7 +41,7 @@ def get_db_connection():
 def find_video_path(user_email: str, file_name: str) -> str:
     """Find the video file path by searching in the user's directory structure, preferring _fixed version."""
     # Remove .mcap extension if present
-    base_name = file_name.replace('.mcap', '')
+    base_name = file_name.replace(".mcap", "")
 
     # Search for the video file in the user's directory and subdirectories
     user_dir = Path(DATASET_ROOT) / user_email
@@ -368,7 +368,7 @@ def serve_video(user_email, file_name):
         if not video_path or not Path(video_path).exists():
             abort(404, description="Video file not found")
 
-        return send_file(video_path, mimetype='video/x-matroska')
+        return send_file(video_path, mimetype="video/x-matroska")
 
     except Exception as e:
         print(f"Error serving video {user_email}/{file_name}: {e}")
