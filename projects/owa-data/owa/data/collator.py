@@ -64,18 +64,7 @@ def collate_fn_smolvlm2(examples, max_sequence_length: int | None = None, proces
         labels[labels == processor.tokenizer.pad_token_id] = -100
 
         # Ignore the image token index in the loss computation
-        # For SmolVLM2, try to get image_token_id from processor first, then fallback
-        image_token_id = None
-        if hasattr(processor, "image_token_id"):
-            image_token_id = processor.image_token_id
-        elif hasattr(processor.tokenizer, "image_token_id"):
-            image_token_id = processor.tokenizer.image_token_id
-        elif hasattr(processor, "image_token"):
-            # Get the token ID from the tokenizer using the image token string
-            image_token_id = processor.tokenizer.convert_tokens_to_ids(processor.image_token)
-
-        if image_token_id is not None:
-            labels[labels == image_token_id] = -100
+        labels[labels == processor.tokenizer.image_token_id] = -100
         assert (labels[attention_mask == 0] == -100).all()
     else:
         labels[attention_mask == 0] = -100
@@ -119,15 +108,8 @@ def collate_fn_internvl3(examples, max_sequence_length: int | None = None, proce
 
         # Ignore the image token index in the loss computation
         # For InternVL3, the tokenizer doesn't have image_token_id, so use processor
-        image_token_id = None
-        if hasattr(processor.tokenizer, "image_token_id"):
-            image_token_id = processor.tokenizer.image_token_id
-        elif hasattr(processor, "image_token"):
-            # Get the token ID from the tokenizer using the image token string
-            image_token_id = processor.tokenizer.convert_tokens_to_ids(processor.image_token)
-
-        if image_token_id is not None:
-            labels[labels == image_token_id] = -100
+        labels[labels == processor.image_token_id] = -100
+        assert (labels[attention_mask == 0] == -100).all()
     else:
         labels[attention_mask == 0] = -100
 
