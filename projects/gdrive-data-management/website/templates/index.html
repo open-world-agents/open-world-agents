@@ -147,7 +147,7 @@
 
 <!-- Charts Row -->
 <div class="row mb-4">
-    <div class="col-md-6">
+    <div class="col-md-4">
         <div class="card">
             <div class="card-header">
                 <h5><i class="bi bi-pie-chart"></i> Game Distribution</h5>
@@ -158,13 +158,61 @@
         </div>
     </div>
     
-    <div class="col-md-6">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-clock"></i> Accepted Hours by Game</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="gameHoursChart" width="400" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
         <div class="card">
             <div class="card-header">
                 <h5><i class="bi bi-bar-chart"></i> Version Distribution</h5>
             </div>
             <div class="card-body">
                 <canvas id="versionChart" width="400" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Game Hours Table -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-trophy"></i> Game Data Collection Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Game</th>
+                                <th>Files</th>
+                                <th>Accepted Hours</th>
+                                <th>Total Hours</th>
+                                <th>Efficiency</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for game in stats.game_hours_distribution %}
+                            <tr>
+                                <td>{{ game.game_name or 'Unknown' }}</td>
+                                <td>{{ game.file_count }}</td>
+                                <td>{{ "{:.1f}h".format(game.accepted_hours or 0) }}</td>
+                                <td>{{ "{:.1f}h".format(game.total_hours or 0) }}</td>
+                                <td>{{ "{:.1f}%".format((game.accepted_hours / game.total_hours * 100) if game.total_hours and game.total_hours > 0 else 0) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -301,6 +349,7 @@
 <script>
 // Chart data from Flask
 const gameData = {{ stats.game_distribution | tojson | safe }};
+const gameHoursData = {{ stats.game_hours_distribution | tojson | safe }};
 const versionData = {{ stats.version_distribution | tojson | safe }};
 
 // Game Distribution Chart
@@ -346,6 +395,42 @@ new Chart(versionCtx, {
         scales: {
             y: {
                 beginAtZero: true
+            }
+        }
+    }
+});
+
+// Game Hours Chart
+const gameHoursCtx = document.getElementById('gameHoursChart').getContext('2d');
+new Chart(gameHoursCtx, {
+    type: 'bar',
+    data: {
+        labels: gameHoursData.slice(0, 8).map(item => (item.game_name || 'Unknown').substring(0, 15)),
+        datasets: [{
+            label: 'Accepted Hours',
+            data: gameHoursData.slice(0, 8).map(item => item.accepted_hours || 0),
+            backgroundColor: '#28a745'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Hours'
+                }
+            }
+        },
+        plugins: {
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return `${context.parsed.y.toFixed(1)} hours`;
+                    }
+                }
             }
         }
     }

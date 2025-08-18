@@ -84,6 +84,20 @@ def get_database_stats():
         )
         game_dist = cursor.fetchall()
 
+        # Game accepted hours distribution
+        cursor.execute("""
+            SELECT game_name, 
+                   COUNT(*) as file_count,
+                   SUM(accepted_duration) / 3600.0 as accepted_hours,
+                   SUM(duration_seconds) / 3600.0 as total_hours
+            FROM dataset_analysis 
+            WHERE available = 1 
+            GROUP BY game_name 
+            ORDER BY accepted_hours DESC 
+            LIMIT 15
+        """)
+        game_hours_dist = cursor.fetchall()
+
         # User statistics
         cursor.execute("""
             SELECT user_email,
@@ -124,6 +138,7 @@ def get_database_stats():
             "version_distribution": [dict(row) for row in version_dist],
             "migration_distribution": [dict(row) for row in migration_dist],
             "game_distribution": [dict(row) for row in game_dist],
+            "game_hours_distribution": [dict(row) for row in game_hours_dist],
             "user_statistics": [dict(row) for row in user_stats],
             "gap_statistics": dict(gap_stats) if gap_stats else {},
         }
