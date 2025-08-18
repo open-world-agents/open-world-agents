@@ -39,7 +39,7 @@ def get_file_version(mcap_path: Path) -> Optional[str]:
         return None
 
 
-def migrate_mcap(input_file: Path, output_file: Path, target_version: str = "0.5.5") -> bool:
+def migrate_mcap(input_file: Path, output_file: Path, target_version: str = "0.5.6") -> bool:
     """Migrate MCAP file to target version."""
     try:
         orchestrator = MigrationOrchestrator()
@@ -416,7 +416,7 @@ def log_to_database(
 def analyze_datasets(
     dataset_root: str = "/mnt/raid12/datasets/owa_game_dataset",
     db_path: str = "/mnt/raid12/datasets/owa_game_dataset/dataset_analysis.db",
-    target_version: str = "0.5.5",
+    target_version: str = "0.5.6",
 ):
     """Main function to analyze all datasets."""
     console = Console()
@@ -679,7 +679,7 @@ if __name__ == "__main__":
         default="/mnt/raid12/datasets/owa_game_dataset/dataset_analysis.db",
         help="Path to SQLite database file",
     )
-    parser.add_argument("--target-version", default="0.5.5", help="Target MCAP version for migration (default: 0.5.5)")
+    parser.add_argument("--target-version", default="0.5.6", help="Target MCAP version for migration (default: 0.5.6)")
 
     args = parser.parse_args()
     analyze_datasets(args.dataset_root, args.db_path, args.target_version)

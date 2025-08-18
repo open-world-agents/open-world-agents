@@ -21,7 +21,7 @@ mkdir -p logs
 # Configuration
 SOURCE_ROOT="/mnt/raid12/datasets/owa_game_dataset"
 DB_PATH="/mnt/raid12/datasets/owa_game_dataset/dataset_analysis.db"
-TARGET_VERSION="0.5.5"  # Target MCAP version for migration
+TARGET_VERSION="0.5.6"  # Target MCAP version for migration
 
 # Run dataset analysis script
 echo "Starting dataset analysis..."

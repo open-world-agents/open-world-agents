@@ -23,8 +23,8 @@ SOURCE_ROOT="/mnt/raid12/datasets/owa_game_dataset"
 DEST_ROOT="/mnt/raid12/datasets/owa_game_dataset_filtered"
 
 # TODO: Make this configurable
-MIN_VERSION="0.5.5"
-TARGET_VERSION="0.5.5"
+MIN_VERSION="0.5.6"
+TARGET_VERSION="0.5.6"
 
 # Run dataset filtering and migration script
 echo "Starting dataset filtering and migration..."

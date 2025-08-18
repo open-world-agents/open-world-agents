@@ -4,8 +4,8 @@ Filter OWA game datasets based on version and migrate to new directory.
 
 This script:
 1. Checks version of each MCAP file
-2. Copies files with version >= 0.5.5 to filtered directory
-3. Migrates files to target version (0.5.5)
+2. Copies files with version >= 0.5.6 to filtered directory
+3. Migrates files to target version (0.5.6)
 4. Copies paired MKV files
 """
 
@@ -65,7 +65,7 @@ def version_compare(version1: str, version2: str) -> int:
         return -1
 
 
-def is_version_compatible(file_version: str, min_version: str = "0.5.5") -> bool:
+def is_version_compatible(file_version: str, min_version: str = "0.5.6") -> bool:
     """Check if file version meets minimum requirement."""
     if not file_version:
         return False
@@ -101,8 +101,8 @@ def copy_with_structure(source_file: Path, source_root: Path, dest_root: Path) -
 def filter_datasets(
     source_root: str = "/mnt/raid12/datasets/owa_game_dataset",
     dest_root: str = "/mnt/raid12/datasets/owa_game_dataset_filtered",
-    min_version: str = "0.5.5",
-    target_version: str = "0.5.5",
+    min_version: str = "0.5.6",
+    target_version: str = "0.5.6",
 ):
     """Main function to filter and migrate datasets."""
     console = Console()
@@ -243,8 +243,8 @@ if __name__ == "__main__":
         default="/mnt/raid12/datasets/owa_game_dataset_filtered",
         help="Destination directory for filtered datasets",
     )
-    parser.add_argument("--min-version", default="0.5.5", help="Minimum version requirement")
-    parser.add_argument("--target-version", default="0.5.5", help="Target version for migration")
+    parser.add_argument("--min-version", default="0.5.6", help="Minimum version requirement")
+    parser.add_argument("--target-version", default="0.5.6", help="Target version for migration")
 
     args = parser.parse_args()
     filter_datasets(args.source_root, args.dest_root, args.min_version, args.target_version)
