@@ -63,7 +63,7 @@ from trl import (
 
 # from owa.agent.training import OWASFTConfig as SFTConfig
 # from owa.agent.training import OWASFTTrainer as SFTTrainer
-from owa.data.collator import detect_model_type, get_collate_fn
+from owa.data.collator import detect_model_type, get_collate_fn, ModelType
 from owa.data.datasets import Dataset, load_from_disk
 from owa.data.episode_tokenizer import EpisodeTokenizer
 
@@ -123,7 +123,7 @@ def main():
     accelerator.print(f"Detected model type: {model_type}")
 
     # Load processor and tokenizer with model-specific configuration
-    if model_type == "internvl3":
+    if model_type == ModelType.INTERNVL:
         # InternVL3 configuration: disable multi-crop for efficiency
         processor = AutoProcessor.from_pretrained(
             model_args.model_name_or_path, trust_remote_code=model_args.trust_remote_code, crop_to_patches=False
