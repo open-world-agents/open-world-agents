@@ -1,3 +1,5 @@
+from enum import StrEnum
+
 import torch
 
 try:
@@ -6,24 +8,23 @@ except ImportError:
     ProcessorMixin = None
 
 
-def detect_model_type(model_name_or_path: str) -> str:
-    """
-    Detect the model type based on model name or path.
+class ModelType(StrEnum):
+    INTERNVL3 = "internvl3"
+    SMOVLM2 = "smolvlm2"
+    UNKNOWN = "unknown"
 
-    Args:
-        model_name_or_path: Model name or path
 
-    Returns:
-        Model type: 'internvl3', 'smolvlm2', or 'unknown'
-    """
-    model_name_lower = model_name_or_path.lower()
+def detect_model_type(model_name_or_path: str) -> ModelType:
+    """Detect the model based on config.model_type"""
+    from transformers import AutoConfig
 
-    if "internvl3" in model_name_lower:
-        return "internvl3"
-    elif "smolvlm" in model_name_lower:
-        return "smolvlm2"
+    config = AutoConfig.from_pretrained(model_name_or_path)
+    if config.model_type == "internvl3":
+        return ModelType.INTERNVL3
+    elif config.model_type == "smolvlm":
+        return ModelType.SMOVLM2
     else:
-        return "unknown"
+        return ModelType.UNKNOWN
 
 
 def collate_fn_smolvlm2(examples, max_sequence_length: int | None = None, processor: ProcessorMixin | None = None):
@@ -151,14 +152,9 @@ def get_collate_fn(model_name_or_path: str):
     """
     model_type = detect_model_type(model_name_or_path)
 
-    if model_type == "internvl3":
+    if model_type == ModelType.INTERNVL3:
         return collate_fn_internvl3
-    elif model_type == "smolvlm2":
+    elif model_type == ModelType.SMOVLM2:
         return collate_fn_smolvlm2
     else:
-        # Default to SmolVLM2 collator for unknown models
-        return collate_fn_smolvlm2
-
-
-# Backward compatibility alias
-collate_fn = collate_fn_smolvlm2
+        raise ValueError(f"Unknown model type: {model_type}")

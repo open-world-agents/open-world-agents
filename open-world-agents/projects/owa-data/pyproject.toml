@@ -18,6 +18,7 @@ dependencies = [
     "orjson>=3.10.15",
     "owa-core",
     "owa-msgs",
+    "mcap-owa-support",
 ]
 
 [build-system]
@@ -36,3 +37,4 @@ markers = [
 [tool.uv.sources]
 owa-core = { path = "../owa-core", editable = true }
 owa-msgs = { path = "../owa-msgs", editable = true }
+mcap-owa-support = { path = "../mcap-owa-support", editable = true }
