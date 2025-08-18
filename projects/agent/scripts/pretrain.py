@@ -54,14 +54,16 @@ from transformers import AutoImageProcessor, AutoModelForImageTextToText, AutoPr
 from trl import (
     ModelConfig,
     ScriptArguments,
+    SFTConfig,
+    SFTTrainer,
     TrlParser,
     get_kbit_device_map,
     get_quantization_config,
 )
 
-from owa.agent.training import OWASFTConfig as SFTConfig
-from owa.agent.training import OWASFTTrainer as SFTTrainer
-from owa.data.collator import collate_fn
+# from owa.agent.training import OWASFTConfig as SFTConfig
+# from owa.agent.training import OWASFTTrainer as SFTTrainer
+from owa.data.collator import detect_model_type, get_collate_fn
 from owa.data.datasets import Dataset, load_from_disk
 from owa.data.episode_tokenizer import EpisodeTokenizer
 
@@ -116,16 +118,38 @@ def main():
         quantization_config=quantization_config,
     )
 
-    # Load processor and tokenizer. TODO: make argument configurable
-    processor = AutoProcessor.from_pretrained(
-        model_args.model_name_or_path, trust_remote_code=model_args.trust_remote_code, do_image_splitting=False
-    )
-    processor.image_processor = AutoImageProcessor.from_pretrained(
-        model_args.model_name_or_path,
-        trust_remote_code=model_args.trust_remote_code,
-        do_image_splitting=False,
-        use_fast=True,
-    )
+    # Detect model type for appropriate configuration
+    model_type = detect_model_type(model_args.model_name_or_path)
+    accelerator.print(f"Detected model type: {model_type}")
+
+    # Load processor and tokenizer with model-specific configuration
+    if model_type == "internvl3":
+        # InternVL3 configuration: disable multi-crop for efficiency
+        processor = AutoProcessor.from_pretrained(
+            model_args.model_name_or_path, trust_remote_code=model_args.trust_remote_code, crop_to_patches=False
+        )
+        assert processor.image_processor.crop_to_patches is False, "Failed to disable multi-crop"
+        assert processor.image_processor.__class__.__name__ == "GotOcr2ImageProcessorFast", (
+            f"Expected GotOcr2ImageProcessorFast, got {processor.image_processor.__class__}"
+        )
+        accelerator.print("Configured InternVL3 processor with multi-crop disabled")
+    else:
+        # SmolVLM2 and other models configuration
+        processor = AutoProcessor.from_pretrained(
+            model_args.model_name_or_path, trust_remote_code=model_args.trust_remote_code, do_image_splitting=False
+        )
+        processor.image_processor = AutoImageProcessor.from_pretrained(
+            model_args.model_name_or_path,
+            trust_remote_code=model_args.trust_remote_code,
+            do_image_splitting=False,
+            use_fast=True,
+        )
+        assert processor.image_processor.do_image_splitting is False, "Failed to disable image splitting"
+        assert processor.image_processor.__class__.__name__ == "SmolVLM2ImageProcessorFast", (
+            f"Expected SmolVLM2ImageProcessorFast, got {processor.image_processor.__class__}"
+        )
+        accelerator.print("Configured SmolVLM2/default processor")
+
     tokenizer = processor.tokenizer
 
     # Set tokenizer model_max_length if needed
@@ -198,7 +222,10 @@ def main():
     ################
     # Data Collator
     ################
-    data_collator = lambda examples: collate_fn(examples, script_args.max_sequence_length, tokenizer)  # noqa: E731
+    # Get the appropriate collate function based on model type
+    collate_fn = get_collate_fn(model_args.model_name_or_path)
+    data_collator = lambda examples: collate_fn(examples, script_args.max_sequence_length, processor)  # noqa: E731
+    accelerator.print(f"Using collate function for model type: {model_type}")
 
     ################
     # Trainer
