@@ -1,6 +1,5 @@
 import argparse
 
-import line_profiler
 import torch
 from accelerate import Accelerator
 from loguru import logger
@@ -8,6 +7,7 @@ from torch.utils.data import ConcatDataset, DataLoader
 from tqdm import tqdm
 from transformers import AutoImageProcessor, AutoProcessor
 
+from owa.data.collator import detect_model_type, get_collate_fn
 from owa.data.datasets import load_from_disk
 
 # This line is to enable throughput logging from FSLTransform
@@ -24,56 +24,6 @@ class DummyDataset(torch.utils.data.Dataset):
 
     def __len__(self):
         return 1000000
-
-
-@line_profiler.profile
-def collate_fn(examples, max_sequence_length: int | None = None, tokenizer=None):
-    input_ids_list = []
-    attention_mask_list = []
-    pixel_values_list = []
-
-    for example in examples:
-        input_ids_list.append(example["input_ids"])  # [seq_len,]
-        attention_mask_list.append(example["attention_mask"])  # [seq_len,]
-        pixel_values_list.append(example["images"])  # [num_images, channels, height, width]
-        assert isinstance(example["images"], torch.Tensor), f"Expected tensor, got {type(example['images'])}"
-
-    max_num_images = max([len(images) for images in pixel_values_list])
-    # Pad images to max_num_images
-    for idx, images in enumerate(pixel_values_list):
-        if len(images) < max_num_images:
-            # NOTE: Idefics3/SmolVLM expect all-zero image to be a padding image. see: https://github.com/huggingface/transformers/blob/69b158260fcb679ea3bfbc1e6a358545ee53ee28/src/transformers/models/idefics3/modeling_idefics3.py#L693
-            padding = torch.zeros(max_num_images - len(images), *images.shape[1:], dtype=torch.float32)
-            pixel_values_list[idx] = torch.concat([images, padding])
-
-    # Convert to tensors
-    input_ids = torch.stack(input_ids_list)  # [batch_size, seq_len]
-    attention_mask = torch.stack(attention_mask_list)  # [batch_size, seq_len]
-    pixel_values = torch.stack(pixel_values_list)  # [batch_size, max_num_images, 3, max_heights, max_widths]
-
-    if max_sequence_length is not None and input_ids.shape[1] != max_sequence_length:
-        raise ValueError(
-            f"Input ids length ({input_ids.shape[1]}) does not match max_sequence_length ({max_sequence_length})"
-        )
-
-    # NOTE: we shift the labels inside the model, so we don't need to do it here
-    labels = input_ids.clone()
-    if tokenizer is not None:
-        # Ignore padding tokens in the loss computation
-        labels[labels == tokenizer.pad_token_id] = -100
-        # Ignore the image token index in the loss computation
-        labels[labels == tokenizer.image_token_id] = -100
-        assert (labels[attention_mask == 0] == -100).all()
-    else:
-        labels[attention_mask == 0] = -100
-
-    batch = {
-        "input_ids": input_ids,
-        "attention_mask": attention_mask,
-        "labels": labels,
-        "pixel_values": pixel_values,
-    }
-    return batch
 
 
 def main():
@@ -115,8 +65,29 @@ def main():
         train_datasets.append(fsl_ds["train"])
 
     print("▶ Loading image processor…")
-    processor = AutoProcessor.from_pretrained(args.model, do_image_splitting=False)
-    processor.image_processor = AutoImageProcessor.from_pretrained(args.model, use_fast=True, do_image_splitting=False)
+    # Detect model type for appropriate configuration
+    model_type = detect_model_type(args.model)
+    print(f"Detected model type: {model_type}")
+
+    # Configure processor based on model type
+    if model_type == "internvl3":
+        # InternVL3 configuration: disable multi-crop for efficiency
+        processor = AutoProcessor.from_pretrained(args.model)
+        processor.image_processor = AutoImageProcessor.from_pretrained(
+            args.model,
+            use_fast=True,
+            crop_to_patches=False,  # InternVL3-specific: disable multi-crop
+        )
+        print("Configured InternVL3 processor with multi-crop disabled")
+    else:
+        # SmolVLM2 and other models configuration
+        processor = AutoProcessor.from_pretrained(args.model, do_image_splitting=False)
+        processor.image_processor = AutoImageProcessor.from_pretrained(
+            args.model,
+            use_fast=True,
+            do_image_splitting=False,  # SmolVLM2-specific: disable image splitting
+        )
+        print("Configured SmolVLM2/default processor")
 
     # 3) Apply FSL transform for on-the-fly processing and concatenate datasets
     for train_ds in train_datasets:
@@ -130,7 +101,8 @@ def main():
     train_ds = ConcatDataset(train_datasets)
     # train_ds = DummyDataset()
 
-    # 4) Create a DataLoader
+    # 4) Create a DataLoader with appropriate collate function
+    collate_fn_for_model = get_collate_fn(args.model)
     train_loader = DataLoader(
         train_ds,
         batch_size=args.batch_size,
@@ -139,8 +111,9 @@ def main():
         prefetch_factor=2,
         # persistent_workers=True,
         pin_memory=True,
-        collate_fn=lambda examples: collate_fn(examples, max_sequence_length=1024, tokenizer=processor.tokenizer),
+        collate_fn=lambda examples: collate_fn_for_model(examples, max_sequence_length=1024, processor=processor),
     )
+    print(f"Using collate function for model type: {model_type}")
 
     # 5) (Optional) A dummy model so you can do a full prepare()
     model = torch.nn.Linear(1024, 1)

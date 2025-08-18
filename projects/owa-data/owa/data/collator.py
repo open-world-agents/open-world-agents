@@ -1,13 +1,34 @@
+from enum import StrEnum
+
 import torch
 
 try:
-    from transformers import PreTrainedTokenizer
+    from transformers import ProcessorMixin
 except ImportError:
-    PreTrainedTokenizer = None
+    ProcessorMixin = None
 
 
-def collate_fn(examples, max_sequence_length: int | None = None, tokenizer: PreTrainedTokenizer | None = None):
-    """Collate function for FSL Dataset, for use with Idefics3/SmolVLM2."""
+class ModelType(StrEnum):
+    INTERNVL3 = "internvl3"
+    SMOLVLM = "smolvlm"
+    UNKNOWN = "unknown"
+
+
+def detect_model_type(model_name_or_path: str) -> ModelType:
+    """Detect the model based on config.model_type"""
+    from transformers import AutoConfig
+
+    config = AutoConfig.from_pretrained(model_name_or_path)
+    if config.model_type == "internvl3":
+        return ModelType.INTERNVL3
+    elif config.model_type == "smolvlm":
+        return ModelType.SMOLVLM
+    else:
+        return ModelType.UNKNOWN
+
+
+def collate_fn_smolvlm2(examples, max_sequence_length: int | None = None, processor: ProcessorMixin | None = None):
+    """Collate function for FSL Dataset, specifically for SmolVLM2/Idefics3."""
     input_ids_list = []
     attention_mask_list = []
     pixel_values_list = []
@@ -38,11 +59,12 @@ def collate_fn(examples, max_sequence_length: int | None = None, tokenizer: PreT
 
     # NOTE: we shift the labels inside the model, so we don't need to do it here
     labels = input_ids.clone()
-    if tokenizer is not None:
+    if processor is not None:
         # Ignore padding tokens in the loss computation
-        labels[labels == tokenizer.pad_token_id] = -100
+        labels[labels == processor.tokenizer.pad_token_id] = -100
+
         # Ignore the image token index in the loss computation
-        labels[labels == tokenizer.image_token_id] = -100
+        labels[labels == processor.tokenizer.image_token_id] = -100
         assert (labels[attention_mask == 0] == -100).all()
     else:
         labels[attention_mask == 0] = -100
@@ -54,3 +76,67 @@ def collate_fn(examples, max_sequence_length: int | None = None, tokenizer: PreT
         "pixel_values": pixel_values,
     }
     return batch
+
+
+def collate_fn_internvl3(examples, max_sequence_length: int | None = None, processor: ProcessorMixin | None = None):
+    """Collate function for InternVL3 with flattened image processing."""
+    input_ids_list = []
+    attention_mask_list = []
+    all_images = []
+    image_counts = []
+
+    for example in examples:
+        input_ids_list.append(example["input_ids"])
+        attention_mask_list.append(example["attention_mask"])
+        images = example["images"]
+        image_counts.append(len(images))
+        if len(images) > 0:
+            all_images.extend(images)
+
+    # Flatten all images: (total_images, C, H, W)
+    pixel_values = torch.stack(all_images) if all_images else torch.empty(0, 3, 448, 448)
+
+    input_ids = torch.stack(input_ids_list)
+    attention_mask = torch.stack(attention_mask_list)
+
+    if max_sequence_length is not None and input_ids.shape[1] != max_sequence_length:
+        raise ValueError(f"Input ids length ({input_ids.shape[1]}) != max_sequence_length ({max_sequence_length})")
+
+    labels = input_ids.clone()
+    if processor is not None:
+        labels[labels == processor.tokenizer.pad_token_id] = -100
+
+        # Ignore the image token index in the loss computation
+        # For InternVL3, the tokenizer doesn't have image_token_id, so use processor
+        labels[labels == processor.image_token_id] = -100
+        assert (labels[attention_mask == 0] == -100).all()
+    else:
+        labels[attention_mask == 0] = -100
+
+    return {
+        "input_ids": input_ids,
+        "attention_mask": attention_mask,
+        "labels": labels,
+        "pixel_values": pixel_values,
+        "image_counts": image_counts,
+    }
+
+
+def get_collate_fn(model_name_or_path: str):
+    """
+    Get the appropriate collate function based on model type.
+
+    Args:
+        model_name_or_path: Model name or path
+
+    Returns:
+        Appropriate collate function for the model type
+    """
+    model_type = detect_model_type(model_name_or_path)
+
+    if model_type == ModelType.INTERNVL3:
+        return collate_fn_internvl3
+    elif model_type == ModelType.SMOLVLM:
+        return collate_fn_smolvlm2
+    else:
+        raise ValueError(f"Unknown model type: {model_type}")

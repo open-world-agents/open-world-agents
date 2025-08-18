@@ -1,0 +1,28 @@
+# SmolVLM2 configuration for event to FSL conversion
+cfg:
+  # Required paths
+  # input_dir: /configure-via-CLI
+  # output_dir: /configure-via-CLI
+
+  # Model configuration
+  tokenizer_name: "HuggingFaceTB/SmolVLM2-256M-Video-Instruct"
+
+  # Episode tokenizer configuration
+  episode_tokenizer:
+    encoder_type: "hierarchical"
+    fake_image_placeholder: "<fake_image_placeholder>"
+    image_token_prefix: "<fake_token_around_image><global-img>"
+    image_token: "<image>"
+    image_token_length: 64
+    image_token_suffix: "<fake_token_around_image>"
+    episode_start_token: "<EPISODE_START>"
+    episode_end_token: "<EPISODE_END>"
+
+  # FSL dataset configuration
+  fsl_dataset:
+    pad_token_id: 0
+    max_sequence_length: 4096
+
+  # Processing options
+  num_proc: 32
+  fsl_workers: 4

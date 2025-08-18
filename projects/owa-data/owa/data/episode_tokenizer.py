@@ -43,6 +43,7 @@ class EpisodeTokenizer:
 
     def get_vocab(self) -> set[str]:
         # NOTE: fake_image_placeholder is NOT included as it's not a real token
+        # TODO: image_token_prefix or similar things can be composed of multiple tokens, so we need to parse them
         return self.encoder.get_vocab() | {
             self.config.image_token,
             self.config.image_token_prefix,

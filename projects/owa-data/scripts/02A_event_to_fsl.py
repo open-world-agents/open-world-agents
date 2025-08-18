@@ -11,47 +11,56 @@ The FSL dataset is pre-computed (excluding image loading) and implements proper 
 with transforms for on-the-fly image loading, following the user's preferred approach.
 """
 
+from dataclasses import dataclass, field
 from pathlib import Path
 
-import typer
+from jsonargparse import CLI
 from loguru import logger
 from transformers import AutoTokenizer
 
 from owa.data.datasets import DatasetDict, DatasetStage, load_from_disk
-
-# Import FSL functionality directly
 from owa.data.datasets.fsl_dataset import FSLDatasetConfig, precompute_fsl_dataset
 from owa.data.episode_tokenizer import EpisodeTokenizer, EpisodeTokenizerConfig
 
 # Re-enable logging for owa.data
 logger.enable("owa.data")
 
-app = typer.Typer(add_completion=False)
+
+@dataclass
+class Config:
+    """Configuration for event to FSL conversion."""
+
+    # Required paths
+    input_dir: Path  # Input event dataset directory
+    output_dir: Path  # Output FSL dataset directory
+
+    # Model configuration
+    tokenizer_name: str
+
+    # Nested configurations
+    episode_tokenizer: EpisodeTokenizerConfig = field(default_factory=EpisodeTokenizerConfig)
+    fsl_dataset: FSLDatasetConfig = field(default_factory=FSLDatasetConfig)
+
+    # Processing options
+    num_proc: int = 32  # Number of processes for tokenization
+    fsl_workers: int = 4  # Number of workers for FSL processing
 
 
-@app.command()
-def main(
-    input_dir: Path = typer.Option(..., "--input-dir", help="Input event dataset directory"),
-    output_dir: Path = typer.Option(..., "--output-dir", help="Output FSL dataset directory"),
-    tokenizer_name: str = typer.Option(
-        "HuggingFaceTB/SmolVLM2-256M-Video-Instruct", "--tokenizer", help="HuggingFace tokenizer model name"
-    ),
-    max_sequence_length: int = typer.Option(8192, "--max-sequence-length", help="Maximum sequence length for FSL"),
-    image_token_length: int = typer.Option(64, "--image-token-length", help="Number of image tokens per image"),
-    encoder_type: str = typer.Option("hierarchical", "--encoder-type", help="Encoder type for episode tokenizer"),
-    image_token: str = typer.Option("<image>", "--image-token", help="Image token string"),
-    num_proc: int = typer.Option(32, "--num-proc", help="Number of processes for tokenization"),
-    fsl_workers: int = typer.Option(4, "--fsl-workers", help="Number of workers for FSL processing"),
-):
+def main(cfg: Config):
     """Convert event dataset to FSL dataset format."""
-    print(f"Loading event dataset from: {input_dir}")
-    print(f"Output directory: {output_dir}")
-    print(f"Tokenizer: {tokenizer_name}")
-    print(f"Max sequence length: {max_sequence_length}")
-    print(f"Image token length: {image_token_length}")
+    print(f"Loading event dataset from: {cfg.input_dir}")
+    print(f"Output directory: {cfg.output_dir}")
+    print(f"Tokenizer: {cfg.tokenizer_name}")
+    print(f"Max sequence length: {cfg.fsl_dataset.max_sequence_length}")
+
+    print("Episode tokenizer cfg:")
+    print(f"  - Image token: {cfg.episode_tokenizer.image_token}")
+    print(f"  - Image token length: {cfg.episode_tokenizer.image_token_length}")
+    print(f"  - Image token prefix: {cfg.episode_tokenizer.image_token_prefix}")
+    print(f"  - Image token suffix: {cfg.episode_tokenizer.image_token_suffix}")
 
     # Load event dataset
-    ds_dict = load_from_disk(str(input_dir))
+    ds_dict = load_from_disk(str(cfg.input_dir))
 
     # Validate input dataset stage
     if isinstance(ds_dict, DatasetDict):
@@ -64,33 +73,26 @@ def main(
         splits = [None]
 
     if first_dataset.owa_config.stage != DatasetStage.EVENT:
-        raise typer.BadParameter(
+        raise ValueError(
             f"Input dataset must be EVENT stage, got {first_dataset.owa_config.stage}. "
             "Use 01_raw_events_to_event_dataset.py to create event datasets first."
         )
 
     # Load tokenizer
-    print(f"Loading tokenizer: {tokenizer_name}")
-    tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
+    print(f"Loading tokenizer: {cfg.tokenizer_name}")
+    tokenizer = AutoTokenizer.from_pretrained(cfg.tokenizer_name)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
-    # Configure episode tokenizer
-    episode_tokenizer_config = EpisodeTokenizerConfig(
-        encoder_type=encoder_type,
-        image_token_length=image_token_length,
-        image_token=image_token,
-    )
-
     # Initialize episode tokenizer
-    episode_tokenizer = EpisodeTokenizer(config=episode_tokenizer_config)
+    episode_tokenizer = EpisodeTokenizer(cfg.episode_tokenizer)
     episode_tokenizer.prepare_model(tokenizer=tokenizer)
 
     # Configure FSL dataset
-    fsl_config = FSLDatasetConfig(
-        pad_token_id=tokenizer.pad_token_id,
-        max_sequence_length=max_sequence_length,
-    )
+    cfg.fsl_dataset.pad_token_id = tokenizer.pad_token_id
+    print("FSL dataset cfg:")
+    print(f"  - Pad token ID: {cfg.fsl_dataset.pad_token_id}")
+    print(f"  - Max sequence length: {cfg.fsl_dataset.max_sequence_length}")
 
     processed_datasets = {}
 
@@ -101,12 +103,12 @@ def main(
 
         # Step 1: Tokenize event dataset
         print(f"Tokenizing {split_name} events...")
-        tokenized_dataset = episode_tokenizer.tokenize_event_dataset(ds, map_kwargs={"num_proc": num_proc})
+        tokenized_dataset = episode_tokenizer.tokenize_event_dataset(ds, map_kwargs={"num_proc": cfg.num_proc})
         print(f"Created {len(tokenized_dataset):,} tokenized events")
 
         # Step 2: Create FSL dataset
         print("Creating FSL dataset from tokenized events...")
-        fsl_dataset = precompute_fsl_dataset(tokenized_dataset, config=fsl_config, num_workers=fsl_workers)
+        fsl_dataset = precompute_fsl_dataset(tokenized_dataset, config=cfg.fsl_dataset, num_workers=cfg.fsl_workers)
         print(f"Created {len(fsl_dataset):,} FSL sequences for {split_name} split")
 
         processed_datasets[split_name] = fsl_dataset
@@ -117,9 +119,9 @@ def main(
     )
 
     # Save dataset
-    output_dir.mkdir(parents=True, exist_ok=True)
-    print(f"Saving FSL dataset to {output_dir}")
-    final_dataset.save_to_disk(str(output_dir))
+    cfg.output_dir.mkdir(parents=True, exist_ok=True)
+    print(f"Saving FSL dataset to {cfg.output_dir}")
+    final_dataset.save_to_disk(str(cfg.output_dir))
 
     # Print summary
     if len(processed_datasets) > 1:
@@ -136,4 +138,4 @@ def main(
 
 
 if __name__ == "__main__":
-    app()
+    CLI(main)
