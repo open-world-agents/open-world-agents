@@ -12,10 +12,10 @@ Raw MCAP Data → Event Dataset → [Path A] FSL Dataset → VLA Training Ready
 ## Quick Start
 ```bash
 # Set variables
-export MCAP_TRAIN_DIR="/mnt/raid12/datasets/owa/mcaps/csgo"
-export EVENT_DATASET_DIR="/mnt/raid12/datasets/owa/data/csgo-event"
-export FSL_DATASET_DIR="/mnt/raid12/datasets/owa/data/csgo-fsl"
-export BINNED_DATASET_DIR="/mnt/raid12/datasets/owa/data/csgo-bin"
+export MCAP_TRAIN_DIR="/mnt/raid12/datasets/owa/mcaps/vpt"
+export EVENT_DATASET_DIR="/mnt/raid12/datasets/owa/data/vpt-event"
+export FSL_DATASET_DIR="/mnt/raid12/datasets/owa/data/vpt-fsl-internvl3"
+export BINNED_DATASET_DIR="/mnt/raid12/datasets/owa/data/vpt-bin"
 
 # 1. Process MCAP → Event Dataset
 python scripts/01_raw_events_to_event_dataset.py \
@@ -27,11 +27,11 @@ python scripts/01_raw_events_to_event_dataset.py \
 
 # 2A. Path A: Event Dataset → FSL Dataset (for transformer training)
 python scripts/02A_event_to_fsl.py \
-  --input-dir $EVENT_DATASET_DIR \
-  --output-dir $FSL_DATASET_DIR \
-  --tokenizer "HuggingFaceTB/SmolVLM2-256M-Video-Instruct" \
-  --max-sequence-length 1024 \
-  --fsl-workers 4
+  --config configs/internvl3_example.yaml \
+  --cfg.input_dir $EVENT_DATASET_DIR \
+  --cfg.output_dir $FSL_DATASET_DIR \
+  --cfg.fsl_dataset.max_sequence_length 4096 \
+  --cfg.fsl_workers 16
 
 # 2B. Path B: Event Dataset → Binned Dataset (for traditional training)
 python scripts/02B_event_dataset_to_binned_dataset.py \
