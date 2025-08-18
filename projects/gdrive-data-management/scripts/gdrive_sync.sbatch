@@ -3,6 +3,7 @@
 #SBATCH --partition=a100
 #SBATCH --nodelist=A100-Zebra
 #SBATCH --cpus-per-task=48
+#SBATCH --mem=256G
 #SBATCH --time=24:00:00
 #SBATCH --output=logs/drive_sync_%j.out
 #SBATCH --error=logs/drive_sync_%j.err
