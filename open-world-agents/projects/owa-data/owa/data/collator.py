@@ -10,7 +10,7 @@ except ImportError:
 
 class ModelType(StrEnum):
     INTERNVL3 = "internvl3"
-    SMOVLM2 = "smolvlm2"
+    SMOLVLM = "smolvlm"
     UNKNOWN = "unknown"
 
 
@@ -22,7 +22,7 @@ def detect_model_type(model_name_or_path: str) -> ModelType:
     if config.model_type == "internvl3":
         return ModelType.INTERNVL3
     elif config.model_type == "smolvlm":
-        return ModelType.SMOVLM2
+        return ModelType.SMOLVLM
     else:
         return ModelType.UNKNOWN
 
@@ -154,7 +154,7 @@ def get_collate_fn(model_name_or_path: str):
 
     if model_type == ModelType.INTERNVL3:
         return collate_fn_internvl3
-    elif model_type == ModelType.SMOVLM2:
+    elif model_type == ModelType.SMOLVLM:
         return collate_fn_smolvlm2
     else:
         raise ValueError(f"Unknown model type: {model_type}")
