@@ -29,7 +29,7 @@ def create_binned_transform(
                 if mcap_msg.message_type == "desktop/ScreenCaptured":
                     screen = mcap_msg.decoded
                     screen.resolve_relative_path(episode_paths[i])
-                screen_value = screen.to_pil_image() if load_images else screen
+                screen_value = screen.to_pil_image(keep_av_open=True) if load_images else screen
                 _state.append(screen_value)
             for msg in batch["actions"][i]:
                 mcap_msg = McapMessage.model_validate_json(msg.decode("utf-8"))
