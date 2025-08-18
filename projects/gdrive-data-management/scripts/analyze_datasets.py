@@ -344,7 +344,10 @@ def get_video_duration(mcap_path: Path) -> float:
         if ocap_duration > mkv_duration + 30:
             print(f"WARNING!!!: MCAP duration is more than 30 seconds longer than MKV duration for {mcap_path.name}")
 
-        return min(mkv_duration, ocap_duration)
+        if mkv_duration > 0:
+            return min(mkv_duration, ocap_duration)
+        else:
+            return ocap_duration
 
     except Exception:
         pass
