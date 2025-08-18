@@ -236,8 +236,57 @@ def detect_activity_gaps(mcap_path: Path, gap_threshold_seconds: int = 60) -> Li
     return gaps
 
 
+def fix_mkv_metadata(mkv_path: Path) -> Path:
+    """Fix MKV file metadata if duration is N/A, creating a _fixed.mkv version."""
+    import subprocess
+
+    # Create the fixed path by replacing .mkv with _fixed.mkv
+    fixed_path = mkv_path.parent / f"{mkv_path.stem}_fixed.mkv"
+
+    # Check if fixed version already exists
+    if fixed_path.exists():
+        return fixed_path
+
+    try:
+        # Check if the original file has duration=N/A
+        cmd = ["ffprobe", "-v", "quiet", "-show_entries", "format=duration", "-of", "csv=p=0", str(mkv_path)]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+
+        if result.returncode == 0 and result.stdout.strip():
+            duration_str = result.stdout.strip()
+            # Check if duration is N/A or can be converted to float
+            if duration_str != "N/A":
+                try:
+                    float(duration_str)
+                    # Duration is available and valid, no need to fix
+                    return mkv_path
+                except ValueError:
+                    pass  # Duration is not a valid number, need to fix
+
+        # Duration is N/A, create fixed version
+        print(f"Fixing metadata for {mkv_path.name}...")
+        fix_cmd = [
+            "ffmpeg", "-v", "quiet", "-i", str(mkv_path),
+            "-c", "copy", "-avoid_negative_ts", "make_zero",
+            str(fixed_path)
+        ]
+
+        fix_result = subprocess.run(fix_cmd, capture_output=True, text=True, timeout=600)
+
+        if fix_result.returncode == 0 and fixed_path.exists():
+            print(f"Successfully created fixed version: {fixed_path.name}")
+            return fixed_path
+        else:
+            print(f"Warning: Failed to fix {mkv_path.name}: {fix_result.stderr}")
+            return mkv_path
+
+    except Exception as e:
+        print(f"Warning: Error fixing {mkv_path.name}: {e}")
+        return mkv_path
+
+
 def get_video_duration_from_mkv(mcap_path: Path) -> float:
-    """Get actual video duration from paired MKV file."""
+    """Get actual video duration from paired MKV file, preferring _fixed version."""
     import subprocess
 
     # Find the paired MKV file
@@ -252,14 +301,24 @@ def get_video_duration_from_mkv(mcap_path: Path) -> float:
         print(f"Warning: No paired MKV file found for {mcap_path.name}")
         return 0.0
 
+    # Try to fix metadata if needed and get the best available MKV file
+    best_mkv_path = fix_mkv_metadata(mkv_path)
+
     try:
         # Use ffprobe to get video duration
-        cmd = ["ffprobe", "-v", "quiet", "-show_entries", "format=duration", "-of", "csv=p=0", str(mkv_path)]
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        cmd = ["ffprobe", "-v", "quiet", "-show_entries", "format=duration", "-of", "csv=p=0", str(best_mkv_path)]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
         if result.returncode == 0 and result.stdout.strip():
-            return float(result.stdout.strip())
+            duration_str = result.stdout.strip()
+            if duration_str != "N/A":
+                try:
+                    return float(duration_str)
+                except ValueError:
+                    print(f"Warning: Invalid duration format '{duration_str}' from {best_mkv_path}")
+            else:
+                print(f"Warning: Duration is N/A for {best_mkv_path}")
     except Exception as e:
-        print(f"Warning: Could not get video duration from {mkv_path}: {e}")
+        print(f"Warning: Could not get video duration from {best_mkv_path}: {e}")
 
     return 0.0
 
@@ -268,16 +327,24 @@ def get_video_duration(mcap_path: Path) -> float:
     """Get total duration of the recording in seconds, preferring MKV duration."""
     # First try to get duration from MKV file (more accurate)
     mkv_duration = get_video_duration_from_mkv(mcap_path)
-    if mkv_duration > 0:
-        return mkv_duration
 
-    # Fallback to MCAP duration
     try:
         with OWAMcapReader(mcap_path) as reader:
             if reader.start_time and reader.end_time:
-                return (reader.end_time - reader.start_time) / 1e9
+                ocap_duration = (reader.end_time - reader.start_time) / 1e9
+
+        print(f"MKV duration: {mkv_duration}, MCAP duration: {ocap_duration}")
+        if ocap_duration > mkv_duration + 30:
+            print(f"WARNING!!!: MCAP duration is more than 30 seconds longer than MKV duration for {mcap_path.name}")
+
+        return min(mkv_duration, ocap_duration)
+
     except Exception:
         pass
+
+    if mkv_duration > 0:
+        return mkv_duration
+
     return 0.0
 
 

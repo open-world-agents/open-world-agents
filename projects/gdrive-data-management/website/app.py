@@ -39,7 +39,7 @@ def get_db_connection():
 
 
 def find_video_path(user_email: str, file_name: str) -> str:
-    """Find the video file path by searching in the user's directory structure."""
+    """Find the video file path by searching in the user's directory structure, preferring _fixed version."""
     # Remove .mcap extension if present
     base_name = file_name.replace('.mcap', '')
 
@@ -48,9 +48,14 @@ def find_video_path(user_email: str, file_name: str) -> str:
     if not user_dir.exists():
         return ""
 
-    # Try to find the .mkv file with the same base name
-    video_files = list(user_dir.glob(f"**/{base_name}.mkv"))
+    # First, try to find the _fixed.mkv version
+    fixed_video_files = list(user_dir.glob(f"**/{base_name}_fixed.mkv"))
+    if fixed_video_files:
+        # Return the first _fixed match
+        return str(fixed_video_files[0])
 
+    # If no _fixed version, try to find the regular .mkv file
+    video_files = list(user_dir.glob(f"**/{base_name}.mkv"))
     if video_files:
         # Return the first match (there should typically be only one)
         return str(video_files[0])
