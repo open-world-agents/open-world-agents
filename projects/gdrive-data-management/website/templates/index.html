@@ -1,0 +1,495 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - OWA Dataset Viewer{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="bi bi-speedometer2"></i> Dataset Analysis Dashboard
+        </h1>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ "{:,}".format(stats.total_files) }}</h4>
+                        <p class="card-text">Total Files</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-file-earmark-text fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ stats.total_users }}</h4>
+                        <p class="card-text">Total Users</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-people fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ "{:.1f}h".format(stats.total_duration_hours) }}</h4>
+                        <p class="card-text">Total Duration</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-clock fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ "{:.1f}%".format(stats.efficiency_percent) }}</h4>
+                        <p class="card-text">Data Efficiency</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-graph-up fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Data Quality Row -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ "{:,}".format(stats.available_files) }}</h4>
+                        <p class="card-text">Available Files</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-check-circle fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ "{:,}".format(stats.failed_files) }}</h4>
+                        <p class="card-text">Failed Files</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-x-circle fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ "{:,}".format(stats.sanitized_files) }}</h4>
+                        <p class="card-text">Sanitized Files</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-shield-check fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card bg-secondary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ "{:.1f}%".format((stats.available_files / stats.total_files * 100) if stats.total_files > 0 else 0) }}</h4>
+                        <p class="card-text">Success Rate</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-percent fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-pie-chart"></i> Game Distribution</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="gameChart" width="400" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-clock"></i> Accepted Hours by Game</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="gameHoursChart" width="400" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-bar-chart"></i> Version Distribution</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="versionChart" width="400" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Game Hours Table -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-trophy"></i> Game Data Collection Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Game</th>
+                                <th>Files</th>
+                                <th>Accepted Hours</th>
+                                <th>Total Hours</th>
+                                <th>Efficiency</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for game in stats.game_hours_distribution %}
+                            <tr>
+                                <td>{{ game.game_name or 'Unknown' }}</td>
+                                <td>{{ game.file_count }}</td>
+                                <td>{{ "{:.1f}h".format(game.accepted_hours or 0) }}</td>
+                                <td>{{ "{:.1f}h".format(game.total_hours or 0) }}</td>
+                                <td>{{ "{:.1f}%".format((game.accepted_hours / game.total_hours * 100) if game.total_hours and game.total_hours > 0 else 0) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Data Quality Metrics -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-shield-check"></i> Data Quality</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h3 class="text-success">{{ "{:,}".format(stats.sanitized_files) }}</h3>
+                        <p class="text-muted">Sanitized Files</p>
+                    </div>
+                    <div class="col-6">
+                        <h3 class="text-primary">{{ "{:.1f}h".format(stats.total_accepted_hours) }}</h3>
+                        <p class="text-muted">Accepted Duration</p>
+                    </div>
+                </div>
+                <div class="progress mt-3">
+                    <div class="progress-bar bg-success" role="progressbar"
+                         style="width: {{ stats.efficiency_percent }}%"
+                         aria-valuenow="{{ stats.efficiency_percent }}"
+                         aria-valuemin="0" aria-valuemax="100">
+                        {{ "{:.1f}%".format(stats.efficiency_percent) }} Efficiency
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <small class="text-muted">
+                        <i class="bi bi-info-circle"></i>
+                        Detailed gap timelines available in Files view
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-activity"></i> Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('files_page') }}" class="btn btn-primary">
+                        <i class="bi bi-table"></i> View All Files
+                    </a>
+                    <a href="{{ url_for('analytics_page') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-graph-up"></i> Detailed Analytics
+                    </a>
+                    <button class="btn btn-outline-secondary" onclick="refreshData()">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh Data
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Top Users Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-trophy"></i> Top Contributors</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Files</th>
+                                <th>Total Duration</th>
+                                <th>Accepted Duration</th>
+                                <th>Efficiency</th>
+                                <th>Avg Gaps</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in stats.user_statistics[:10] %}
+                            <tr>
+                                <td>
+                                    <a href="#" onclick="showUserDetails('{{ user.user_email }}')" 
+                                       class="text-decoration-none">
+                                        {{ user.user_email }}
+                                    </a>
+                                </td>
+                                <td>{{ user.file_count }}</td>
+                                <td>{{ "{:.1f}h".format((user.total_duration or 0) / 3600) }}</td>
+                                <td>{{ "{:.1f}h".format((user.accepted_duration or 0) / 3600) }}</td>
+                                <td>
+                                    {% set efficiency = ((user.accepted_duration or 0) / (user.total_duration or 1) * 100) %}
+                                    <span class="badge bg-{% if efficiency > 80 %}success{% elif efficiency > 60 %}warning{% else %}danger{% endif %}">
+                                        {{ "{:.1f}%".format(efficiency) }}
+                                    </span>
+                                </td>
+                                <td>{{ "{:.1f}".format(user.avg_gaps or 0) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Details Modal -->
+<div class="modal fade" id="userModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">User Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="userModalBody">
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Chart data from Flask
+const gameData = {{ stats.game_distribution | tojson | safe }};
+const gameHoursData = {{ stats.game_hours_distribution | tojson | safe }};
+const versionData = {{ stats.version_distribution | tojson | safe }};
+
+// Game Distribution Chart
+const gameCtx = document.getElementById('gameChart').getContext('2d');
+new Chart(gameCtx, {
+    type: 'doughnut',
+    data: {
+        labels: gameData.slice(0, 8).map(item => item.game_name || 'Unknown'),
+        datasets: [{
+            data: gameData.slice(0, 8).map(item => item.count),
+            backgroundColor: [
+                '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
+                '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Version Distribution Chart
+const versionCtx = document.getElementById('versionChart').getContext('2d');
+new Chart(versionCtx, {
+    type: 'bar',
+    data: {
+        labels: versionData.map(item => item.original_version || 'Unknown'),
+        datasets: [{
+            label: 'Files',
+            data: versionData.map(item => item.count),
+            backgroundColor: '#36A2EB'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// Game Hours Chart
+const gameHoursCtx = document.getElementById('gameHoursChart').getContext('2d');
+new Chart(gameHoursCtx, {
+    type: 'bar',
+    data: {
+        labels: gameHoursData.slice(0, 8).map(item => (item.game_name || 'Unknown').substring(0, 15)),
+        datasets: [{
+            label: 'Accepted Hours',
+            data: gameHoursData.slice(0, 8).map(item => item.accepted_hours || 0),
+            backgroundColor: '#28a745'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Hours'
+                }
+            }
+        },
+        plugins: {
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return `${context.parsed.y.toFixed(1)} hours`;
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Functions
+function refreshData() {
+    location.reload();
+}
+
+function showUserDetails(userEmail) {
+    $('#userModal').modal('show');
+    
+    fetch(`/api/user/${encodeURIComponent(userEmail)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                $('#userModalBody').html(`<div class="alert alert-danger">${data.error}</div>`);
+                return;
+            }
+            
+            const html = `
+                <h6>${data.user_email}</h6>
+                <div class="row mb-3">
+                    <div class="col-md-3 text-center">
+                        <h4>${data.total_files}</h4>
+                        <small class="text-muted">Files</small>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <h4>${data.total_duration_hours.toFixed(1)}h</h4>
+                        <small class="text-muted">Duration</small>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <h4>${data.efficiency_percent.toFixed(1)}%</h4>
+                        <small class="text-muted">Efficiency</small>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <h4>${data.sanitized_files}</h4>
+                        <small class="text-muted">Sanitized</small>
+                    </div>
+                </div>
+                <h6>Games Played:</h6>
+                <ul class="list-group">
+                    ${Object.entries(data.games).map(([game, count]) => 
+                        `<li class="list-group-item d-flex justify-content-between">
+                            <span>${game}</span>
+                            <span class="badge bg-primary">${count}</span>
+                        </li>`
+                    ).join('')}
+                </ul>
+            `;
+            $('#userModalBody').html(html);
+        })
+        .catch(error => {
+            $('#userModalBody').html(`<div class="alert alert-danger">Error loading user details</div>`);
+        });
+}
+
+// Update last updated time
+document.getElementById('last-updated').textContent = new Date().toLocaleString();
+</script>
+{% endblock %}

@@ -1,0 +1,11 @@
+name: gdrive-data-management
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.11
+  - libgl
+  - ffmpeg
+  - pip
+  - pip:
+      - -e .

@@ -1,0 +1,418 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics - OWA Dataset Viewer{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="bi bi-graph-up"></i> Dataset Analytics
+        </h1>
+    </div>
+</div>
+
+<!-- Key Metrics Row -->
+<div class="row mb-4">
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h4 class="text-primary">{{ "{:,}".format(stats.total_files) }}</h4>
+                <small class="text-muted">Total Files</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h4 class="text-success">{{ stats.total_users }}</h4>
+                <small class="text-muted">Users</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h4 class="text-warning">{{ "{:.0f}h".format(stats.total_duration_hours) }}</h4>
+                <small class="text-muted">Total Duration</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h4 class="text-info">{{ "{:.0f}h".format(stats.total_accepted_hours) }}</h4>
+                <small class="text-muted">Accepted</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h4 class="text-danger">{{ "{:.1f}%".format(stats.efficiency_percent) }}</h4>
+                <small class="text-muted">Efficiency</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h4 class="text-secondary">{{ "{:,}".format(stats.sanitized_files) }}</h4>
+                <small class="text-muted">Sanitized</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row 1 -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-bar-chart"></i> Top Games by File Count</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="topGamesChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-pie-chart"></i> Data Quality</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="qualityChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row 2 -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-graph-down"></i> Version Distribution</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="versionDistChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-people"></i> User Contribution</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="userContributionChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Statistics -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-list-ol"></i> Top Games (Detailed)</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Game</th>
+                                <th>Files</th>
+                                <th>%</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for game in stats.game_distribution[:10] %}
+                            <tr>
+                                <td>{{ game.game_name or 'Unknown' }}</td>
+                                <td>{{ game.count }}</td>
+                                <td>{{ "{:.1f}%".format(game.count / stats.total_files * 100) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-award"></i> User Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Metric</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Average files per user</td>
+                                <td>{{ "{:.1f}".format(stats.total_files / stats.total_users) }}</td>
+                            </tr>
+                            <tr>
+                                <td>Average duration per file</td>
+                                <td>{{ "{:.1f} min".format(stats.total_duration_hours * 60 / stats.total_files) }}</td>
+                            </tr>
+                            <tr>
+                                <td>Sanitization rate</td>
+                                <td>{{ "{:.1f}%".format(stats.sanitized_files / stats.total_files * 100) }}</td>
+                            </tr>
+                            <tr>
+                                <td>Most productive user</td>
+                                <td>{{ stats.user_statistics[0].user_email if stats.user_statistics else 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <td>Total data collected</td>
+                                <td>{{ "{:.1f} hours".format(stats.total_duration_hours) }}</td>
+                            </tr>
+                            <tr>
+                                <td>Usable data</td>
+                                <td>{{ "{:.1f} hours".format(stats.total_accepted_hours) }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Export Section -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-download"></i> Export Analytics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <p class="text-muted">
+                            Export detailed analytics data for further analysis or reporting.
+                        </p>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary" onclick="exportAnalytics()">
+                                <i class="bi bi-file-earmark-spreadsheet"></i> Export to CSV
+                            </button>
+                            <button class="btn btn-outline-primary" onclick="exportSummary()">
+                                <i class="bi bi-file-earmark-text"></i> Export Summary
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Data from Flask
+const gameData = {{ stats.game_distribution | tojson | safe }};
+const versionData = {{ stats.version_distribution | tojson | safe }};
+const userData = {{ stats.user_statistics | tojson | safe }};
+
+// Top Games Chart
+const topGamesCtx = document.getElementById('topGamesChart').getContext('2d');
+new Chart(topGamesCtx, {
+    type: 'bar',
+    data: {
+        labels: gameData.slice(0, 10).map(item => item.game_name || 'Unknown'),
+        datasets: [{
+            label: 'Files',
+            data: gameData.slice(0, 10).map(item => item.count),
+            backgroundColor: '#36A2EB'
+        }]
+    },
+    options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            x: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// Quality Chart
+const qualityCtx = document.getElementById('qualityChart').getContext('2d');
+new Chart(qualityCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Sanitized', 'Original'],
+        datasets: [{
+            data: [{{ stats.sanitized_files }}, {{ stats.total_files - stats.sanitized_files }}],
+            backgroundColor: ['#28a745', '#6c757d']
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Version Distribution Chart
+const versionCtx = document.getElementById('versionDistChart').getContext('2d');
+new Chart(versionCtx, {
+    type: 'pie',
+    data: {
+        labels: versionData.map(item => item.original_version || 'Unknown'),
+        datasets: [{
+            data: versionData.map(item => item.count),
+            backgroundColor: [
+                '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
+                '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// User Contribution Chart
+const userCtx = document.getElementById('userContributionChart').getContext('2d');
+new Chart(userCtx, {
+    type: 'bar',
+    data: {
+        labels: userData.slice(0, 10).map(user => user.user_email.split('@')[0]),
+        datasets: [{
+            label: 'Files',
+            data: userData.slice(0, 10).map(user => user.file_count),
+            backgroundColor: '#FF6384'
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        },
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+
+function exportAnalytics() {
+    // Export comprehensive analytics data
+    const analyticsData = {
+        summary: {
+            total_files: {{ stats.total_files }},
+            total_users: {{ stats.total_users }},
+            total_duration_hours: {{ stats.total_duration_hours }},
+            total_accepted_hours: {{ stats.total_accepted_hours }},
+            efficiency_percent: {{ stats.efficiency_percent }},
+            sanitized_files: {{ stats.sanitized_files }}
+        },
+        games: gameData,
+        versions: versionData,
+        users: userData
+    };
+    
+    const csv = convertAnalyticsToCSV(analyticsData);
+    downloadCSV(csv, 'owa_analytics.csv');
+}
+
+function exportSummary() {
+    // Export summary report
+    const summary = `OWA Dataset Analysis Summary
+Generated: ${new Date().toLocaleString()}
+
+OVERVIEW
+========
+Total Files: {{ "{:,}".format(stats.total_files) }}
+Total Users: {{ stats.total_users }}
+Total Duration: {{ "{:.1f} hours".format(stats.total_duration_hours) }}
+Accepted Duration: {{ "{:.1f} hours".format(stats.total_accepted_hours) }}
+Data Efficiency: {{ "{:.1f}%".format(stats.efficiency_percent) }}
+Sanitized Files: {{ "{:,}".format(stats.sanitized_files) }} ({{ "{:.1f}%".format(stats.sanitized_files / stats.total_files * 100) }})
+
+TOP GAMES
+=========
+${gameData.slice(0, 5).map((game, i) => `${i+1}. ${game.game_name || 'Unknown'}: ${game.count} files`).join('\n')}
+
+VERSION DISTRIBUTION
+===================
+${versionData.map(v => `${v.original_version || 'Unknown'}: ${v.count} files`).join('\n')}
+
+TOP CONTRIBUTORS
+===============
+${userData.slice(0, 5).map((user, i) => `${i+1}. ${user.user_email}: ${user.file_count} files`).join('\n')}
+`;
+    
+    downloadText(summary, 'owa_summary.txt');
+}
+
+function convertAnalyticsToCSV(data) {
+    let csv = 'Category,Item,Value\n';
+    
+    // Summary
+    Object.entries(data.summary).forEach(([key, value]) => {
+        csv += `Summary,${key},${value}\n`;
+    });
+    
+    // Games
+    data.games.forEach(game => {
+        csv += `Games,"${game.game_name || 'Unknown'}",${game.count}\n`;
+    });
+    
+    // Versions
+    data.versions.forEach(version => {
+        csv += `Versions,"${version.original_version || 'Unknown'}",${version.count}\n`;
+    });
+    
+    return csv;
+}
+
+function downloadCSV(csv, filename) {
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
+function downloadText(text, filename) {
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+</script>
+{% endblock %}
