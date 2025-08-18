@@ -179,7 +179,7 @@ class FSLTransform:
                 self._preload_images_parallel(image_msgs)
 
             # Convert to PIL images
-            all_images = [img.to_pil_image() for img in image_msgs]
+            all_images = [img.to_pil_image(keep_av_open=True) for img in image_msgs]
 
             # Calculate image bits
             image_bits = sum(image.width * image.height * 3 for image in all_images)

@@ -13,7 +13,7 @@ import random
 import threading
 import time
 from pathlib import Path
-from typing import Dict, List, NamedTuple, Union
+from typing import Dict, List, NamedTuple, Tuple, Union
 
 import cv2
 import numpy as np
@@ -27,34 +27,57 @@ class RequestResult(NamedTuple):
     response_size: int
 
 
-def extract_frame_api(
-    video_path: Union[str, Path],
-    pts: float,
+def extract_frames_api(
+    requests: Union[Tuple[Union[str, Path], float], List[Tuple[Union[str, Path], float]]],
     client: httpclient.InferenceServerClient,
 ) -> RequestResult:
     """
-    Send a frame-extraction request and return timing/size metrics.
+    Send frame-extraction request(s) and return timing/size metrics.
 
     Args:
-        video_path: Path to the video file.
-        pts: Timestamp in seconds.
-        server_url: Base URL of the decoding server.
+        requests: Single (video_path, pts) tuple or list of tuples
+        client: Triton client instance
 
     Returns:
-        RequestResult containing latency and response size.
+        RequestResult containing latency and total response size.
     """
+    # Normalize to list
+    is_single = not isinstance(requests, list)
+    if is_single:
+        requests = [requests]
+
+    if not requests:
+        return RequestResult(0.0, 0)
+
     start_time = time.perf_counter()
-    inputs = [httpclient.InferInput("video_path", [1], "BYTES"), httpclient.InferInput("time_sec", [1], "FP32")]
-    inputs[0].set_data_from_numpy(np.array([str(video_path).encode()], dtype=np.object_))
-    inputs[1].set_data_from_numpy(np.array([pts], dtype=np.float32))
+    batch_size = len(requests)
+
+    # Prepare batch inputs
+    video_paths = [str(req[0]) for req in requests]
+    time_secs = [req[1] for req in requests]
+
+    inputs = [
+        httpclient.InferInput("video_path", [batch_size, 1], "BYTES"),
+        httpclient.InferInput("time_sec", [batch_size, 1], "FP32"),
+    ]
+
+    # Convert to numpy arrays
+    # Convert to numpy arrays and reshape
+    video_path_data = np.array([path.encode() for path in video_paths], dtype=np.object_).reshape(batch_size, 1)
+    time_sec_data = np.array(time_secs, dtype=np.float32).reshape(batch_size, 1)
+
+    inputs[0].set_data_from_numpy(video_path_data)
+    inputs[1].set_data_from_numpy(time_sec_data)
+
     outputs = [httpclient.InferRequestedOutput("frame")]
     response = client.infer("video_decoder", inputs=inputs, outputs=outputs)
-    frame_array = response.as_numpy("frame")
 
-    response_size = frame_array.nbytes if frame_array is not None else 0
+    # Calculate total response size
+    batch_frames = response.as_numpy("frame")
+    total_response_size = batch_frames.nbytes if batch_frames is not None else 0
 
     latency = time.perf_counter() - start_time
-    return RequestResult(latency, response_size)
+    return RequestResult(latency, total_response_size)
 
 
 def get_video_durations(video_paths: List[Path]) -> Dict[Path, float]:
@@ -116,7 +139,7 @@ def multiprocess_worker(
             pts = random.random() * durations[video]
 
             try:
-                result = extract_frame_api(video, pts, client=client)
+                result = extract_frames_api((video, pts), client)
 
                 # Only count results that completed before end_time
                 if time.perf_counter() < end_time:
@@ -151,7 +174,7 @@ def threading_worker(
         pts = random.random() * durations[video]
 
         try:
-            result = extract_frame_api(video, pts, client=client)
+            result = extract_frames_api((video, pts), client)
 
             # Only count results that completed before end_time
             if time.perf_counter() < end_time:
