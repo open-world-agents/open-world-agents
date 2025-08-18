@@ -26,7 +26,7 @@ def create_event_transform(
             if batch["topic"][i] == "screen" and screen_captured and load_images:
                 for screen in screen_captured:
                     screen.resolve_relative_path(episode_paths[i])
-                    images.append(screen.to_pil_image())
+                    images.append(screen.to_pil_image(keep_av_open=True))
 
             results["encoded_event"].append(encoded_text)
             results["images"].append(images)

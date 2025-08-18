@@ -5,10 +5,9 @@ from .callable import Callable
 from .component_access import get_component, get_component_info, list_components
 from .listener import Listener
 from .message import BaseMessage, OWAMessage
-from .messages import MESSAGES, MessageRegistry
-from .plugin_discovery import discover_and_register_plugins, get_plugin_discovery
-from .plugin_spec import PluginSpec
-from .registry import CALLABLES, LISTENERS, RUNNABLES, LazyImportRegistry, Registry
+from .messages import MESSAGES
+from .plugin_discovery import get_plugin_discovery
+from .registry import CALLABLES, LISTENERS, RUNNABLES
 from .runnable import Runnable
 
 # Disable logger by default for library usage (following loguru best practices)
@@ -22,18 +21,13 @@ __all__ = [
     # Core components
     "Callable",
     "Listener",
-    "Registry",
-    "LazyImportRegistry",
     "Runnable",
     # Messages
     "BaseMessage",
     "OWAMessage",
-    # Message registry (OEP-0006)
+    # Message registry
     "MESSAGES",
-    "MessageRegistry",
-    # Plugin system (OEP-0003)
-    "PluginSpec",
-    "discover_and_register_plugins",
+    # Plugin system
     "get_plugin_discovery",
     # Component access API
     "get_component",
