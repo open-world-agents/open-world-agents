@@ -9,7 +9,7 @@ except ImportError:
 
 
 class ModelType(StrEnum):
-    INTERNVL3 = "internvl3"
+    INTERNVL = "internvl"
     SMOLVLM = "smolvlm"
     UNKNOWN = "unknown"
 
@@ -19,8 +19,8 @@ def detect_model_type(model_name_or_path: str) -> ModelType:
     from transformers import AutoConfig
 
     config = AutoConfig.from_pretrained(model_name_or_path)
-    if config.model_type == "internvl3":
-        return ModelType.INTERNVL3
+    if config.model_type == "internvl":
+        return ModelType.INTERNVL
     elif config.model_type == "smolvlm":
         return ModelType.SMOLVLM
     else:
@@ -134,7 +134,7 @@ def get_collate_fn(model_name_or_path: str):
     """
     model_type = detect_model_type(model_name_or_path)
 
-    if model_type == ModelType.INTERNVL3:
+    if model_type == ModelType.INTERNVL:
         return collate_fn_internvl3
     elif model_type == ModelType.SMOLVLM:
         return collate_fn_smolvlm2
