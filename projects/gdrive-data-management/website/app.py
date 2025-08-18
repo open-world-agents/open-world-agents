@@ -6,8 +6,9 @@ A Flask web application to view and analyze the dataset_analysis.db database.
 
 import sqlite3
 import os
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, send_file, abort
 import json
+from pathlib import Path
 
 app = Flask(__name__)
 
@@ -20,6 +21,7 @@ def to_json_filter(obj):
 
 # Configuration
 DB_PATH = "/mnt/raid12/datasets/owa_game_dataset/dataset_analysis.db"  # Relative to website folder
+DATASET_ROOT = "/mnt/raid12/datasets/owa_game_dataset"  # Root directory for dataset files
 app.config["SECRET_KEY"] = "owa-dataset-viewer-2024"
 
 
@@ -34,6 +36,32 @@ def get_db_connection():
     except Exception as e:
         print(f"Database connection error: {e}")
         return None
+
+
+def find_video_path(user_email: str, file_name: str) -> str:
+    """Find the video file path by searching in the user's directory structure."""
+    # Remove .mcap extension if present
+    base_name = file_name.replace('.mcap', '')
+
+    # Search for the video file in the user's directory and subdirectories
+    user_dir = Path(DATASET_ROOT) / user_email
+    if not user_dir.exists():
+        return ""
+
+    # Try to find the .mkv file with the same base name
+    video_files = list(user_dir.glob(f"**/{base_name}.mkv"))
+
+    if video_files:
+        # Return the first match (there should typically be only one)
+        return str(video_files[0])
+
+    return ""
+
+
+def video_exists(user_email: str, file_name: str) -> bool:
+    """Check if the video file exists for the given user and file."""
+    video_path = find_video_path(user_email, file_name)
+    return bool(video_path and Path(video_path).exists())
 
 
 def get_database_stats():
@@ -213,6 +241,9 @@ def api_files():
                 round(file["total_gap_duration"] / 60, 1) if file["total_gap_duration"] else 0
             )
 
+            # Check if video file exists
+            file["video_available"] = video_exists(file["user_email"], file["file_name"])
+
             # Parse gap timeline if available
             if file["gap_timeline"]:
                 try:
@@ -279,8 +310,8 @@ def api_user_details(user_email):
         # Get user files
         cursor.execute(
             """
-            SELECT * FROM dataset_analysis 
-            WHERE user_email = ? 
+            SELECT * FROM dataset_analysis
+            WHERE user_email = ?
             ORDER BY analysis_date DESC
         """,
             (user_email,),
@@ -321,6 +352,22 @@ def api_user_details(user_email):
     except Exception as e:
         conn.close()
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/video/<user_email>/<file_name>")
+def serve_video(user_email, file_name):
+    """Serve video files for the dataset."""
+    try:
+        video_path = find_video_path(user_email, file_name)
+
+        if not video_path or not Path(video_path).exists():
+            abort(404, description="Video file not found")
+
+        return send_file(video_path, mimetype='video/x-matroska')
+
+    except Exception as e:
+        print(f"Error serving video {user_email}/{file_name}: {e}")
+        abort(500, description="Error serving video file")
 
 
 if __name__ == "__main__":

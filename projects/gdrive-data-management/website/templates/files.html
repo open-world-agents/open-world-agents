@@ -59,6 +59,7 @@
                                 <th>Efficiency</th>
                                 <th>Gaps</th>
                                 <th>Sanitized</th>
+                                <th>Video</th>
                                 <th>Original Ver</th>
                                 <th>Target Ver</th>
                                 <th>Date</th>
@@ -66,7 +67,7 @@
                         </thead>
                         <tbody id="filesTableBody">
                             <tr>
-                                <td colspan="12" class="text-center">
+                                <td colspan="13" class="text-center">
                                     <div class="spinner-border" role="status">
                                         <span class="visually-hidden">Loading...</span>
                                     </div>
@@ -88,7 +89,7 @@
 
 <!-- File Details Modal -->
 <div class="modal fade" id="fileModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">File Details</h5>
@@ -154,7 +155,7 @@ function displayFiles(files) {
     const tbody = document.getElementById('filesTableBody');
     
     if (files.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="12" class="text-center text-muted">No files found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="13" class="text-center text-muted">No files found</td></tr>';
         return;
     }
     
@@ -197,6 +198,9 @@ function displayFiles(files) {
             </td>
             <td>
                 ${file.sanitized ? '<i class="bi bi-check-circle text-success"></i>' : '<i class="bi bi-x-circle text-muted"></i>'}
+            </td>
+            <td>
+                ${file.video_available ? '<i class="bi bi-camera-video text-primary" title="Video available"></i>' : '<i class="bi bi-camera-video-off text-muted" title="No video"></i>'}
             </td>
             <td>
                 <small class="text-muted">${file.original_version || 'Unknown'}</small>
@@ -323,6 +327,36 @@ function showFileDetails(fileId) {
         gapsHtml = '<p class="text-muted">No gaps detected in this recording.</p>';
     }
 
+    // Create video player HTML if video is available
+    let videoHtml = '';
+    if (file.video_available) {
+        const videoUrl = `/video/${encodeURIComponent(file.user_email)}/${encodeURIComponent(file.file_name)}`;
+        videoHtml = `
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h6><i class="bi bi-play-circle"></i> Video Recording</h6>
+                    <div class="ratio ratio-16x9">
+                        <video controls class="rounded">
+                            <source src="${videoUrl}" type="video/x-matroska">
+                            <source src="${videoUrl}" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                    </div>
+                </div>
+            </div>
+        `;
+    } else {
+        videoHtml = `
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i> Video file not available for this recording.
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
     document.getElementById('fileModalBody').innerHTML = `
         <div class="row mb-3">
             <div class="col-md-6">
@@ -333,8 +367,11 @@ function showFileDetails(fileId) {
                 <span class="badge ${file.available ? 'bg-success' : 'bg-danger'}">
                     ${file.available ? 'Available' : 'Failed'}
                 </span>
+                ${file.video_available ? '<span class="badge bg-info ms-2"><i class="bi bi-camera-video"></i> Video</span>' : ''}
             </div>
         </div>
+
+        ${videoHtml}
 
         <div class="row mb-3">
             <div class="col-md-3">
@@ -406,8 +443,8 @@ function exportData() {
 }
 
 function convertToCSV(files) {
-    const headers = ['User', 'File Name', 'Game', 'Duration (min)', 'Accepted (min)', 'Efficiency (%)', 'Gaps', 'Gap Duration (min)', 'Sanitized', 'Version', 'Analysis Date'];
-    
+    const headers = ['User', 'File Name', 'Game', 'Duration (min)', 'Accepted (min)', 'Efficiency (%)', 'Gaps', 'Gap Duration (min)', 'Sanitized', 'Video Available', 'Version', 'Analysis Date'];
+
     const rows = files.map(file => [
         file.user_email,
         file.file_name,
@@ -418,6 +455,7 @@ function convertToCSV(files) {
         file.detected_gaps || 0,
         file.gap_duration_minutes,
         file.sanitized ? 'Yes' : 'No',
+        file.video_available ? 'Yes' : 'No',
         file.original_version || 'Unknown',
         file.analysis_date
     ]);
@@ -439,7 +477,7 @@ function downloadCSV(csv, filename) {
 
 function showError(message) {
     const tbody = document.getElementById('filesTableBody');
-    tbody.innerHTML = `<tr><td colspan="12" class="text-center text-danger">${message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="13" class="text-center text-danger">${message}</td></tr>`;
 }
 </script>
 {% endblock %}
