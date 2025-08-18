@@ -14,7 +14,7 @@ with transforms for on-the-fly image loading, following the user's preferred app
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from jsonargparse import CLI
+from jsonargparse import auto_cli
 from loguru import logger
 from transformers import AutoTokenizer
 
@@ -138,4 +138,4 @@ def main(cfg: Config):
 
 
 if __name__ == "__main__":
-    CLI(main)
+    main(auto_cli(Config, as_positional=False))
