@@ -7,7 +7,7 @@ from torch.utils.data import ConcatDataset, DataLoader
 from tqdm import tqdm
 from transformers import AutoImageProcessor, AutoProcessor
 
-from owa.data.collator import detect_model_type, get_collate_fn
+from owa.data.collator import detect_model_type, get_collate_fn, ModelType
 from owa.data.datasets import load_from_disk
 
 # This line is to enable throughput logging from FSLTransform
@@ -70,7 +70,7 @@ def main():
     print(f"Detected model type: {model_type}")
 
     # Configure processor based on model type
-    if model_type == "internvl3":
+    if model_type == ModelType.INTERNVL:
         # InternVL3 configuration: disable multi-crop for efficiency
         processor = AutoProcessor.from_pretrained(args.model)
         processor.image_processor = AutoImageProcessor.from_pretrained(
