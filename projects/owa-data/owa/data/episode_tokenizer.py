@@ -108,8 +108,25 @@ class EpisodeTokenizer:
 
         return self.encoder.decode(text, tokenized_event["images"])
 
-    def tokenize_episode(self, mcap_messages: list[McapMessage]) -> list[TokenizedEvent]:
-        return [self.tokenize_event(mcap_msg) for mcap_msg in mcap_messages]
+    def tokenize_episode(
+        self,
+        mcap_messages: list[McapMessage],
+        *,
+        append_episode_start_token: bool = False,
+        append_episode_end_token: bool = False,
+    ) -> list[TokenizedEvent]:
+        results = []
+        for i, mcap_msg in enumerate(mcap_messages):
+            is_first = i == 0
+            is_last = i == len(mcap_messages) - 1
+            results.append(
+                self.tokenize_event(
+                    mcap_msg,
+                    is_first=is_first and append_episode_start_token,
+                    is_last=is_last and append_episode_end_token,
+                )
+            )
+        return results
 
     def decode_episode(
         self,
