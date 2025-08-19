@@ -42,8 +42,12 @@ jobs:
       - name: Generate Release Files
         run: |
           # Step 1: Run `uv pip install . --no-sources`
-          # NOTE: `--no-sources` is needed to prevent editable install. See https://github.com/astral-sh/uv/issues/14609
-          uv pip install projects/ocap --no-sources
+          # NOTE: `uv pip install --no-sources` ignores both path and editable, so I avoided it.
+          # Related issue: https://github.com/astral-sh/uv/issues/13087
+          find . -name "pyproject.toml" -exec sed -i 's/editable = true/editable = false/g' {} +
+          uv pip install projects/ocap
+          find . -name "pyproject.toml" -exec sed -i 's/editable = false/editable = true/g' {} +
+
           echo "Installed project dependencies."
 
           # Step 2: Run `conda pack -n owa`
