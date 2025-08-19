@@ -63,11 +63,26 @@ class EpisodeTokenizer:
         self.tokenizer = tokenizer
         self.is_prepared = True
 
-    def tokenize_event(self, mcap_msg: McapMessage) -> TokenizedEvent:
+    def tokenize_event(
+        self,
+        mcap_msg: McapMessage,
+        *,
+        is_first: bool = False,
+        is_last: bool = False,
+    ) -> TokenizedEvent:
         if not self.is_prepared:
             raise RuntimeError("EpisodeTokenizer must be prepared by `prepare_model` before tokenizing")
 
         encoded_text, images = self.encoder.encode(mcap_msg)
+
+        # Add episode start/end tokens if needed
+        prefix = suffix = ""
+        if is_first:
+            prefix = self.config.episode_start_token
+        if is_last:
+            suffix = self.config.episode_end_token
+        encoded_text = f"{prefix}{encoded_text}{suffix}"
+
         # Replace fake image placeholder with prefix + repeated real image tokens + suffix
         # EventEncoder outputs fake_image_placeholder, we convert to real image tokens
         replacement = f"{self.config.image_token_prefix}{self.config.image_token * self.config.image_token_length}{self.config.image_token_suffix}"
@@ -92,6 +107,9 @@ class EpisodeTokenizer:
         text = text.replace(repeated_image_pattern, self.config.fake_image_placeholder)
 
         return self.encoder.decode(text, tokenized_event["images"])
+
+    def tokenize_episode(self, mcap_messages: list[McapMessage]) -> list[TokenizedEvent]:
+        return [self.tokenize_event(mcap_msg) for mcap_msg in mcap_messages]
 
     def decode_episode(
         self,
@@ -147,24 +165,17 @@ class EpisodeTokenizer:
 
         # Tokenize each event in the dataset
         def process_event(event, idx):
-            prefix_text = suffix_text = ""
+            is_first = is_last = False
             # Add episode start token
             if idx == 0 or (idx > 0 and event["episode_path"] != event_dataset[idx - 1]["episode_path"]):
-                prefix_text = self.config.episode_start_token
+                is_first = True
             # Add episode end token
             if idx < len(event_dataset) - 1 and event["episode_path"] != event_dataset[idx + 1]["episode_path"]:
-                suffix_text = self.config.episode_end_token
-
-            prefix_ids = self.tokenizer.encode(prefix_text, add_special_tokens=False)
-            suffix_ids = self.tokenizer.encode(suffix_text, add_special_tokens=False)
+                is_last = True
 
             episode_path = event["episode_path"]
             mcap_message = McapMessage.model_validate_json(event["mcap_message"])
-            tokenized_event = self.tokenize_event(mcap_message)
-
-            tokenized_event["text"] = f"{prefix_text}{tokenized_event['text']}{suffix_text}"
-            tokenized_event["token_ids"] = prefix_ids + tokenized_event["token_ids"] + suffix_ids
-            tokenized_event["total_token_count"] += len(prefix_ids) + len(suffix_ids)
+            tokenized_event = self.tokenize_event(mcap_message, is_first=is_first, is_last=is_last)
 
             return {
                 "episode_path": episode_path,
