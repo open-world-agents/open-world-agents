@@ -1,4 +1,5 @@
 import os
+from dataclasses import dataclass
 from typing import Optional, cast
 
 import torch
@@ -13,6 +14,7 @@ from .event_metric import compute_metrics_for_events
 
 
 # @add_start_docstrings(SFTConfig.__doc__)
+@dataclass
 class OWASFTConfig(SFTConfig):
     batch_eval_metrics: bool = True  # False in SFTConfig
     prediction_loss_only: bool = False  # True in SFTConfig
