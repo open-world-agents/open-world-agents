@@ -1,6 +1,6 @@
 import re
 from dataclasses import dataclass
-from typing import TypedDict
+from typing import Iterator, TypedDict
 
 from transformers.tokenization_utils import PreTrainedTokenizer
 
@@ -61,7 +61,7 @@ class EpisodeTokenizer:
         self.tokenizer = tokenizer
         self.is_prepared = True
 
-    def tokenize(self, mcap_msg: McapMessage) -> TokenizedEvent:
+    def tokenize_event(self, mcap_msg: McapMessage) -> TokenizedEvent:
         if not self.is_prepared:
             raise RuntimeError("EpisodeTokenizer must be prepared by `prepare_model` before tokenizing")
 
@@ -79,9 +79,21 @@ class EpisodeTokenizer:
             total_token_count=len(token_ids),
         )
 
-    def decode(
-        self, input_ids_or_text: list[int] | str, *, suppress_errors: bool = False
-    ) -> list[McapMessage] | list[McapMessage | None]:
+    def decode_event(self, tokenized_event: TokenizedEvent) -> McapMessage:
+        text = tokenized_event["text"]
+        # Convert repeated image token sequences back to fake_image_placeholder
+        # Pattern: prefix + (image_token * image_token_length) + suffix -> fake_image_placeholder
+        assert self.config.image_token not in text, (
+            f"Image token {self.config.image_token} found in text, note that EpisodeTokenizer.decode is intended to be called on evaluation only. (since image tokens are replaced as -100 they're skipped on eval time)"
+        )
+        repeated_image_pattern = f"{self.config.image_token_prefix}{self.config.image_token_suffix}"
+        text = text.replace(repeated_image_pattern, self.config.fake_image_placeholder)
+
+        return self.encoder.decode(text, tokenized_event["images"])
+
+    def decode_episode(
+        self, input_ids_or_text: list[int] | str, *, suppress_errors: bool = True
+    ) -> Iterator[McapMessage] | Iterator[McapMessage | None]:
         """Decode token IDs or tokenized text back to the original McapMessage format."""
         # Step 1: Convert token IDs back to text (if input is token IDs)
         if isinstance(input_ids_or_text, list):
@@ -103,19 +115,18 @@ class EpisodeTokenizer:
         if text.endswith(self.config.episode_end_token):
             text = text[: -len(self.config.episode_end_token)]
 
-        # Step 3: Convert repeated image token sequences back to fake_image_placeholder
-        # Pattern: prefix + (image_token * image_token_length) + suffix -> fake_image_placeholder
-        assert self.config.image_token not in text, (
-            f"Image token {self.config.image_token} found in text, note that EpisodeTokenizer.decode is intended to be called on evaluation only. (since image tokens are replaced as -100 they're skipped on eval time)"
-        )
-        repeated_image_pattern = f"{self.config.image_token_prefix}{self.config.image_token_suffix}"
-        text = text.replace(repeated_image_pattern, self.config.fake_image_placeholder)
-
         # Parse all events between <EVENT_START> and <EVENT_END> tokens
         events = re.findall(r"<EVENT_START>.*?<EVENT_END>", text)
 
         # Step 4: Use the encoder's decode method to reconstruct the original message
-        return self.encoder.decode_batch(events, suppress_errors=suppress_errors)
+        for event in events:
+            try:
+                yield self.decode_event(event)
+            except Exception as e:
+                if suppress_errors:
+                    yield None
+                else:
+                    raise e
 
     def tokenize_event_dataset(self, event_dataset: Dataset, map_kwargs: dict = {"num_proc": 32}) -> Dataset:
         # Check if the input is a Dataset
@@ -137,7 +148,7 @@ class EpisodeTokenizer:
 
             episode_path = event["episode_path"]
             mcap_message = McapMessage.model_validate_json(event["mcap_message"])
-            tokenized_event = self.tokenize(mcap_message)
+            tokenized_event = self.tokenize_event(mcap_message)
 
             tokenized_event["text"] = f"{prefix_text}{tokenized_event['text']}{suffix_text}"
             tokenized_event["token_ids"] = prefix_ids + tokenized_event["token_ids"] + suffix_ids
