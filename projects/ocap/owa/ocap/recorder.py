@@ -361,3 +361,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+    # TODO: add callback which captures window switch event and record only events when the target window is active
