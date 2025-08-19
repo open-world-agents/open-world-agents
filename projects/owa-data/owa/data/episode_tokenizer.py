@@ -101,7 +101,7 @@ class EpisodeTokenizer:
         # Convert repeated image token sequences back to fake_image_placeholder
         # Pattern: prefix + (image_token * image_token_length) + suffix -> fake_image_placeholder
         assert self.config.image_token not in text, (
-            f"Image token {self.config.image_token} found in text, note that EpisodeTokenizer.decode is intended to be called on evaluation only. (since image tokens are replaced as -100 they're skipped on eval time)"
+            f"Image token {self.config.image_token} found in text, note that this method expects image tokens are excluded since they are treated as -100 in labels."
         )
         repeated_image_pattern = f"{self.config.image_token_prefix}{self.config.image_token_suffix}"
         text = text.replace(repeated_image_pattern, self.config.fake_image_placeholder)
