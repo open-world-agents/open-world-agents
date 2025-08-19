@@ -20,7 +20,7 @@ episode_tokenizer:
 
 # FSL dataset configuration
 fsl_dataset:
-  pad_token_id: 0
+  pad_token_id: 0 # overrided from tokenizer automatically
   max_sequence_length: 4096
 
 # Processing options

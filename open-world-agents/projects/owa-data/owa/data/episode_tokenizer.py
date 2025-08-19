@@ -1,11 +1,13 @@
 import re
 from dataclasses import dataclass
-from typing import Iterator, TypedDict
+from typing import Iterator, Literal, Sequence, TypedDict, overload
 
+import numpy as np
+import numpy.typing as npt
 from transformers.tokenization_utils import PreTrainedTokenizer
 
 from mcap_owa.highlevel import McapMessage
-from owa.data.encoders import create_encoder
+from owa.data.encoders import HierarchicalEventEncoder, create_encoder
 from owa.msgs.desktop.screen import ScreenCaptured
 
 from .datasets import Dataset, DatasetStage
@@ -29,8 +31,8 @@ class EpisodeTokenizerConfig:
 
 class TokenizedEvent(TypedDict):
     text: str
-    token_ids: list[int]
     images: list[ScreenCaptured]
+    token_ids: list[int]
     total_token_count: int
 
 
@@ -61,11 +63,26 @@ class EpisodeTokenizer:
         self.tokenizer = tokenizer
         self.is_prepared = True
 
-    def tokenize_event(self, mcap_msg: McapMessage) -> TokenizedEvent:
+    def tokenize_event(
+        self,
+        mcap_msg: McapMessage,
+        *,
+        is_first: bool = False,
+        is_last: bool = False,
+    ) -> TokenizedEvent:
         if not self.is_prepared:
             raise RuntimeError("EpisodeTokenizer must be prepared by `prepare_model` before tokenizing")
 
         encoded_text, images = self.encoder.encode(mcap_msg)
+
+        # Add episode start/end tokens if needed
+        prefix = suffix = ""
+        if is_first:
+            prefix = self.config.episode_start_token
+        if is_last:
+            suffix = self.config.episode_end_token
+        encoded_text = f"{prefix}{encoded_text}{suffix}"
+
         # Replace fake image placeholder with prefix + repeated real image tokens + suffix
         # EventEncoder outputs fake_image_placeholder, we convert to real image tokens
         replacement = f"{self.config.image_token_prefix}{self.config.image_token * self.config.image_token_length}{self.config.image_token_suffix}"
@@ -74,12 +91,12 @@ class EpisodeTokenizer:
 
         return TokenizedEvent(
             text=encoded_text,
-            token_ids=token_ids,
             images=images,
+            token_ids=token_ids,
             total_token_count=len(token_ids),
         )
 
-    def decode_event(self, tokenized_event: TokenizedEvent) -> McapMessage:
+    def decode_event(self, tokenized_event: dict) -> McapMessage:
         text = tokenized_event["text"]
         # Convert repeated image token sequences back to fake_image_placeholder
         # Pattern: prefix + (image_token * image_token_length) + suffix -> fake_image_placeholder
@@ -91,41 +108,71 @@ class EpisodeTokenizer:
 
         return self.encoder.decode(text, tokenized_event["images"])
 
+    def tokenize_episode(
+        self,
+        mcap_messages: list[McapMessage],
+        *,
+        append_episode_start_token: bool = False,
+        append_episode_end_token: bool = False,
+    ) -> list[TokenizedEvent]:
+        results = []
+        for i, mcap_msg in enumerate(mcap_messages):
+            is_first = i == 0
+            is_last = i == len(mcap_messages) - 1
+            results.append(
+                self.tokenize_event(
+                    mcap_msg,
+                    is_first=is_first and append_episode_start_token,
+                    is_last=is_last and append_episode_end_token,
+                )
+            )
+        return results
+
     def decode_episode(
-        self, input_ids_or_text: list[int] | str, *, suppress_errors: bool = True
-    ) -> Iterator[McapMessage] | Iterator[McapMessage | None]:
+        self,
+        input_ids_or_text: list[int] | npt.NDArray[np.int64] | str,
+        *,
+        skip_invalid: bool = True,
+        adjust_timestamp: bool = True,
+    ) -> Iterator[McapMessage]:
         """Decode token IDs or tokenized text back to the original McapMessage format."""
-        # Step 1: Convert token IDs back to text (if input is token IDs)
-        if isinstance(input_ids_or_text, list):
+        if not isinstance(self.encoder, HierarchicalEventEncoder):
+            raise NotImplementedError(
+                "EpisodeTokenizer.decode_episode is only implemented for HierarchicalEventEncoder"
+            )
+
+        # Convert token IDs back to text (if input is token IDs)
+        if isinstance(input_ids_or_text, str):
+            text = input_ids_or_text
+        else:
             if not self.is_prepared:
                 raise RuntimeError("EpisodeTokenizer must be prepared by `prepare_model` before decoding")
             # Input is token IDs
             text = self.tokenizer.decode(input_ids_or_text, skip_special_tokens=False)
-        elif isinstance(input_ids_or_text, str):
-            # Input is already text
-            text = input_ids_or_text
-        else:
-            raise ValueError(
-                f"Input must be either list[int] (token IDs) or str (text), got {type(input_ids_or_text)}"
-            )
 
-        # Step 2: Remove episode start/end tokens if present
+        # Remove episode start/end tokens if present
         if text.startswith(self.config.episode_start_token):
             text = text[len(self.config.episode_start_token) :]
         if text.endswith(self.config.episode_end_token):
             text = text[: -len(self.config.episode_end_token)]
 
         # Parse all events between <EVENT_START> and <EVENT_END> tokens
-        events = re.findall(r"<EVENT_START>.*?<EVENT_END>", text)
+        event_strings = re.findall(r"<EVENT_START>.*?<EVENT_END>", text)
 
-        # Step 4: Use the encoder's decode method to reconstruct the original message
-        for event in events:
+        previous_timestamp = float("-inf")
+        timestamp_bias = 0
+        for event_string in event_strings:
             try:
-                yield self.decode_event(event)
+                event = self.decode_event({"text": event_string, "images": None})
+                if event.timestamp < previous_timestamp:
+                    timestamp_bias += self.encoder.config.timestamp_range
+                if adjust_timestamp:
+                    event.timestamp += timestamp_bias
+
+                yield event
+                previous_timestamp = event.timestamp
             except Exception as e:
-                if suppress_errors:
-                    yield None
-                else:
+                if not skip_invalid:
                     raise e
 
     def tokenize_event_dataset(self, event_dataset: Dataset, map_kwargs: dict = {"num_proc": 32}) -> Dataset:
@@ -135,24 +182,17 @@ class EpisodeTokenizer:
 
         # Tokenize each event in the dataset
         def process_event(event, idx):
-            prefix_text = suffix_text = ""
+            is_first = is_last = False
             # Add episode start token
             if idx == 0 or (idx > 0 and event["episode_path"] != event_dataset[idx - 1]["episode_path"]):
-                prefix_text = self.config.episode_start_token
+                is_first = True
             # Add episode end token
             if idx < len(event_dataset) - 1 and event["episode_path"] != event_dataset[idx + 1]["episode_path"]:
-                suffix_text = self.config.episode_end_token
-
-            prefix_ids = self.tokenizer.encode(prefix_text, add_special_tokens=False)
-            suffix_ids = self.tokenizer.encode(suffix_text, add_special_tokens=False)
+                is_last = True
 
             episode_path = event["episode_path"]
             mcap_message = McapMessage.model_validate_json(event["mcap_message"])
-            tokenized_event = self.tokenize_event(mcap_message)
-
-            tokenized_event["text"] = f"{prefix_text}{tokenized_event['text']}{suffix_text}"
-            tokenized_event["token_ids"] = prefix_ids + tokenized_event["token_ids"] + suffix_ids
-            tokenized_event["total_token_count"] += len(prefix_ids) + len(suffix_ids)
+            tokenized_event = self.tokenize_event(mcap_message, is_first=is_first, is_last=is_last)
 
             return {
                 "episode_path": episode_path,
