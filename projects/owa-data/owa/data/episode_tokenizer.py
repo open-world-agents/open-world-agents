@@ -159,17 +159,22 @@ class EpisodeTokenizer:
         # Parse all events between <EVENT_START> and <EVENT_END> tokens
         event_strings = re.findall(r"<EVENT_START>.*?<EVENT_END>", text)
 
+        # Initialize previous timestamp and timestamp bias
         previous_timestamp = float("-inf")
         timestamp_bias = 0
         for event_string in event_strings:
             try:
                 event = self.decode_event({"text": event_string, "images": None})
+                # Since HierarchicalEventEncoder uses modular arithmetic for timestamp encoding,
+                # we need to adjust the timestamp if it's smaller than the previous one
                 if event.timestamp < previous_timestamp:
                     timestamp_bias += self.encoder.config.timestamp_range
+                # Adjust timestamp with bias
                 if adjust_timestamp:
                     event.timestamp += timestamp_bias
 
                 yield event
+                # Update previous timestamp
                 previous_timestamp = event.timestamp
             except Exception as e:
                 if not skip_invalid:
