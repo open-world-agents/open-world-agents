@@ -1,6 +1,6 @@
 import re
 from dataclasses import dataclass
-from typing import Iterator, Literal, Sequence, TypedDict, overload
+from typing import Iterator, TypedDict
 
 import numpy as np
 import numpy.typing as npt
@@ -101,7 +101,7 @@ class EpisodeTokenizer:
         # Convert repeated image token sequences back to fake_image_placeholder
         # Pattern: prefix + (image_token * image_token_length) + suffix -> fake_image_placeholder
         assert self.config.image_token not in text, (
-            f"Image token {self.config.image_token} found in text, note that EpisodeTokenizer.decode is intended to be called on evaluation only. (since image tokens are replaced as -100 they're skipped on eval time)"
+            f"Image token {self.config.image_token} found in text, note that this method expects image tokens are excluded since they are treated as -100 in labels."
         )
         repeated_image_pattern = f"{self.config.image_token_prefix}{self.config.image_token_suffix}"
         text = text.replace(repeated_image_pattern, self.config.fake_image_placeholder)
@@ -115,18 +115,14 @@ class EpisodeTokenizer:
         append_episode_start_token: bool = False,
         append_episode_end_token: bool = False,
     ) -> list[TokenizedEvent]:
-        results = []
-        for i, mcap_msg in enumerate(mcap_messages):
-            is_first = i == 0
-            is_last = i == len(mcap_messages) - 1
-            results.append(
-                self.tokenize_event(
-                    mcap_msg,
-                    is_first=is_first and append_episode_start_token,
-                    is_last=is_last and append_episode_end_token,
-                )
+        return [
+            self.tokenize_event(
+                mcap_msg,
+                is_first=i == 0 and append_episode_start_token,
+                is_last=i == len(mcap_messages) - 1 and append_episode_end_token,
             )
-        return results
+            for i, mcap_msg in enumerate(mcap_messages)
+        ]
 
     def decode_episode(
         self,
@@ -159,17 +155,22 @@ class EpisodeTokenizer:
         # Parse all events between <EVENT_START> and <EVENT_END> tokens
         event_strings = re.findall(r"<EVENT_START>.*?<EVENT_END>", text)
 
+        # Initialize previous timestamp and timestamp bias
         previous_timestamp = float("-inf")
         timestamp_bias = 0
         for event_string in event_strings:
             try:
                 event = self.decode_event({"text": event_string, "images": None})
+                # Since HierarchicalEventEncoder uses modular arithmetic for timestamp encoding,
+                # we need to adjust the timestamp if it's smaller than the previous one
                 if event.timestamp < previous_timestamp:
                     timestamp_bias += self.encoder.config.timestamp_range
+                # Adjust timestamp with bias
                 if adjust_timestamp:
                     event.timestamp += timestamp_bias
 
                 yield event
+                # Update previous timestamp
                 previous_timestamp = event.timestamp
             except Exception as e:
                 if not skip_invalid:
