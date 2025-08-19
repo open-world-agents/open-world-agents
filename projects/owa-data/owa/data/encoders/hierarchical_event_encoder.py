@@ -36,6 +36,14 @@ class HierarchicalEventEncoderConfig(BaseEventEncoderConfig):
         return min_val, max_val
 
     @property
+    def timestamp_range(self) -> int:
+        """Calculate valid timestamp range from bases."""
+        total_range = 1
+        for base in self.timestamp_bases:
+            total_range *= base
+        return total_range * self.timestamp_unit_ns
+
+    @property
     def mouse_delta_range(self) -> Tuple[int, int]:
         """Calculate valid mouse delta range from bases."""
         return self._signed_range(self.mouse_delta_bases)
