@@ -297,15 +297,13 @@ if __name__ == "__main__":
     import dill as pickle
     from transformers import AutoTokenizer
 
-    tokenizer = AutoTokenizer.from_pretrained(
-        "/mnt/raid12/scratch/claude/checkpoints/pretrain_smolvlm-256m_csgo_0811_legacy"
-    )
+    tokenizer = AutoTokenizer.from_pretrained("/mnt/harbor/projects/owa/checkpoints/smolvlm-256m_vpt_0811-00")
 
     outputs = torch.load(
-        "/mnt/raid12/scratch/claude/checkpoints/pretrain_smolvlm-256m_csgo_0811/eval/output.pt", pickle_module=pickle
+        "/mnt/harbor/projects/owa/checkpoints/smolvlm-256m_vpt_0811-00/eval/eval_step_12348.pt", pickle_module=pickle
     )
-    logits, labels = outputs["logits"], outputs["labels"]
-    logits = logits[:, :-1]
+    logits, labels = outputs["logits"][0], outputs["labels"][0]
+    logits = logits[:-1]
     labels = labels[1:]
 
     metric = compute_metrics_for_events(logits=logits, labels=labels, tokenizer=tokenizer)
