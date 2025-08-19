@@ -1,6 +1,6 @@
 import re
 from dataclasses import dataclass
-from typing import Iterator, Literal, Sequence, TypedDict, overload
+from typing import Iterator, TypedDict
 
 import numpy as np
 import numpy.typing as npt
