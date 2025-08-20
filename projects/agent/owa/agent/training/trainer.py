@@ -154,12 +154,13 @@ class OWAEvaluatorBatched:
                     self.metrics["mouse_movement_squared_error"] += dx_error**2 + dy_error**2
                     self.metrics["mouse_movement_gt_values"].append((gt_decoded.dx, gt_decoded.dy))
 
-                    # Compute percentage error: |predicted - actual| / |actual| * 100
-                    # Use Euclidean norm for 2D vectors
-                    pred_norm = np.sqrt(pred_decoded.dx**2 + pred_decoded.dy**2)
+                    # Compute percentage error using Euclidean distance between vectors
+                    euclidean_error = np.sqrt(
+                        (pred_decoded.dx - gt_decoded.dx) ** 2 + (pred_decoded.dy - gt_decoded.dy) ** 2
+                    )
                     gt_norm = np.sqrt(gt_decoded.dx**2 + gt_decoded.dy**2)
                     if gt_norm > 0:  # Avoid division by zero
-                        percentage_error = abs(pred_norm - gt_norm) / gt_norm * 100
+                        percentage_error = euclidean_error / gt_norm * 100
                         self.metrics["mouse_movement_percentage_errors"].append(percentage_error)
                 # for mouse event which has button operation, compute accuracy for button_flags and button_data
                 if pred_event.topic == "mouse/raw" and gt_event.topic == "mouse/raw":
