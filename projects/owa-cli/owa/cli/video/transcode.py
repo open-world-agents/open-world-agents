@@ -107,10 +107,10 @@ def transcode(
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     try:
-        subprocess.run(cmd, check=True, capture_output=True)
+        subprocess.run(cmd, check=True, capture_output=True, text=True)
         return f"✓ Transcoded {input_path.name} → {output_path.name}"
     except subprocess.CalledProcessError as e:
-        return f"✗ Error: {e.stderr.decode() if e.stderr else 'Unknown error'}"
+        return f"✗ Error: {e.stderr if e.stderr else 'Unknown error'}"
 
 
 def main(
