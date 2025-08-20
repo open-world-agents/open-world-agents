@@ -17,7 +17,7 @@ from tqdm import tqdm
 from mcap_owa.highlevel import OWAMcapReader
 from owa.data.datasets import Dataset, DatasetConfig, DatasetStage
 from owa.data.interval import Intervals
-from owa.data.interval.selector import All
+from owa.data.interval.selector import InactivityFilter
 from owa.data.processing.resampler import EventResampler, create_resampler
 
 # Re-enable logging for owa.data
@@ -53,7 +53,7 @@ def process_raw_events_file(
 ) -> List[Dict]:
     """Process MCAP file with resampling."""
     events: List[Dict] = []
-    interval_extractor = All()  # Select all intervals
+    interval_extractor = InactivityFilter()
     valid_intervals: Intervals = interval_extractor.extract_intervals(Path(episode_path))
 
     # Initialize resamplers for all topics
