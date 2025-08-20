@@ -1,12 +1,9 @@
 import tempfile
 from pathlib import Path
-from unittest.mock import Mock, MagicMock
 
 import pytest
 
-from mcap_owa.highlevel import OWAMcapWriter
 from owa.core.time import TimeUnits
-from owa.data.interval.interval import Intervals
 from owa.data.interval.selector import InactivityFilter
 
 
@@ -146,7 +143,7 @@ class TestInactivityFilter:
         assert len(activity) == 2
         expected = [
             (int(1.0 * TimeUnits.SECOND), int(1.5 * TimeUnits.SECOND)),
-            (int(4.0 * TimeUnits.SECOND), int(4.5 * TimeUnits.SECOND))
+            (int(4.0 * TimeUnits.SECOND), int(4.5 * TimeUnits.SECOND)),
         ]
         assert activity.to_tuples() == expected
 
@@ -155,8 +152,8 @@ class TestInactivityFilter:
         messages = [
             MockMessage("keyboard", int(1.0 * TimeUnits.SECOND)),
             MockMessage("mouse/raw", int(3.0 * TimeUnits.SECOND)),  # 2s gap - should be continuous
-            MockMessage("keyboard", int(4.0 * TimeUnits.SECOND)),   # 1s gap - should be continuous
-            MockMessage("mouse/raw", int(10.0 * TimeUnits.SECOND)), # 6s gap - should break interval
+            MockMessage("keyboard", int(4.0 * TimeUnits.SECOND)),  # 1s gap - should be continuous
+            MockMessage("mouse/raw", int(10.0 * TimeUnits.SECOND)),  # 6s gap - should break interval
             MockMessage("keyboard", int(11.0 * TimeUnits.SECOND)),  # 1s gap - continuous
         ]
 
@@ -174,7 +171,7 @@ class TestInactivityFilter:
         assert len(activity) == 2
         expected = [
             (int(1.0 * TimeUnits.SECOND), int(4.0 * TimeUnits.SECOND)),
-            (int(10.0 * TimeUnits.SECOND), int(11.0 * TimeUnits.SECOND))
+            (int(10.0 * TimeUnits.SECOND), int(11.0 * TimeUnits.SECOND)),
         ]
         assert activity.to_tuples() == expected
 
@@ -186,7 +183,6 @@ class TestInactivityFilter:
             MockMessage("screen", int(1.0 * TimeUnits.SECOND)),
             MockMessage("screen", int(2.0 * TimeUnits.SECOND)),
             MockMessage("screen", int(6.0 * TimeUnits.SECOND)),  # Last screen event
-
             # Input events with some gaps
             MockMessage("keyboard", int(1.5 * TimeUnits.SECOND)),
             MockMessage("mouse/raw", int(2.5 * TimeUnits.SECOND)),

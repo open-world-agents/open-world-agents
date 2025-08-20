@@ -195,7 +195,9 @@ class InactivityFilter(IntervalExtractor):
 
         return Intervals([(first_screen_time, last_screen_time)])
 
-    def _get_topic_activity_intervals(self, episode_path: Path, topics: list[str], inactivity_threshold: float) -> Intervals:
+    def _get_topic_activity_intervals(
+        self, episode_path: Path, topics: list[str], inactivity_threshold: float
+    ) -> Intervals:
         """
         Extract activity intervals for specific topics with given inactivity threshold.
 
