@@ -203,7 +203,7 @@ class TestInactivityFilter:
         # The result should be the intersection of screen activity, input activity,
         # and screen boundary
         # Screen boundary: [1.0, 6.0]
-        # Screen activity: [1.0, 2.0] and [6.0, 6.0] (gap from 2.0 to 6.0 = 4s > 1s threshold)
+        # Screen activity: [1.0, 2.0] (gap from 2.0 to 6.0 = 4s > 1s threshold, so interval breaks; single-event interval at 6.0 is ignored)
         # Input activity: [1.5, 5.5] (no gaps > 5s)
         # Intersection: [1.0, 2.0] ∩ [1.5, 5.5] = [1.5, 2.0]
         #               [6.0, 6.0] ∩ [1.5, 5.5] = empty (6.0 > 5.5)
