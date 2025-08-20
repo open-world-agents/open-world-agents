@@ -110,19 +110,28 @@ class EpisodeTokenizer:
 
     def tokenize_episode(
         self,
-        mcap_messages: list[McapMessage],
+        mcap_messages: Iterator[McapMessage],
         *,
         append_episode_start_token: bool = False,
         append_episode_end_token: bool = False,
-    ) -> list[TokenizedEvent]:
-        return [
-            self.tokenize_event(
-                mcap_msg,
-                is_first=i == 0 and append_episode_start_token,
-                is_last=i == len(mcap_messages) - 1 and append_episode_end_token,
+    ) -> Iterator[TokenizedEvent]:
+        iterator = iter(mcap_messages)
+        prev_msg = None
+        current_msg = next(iterator, None)
+
+        while current_msg is not None:
+            next_msg = next(iterator, None)
+            is_first = prev_msg is None
+            is_last = next_msg is None
+
+            yield self.tokenize_event(
+                current_msg,
+                is_first=is_first and append_episode_start_token,
+                is_last=is_last and append_episode_end_token,
             )
-            for i, mcap_msg in enumerate(mcap_messages)
-        ]
+
+            prev_msg = current_msg
+            current_msg = next_msg
 
     def decode_episode(
         self,
