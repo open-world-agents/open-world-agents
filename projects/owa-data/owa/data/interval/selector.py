@@ -185,10 +185,11 @@ class InactivityFilter(IntervalExtractor):
         last_screen_time = None
 
         with OWAMcapReader(episode_path) as reader:
-            for mcap_msg in reader.iter_messages(topics=["screen"]):
-                if first_screen_time is None:
-                    first_screen_time = mcap_msg.timestamp
-                last_screen_time = mcap_msg.timestamp
+            try:
+                first_screen_time = next(reader.iter_messages(topics=["screen"])).timestamp
+                last_screen_time = next(reader.iter_messages(topics=["screen"], reverse=True)).timestamp
+            except StopIteration:
+                pass  # No screen events, will return empty Intervals below
 
         if first_screen_time is None or last_screen_time is None:
             return Intervals()
