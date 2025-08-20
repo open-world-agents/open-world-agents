@@ -18,7 +18,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from typing_extensions import Annotated
 
 from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
-from owa.cli.mcap.backup_utils import BackupContext
+from owa.core.utils.backup import BackupContext
 
 from ..console import console
 

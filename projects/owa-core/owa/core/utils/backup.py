@@ -1,4 +1,4 @@
-"""Backup utilities for MCAP file operations."""
+"""Backup utilities for file operations."""
 
 import shutil
 from pathlib import Path
@@ -8,6 +8,8 @@ from rich.console import Console
 
 
 class DummyConsole(Console):
+    """A console that doesn't print anything."""
+    
     def print(self, *args, **kwargs):
         pass
 

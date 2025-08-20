@@ -18,7 +18,7 @@ from rich.table import Table
 
 from mcap_owa import __version__ as mcap_owa_version
 from mcap_owa.highlevel import OWAMcapReader
-from owa.cli.mcap.backup_utils import BackupContext
+from owa.core.utils.backup import BackupContext
 
 
 def _get_subprocess_env():

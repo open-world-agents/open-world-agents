@@ -1,9 +1,7 @@
 """
 Tests for the BackupContext context manager.
 
-This module tests the BackupContext system used across different CLI commands.
-Feature-specific integration tests should only verify that features correctly
-use BackupContext, not test BackupContext functionality itself.
+This module tests the BackupContext system used across different projects.
 """
 
 from unittest.mock import patch
@@ -11,7 +9,7 @@ from unittest.mock import patch
 import pytest
 from rich.console import Console
 
-from owa.cli.mcap.backup_utils import BackupContext, DummyConsole
+from owa.core.utils.backup import BackupContext, DummyConsole
 
 
 class TestBackupContext:
@@ -116,7 +114,7 @@ class TestBackupContext:
             with BackupContext(test_file, console=console):
                 pass
 
-    @patch("owa.cli.mcap.backup_utils.BackupContext.rollback_from_backup")
+    @patch("owa.core.utils.backup.BackupContext.rollback_from_backup")
     def test_rollback_failure_during_exception(self, mock_rollback, tmp_path):
         """Test critical error when rollback fails during exception handling."""
         console = Console()
@@ -203,7 +201,7 @@ class TestBackupContext:
         # Should not raise exception due to missing_ok=True
         BackupContext.cleanup_backup(backup_file, console)
 
-    @patch("owa.cli.mcap.backup_utils.Path.unlink")
+    @patch("owa.core.utils.backup.Path.unlink")
     def test_cleanup_backup_permission_error(self, mock_unlink, tmp_path):
         """Test cleanup when deletion fails."""
         console = Console()
