@@ -11,102 +11,65 @@ from unittest.mock import patch
 import pytest
 from rich.console import Console
 
-from owa.cli.mcap.backup_utils import BackupContext
+from owa.cli.mcap.backup_utils import BackupContext, DummyConsole
 
 
 class TestBackupContext:
     """Test cases for the BackupContext context manager."""
 
-    def test_backup_context_success(self, tmp_path):
-        """Test successful backup context usage."""
-        console = Console()
+    # Core Context Manager Functionality
 
+    def test_successful_context_with_auto_cleanup(self, tmp_path):
+        """Test successful backup context usage with automatic cleanup."""
+        console = Console()
         test_file = tmp_path / "test.mcap"
         test_file.write_bytes(b"original content")
 
         with BackupContext(test_file, console) as ctx:
-            assert ctx.backup_created is True
             assert ctx.backup_path.exists()
-
-            # Modify the file
+            assert ctx.backup_path.read_bytes() == b"original content"
             test_file.write_bytes(b"modified content")
 
-        # File should remain modified (no exception occurred)
+        # File should remain modified, backup cleaned up
+        assert test_file.read_bytes() == b"modified content"
+        assert not ctx.backup_path.exists()
+
+    def test_successful_context_with_keep_backup(self, tmp_path):
+        """Test successful backup context usage keeping backup."""
+        console = Console()
+        test_file = tmp_path / "test.mcap"
+        test_file.write_bytes(b"original content")
+
+        with BackupContext(test_file, console, keep_backup=True) as ctx:
+            test_file.write_bytes(b"modified content")
+
+        # File should remain modified, backup kept
         assert test_file.read_bytes() == b"modified content"
         assert ctx.backup_path.exists()
+        assert ctx.backup_path.read_bytes() == b"original content"
 
-    def test_backup_context_auto_rollback_on_exception(self, tmp_path):
+    def test_automatic_rollback_on_exception(self, tmp_path):
         """Test automatic rollback when exception occurs."""
         console = Console()
-
         test_file = tmp_path / "test.mcap"
         original_content = b"original content"
         test_file.write_bytes(original_content)
 
+        backup_path = BackupContext.find_backup_path(test_file)
         with pytest.raises(ValueError):
-            with BackupContext(test_file, console) as ctx:
-                # Modify the file
-                test_file.write_bytes(b"modified content")
-
-                # Raise an exception to trigger rollback
-                raise ValueError("Test exception")
-
-        # File should be restored to original content
-        assert test_file.read_bytes() == original_content
-        assert not ctx.backup_path.exists()  # Backup deleted after rollback
-
-    def test_backup_context_manual_rollback_only(self, tmp_path):
-        """Test context with manual rollback only (no automatic rollback)."""
-        console = Console()
-
-        test_file = tmp_path / "test.mcap"
-        original_content = b"original content"
-        test_file.write_bytes(original_content)
-
-        # Test that automatic rollback always happens on exception
-        with pytest.raises(ValueError):
-            with BackupContext(test_file, console) as ctx:
+            with BackupContext(test_file, console):
                 test_file.write_bytes(b"modified content")
                 raise ValueError("Test exception")
 
-        # File should be restored (automatic rollback always enabled)
+        # File should be restored, backup deleted
         assert test_file.read_bytes() == original_content
-        assert not ctx.backup_path.exists()  # Backup deleted after rollback
+        assert not backup_path.exists()
 
-    def test_backup_context_manual_rollback(self, tmp_path):
-        """Test manual rollback functionality."""
-        console = Console()
+    # Initialization and Configuration
 
-        test_file = tmp_path / "test.mcap"
-        original_content = b"original content"
-        test_file.write_bytes(original_content)
-
-        with BackupContext(test_file, console) as ctx:
-            test_file.write_bytes(b"modified content")
-
-            # Manual rollback
-            result = ctx.rollback(delete_backup=True)
-            assert result is True
-            assert test_file.read_bytes() == original_content
-            assert not ctx.backup_path.exists()
-
-    def test_backup_context_cleanup_backup(self, tmp_path):
-        """Test manual backup cleanup."""
-        console = Console()
-
-        test_file = tmp_path / "test.mcap"
-        test_file.write_bytes(b"content")
-
-        with BackupContext(test_file, console) as ctx:
-            assert ctx.backup_path.exists()
-
-            ctx.cleanup_backup()
-            assert not ctx.backup_path.exists()
-
-    def test_backup_context_custom_suffix(self, tmp_path):
+    def test_custom_backup_suffix(self, tmp_path):
         """Test backup context with custom suffix."""
         console = Console()
-
         test_file = tmp_path / "test.mcap"
         test_file.write_bytes(b"content")
 
@@ -115,79 +78,147 @@ class TestBackupContext:
             assert ctx.backup_path == expected_backup
             assert ctx.backup_path.exists()
 
-    def test_backup_context_backup_creation_fails(self, tmp_path):
-        """Test context when backup creation fails."""
-        console = Console()
+    def test_default_dummy_console(self, tmp_path):
+        """Test that DummyConsole is used when no console provided."""
+        test_file = tmp_path / "test.mcap"
+        test_file.write_bytes(b"content")
 
-        # Create a file that doesn't exist
+        ctx = BackupContext(test_file)  # No console provided
+        assert isinstance(ctx.console, DummyConsole)
+
+        # Verify DummyConsole doesn't output anything
+        with patch("builtins.print") as mock_print:
+            ctx.console.print("test message")
+            mock_print.assert_not_called()
+
+    # Error Conditions
+
+    def test_file_not_found_error(self, tmp_path):
+        """Test context when source file doesn't exist."""
+        console = Console()
         nonexistent_file = tmp_path / "nonexistent.mcap"
 
-        with pytest.raises(FileNotFoundError):
+        with pytest.raises(FileNotFoundError, match="File not found"):
             with BackupContext(nonexistent_file, console):
                 pass
 
-    def test_backup_context_rollback_no_backup_created(self, tmp_path):
-        """Test rollback when no backup was created."""
+    def test_backup_already_exists_error(self, tmp_path):
+        """Test context when backup file already exists."""
         console = Console()
-
         test_file = tmp_path / "test.mcap"
         test_file.write_bytes(b"content")
 
-        ctx = BackupContext(test_file, console)
-        # Don't enter context, so no backup is created
+        # Create backup file manually
+        backup_path = BackupContext.find_backup_path(test_file)
+        backup_path.write_bytes(b"existing backup")
 
-        result = ctx.rollback()
-        assert result is False
+        with pytest.raises(FileExistsError, match="Backup file already exists"):
+            with BackupContext(test_file, console):
+                pass
+
+    @patch("owa.cli.mcap.backup_utils.BackupContext.rollback_from_backup")
+    def test_rollback_failure_during_exception(self, mock_rollback, tmp_path):
+        """Test critical error when rollback fails during exception handling."""
+        console = Console()
+        test_file = tmp_path / "test.mcap"
+        test_file.write_bytes(b"original content")
+
+        # Make rollback fail
+        mock_rollback.side_effect = OSError("Rollback failed")
+
+        with pytest.raises(OSError, match="Rollback failed"):
+            with BackupContext(test_file, console):
+                test_file.write_bytes(b"modified content")
+                raise ValueError("Original exception")
+
+    # Static Method Tests
+
+    def test_find_backup_path_default_suffix(self, tmp_path):
+        """Test find_backup_path with default suffix."""
+        test_file = tmp_path / "test.mcap"
+        backup_path = BackupContext.find_backup_path(test_file)
+        expected = test_file.with_suffix(".mcap.backup")
+        assert backup_path == expected
+
+    def test_find_backup_path_custom_suffix(self, tmp_path):
+        """Test find_backup_path with custom suffix."""
+        test_file = tmp_path / "test.mcap"
+        backup_path = BackupContext.find_backup_path(test_file, ".bak")
+        expected = test_file.with_suffix(".mcap.bak")
+        assert backup_path == expected
+
+    def test_rollback_from_backup_success(self, tmp_path):
+        """Test successful rollback using static method."""
+        console = Console()
+        test_file = tmp_path / "test.mcap"
+        backup_file = tmp_path / "test.mcap.backup"
+
+        test_file.write_bytes(b"modified content")
+        backup_file.write_bytes(b"original content")
+
+        BackupContext.rollback_from_backup(test_file, backup_file, console)
+
+        assert test_file.read_bytes() == b"original content"
+        assert backup_file.exists()  # Backup preserved by default
+
+    def test_rollback_from_backup_with_delete(self, tmp_path):
+        """Test rollback with backup deletion."""
+        console = Console()
+        test_file = tmp_path / "test.mcap"
+        backup_file = tmp_path / "test.mcap.backup"
+
+        test_file.write_bytes(b"modified content")
+        backup_file.write_bytes(b"original content")
+
+        BackupContext.rollback_from_backup(test_file, backup_file, console, delete_backup=True)
+
+        assert test_file.read_bytes() == b"original content"
+        assert not backup_file.exists()  # Backup deleted
+
+    def test_rollback_from_backup_missing_backup(self, tmp_path):
+        """Test rollback when backup file doesn't exist."""
+        console = Console()
+        test_file = tmp_path / "test.mcap"
+        backup_file = tmp_path / "test.mcap.backup"
+
+        test_file.write_bytes(b"content")
+
+        with pytest.raises(FileNotFoundError, match="Backup file not found"):
+            BackupContext.rollback_from_backup(test_file, backup_file, console)
+
+    def test_cleanup_backup_success(self, tmp_path):
+        """Test successful backup cleanup."""
+        console = Console()
+        backup_file = tmp_path / "test.mcap.backup"
+        backup_file.write_bytes(b"backup content")
+
+        BackupContext.cleanup_backup(backup_file, console)
+        assert not backup_file.exists()
+
+    def test_cleanup_backup_missing_file(self, tmp_path):
+        """Test cleanup when backup file doesn't exist (should not raise)."""
+        console = Console()
+        backup_file = tmp_path / "nonexistent.backup"
+
+        # Should not raise exception due to missing_ok=True
+        BackupContext.cleanup_backup(backup_file, console)
 
     @patch("owa.cli.mcap.backup_utils.Path.unlink")
-    def test_backup_context_cleanup_fails(self, mock_unlink, tmp_path):
-        """Test cleanup when backup deletion fails."""
+    def test_cleanup_backup_permission_error(self, mock_unlink, tmp_path):
+        """Test cleanup when deletion fails."""
         console = Console()
-
-        test_file = tmp_path / "test.mcap"
-        test_file.write_bytes(b"content")
+        backup_file = tmp_path / "test.mcap.backup"
 
         mock_unlink.side_effect = OSError("Permission denied")
 
-        with BackupContext(test_file, console) as ctx:
-            # Should not raise exception when cleanup fails
-            ctx.cleanup_backup()
+        with pytest.raises(OSError, match="Permission denied"):
+            BackupContext.cleanup_backup(backup_file, console)
 
-    def test_backup_context_auto_cleanup_on_success(self, tmp_path):
-        """Test automatic cleanup when keep_backup=False."""
-        console = Console()
-
-        test_file = tmp_path / "test.mcap"
-        test_file.write_bytes(b"original content")
-
-        with BackupContext(test_file, console, keep_backup=False) as ctx:
-            test_file.write_bytes(b"modified content")
-            # No exception, so backup should be cleaned up automatically
-
-        # Backup should be cleaned up
-        assert not ctx.backup_path.exists()
-        assert test_file.read_bytes() == b"modified content"
-
-    def test_backup_context_keep_backup_on_success(self, tmp_path):
-        """Test keeping backup when keep_backup=True."""
-        console = Console()
-
-        test_file = tmp_path / "test.mcap"
-        test_file.write_bytes(b"original content")
-
-        with BackupContext(test_file, console, keep_backup=True) as ctx:
-            test_file.write_bytes(b"modified content")
-            # No exception, so backup should be kept
-
-        # Backup should still exist
-        assert ctx.backup_path.exists()
-        assert ctx.backup_path.read_bytes() == b"original content"
-        assert test_file.read_bytes() == b"modified content"
+    # Complex Scenarios
 
     def test_nested_backup_contexts(self, tmp_path):
-        """Test nested backup contexts."""
+        """Test nested backup contexts with different suffixes."""
         console = Console()
-
         test_file = tmp_path / "test.mcap"
         original_content = b"original"
         test_file.write_bytes(original_content)
@@ -207,3 +238,24 @@ class TestBackupContext:
 
         # File should contain inner modification (no exceptions)
         assert test_file.read_bytes() == b"inner modification"
+
+    def test_nested_contexts_with_exception_in_inner(self, tmp_path):
+        """Test nested contexts where inner context raises exception."""
+        console = Console()
+        test_file = tmp_path / "test.mcap"
+        original_content = b"original"
+        test_file.write_bytes(original_content)
+
+        with BackupContext(test_file, console, backup_suffix=".outer"):
+            test_file.write_bytes(b"outer modification")
+
+            with pytest.raises(ValueError):
+                with BackupContext(test_file, console, backup_suffix=".inner"):
+                    test_file.write_bytes(b"inner modification")
+                    raise ValueError("Inner exception")
+
+            # After inner exception, file should be restored to outer state
+            assert test_file.read_bytes() == b"outer modification"
+
+        # After outer context, file should remain with outer modification
+        assert test_file.read_bytes() == b"outer modification"

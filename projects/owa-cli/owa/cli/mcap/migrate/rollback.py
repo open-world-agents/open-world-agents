@@ -5,6 +5,7 @@ This module provides functionality to rollback MCAP files from their backup file
 typically used when a migration fails or needs to be undone.
 """
 
+# Removed shutil import - using BackupContext methods
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -13,7 +14,7 @@ from typing import List, Optional
 import typer
 from rich.console import Console
 
-from owa.cli.mcap.backup_utils import generate_backup_path, rollback_from_backup
+from owa.cli.mcap.backup_utils import BackupContext
 from owa.cli.mcap.migrate.file_utils import (
     add_rollback_row,
     create_file_info_table,
@@ -57,7 +58,7 @@ def find_backup_files(file_paths: List[Path], console: Console) -> List[BackupIn
             console.print(f"[yellow]Skipping non-MCAP file: {file_path}[/yellow]")
             continue
 
-        backup_path = generate_backup_path(file_path)
+        backup_path = BackupContext.find_backup_path(file_path)
         backup_exists = backup_path.exists()
         original_exists = file_path.exists()
 
@@ -193,15 +194,12 @@ def rollback(
             console.print(f"Restoring from: {info.backup_path}")
 
         try:
-            success = rollback_from_backup(info.original_path, info.backup_path, console, delete_backup=True)
-
-            if success:
-                successful_rollbacks += 1
-            else:
-                failed_rollbacks += 1
+            # Use BackupContext static method for rollback
+            BackupContext.rollback_from_backup(info.original_path, info.backup_path, console, delete_backup=True)
+            successful_rollbacks += 1
 
         except Exception as e:
-            console.print(f"[red]Unexpected error during rollback: {e}[/red]")
+            console.print(f"[red]Rollback failed: {e}[/red]")
             failed_rollbacks += 1
 
     # Final summary
