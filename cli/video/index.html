@@ -1391,6 +1391,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#owl-video-transcode" class="md-nav__link">
+    <span class="md-ellipsis">
+      transcode
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#owl-video-vfr-to-cfr" class="md-nav__link">
     <span class="md-ellipsis">
       vfr-to-cfr
@@ -1663,6 +1672,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#owl-video-transcode" class="md-nav__link">
+    <span class="md-ellipsis">
+      transcode
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#owl-video-vfr-to-cfr" class="md-nav__link">
     <span class="md-ellipsis">
       vfr-to-cfr
@@ -1717,7 +1735,7 @@
 </div>
 <h2 id="command-reference">Command Reference<a class="headerlink" href="#command-reference" title="Permanent link">&para;</a></h2>
 <h4 id="owl-video">owl video<a class="headerlink" href="#owl-video" title="Permanent link">&para;</a></h4>
-<p>MKV management commands.</p>
+<p>Video processing commands.</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>owl video [OPTIONS] COMMAND [ARGS]...
 </code></pre></div>
@@ -1800,10 +1818,104 @@
 </tr>
 </tbody>
 </table>
+<h5 id="owl-video-transcode">owl video transcode<a class="headerlink" href="#owl-video-transcode" title="Permanent link">&para;</a></h5>
+<p>Transcode video with fps/resolution/quality control.</p>
+<p>This command maintains all video, audio, and subtitle streams while applying
+professional encoding settings for maximum compatibility.</p>
+<p>Key Parameters:
+- fps: Target frame rate (default: 60) - higher fps for smooth motion
+- keyint: Keyframe interval (default: 30) - lower = better seeking, higher = better compression
+- scenecut: Scene change detection (0=disable for consistent GOP, 40=default adaptive)
+- crf: Quality level (18=high, 23=default, 28=lower) - lower numbers = better quality</p>
+<p>Examples:
+  # Basic transcoding with defaults (60fps, keyint=30)
+  owl video transcode input.mkv output.mkv</p>
+<p># Custom resolution and frame rate
+  owl video transcode input.mkv output.mkv --fps 30 --width 1920 --height 1080</p>
+<p># High quality with fixed keyframes (good for streaming)
+  owl video transcode input.mkv output.mkv --crf 18 --keyint 60 --scenecut 0</p>
+<p># Screen recording optimization
+  owl video transcode input.mkv output.mkv --fps 30 --keyint 30 --scenecut 0</p>
+<p><strong>Usage:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>owl video transcode [OPTIONS] INPUT_PATH OUTPUT_PATH
+</code></pre></div>
+<p><strong>Options:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--fps</code>, <code>-f</code></td>
+<td>float</td>
+<td>Target FPS</td>
+<td><code>60.0</code></td>
+</tr>
+<tr>
+<td><code>--width</code>, <code>-w</code></td>
+<td>integer</td>
+<td>Target width</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>--height</code>, <code>-h</code></td>
+<td>integer</td>
+<td>Target height</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>--codec</code>, <code>-c</code></td>
+<td>text</td>
+<td>Video codec</td>
+<td><code>libx264</code></td>
+</tr>
+<tr>
+<td><code>--crf</code></td>
+<td>integer</td>
+<td>Quality (0-51, lower=better)</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>--keyint</code>, <code>-k</code></td>
+<td>integer</td>
+<td>Keyframe interval</td>
+<td><code>30</code></td>
+</tr>
+<tr>
+<td><code>--min-keyint</code></td>
+<td>integer</td>
+<td>Min keyframe interval</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>--scenecut</code></td>
+<td>integer</td>
+<td>Scene cut threshold (0=disable)</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>--dry-run</code></td>
+<td>boolean</td>
+<td>Show command only</td>
+<td><code>False</code></td>
+</tr>
+<tr>
+<td><code>--help</code></td>
+<td>boolean</td>
+<td>Show this message and exit.</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
 <h5 id="owl-video-vfr-to-cfr">owl video vfr-to-cfr<a class="headerlink" href="#owl-video-vfr-to-cfr" title="Permanent link">&para;</a></h5>
 <p>Convert MKV files with Variable Frame Rate (VFR) to Constant Frame Rate (CFR).</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>owl video vfr-to-cfr [OPTIONS] PATH
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>owl video vfr-to-cfr [OPTIONS] PATH
 </code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
