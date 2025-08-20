@@ -124,30 +124,102 @@ class InactivityFilter(IntervalExtractor):
     """
     Extract intervals by detecting periods of activity versus inactivity.
 
-    This implementation scans both keyboard and mouse topics. If the gap
-    between two consecutive events exceeds inactivity_threshold (in seconds),
-    it closes the previous activity interval and starts a new one.
+    This enhanced implementation uses composite interval operations to handle different
+    inactivity thresholds for different event types:
+    - Screen topics: 1 second inactivity threshold
+    - Input devices (keyboard, mouse/raw): 5 seconds inactivity threshold
+
+    The activity interval spans from the first to last screen topic event, with
+    inactivity gaps removed based on the appropriate thresholds.
     """
 
-    def __init__(self, inactivity_threshold: float = 5.0):
+    def __init__(self, screen_inactivity_threshold: float = 1.0, input_inactivity_threshold: float = 5.0):
         """
         Args:
-            inactivity_threshold: A float number of seconds that defines an inactivity gap.
+            screen_inactivity_threshold: Seconds of gap between screen events to consider inactivity (default: 1.0).
+            input_inactivity_threshold: Seconds of gap between input events to consider inactivity (default: 5.0).
         """
-        self.inactivity_threshold = inactivity_threshold
+        self.screen_inactivity_threshold = screen_inactivity_threshold
+        self.input_inactivity_threshold = input_inactivity_threshold
 
     def extract_intervals(self, episode_path: Path) -> Intervals:
         """
-        Walk through keyboard and mouse messages in the MCAP file. Whenever the
-        time difference between the current event and the last recorded activity
-        exceeds inactivity_threshold, close off the current interval and start a new one.
+        Extract activity intervals using composite interval operations.
+
+        1. Find screen topic boundaries (first to last screen event)
+        2. Create screen activity intervals (removing >1s gaps)
+        3. Create input device activity intervals (removing >5s gaps)
+        4. Use intersection to find periods where both are active
+        5. Constrain result to screen boundary interval
         """
-        activity_intervals = Intervals()
-        current_interval_start = None
-        last_activity_time = None
+        # Step 1: Find screen topic boundaries
+        screen_boundary = self._get_screen_boundary_interval(episode_path)
+        if screen_boundary.is_empty:
+            return Intervals()  # No screen events found
+
+        # Step 2: Create screen activity intervals
+        screen_activity = self._get_topic_activity_intervals(
+            episode_path, ["screen"], self.screen_inactivity_threshold
+        )
+
+        # Step 3: Create input device activity intervals
+        input_activity = self._get_topic_activity_intervals(
+            episode_path, ["keyboard", "mouse/raw"], self.input_inactivity_threshold
+        )
+
+        # Step 4: Use composite interval operations
+        # Use intersection of screen and input activities, within boundary
+        result = screen_activity & input_activity & screen_boundary
+
+        return result
+
+    def _get_screen_boundary_interval(self, episode_path: Path) -> Intervals:
+        """
+        Find the overall boundary interval from first to last screen topic event.
+
+        Returns:
+            Intervals containing a single interval from first to last screen event,
+            or empty Intervals if no screen events found.
+        """
+        first_screen_time = None
+        last_screen_time = None
 
         with OWAMcapReader(episode_path) as reader:
-            for mcap_msg in reader.iter_messages(topics=["keyboard", "mouse"]):
+            try:
+                first_screen_time = next(reader.iter_messages(topics=["screen"])).timestamp
+                last_screen_time = next(reader.iter_messages(topics=["screen"], reverse=True)).timestamp
+            except StopIteration:
+                pass  # No screen events, will return empty Intervals below
+
+        if first_screen_time is None or last_screen_time is None:
+            return Intervals()
+
+        return Intervals([(first_screen_time, last_screen_time)])
+
+    def _get_topic_activity_intervals(
+        self, episode_path: Path, topics: list[str], inactivity_threshold: float
+    ) -> Intervals:
+        """
+        Extract activity intervals for specific topics with given inactivity threshold.
+
+        Args:
+            episode_path: Path to MCAP file
+            topics: List of topic names to process
+            inactivity_threshold: Gap threshold in seconds to consider inactivity
+
+        Returns:
+            Intervals representing periods of activity (gaps > threshold removed)
+        """
+        activity_intervals = Intervals()
+        threshold_ns = int(inactivity_threshold * TimeUnits.SECOND)
+
+        current_interval_start: int | None = None
+        last_activity_time: int | None = None
+
+        # Since iter_messages() yields messages in chronological order by default,
+        # we can process them in a streaming fashion without buffering all timestamps
+        with OWAMcapReader(episode_path) as reader:
+            for mcap_msg in reader.iter_messages(topics=topics):
                 # If this is the first event, mark the start of the first interval
                 if current_interval_start is None:
                     current_interval_start = mcap_msg.timestamp
@@ -155,7 +227,9 @@ class InactivityFilter(IntervalExtractor):
                     continue
 
                 # If gap > threshold, close previous interval and begin a new one
-                if mcap_msg.timestamp - last_activity_time > int(self.inactivity_threshold * TimeUnits.SECOND):
+                # At this point, last_activity_time is guaranteed to be not None
+                assert last_activity_time is not None
+                if mcap_msg.timestamp - last_activity_time > threshold_ns:
                     if current_interval_start < last_activity_time:
                         activity_intervals.add((current_interval_start, last_activity_time))
                     current_interval_start = mcap_msg.timestamp
@@ -164,7 +238,8 @@ class InactivityFilter(IntervalExtractor):
 
         # After the loop, if there's an open interval, close it
         if current_interval_start is not None and last_activity_time is not None:
-            activity_intervals.add((current_interval_start, last_activity_time))
+            if current_interval_start < last_activity_time:
+                activity_intervals.add((current_interval_start, last_activity_time))
 
         return activity_intervals
 

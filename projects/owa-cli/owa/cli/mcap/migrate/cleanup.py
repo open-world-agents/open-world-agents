@@ -14,7 +14,6 @@ from typing import List, Optional
 import typer
 from rich.console import Console
 
-from owa.cli.mcap.backup_utils import generate_backup_path
 from owa.cli.mcap.migrate.file_utils import (
     add_cleanup_row,
     create_file_info_table,
@@ -22,6 +21,7 @@ from owa.cli.mcap.migrate.file_utils import (
     format_datetime,
     format_file_size,
 )
+from owa.core.utils.backup import BackupContext
 
 from ...console import console
 
@@ -67,7 +67,7 @@ def find_backup_files_by_pattern(patterns: List[str], console: Console) -> List[
                 backup_paths = []
                 for mcap_path in mcap_paths:
                     if mcap_path.suffix == ".mcap":
-                        backup_path = generate_backup_path(mcap_path)
+                        backup_path = BackupContext.find_backup_path(mcap_path)
                         if backup_path.exists():
                             backup_paths.append(backup_path)
 
