@@ -476,7 +476,7 @@ class MigrationOrchestrator:
         console.print(f"Migration path: {' → '.join([m.from_version for m in migration_path] + [target_version])}")
 
         # Use BackupContext for safe migration operations
-        with BackupContext(file_path, console, keep_backup=keep_backup) as backup_ctx:
+        with BackupContext(file_path, console=console, keep_backup=keep_backup) as backup_ctx:
             results = []
             for i, migrator in enumerate(migration_path):
                 console.print(

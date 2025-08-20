@@ -18,6 +18,7 @@ class BackupContext:
     def __init__(
         self,
         file_path: Path,
+        *,
         console: Optional[Console] = None,
         backup_suffix: str = ".backup",
         keep_backup: bool = False,

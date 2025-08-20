@@ -25,7 +25,7 @@ class TestBackupContext:
         test_file = tmp_path / "test.mcap"
         test_file.write_bytes(b"original content")
 
-        with BackupContext(test_file, console) as ctx:
+        with BackupContext(test_file, console=console) as ctx:
             assert ctx.backup_path.exists()
             assert ctx.backup_path.read_bytes() == b"original content"
             test_file.write_bytes(b"modified content")
@@ -40,7 +40,7 @@ class TestBackupContext:
         test_file = tmp_path / "test.mcap"
         test_file.write_bytes(b"original content")
 
-        with BackupContext(test_file, console, keep_backup=True) as ctx:
+        with BackupContext(test_file, console=console, keep_backup=True) as ctx:
             test_file.write_bytes(b"modified content")
 
         # File should remain modified, backup kept
@@ -57,7 +57,7 @@ class TestBackupContext:
 
         backup_path = BackupContext.find_backup_path(test_file)
         with pytest.raises(ValueError):
-            with BackupContext(test_file, console):
+            with BackupContext(test_file, console=console):
                 test_file.write_bytes(b"modified content")
                 raise ValueError("Test exception")
 
@@ -73,7 +73,7 @@ class TestBackupContext:
         test_file = tmp_path / "test.mcap"
         test_file.write_bytes(b"content")
 
-        with BackupContext(test_file, console, backup_suffix=".bak") as ctx:
+        with BackupContext(test_file, console=console, backup_suffix=".bak") as ctx:
             expected_backup = test_file.with_suffix(f"{test_file.suffix}.bak")
             assert ctx.backup_path == expected_backup
             assert ctx.backup_path.exists()
@@ -99,7 +99,7 @@ class TestBackupContext:
         nonexistent_file = tmp_path / "nonexistent.mcap"
 
         with pytest.raises(FileNotFoundError, match="File not found"):
-            with BackupContext(nonexistent_file, console):
+            with BackupContext(nonexistent_file, console=console):
                 pass
 
     def test_backup_already_exists_error(self, tmp_path):
@@ -113,7 +113,7 @@ class TestBackupContext:
         backup_path.write_bytes(b"existing backup")
 
         with pytest.raises(FileExistsError, match="Backup file already exists"):
-            with BackupContext(test_file, console):
+            with BackupContext(test_file, console=console):
                 pass
 
     @patch("owa.cli.mcap.backup_utils.BackupContext.rollback_from_backup")
@@ -127,7 +127,7 @@ class TestBackupContext:
         mock_rollback.side_effect = OSError("Rollback failed")
 
         with pytest.raises(OSError, match="Rollback failed"):
-            with BackupContext(test_file, console):
+            with BackupContext(test_file, console=console):
                 test_file.write_bytes(b"modified content")
                 raise ValueError("Original exception")
 
@@ -223,10 +223,10 @@ class TestBackupContext:
         original_content = b"original"
         test_file.write_bytes(original_content)
 
-        with BackupContext(test_file, console, backup_suffix=".outer") as outer_ctx:
+        with BackupContext(test_file, console=console, backup_suffix=".outer") as outer_ctx:
             test_file.write_bytes(b"outer modification")
 
-            with BackupContext(test_file, console, backup_suffix=".inner") as inner_ctx:
+            with BackupContext(test_file, console=console, backup_suffix=".inner") as inner_ctx:
                 test_file.write_bytes(b"inner modification")
 
                 # Both backups should exist
@@ -246,11 +246,11 @@ class TestBackupContext:
         original_content = b"original"
         test_file.write_bytes(original_content)
 
-        with BackupContext(test_file, console, backup_suffix=".outer"):
+        with BackupContext(test_file, console=console, backup_suffix=".outer"):
             test_file.write_bytes(b"outer modification")
 
             with pytest.raises(ValueError):
-                with BackupContext(test_file, console, backup_suffix=".inner"):
+                with BackupContext(test_file, console=console, backup_suffix=".inner"):
                     test_file.write_bytes(b"inner modification")
                     raise ValueError("Inner exception")
 
