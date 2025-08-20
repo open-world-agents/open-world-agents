@@ -9,7 +9,7 @@ from rich.console import Console
 
 class DummyConsole(Console):
     """A console that doesn't print anything."""
-    
+
     def print(self, *args, **kwargs):
         pass
 
@@ -67,7 +67,7 @@ class BackupContext:
         self.console.print(f"[dim]Created backup: {self.backup_path}[/dim]")
         return self
 
-    def __exit__(self, exc_type, *_):
+    def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_type is not None:
             # Rollback on error using static method
             try:
@@ -75,7 +75,8 @@ class BackupContext:
             except Exception as rollback_error:
                 self.console.print(f"[red]CRITICAL: Rollback failed! {rollback_error}[/red]")
                 self.console.print(f"[red]Manual recovery needed. Backup file: {self.backup_path}[/red]")
-                raise rollback_error
+                # Chain the rollback error with the original exception to preserve context
+                raise rollback_error from exc_val
         elif not self.keep_backup:
             # Clean up backup on success
             self.cleanup_backup(self.backup_path, self.console)

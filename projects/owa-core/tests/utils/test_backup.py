@@ -129,6 +129,29 @@ class TestBackupContext:
                 test_file.write_bytes(b"modified content")
                 raise ValueError("Original exception")
 
+    @patch("owa.core.utils.backup.BackupContext.rollback_from_backup")
+    def test_exception_chaining_preserves_original_context(self, mock_rollback, tmp_path):
+        """Test that exception chaining preserves the original exception context."""
+        console = Console()
+        test_file = tmp_path / "test.mcap"
+        test_file.write_bytes(b"original content")
+
+        # Make rollback fail
+        rollback_error = OSError("Rollback failed")
+        mock_rollback.side_effect = rollback_error
+
+        try:
+            with BackupContext(test_file, console=console):
+                test_file.write_bytes(b"modified content")
+                raise ValueError("Original exception")
+        except OSError as e:
+            # Verify the rollback error is raised
+            assert str(e) == "Rollback failed"
+            # Verify the original exception is chained as the cause
+            assert e.__cause__ is not None
+            assert isinstance(e.__cause__, ValueError)
+            assert str(e.__cause__) == "Original exception"
+
     # Static Method Tests
 
     def test_find_backup_path_default_suffix(self, tmp_path):
