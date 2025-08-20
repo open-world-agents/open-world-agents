@@ -17,55 +17,67 @@ def build_ffmpeg_cmd(
     min_keyint: Optional[int] = None,
     scenecut: Optional[int] = None,
 ) -> list[str]:
-    """Build ffmpeg command with proper video/audio settings."""
+    """
+    Build ffmpeg command with proper video/audio settings for compatibility.
+
+    Key parameters explained:
+    - vsync=1: Forces constant frame rate (CFR) output for better compatibility
+    - bframes=0: Disables B-frames for maximum player/editor compatibility
+    - keyint: Maximum keyframe interval (GOP size) - affects seeking performance
+    - scenecut: Scene change detection (0=disable for consistent GOP structure)
+    - yuv420p: 4:2:0 chroma subsampling for universal device compatibility
+    - aresample=async=1000: Audio sync correction to prevent A/V drift
+    """
     cmd = ["ffmpeg", "-i", str(input_path)]
 
-    # Force constant frame rate
+    # Force constant frame rate (CFR) - critical for seeking and compatibility
     cmd.extend(["-vsync", "1"])
 
-    # Video filters
+    # Video filters for resolution and frame rate
     filters = []
     if width or height:
         if width and height:
-            filters.append(f"scale={width}:{height}")
+            filters.append(f"scale={width}:{height}")  # Exact dimensions
         elif width:
-            filters.append(f"scale={width}:-2")
+            filters.append(f"scale={width}:-2")  # Keep aspect ratio, even height
         else:
-            filters.append(f"scale=-2:{height}")
+            filters.append(f"scale=-2:{height}")  # Keep aspect ratio, even width
 
     if fps:
-        filters.append(f"fps={fps}")
+        filters.append(f"fps={fps}")  # Frame rate conversion
 
     if filters:
         cmd.extend(["-filter:v", ",".join(filters)])
 
-    # Video codec
+    # Video codec selection
     cmd.extend(["-c:v", codec])
 
-    # Quality
+    # Quality control (CRF = Constant Rate Factor)
     if crf is not None:
-        cmd.extend(["-crf", str(crf)])
+        cmd.extend(["-crf", str(crf)])  # 18=high quality, 23=default, 28=lower quality
 
-    # Keyframe settings with bframes=0 for compatibility
+    # Keyframe and GOP structure settings - EXTREMELY IMPORTANT for seeking
     if codec in ["libx264", "libx265"]:
-        params = ["bframes=0"]  # Disable B-frames for compatibility
+        params = ["bframes=0"]  # Disable B-frames for maximum compatibility
+
         if keyint:
-            params.append(f"keyint={keyint}")
+            params.append(f"keyint={keyint}")  # Max keyframe interval (GOP size)
         if min_keyint:
-            params.append(f"min-keyint={min_keyint}")
+            params.append(f"min-keyint={min_keyint}")  # Min keyframe interval
         if scenecut is not None:
+            # Scene change detection: 0=disable for consistent GOP, >0=adaptive
             params.append("no-scenecut=1" if scenecut == 0 else f"scenecut={scenecut}")
 
         param_flag = "-x264-params" if codec == "libx264" else "-x265-params"
         cmd.extend([param_flag, ":".join(params)])
 
-    # Pixel format for compatibility
+    # Pixel format for universal compatibility (4:2:0 chroma subsampling)
     cmd.extend(["-pix_fmt", "yuv420p"])
 
-    # Audio with explicit bitrate and sync correction
+    # Audio encoding with explicit quality and sync correction
     cmd.extend(["-c:a", "aac", "-b:a", "192k", "-af", "aresample=async=1000"])
 
-    # Copy subtitles and map all streams
+    # Preserve all streams: video, audio, subtitles
     cmd.extend(["-c:s", "copy", "-map", "0"])
     cmd.append(str(output_path))
 
@@ -117,9 +129,27 @@ def main(
     """
     Transcode video with fps/resolution/quality control.
 
+    This command maintains all video, audio, and subtitle streams while applying
+    professional encoding settings for maximum compatibility.
+
+    Key Parameters:
+    - fps: Target frame rate (default: 60) - higher fps for smooth motion
+    - keyint: Keyframe interval (default: 30) - lower = better seeking, higher = better compression
+    - scenecut: Scene change detection (0=disable for consistent GOP, 40=default adaptive)
+    - crf: Quality level (18=high, 23=default, 28=lower) - lower numbers = better quality
+
     Examples:
+      # Basic transcoding with defaults (60fps, keyint=30)
+      owl video transcode input.mkv output.mkv
+
+      # Custom resolution and frame rate
       owl video transcode input.mkv output.mkv --fps 30 --width 1920 --height 1080
+
+      # High quality with fixed keyframes (good for streaming)
       owl video transcode input.mkv output.mkv --crf 18 --keyint 60 --scenecut 0
+
+      # Screen recording optimization
+      owl video transcode input.mkv output.mkv --fps 30 --keyint 30 --scenecut 0
     """
     input_file = Path(input_path)
     output_file = Path(output_path)
