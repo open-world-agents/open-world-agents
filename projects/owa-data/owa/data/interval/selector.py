@@ -213,34 +213,33 @@ class InactivityFilter(IntervalExtractor):
         activity_intervals = Intervals()
         threshold_ns = int(inactivity_threshold * TimeUnits.SECOND)
 
-        # Collect all timestamps for this topic first
-        timestamps = []
+        current_interval_start: int | None = None
+        last_activity_time: int | None = None
+
+        # Since iter_messages() yields messages in chronological order by default,
+        # we can process them in a streaming fashion without buffering all timestamps
         with OWAMcapReader(episode_path) as reader:
             for mcap_msg in reader.iter_messages(topics=topics):
-                timestamps.append(mcap_msg.timestamp)
+                # If this is the first event, mark the start of the first interval
+                if current_interval_start is None:
+                    current_interval_start = mcap_msg.timestamp
+                    last_activity_time = mcap_msg.timestamp
+                    continue
 
-        if not timestamps:
-            return activity_intervals
+                # If gap > threshold, close previous interval and begin a new one
+                # At this point, last_activity_time is guaranteed to be not None
+                assert last_activity_time is not None
+                if mcap_msg.timestamp - last_activity_time > threshold_ns:
+                    if current_interval_start < last_activity_time:
+                        activity_intervals.add((current_interval_start, last_activity_time))
+                    current_interval_start = mcap_msg.timestamp
 
-        # Sort timestamps to ensure chronological order
-        timestamps.sort()
-
-        current_interval_start: int = timestamps[0]
-        last_activity_time: int = timestamps[0]
-
-        for timestamp in timestamps[1:]:
-            # If gap > threshold, close previous interval and begin a new one
-            if timestamp - last_activity_time > threshold_ns:
-                # Close the current interval (from start to last activity time)
-                if current_interval_start < last_activity_time:
-                    activity_intervals.add((current_interval_start, last_activity_time))
-                current_interval_start = timestamp
-
-            last_activity_time = timestamp
+                last_activity_time = mcap_msg.timestamp
 
         # After the loop, if there's an open interval, close it
-        if current_interval_start < last_activity_time:
-            activity_intervals.add((current_interval_start, last_activity_time))
+        if current_interval_start is not None and last_activity_time is not None:
+            if current_interval_start < last_activity_time:
+                activity_intervals.add((current_interval_start, last_activity_time))
 
         return activity_intervals
 

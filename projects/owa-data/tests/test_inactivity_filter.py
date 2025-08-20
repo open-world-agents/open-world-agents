@@ -28,10 +28,15 @@ class MockReader:
     def __exit__(self, exc_type, exc_val, exc_tb):
         pass
 
-    def iter_messages(self, topics=None):
-        if topics is None:
-            return self.messages
-        return [msg for msg in self.messages if msg.topic in topics]
+    def iter_messages(self, topics=None, reverse=False):
+        messages = self.messages
+        if topics is not None:
+            messages = [msg for msg in messages if msg.topic in topics]
+
+        if reverse:
+            messages = reversed(messages)
+
+        yield from messages
 
 
 def create_test_mcap_file(messages: list[MockMessage]) -> Path:
