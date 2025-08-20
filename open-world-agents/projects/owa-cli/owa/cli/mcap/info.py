@@ -32,11 +32,27 @@ def get_mcap_info(file_path: Path) -> dict:
     """Get MCAP file information using OWAMcapReader."""
     with OWAMcapReader(file_path) as reader:
         duration_ns = reader.end_time - reader.start_time
+
+        # Get MCAP file size
+        mcap_size = file_path.stat().st_size
+
+        # Check for corresponding .mkv file
+        mkv_path = file_path.with_suffix(".mkv")
+        mkv_size = 0
+        has_mkv = False
+
+        if mkv_path.exists():
+            mkv_size = mkv_path.stat().st_size
+            has_mkv = True
+
         return {
             "file_path": file_path,
             "messages": reader.message_count,
             "duration_seconds": duration_ns / 1e9,
-            "size_bytes": file_path.stat().st_size,
+            "size_bytes": mcap_size,
+            "mkv_size_bytes": mkv_size,
+            "total_size_bytes": mcap_size + mkv_size,
+            "has_mkv": has_mkv,
             "channels": len(reader.topics),
         }
 
@@ -77,32 +93,56 @@ def print_summary(file_infos: List[dict]) -> None:
     # Calculate totals
     total_messages = sum(info["messages"] for info in file_infos)
     total_duration = sum(info["duration_seconds"] for info in file_infos)
-    total_size = sum(info["size_bytes"] for info in file_infos)
-    total_channels = sum(info["channels"] for info in file_infos)
+    total_mcap_size = sum(info["size_bytes"] for info in file_infos)
+    total_mkv_size = sum(info["mkv_size_bytes"] for info in file_infos)
+    files_with_mkv = sum(1 for info in file_infos if info["has_mkv"])
 
     console.print(f"Summary for {len(file_infos)} MCAP files:")
     console.print(f"{'=' * 50}")
-    console.print(f"Total messages:  {total_messages:,}")
-    console.print(f"Total duration:  {format_duration(total_duration)}")
-    console.print(f"Total size:      {format_size(total_size)}")
-    console.print(f"Total channels:  {total_channels} (sum across all files)")
-    console.print(f"Files processed: {len(file_infos)}")
+    console.print(f"Total messages:     {total_messages:,}")
+    console.print(f"Total duration:     {format_duration(total_duration)}")
+    console.print(f"Total MCAP size:    {format_size(total_mcap_size)}")
+    if total_mkv_size > 0:
+        console.print(f"Total MKV size:     {format_size(total_mkv_size)}")
+        console.print(f"Files with MKV:     {files_with_mkv}/{len(file_infos)}")
+    console.print(f"Files processed:    {len(file_infos)}")
     console.print()
 
-    # Show per-file breakdown
-    console.print("Per-file breakdown:")
-    console.print(f"{'File':<30} {'Messages':<12} {'Duration':<15} {'Size':<12} {'Channels':<8}")
-    console.print(f"{'-' * 30} {'-' * 12} {'-' * 15} {'-' * 12} {'-' * 8}")
+    # Show per-file breakdown with limit to prevent stdout explosion
+    MAX_FILES_TO_SHOW = 25  # Limit to prevent overwhelming output
 
-    for info in file_infos:
+    if len(file_infos) <= MAX_FILES_TO_SHOW:
+        console.print("Per-file breakdown:")
+    else:
+        console.print(f"Per-file breakdown (showing first {MAX_FILES_TO_SHOW} of {len(file_infos)} files):")
+
+    console.print(
+        f"{'File':<25} {'Messages':<10} {'Duration':<12} {'MCAP Size':<12} {'Total Size':<12} {'MKV':<5} {'Ch':<4}"
+    )
+    console.print(f"{'-' * 25} {'-' * 10} {'-' * 12} {'-' * 12} {'-' * 12} {'-' * 5} {'-' * 4}")
+
+    # Only show up to MAX_FILES_TO_SHOW files to prevent stdout explosion
+    files_to_show = file_infos[:MAX_FILES_TO_SHOW]
+
+    for info in files_to_show:
         filename = info["file_path"].name
-        if len(filename) > 28:
-            filename = filename[:25] + "..."
+        if len(filename) > 23:
+            filename = filename[:20] + "..."
+
+        # Format sizes
+        mcap_size_str = format_size(info["size_bytes"])
+        total_size_str = format_size(info["total_size_bytes"])
+        mkv_indicator = "✓" if info["has_mkv"] else "✗"
 
         console.print(
-            f"{filename:<30} {info['messages']:<12,} {format_duration(info['duration_seconds']):<15} "
-            f"{format_size(info['size_bytes']):<12} {info['channels']:<8}"
+            f"{filename:<25} {info['messages']:<10,} {format_duration(info['duration_seconds']):<12} "
+            f"{mcap_size_str:<12} {total_size_str:<12} {mkv_indicator:<5} {info['channels']:<4}"
         )
+
+    # Show indication if there are more files
+    if len(file_infos) > MAX_FILES_TO_SHOW:
+        remaining_files = len(file_infos) - MAX_FILES_TO_SHOW
+        console.print(f"... and {remaining_files} more files (use individual file info command for details)")
 
 
 def detect_system():

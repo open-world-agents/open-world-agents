@@ -83,13 +83,11 @@ def collate_fn_internvl3(examples, max_sequence_length: int | None = None, proce
     input_ids_list = []
     attention_mask_list = []
     all_images = []
-    image_counts = []
 
     for example in examples:
         input_ids_list.append(example["input_ids"])
         attention_mask_list.append(example["attention_mask"])
         images = example["images"]
-        image_counts.append(len(images))
         if len(images) > 0:
             all_images.extend(images)
 
@@ -118,7 +116,6 @@ def collate_fn_internvl3(examples, max_sequence_length: int | None = None, proce
         "attention_mask": attention_mask,
         "labels": labels,
         "pixel_values": pixel_values,
-        "image_counts": image_counts,
     }
 
 

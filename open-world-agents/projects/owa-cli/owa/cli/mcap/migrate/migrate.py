@@ -18,7 +18,7 @@ from rich.table import Table
 
 from mcap_owa import __version__ as mcap_owa_version
 from mcap_owa.highlevel import OWAMcapReader
-from owa.cli.mcap.backup_utils import BackupContext
+from owa.core.utils.backup import BackupContext
 
 
 def _get_subprocess_env():
@@ -476,7 +476,7 @@ class MigrationOrchestrator:
         console.print(f"Migration path: {' → '.join([m.from_version for m in migration_path] + [target_version])}")
 
         # Use BackupContext for safe migration operations
-        with BackupContext(file_path, console, keep_backup=keep_backup) as backup_ctx:
+        with BackupContext(file_path, console=console, keep_backup=keep_backup) as backup_ctx:
             results = []
             for i, migrator in enumerate(migration_path):
                 console.print(
