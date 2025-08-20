@@ -168,6 +168,9 @@ def main(
         raise typer.Exit(1)
 
     result = transcode(input_file, output_file, fps, width, height, codec, crf, keyint, min_keyint, scenecut, dry_run)
+    if result.startswith("✗"):
+        typer.echo(f"[bold red]{result}[/bold red]", err=True)
+        raise typer.Exit(code=1)
     typer.echo(result)
 
 
