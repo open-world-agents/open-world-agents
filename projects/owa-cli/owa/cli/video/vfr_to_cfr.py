@@ -1,6 +1,5 @@
 import concurrent.futures
 import json
-import os
 import shutil
 import subprocess
 import tempfile
@@ -57,66 +56,45 @@ def is_vfr(file_path: Path) -> bool:
 
 def convert_to_cfr(file_path: Path, dry_run: bool = False) -> str:
     """Convert VFR file to CFR using ffmpeg."""
+    cmd = [
+        "ffmpeg",
+        "-i",
+        str(file_path),
+        "-vsync",
+        "1",
+        "-filter:v",
+        "fps=60",
+        "-c:v",
+        "libx264",
+        "-x264-params",
+        "keyint=30:no-scenecut=1:bframes=0",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "192k",
+        "-af",
+        "aresample=async=1000",
+        "-c:s",
+        "copy",
+    ]
+
     if dry_run:
-        cmd = [
-            "ffmpeg",
-            "-i",
-            str(file_path),
-            "-vsync",
-            "1",
-            "-filter:v",
-            "fps=60",
-            "-c:v",
-            "libx264",
-            "-x264-params",
-            "keyint=30:no-scenecut=1:bframes=0",
-            "-c:a",
-            "aac",
-            "-b:a",
-            "192k",
-            "-af",
-            "aresample=async=1000",
-            "-c:s",
-            "copy",
-            f"cfr_{file_path.name}",
-        ]
+        cmd.append(f"cfr_{file_path.name}")
         return f"[DRY RUN] Would convert '{file_path.name}' to CFR using: {' '.join(cmd)}"
 
-    temp_dir = tempfile.mkdtemp()
-    temp_file = Path(temp_dir) / f"cfr_{file_path.name}"
+    temp_dir = Path(tempfile.mkdtemp())
+    temp_file = temp_dir / f"cfr_{file_path.name}"
     backup_file = file_path.with_suffix(f"{file_path.suffix}.bak")
 
     try:
-        cmd = [
-            "ffmpeg",
-            "-i",
-            str(file_path),
-            "-vsync",
-            "1",
-            "-filter:v",
-            "fps=60",
-            "-c:v",
-            "libx264",
-            "-x264-params",
-            "keyint=30:no-scenecut=1:bframes=0",
-            "-c:a",
-            "aac",
-            "-b:a",
-            "192k",
-            "-af",
-            "aresample=async=1000",
-            "-c:s",
-            "copy",
-            str(temp_file),
-        ]
+        if backup_file.exists():
+            raise Exception(f"Backup file already exists: {backup_file}")
 
+        cmd.append(str(temp_file))
         subprocess.run(cmd, capture_output=True, text=True, check=True)
 
         if not temp_file.exists() or temp_file.stat().st_size < 1000:
             raise Exception("Output file missing or too small")
-
-        if backup_file.exists():
-            raise Exception(f"Backup file already exists: {backup_file}")
 
         shutil.copy2(file_path, backup_file)
         shutil.move(str(temp_file), str(file_path))
@@ -133,11 +111,10 @@ def convert_to_cfr(file_path: Path, dry_run: bool = False) -> str:
             return f"Error converting '{file_path.name}': {e} (restored from backup)"
         elif backup_file.exists():
             backup_file.unlink(missing_ok=True)
-
         return f"Error converting '{file_path.name}': {e}"
 
     finally:
-        if os.path.exists(temp_dir):
+        if temp_dir.exists():
             shutil.rmtree(temp_dir, ignore_errors=True)
 
 
@@ -171,7 +148,7 @@ def process_directory(directory_path: Path, max_workers: Optional[int] = None, d
     mkv_files = list(directory_path.rglob("*.mkv"))
     print(f"Found {len(mkv_files)} .mkv files. Checking for VFR...")
 
-    # Filter for VFR files
+    # Find VFR files
     vfr_files = []
     with tqdm(mkv_files, desc="Analyzing files for VFR", unit="file") as pbar:
         for file in pbar:
