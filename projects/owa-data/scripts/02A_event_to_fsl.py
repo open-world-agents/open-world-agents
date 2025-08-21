@@ -20,7 +20,7 @@ from transformers import AutoTokenizer
 
 from owa.data.datasets import DatasetDict, DatasetStage, load_from_disk
 from owa.data.datasets.fsl_dataset import FSLDatasetConfig, precompute_fsl_dataset
-from owa.data.episode_tokenizer import EpisodeTokenizer, EpisodeTokenizerConfig
+from owa.data.episode_tokenizer import EpisodeTokenizer
 
 # Re-enable logging for owa.data
 logger.enable("owa.data")
@@ -38,7 +38,7 @@ class Config:
     tokenizer_name: str
 
     # Nested configurations
-    episode_tokenizer: EpisodeTokenizerConfig
+    episode_tokenize_config: dict = field(default_factory=dict)
     fsl_dataset: FSLDatasetConfig = field(default_factory=FSLDatasetConfig)
 
     # Processing options
@@ -53,11 +53,7 @@ def main(cfg: Config):
     print(f"Tokenizer: {cfg.tokenizer_name}")
     print(f"Max sequence length: {cfg.fsl_dataset.max_sequence_length}")
 
-    print("Episode tokenizer cfg:")
-    print(f"  - Image token: {cfg.episode_tokenizer.image_token}")
-    print(f"  - Image token length: {cfg.episode_tokenizer.image_token_length}")
-    print(f"  - Image token prefix: {cfg.episode_tokenizer.image_token_prefix}")
-    print(f"  - Image token suffix: {cfg.episode_tokenizer.image_token_suffix}")
+    print(f"Episode tokenizer cfg: {cfg.episode_tokenize_config}")
 
     # Load event dataset
     ds_dict = load_from_disk(str(cfg.input_dir))
@@ -85,7 +81,7 @@ def main(cfg: Config):
         tokenizer.pad_token = tokenizer.eos_token
 
     # Initialize episode tokenizer
-    episode_tokenizer = EpisodeTokenizer.from_transformers_model(cfg.tokenizer_name)
+    episode_tokenizer = EpisodeTokenizer.from_transformers_model(cfg.tokenizer_name, **cfg.episode_tokenize_config)
     episode_tokenizer.prepare_model(tokenizer=tokenizer)
 
     # Configure FSL dataset

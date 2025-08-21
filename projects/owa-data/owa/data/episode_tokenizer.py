@@ -48,7 +48,7 @@ class EpisodeTokenizer:
         self.is_prepared = False
 
     @classmethod
-    def from_transformers_model(cls, model_name_or_path: str):
+    def from_transformers_model(cls, model_name_or_path: str, **kwargs):
         model_type = detect_model_type(model_name_or_path)
         if model_type == ModelType.INTERNVL:
             # InternVL3 configuration
@@ -74,7 +74,7 @@ class EpisodeTokenizer:
                 episode_start_token="<EPISODE_START>",
                 episode_end_token="<EPISODE_END>",
             )
-        return cls(episode_tokenizer_config)
+        return cls(episode_tokenizer_config, **kwargs)
 
     def get_vocab(self) -> set[str]:
         # NOTE: fake_image_placeholder is NOT included as it's not a real token
