@@ -2,6 +2,20 @@
 
 This document provides comprehensive mathematical definitions and explanations for all evaluation metrics used in the OWA (Open World Agent) training system.
 
+## Metrics Overview
+
+| Category | Metric | Description | Units |
+|----------|--------|-------------|-------|
+| **Event Classification** | Comparable Events Ratio | Proportion of events with matching predicted/GT types | Ratio (0-1) |
+| | Event Type Ratios | Distribution of event types in dataset | Ratio (0-1) |
+| **Timing Accuracy** | Timestamp Absolute Error P95 | 95th percentile of timing errors | Milliseconds |
+| | Timestamp Signed Error IQM/CI | Systematic timing bias with confidence intervals | Milliseconds |
+| **Mouse Movement** | Euclidean PE P95 | 95th percentile of magnitude errors | Percentage |
+| | Signed PE X/Y IQM/CI | Coordinate-specific bias with confidence intervals | Percentage |
+| | Direction Error P50/P95 | Median and 95th percentile angular errors | Degrees |
+| **Action Accuracy** | Keyboard Accuracy | Correct key code and event type predictions | Ratio (0-1) |
+| | Mouse Action Accuracy | Correct button flag and scroll predictions | Ratio (0-1) |
+
 ## 1. Comparable Events Metrics
 
 ### 1.1 Overall Comparable Events
@@ -97,6 +111,29 @@ $$\text{Signed PE}_y = \frac{dy_{\text{pred}} - dy_{\text{gt}}}{dy_{\text{gt}}} 
 - **X-coordinate bias**: Positive = rightward bias, Negative = leftward bias
 - **Y-coordinate bias**: Positive = downward bias, Negative = upward bias
 
+### 4.3 Mouse Movement Direction Error
+**Definition**: Angular error between predicted and ground truth movement direction vectors.
+
+For mouse movements with ground truth $(dx_{\text{gt}}, dy_{\text{gt}})$ and predictions $(dx_{\text{pred}}, dy_{\text{pred}})$:
+
+$$\theta_{\text{gt}} = \arctan2(dy_{\text{gt}}, dx_{\text{gt}})$$
+$$\theta_{\text{pred}} = \arctan2(dy_{\text{pred}}, dx_{\text{pred}})$$
+
+$$\text{Direction Error} = \min(|\theta_{\text{pred}} - \theta_{\text{gt}}|, 2\pi - |\theta_{\text{pred}} - \theta_{\text{gt}}|) \times \frac{180°}{\pi}$$
+
+**Reported Metrics**:
+- **Movement Direction Error P50**: $P_{50}(\{\text{Direction Error}_1, \ldots, \text{Direction Error}_n\})$
+- **Movement Direction Error P95**: $P_{95}(\{\text{Direction Error}_1, \ldots, \text{Direction Error}_n\})$
+
+**Special Cases**:
+- Zero movements $(dx_{\text{gt}} = 0, dy_{\text{gt}} = 0)$ are excluded (no meaningful direction)
+- Error range: $[0°, 180°]$ where $0°$ = perfect direction, $180°$ = opposite direction
+
+**Interpretation**:
+- **Low values** (< 30°): Good directional accuracy
+- **High values** (> 90°): Poor directional accuracy, major UX impact
+- **180°**: Completely wrong direction (catastrophic for user experience)
+
 ## 5. Action Accuracy Metrics
 
 ### 5.1 Keyboard Accuracy
@@ -146,6 +183,9 @@ $$\text{Mouse Scroll Accuracy} = \frac{\sum_{i=1}^{n} \mathbf{1}[\text{button\_d
 ## 7. Implementation Notes
 
 - **Units**: Timestamps converted from nanoseconds to milliseconds for readability
-- **Division by Zero**: Handled by checking denominators before percentage error calculations
+- **Division by Zero**: Current handling excludes zero-movement events (reasonable design choice)
 - **Missing Data**: Events with zero ground truth values excluded from percentage error calculations
 - **Reproducibility**: Fixed random seed (42) used for bootstrap sampling
+- **Statistical Validity**: Current metrics are well-designed and statistically sound
+- **Direction Metrics**: Movement direction error metrics complement magnitude-based evaluation
+- **Angular Calculations**: Uses `arctan2()` for proper quadrant handling and shortest angular distance

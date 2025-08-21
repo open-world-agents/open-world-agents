@@ -74,6 +74,32 @@ def stratified_bootstrap_ci(
     return (float(lower_bound), float(upper_bound))
 
 
+def movement_direction_error_degrees(pred_dx: float, pred_dy: float, gt_dx: float, gt_dy: float) -> float | None:
+    """Calculate angular error between predicted and ground truth movement vectors.
+
+    Args:
+        pred_dx, pred_dy: Predicted movement vector components
+        gt_dx, gt_dy: Ground truth movement vector components
+
+    Returns:
+        Angular error in degrees (0-180°), or None for zero movements
+    """
+    # Skip zero movements (no meaningful direction)
+    if gt_dx == 0 and gt_dy == 0:
+        return None
+
+    # Calculate angles using atan2 (handles all quadrants correctly)
+    pred_angle = np.arctan2(pred_dy, pred_dx)
+    gt_angle = np.arctan2(gt_dy, gt_dx)
+
+    # Calculate shortest angular distance (0 to π radians)
+    angle_diff = np.abs(pred_angle - gt_angle)
+    shortest_angle = np.minimum(angle_diff, 2 * np.pi - angle_diff)
+
+    # Convert to degrees
+    return float(shortest_angle * 180 / np.pi)
+
+
 # @add_start_docstrings(SFTConfig.__doc__)
 @dataclass
 class OWASFTConfig(SFTConfig):
@@ -134,6 +160,7 @@ class OWAEvaluatorBatched:
             "mouse_move_pe_euclidean": [],
             "mouse_move_signed_pe_x": [],
             "mouse_move_signed_pe_y": [],
+            "mouse_move_direction_errors": [],
             "timestamp_squared_error": 0,
             "timestamp_gt_values": [],
             "timestamp_pred_values": [],
@@ -204,6 +231,13 @@ class OWAEvaluatorBatched:
         if gt_decoded.dy != 0:  # Avoid division by zero
             signed_pe_y = (pred_decoded.dy - gt_decoded.dy) / gt_decoded.dy * 100
             self.metrics["mouse_move_signed_pe_y"].append(signed_pe_y)
+
+        # Compute movement direction error (angular error between movement vectors)
+        direction_error = movement_direction_error_degrees(
+            pred_decoded.dx, pred_decoded.dy, gt_decoded.dx, gt_decoded.dy
+        )
+        if direction_error is not None:
+            self.metrics["mouse_move_direction_errors"].append(direction_error)
 
     def _process_mouse_action_metrics(self, pred_event: McapMessage, gt_event: McapMessage) -> None:
         """Process mouse action metrics (button flags and scroll data)."""
@@ -417,6 +451,12 @@ class OWAEvaluatorBatched:
                     final_metrics["mouse_move_signed_pe_y_ci_lower"] = ci_lower_y
                     final_metrics["mouse_move_signed_pe_y_ci_upper"] = ci_upper_y
 
+                # Calculate movement direction error percentiles
+                if len(self.metrics["mouse_move_direction_errors"]) > 0:
+                    direction_errors = np.array(self.metrics["mouse_move_direction_errors"])
+                    final_metrics["mouse_move_direction_error_p50"] = np.percentile(direction_errors, 50)
+                    final_metrics["mouse_move_direction_error_p95"] = np.percentile(direction_errors, 95)
+
             # Calculate timestamp metrics (R², percentiles of absolute errors, and percentiles of signed errors)
             if len(self.metrics["timestamp_gt_values"]) > 0:
                 gt_timestamps = np.array(self.metrics["timestamp_gt_values"])
@@ -579,6 +619,18 @@ def print_evaluation_results(
         ci_upper = metrics.get("mouse_move_signed_pe_y_ci_upper", 0)
         print(
             f"    IQM: {iqm:>12.3f}%  [95% CI: {ci_lower:>12.3f}%, {ci_upper:>12.3f}%]",
+            file=file,
+        )
+
+    # Movement direction errors
+    direction_error_p50_key = "mouse_move_direction_error_p50"
+    direction_error_p95_key = "mouse_move_direction_error_p95"
+    if direction_error_p50_key in metrics and direction_error_p95_key in metrics:
+        print("  Movement Direction Error (degrees):", file=file)
+        p50 = metrics.get("mouse_move_direction_error_p50", 0)
+        p95 = metrics.get("mouse_move_direction_error_p95", 0)
+        print(
+            f"    P50: {p50:>12.1f}°  P95: {p95:>12.1f}°",
             file=file,
         )
 
