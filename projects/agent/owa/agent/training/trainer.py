@@ -337,35 +337,31 @@ class OWAEvaluatorBatched:
                 # Calculate percentile-based percentage error metrics for Euclidean distance
                 if len(self.metrics["mouse_move_pe_euclidean"]) > 0:
                     pe_values_euclidean = np.array(self.metrics["mouse_move_pe_euclidean"])
-                    final_metrics["mouse_move_pe_euclidean_p0"] = np.percentile(pe_values_euclidean, 0)  # min
-                    final_metrics["mouse_move_pe_euclidean_p25"] = np.percentile(
-                        pe_values_euclidean, 25
-                    )  # 1st quartile
-                    final_metrics["mouse_move_pe_euclidean_p50"] = np.percentile(pe_values_euclidean, 50)  # median
-                    final_metrics["mouse_move_pe_euclidean_p75"] = np.percentile(
-                        pe_values_euclidean, 75
-                    )  # 3rd quartile
-                    final_metrics["mouse_move_pe_euclidean_p100"] = np.percentile(pe_values_euclidean, 100)  # max
+                    final_metrics["mouse_move_pe_euclidean_p0"] = np.percentile(pe_values_euclidean, 0)
+                    final_metrics["mouse_move_pe_euclidean_p25"] = np.percentile(pe_values_euclidean, 25)
+                    final_metrics["mouse_move_pe_euclidean_p50"] = np.percentile(pe_values_euclidean, 50)
+                    final_metrics["mouse_move_pe_euclidean_p75"] = np.percentile(pe_values_euclidean, 75)
+                    final_metrics["mouse_move_pe_euclidean_p100"] = np.percentile(pe_values_euclidean, 100)
 
                 # Calculate percentile-based signed percentage error metrics for X coordinate
                 if len(self.metrics["mouse_move_signed_pe_x"]) > 0:
                     signed_pe_values_x = np.array(self.metrics["mouse_move_signed_pe_x"])
-                    final_metrics["mouse_move_signed_pe_x_p0"] = np.percentile(signed_pe_values_x, 0)  # min
-                    final_metrics["mouse_move_signed_pe_x_p25"] = np.percentile(signed_pe_values_x, 25)  # 1st quartile
-                    final_metrics["mouse_move_signed_pe_x_p50"] = np.percentile(signed_pe_values_x, 50)  # median
-                    final_metrics["mouse_move_signed_pe_x_p75"] = np.percentile(signed_pe_values_x, 75)  # 3rd quartile
-                    final_metrics["mouse_move_signed_pe_x_p100"] = np.percentile(signed_pe_values_x, 100)  # max
+                    final_metrics["mouse_move_signed_pe_x_p0"] = np.percentile(signed_pe_values_x, 0)
+                    final_metrics["mouse_move_signed_pe_x_p25"] = np.percentile(signed_pe_values_x, 25)
+                    final_metrics["mouse_move_signed_pe_x_p50"] = np.percentile(signed_pe_values_x, 50)
+                    final_metrics["mouse_move_signed_pe_x_p75"] = np.percentile(signed_pe_values_x, 75)
+                    final_metrics["mouse_move_signed_pe_x_p100"] = np.percentile(signed_pe_values_x, 100)
 
                 # Calculate percentile-based signed percentage error metrics for Y coordinate
                 if len(self.metrics["mouse_move_signed_pe_y"]) > 0:
                     signed_pe_values_y = np.array(self.metrics["mouse_move_signed_pe_y"])
-                    final_metrics["mouse_move_signed_pe_y_p0"] = np.percentile(signed_pe_values_y, 0)  # min
-                    final_metrics["mouse_move_signed_pe_y_p25"] = np.percentile(signed_pe_values_y, 25)  # 1st quartile
-                    final_metrics["mouse_move_signed_pe_y_p50"] = np.percentile(signed_pe_values_y, 50)  # median
-                    final_metrics["mouse_move_signed_pe_y_p75"] = np.percentile(signed_pe_values_y, 75)  # 3rd quartile
-                    final_metrics["mouse_move_signed_pe_y_p100"] = np.percentile(signed_pe_values_y, 100)  # max
+                    final_metrics["mouse_move_signed_pe_y_p0"] = np.percentile(signed_pe_values_y, 0)
+                    final_metrics["mouse_move_signed_pe_y_p25"] = np.percentile(signed_pe_values_y, 25)
+                    final_metrics["mouse_move_signed_pe_y_p50"] = np.percentile(signed_pe_values_y, 50)
+                    final_metrics["mouse_move_signed_pe_y_p75"] = np.percentile(signed_pe_values_y, 75)
+                    final_metrics["mouse_move_signed_pe_y_p100"] = np.percentile(signed_pe_values_y, 100)
 
-            # Calculate timestamp metrics (R², quartiles of absolute errors, and quartiles of signed errors)
+            # Calculate timestamp metrics (R², percentiles of absolute errors, and percentiles of signed errors)
             if len(self.metrics["timestamp_gt_values"]) > 0:
                 gt_timestamps = np.array(self.metrics["timestamp_gt_values"])
 
@@ -381,22 +377,22 @@ class OWAEvaluatorBatched:
             if len(self.metrics["timestamp_absolute_errors"]) > 0:
                 abs_errors = np.array(self.metrics["timestamp_absolute_errors"])
 
-                # Calculate quartiles for absolute errors (q0=min, q1=25%, q2=50%/median, q3=75%, q4=max)
-                final_metrics["timestamp_abs_error_q0"] = np.percentile(abs_errors, 0)  # min
-                final_metrics["timestamp_abs_error_q1"] = np.percentile(abs_errors, 25)  # 1st quartile
-                final_metrics["timestamp_abs_error_q2"] = np.percentile(abs_errors, 50)  # median
-                final_metrics["timestamp_abs_error_q3"] = np.percentile(abs_errors, 75)  # 3rd quartile
-                final_metrics["timestamp_abs_error_q4"] = np.percentile(abs_errors, 100)  # max
+                # Calculate percentiles for absolute errors
+                final_metrics["timestamp_abs_error_p0"] = np.percentile(abs_errors, 0)
+                final_metrics["timestamp_abs_error_p25"] = np.percentile(abs_errors, 25)
+                final_metrics["timestamp_abs_error_p50"] = np.percentile(abs_errors, 50)
+                final_metrics["timestamp_abs_error_p75"] = np.percentile(abs_errors, 75)
+                final_metrics["timestamp_abs_error_p100"] = np.percentile(abs_errors, 100)
 
             if len(self.metrics["timestamp_signed_errors"]) > 0:
                 signed_errors = np.array(self.metrics["timestamp_signed_errors"])
 
-                # Calculate quartiles for signed errors (q0=min, q1=25%, q2=50%/median, q3=75%, q4=max)
-                final_metrics["timestamp_signed_error_q0"] = np.percentile(signed_errors, 0)  # min
-                final_metrics["timestamp_signed_error_q1"] = np.percentile(signed_errors, 25)  # 1st quartile
-                final_metrics["timestamp_signed_error_q2"] = np.percentile(signed_errors, 50)  # median
-                final_metrics["timestamp_signed_error_q3"] = np.percentile(signed_errors, 75)  # 3rd quartile
-                final_metrics["timestamp_signed_error_q4"] = np.percentile(signed_errors, 100)  # max
+                # Calculate percentiles for signed errors
+                final_metrics["timestamp_signed_error_p0"] = np.percentile(signed_errors, 0)
+                final_metrics["timestamp_signed_error_p25"] = np.percentile(signed_errors, 25)
+                final_metrics["timestamp_signed_error_p50"] = np.percentile(signed_errors, 50)
+                final_metrics["timestamp_signed_error_p75"] = np.percentile(signed_errors, 75)
+                final_metrics["timestamp_signed_error_p100"] = np.percentile(signed_errors, 100)
 
         return final_metrics
 
@@ -501,7 +497,7 @@ def print_evaluation_results(
         percentiles = ["p0", "p25", "p50", "p75", "p100"]
         values = [metrics.get(f"mouse_move_pe_euclidean_{p}", 0) for p in percentiles]
         print(
-            f"    Min: {values[0]:>6.1f}%  Q1: {values[1]:>6.1f}%  Median: {values[2]:>6.1f}%  Q3: {values[3]:>6.1f}%  Max: {values[4]:>6.1f}%",
+            f"    P0: {values[0]:>6.1f}%  P25: {values[1]:>6.1f}%  P50: {values[2]:>6.1f}%  P75: {values[3]:>6.1f}%  P100: {values[4]:>6.1f}%",
             file=file,
         )
 
@@ -512,7 +508,7 @@ def print_evaluation_results(
         percentiles = ["p0", "p25", "p50", "p75", "p100"]
         values = [metrics.get(f"mouse_move_signed_pe_x_{p}", 0) for p in percentiles]
         print(
-            f"    Min: {values[0]:>6.1f}%  Q1: {values[1]:>6.1f}%  Median: {values[2]:>6.1f}%  Q3: {values[3]:>6.1f}%  Max: {values[4]:>6.1f}%",
+            f"    P0: {values[0]:>6.1f}%  P25: {values[1]:>6.1f}%  P50: {values[2]:>6.1f}%  P75: {values[3]:>6.1f}%  P100: {values[4]:>6.1f}%",
             file=file,
         )
 
@@ -523,7 +519,7 @@ def print_evaluation_results(
         percentiles = ["p0", "p25", "p50", "p75", "p100"]
         values = [metrics.get(f"mouse_move_signed_pe_y_{p}", 0) for p in percentiles]
         print(
-            f"    Min: {values[0]:>6.1f}%  Q1: {values[1]:>6.1f}%  Median: {values[2]:>6.1f}%  Q3: {values[3]:>6.1f}%  Max: {values[4]:>6.1f}%",
+            f"    P0: {values[0]:>6.1f}%  P25: {values[1]:>6.1f}%  P50: {values[2]:>6.1f}%  P75: {values[3]:>6.1f}%  P100: {values[4]:>6.1f}%",
             file=file,
         )
 
@@ -533,36 +529,36 @@ def print_evaluation_results(
     if "timestamp_r2" in metrics:
         print(f"  R² Score: {metrics['timestamp_r2']:>6.3f}", file=file)
 
-    # Absolute error quartiles
-    abs_error_keys = [k for k in metrics.keys() if k.startswith("timestamp_abs_error_q")]
+    # Absolute error percentiles
+    abs_error_keys = [k for k in metrics.keys() if k.startswith("timestamp_abs_error_p")]
     if abs_error_keys:
-        print("  Absolute Error Quartiles (ns):", file=file)
-        quartiles = ["q0", "q1", "q2", "q3", "q4"]
-        values = [metrics.get(f"timestamp_abs_error_{q}", 0) for q in quartiles]
+        print("  Absolute Error Percentiles (ms):", file=file)
+        percentiles = ["p0", "p25", "p50", "p75", "p100"]
+        values = [metrics.get(f"timestamp_abs_error_{p}", 0) / 1_000_000 for p in percentiles]  # Convert ns to ms
         print(
-            f"    Min: {values[0]:>8.0f}  Q1: {values[1]:>8.0f}  Median: {values[2]:>8.0f}  Q3: {values[3]:>8.0f}  Max: {values[4]:>8.0f}",
+            f"    P0: {values[0]:>8.3f}  P25: {values[1]:>8.3f}  P50: {values[2]:>8.3f}  P75: {values[3]:>8.3f}  P100: {values[4]:>8.3f}",
             file=file,
         )
 
-    # Signed error quartiles
-    signed_error_keys = [k for k in metrics.keys() if k.startswith("timestamp_signed_error_q")]
+    # Signed error percentiles
+    signed_error_keys = [k for k in metrics.keys() if k.startswith("timestamp_signed_error_p")]
     if signed_error_keys:
-        print("  Signed Error Quartiles (ns):", file=file)
-        quartiles = ["q0", "q1", "q2", "q3", "q4"]
-        values = [metrics.get(f"timestamp_signed_error_{q}", 0) for q in quartiles]
+        print("  Signed Error Percentiles (ms):", file=file)
+        percentiles = ["p0", "p25", "p50", "p75", "p100"]
+        values = [metrics.get(f"timestamp_signed_error_{p}", 0) / 1_000_000 for p in percentiles]  # Convert ns to ms
         print(
-            f"    Min: {values[0]:>8.0f}  Q1: {values[1]:>8.0f}  Median: {values[2]:>8.0f}  Q3: {values[3]:>8.0f}  Max: {values[4]:>8.0f}",
+            f"    P0: {values[0]:>8.3f}  P25: {values[1]:>8.3f}  P50: {values[2]:>8.3f}  P75: {values[3]:>8.3f}  P100: {values[4]:>8.3f}",
             file=file,
         )
 
         # Add interpretation for signed errors
-        median_bias = values[2]
-        if abs(median_bias) < 1000:  # Less than 1μs
+        p50_bias = values[2]
+        if abs(p50_bias) < 0.001:  # Less than 1μs (0.001ms)
             bias_interpretation = "No significant timing bias"
-        elif median_bias > 0:
-            bias_interpretation = f"Model predicts {median_bias / 1000:.1f}μs too late"
+        elif p50_bias > 0:
+            bias_interpretation = f"Model predicts {p50_bias:.3f}ms too late"
         else:
-            bias_interpretation = f"Model predicts {abs(median_bias) / 1000:.1f}μs too early"
+            bias_interpretation = f"Model predicts {abs(p50_bias):.3f}ms too early"
         print(f"    Interpretation: {bias_interpretation}", file=file)
 
     print(f"\n{'=' * 60}\n", file=file)
