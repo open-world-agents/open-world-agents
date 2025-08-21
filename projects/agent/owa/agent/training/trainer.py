@@ -341,6 +341,7 @@ class OWAEvaluatorBatched:
                     final_metrics["mouse_move_pe_euclidean_p25"] = np.percentile(pe_values_euclidean, 25)
                     final_metrics["mouse_move_pe_euclidean_p50"] = np.percentile(pe_values_euclidean, 50)
                     final_metrics["mouse_move_pe_euclidean_p75"] = np.percentile(pe_values_euclidean, 75)
+                    final_metrics["mouse_move_pe_euclidean_p95"] = np.percentile(pe_values_euclidean, 95)
                     final_metrics["mouse_move_pe_euclidean_p100"] = np.percentile(pe_values_euclidean, 100)
 
                 # Calculate percentile-based signed percentage error metrics for X coordinate
@@ -382,6 +383,7 @@ class OWAEvaluatorBatched:
                 final_metrics["timestamp_abs_error_p25"] = np.percentile(abs_errors, 25)
                 final_metrics["timestamp_abs_error_p50"] = np.percentile(abs_errors, 50)
                 final_metrics["timestamp_abs_error_p75"] = np.percentile(abs_errors, 75)
+                final_metrics["timestamp_abs_error_p95"] = np.percentile(abs_errors, 95)
                 final_metrics["timestamp_abs_error_p100"] = np.percentile(abs_errors, 100)
 
             if len(self.metrics["timestamp_signed_errors"]) > 0:
@@ -494,10 +496,10 @@ def print_evaluation_results(
     euclidean_keys = [k for k in metrics.keys() if k.startswith("mouse_move_pe_euclidean_p")]
     if euclidean_keys:
         print("  Euclidean PE Percentiles:", file=file)
-        percentiles = ["p0", "p25", "p50", "p75", "p100"]
+        percentiles = ["p0", "p25", "p50", "p75", "p95", "p100"]
         values = [metrics.get(f"mouse_move_pe_euclidean_{p}", 0) for p in percentiles]
         print(
-            f"    P0: {values[0]:>12.3f}%  P25: {values[1]:>12.3f}%  P50: {values[2]:>12.3f}%  P75: {values[3]:>12.3f}%  P100: {values[4]:>12.3f}%",
+            f"    P0: {values[0]:>12.3f}%  P25: {values[1]:>12.3f}%  P50: {values[2]:>12.3f}%  P75: {values[3]:>12.3f}%  P95: {values[4]:>12.3f}%  P100: {values[5]:>12.3f}%",
             file=file,
         )
 
@@ -533,10 +535,10 @@ def print_evaluation_results(
     abs_error_keys = [k for k in metrics.keys() if k.startswith("timestamp_abs_error_p")]
     if abs_error_keys:
         print("  Absolute Error Percentiles (ms):", file=file)
-        percentiles = ["p0", "p25", "p50", "p75", "p100"]
+        percentiles = ["p0", "p25", "p50", "p75", "p95", "p100"]
         values = [metrics.get(f"timestamp_abs_error_{p}", 0) / 1_000_000 for p in percentiles]  # Convert ns to ms
         print(
-            f"    P0: {values[0]:>12.3f}  P25: {values[1]:>12.3f}  P50: {values[2]:>12.3f}  P75: {values[3]:>12.3f}  P100: {values[4]:>12.3f}",
+            f"    P0: {values[0]:>12.3f}  P25: {values[1]:>12.3f}  P50: {values[2]:>12.3f}  P75: {values[3]:>12.3f}  P95: {values[4]:>12.3f}  P100: {values[5]:>12.3f}",
             file=file,
         )
 
