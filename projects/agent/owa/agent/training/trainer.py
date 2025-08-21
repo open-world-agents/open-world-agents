@@ -423,9 +423,9 @@ class OWAEvaluatorBatched:
             with open(os.path.join(self.output_dir, f"eval_step_{self.state.global_step}.md"), "a") as f:
                 f.write(f"Sample {idx}\n")
                 f.write(f"Accuracy: {accuracy:.2f}\n")
-                f.write("Predictions:")
+                f.write("Predictions:\n")
                 f.write(f"{''.join(pred_tokens)}\n")
-                f.write("Ground Truth:")
+                f.write("Ground Truth:\n")
                 f.write(f"{''.join(gt_tokens)}\n")
                 f.write(f"{'-' * 80}\n")
 
@@ -625,18 +625,24 @@ class OWASFTTrainer(SFTTrainer):
 
 
 if __name__ == "__main__":
-    import dill as pickle
     from transformers import AutoTokenizer
 
-    tokenizer = AutoTokenizer.from_pretrained("/mnt/harbor/projects/owa/checkpoints/smolvlm-256m_vpt_0811-00")
+    tokenizer = AutoTokenizer.from_pretrained("/mnt/harbor/projects/owa/checkpoints/tmp")
+    with open("/mnt/harbor/projects/owa/checkpoints/tmp/eval/eval_step_1032_000.pkl", "rb") as f:
+        outputs = pickle.load(f)
 
-    outputs = torch.load(
-        "/mnt/harbor/projects/owa/checkpoints/smolvlm-256m_vpt_0811-00/eval/eval_step_12348.pt", pickle_module=pickle
-    )
-    logits = torch.from_numpy(outputs["logits"])
-    labels = torch.from_numpy(outputs["labels"])
+    print(outputs)
+
+    predictions = torch.from_numpy(outputs["predictions"])
+    logits = torch.zeros((predictions.shape[0], tokenizer.vocab_size))
+    # Set logit value
+    for idx, pred in enumerate(predictions):
+        logits[idx, pred] = 1
+    logits = logits.unsqueeze(0)
+
+    labels = torch.from_numpy(outputs["labels"][np.newaxis, ...])
     eval_prediction = EvalPrediction(predictions=logits, label_ids=labels)
 
-    evaluator = OWAEvaluatorBatched(tokenizer=tokenizer)
+    evaluator = OWAEvaluatorBatched(tokenizer=tokenizer, output_dir=".")
     metrics = evaluator(eval_prediction, compute_result=True)
     print(metrics)
