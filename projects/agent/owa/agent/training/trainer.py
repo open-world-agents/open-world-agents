@@ -427,8 +427,10 @@ class OWAEvaluatorBatched:
             with open(os.path.join(self.output_dir, f"eval_step_{self.state.global_step}.md"), "a") as f:
                 f.write(f"Sample {idx}\n")
                 f.write(f"Accuracy: {accuracy:.2f}\n")
-                f.write(f"Predictions: {''.join(pred_tokens)}\n")
-                f.write(f"Ground Truth: {''.join(gt_tokens)}\n")
+                f.write("Predictions:")
+                f.write(f"{''.join(pred_tokens)}\n")
+                f.write("Ground Truth:")
+                f.write(f"{''.join(gt_tokens)}\n")
                 f.write(f"{'-' * 80}\n")
 
             # pickle sample for debug
@@ -617,13 +619,13 @@ class OWASFTTrainer(SFTTrainer):
         # detach metric_key_prefix prefix from metric names
         for key in list(output.metrics.keys()):
             if key.startswith(f"{metric_key_prefix}_"):
-                metrics[key[len(metric_key_prefix) + 1 :]] = output.metrics.pop(key)
+                metrics[key[len(metric_key_prefix) + 1 :]] = output.metrics[key]
 
         with open(os.path.join(self._eval_output_dir, f"{metric_key_prefix}_step_{step}_metrics.json"), "w") as f:
-            json.dump(output.metrics, f, indent=2)
+            json.dump(metrics, f, indent=2)
 
         with open(os.path.join(self._eval_output_dir, f"{metric_key_prefix}_step_{step}_metrics.md"), "w") as f:
-            print_evaluation_results(output.metrics, f"Step {step}", file=f)
+            print_evaluation_results(metrics, f"Step {step}", file=f)
 
 
 if __name__ == "__main__":
