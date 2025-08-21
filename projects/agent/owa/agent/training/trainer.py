@@ -572,7 +572,7 @@ class OWASFTTrainer(SFTTrainer):
     args: OWASFTConfig
 
     def __init__(self, args: OWASFTConfig, **kwargs):
-        self._eval_output_dir = os.path.join(self.args.output_dir or "./output", "eval")
+        self._eval_output_dir = os.path.join(args.output_dir or "./output", "eval")
         os.makedirs(self._eval_output_dir, exist_ok=True)
 
         tokenizer = cast(PreTrainedTokenizer, kwargs["processing_class"].tokenizer)
