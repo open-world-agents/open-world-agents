@@ -19,6 +19,61 @@ from owa.data.collator import ModelType, detect_model_type
 from owa.data.episode_tokenizer import EpisodeTokenizer, EpisodeTokenizerConfig
 
 
+def interquartile_mean(data: np.ndarray) -> float:
+    """Calculate the Interquartile Mean (IQM) of the data.
+
+    IQM is the mean of the values between the 25th and 75th percentiles.
+    """
+    if len(data) == 0:
+        return 0.0
+
+    q25 = np.percentile(data, 25)
+    q75 = np.percentile(data, 75)
+
+    # Filter data to include only values between Q1 and Q3 (inclusive)
+    iqr_data = data[(data >= q25) & (data <= q75)]
+
+    return float(np.mean(iqr_data)) if len(iqr_data) > 0 else 0.0
+
+
+def stratified_bootstrap_ci(
+    data: np.ndarray, n_bootstrap: int = 1000, confidence_level: float = 0.95
+) -> tuple[float, float]:
+    """Calculate stratified bootstrap confidence intervals for IQM.
+
+    Args:
+        data: Input data array
+        n_bootstrap: Number of bootstrap samples
+        confidence_level: Confidence level (e.g., 0.95 for 95% CI)
+
+    Returns:
+        Tuple of (lower_bound, upper_bound) for the confidence interval
+    """
+    if len(data) == 0:
+        return (0.0, 0.0)
+
+    # Generate bootstrap samples
+    bootstrap_iqms = []
+    rng = np.random.RandomState(42)  # Fixed seed for reproducibility
+
+    for _ in range(n_bootstrap):
+        # Stratified sampling: sample with replacement
+        bootstrap_sample = rng.choice(data, size=len(data), replace=True)
+        bootstrap_iqms.append(interquartile_mean(bootstrap_sample))
+
+    bootstrap_iqms = np.array(bootstrap_iqms)
+
+    # Calculate confidence interval
+    alpha = 1 - confidence_level
+    lower_percentile = (alpha / 2) * 100
+    upper_percentile = (1 - alpha / 2) * 100
+
+    lower_bound = np.percentile(bootstrap_iqms, lower_percentile)
+    upper_bound = np.percentile(bootstrap_iqms, upper_percentile)
+
+    return (float(lower_bound), float(upper_bound))
+
+
 # @add_start_docstrings(SFTConfig.__doc__)
 @dataclass
 class OWASFTConfig(SFTConfig):
@@ -344,23 +399,23 @@ class OWAEvaluatorBatched:
                     final_metrics["mouse_move_pe_euclidean_p95"] = np.percentile(pe_values_euclidean, 95)
                     final_metrics["mouse_move_pe_euclidean_p100"] = np.percentile(pe_values_euclidean, 100)
 
-                # Calculate percentile-based signed percentage error metrics for X coordinate
+                # Calculate IQM with 95% stratified bootstrap CIs for X coordinate signed PE
                 if len(self.metrics["mouse_move_signed_pe_x"]) > 0:
                     signed_pe_values_x = np.array(self.metrics["mouse_move_signed_pe_x"])
-                    final_metrics["mouse_move_signed_pe_x_p0"] = np.percentile(signed_pe_values_x, 0)
-                    final_metrics["mouse_move_signed_pe_x_p25"] = np.percentile(signed_pe_values_x, 25)
-                    final_metrics["mouse_move_signed_pe_x_p50"] = np.percentile(signed_pe_values_x, 50)
-                    final_metrics["mouse_move_signed_pe_x_p75"] = np.percentile(signed_pe_values_x, 75)
-                    final_metrics["mouse_move_signed_pe_x_p100"] = np.percentile(signed_pe_values_x, 100)
+                    iqm_x = interquartile_mean(signed_pe_values_x)
+                    ci_lower_x, ci_upper_x = stratified_bootstrap_ci(signed_pe_values_x)
+                    final_metrics["mouse_move_signed_pe_x_iqm"] = iqm_x
+                    final_metrics["mouse_move_signed_pe_x_ci_lower"] = ci_lower_x
+                    final_metrics["mouse_move_signed_pe_x_ci_upper"] = ci_upper_x
 
-                # Calculate percentile-based signed percentage error metrics for Y coordinate
+                # Calculate IQM with 95% stratified bootstrap CIs for Y coordinate signed PE
                 if len(self.metrics["mouse_move_signed_pe_y"]) > 0:
                     signed_pe_values_y = np.array(self.metrics["mouse_move_signed_pe_y"])
-                    final_metrics["mouse_move_signed_pe_y_p0"] = np.percentile(signed_pe_values_y, 0)
-                    final_metrics["mouse_move_signed_pe_y_p25"] = np.percentile(signed_pe_values_y, 25)
-                    final_metrics["mouse_move_signed_pe_y_p50"] = np.percentile(signed_pe_values_y, 50)
-                    final_metrics["mouse_move_signed_pe_y_p75"] = np.percentile(signed_pe_values_y, 75)
-                    final_metrics["mouse_move_signed_pe_y_p100"] = np.percentile(signed_pe_values_y, 100)
+                    iqm_y = interquartile_mean(signed_pe_values_y)
+                    ci_lower_y, ci_upper_y = stratified_bootstrap_ci(signed_pe_values_y)
+                    final_metrics["mouse_move_signed_pe_y_iqm"] = iqm_y
+                    final_metrics["mouse_move_signed_pe_y_ci_lower"] = ci_lower_y
+                    final_metrics["mouse_move_signed_pe_y_ci_upper"] = ci_upper_y
 
             # Calculate timestamp metrics (R², percentiles of absolute errors, and percentiles of signed errors)
             if len(self.metrics["timestamp_gt_values"]) > 0:
@@ -389,12 +444,12 @@ class OWAEvaluatorBatched:
             if len(self.metrics["timestamp_signed_errors"]) > 0:
                 signed_errors = np.array(self.metrics["timestamp_signed_errors"])
 
-                # Calculate percentiles for signed errors
-                final_metrics["timestamp_signed_error_p0"] = np.percentile(signed_errors, 0)
-                final_metrics["timestamp_signed_error_p25"] = np.percentile(signed_errors, 25)
-                final_metrics["timestamp_signed_error_p50"] = np.percentile(signed_errors, 50)
-                final_metrics["timestamp_signed_error_p75"] = np.percentile(signed_errors, 75)
-                final_metrics["timestamp_signed_error_p100"] = np.percentile(signed_errors, 100)
+                # Calculate IQM with 95% stratified bootstrap CIs for signed errors
+                iqm_signed = interquartile_mean(signed_errors)
+                ci_lower_signed, ci_upper_signed = stratified_bootstrap_ci(signed_errors)
+                final_metrics["timestamp_signed_error_iqm"] = iqm_signed
+                final_metrics["timestamp_signed_error_ci_lower"] = ci_lower_signed
+                final_metrics["timestamp_signed_error_ci_upper"] = ci_upper_signed
 
         return final_metrics
 
@@ -504,24 +559,26 @@ def print_evaluation_results(
         )
 
     # X-coordinate signed PE
-    x_pe_keys = [k for k in metrics.keys() if k.startswith("mouse_move_signed_pe_x_p")]
-    if x_pe_keys:
-        print("  X-Coordinate Signed PE:", file=file)
-        percentiles = ["p0", "p25", "p50", "p75", "p100"]
-        values = [metrics.get(f"mouse_move_signed_pe_x_{p}", 0) for p in percentiles]
+    x_pe_iqm_key = "mouse_move_signed_pe_x_iqm"
+    if x_pe_iqm_key in metrics:
+        print("  X-Coordinate Signed PE - IQM with 95% stratified bootstrap CIs:", file=file)
+        iqm = metrics.get("mouse_move_signed_pe_x_iqm", 0)
+        ci_lower = metrics.get("mouse_move_signed_pe_x_ci_lower", 0)
+        ci_upper = metrics.get("mouse_move_signed_pe_x_ci_upper", 0)
         print(
-            f"    P0: {values[0]:>12.3f}%  P25: {values[1]:>12.3f}%  P50: {values[2]:>12.3f}%  P75: {values[3]:>12.3f}%  P100: {values[4]:>12.3f}%",
+            f"    IQM: {iqm:>12.3f}%  [95% CI: {ci_lower:>12.3f}%, {ci_upper:>12.3f}%]",
             file=file,
         )
 
     # Y-coordinate signed PE
-    y_pe_keys = [k for k in metrics.keys() if k.startswith("mouse_move_signed_pe_y_p")]
-    if y_pe_keys:
-        print("  Y-Coordinate Signed PE:", file=file)
-        percentiles = ["p0", "p25", "p50", "p75", "p100"]
-        values = [metrics.get(f"mouse_move_signed_pe_y_{p}", 0) for p in percentiles]
+    y_pe_iqm_key = "mouse_move_signed_pe_y_iqm"
+    if y_pe_iqm_key in metrics:
+        print("  Y-Coordinate Signed PE - IQM with 95% stratified bootstrap CIs:", file=file)
+        iqm = metrics.get("mouse_move_signed_pe_y_iqm", 0)
+        ci_lower = metrics.get("mouse_move_signed_pe_y_ci_lower", 0)
+        ci_upper = metrics.get("mouse_move_signed_pe_y_ci_upper", 0)
         print(
-            f"    P0: {values[0]:>12.3f}%  P25: {values[1]:>12.3f}%  P50: {values[2]:>12.3f}%  P75: {values[3]:>12.3f}%  P100: {values[4]:>12.3f}%",
+            f"    IQM: {iqm:>12.3f}%  [95% CI: {ci_lower:>12.3f}%, {ci_upper:>12.3f}%]",
             file=file,
         )
 
@@ -542,25 +599,25 @@ def print_evaluation_results(
             file=file,
         )
 
-    # Signed error percentiles
-    signed_error_keys = [k for k in metrics.keys() if k.startswith("timestamp_signed_error_p")]
-    if signed_error_keys:
-        print("  Signed Error Percentiles (ms):", file=file)
-        percentiles = ["p0", "p25", "p50", "p75", "p100"]
-        values = [metrics.get(f"timestamp_signed_error_{p}", 0) / 1_000_000 for p in percentiles]  # Convert ns to ms
+    # Signed error IQM with 95% stratified bootstrap CIs
+    signed_error_iqm_key = "timestamp_signed_error_iqm"
+    if signed_error_iqm_key in metrics:
+        print("  Signed Error - IQM with 95% stratified bootstrap CIs (ms):", file=file)
+        iqm = metrics.get("timestamp_signed_error_iqm", 0) / 1_000_000  # Convert ns to ms
+        ci_lower = metrics.get("timestamp_signed_error_ci_lower", 0) / 1_000_000  # Convert ns to ms
+        ci_upper = metrics.get("timestamp_signed_error_ci_upper", 0) / 1_000_000  # Convert ns to ms
         print(
-            f"    P0: {values[0]:>12.3f}  P25: {values[1]:>12.3f}  P50: {values[2]:>12.3f}  P75: {values[3]:>12.3f}  P100: {values[4]:>12.3f}",
+            f"    IQM: {iqm:>12.3f}  [95% CI: {ci_lower:>12.3f}, {ci_upper:>12.3f}]",
             file=file,
         )
 
-        # Add interpretation for signed errors
-        p50_bias = values[2]
-        if abs(p50_bias) < 0.001:  # Less than 1μs (0.001ms)
+        # Add interpretation for signed errors using IQM
+        if abs(iqm) < 0.001:  # Less than 1μs (0.001ms)
             bias_interpretation = "No significant timing bias"
-        elif p50_bias > 0:
-            bias_interpretation = f"Model predicts {p50_bias:.3f}ms too late"
+        elif iqm > 0:
+            bias_interpretation = f"Model predicts {iqm:.3f}ms too late"
         else:
-            bias_interpretation = f"Model predicts {abs(p50_bias):.3f}ms too early"
+            bias_interpretation = f"Model predicts {abs(iqm):.3f}ms too early"
         print(f"    Interpretation: {bias_interpretation}", file=file)
 
     print(f"\n{'=' * 60}\n", file=file)
