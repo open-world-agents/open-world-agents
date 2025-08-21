@@ -497,7 +497,7 @@ def print_evaluation_results(
         percentiles = ["p0", "p25", "p50", "p75", "p100"]
         values = [metrics.get(f"mouse_move_pe_euclidean_{p}", 0) for p in percentiles]
         print(
-            f"    P0: {values[0]:>6.1f}%  P25: {values[1]:>6.1f}%  P50: {values[2]:>6.1f}%  P75: {values[3]:>6.1f}%  P100: {values[4]:>6.1f}%",
+            f"    P0: {values[0]:>10.3f}%  P25: {values[1]:>10.3f}%  P50: {values[2]:>10.3f}%  P75: {values[3]:>10.3f}%  P100: {values[4]:>10.3f}%",
             file=file,
         )
 
@@ -508,7 +508,7 @@ def print_evaluation_results(
         percentiles = ["p0", "p25", "p50", "p75", "p100"]
         values = [metrics.get(f"mouse_move_signed_pe_x_{p}", 0) for p in percentiles]
         print(
-            f"    P0: {values[0]:>6.1f}%  P25: {values[1]:>6.1f}%  P50: {values[2]:>6.1f}%  P75: {values[3]:>6.1f}%  P100: {values[4]:>6.1f}%",
+            f"    P0: {values[0]:>10.3f}%  P25: {values[1]:>10.3f}%  P50: {values[2]:>10.3f}%  P75: {values[3]:>10.3f}%  P100: {values[4]:>10.3f}%",
             file=file,
         )
 
@@ -519,7 +519,7 @@ def print_evaluation_results(
         percentiles = ["p0", "p25", "p50", "p75", "p100"]
         values = [metrics.get(f"mouse_move_signed_pe_y_{p}", 0) for p in percentiles]
         print(
-            f"    P0: {values[0]:>6.1f}%  P25: {values[1]:>6.1f}%  P50: {values[2]:>6.1f}%  P75: {values[3]:>6.1f}%  P100: {values[4]:>6.1f}%",
+            f"    P0: {values[0]:>10.3f}%  P25: {values[1]:>10.3f}%  P50: {values[2]:>10.3f}%  P75: {values[3]:>10.3f}%  P100: {values[4]:>10.3f}%",
             file=file,
         )
 
@@ -536,7 +536,7 @@ def print_evaluation_results(
         percentiles = ["p0", "p25", "p50", "p75", "p100"]
         values = [metrics.get(f"timestamp_abs_error_{p}", 0) / 1_000_000 for p in percentiles]  # Convert ns to ms
         print(
-            f"    P0: {values[0]:>8.3f}  P25: {values[1]:>8.3f}  P50: {values[2]:>8.3f}  P75: {values[3]:>8.3f}  P100: {values[4]:>8.3f}",
+            f"    P0: {values[0]:>10.3f}  P25: {values[1]:>10.3f}  P50: {values[2]:>10.3f}  P75: {values[3]:>10.3f}  P100: {values[4]:>10.3f}",
             file=file,
         )
 
@@ -547,7 +547,7 @@ def print_evaluation_results(
         percentiles = ["p0", "p25", "p50", "p75", "p100"]
         values = [metrics.get(f"timestamp_signed_error_{p}", 0) / 1_000_000 for p in percentiles]  # Convert ns to ms
         print(
-            f"    P0: {values[0]:>8.3f}  P25: {values[1]:>8.3f}  P50: {values[2]:>8.3f}  P75: {values[3]:>8.3f}  P100: {values[4]:>8.3f}",
+            f"    P0: {values[0]:>10.3f}  P25: {values[1]:>10.3f}  P50: {values[2]:>10.3f}  P75: {values[3]:>10.3f}  P100: {values[4]:>10.3f}",
             file=file,
         )
 
