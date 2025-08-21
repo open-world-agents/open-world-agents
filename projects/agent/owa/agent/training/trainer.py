@@ -489,39 +489,39 @@ def print_evaluation_results(
             print(f"  {label:<15}: {metrics[key]:>6.1%}", file=file)
 
     # Mouse movement metrics
-    print("\n🖱️  MOUSE MOVEMENT METRICS", file=file)
+    print("\n🖱️  MOUSE MOVE METRICS", file=file)
     print(f"{'─' * 40}", file=file)
-    if "mouse_movement_r2" in metrics:
-        print(f"  R² Score: {metrics['mouse_movement_r2']:>6.3f}", file=file)
+    if "mouse_move_r2" in metrics:
+        print(f"  R² Score: {metrics['mouse_move_r2']:>6.3f}", file=file)
 
     # Euclidean percentage errors
-    euclidean_keys = [k for k in metrics.keys() if k.startswith("mouse_movement_pe_euclidean_p")]
+    euclidean_keys = [k for k in metrics.keys() if k.startswith("mouse_move_pe_euclidean_p")]
     if euclidean_keys:
         print("  Euclidean PE Percentiles:", file=file)
         percentiles = ["p0", "p25", "p50", "p75", "p100"]
-        values = [metrics.get(f"mouse_movement_pe_euclidean_{p}", 0) for p in percentiles]
+        values = [metrics.get(f"mouse_move_pe_euclidean_{p}", 0) for p in percentiles]
         print(
             f"    Min: {values[0]:>6.1f}%  Q1: {values[1]:>6.1f}%  Median: {values[2]:>6.1f}%  Q3: {values[3]:>6.1f}%  Max: {values[4]:>6.1f}%",
             file=file,
         )
 
     # X-coordinate signed PE
-    x_pe_keys = [k for k in metrics.keys() if k.startswith("mouse_movement_signed_pe_x_p")]
+    x_pe_keys = [k for k in metrics.keys() if k.startswith("mouse_move_signed_pe_x_p")]
     if x_pe_keys:
         print("  X-Coordinate Signed PE:", file=file)
         percentiles = ["p0", "p25", "p50", "p75", "p100"]
-        values = [metrics.get(f"mouse_movement_signed_pe_x_{p}", 0) for p in percentiles]
+        values = [metrics.get(f"mouse_move_signed_pe_x_{p}", 0) for p in percentiles]
         print(
             f"    Min: {values[0]:>6.1f}%  Q1: {values[1]:>6.1f}%  Median: {values[2]:>6.1f}%  Q3: {values[3]:>6.1f}%  Max: {values[4]:>6.1f}%",
             file=file,
         )
 
     # Y-coordinate signed PE
-    y_pe_keys = [k for k in metrics.keys() if k.startswith("mouse_movement_signed_pe_y_p")]
+    y_pe_keys = [k for k in metrics.keys() if k.startswith("mouse_move_signed_pe_y_p")]
     if y_pe_keys:
         print("  Y-Coordinate Signed PE:", file=file)
         percentiles = ["p0", "p25", "p50", "p75", "p100"]
-        values = [metrics.get(f"mouse_movement_signed_pe_y_{p}", 0) for p in percentiles]
+        values = [metrics.get(f"mouse_move_signed_pe_y_{p}", 0) for p in percentiles]
         print(
             f"    Min: {values[0]:>6.1f}%  Q1: {values[1]:>6.1f}%  Median: {values[2]:>6.1f}%  Q3: {values[3]:>6.1f}%  Max: {values[4]:>6.1f}%",
             file=file,
