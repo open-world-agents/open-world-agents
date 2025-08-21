@@ -38,7 +38,7 @@ class Config:
     tokenizer_name: str
 
     # Nested configurations
-    episode_tokenizer: EpisodeTokenizerConfig = field(default_factory=EpisodeTokenizerConfig)
+    episode_tokenizer: EpisodeTokenizerConfig
     fsl_dataset: FSLDatasetConfig = field(default_factory=FSLDatasetConfig)
 
     # Processing options
@@ -85,7 +85,7 @@ def main(cfg: Config):
         tokenizer.pad_token = tokenizer.eos_token
 
     # Initialize episode tokenizer
-    episode_tokenizer = EpisodeTokenizer(cfg.episode_tokenizer)
+    episode_tokenizer = EpisodeTokenizer.from_transformers_model(cfg.tokenizer_name)
     episode_tokenizer.prepare_model(tokenizer=tokenizer)
 
     # Configure FSL dataset
