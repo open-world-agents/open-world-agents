@@ -577,7 +577,7 @@ class OWASFTTrainer(SFTTrainer):
 
         tokenizer = cast(PreTrainedTokenizer, kwargs["processing_class"].tokenizer)
         self._compute_metrics = OWAEvaluatorBatched(
-            tokenizer=tokenizer, eval_samples_to_show=args.eval_samples_to_show, output_dir=_eval_output_dir
+            tokenizer=tokenizer, eval_samples_to_show=args.eval_samples_to_show, output_dir=self._eval_output_dir
         )
         kwargs = kwargs | dict(args=args, compute_metrics=self._compute_metrics)
         super().__init__(**kwargs)
