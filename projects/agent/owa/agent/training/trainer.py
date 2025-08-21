@@ -602,21 +602,27 @@ class OWASFTTrainer(SFTTrainer):
 
         # Save prediction examples on main process
         if self.is_world_process_zero() and self.args.eval_samples_to_show > 0:
-            self._save_predictions_and_ground_truth(output)
+            self._save_predictions_and_ground_truth(output, metric_key_prefix=metric_key_prefix)
 
         return output
 
-    def _save_predictions_and_ground_truth(self, output: EvalLoopOutput):
+    def _save_predictions_and_ground_truth(self, output: EvalLoopOutput, metric_key_prefix: str = "eval"):
         """Save predictions and ground truth examples for inspection."""
         assert output.metrics is not None
 
         # Save evaluation results
         step = self.state.global_step
 
-        with open(os.path.join(self._eval_output_dir, f"eval_step_{step}_metrics.json"), "w") as f:
+        metrics = {}
+        # detach metric_key_prefix prefix from metric names
+        for key in list(output.metrics.keys()):
+            if key.startswith(f"{metric_key_prefix}_"):
+                metrics[key[len(metric_key_prefix) + 1 :]] = output.metrics.pop(key)
+
+        with open(os.path.join(self._eval_output_dir, f"{metric_key_prefix}_step_{step}_metrics.json"), "w") as f:
             json.dump(output.metrics, f, indent=2)
 
-        with open(os.path.join(self._eval_output_dir, f"eval_step_{step}_metrics.md"), "w") as f:
+        with open(os.path.join(self._eval_output_dir, f"{metric_key_prefix}_step_{step}_metrics.md"), "w") as f:
             print_evaluation_results(output.metrics, f"Step {step}", file=f)
 
 
