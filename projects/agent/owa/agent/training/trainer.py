@@ -482,13 +482,13 @@ def print_evaluation_results(
 
     for key, label in accuracy_metrics.items():
         if key in metrics:
-            print(f"  {label:<15}: {metrics[key]:>6.1%}", file=file)
+            print(f"  {label:<15}: {metrics[key]:>12.3%}", file=file)
 
     # Mouse movement metrics
     print("\n🖱️  MOUSE MOVE METRICS", file=file)
     print(f"{'─' * 40}", file=file)
     if "mouse_move_r2" in metrics:
-        print(f"  R² Score: {metrics['mouse_move_r2']:>6.3f}", file=file)
+        print(f"  R² Score: {metrics['mouse_move_r2']:>12.3f}", file=file)
 
     # Euclidean percentage errors
     euclidean_keys = [k for k in metrics.keys() if k.startswith("mouse_move_pe_euclidean_p")]
@@ -497,7 +497,7 @@ def print_evaluation_results(
         percentiles = ["p0", "p25", "p50", "p75", "p100"]
         values = [metrics.get(f"mouse_move_pe_euclidean_{p}", 0) for p in percentiles]
         print(
-            f"    P0: {values[0]:>10.3f}%  P25: {values[1]:>10.3f}%  P50: {values[2]:>10.3f}%  P75: {values[3]:>10.3f}%  P100: {values[4]:>10.3f}%",
+            f"    P0: {values[0]:>12.3f}%  P25: {values[1]:>12.3f}%  P50: {values[2]:>12.3f}%  P75: {values[3]:>12.3f}%  P100: {values[4]:>12.3f}%",
             file=file,
         )
 
@@ -508,7 +508,7 @@ def print_evaluation_results(
         percentiles = ["p0", "p25", "p50", "p75", "p100"]
         values = [metrics.get(f"mouse_move_signed_pe_x_{p}", 0) for p in percentiles]
         print(
-            f"    P0: {values[0]:>10.3f}%  P25: {values[1]:>10.3f}%  P50: {values[2]:>10.3f}%  P75: {values[3]:>10.3f}%  P100: {values[4]:>10.3f}%",
+            f"    P0: {values[0]:>12.3f}%  P25: {values[1]:>12.3f}%  P50: {values[2]:>12.3f}%  P75: {values[3]:>12.3f}%  P100: {values[4]:>12.3f}%",
             file=file,
         )
 
@@ -519,7 +519,7 @@ def print_evaluation_results(
         percentiles = ["p0", "p25", "p50", "p75", "p100"]
         values = [metrics.get(f"mouse_move_signed_pe_y_{p}", 0) for p in percentiles]
         print(
-            f"    P0: {values[0]:>10.3f}%  P25: {values[1]:>10.3f}%  P50: {values[2]:>10.3f}%  P75: {values[3]:>10.3f}%  P100: {values[4]:>10.3f}%",
+            f"    P0: {values[0]:>12.3f}%  P25: {values[1]:>12.3f}%  P50: {values[2]:>12.3f}%  P75: {values[3]:>12.3f}%  P100: {values[4]:>12.3f}%",
             file=file,
         )
 
@@ -527,7 +527,7 @@ def print_evaluation_results(
     print("\n⏰ TIMESTAMP METRICS", file=file)
     print(f"{'─' * 40}", file=file)
     if "timestamp_r2" in metrics:
-        print(f"  R² Score: {metrics['timestamp_r2']:>6.3f}", file=file)
+        print(f"  R² Score: {metrics['timestamp_r2']:>12.3f}", file=file)
 
     # Absolute error percentiles
     abs_error_keys = [k for k in metrics.keys() if k.startswith("timestamp_abs_error_p")]
@@ -536,7 +536,7 @@ def print_evaluation_results(
         percentiles = ["p0", "p25", "p50", "p75", "p100"]
         values = [metrics.get(f"timestamp_abs_error_{p}", 0) / 1_000_000 for p in percentiles]  # Convert ns to ms
         print(
-            f"    P0: {values[0]:>10.3f}  P25: {values[1]:>10.3f}  P50: {values[2]:>10.3f}  P75: {values[3]:>10.3f}  P100: {values[4]:>10.3f}",
+            f"    P0: {values[0]:>12.3f}  P25: {values[1]:>12.3f}  P50: {values[2]:>12.3f}  P75: {values[3]:>12.3f}  P100: {values[4]:>12.3f}",
             file=file,
         )
 
@@ -547,7 +547,7 @@ def print_evaluation_results(
         percentiles = ["p0", "p25", "p50", "p75", "p100"]
         values = [metrics.get(f"timestamp_signed_error_{p}", 0) / 1_000_000 for p in percentiles]  # Convert ns to ms
         print(
-            f"    P0: {values[0]:>10.3f}  P25: {values[1]:>10.3f}  P50: {values[2]:>10.3f}  P75: {values[3]:>10.3f}  P100: {values[4]:>10.3f}",
+            f"    P0: {values[0]:>12.3f}  P25: {values[1]:>12.3f}  P50: {values[2]:>12.3f}  P75: {values[3]:>12.3f}  P100: {values[4]:>12.3f}",
             file=file,
         )
 
