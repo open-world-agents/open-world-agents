@@ -194,6 +194,8 @@ class HierarchicalEventEncoder(BaseEventEncoder):
             warnings.warn(
                 f"Mouse delta value ({event.dx},{event.dy}) is outside valid range ({min_delta}, {max_delta}). Clamping."
             )
+            event.last_x = max(min_delta, min(max_delta, event.last_x))
+            event.last_y = max(min_delta, min(max_delta, event.last_y))
 
         tokens = ["<MOUSE>"]
 
