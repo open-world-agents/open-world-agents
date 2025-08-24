@@ -74,6 +74,10 @@ def process_raw_events_file(
 
                 # Process all ready events
                 for mcap_message_obj in ready_events:
+                    # Apply time shift if applicable
+                    if time_shift_seconds is not None and action_topics is not None and topic in action_topics:
+                        mcap_message_obj.timestamp += int(time_shift_seconds * 1e9)
+
                     # Serialize McapMessage to bytes using model_dump_json
                     mcap_message_bytes = mcap_message_obj.model_dump_json().encode("utf-8")
 
@@ -92,16 +96,7 @@ def process_raw_events_file(
                         }
                     )
 
-    if time_shift_seconds is None or not action_topics:
-        return events
-
-    action_topics_set = set(action_topics)
-    time_shift_ns = int(time_shift_seconds * 1e9)
-
-    for event in events:
-        if event["topic"] in action_topics_set:
-            event["timestamp_ns"] += time_shift_ns
-
+    # Sort events by timestamp (needed for time shift)
     events.sort(key=lambda e: e["timestamp_ns"])
     return events
 
