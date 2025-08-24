@@ -428,7 +428,7 @@ OWAMcap achieves remarkable storage efficiency through external video references
 #### Compression Benefits
 
 !!! info "Compression Performance"
-    Compression performance varies significantly across formats. H.265 encoding achieves a 217.8× compression ratio compared to raw BGRA data (202 KB vs 43.1 MB per frame) while maintaining visual quality suitable for agent training, enabling practical storage of large-scale desktop interaction datasets.
+    Compression performance varies significantly across formats. H.265 encoding achieves a 217.8× compression ratio compared to raw BGRA data while maintaining visual quality suitable for agent training, enabling practical storage of large-scale desktop interaction datasets.
 
 Desktop screen capture at 1920 × 1080 resolution, 12 s @ 60 Hz:
 
