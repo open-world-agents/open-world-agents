@@ -26,6 +26,7 @@ class EventToken(str, Enum):
     EVENT_END = "<EVENT_END>"
     KEYBOARD = "<KEYBOARD>"
     MOUSE = "<MOUSE>"
+    SCREEN = "<SCREEN>"
     PRESS = "<press>"
     RELEASE = "<release>"
 
@@ -163,7 +164,7 @@ def _generate_vocab() -> Set[str]:
     Generate the hierarchical token vocabulary.
 
     Includes:
-    - Event structure tokens (START, END, KEYBOARD, MOUSE, etc.)
+    - Event structure tokens (START, END, KEYBOARD, MOUSE, SCREEN, etc.)
     - Numeric tokens <0> to <255> for:
       * VK codes (0-255)
       * Quantized timestamp digits
@@ -178,6 +179,7 @@ def _generate_vocab() -> Set[str]:
         EventToken.PRESS.value,
         EventToken.RELEASE.value,
         EventToken.MOUSE.value,
+        EventToken.SCREEN.value,
         *[f"<{i}>" for i in range(256)],
     }
 
@@ -384,8 +386,8 @@ class HierarchicalEventEncoder(BaseEventEncoder):
             event_tokens = [EventToken.MOUSE.value] + timestamp_tokens + data_tokens
             return f"{EventToken.EVENT_START.value}{''.join(event_tokens)}{EventToken.EVENT_END.value}", []
         elif mcap_message.topic == "screen":
-            # Screen events only have timestamp, image data is returned separately
-            event_tokens = [self.config.fake_image_placeholder] + timestamp_tokens
+            # Screen events: <EVENT_START><SCREEN><TIMESTAMP><fake_image_placeholder><EVENT_END>
+            event_tokens = [EventToken.SCREEN.value] + timestamp_tokens + [self.config.fake_image_placeholder]
             return f"{EventToken.EVENT_START.value}{''.join(event_tokens)}{EventToken.EVENT_END.value}", [decoded]
         else:
             raise UnsupportedInputError(f"Unsupported topic: {mcap_message.topic}")
@@ -427,7 +429,13 @@ class HierarchicalEventEncoder(BaseEventEncoder):
                 message_type="desktop/RawMouseEvent",
                 message=event.model_dump_json().encode(),
             )
-        elif event_type == self.config.fake_image_placeholder:
+        elif event_type == EventToken.SCREEN.value:
+            # Screen events should have exactly one data token: fake_image_placeholder
+            if len(data_tokens) != 1 or data_tokens[0] != self.config.fake_image_placeholder:
+                raise InvalidTokenError(
+                    f"Screen event should have exactly one fake_image_placeholder token, got {data_tokens}"
+                )
+
             if not images:
                 warnings.warn("No image data provided for screen event", UserWarning)
                 from owa.msgs.desktop.screen import MediaRef
