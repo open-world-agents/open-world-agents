@@ -1,9 +1,8 @@
 import re
 import warnings
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import List, Optional, Set, Tuple
-
-import orjson
 
 from mcap_owa.highlevel.mcap_msg import McapMessage
 from owa.core.time import TimeUnits
@@ -12,6 +11,23 @@ from owa.msgs.desktop.mouse import RawMouseEvent
 from owa.msgs.desktop.screen import ScreenCaptured
 
 from .base_encoder import BaseEventEncoder, BaseEventEncoderConfig
+from .exceptions import (
+    InvalidInputError,
+    InvalidTokenError,
+    UnsupportedInputError,
+    UnsupportedTokenError,
+)
+
+
+class EventToken(str, Enum):
+    """Event tokens for hierarchical encoding."""
+
+    EVENT_START = "<EVENT_START>"
+    EVENT_END = "<EVENT_END>"
+    KEYBOARD = "<KEYBOARD>"
+    MOUSE = "<MOUSE>"
+    PRESS = "<press>"
+    RELEASE = "<release>"
 
 
 @dataclass
@@ -19,12 +35,21 @@ class HierarchicalEventEncoderConfig(BaseEventEncoderConfig):
     """Configuration for HierarchicalEventEncoder."""
 
     # Minimal timestamp unit (default: 10ms)
+    # Provides 16-second range: 16*10*10 = 1600 units * 10ms = 16 seconds
     timestamp_unit_ns: int = 10 * TimeUnits.MSECOND
-    # 16 seconds in 10ms intervals
+
+    # Timestamp encoding bases: [16, 10, 10] = 1600 total units
+    # Range: 0 to 15.99 seconds in 10ms increments
     timestamp_bases: List[int] = field(default_factory=lambda: [16, 10, 10])
-    # Mouse delta encoding bases
+
+    # Mouse delta encoding bases: [20, 10, 10] = 2000 total values
+    # With sign bit [2, 20, 10, 10] = 4000 total, range: -2000 to +1999 pixels
+    # Accommodates large mouse movements (-1000+ per tick)
     mouse_delta_bases: List[int] = field(default_factory=lambda: [20, 10, 10])
-    # Mouse scroll encoding bases
+
+    # Mouse scroll encoding bases: [10] = 10 total values
+    # With sign bit [2, 10] = 20 total, range: -10 to +9 scroll units
+    # Each unit represents 120 (WHEEL_DELTA) in button_data
     mouse_scroll_bases: List[int] = field(default_factory=lambda: [10])
 
     def _signed_range(self, bases: List[int]) -> Tuple[int, int]:
@@ -77,14 +102,13 @@ def quantize_to_digits(value: int, bases: List[int]) -> List[int]:
         >>> quantize_to_digits(-3, [2, 10, 10, 10])
         [1, 9, 9, 7]  # Negative with signed: add [2] at front for sign bit
     """
-    # Convert to digits
     digits = []
     remaining = value
+    # Process bases from least to most significant (reverse order)
     for base in reversed(bases):
-        digit = remaining % base
-        digits.insert(0, digit)
-        remaining //= base
-
+        digit = remaining % base  # Extract digit for this base
+        digits.insert(0, digit)  # Insert at front to maintain order
+        remaining //= base  # Move to next significance level
     return digits
 
 
@@ -116,79 +140,132 @@ def digits_to_value(digits: List[int], bases: List[int], *, signed: bool | None 
         raise ValueError(f"Digits length {len(digits)} must match bases length {len(bases)}")
 
     if signed is None:
-        signed = bases[0] == 2
+        signed = bases[0] == 2  # Auto-detect: sign bit if first base is 2
 
-    # Reconstruct the encoded value from digits
+    # Reconstruct value using positional notation (most to least significant)
     encoded_value = 0
     for digit, base in zip(digits, bases):
         encoded_value = encoded_value * base + digit
 
+    # Convert from unsigned to signed representation if needed
     if signed:
-        # Calculate total range for signed conversion
         total_range = 1
         for base in bases:
             total_range *= base
-        # For signed representation, if encoded_value >= total_range//2, it's negative
+        # If value is in upper half of range, it represents a negative number
         if encoded_value >= total_range // 2:
             return encoded_value - total_range
-        else:
-            return encoded_value
-    else:
-        return encoded_value
+    return encoded_value
 
 
 def _generate_vocab() -> Set[str]:
-    """Generate the hierarchical token vocabulary.
-
-    Note: fake_image_placeholder is NOT included in vocab as it's not a real token,
-    just an internal placeholder used during encoding.
     """
-    vocab = [
-        "<EVENT_START>",
-        "<EVENT_END>",
-        "<KEYBOARD>",
-        "<press>",
-        "<release>",
-        "<MOUSE>",
-        # fake_image_placeholder deliberately excluded - it's not a real token
-    ]
+    Generate the hierarchical token vocabulary.
 
-    # Numbers 0-255 for various parameters. TODO: verify this is enough
-    vocab.extend(f"<{i}>" for i in range(256))
-    return set(vocab)
+    Includes:
+    - Event structure tokens (START, END, KEYBOARD, MOUSE, etc.)
+    - Numeric tokens <0> to <255> for:
+      * VK codes (0-255)
+      * Quantized timestamp digits
+      * Quantized mouse delta digits
+      * Quantized scroll digits
+      * Button flag hex digits (0-15)
+    """
+    return {
+        EventToken.EVENT_START.value,
+        EventToken.EVENT_END.value,
+        EventToken.KEYBOARD.value,
+        EventToken.PRESS.value,
+        EventToken.RELEASE.value,
+        EventToken.MOUSE.value,
+        *[f"<{i}>" for i in range(256)],
+    }
+
+
+# Helper function for token parsing
+def _extract_digit(token: str) -> int:
+    """Extract digit from token format <digit>."""
+    match = re.match(r"<(\d+)>", token)
+    if not match:
+        raise InvalidTokenError(f"Invalid token format: {token}")
+    return int(match.group(1))
 
 
 class HierarchicalEventEncoder(BaseEventEncoder):
-    """Hierarchical event encoder with simple token structure."""
+    """Hierarchical event encoder: <EVENT_START><TYPE><TIMESTAMP><DATA><EVENT_END>"""
 
     def __init__(self, config: Optional[HierarchicalEventEncoderConfig] = None, **kwargs):
         if config is None:
             config = HierarchicalEventEncoderConfig()
+        # Merge config with any keyword overrides
         self.config = HierarchicalEventEncoderConfig(**(config.__dict__ | kwargs))
 
+        # Verify token ranges once during initialization to catch config errors early
+        self._verify_configuration()
+
+    def _verify_configuration(self) -> None:
+        """Verify that all configuration values will produce valid tokens."""
+        # Check that all bases produce digits within token range <0> to <255>
+        for name, bases in [
+            ("timestamp", self.config.timestamp_bases),
+            ("mouse_delta", [2] + self.config.mouse_delta_bases),  # Include sign bit
+            ("mouse_scroll", [2] + self.config.mouse_scroll_bases),  # Include sign bit
+        ]:
+            if max(bases) > 256:
+                raise InvalidInputError(f"{name} base {max(bases)} produces digits > 255")
+
+    @property
+    def vocab(self) -> Set[str]:
+        return _generate_vocab()
+
+    # ============================================================================
+    # TIMESTAMP ENCODING/DECODING
+    # ============================================================================
+
     def _encode_timestamp(self, timestamp_ns: int) -> List[str]:
-        """Encode timestamp with multi-level quantization: [<digit1>, <digit2>, ...]"""
-        # Convert to timestamp units (e.g., 10ms units)
-        timestamp_units = timestamp_ns // self.config.timestamp_unit_ns
+        """Encode timestamp as tokens."""
+        units = timestamp_ns // self.config.timestamp_unit_ns
+        return [f"<{d}>" for d in quantize_to_digits(units, self.config.timestamp_bases)]
 
-        # Quantize to digits using integer approach
-        digits = quantize_to_digits(timestamp_units, self.config.timestamp_bases)
+    def _decode_timestamp(self, tokens: List[str]) -> int:
+        """Decode timestamp tokens back to nanoseconds."""
+        digits = [_extract_digit(token) for token in tokens]
+        units = digits_to_value(digits, self.config.timestamp_bases)
+        return units * self.config.timestamp_unit_ns
 
-        # Create tokens
-        tokens = [f"<{digit}>" for digit in digits]
-        return tokens
+    # ============================================================================
+    # KEYBOARD ENCODING/DECODING
+    # ============================================================================
 
-    def _encode_keyboard(self, event: KeyboardEvent) -> List[str]:
-        """Encode keyboard event: [<KEYBOARD>, <vk>, <action>]"""
-        return ["<KEYBOARD>", f"<{event.vk}>", f"<{event.event_type}>"]
+    def _encode_keyboard_data(self, event: KeyboardEvent) -> List[str]:
+        """Encode keyboard data: [<vk>, <action>]"""
+        return [f"<{event.vk}>", f"<{event.event_type}>"]
 
-    def _encode_mouse(self, event: RawMouseEvent) -> List[str]:
-        """
-        Encode raw mouse event as: <MOUSE><dx0><dy0><dx1><dy1>...<flag0><flag1><flag2><optional_button_data>
+    def _decode_keyboard_data(self, tokens: List[str]) -> KeyboardEvent:
+        """Decode keyboard data tokens."""
+        if len(tokens) != 2:
+            raise InvalidTokenError(f"Expected 2 keyboard tokens, got {len(tokens)}")
 
-        Each flag is encoded as a hex digit (0-15).
-        """
-        # Warn if mouse delta values are outside acceptable range
+        vk = _extract_digit(tokens[0])
+
+        # Extract event type
+        event_type_match = re.match(r"<(\w+)>", tokens[1])
+        if not event_type_match:
+            raise InvalidTokenError(f"Invalid event type token: {tokens[1]}")
+        event_type = event_type_match.group(1)
+
+        if event_type not in ("press", "release"):
+            raise UnsupportedTokenError(f"Unsupported event type: {event_type}")
+
+        return KeyboardEvent(event_type=event_type, vk=vk)
+
+    # ============================================================================
+    # MOUSE ENCODING/DECODING
+    # ============================================================================
+
+    def _encode_mouse_data(self, event: RawMouseEvent) -> List[str]:
+        """Encode mouse data: movement + flags + optional scroll."""
+        # Validate mouse delta range
         min_delta, max_delta = self.config.mouse_delta_range
         if not (min_delta <= event.dx <= max_delta) or not (min_delta <= event.dy <= max_delta):
             warnings.warn(
@@ -197,262 +274,165 @@ class HierarchicalEventEncoder(BaseEventEncoder):
             event.last_x = max(min_delta, min(max_delta, event.last_x))
             event.last_y = max(min_delta, min(max_delta, event.last_y))
 
-        tokens = ["<MOUSE>"]
+        tokens = []
 
-        # Use signed bases (add [2] to front for sign bit)
+        # Encode movement deltas with sign bit
         signed_bases = [2] + self.config.mouse_delta_bases
         digits_dx = quantize_to_digits(event.dx, signed_bases)
         digits_dy = quantize_to_digits(event.dy, signed_bases)
-
-        # Interleave dx,dy digit pairs
+        # Interleave dx and dy digits: <dx0><dy0><dx1><dy1>...
         for digit_dx, digit_dy in zip(digits_dx, digits_dy):
             tokens.extend([f"<{digit_dx}>", f"<{digit_dy}>"])
 
-        # Encode button flags as hex digits (0-15)
+        # Encode button flags as 3-digit hex (0x000-0xFFF range)
+        # Each hex digit (0-15) becomes a separate token
         flag_value = int(event.button_flags)
-
-        # Convert to hex and pad to 3 digits, then split into individual hex digits
-        hex_str = f"{flag_value:03x}"  # 3 hex digits, e.g., "401" for 0x401
+        hex_str = f"{flag_value:03x}"  # Always 3 digits: 000-FFF
         for hex_digit in hex_str:
-            tokens.append(f"<{int(hex_digit, 16)}>")  # Convert hex char to int (0-15)
+            hex_digit_int = int(hex_digit, 16)
+            tokens.append(f"<{hex_digit_int}>")
 
-        # Add button data if non-zero (for wheel events)
+        # Encode scroll data if present
+        # button_data is USHORT (0-65535), convert to signed and scale by WHEEL_DELTA (120)
+        # See: https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-rawmouse
         if event.button_data != 0:
-            # NOTE: button_data is USHORT and is multiple if 120=WHEEL_DELTA. See: https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-rawmouse
             button_data = event.button_data
-            if button_data >= 32768:
+            if button_data >= 32768:  # Convert USHORT to signed
                 button_data -= 65536
-            button_data //= 120
+            button_data //= 120  # Scale by WHEEL_DELTA
 
             # Validate scroll range
             min_scroll, max_scroll = self.config.mouse_scroll_range
             if not (min_scroll <= button_data <= max_scroll):
-                raise ValueError(
+                raise InvalidInputError(
                     f"Mouse scroll value {button_data} is outside valid range [{min_scroll}, {max_scroll}]"
                 )
 
-            # Use signed bases for scroll encoding
             signed_bases = [2] + self.config.mouse_scroll_bases
             digits = quantize_to_digits(button_data, signed_bases)
             tokens.extend(f"<{digit}>" for digit in digits)
 
         return tokens
 
-    def _decode_mouse_deltas(self, tokens: List[str]) -> Tuple[int, int]:
-        """Decode quantized mouse deltas."""
-        delta_tokens = tokens[1:]  # Skip <MOUSE>
+    def _decode_mouse_data(self, tokens: List[str]) -> RawMouseEvent:
+        """Decode mouse data tokens."""
+        # Decode movement deltas from interleaved dx/dy tokens
+        dx, dy = self._decode_mouse_deltas(["<MOUSE>"] + tokens)
 
-        # Check for enough tokens: 2 pairs of deltas (dx, dy) with sign bits. Flag digits are handled separately.
-        expected_delta_tokens = len(self.config.mouse_delta_bases) * 2 + 2
-        if len(delta_tokens) < expected_delta_tokens:
-            raise ValueError(f"Expected at least {expected_delta_tokens} delta tokens")
+        # Decode button flags from 3 hex digit tokens
+        # Each token represents one hex digit (0-15), reconstruct 3-digit hex value
+        flag_start = len(self.config.mouse_delta_bases) * 2 + 2
+        hex_digits = "".join(f"{_extract_digit(tokens[flag_start + i]):x}" for i in range(3))
+        button_flags = int(hex_digits, 16)  # Convert back to integer (0x000-0xFFF)
 
-        # Parse digit pairs from tokens
-        digits_dx, digits_dy = [], []
-        for i in range(0, expected_delta_tokens, 2):
-            dx_token = delta_tokens[i]
-            dy_token = delta_tokens[i + 1]
-
-            dx_match = re.match(r"<(\d+)>", dx_token)
-            dy_match = re.match(r"<(\d+)>", dy_token)
-            if not dx_match or not dy_match:
-                raise ValueError(f"Invalid delta tokens: {dx_token}, {dy_token}")
-
-            digits_dx.append(int(dx_match.group(1)))
-            digits_dy.append(int(dy_match.group(1)))
-
-        # Use signed bases (add [2] to front for sign bit)
-        signed_bases = [2] + self.config.mouse_delta_bases
-
-        # Reconstruct signed deltas from digits
-        dx = digits_to_value(digits_dx, signed_bases, signed=True)
-        dy = digits_to_value(digits_dy, signed_bases, signed=True)
-
-        return dx, dy
-
-    def encode(self, mcap_message: McapMessage) -> Tuple[str, List[ScreenCaptured]]:
-        """Encode a single McapMessage object to hierarchical token format."""
-        mcap_message = mcap_message if isinstance(mcap_message, McapMessage) else McapMessage(**mcap_message)
-
-        base_tokens = self._encode_timestamp(mcap_message.timestamp)
-        images = []
-
-        # Parse message content
-        try:
-            msg_data = orjson.loads(mcap_message.message.decode("utf-8"))
-        except (orjson.JSONDecodeError, TypeError) as e:
-            raise ValueError(f"Failed to parse message content: {e}")
-
-        # Encode based on event type
-        if mcap_message.topic == "keyboard":
-            keyboard_event = KeyboardEvent(**msg_data)
-            event_tokens = base_tokens + self._encode_keyboard(keyboard_event)
-        elif mcap_message.topic == "mouse" or mcap_message.topic == "mouse/raw":
-            raw_mouse_event = RawMouseEvent(**msg_data)
-            mouse_tokens = self._encode_mouse(raw_mouse_event)
-            event_tokens = base_tokens + mouse_tokens
-        elif mcap_message.topic == "screen":
-            screen_event = ScreenCaptured(**msg_data)
-            # Insert a single placeholder token - EpisodeTokenizer will handle prefix/suffix/repetition
-            event_tokens = base_tokens + [self.config.fake_image_placeholder]
-            images.append(screen_event)
-        else:
-            raise ValueError(f"Unsupported event type: {mcap_message.topic}")
-
-        encoded_event = f"<EVENT_START>{''.join(event_tokens)}<EVENT_END>"
-        return encoded_event, images
-
-    def _decode_timestamp(self, tokens: List[str]) -> int:
-        """Decode timestamp tokens back to nanoseconds."""
-        if len(tokens) != len(self.config.timestamp_bases):
-            raise ValueError(f"Invalid timestamp tokens: {tokens}")
-
-        # Parse digits from tokens
-        digits = []
-        for i in range(len(tokens)):
-            digit_match = re.match(r"<(\d+)>", tokens[i])
-            if not digit_match:
-                raise ValueError(f"Invalid timestamp digit token: {tokens[i]}")
-            digits.append(int(digit_match.group(1)))
-
-        # Reconstruct timestamp units using integer approach
-        timestamp_units = digits_to_value(digits, self.config.timestamp_bases, signed=False)
-
-        # Convert back to nanoseconds
-        timestamp_ns = timestamp_units * self.config.timestamp_unit_ns
-        return timestamp_ns
-
-    def _decode_keyboard(self, tokens: List[str]) -> KeyboardEvent:
-        """Decode keyboard tokens back to KeyboardEvent."""
-        if len(tokens) != 3 or tokens[0] != "<KEYBOARD>":
-            raise ValueError(f"Invalid keyboard tokens: {tokens}")
-        vk_match = re.match(r"<(\d+)>", tokens[1])
-        action_match = re.match(r"<(\w+)>", tokens[2])
-        if not vk_match or not action_match:
-            raise ValueError(f"Invalid keyboard tokens: {tokens}")
-        return KeyboardEvent(event_type=action_match.group(1), vk=int(vk_match.group(1)))
-
-    def _decode_mouse(self, tokens: List[str]) -> RawMouseEvent:
-        """Decode mouse tokens back to RawMouseEvent."""
-        if len(tokens) < 2 or tokens[0] != "<MOUSE>":
-            raise ValueError(f"Invalid mouse tokens: {tokens}")
-
-        # Decode deltas
-        dx, dy = self._decode_mouse_deltas(tokens)
-
-        # Extract button flags from hex digits
-        delta_token_count = len(self.config.mouse_delta_bases) * 2 + 2
-        flag_start_idx = 1 + delta_token_count
-
-        if len(tokens) < flag_start_idx + 3:
-            raise ValueError("Missing flag tokens")
-
-        # Extract 3 hex digits for flags
-        hex_digits = []
-        for i in range(3):
-            flag_token = tokens[flag_start_idx + i]
-            flag_match = re.match(r"<(\d+)>", flag_token)
-            if not flag_match:
-                raise ValueError(f"Invalid flag token: {flag_token}")
-            digit = int(flag_match.group(1))
-            if digit > 15:
-                raise ValueError(f"Invalid hex digit: {digit}")
-            hex_digits.append(f"{digit:x}")
-
-        # Reconstruct flag value from hex digits
-        hex_str = "".join(hex_digits)
-        button_flags = int(hex_str, 16)
-
-        # Extract button data if present
+        # Decode scroll data if present
+        # Reverse the encoding: multiply by WHEEL_DELTA (120) and convert back to USHORT
         button_data = 0
-        button_data_idx = flag_start_idx + 3
-        if len(tokens) > button_data_idx:
-            signed_bases = [2] + self.config.mouse_scroll_bases
-            expected_tokens = len(signed_bases)
-
-            # Validate exact token count
-            if len(tokens) != button_data_idx + expected_tokens:
-                raise ValueError(
-                    f"Invalid scroll token count: expected {expected_tokens}, got {len(tokens) - button_data_idx}"
-                )
-
-            # Parse scroll tokens
-            digits = []
-            for i in range(expected_tokens):
-                token = tokens[button_data_idx + i]
-                match = re.match(r"<(\d+)>", token)
-                if not match:
-                    raise ValueError(f"Invalid scroll token: {token}")
-                digits.append(int(match.group(1)))
-
-            scroll_value = digits_to_value(digits, signed_bases, signed=True)
-            button_data = scroll_value * 120
+        scroll_start = flag_start + 3
+        if len(tokens) > scroll_start:
+            bases = [2] + self.config.mouse_scroll_bases
+            digits = [_extract_digit(tokens[scroll_start + i]) for i in range(len(bases))]
+            button_data = digits_to_value(digits, bases, signed=True) * 120  # Restore WHEEL_DELTA scaling
 
         return RawMouseEvent(
             last_x=dx, last_y=dy, button_flags=RawMouseEvent.ButtonFlags(button_flags), button_data=button_data
         )
 
-    def decode(
-        self,
-        encoded_data: str,
-        images: Optional[List[ScreenCaptured]] = None,
-    ) -> McapMessage:
-        """Decode hierarchical tokens back to original raw event format."""
-        if not encoded_data.startswith("<EVENT_START>") or not encoded_data.endswith("<EVENT_END>"):
-            raise ValueError("Invalid encoded format: missing <EVENT_START> or <EVENT_END> tokens")
+    def _decode_mouse_deltas(self, tokens: List[str]) -> Tuple[int, int]:
+        """Decode quantized mouse deltas from interleaved token pairs."""
+        delta_tokens = tokens[1:]  # Skip <MOUSE>
+        expected = len(self.config.mouse_delta_bases) * 2 + 2  # *2 for dx/dy, +2 for sign bits
 
-        token_content = encoded_data[len("<EVENT_START>") : -len("<EVENT_END>")].strip()
-        tokens = re.findall(r"<[^>]*>", token_content) if token_content else []
+        # De-interleave dx and dy digits: even indices=dx, odd indices=dy
+        digits_dx = [_extract_digit(delta_tokens[i]) for i in range(0, expected, 2)]
+        digits_dy = [_extract_digit(delta_tokens[i]) for i in range(1, expected, 2)]
 
-        timestamp_token_count = len(self.config.timestamp_bases)
-        if len(tokens) < timestamp_token_count + 1:
-            raise ValueError("Token sequence too short")
+        # Reconstruct signed values using sign bit + quantization bases
+        bases = [2] + self.config.mouse_delta_bases
+        return digits_to_value(digits_dx, bases, signed=True), digits_to_value(digits_dy, bases, signed=True)
 
-        timestamp_ns = self._decode_timestamp(tokens[:timestamp_token_count])
-        event_type_token = tokens[timestamp_token_count]
+    # ============================================================================
+    # MAIN ENCODE/DECODE METHODS
+    # ============================================================================
 
-        if event_type_token == "<KEYBOARD>":
-            keyboard_event = self._decode_keyboard(tokens[timestamp_token_count : timestamp_token_count + 3])
-            msg_data = {"event_type": keyboard_event.event_type, "vk": keyboard_event.vk}
+    def encode(self, mcap_message: McapMessage) -> Tuple[str, List[ScreenCaptured]]:
+        """Encode message to: <EVENT_START><TYPE><TIMESTAMP><DATA><EVENT_END>"""
+        try:
+            # Use decoded message directly
+            decoded = mcap_message.decoded
+        except Exception as e:
+            raise InvalidInputError(f"Failed to decode message: {e}") from e
+
+        # Encode timestamp to quantized tokens
+        timestamp_tokens = self._encode_timestamp(mcap_message.timestamp)
+
+        # Encode by topic type - each has different data structure
+        if mcap_message.topic == "keyboard":
+            data_tokens = self._encode_keyboard_data(decoded)
+            event_tokens = [EventToken.KEYBOARD.value] + timestamp_tokens + data_tokens
+            return f"{EventToken.EVENT_START.value}{''.join(event_tokens)}{EventToken.EVENT_END.value}", []
+        elif mcap_message.topic in ("mouse", "mouse/raw"):
+            data_tokens = self._encode_mouse_data(decoded)
+            event_tokens = [EventToken.MOUSE.value] + timestamp_tokens + data_tokens
+            return f"{EventToken.EVENT_START.value}{''.join(event_tokens)}{EventToken.EVENT_END.value}", []
+        elif mcap_message.topic == "screen":
+            # Screen events only have timestamp, image data is returned separately
+            event_tokens = [self.config.fake_image_placeholder] + timestamp_tokens
+            return f"{EventToken.EVENT_START.value}{''.join(event_tokens)}{EventToken.EVENT_END.value}", [decoded]
+        else:
+            raise UnsupportedInputError(f"Unsupported topic: {mcap_message.topic}")
+
+    def decode(self, encoded_data: str, images: Optional[List[ScreenCaptured]] = None) -> McapMessage:
+        """Decode: <EVENT_START><TYPE><TIMESTAMP><DATA><EVENT_END>"""
+        # Validate and parse token structure
+        if not (
+            encoded_data.startswith(EventToken.EVENT_START.value) and encoded_data.endswith(EventToken.EVENT_END.value)
+        ):
+            raise InvalidTokenError("Missing EVENT_START or EVENT_END tokens")
+
+        # Extract content between start/end tokens and parse individual tokens
+        content = encoded_data[len(EventToken.EVENT_START.value) : -len(EventToken.EVENT_END.value)]
+        tokens = re.findall(r"<[^>]*>", content)
+
+        # Split tokens into components: [TYPE][TIMESTAMP][DATA]
+        ts_len = len(self.config.timestamp_bases)
+        if len(tokens) < 1 + ts_len:  # Need at least type + timestamp
+            raise InvalidTokenError("Token sequence too short")
+        timestamp_ns = self._decode_timestamp(tokens[1 : 1 + ts_len])
+        data_tokens = tokens[1 + ts_len :]  # Remaining tokens are event-specific data
+
+        # Decode by type
+        event_type = tokens[0]
+        if event_type == EventToken.KEYBOARD.value:
+            event = self._decode_keyboard_data(data_tokens)
             return McapMessage(
                 topic="keyboard",
                 timestamp=timestamp_ns,
                 message_type="desktop/KeyboardEvent",
-                message=orjson.dumps(msg_data),
+                message=event.model_dump_json().encode(),
             )
-        elif event_type_token == "<MOUSE>":
-            raw_mouse_event = self._decode_mouse(tokens[timestamp_token_count:])
-            msg_data = {
-                "last_x": raw_mouse_event.last_x,
-                "last_y": raw_mouse_event.last_y,
-                "button_flags": int(raw_mouse_event.button_flags),
-                "button_data": raw_mouse_event.button_data,
-            }
-            if raw_mouse_event.device_handle is not None:
-                msg_data["device_handle"] = raw_mouse_event.device_handle
-            if raw_mouse_event.timestamp is not None:
-                msg_data["timestamp"] = raw_mouse_event.timestamp
+        elif event_type == EventToken.MOUSE.value:
+            event = self._decode_mouse_data(data_tokens)
             return McapMessage(
                 topic="mouse/raw",
                 timestamp=timestamp_ns,
                 message_type="desktop/RawMouseEvent",
-                message=orjson.dumps(msg_data),
+                message=event.model_dump_json().encode(),
             )
-        elif event_type_token == self.config.fake_image_placeholder:
-            # Simple image token - EpisodeTokenizer handles prefix/suffix/repetition
+        elif event_type == self.config.fake_image_placeholder:
             if not images:
                 warnings.warn("No image data provided for screen event", UserWarning)
-                images = [ScreenCaptured(utc_ns=timestamp_ns, media_ref={"uri": "placeholder"})]
-            image_data = images[0]
-            msg = image_data.model_dump_json(exclude={"frame_arr"})
+                from owa.msgs.desktop.screen import MediaRef
+
+                images = [ScreenCaptured(utc_ns=timestamp_ns, media_ref=MediaRef(uri="placeholder"))]
             return McapMessage(
                 topic="screen",
                 timestamp=timestamp_ns,
                 message_type="desktop/ScreenCaptured",
-                message=msg.encode("utf-8"),
+                message=images[0].model_dump_json().encode(),
             )
         else:
-            raise ValueError(f"Unknown event type token: {event_type_token}")
+            raise UnsupportedTokenError(f"Unknown event type: {event_type}")
 
     def get_vocab(self) -> Set[str]:
         """Get all tokens in the vocabulary."""
