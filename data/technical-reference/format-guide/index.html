@@ -2577,8 +2577,49 @@
 <p>OWAMcap achieves remarkable storage efficiency through external video references and intelligent compression:</p>
 <h4 id="compression-benefits">Compression Benefits<a class="headerlink" href="#compression-benefits" title="Permanent link">&para;</a></h4>
 <div class="admonition info">
-<p class="admonition-title">Understanding the Baseline</p>
-<p>Raw screen capture data is enormous: a single 1920×1080 frame in BGRA format is 8.3 MB. At 60 FPS, this means 498 MB per second of recording. OWAMcap's hybrid storage makes this manageable.</p>
+<p class="admonition-title">Compression Performance</p>
+<p>Compression performance varies significantly across formats. H.265 encoding achieves a 217.8× compression ratio compared to raw BGRA data while maintaining visual quality suitable for agent training, enabling practical storage of large-scale desktop interaction datasets.</p>
+</div>
+<p>Desktop screen capture at 1920 × 1080 resolution, 12 s @ 60 Hz:</p>
+<table>
+<thead>
+<tr>
+<th>Format</th>
+<th style="text-align: right;">Size per Frame</th>
+<th style="text-align: right;">Whole Size</th>
+<th>Compression Ratio</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Raw BGRA</td>
+<td style="text-align: right;">5.97 MB</td>
+<td style="text-align: right;">4.2 GB</td>
+<td>1.0× (baseline)</td>
+</tr>
+<tr>
+<td>PNG</td>
+<td style="text-align: right;">1.87 MB</td>
+<td style="text-align: right;">1.31 GB</td>
+<td>3.2×</td>
+</tr>
+<tr>
+<td>JPEG (Quality 85)</td>
+<td style="text-align: right;">191 KB</td>
+<td style="text-align: right;">135 MB</td>
+<td>31.9×</td>
+</tr>
+<tr>
+<td>H.265 (keyframe 0.5s, nvd3d11h265enc)</td>
+<td style="text-align: right;">27.8 KB avg</td>
+<td style="text-align: right;">19.6 MB</td>
+<td>217.8×</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Compression benefit per resolution</p>
+<p>Compression performance is resolution-dependent. Lower resolutions yield lower compression ratios.</p>
 </div>
 <p>Desktop screen capture at 600 × 800 resolution, 13 s @ 60 Hz:</p>
 <table>
@@ -2593,26 +2634,26 @@
 <tbody>
 <tr>
 <td>Raw BGRA</td>
-<td style="text-align: right;">1.28 MB</td>
+<td style="text-align: right;">1.37 MB</td>
 <td style="text-align: right;">1.0 GB</td>
 <td>1.0× (baseline)</td>
 </tr>
 <tr>
 <td>PNG</td>
-<td style="text-align: right;">436 KB</td>
-<td style="text-align: right;">333 MB</td>
+<td style="text-align: right;">468 KB</td>
+<td style="text-align: right;">341 MB</td>
 <td>3.0×</td>
 </tr>
 <tr>
 <td>JPEG (Quality 85)</td>
-<td style="text-align: right;">59 KB</td>
-<td style="text-align: right;">46 MB</td>
+<td style="text-align: right;">64.6 KB</td>
+<td style="text-align: right;">47.2 MB</td>
 <td>21.7×</td>
 </tr>
 <tr>
 <td>H.265 (keyframe 0.5s, nvd3d11h265enc)</td>
-<td style="text-align: right;">14.5 KB avg</td>
-<td style="text-align: right;">11.3 MB</td>
+<td style="text-align: right;">15.3 KB avg</td>
+<td style="text-align: right;">11.2 MB</td>
 <td>91.7×</td>
 </tr>
 </tbody>
@@ -2868,7 +2909,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="July 28, 2025 08:30:19 UTC">July 28, 2025 08:30:19</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="August 24, 2025 04:03:38 UTC">August 24, 2025 04:03:38</span>
   </span>
 
     
