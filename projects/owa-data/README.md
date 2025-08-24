@@ -21,7 +21,7 @@ export BINNED_DATASET_DIR="/mnt/harbor/projects/owa/data/vpt-bin"
 python scripts/01_raw_events_to_event_dataset.py \
   --train-dir $MCAP_TRAIN_DIR \
   --output-dir $EVENT_DATASET_DIR \
-  --rate screen=10 --rate mouse/raw=20 \
+  --rate screen=20 --rate mouse/raw=20 \
   --keep-topic screen --keep-topic keyboard --keep-topic mouse/raw \
   --num-workers 4
 
@@ -104,8 +104,8 @@ python scripts/01_raw_events_to_event_dataset.py \
   --train-dir $MCAP_TRAIN_DIR \
   --test-dir $MCAP_TEST_DIR \
   --output-dir $EVENT_DATASET_DIR \
-  --rate screen=20 --rate mouse=60 \
-  --keep-topic screen --keep-topic keyboard
+  --rate screen=20 --rate mouse/raw=20 \
+  --keep-topic screen --keep-topic keyboard --keep-topic mouse/raw
 ```
 
 **Schema**: `episode_path` (string), `topic` (string), `timestamp_ns` (int64), `message_type` (string), `mcap_message` (binary)
@@ -118,11 +118,11 @@ python scripts/01_raw_events_to_event_dataset.py \
 
 ```bash
 python scripts/02A_event_to_fsl.py \
+  --config configs/internvl3_example.yaml \
   --input-dir $EVENT_DATASET_DIR \
   --output-dir $FSL_DATASET_DIR \
-  --tokenizer "HuggingFaceTB/SmolVLM2-256M-Video-Instruct" \
-  --max-sequence-length 1024 \
-  --num-proc 32
+  --fsl_dataset.max_sequence_length 4096 \
+  --fsl_workers 16
 ```
 
 **Schema**: `input_ids` (sequence), `attention_mask` (sequence), `texts` (string), `images` (sequence), `episode_path` (string)
