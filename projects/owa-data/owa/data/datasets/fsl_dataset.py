@@ -12,6 +12,7 @@ class FSLDatasetConfig:
 
     pad_token_id: int = 0
     max_sequence_length: int = 8192
+    include_samples_without_images: bool = True  # Whether to include samples that don't contain images when tokenized
 
 
 def _process_batch_to_sequences(batch, config: FSLDatasetConfig):
@@ -31,6 +32,10 @@ def _process_batch_to_sequences(batch, config: FSLDatasetConfig):
     sequences = []
     current_tokens, current_texts, current_images, current_episode_path = [], [], [], None
 
+    # Track filtering statistics
+    skipped_no_images = 0
+    skipped_too_long = 0
+
     # Process all events in the batch
     for i in range(len(batch["token_ids"])):
         event_tokens = list(batch["token_ids"][i])
@@ -42,13 +47,20 @@ def _process_batch_to_sequences(batch, config: FSLDatasetConfig):
             logger.warning(
                 f"Skipping an event of {len(event_tokens)=} because it is longer than {config.max_sequence_length=}"
             )
+            skipped_too_long += 1
             continue
 
         if len(current_tokens) + len(event_tokens) > config.max_sequence_length or (
             current_episode_path is not None and current_episode_path != event_episode_path
         ):
             if current_tokens:
-                sequences.append(pad_sequence(current_tokens, current_texts, current_images, current_episode_path))
+                if not config.include_samples_without_images and len(current_images) == 0:
+                    # logger.warning(
+                    #     f"Skipping a sequence of {''.join(current_texts)} because it does not contain any images"
+                    # )
+                    skipped_no_images += 1
+                else:
+                    sequences.append(pad_sequence(current_tokens, current_texts, current_images, current_episode_path))
             current_tokens, current_texts, current_images, current_episode_path = [], [], [], None
 
         current_tokens.extend(event_tokens)
@@ -57,7 +69,20 @@ def _process_batch_to_sequences(batch, config: FSLDatasetConfig):
         current_episode_path = event_episode_path
 
     if current_tokens:
-        sequences.append(pad_sequence(current_tokens, current_texts, current_images, current_episode_path))
+        if not config.include_samples_without_images and len(current_images) == 0:
+            # logger.warning(
+            #     f"Skipping a sequence of {''.join(current_texts)} because it does not contain any images"
+            # )
+            skipped_no_images += 1
+        else:
+            sequences.append(pad_sequence(current_tokens, current_texts, current_images, current_episode_path))
+
+    # Log filtering statistics if any events were skipped
+    if skipped_too_long > 0 or skipped_no_images > 0:
+        logger.info(
+            f"Batch processing: {len(sequences)} sequences processed "
+            f"(skipped {skipped_too_long} too long, {skipped_no_images} without images)"
+        )
 
     # Return in the format expected by datasets.map (flattened)
     if not sequences:
