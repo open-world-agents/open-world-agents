@@ -10,6 +10,7 @@ from mcap_owa.highlevel import McapMessage
 from owa.data.encoders import HierarchicalEventEncoder, create_encoder
 from owa.msgs.desktop.screen import ScreenCaptured
 
+from .collator import ModelType, detect_model_type
 from .datasets import Dataset, DatasetStage
 
 
@@ -17,14 +18,15 @@ from .datasets import Dataset, DatasetStage
 class EpisodeTokenizerConfig:
     """Configuration for EpisodeTokenizer."""
 
+    # Real image token that will be repeated in the final tokenized sequence. f"{image_token_prefix}{image_token * image_token_length}{image_token_suffix}
+    image_token_prefix: str
+    image_token: str
+    image_token_length: int
+    image_token_suffix: str
+
     encoder_type: str = "hierarchical"
     # Internal placeholder token used by encoders (not a real token, not in vocab)
     fake_image_placeholder: str = "<fake_image_placeholder>"
-    # Real image token that will be repeated in the final tokenized sequence
-    image_token_prefix: str = "<fake_token_around_image><global-img>"
-    image_token: str = "<image>"
-    image_token_length: int = 64
-    image_token_suffix: str = "<fake_token_around_image>"
     episode_start_token: str = "<EPISODE_START>"
     episode_end_token: str = "<EPISODE_END>"
 
@@ -37,13 +39,42 @@ class TokenizedEvent(TypedDict):
 
 
 class EpisodeTokenizer:
-    def __init__(self, config: EpisodeTokenizerConfig = EpisodeTokenizerConfig(), **kwargs):
+    def __init__(self, config: EpisodeTokenizerConfig, **kwargs):
         self.config = EpisodeTokenizerConfig(**(config.__dict__ | kwargs))
         self.encoder = create_encoder(
             self.config.encoder_type,
             fake_image_placeholder=self.config.fake_image_placeholder,
         )
         self.is_prepared = False
+
+    @classmethod
+    def from_transformers_model(cls, model_name_or_path: str, **kwargs):
+        model_type = detect_model_type(model_name_or_path)
+        if model_type == ModelType.INTERNVL:
+            # InternVL3 configuration
+            episode_tokenizer_config = EpisodeTokenizerConfig(
+                encoder_type="hierarchical",
+                fake_image_placeholder="<fake_image_placeholder>",
+                image_token_prefix="<img>",
+                image_token="<IMG_CONTEXT>",
+                image_token_length=256,
+                image_token_suffix="</img>",
+                episode_start_token="<EPISODE_START>",
+                episode_end_token="<EPISODE_END>",
+            )
+        else:
+            # SmolVLM2 and other models configuration
+            episode_tokenizer_config = EpisodeTokenizerConfig(
+                encoder_type="hierarchical",
+                fake_image_placeholder="<fake_image_placeholder>",
+                image_token_prefix="<fake_token_around_image><global-img>",
+                image_token="<image>",
+                image_token_length=64,
+                image_token_suffix="<fake_token_around_image>",
+                episode_start_token="<EPISODE_START>",
+                episode_end_token="<EPISODE_END>",
+            )
+        return cls(episode_tokenizer_config, **kwargs)
 
     def get_vocab(self) -> set[str]:
         # NOTE: fake_image_placeholder is NOT included as it's not a real token
