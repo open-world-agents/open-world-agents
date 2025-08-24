@@ -9,6 +9,7 @@ dependencies = [
     "accelerate>=1.10.0",
     "datasets>=4.0.0",
     "deepspeed==0.17.4",
+    "flash-attn>=2.8.3",
     "num2words>=0.5.14",
     "owa-core>=0.5.6",
     "owa-data>=0.1.0",
@@ -21,6 +22,12 @@ dependencies = [
     "trl==0.21.0",
     "wandb>=0.21.0",
 ]
+
+[tool.uv.extra-build-dependencies]
+flash-attn = [{ requirement = "torch", match-runtime = true }]
+
+[tool.uv.extra-build-variables]
+flash-attn = { FLASH_ATTENTION_SKIP_CUDA_BUILD = "TRUE" }
 
 [build-system]
 requires = ["hatchling"]
