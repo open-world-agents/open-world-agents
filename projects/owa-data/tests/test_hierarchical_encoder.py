@@ -302,6 +302,10 @@ class TestFidelity:
         with pytest.raises(InvalidTokenError, match="Expected 2 keyboard tokens"):
             encoder.decode("<EVENT_START><KEYBOARD><0><0><0>invalid_action<65><EVENT_END>")
 
+        # Insufficient mouse tokens - should raise InvalidTokenError from our exceptions module
+        with pytest.raises(InvalidTokenError, match="Expected .* to .* mouse tokens"):
+            encoder.decode("<EVENT_START><MOUSE><0><0><0><0><EVENT_END>")
+
     def test_unsupported_event_types(self, encoder):
         """Test that unsupported event types raise appropriate errors."""
         # Unknown event type (not KEYBOARD, MOUSE, or screen placeholder)

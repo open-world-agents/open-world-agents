@@ -316,6 +316,15 @@ class HierarchicalEventEncoder(BaseEventEncoder):
 
     def _decode_mouse_data(self, tokens: List[str]) -> RawMouseEvent:
         """Decode mouse data tokens."""
+        # Calculate minimum required tokens: deltas + button flags
+        delta_tokens_needed = len(self.config.mouse_delta_bases) * 2 + 2  # *2 for dx/dy, +2 for sign bits
+        button_flags_needed = 3  # 3 hex digits for button flags
+        min_tokens = delta_tokens_needed + button_flags_needed
+        max_tokens = min_tokens + 1 + len(self.config.mouse_scroll_bases)  # +1 for scroll sign bit
+
+        if not (min_tokens <= len(tokens) <= max_tokens):
+            raise InvalidTokenError(f"Expected {min_tokens} to {max_tokens} mouse tokens, got {len(tokens)}")
+
         # Decode movement deltas from interleaved dx/dy tokens
         dx, dy = self._decode_mouse_deltas(["<MOUSE>"] + tokens)
 
