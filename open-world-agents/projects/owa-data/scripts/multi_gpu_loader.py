@@ -7,7 +7,7 @@ from torch.utils.data import ConcatDataset, DataLoader
 from tqdm import tqdm
 from transformers import AutoImageProcessor, AutoProcessor
 
-from owa.data.collator import detect_model_type, get_collate_fn, ModelType
+from owa.data.collator import ModelType, detect_model_type, get_collate_fn
 from owa.data.datasets import load_from_disk
 
 # This line is to enable throughput logging from FSLTransform
