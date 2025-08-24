@@ -28,10 +28,10 @@ python scripts/01_raw_events_to_event_dataset.py \
 # 2A. Path A: Event Dataset → FSL Dataset (for transformer training)
 python scripts/02A_event_to_fsl.py \
   --config configs/internvl3_example.yaml \
-  --cfg.input_dir $EVENT_DATASET_DIR \
-  --cfg.output_dir $FSL_DATASET_DIR \
-  --cfg.fsl_dataset.max_sequence_length 4096 \
-  --cfg.fsl_workers 16
+  --input_dir $EVENT_DATASET_DIR \
+  --output_dir $FSL_DATASET_DIR \
+  --fsl_dataset.max_sequence_length 4096 \
+  --fsl_workers 16
 
 # 2B. Path B: Event Dataset → Binned Dataset (for traditional training)
 python scripts/02B_event_dataset_to_binned_dataset.py \

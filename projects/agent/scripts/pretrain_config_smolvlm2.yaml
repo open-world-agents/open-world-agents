@@ -1,0 +1,88 @@
+# Training Configuration for SmolVLM Pretraining with FSLDataset
+# This configuration is optimized for pretraining vision-language models on desktop interaction data
+# Comments show: [CUSTOM_VALUE] (default: DEFAULT_VALUE)
+
+output_dir: "/mnt/harbor/users/claude/checkpoints/owa/smolvlm-256m_vpt_0811-00"  # (default: 'trainer_output') - can be overridden via CLI
+
+# ============================================================================
+# SCRIPT ARGUMENTS (Custom for FSLDataset pretraining)
+# ============================================================================
+dataset_paths: # (default: None) - required
+  - "/mnt/raid12/datasets/owa/data/vpt-fsl"
+max_sequence_length: 1024  # (default: 1024)
+
+# ============================================================================
+# MODEL CONFIGURATION
+# ============================================================================
+model_name_or_path: "HuggingFaceTB/SmolVLM2-256M-Video-Instruct"  # (default: None)
+torch_dtype: "bfloat16"  # (default: None)
+attn_implementation: "flash_attention_2"  # (default: None)
+trust_remote_code: false  # (default: False)
+
+# ============================================================================
+# TRAINING HYPERPARAMETERS
+# ============================================================================
+num_train_epochs: 0.12  # (default: 3.0)
+per_device_train_batch_size: 8  # (default: 8)
+gradient_accumulation_steps: 1  # (default: 1)
+learning_rate: 3e-4  # (default: 2e-5)
+
+# ============================================================================
+# OPTIMIZATION SETTINGS
+# ============================================================================
+optim: "adamw_torch_fused"  # (default: 'adamw_torch')
+max_grad_norm: 1.0  # (default: 1.0)
+warmup_ratio: 0.03  # (default: 0)
+weight_decay: 0.1  # (default: 0.0)
+lr_scheduler_type: "cosine"  # (default: 'linear')
+# lr_scheduler_kwargs:
+#   min_lr_rate: 3e-5  # (default: None)
+
+# ============================================================================
+# PRECISION AND PERFORMANCE
+# ============================================================================
+bf16: true  # (default: False for TrainingArguments)
+tf32: true  # (default: None)
+gradient_checkpointing: false  # (default: False)
+gradient_checkpointing_kwargs:
+  use_reentrant: false  # (default: None, would use True if set)
+
+# ============================================================================
+# LOGGING AND CHECKPOINTING
+# ============================================================================
+logging_steps: 10  # (default: 10)
+save_strategy: "steps"  # (default: 'steps')
+save_steps: 0.1  # (default: 500)
+save_total_limit: null  # (default: None) - keep more checkpoints for pretraining
+report_to: ["tensorboard", "wandb"]  # (default: ['tensorboard'])
+run_name: null  # (default: None)
+
+# ============================================================================
+# DATASET HANDLING
+# ============================================================================
+dataset_kwargs:
+  skip_prepare_dataset: true  # (default: None/False) - required for custom dataset
+remove_unused_columns: false  # (default: True) - required for custom dataset
+dataloader_num_workers: 8    # (default: 0)
+
+# ============================================================================
+# EVALUATION SETTINGS
+# ============================================================================
+do_eval: true  # (default: False)
+eval_strategy: "steps"  # (default: 'no')
+eval_steps: 0.1  # (default: None) - used when eval_strategy is 'steps'
+per_device_eval_batch_size: 8  # (default: 8)
+
+# ============================================================================
+# DISTRIBUTED TRAINING SETTINGS
+# ============================================================================
+ddp_find_unused_parameters: false  # (default: None)
+dataloader_pin_memory: true  # (default: True)
+dataloader_persistent_workers: true  # (default: False)
+
+# ============================================================================
+# ADDITIONAL SETTINGS
+# ============================================================================
+max_steps: -1  # (default: -1) - train for full epochs
+seed: 42  # (default: 42)
+data_seed: 42  # (default: None)

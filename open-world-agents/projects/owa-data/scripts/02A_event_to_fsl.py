@@ -14,13 +14,13 @@ with transforms for on-the-fly image loading, following the user's preferred app
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from jsonargparse import CLI
+from jsonargparse import auto_cli
 from loguru import logger
 from transformers import AutoTokenizer
 
 from owa.data.datasets import DatasetDict, DatasetStage, load_from_disk
 from owa.data.datasets.fsl_dataset import FSLDatasetConfig, precompute_fsl_dataset
-from owa.data.episode_tokenizer import EpisodeTokenizer, EpisodeTokenizerConfig
+from owa.data.episode_tokenizer import EpisodeTokenizer
 
 # Re-enable logging for owa.data
 logger.enable("owa.data")
@@ -38,12 +38,15 @@ class Config:
     tokenizer_name: str
 
     # Nested configurations
-    episode_tokenizer: EpisodeTokenizerConfig = field(default_factory=EpisodeTokenizerConfig)
+    episode_tokenize_config: dict = field(default_factory=dict)
     fsl_dataset: FSLDatasetConfig = field(default_factory=FSLDatasetConfig)
 
     # Processing options
     num_proc: int = 32  # Number of processes for tokenization
     fsl_workers: int = 4  # Number of workers for FSL processing
+
+    # Filtering options
+    include_samples_without_images: bool = False  # Whether to include samples that don't contain images when tokenized
 
 
 def main(cfg: Config):
@@ -52,12 +55,9 @@ def main(cfg: Config):
     print(f"Output directory: {cfg.output_dir}")
     print(f"Tokenizer: {cfg.tokenizer_name}")
     print(f"Max sequence length: {cfg.fsl_dataset.max_sequence_length}")
+    print(f"Include samples without images: {cfg.include_samples_without_images}")
 
-    print("Episode tokenizer cfg:")
-    print(f"  - Image token: {cfg.episode_tokenizer.image_token}")
-    print(f"  - Image token length: {cfg.episode_tokenizer.image_token_length}")
-    print(f"  - Image token prefix: {cfg.episode_tokenizer.image_token_prefix}")
-    print(f"  - Image token suffix: {cfg.episode_tokenizer.image_token_suffix}")
+    print(f"Episode tokenizer cfg: {cfg.episode_tokenize_config}")
 
     # Load event dataset
     ds_dict = load_from_disk(str(cfg.input_dir))
@@ -85,14 +85,16 @@ def main(cfg: Config):
         tokenizer.pad_token = tokenizer.eos_token
 
     # Initialize episode tokenizer
-    episode_tokenizer = EpisodeTokenizer(cfg.episode_tokenizer)
+    episode_tokenizer = EpisodeTokenizer.from_transformers_model(cfg.tokenizer_name, **cfg.episode_tokenize_config)
     episode_tokenizer.prepare_model(tokenizer=tokenizer)
 
     # Configure FSL dataset
     cfg.fsl_dataset.pad_token_id = tokenizer.pad_token_id
+    cfg.fsl_dataset.include_samples_without_images = cfg.include_samples_without_images
     print("FSL dataset cfg:")
     print(f"  - Pad token ID: {cfg.fsl_dataset.pad_token_id}")
     print(f"  - Max sequence length: {cfg.fsl_dataset.max_sequence_length}")
+    print(f"  - Include samples without images: {cfg.fsl_dataset.include_samples_without_images}")
 
     processed_datasets = {}
 
@@ -138,4 +140,4 @@ def main(cfg: Config):
 
 
 if __name__ == "__main__":
-    CLI(main)
+    main(auto_cli(Config, as_positional=False))

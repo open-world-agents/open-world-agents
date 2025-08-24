@@ -18,7 +18,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from typing_extensions import Annotated
 
 from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
-from owa.cli.mcap.backup_utils import BackupContext
+from owa.core.utils.backup import BackupContext
 
 from ..console import console
 
@@ -159,7 +159,7 @@ def sanitize_mcap_file(
 
     # Use combined context managers for safe file operations
     with (
-        BackupContext(file_path, console, keep_backup=keep_backup) as backup_ctx,
+        BackupContext(file_path, console=console, keep_backup=keep_backup) as backup_ctx,
         safe_temp_file(mode="wb", suffix=".mcap") as (temp_file, temp_path),
     ):
         # Second pass: write sanitized file
