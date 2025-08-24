@@ -326,7 +326,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
             raise InvalidTokenError(f"Expected {min_tokens} to {max_tokens} mouse tokens, got {len(tokens)}")
 
         # Decode movement deltas from interleaved dx/dy tokens
-        dx, dy = self._decode_mouse_deltas(["<MOUSE>"] + tokens)
+        dx, dy = self._decode_mouse_deltas(tokens)
 
         # Decode button flags from 3 hex digit tokens
         # Each token represents one hex digit (0-15), reconstruct 3-digit hex value
@@ -347,9 +347,8 @@ class HierarchicalEventEncoder(BaseEventEncoder):
             last_x=dx, last_y=dy, button_flags=RawMouseEvent.ButtonFlags(button_flags), button_data=button_data
         )
 
-    def _decode_mouse_deltas(self, tokens: List[str]) -> Tuple[int, int]:
+    def _decode_mouse_deltas(self, delta_tokens: List[str]) -> Tuple[int, int]:
         """Decode quantized mouse deltas from interleaved token pairs."""
-        delta_tokens = tokens[1:]  # Skip <MOUSE>
         expected = len(self.config.mouse_delta_bases) * 2 + 2  # *2 for dx/dy, +2 for sign bits
 
         # De-interleave dx and dy digits: even indices=dx, odd indices=dy
