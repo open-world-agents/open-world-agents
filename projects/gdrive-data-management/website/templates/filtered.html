@@ -1,0 +1,387 @@
+{% extends "base.html" %}
+
+{% block title %}Filtered Files - OWA Dataset Viewer{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="bi bi-funnel"></i> Filtered Dataset Files
+        </h1>
+        <p class="text-muted">
+            These are the processed and filtered dataset files ready for training. 
+            Videos have been resized and optimized according to filtering criteria.
+        </p>
+    </div>
+</div>
+
+<!-- Search and Filters -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" class="form-control" id="searchInput" 
+                   placeholder="Search by user, file name, or game...">
+            <button class="btn btn-outline-secondary" type="button" onclick="searchFiles()">
+                Search
+            </button>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="btn-group w-100" role="group">
+            <button type="button" class="btn btn-outline-primary" onclick="exportData()">
+                <i class="bi bi-download"></i> Export
+            </button>
+            <button type="button" class="btn btn-outline-secondary" onclick="refreshFiles()">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-primary" id="totalFiles">-</h5>
+                <p class="card-text">Total Files</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-success" id="fullyProcessed">-</h5>
+                <p class="card-text">Fully Processed</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-info" id="totalHours">-</h5>
+                <p class="card-text">Total Hours</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-warning" id="avgEfficiency">-</h5>
+                <p class="card-text">Avg Efficiency</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Accepted Hours by Game Chart -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-clock"></i> Accepted Hours by Game (Filtered Dataset)</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="filteredGameHoursChart" height="80"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Files Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-table"></i> Filtered Files List</h5>
+                <div>
+                    <span class="badge bg-secondary" id="totalCount">Loading...</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover" id="filteredFilesTable">
+                        <thead class="table-dark">
+                            <tr>
+                                <th onclick="sortTable('user_email')">User <i class="bi bi-arrow-up-down"></i></th>
+                                <th onclick="sortTable('file_name')">File Name <i class="bi bi-arrow-up-down"></i></th>
+                                <th onclick="sortTable('game_name')">Game <i class="bi bi-arrow-up-down"></i></th>
+                                <th onclick="sortTable('duration_seconds')">Duration <i class="bi bi-arrow-up-down"></i></th>
+                                <th onclick="sortTable('efficiency')">Efficiency <i class="bi bi-arrow-up-down"></i></th>
+                                <th onclick="sortTable('resolution')">Resolution <i class="bi bi-arrow-up-down"></i></th>
+                                <th>Status</th>
+                                <th>Video</th>
+                                <th onclick="sortTable('processing_date')">Processed <i class="bi bi-arrow-up-down"></i></th>
+                            </tr>
+                        </thead>
+                        <tbody id="filteredFilesTableBody">
+                            <tr>
+                                <td colspan="9" class="text-center">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    Loading filtered files...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pagination -->
+<div class="row mt-4">
+    <div class="col-12">
+        <nav aria-label="Files pagination">
+            <ul class="pagination justify-content-center" id="pagination">
+                <!-- Pagination will be populated by JavaScript -->
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<!-- Video Modal -->
+<div class="modal fade" id="videoModal" tabindex="-1" aria-labelledby="videoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="videoModalLabel">Video Player</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <video id="videoPlayer" controls style="width: 100%; height: auto;">
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentPage = 1;
+let currentSort = 'processing_date';
+let currentOrder = 'DESC';
+let currentSearch = '';
+
+// Load filtered files on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadFilteredFiles();
+    loadFilteredStats();
+});
+
+function loadFilteredStats() {
+    fetch('/api/filtered/stats')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error('Error loading filtered stats:', data.error);
+                return;
+            }
+
+            document.getElementById('totalFiles').textContent = data.total_files || 0;
+            document.getElementById('fullyProcessed').textContent = data.fully_processed || 0;
+            document.getElementById('totalHours').textContent = (data.total_duration_hours || 0).toFixed(1) + 'h';
+            document.getElementById('avgEfficiency').textContent = (data.avg_efficiency || 0).toFixed(1) + '%';
+
+            // Create the game hours chart
+            createFilteredGameHoursChart(data.game_hours_distribution || []);
+        })
+        .catch(error => {
+            console.error('Error loading filtered stats:', error);
+        });
+}
+
+function loadFilteredFiles(page = 1) {
+    currentPage = page;
+    const params = new URLSearchParams({
+        page: page,
+        per_page: 50,
+        search: currentSearch,
+        sort_by: currentSort,
+        sort_order: currentOrder
+    });
+
+    fetch(`/api/filtered/files?${params}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error('Error loading filtered files:', data.error);
+                return;
+            }
+            
+            displayFilteredFiles(data.files);
+            updatePagination(data.page, data.total_pages, data.total_count);
+        })
+        .catch(error => {
+            console.error('Error loading filtered files:', error);
+        });
+}
+
+function displayFilteredFiles(files) {
+    const tbody = document.getElementById('filteredFilesTableBody');
+    
+    if (files.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">No filtered files found</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = files.map(file => {
+        const statusBadges = [];
+        if (file.mcap_processed) statusBadges.push('<span class="badge bg-success">MCAP</span>');
+        if (file.mkv_processed) statusBadges.push('<span class="badge bg-info">Video</span>');
+        
+        const videoButton = file.filtered_video_available ? 
+            `<button class="btn btn-sm btn-outline-primary" onclick="playFilteredVideo('${file.user_email}', '${file.file_name}')">
+                <i class="bi bi-play-circle"></i> Play
+            </button>` : 
+            '<span class="text-muted">N/A</span>';
+            
+        return `
+            <tr>
+                <td>${file.user_email}</td>
+                <td><code>${file.file_name}</code></td>
+                <td>${file.game_name || 'Unknown'}</td>
+                <td>${file.duration_minutes}m</td>
+                <td>${file.efficiency_percent}%</td>
+                <td>${file.resolution}</td>
+                <td>${statusBadges.join(' ')}</td>
+                <td>${videoButton}</td>
+                <td>${new Date(file.processing_date).toLocaleDateString()}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function playFilteredVideo(userEmail, fileName) {
+    const videoUrl = `/filtered-video/${userEmail}/${fileName}`;
+    const videoPlayer = document.getElementById('videoPlayer');
+    videoPlayer.src = videoUrl;
+    
+    const modal = new bootstrap.Modal(document.getElementById('videoModal'));
+    document.getElementById('videoModalLabel').textContent = `${userEmail}/${fileName}`;
+    modal.show();
+}
+
+function updatePagination(currentPage, totalPages, totalCount) {
+    document.getElementById('totalCount').textContent = `${totalCount} files`;
+    
+    const pagination = document.getElementById('pagination');
+    let paginationHTML = '';
+    
+    // Previous button
+    if (currentPage > 1) {
+        paginationHTML += `<li class="page-item"><a class="page-link" href="#" onclick="loadFilteredFiles(${currentPage - 1})">Previous</a></li>`;
+    }
+    
+    // Page numbers (show max 5 pages around current)
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(totalPages, currentPage + 2);
+    
+    for (let i = startPage; i <= endPage; i++) {
+        const activeClass = i === currentPage ? 'active' : '';
+        paginationHTML += `<li class="page-item ${activeClass}"><a class="page-link" href="#" onclick="loadFilteredFiles(${i})">${i}</a></li>`;
+    }
+    
+    // Next button
+    if (currentPage < totalPages) {
+        paginationHTML += `<li class="page-item"><a class="page-link" href="#" onclick="loadFilteredFiles(${currentPage + 1})">Next</a></li>`;
+    }
+    
+    pagination.innerHTML = paginationHTML;
+}
+
+function sortTable(column) {
+    if (currentSort === column) {
+        currentOrder = currentOrder === 'ASC' ? 'DESC' : 'ASC';
+    } else {
+        currentSort = column;
+        currentOrder = 'DESC';
+    }
+    loadFilteredFiles(1);
+}
+
+function searchFiles() {
+    currentSearch = document.getElementById('searchInput').value;
+    loadFilteredFiles(1);
+}
+
+function refreshFiles() {
+    currentSearch = '';
+    document.getElementById('searchInput').value = '';
+    loadFilteredFiles(1);
+    loadFilteredStats();
+}
+
+function exportData() {
+    // TODO: Implement export functionality
+    alert('Export functionality coming soon!');
+}
+
+// Allow Enter key to trigger search
+document.getElementById('searchInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        searchFiles();
+    }
+});
+
+function createFilteredGameHoursChart(gameHoursData) {
+    const ctx = document.getElementById('filteredGameHoursChart').getContext('2d');
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: gameHoursData.slice(0, 15).map(game => game.game_name || 'Unknown'),
+            datasets: [{
+                label: 'Accepted Hours',
+                data: gameHoursData.slice(0, 15).map(game => game.accepted_hours || 0),
+                backgroundColor: 'rgba(40, 167, 69, 0.8)',
+                borderColor: 'rgba(40, 167, 69, 1)',
+                borderWidth: 1
+            }, {
+                label: 'Total Hours',
+                data: gameHoursData.slice(0, 15).map(game => game.total_hours || 0),
+                backgroundColor: 'rgba(108, 117, 125, 0.5)',
+                borderColor: 'rgba(108, 117, 125, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Hours'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Games'
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        afterLabel: function(context) {
+                            const gameIndex = context.dataIndex;
+                            const game = gameHoursData[gameIndex];
+                            if (game) {
+                                const efficiency = game.total_hours > 0 ? (game.accepted_hours / game.total_hours * 100) : 0;
+                                return `Files: ${game.file_count}, Avg Efficiency: ${game.avg_efficiency ? game.avg_efficiency.toFixed(1) : 0}%`;
+                            }
+                            return '';
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+</script>
+{% endblock %}

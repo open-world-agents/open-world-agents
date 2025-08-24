@@ -111,6 +111,20 @@
     </div>
 </div>
 
+<!-- Charts Row 3 -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-clock"></i> Accepted Hours by Game</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="gameHoursChart" height="80"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Detailed Statistics -->
 <div class="row mb-4">
     <div class="col-md-6">
@@ -225,6 +239,7 @@
 <script>
 // Data from Flask
 const gameData = {{ stats.game_distribution | tojson | safe }};
+const gameHoursData = {{ stats.game_hours_distribution | tojson | safe }};
 const versionData = {{ stats.version_distribution | tojson | safe }};
 const userData = {{ stats.user_statistics | tojson | safe }};
 
@@ -319,6 +334,61 @@ new Chart(userCtx, {
         plugins: {
             legend: {
                 display: false
+            }
+        }
+    }
+});
+
+// Game Hours Chart
+const gameHoursCtx = document.getElementById('gameHoursChart').getContext('2d');
+new Chart(gameHoursCtx, {
+    type: 'bar',
+    data: {
+        labels: gameHoursData.slice(0, 15).map(game => game.game_name || 'Unknown'),
+        datasets: [{
+            label: 'Accepted Hours',
+            data: gameHoursData.slice(0, 15).map(game => game.accepted_hours || 0),
+            backgroundColor: 'rgba(40, 167, 69, 0.8)',
+            borderColor: 'rgba(40, 167, 69, 1)',
+            borderWidth: 1
+        }, {
+            label: 'Total Hours',
+            data: gameHoursData.slice(0, 15).map(game => game.total_hours || 0),
+            backgroundColor: 'rgba(108, 117, 125, 0.5)',
+            borderColor: 'rgba(108, 117, 125, 1)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Hours'
+                }
+            },
+            x: {
+                title: {
+                    display: true,
+                    text: 'Games'
+                }
+            }
+        },
+        plugins: {
+            tooltip: {
+                callbacks: {
+                    afterLabel: function(context) {
+                        const gameIndex = context.dataIndex;
+                        const game = gameHoursData[gameIndex];
+                        if (game) {
+                            const efficiency = game.total_hours > 0 ? (game.accepted_hours / game.total_hours * 100) : 0;
+                            return `Files: ${game.file_count}, Efficiency: ${efficiency.toFixed(1)}%`;
+                        }
+                        return '';
+                    }
+                }
             }
         }
     }

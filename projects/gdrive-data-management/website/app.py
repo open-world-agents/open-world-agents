@@ -21,7 +21,11 @@ def to_json_filter(obj):
 
 # Configuration
 DB_PATH = "/mnt/raid12/datasets/owa_game_dataset/dataset_analysis.db"  # Relative to website folder
+FILTERED_DB_PATH = (
+    "/mnt/raid12/datasets/owa_game_dataset_filtered_448/filtered_datasets.db"  # Filtered datasets database
+)
 DATASET_ROOT = "/mnt/raid12/datasets/owa_game_dataset"  # Root directory for dataset files
+FILTERED_ROOT = "/mnt/raid12/datasets/owa_game_dataset_filtered_448"  # Root directory for filtered dataset files
 app.config["SECRET_KEY"] = "owa-dataset-viewer-2024"
 
 
@@ -35,6 +39,19 @@ def get_db_connection():
         return conn
     except Exception as e:
         print(f"Database connection error: {e}")
+        return None
+
+
+def get_filtered_db_connection():
+    """Get filtered database connection with error handling."""
+    try:
+        if not os.path.exists(FILTERED_DB_PATH):
+            return None
+        conn = sqlite3.connect(FILTERED_DB_PATH)
+        conn.row_factory = sqlite3.Row  # Enable column access by name
+        return conn
+    except Exception as e:
+        print(f"Filtered database connection error: {e}")
         return None
 
 
@@ -66,6 +83,31 @@ def find_video_path(user_email: str, file_name: str) -> str:
 def video_exists(user_email: str, file_name: str) -> bool:
     """Check if the video file exists for the given user and file."""
     video_path = find_video_path(user_email, file_name)
+    return bool(video_path and Path(video_path).exists())
+
+
+def find_filtered_video_path(user_email: str, file_name: str) -> str:
+    """Find the filtered video file path by searching in the filtered directory structure."""
+    # Remove .mcap extension if present
+    base_name = file_name.replace(".mcap", "")
+
+    # Search for the video file in the filtered user's directory and subdirectories
+    user_dir = Path(FILTERED_ROOT) / user_email
+    if not user_dir.exists():
+        return ""
+
+    # Try to find the .mkv file
+    video_files = list(user_dir.glob(f"**/{base_name}.mkv"))
+    if video_files:
+        # Return the first match (there should typically be only one)
+        return str(video_files[0])
+
+    return ""
+
+
+def filtered_video_exists(user_email: str, file_name: str) -> bool:
+    """Check if the filtered video file exists for the given user and file."""
+    video_path = find_filtered_video_path(user_email, file_name)
     return bool(video_path and Path(video_path).exists())
 
 
@@ -177,6 +219,104 @@ def get_database_stats():
         }
     except Exception as e:
         print(f"Error getting database stats: {e}")
+        conn.close()
+        return None
+
+
+def get_filtered_database_stats():
+    """Get filtered database statistics."""
+    conn = get_filtered_db_connection()
+    if not conn:
+        return None
+
+    try:
+        cursor = conn.cursor()
+
+        # Basic counts
+        cursor.execute("SELECT COUNT(*) as total_files FROM filtered_datasets")
+        total_files = cursor.fetchone()["total_files"]
+
+        cursor.execute("SELECT COUNT(DISTINCT user_email) as total_users FROM filtered_datasets")
+        total_users = cursor.fetchone()["total_users"]
+
+        cursor.execute("SELECT COUNT(*) as mcap_processed FROM filtered_datasets WHERE mcap_processed = 1")
+        mcap_processed = cursor.fetchone()["mcap_processed"]
+
+        cursor.execute("SELECT COUNT(*) as mkv_processed FROM filtered_datasets WHERE mkv_processed = 1")
+        mkv_processed = cursor.fetchone()["mkv_processed"]
+
+        cursor.execute(
+            "SELECT COUNT(*) as fully_processed FROM filtered_datasets WHERE mcap_processed = 1 AND mkv_processed = 1"
+        )
+        fully_processed = cursor.fetchone()["fully_processed"]
+
+        # Duration statistics
+        cursor.execute(
+            "SELECT SUM(duration_seconds) as total_duration, AVG(efficiency) as avg_efficiency FROM filtered_datasets"
+        )
+        duration_stats = cursor.fetchone()
+        total_duration = duration_stats["total_duration"] or 0
+        avg_efficiency = duration_stats["avg_efficiency"] or 0
+
+        # Game distribution
+        cursor.execute(
+            "SELECT game_name, COUNT(*) as count FROM filtered_datasets GROUP BY game_name ORDER BY count DESC LIMIT 10"
+        )
+        game_dist = cursor.fetchall()
+
+        # Game hours distribution
+        cursor.execute("""
+            SELECT game_name,
+                   COUNT(*) as file_count,
+                   SUM(duration_seconds) / 3600.0 as total_hours,
+                   SUM(duration_seconds) / 3600.0 as accepted_hours,
+                   AVG(efficiency) as avg_efficiency
+            FROM filtered_datasets
+            GROUP BY game_name
+            ORDER BY total_hours DESC
+            LIMIT 15
+        """)
+        game_hours_dist = cursor.fetchall()
+
+        # User statistics
+        cursor.execute("""
+            SELECT user_email,
+                   COUNT(*) as file_count,
+                   SUM(duration_seconds) as total_duration,
+                   AVG(efficiency) as avg_efficiency
+            FROM filtered_datasets
+            GROUP BY user_email
+            ORDER BY file_count DESC
+        """)
+        user_stats = cursor.fetchall()
+
+        # Resolution statistics
+        cursor.execute("""
+            SELECT target_width, target_height, COUNT(*) as count
+            FROM filtered_datasets
+            WHERE target_width IS NOT NULL AND target_height IS NOT NULL
+            GROUP BY target_width, target_height
+            ORDER BY count DESC
+        """)
+        resolution_stats = cursor.fetchall()
+
+        conn.close()
+
+        return {
+            "total_files": total_files,
+            "total_users": total_users,
+            "mcap_processed": mcap_processed,
+            "mkv_processed": mkv_processed,
+            "fully_processed": fully_processed,
+            "total_duration_hours": total_duration / 3600,
+            "avg_efficiency": avg_efficiency,
+            "game_distribution": [dict(row) for row in game_dist],
+            "game_hours_distribution": [dict(row) for row in game_hours_dist],
+            "user_statistics": [dict(row) for row in user_stats],
+            "resolution_statistics": [dict(row) for row in resolution_stats],
+        }
+    except Exception as e:
+        print(f"Error getting filtered database stats: {e}")
         conn.close()
         return None
 
@@ -302,6 +442,94 @@ def analytics_page():
     return render_template("analytics.html", stats=stats)
 
 
+@app.route("/filtered")
+def filtered_files_page():
+    """Filtered files listing page with search and pagination."""
+    return render_template("filtered.html")
+
+
+@app.route("/api/filtered/files")
+def api_filtered_files():
+    """API endpoint to get all filtered files with pagination and filtering."""
+    conn = get_filtered_db_connection()
+    if not conn:
+        return jsonify({"error": "Filtered database connection failed"}), 500
+
+    try:
+        # Get query parameters
+        page = int(request.args.get("page", 1))
+        per_page = int(request.args.get("per_page", 50))
+        search = request.args.get("search", "")
+        sort_by = request.args.get("sort_by", "processing_date")
+        sort_order = request.args.get("sort_order", "DESC")
+
+        # Build WHERE clause for search
+        where_clause = ""
+        params = []
+        if search:
+            where_clause = """WHERE user_email LIKE ? OR file_name LIKE ? OR game_name LIKE ?"""
+            search_param = f"%{search}%"
+            params = [search_param, search_param, search_param]
+
+        # Get total count
+        count_query = f"SELECT COUNT(*) as total FROM filtered_datasets {where_clause}"
+        cursor = conn.cursor()
+        cursor.execute(count_query, params)
+        total_count = cursor.fetchone()["total"]
+
+        # Get paginated data
+        offset = (page - 1) * per_page
+        data_query = f"""
+            SELECT * FROM filtered_datasets
+            {where_clause}
+            ORDER BY {sort_by} {sort_order}
+            LIMIT ? OFFSET ?
+        """
+        cursor.execute(data_query, params + [per_page, offset])
+        files = [dict(row) for row in cursor.fetchall()]
+
+        # Format data for display
+        for file in files:
+            file["duration_minutes"] = round(file["duration_seconds"] / 60, 1) if file["duration_seconds"] else 0
+            file["efficiency_percent"] = round(file["efficiency"], 1) if file["efficiency"] else 0
+            file["gap_duration_minutes"] = (
+                round(file["total_gap_duration"] / 60, 1) if file["total_gap_duration"] else 0
+            )
+            file["resolution"] = (
+                f"{file['target_width']}x{file['target_height']}"
+                if file["target_width"] and file["target_height"]
+                else "Unknown"
+            )
+
+            # Check if filtered video file exists
+            file["filtered_video_available"] = filtered_video_exists(file["user_email"], file["file_name"])
+
+        conn.close()
+
+        return jsonify(
+            {
+                "files": files,
+                "total_count": total_count,
+                "page": page,
+                "per_page": per_page,
+                "total_pages": (total_count + per_page - 1) // per_page,
+            }
+        )
+
+    except Exception as e:
+        conn.close()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/filtered/stats")
+def api_filtered_stats():
+    """API endpoint to get filtered database statistics."""
+    stats = get_filtered_database_stats()
+    if not stats:
+        return jsonify({"error": "Could not get filtered database statistics"}), 500
+    return jsonify(stats)
+
+
 @app.route("/api/user/<user_email>")
 def api_user_details(user_email):
     """API endpoint to get detailed information about a specific user."""
@@ -373,6 +601,22 @@ def serve_video(user_email, file_name):
     except Exception as e:
         print(f"Error serving video {user_email}/{file_name}: {e}")
         abort(500, description="Error serving video file")
+
+
+@app.route("/filtered-video/<user_email>/<file_name>")
+def serve_filtered_video(user_email, file_name):
+    """Serve filtered video files for the dataset."""
+    try:
+        video_path = find_filtered_video_path(user_email, file_name)
+
+        if not video_path or not Path(video_path).exists():
+            abort(404, description="Filtered video file not found")
+
+        return send_file(video_path, mimetype="video/x-matroska")
+
+    except Exception as e:
+        print(f"Error serving filtered video {user_email}/{file_name}: {e}")
+        abort(500, description="Error serving filtered video file")
 
 
 if __name__ == "__main__":

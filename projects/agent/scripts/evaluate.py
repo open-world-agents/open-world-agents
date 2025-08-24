@@ -101,6 +101,10 @@ def main():
     training_args.remove_unused_columns = False
     training_args.dataset_kwargs = {"skip_prepare_dataset": True}
 
+    # Set wandb run name to output_dir if not specified
+    if training_args.run_name is None:
+        training_args.run_name = training_args.output_dir
+
     ################
     # Model, Tokenizer & Processor
     ################
@@ -212,7 +216,7 @@ def main():
         if "train" in dataset:
             train_datasets.append(dataset["train"])
         if "test" in dataset:
-            test_datasets.append(limit_dataset(dataset["test"]))
+            test_datasets.append(dataset["test"])
 
     train_fsl_dataset = ConcatDataset(train_datasets)
     eval_fsl_dataset = ConcatDataset(test_datasets) if test_datasets else None
@@ -240,23 +244,11 @@ def main():
     )
 
     ################
-    # Training
+    # Evaluation
     ################
-    accelerator.print("Starting training...")
-    trainer.train()
-
-    # Save final model
-    accelerator.print("Saving final model...")
-    trainer.save_model(training_args.output_dir)
-
-    # Push to hub if requested
-    if training_args.push_to_hub:
-        accelerator.print("Pushing to hub...")
-        trainer.push_to_hub(dataset_name=script_args.dataset_path)
-        if trainer.accelerator.is_main_process:
-            processor.push_to_hub(training_args.hub_model_id)
-
-    accelerator.print("Training completed!")
+    accelerator.print("Starting evaluation...")
+    eval_output = trainer.evaluate()
+    accelerator.print(f"Eval output: {eval_output}")
 
 
 if __name__ == "__main__":
