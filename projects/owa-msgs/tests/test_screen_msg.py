@@ -496,10 +496,15 @@ class TestScreenCaptured:
         Test: From URL: ScreenCaptured(media_ref={"uri": "https://example.com/image.png"})
 
         This test demonstrates the URL creation pattern from docstring with actual loading.
-        Skipped in CI environments to avoid flaky tests from unreliable external services.
         """
         test_cases = [
-            ("https://www.sample-videos.com/video321/mp4/240/big_buck_bunny_240p_2mb.mp4", 1_000_000_000, "video"),
+            # Using Hugging Face dataset - reliable and fast
+            (
+                "https://huggingface.co/datasets/open-world-agents/example_dataset/resolve/main/example.mkv",
+                1_000_000_000,
+                "video",
+            ),
+            # Using httpbingo.org for image testing - FAR BETTER than httpbin (faster, more reliable, better maintained)
             ("https://httpbingo.org/image/png", None, "image"),
         ]
 
@@ -559,7 +564,7 @@ class TestScreenCaptured:
     @pytest.mark.network
     def test_remote_video_caching_behavior(self):
         """Test remote video frame caching and keep_av_open functionality."""
-        test_url = "https://www.sample-videos.com/video321/mp4/240/big_buck_bunny_240p_2mb.mp4"
+        test_url = "https://huggingface.co/datasets/open-world-agents/example_dataset/resolve/main/example.mkv"
         pts_ns = 1_000_000_000  # 1 second
 
         # Create from remote video (docstring pattern)
