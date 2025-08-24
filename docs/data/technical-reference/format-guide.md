@@ -448,7 +448,7 @@ Desktop screen capture at 600 × 800 resolution, 13 s @ 60 Hz:
 |--------------------------------------|---------------:|-----------:|---------------------|
 | Raw BGRA                             | 1.37 MB        | 1.0 GB     | 1.0× (baseline)     |
 | PNG                                  | 468 KB         | 341 MB     | 3.0×                |
-| JPEG (Quality 85)                    | 64.6 K         | 47.2 MB    | 21.7×               |
+| JPEG (Quality 85)                    | 64.6 KB        | 47.2 MB    | 21.7×               |
 | H.265 (keyframe 0.5s, nvd3d11h265enc)| 15.3 KB avg    | 11.2 MB    | 91.7×               |
 
 !!! note "H.265 Configuration"
