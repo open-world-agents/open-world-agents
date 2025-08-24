@@ -13,9 +13,9 @@ Raw MCAP Data → Event Dataset → [Path A] FSL Dataset → VLA Training Ready
 ```bash
 # Set variables
 export MCAP_TRAIN_DIR="/mnt/raid12/datasets/owa/mcaps/vpt"
-export EVENT_DATASET_DIR="/mnt/raid12/datasets/owa/data/vpt-event"
-export FSL_DATASET_DIR="/mnt/raid12/datasets/owa/data/vpt-fsl-internvl3"
-export BINNED_DATASET_DIR="/mnt/raid12/datasets/owa/data/vpt-bin"
+export EVENT_DATASET_DIR="/mnt/harbor/projects/owa/data/vpt-event"
+export FSL_DATASET_DIR="/mnt/harbor/projects/owa/data/vpt-fsl-internvl3"
+export BINNED_DATASET_DIR="/mnt/harbor/projects/owa/data/vpt-bin"
 
 # 1. Process MCAP → Event Dataset
 python scripts/01_raw_events_to_event_dataset.py \
