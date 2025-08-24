@@ -427,17 +427,29 @@ OWAMcap achieves remarkable storage efficiency through external video references
 
 #### Compression Benefits
 
-!!! info "Understanding the Baseline"
-    Raw screen capture data is enormous: a single 1920×1080 frame in BGRA format is 8.3 MB. At 60 FPS, this means 498 MB per second of recording. OWAMcap's hybrid storage makes this manageable.
+!!! info "Compression Performance"
+    Compression performance varies significantly across formats. H.265 encoding achieves a 217.8× compression ratio compared to raw BGRA data (202 KB vs 43.1 MB per frame) while maintaining visual quality suitable for agent training, enabling practical storage of large-scale desktop interaction datasets.
+
+Desktop screen capture at 1920 × 1080 resolution, 12 s @ 60 Hz:
+
+| Format                                | Size per Frame | Whole Size | Compression Ratio |
+|---------------------------------------|---------------:|-----------:|-------------------|
+| Raw BGRA                              | 5.97 MB        | 4.2 GB     | 1.0× (baseline)   |
+| PNG                                   | 1.87 MB        | 1.31 GB    | 3.2×              |
+| JPEG (Quality 85)                     | 191 KB         | 135 MB     | 31.9×             |
+| H.265 (keyframe 0.5s, nvd3d11h265enc) | 27.8 KB avg    | 19.6 MB    | 217.8×            |
+
+!!! note "Compression benefit per resolution"
+    Compression performance is resolution-dependent. Lower resolutions yield lower compression ratios.
 
 Desktop screen capture at 600 × 800 resolution, 13 s @ 60 Hz:
 
 | Format                               | Size per Frame | Whole Size | Compression Ratio   |
 |--------------------------------------|---------------:|-----------:|---------------------|
-| Raw BGRA                             | 1.28 MB        | 1.0 GB     | 1.0× (baseline)     |
-| PNG                                  | 436 KB         | 333 MB     | 3.0×                |
-| JPEG (Quality 85)                    | 59 KB          | 46 MB      | 21.7×               |
-| H.265 (keyframe 0.5s, nvd3d11h265enc)| 14.5 KB avg    | 11.3 MB    | 91.7×               |
+| Raw BGRA                             | 1.37 MB        | 1.0 GB     | 1.0× (baseline)     |
+| PNG                                  | 468 KB         | 341 MB     | 3.0×                |
+| JPEG (Quality 85)                    | 64.6 K         | 47.2 MB    | 21.7×               |
+| H.265 (keyframe 0.5s, nvd3d11h265enc)| 15.3 KB avg    | 11.2 MB    | 91.7×               |
 
 !!! note "H.265 Configuration"
     The H.265 settings shown above (keyframe 0.5s, nvd3d11h265enc) are the same as those used by [ocap](../getting-started/recording-data.md) for efficient desktop recording.
