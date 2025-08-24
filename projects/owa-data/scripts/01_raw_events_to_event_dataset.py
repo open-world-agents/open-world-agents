@@ -259,7 +259,7 @@ def main(
         raise typer.BadParameter("--test_percent must be between 0 and 1 (exclusive)")
 
     # Parse rate settings or use defaults
-    rate_settings = parse_rate_argument(rate) if rate else {"mouse/raw": 20.0, "screen": 10.0}
+    rate_settings = parse_rate_argument(rate) if rate else {"mouse/raw": 20.0, "screen": 20.0}
     topics_to_keep = keep_topic if keep_topic else ["screen", "keyboard", "mouse/raw"]
 
     # Define action topics that should be time-shifted
