@@ -7,6 +7,9 @@ from typing_extensions import Annotated
 from mcap_owa.highlevel import OWAMcapReader
 from owa.env.desktop.constants import VK
 
+# Constants
+MIN_MOUSE_CLICK_DURATION_NS = 500_000_000  # 500ms in nanoseconds
+
 
 def format_timestamp(timestamp_ns: int) -> str:
     """Convert nanosecond timestamp to SRT timestamp format (HH:MM:SS,mmm)."""
@@ -22,7 +25,7 @@ def convert(
     mcap_path: Annotated[Path, typer.Argument(help="Path to the input .mcap file")],
     topics: Annotated[
         list[str], typer.Option(help="Comma-separated list of topics to include in the subtitle file")
-    ] = ["mouse", "keyboard"],
+    ] = ["mouse/raw", "keyboard"],
     output_srt: Annotated[Path | None, typer.Argument(help="Path to the output .srt file")] = None,
 ):
     """
@@ -52,37 +55,63 @@ def convert(
         mouse_button_states = {}  # button_name -> press_timestamp
         pending_mouse_events = []  # List of (press_timestamp, button_name, message_content)
 
-        # Track keyboard key states and pending press events
-        keyboard_key_states = {}  # vk -> press_timestamp
-        pending_keyboard_events = []  # List of (press_timestamp, vk, press_count)
-
         subtitle_counter = 0
+
+        def handle_mouse_button_press(button_name: str, timestamp: int):
+            """Handle mouse button press event."""
+            mouse_button_states[button_name] = timestamp
+            message_content = f"{button_name} click"
+            pending_mouse_events.append((timestamp, button_name, message_content))
+
+        def handle_mouse_button_release(button_name: str, timestamp: int):
+            """Handle mouse button release event."""
+            nonlocal subtitle_counter
+            if button_name in mouse_button_states:
+                press_timestamp = mouse_button_states[button_name]
+                # Find the corresponding press event
+                for i, (press_ts, btn_name, msg_content) in enumerate(pending_mouse_events):
+                    if press_ts == press_timestamp and btn_name == button_name:
+                        subtitle_counter += 1
+                        start = format_timestamp(press_timestamp - start_time)
+                        # Ensure minimum duration for mouse clicks
+                        actual_duration = timestamp - press_timestamp
+                        end_timestamp = press_timestamp + max(actual_duration, MIN_MOUSE_CLICK_DURATION_NS)
+                        end = format_timestamp(end_timestamp - start_time)
+                        subtitles.append(f"{subtitle_counter}\n{start} --> {end}\n[mouse] {msg_content}\n")
+                        pending_mouse_events.pop(i)
+                        break
+                del mouse_button_states[button_name]
+
+        # Button flag mappings for RawMouseEvent
+        BUTTON_PRESS_FLAGS = {
+            0x0001: "left",    # RI_MOUSE_LEFT_BUTTON_DOWN
+            0x0004: "right",   # RI_MOUSE_RIGHT_BUTTON_DOWN
+            0x0010: "middle",  # RI_MOUSE_MIDDLE_BUTTON_DOWN
+        }
+
+        BUTTON_RELEASE_FLAGS = {
+            0x0002: "left",    # RI_MOUSE_LEFT_BUTTON_UP
+            0x0008: "right",   # RI_MOUSE_RIGHT_BUTTON_UP
+            0x0020: "middle",  # RI_MOUSE_MIDDLE_BUTTON_UP
+        }
 
         for mcap_msg in all_messages:
             # Handle mouse events with press/release pairing
-            if mcap_msg.topic == "mouse":
-                if hasattr(mcap_msg.decoded, 'event_type') and hasattr(mcap_msg.decoded, 'pressed') and hasattr(mcap_msg.decoded, 'button'):
-                    if mcap_msg.decoded.event_type == "click":
-                        button_name = mcap_msg.decoded.button
-                        if mcap_msg.decoded.pressed:
-                            # Button press - store the press event
-                            mouse_button_states[button_name] = mcap_msg.timestamp
-                            message_content = f"{button_name} click"
-                            pending_mouse_events.append((mcap_msg.timestamp, button_name, message_content))
-                        else:
-                            # Button release - create subtitle with proper duration
-                            if button_name in mouse_button_states:
-                                press_timestamp = mouse_button_states[button_name]
-                                # Find the corresponding press event
-                                for i, (press_ts, btn_name, msg_content) in enumerate(pending_mouse_events):
-                                    if press_ts == press_timestamp and btn_name == button_name:
-                                        subtitle_counter += 1
-                                        start = format_timestamp(press_timestamp - start_time)
-                                        end = format_timestamp(mcap_msg.timestamp - start_time)
-                                        subtitles.append(f"{subtitle_counter}\n{start} --> {end}\n[mouse] {msg_content}\n")
-                                        pending_mouse_events.pop(i)
-                                        break
-                                del mouse_button_states[button_name]
+            if mcap_msg.topic == "mouse/raw":
+                if hasattr(mcap_msg.decoded, 'button_flags'):
+                    button_flags = mcap_msg.decoded.button_flags
+
+                    # Check for button press events
+                    for flag, button_name in BUTTON_PRESS_FLAGS.items():
+                        if button_flags & flag:
+                            handle_mouse_button_press(button_name, mcap_msg.timestamp)
+                            break
+
+                    # Check for button release events
+                    for flag, button_name in BUTTON_RELEASE_FLAGS.items():
+                        if button_flags & flag:
+                            handle_mouse_button_release(button_name, mcap_msg.timestamp)
+                            break
 
             # Handle keyboard events (unchanged logic)
             elif mcap_msg.topic == "keyboard":
@@ -90,7 +119,7 @@ def convert(
                 if should_log:
                     subtitle_counter += 1
                     start = format_timestamp(mcap_msg.timestamp - start_time)
-                    end = format_timestamp(mcap_msg.timestamp - start_time + 500_000_000)
+                    end = format_timestamp(mcap_msg.timestamp - start_time + MIN_MOUSE_CLICK_DURATION_NS)
 
                     if hasattr(mcap_msg.decoded, 'event_type') and hasattr(mcap_msg.decoded, 'vk'):
                         message_content = f"{mcap_msg.decoded.event_type} {VK(mcap_msg.decoded.vk).name}"
@@ -103,7 +132,7 @@ def convert(
         for press_timestamp, button_name, message_content in pending_mouse_events:
             subtitle_counter += 1
             start = format_timestamp(press_timestamp - start_time)
-            end = format_timestamp(press_timestamp - start_time + 500_000_000)
+            end = format_timestamp(press_timestamp - start_time + MIN_MOUSE_CLICK_DURATION_NS)
             subtitles.append(f"{subtitle_counter}\n{start} --> {end}\n[mouse] {message_content}\n")
 
     output_srt.write_text("\n".join(subtitles), encoding="utf-8")
