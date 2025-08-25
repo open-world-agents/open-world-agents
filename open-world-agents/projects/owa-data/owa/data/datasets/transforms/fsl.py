@@ -115,14 +115,13 @@ class FSLTransformConfig:
 
     load_images: bool = True
     mcap_root_directory: Optional[str] = None
-    image_processor: Any = None
     pad_token_id: int = 0
 
 
 class FSLTransform:
     """Clean, modular FSL transform class."""
 
-    def __init__(self, config: Optional[FSLTransformConfig] = None, **kwargs):
+    def __init__(self, config: Optional[FSLTransformConfig] = None, image_processor: Any = None, **kwargs):
         """Initialize FSL transform with configuration."""
         if config is None:
             config = FSLTransformConfig()
@@ -133,6 +132,7 @@ class FSLTransform:
                 setattr(config, key, value)
 
         self.config = config
+        self.image_processor = image_processor
         self.is_decoding_server_available = "VIDEO_DECODING_SERVER_URL" in os.environ
         self.stat_logger = FSLStatLogger()
 
@@ -199,10 +199,10 @@ class FSLTransform:
             total_image_bits += image_bits
 
             # Process with image processor if available
-            if self.config.image_processor is not None:
+            if self.image_processor is not None:
                 pixel_values = []
                 for image in all_images:
-                    processed = self.config.image_processor(image, return_tensors="pt")
+                    processed = self.image_processor(image, return_tensors="pt")
                     pixel_value = processed["pixel_values"].squeeze(0).squeeze(0)
                     pixel_values.append(pixel_value)
                 # NOTE: SmolVLM2-256M-Video-Instruct expects [num_images, 3, 512, 512]
@@ -236,9 +236,7 @@ def create_fsl_transform(
     image_processor=None, load_images: bool = True, mcap_root_directory: Optional[str] = None, **kwargs
 ):
     """Create FSL transform - maintains backward compatibility."""
-    config = FSLTransformConfig(
-        image_processor=image_processor, load_images=load_images, mcap_root_directory=mcap_root_directory, **kwargs
-    )
+    config = FSLTransformConfig(load_images=load_images, mcap_root_directory=mcap_root_directory, **kwargs)
 
-    transform = FSLTransform(config)
+    transform = FSLTransform(config, image_processor=image_processor)
     return transform.transform_batch
