@@ -2,19 +2,23 @@
 # This configuration is optimized for pretraining vision-language models on desktop interaction data
 # Comments show: [CUSTOM_VALUE] (default: DEFAULT_VALUE)
 
-output_dir: "/mnt/harbor/users/claude/checkpoints/owa/InternVL3-1B-hf_vpt_0815-00"  # (default: 'trainer_output') - can be overridden via CLI
+output_dir: "/mnt/harbor/projects/owa/checkpoints/gidm/InternVL3-1B-hf_gidm-100ms-batch128-lr2e5-TEST"  # (default: 'trainer_output') - can be overridden via CLI
 
 # ============================================================================
 # SCRIPT ARGUMENTS (Custom for FSLDataset pretraining)
 # ============================================================================
 dataset_paths: # (default: None) - required
-  - "/mnt/raid12/datasets/owa/data/vpt-fsl-internvl3"
+  - "/mnt/raid12/datasets/owa_game_dataset_filtered_448_fsl-100ms/grand-theft-auto-v"
+  - "/mnt/raid12/datasets/owa_game_dataset_filtered_448_fsl-100ms/rainbow-six"
+  - "/mnt/raid12/datasets/owa_game_dataset_filtered_448_fsl-100ms/apex-legends"
+  - "/mnt/raid12/datasets/owa_game_dataset_filtered_448_fsl-100ms/euro-truck-simulator-2"
+  - "/mnt/raid12/datasets/owa_game_dataset_filtered_448_fsl-100ms/counter-strike-2"
 max_sequence_length: 4096  # (default: 1024)
 
 # ============================================================================
 # MODEL CONFIGURATION
 # ============================================================================
-model_name_or_path: "OpenGVLab/InternVL3-1B-hf"  # (default: None)
+model_name_or_path: "/mnt/harbor/users/jyjung/hf-checkpoints/InternVL3-1B-hf"  # (default: None)
 torch_dtype: "bfloat16"  # (default: None)
 attn_implementation: "flash_attention_2"  # (default: None)
 trust_remote_code: false  # (default: False)
@@ -22,10 +26,10 @@ trust_remote_code: false  # (default: False)
 # ============================================================================
 # TRAINING HYPERPARAMETERS
 # ============================================================================
-num_train_epochs: 0.12  # (default: 3.0)
-per_device_train_batch_size: 3  # (default: 8)
-gradient_accumulation_steps: 1  # (default: 1)
-learning_rate: 3e-4  # (default: 2e-5)
+num_train_epochs: 10  # (default: 3.0)
+per_device_train_batch_size: 2  # (default: 8)
+gradient_accumulation_steps: 8  # (default: 1)
+learning_rate: 2e-5  # (default: 2e-5)
 
 # ============================================================================
 # OPTIMIZATION SETTINGS
@@ -71,7 +75,7 @@ dataloader_num_workers: 8    # (default: 0)
 do_eval: true  # (default: False)
 eval_strategy: "steps"  # (default: 'no')
 eval_steps: 0.1  # (default: None) - used when eval_strategy is 'steps'
-per_device_eval_batch_size: 1  # (default: 8)
+per_device_eval_batch_size: 4  # (default: 8)
 
 # ============================================================================
 # DISTRIBUTED TRAINING SETTINGS
