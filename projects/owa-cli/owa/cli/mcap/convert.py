@@ -171,7 +171,12 @@ def convert(
         for mcap_msg in reader.iter_messages(topics=["screen"]):
             start_time = mcap_msg.timestamp
             # Add pts_ns from the first screen message if available
-            if hasattr(mcap_msg.decoded, 'media_ref') and mcap_msg.decoded.media_ref and hasattr(mcap_msg.decoded.media_ref, 'pts_ns') and mcap_msg.decoded.media_ref.pts_ns is not None:
+            if (
+                hasattr(mcap_msg.decoded, "media_ref")
+                and mcap_msg.decoded.media_ref
+                and hasattr(mcap_msg.decoded.media_ref, "pts_ns")
+                and mcap_msg.decoded.media_ref.pts_ns is not None
+            ):
                 start_time -= mcap_msg.decoded.media_ref.pts_ns
             else:
                 print("No pts_ns found in the first screen message. Subtitle timing may be off.")
@@ -218,21 +223,21 @@ def convert(
 
         # Button flag mappings for RawMouseEvent
         BUTTON_PRESS_FLAGS = {
-            0x0001: "left",    # RI_MOUSE_LEFT_BUTTON_DOWN
-            0x0004: "right",   # RI_MOUSE_RIGHT_BUTTON_DOWN
+            0x0001: "left",  # RI_MOUSE_LEFT_BUTTON_DOWN
+            0x0004: "right",  # RI_MOUSE_RIGHT_BUTTON_DOWN
             0x0010: "middle",  # RI_MOUSE_MIDDLE_BUTTON_DOWN
         }
 
         BUTTON_RELEASE_FLAGS = {
-            0x0002: "left",    # RI_MOUSE_LEFT_BUTTON_UP
-            0x0008: "right",   # RI_MOUSE_RIGHT_BUTTON_UP
+            0x0002: "left",  # RI_MOUSE_LEFT_BUTTON_UP
+            0x0008: "right",  # RI_MOUSE_RIGHT_BUTTON_UP
             0x0020: "middle",  # RI_MOUSE_MIDDLE_BUTTON_UP
         }
 
         for mcap_msg in all_messages:
             # Handle mouse events with press/release pairing
             if mcap_msg.topic == "mouse/raw":
-                if hasattr(mcap_msg.decoded, 'button_flags'):
+                if hasattr(mcap_msg.decoded, "button_flags"):
                     button_flags = mcap_msg.decoded.button_flags
 
                     # Check for button press events
@@ -249,11 +254,9 @@ def convert(
 
             # Handle keyboard events with state management
             elif mcap_msg.topic == "keyboard":
-                if hasattr(mcap_msg.decoded, 'event_type') and hasattr(mcap_msg.decoded, 'vk'):
+                if hasattr(mcap_msg.decoded, "event_type") and hasattr(mcap_msg.decoded, "vk"):
                     key_state_manager.handle_key_event(
-                        mcap_msg.decoded.event_type,
-                        mcap_msg.decoded.vk,
-                        mcap_msg.timestamp
+                        mcap_msg.decoded.event_type, mcap_msg.decoded.vk, mcap_msg.timestamp
                     )
 
         # Handle any remaining unpaired mouse press events (use default duration)
