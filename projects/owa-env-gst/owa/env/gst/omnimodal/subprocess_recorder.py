@@ -51,6 +51,7 @@ class SubprocessRecorder(SubprocessRunner):
         show_cursor: bool = True,
         fps: float = 60,
         window_name: Optional[str] = None,
+        audio_window_name: Optional[str] = None,
         monitor_idx: Optional[int] = None,
         additional_properties: Optional[dict] = None,
     ) -> None:
@@ -66,6 +67,7 @@ class SubprocessRecorder(SubprocessRunner):
             show_cursor: Whether to show the cursor in the recording.
             fps: Frames per second for video recording.
             window_name: Specific window to record (optional).
+            audio_window_name: Specific window to capture audio from (optional). If None, uses window_name.
             monitor_idx: Monitor index to record from (optional).
             additional_properties: Additional pipeline properties (optional).
 
@@ -90,6 +92,7 @@ class SubprocessRecorder(SubprocessRunner):
             show_cursor=show_cursor,
             fps=fps,
             window_name=window_name,
+            audio_window_name=audio_window_name,
             monitor_idx=monitor_idx,
             additional_properties=additional_properties,
         )
