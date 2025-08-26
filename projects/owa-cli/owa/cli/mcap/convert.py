@@ -9,6 +9,138 @@ from owa.env.desktop.constants import VK
 
 # Constants
 MIN_MOUSE_CLICK_DURATION_NS = 500_000_000  # 500ms in nanoseconds
+MIN_KEY_PRESS_DURATION_NS = 500_000_000  # 500ms in nanoseconds
+
+
+class KeyState:
+    """Represents the state of a single key."""
+
+    def __init__(self, vk: int):
+        self.vk = vk
+        self.is_pressed = False
+        self.first_press_timestamp = None
+        self.last_press_timestamp = None
+        self.release_timestamp = None
+        self.press_count = 0
+
+    def press(self, timestamp: int) -> bool:
+        """
+        Handle a key press event.
+
+        Returns:
+            bool: True if this is the first press (should create subtitle), False otherwise
+        """
+        if not self.is_pressed:
+            # First press - transition from released to pressed
+            self.is_pressed = True
+            self.first_press_timestamp = timestamp
+            self.last_press_timestamp = timestamp
+            self.press_count = 1
+            self.release_timestamp = None
+            return True
+        else:
+            # Key is already pressed - just update the last press timestamp
+            self.last_press_timestamp = timestamp
+            self.press_count += 1
+            return False
+
+    def release(self, timestamp: int) -> bool:
+        """
+        Handle a key release event.
+
+        Returns:
+            bool: True if key was pressed and should finalize subtitle, False otherwise
+        """
+        if self.is_pressed:
+            self.is_pressed = False
+            self.release_timestamp = timestamp
+            return True
+        return False
+
+    def get_subtitle_duration(self) -> tuple[int, int]:
+        """
+        Get the start and end timestamps for the subtitle.
+
+        Returns:
+            tuple[int, int]: (start_timestamp, end_timestamp)
+        """
+        if self.first_press_timestamp is None:
+            return (0, 0)
+
+        start_time = self.first_press_timestamp
+
+        if self.release_timestamp is not None:
+            # Key was released - use actual duration but ensure minimum
+            actual_duration = self.release_timestamp - self.first_press_timestamp
+            end_time = self.first_press_timestamp + max(actual_duration, MIN_KEY_PRESS_DURATION_NS)
+        else:
+            # Key is still pressed or no release recorded - use minimum duration
+            end_time = self.first_press_timestamp + MIN_KEY_PRESS_DURATION_NS
+
+        return (start_time, end_time)
+
+
+class KeyStateManager:
+    """Manages the state of all keyboard keys."""
+
+    def __init__(self):
+        self.key_states = {}  # vk -> KeyState
+        self.pending_subtitles = []  # List of (KeyState, message_content) for keys that need subtitles
+        self.completed_subtitles = []  # List of (start_time, end_time, message_content) for finalized subtitles
+
+    def handle_key_event(self, event_type: str, vk: int, timestamp: int) -> None:
+        """
+        Handle a keyboard event (press or release).
+
+        Args:
+            event_type: "press" or "release"
+            vk: Virtual key code
+            timestamp: Event timestamp in nanoseconds
+        """
+        if vk not in self.key_states:
+            self.key_states[vk] = KeyState(vk)
+
+        key_state = self.key_states[vk]
+
+        if event_type == "press":
+            should_create_subtitle = key_state.press(timestamp)
+            if should_create_subtitle:
+                # Create message content
+                try:
+                    key_name = VK(vk).name
+                except ValueError:
+                    key_name = f"VK_{vk}"
+                message_content = f"press {key_name}"
+                self.pending_subtitles.append((key_state, message_content))
+
+        elif event_type == "release":
+            should_finalize_subtitle = key_state.release(timestamp)
+            if should_finalize_subtitle:
+                # Find and finalize the corresponding pending subtitle
+                for i, (pending_key_state, message_content) in enumerate(self.pending_subtitles):
+                    if pending_key_state is key_state:
+                        start_time, end_time = key_state.get_subtitle_duration()
+                        self.completed_subtitles.append((start_time, end_time, message_content))
+                        self.pending_subtitles.pop(i)
+                        break
+
+    def finalize_remaining_subtitles(self) -> None:
+        """
+        Finalize any remaining pending subtitles (for keys that were never released).
+        """
+        for key_state, message_content in self.pending_subtitles:
+            start_time, end_time = key_state.get_subtitle_duration()
+            self.completed_subtitles.append((start_time, end_time, message_content))
+        self.pending_subtitles.clear()
+
+    def get_completed_subtitles(self) -> list[tuple[int, int, str]]:
+        """
+        Get all completed subtitles.
+
+        Returns:
+            list[tuple[int, int, str]]: List of (start_time, end_time, message_content)
+        """
+        return self.completed_subtitles.copy()
 
 
 def format_timestamp(timestamp_ns: int) -> str:
@@ -54,6 +186,9 @@ def convert(
         # Track mouse button states and pending press events
         mouse_button_states = {}  # button_name -> press_timestamp
         pending_mouse_events = []  # List of (press_timestamp, button_name, message_content)
+
+        # Initialize key state manager
+        key_state_manager = KeyStateManager()
 
         subtitle_counter = 0
 
@@ -113,20 +248,14 @@ def convert(
                             handle_mouse_button_release(button_name, mcap_msg.timestamp)
                             break
 
-            # Handle keyboard events (unchanged logic)
+            # Handle keyboard events with state management
             elif mcap_msg.topic == "keyboard":
-                should_log = True
-                if should_log:
-                    subtitle_counter += 1
-                    start = format_timestamp(mcap_msg.timestamp - start_time)
-                    end = format_timestamp(mcap_msg.timestamp - start_time + MIN_MOUSE_CLICK_DURATION_NS)
-
-                    if hasattr(mcap_msg.decoded, 'event_type') and hasattr(mcap_msg.decoded, 'vk'):
-                        message_content = f"{mcap_msg.decoded.event_type} {VK(mcap_msg.decoded.vk).name}"
-                    else:
-                        message_content = str(mcap_msg.decoded)
-
-                    subtitles.append(f"{subtitle_counter}\n{start} --> {end}\n[keyboard] {message_content}\n")
+                if hasattr(mcap_msg.decoded, 'event_type') and hasattr(mcap_msg.decoded, 'vk'):
+                    key_state_manager.handle_key_event(
+                        mcap_msg.decoded.event_type,
+                        mcap_msg.decoded.vk,
+                        mcap_msg.timestamp
+                    )
 
         # Handle any remaining unpaired mouse press events (use default duration)
         for press_timestamp, button_name, message_content in pending_mouse_events:
@@ -134,6 +263,17 @@ def convert(
             start = format_timestamp(press_timestamp - start_time)
             end = format_timestamp(press_timestamp - start_time + MIN_MOUSE_CLICK_DURATION_NS)
             subtitles.append(f"{subtitle_counter}\n{start} --> {end}\n[mouse] {message_content}\n")
+
+        # Finalize any remaining keyboard key states and add keyboard subtitles
+        key_state_manager.finalize_remaining_subtitles()
+        keyboard_subtitles = key_state_manager.get_completed_subtitles()
+
+        # Add keyboard subtitles to the main list
+        for key_start_time, key_end_time, key_message_content in keyboard_subtitles:
+            subtitle_counter += 1
+            start = format_timestamp(key_start_time - start_time)
+            end = format_timestamp(key_end_time - start_time)
+            subtitles.append(f"{subtitle_counter}\n{start} --> {end}\n[keyboard] {key_message_content}\n")
 
     output_srt.write_text("\n".join(subtitles), encoding="utf-8")
     print(f"Subtitle file saved as {output_srt}")
