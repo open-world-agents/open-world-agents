@@ -100,7 +100,8 @@ class EpisodeTokenizer:
         *,
         is_first: bool = False,
         is_last: bool = False,
-    ) -> TokenizedEvent:
+        return_dict: bool = True,
+    ) -> TokenizedEvent | npt.NDArray[np.int64]:
         if not self.is_prepared:
             raise RuntimeError("EpisodeTokenizer must be prepared by `prepare_model` before tokenizing")
 
@@ -118,17 +119,20 @@ class EpisodeTokenizer:
         # EventEncoder outputs fake_image_placeholder, we convert to real image tokens
         replacement = f"{self.config.image_token_prefix}{self.config.image_token * self.config.image_token_length}{self.config.image_token_suffix}"
         encoded_text = encoded_text.replace(self.config.fake_image_placeholder, replacement)
-        token_ids = self.tokenizer.encode(encoded_text, add_special_tokens=False)
+        token_ids = self.tokenizer.encode(encoded_text, add_special_tokens=False, return_tensors="np")[0]
 
-        return TokenizedEvent(
-            text=encoded_text,
-            images=images,
-            token_ids=token_ids,
-            total_token_count=len(token_ids),
-        )
+        if return_dict:
+            return TokenizedEvent(
+                text=encoded_text,
+                images=images,
+                token_ids=token_ids,
+                total_token_count=len(token_ids),
+            )
+        else:
+            return token_ids
 
-    def decode_event(self, tokenized_event: dict) -> McapMessage:
-        text = tokenized_event["text"]
+    def decode_event(self, token_ids: npt.NDArray[np.int64]) -> McapMessage:
+        text = self.tokenizer.decode(token_ids, skip_special_tokens=False)
         # Convert repeated image token sequences back to fake_image_placeholder
         # Pattern: prefix + (image_token * image_token_length) + suffix -> fake_image_placeholder
         assert self.config.image_token not in text, (
@@ -137,7 +141,7 @@ class EpisodeTokenizer:
         repeated_image_pattern = f"{self.config.image_token_prefix}{self.config.image_token_suffix}"
         text = text.replace(repeated_image_pattern, self.config.fake_image_placeholder)
 
-        return self.encoder.decode(text, tokenized_event["images"])
+        return self.encoder.decode(text)
 
     def tokenize_episode(
         self,
