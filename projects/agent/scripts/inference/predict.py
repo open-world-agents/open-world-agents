@@ -202,36 +202,30 @@ def prepare_initial_inputs(input_iterator) -> tuple[torch.LongTensor, torch.Floa
     return sequences, pixel_values, past_key_values
 
 
-def prefill(sequences, pixel_values, past_key_values):
+# BUG: when we pass prefilled past_key_values to generate, it crashes
+#   File "/mnt/home/claude/GitHub/transformers/src/transformers/generation/utils.py", line 475, in _cache_dependant_input_preparation
+#     or (cache_position[-1] >= input_ids.shape[1])  # Exception 3
+#         ~~~~~~~~~~~~~~^^^^
+# IndexError: index -1 is out of bounds for dimension 0 with size 0
+def prefill(sequences, pixel_values, past_key_values: Cache):
     # Case when already prefilled
-    if past_key_values.get_seq_length() and past_key_values[0][0].shape[-2] == sequences.shape[1] - 1:
+    logger.info(f"Prefilling cache: {sequences.shape=}, {past_key_values.get_seq_length()=}, {type(past_key_values)=}")
+    if past_key_values.get_seq_length() >= sequences.shape[1]:
         return past_key_values
-    if past_key_values.get_seq_length():
-        # NOTE: following commented block is wrong
-        # start = past_key_values[0][0].shape[-2]
-        # end = start + sequences.shape[1] - 1
-        # cache_position = torch.arange(start, end, device=torch_device)
-
-        # BUG: DynamicCache doesn't support cache_position. WHAT?!
-        cache_position = torch.arange(sequences.shape[1] - 1, device=torch_device)
-    else:
-        cache_position = None
+    past_seen_tokens = past_key_values.get_seq_length() if past_key_values is not None else 0
+    sequences = sequences[:, past_seen_tokens:]
+    cache_position = torch.arange(past_seen_tokens, past_seen_tokens + sequences.shape[1], device=sequences.device)
+    # BUG: DynamicCache doesn't support cache_position. WHAT?!
     # prefill. Reference: https://huggingface.co/docs/transformers/main/kv_cache#prefill-a-cache-prefix-caching
-    if past_key_values.get_seq_length():
-        logger.info(f"Prefilled cache: {sequences.shape=}, {past_key_values[0][0].shape=}, {type(past_key_values)=}")
-        print(f"{type(model)=}")
-        print(f"{type(model.model)=}")
-        print(f"{type(model.model.language_model)=}")
     with torch.no_grad():
-        # BUG: when we pass sequences as-is, future .generate creates empty cache_position, leading to crash.
         past_key_values = model(
-            input_ids=sequences[:, :-1],
+            input_ids=sequences,
             pixel_values=pixel_values,
             past_key_values=past_key_values,
             cache_position=cache_position,
             use_cache=True,
         ).past_key_values
-    logger.info(f"Prefilled cache: {sequences.shape=}, {past_key_values[0][0].shape=}, {type(past_key_values)=}")
+    logger.info(f"Prefilled cache: {sequences.shape=}, {past_key_values.get_seq_length()=}, {type(past_key_values)=}")
     return past_key_values
 
 
@@ -272,7 +266,7 @@ def generate():
             next_event, next_event_tokenized = next(input_iterator)
             # generate events until next_event.timestamp
             while True:
-                past_key_values = prefill(sequences, pixel_values, past_key_values)
+                # past_key_values = prefill(sequences, pixel_values, past_key_values)
                 past_past_key_values = copy.deepcopy(past_key_values)
                 new_sequences, new_past_key_values = generate_single_event(sequences, pixel_values, past_key_values)
                 # If generatd event is not valid event, break
