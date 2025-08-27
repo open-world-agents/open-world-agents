@@ -156,13 +156,22 @@ document.addEventListener('DOMContentLoaded', () => {
             // Initialize with data from the beginning
             await loadDataForTimeRange(metadata.start_time, null);
 
-            // Process the screen topics to find base time. TODO: more stable base time finding logic. sometime it miss.
+            // Process the screen topics to find base time using pts_ns from media_ref as offset
             if (currentData.screen && currentData.screen.length > 0) {
                 const firstScreenEvent = currentData.screen[0];
                 console.log("First screen event:", firstScreenEvent);
                 console.log("First screen event timestamp:", firstScreenEvent.timestamp);
-                basePtsTime = firstScreenEvent.timestamp || 0;
-                console.log("Base PTS time:", basePtsTime);
+
+                // Use pts_ns from media_ref as the offset for events
+                if (firstScreenEvent.media_ref && typeof firstScreenEvent.media_ref.pts_ns !== 'undefined') {
+                    basePtsTime = firstScreenEvent.timestamp - firstScreenEvent.media_ref.pts_ns;
+                    console.log("Using media_ref.pts_ns as offset:", firstScreenEvent.media_ref.pts_ns);
+                    console.log("Base PTS time (timestamp - pts_ns offset):", basePtsTime);
+                } else {
+                    console.warn("No media_ref.pts_ns found in first screen event, using timestamp as fallback");
+                    basePtsTime = firstScreenEvent.timestamp || 0;
+                    console.log("Base PTS time (fallback):", basePtsTime);
+                }
             } else {
                 console.warn("No screen events found in MCAP data");
                 basePtsTime = 0;
