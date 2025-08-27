@@ -217,3 +217,6 @@ __marimo__/
 
 # sbatch logs
 logs/
+
+embeddings_*/
+sampled_frames*/
