@@ -1,30 +1,22 @@
 import copy
-import re
-from abc import ABC, abstractmethod
-from enum import StrEnum
-from typing import Any, Iterator, Self, Type, TypedDict
+from typing import Iterator
 
-import numpy as np
-import numpy.typing as npt
 import torch
 from loguru import logger
 from transformers import (
-    AutoImageProcessor,
     AutoModelForImageTextToText,
     AutoProcessor,
-    AutoTokenizer,
     PreTrainedTokenizer,
 )
 from transformers.cache_utils import Cache, StaticCache
-from transformers.generation import GenerateDecoderOnlyOutput, LogitsProcessor, LogitsProcessorList
+from transformers.generation import LogitsProcessor
 
-from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
+from mcap_owa.highlevel import OWAMcapReader
 from mcap_owa.highlevel.mcap_msg import McapMessage
-from owa.core.utils.typing import PathLike
 from owa.data.datasets import load_from_disk
 from owa.data.encoders import EventEncoderError
 from owa.data.episode_tokenizer import EpisodeTokenizer, TokenizedEvent
-from owa.data.processing.resampler import EventResampler, create_resampler
+from owa.data.processing.resampler import create_resampler
 
 torch_device = "cuda:0"
 
@@ -149,7 +141,7 @@ def input_stream() -> Iterator[tuple[McapMessage, TokenizedEvent]]:
     with OWAMcapReader(
         "/mnt/raid12/datasets/owa_game_dataset_filtered_448/milkclouds00@gmail.com/apex_legends/0805_01.mcap"
     ) as reader:
-        mid_time = reader.start_time + (reader.end_time - reader.start_time) / 2
+        mid_time = reader.start_time + (reader.end_time - reader.start_time) // 2
         for mcap_msg in reader.iter_messages(topics=["screen", "mouse/raw", "keyboard"], start_time=mid_time):
             resampler = resamplers[mcap_msg.topic]
             resampler.add_event(mcap_msg)
