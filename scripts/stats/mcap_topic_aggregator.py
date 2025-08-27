@@ -10,7 +10,7 @@ import sys
 import subprocess
 import re
 from pathlib import Path
-from collections import defaultdict, Counter
+from collections import Counter
 import json
 import argparse
 from typing import Dict, List, Any
