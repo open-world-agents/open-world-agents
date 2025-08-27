@@ -1,6 +1,6 @@
 import re
 from dataclasses import dataclass
-from typing import Iterator, TypedDict
+from typing import Iterator, Literal, TypedDict, overload
 
 import numpy as np
 import numpy.typing as npt
@@ -93,6 +93,26 @@ class EpisodeTokenizer:
             model.resize_token_embeddings(len(tokenizer))
         self.tokenizer = tokenizer
         self.is_prepared = True
+
+    @overload
+    def tokenize_event(
+        self,
+        mcap_msg: McapMessage,
+        *,
+        is_first: bool = False,
+        is_last: bool = False,
+        return_dict: Literal[True] = True,
+    ) -> TokenizedEvent: ...
+
+    @overload
+    def tokenize_event(
+        self,
+        mcap_msg: McapMessage,
+        *,
+        is_first: bool = False,
+        is_last: bool = False,
+        return_dict: Literal[False],
+    ) -> npt.NDArray[np.int64]: ...
 
     def tokenize_event(
         self,
