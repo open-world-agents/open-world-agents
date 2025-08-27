@@ -145,59 +145,6 @@ def compute_metrics_from_file(src_mcap_path: PathLike, dst_mcap_path: PathLike) 
         return compute_metrics(src_events, dst_events)
 
 
-import numpy.typing as npt
-from transformers import AutoTokenizer
-
-from mcap_owa.highlevel import OWAMcapWriter
-from owa.data.episode_tokenizer import EpisodeTokenizer
-
-tokenizer = AutoTokenizer.from_pretrained("/mnt/harbor/projects/owa/checkpoints/smolvlm-256m_vpt_0811-00")
-episode_tokenizer = EpisodeTokenizer(encoder_type="hierarchical")
-episode_tokenizer.prepare_model(tokenizer=tokenizer)
-
-
-def prediction_to_event(predictions: npt.NDArray[np.int64]) -> Iterator[McapMessage]:
-    """Convert the predictions to an MCAP file."""
-    # Since logits/labels is shifted-by-1, if the first token is not <EVENT_START>, add it.
-    event_start_token_id = tokenizer.convert_tokens_to_ids("<EVENT_START>")
-    event_end_token_id = tokenizer.convert_tokens_to_ids("<EVENT_END>")
-    if predictions[0] != event_start_token_id:
-        predictions = np.insert(predictions, 0, event_start_token_id)
-
-    yield from filter(
-        lambda x: x is not None,
-        episode_tokenizer.decode_episode(predictions, skip_invalid=True, adjust_timestamp=True),
-    )
-
-
-def prediction_to_mcap(predictions: npt.NDArray[np.int64], mcap_path: PathLike) -> None:
-    """Convert the predictions to an MCAP file."""
-    events = prediction_to_event(predictions)
-    print("Writing to", mcap_path)
-    with OWAMcapWriter(str(mcap_path)) as writer:
-        for event in events:
-            writer.write_message(event)
-
-
 if __name__ == "__main__":
-    import dill as pickle
-    import torch
-
-    outputs = torch.load(
-        "/mnt/harbor/projects/owa/checkpoints/smolvlm-256m_vpt_0811-00/eval/eval_step_10976.pt", pickle_module=pickle
-    )
-    logits, labels = outputs["logits"][0], outputs["labels"][0]
-    logits = logits[:-1]
-    labels = labels[1:]
-
-    mask = labels != -100
-    logits = logits[mask]
-    labels = labels[mask]
-
-    predictions = logits.argmax(axis=-1)
-
-    prediction_to_mcap(predictions, "dst.mcap")
-    prediction_to_mcap(labels, "src.mcap")
-
     result = compute_metrics_from_file("src.mcap", "dst.mcap")
     print(result)
