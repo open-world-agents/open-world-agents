@@ -6,7 +6,7 @@ Minimal, clean design focused on essential functionality.
 
 import warnings
 from pathlib import Path, PurePosixPath
-from typing import Optional, Self, Tuple
+from typing import Optional, Self, Tuple, cast
 
 import cv2
 import numpy as np
@@ -15,6 +15,7 @@ from pydantic.json_schema import SkipJsonSchema
 
 from owa.core.io import encode_to_base64, load_image_as_bgra, load_video_frame_as_bgra
 from owa.core.message import OWAMessage
+from owa.core.time import TimeUnits
 
 
 class MediaRef(BaseModel):
@@ -229,7 +230,7 @@ class ScreenCaptured(OWAMessage):
             if self.media_ref.is_embedded:
                 parts.append("embedded")
             elif self.media_ref.is_video:
-                parts.append(f"video@{self.media_ref.pts_ns}ns")
+                parts.append(f"video@{cast(int, self.media_ref.pts_ns) / TimeUnits.SECOND:.3f}s")
             else:
                 parts.append("external")
         return f"ScreenCaptured({', '.join(parts)})"
