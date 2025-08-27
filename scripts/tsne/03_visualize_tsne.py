@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 """
 Script to visualize image embeddings using t-SNE.
-Loads embeddings from ./embeddings directory and creates interactive visualizations.
+Loads embeddings from ./embeddings directory and creates static visualizations.
 """
 
-import os
 import sys
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional
+from typing import List, Tuple, Optional, Union, Literal
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -21,17 +20,6 @@ except ImportError:
     print("Error: scikit-learn is not installed. Please install it with:")
     print("pip install scikit-learn")
     sys.exit(1)
-
-try:
-    import plotly.express as px
-    import plotly.graph_objects as go
-    from plotly.subplots import make_subplots
-
-    PLOTLY_AVAILABLE = True
-except ImportError:
-    print("Warning: plotly is not installed. Interactive plots will not be available.")
-    print("Install with: pip install plotly")
-    PLOTLY_AVAILABLE = False
 
 
 class EmbeddingVisualizer:
@@ -143,7 +131,7 @@ class EmbeddingVisualizer:
         embeddings: np.ndarray,
         perplexity: int = 30,
         max_iter: int = 1000,
-        learning_rate: str = "auto",
+        learning_rate: Union[Literal["auto"], float] = "auto",
         random_state: int = 42,
     ) -> np.ndarray:
         """
@@ -222,54 +210,6 @@ class EmbeddingVisualizer:
         print(f"Matplotlib plot saved to: {save_path}")
         plt.show()
 
-    def plot_plotly(
-        self, embeddings_2d: np.ndarray, labels: np.ndarray, paths: List[str], save_path: str = "tsne_interactive.html"
-    ):
-        """
-        Create an interactive Plotly visualization of the t-SNE results.
-
-        Args:
-            embeddings_2d: 2D t-SNE embeddings
-            labels: Game labels
-            paths: File paths for hover information
-            save_path: Path to save the HTML file
-        """
-        if not PLOTLY_AVAILABLE:
-            print("Plotly not available, skipping interactive visualization")
-            return
-
-        print("Creating interactive Plotly visualization...")
-
-        # Create hover text with file information
-        hover_text = []
-        for path in paths:
-            filename = Path(path).name
-            hover_text.append(f"File: {filename}")
-
-        # Create the plot
-        fig = px.scatter(
-            x=embeddings_2d[:, 0],
-            y=embeddings_2d[:, 1],
-            color=[self.game_names[label] for label in labels],
-            hover_name=hover_text,
-            title="Interactive t-SNE Visualization of Game Frame Embeddings",
-            labels={"x": "t-SNE Component 1", "y": "t-SNE Component 2", "color": "Game"},
-            width=1000,
-            height=700,
-        )
-
-        fig.update_traces(marker=dict(size=5, opacity=0.7))
-        fig.update_layout(
-            font=dict(size=12), title_font_size=16, legend=dict(yanchor="top", y=0.99, xanchor="left", x=1.01)
-        )
-
-        # Save as HTML
-        fig.write_html(save_path)
-        print(f"Interactive plot saved to: {save_path}")
-
-        # Show the plot
-        fig.show()
-
 
 def main():
     """Main function to run the t-SNE visualization."""
@@ -283,7 +223,6 @@ def main():
     parser.add_argument("--pca-components", type=int, default=50, help="Number of PCA components for pre-processing")
     parser.add_argument("--output-dir", default="./visualizations", help="Directory to save visualizations")
     parser.add_argument("--no-pca", action="store_true", help="Skip PCA preprocessing")
-    parser.add_argument("--no-interactive", action="store_false", help="Skip interactive Plotly visualization")
 
     args = parser.parse_args()
 
@@ -304,7 +243,7 @@ def main():
     visualizer = EmbeddingVisualizer(args.embeddings_dir)
 
     # Load embeddings
-    embeddings, labels, paths = visualizer.load_embeddings(max_per_game=args.max_per_game, sample_randomly=True)
+    embeddings, labels, _ = visualizer.load_embeddings(max_per_game=args.max_per_game, sample_randomly=True)
 
     # Apply PCA preprocessing if requested
     if not args.no_pca and embeddings.shape[1] > args.pca_components:
@@ -319,11 +258,6 @@ def main():
     # Matplotlib plot
     matplotlib_path = output_dir / "tsne_visualization.png"
     visualizer.plot_matplotlib(embeddings_2d, labels, str(matplotlib_path))
-
-    # Interactive Plotly plot
-    if not args.no_interactive:
-        plotly_path = output_dir / "tsne_interactive.html"
-        visualizer.plot_plotly(embeddings_2d, labels, paths, str(plotly_path))
 
     print("\n=== Visualization Complete! ===")
     print(f"Results saved to: {args.output_dir}")

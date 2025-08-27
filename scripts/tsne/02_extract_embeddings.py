@@ -5,10 +5,9 @@ For each image in ./sampled_frames, extracts embeddings and saves them as .npy f
 """
 
 import argparse
-import os
 import sys
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List
 import numpy as np
 from tqdm import tqdm
 import torch

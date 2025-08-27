@@ -57,7 +57,7 @@ def find_mkv_files(dataset_path):
     for game_name, special_path in special_dirs.items():
         print(f"Checking special directory: {game_name} at {special_path}")
         if os.path.exists(special_path):
-            print(f"  Directory exists, listing files...")
+            print("  Directory exists, listing files...")
             files = os.listdir(special_path)
             print(f"  Found {len(files)} files")
 
@@ -271,7 +271,7 @@ def main():
 
         # Skip empty game names
         if not game_name.strip():
-            print(f"Skipping empty game name")
+            print("Skipping empty game name")
             continue
 
         try:
