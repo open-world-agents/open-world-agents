@@ -37,7 +37,7 @@ class ResourceCache(dict[str, CacheEntry]):
             # Default to context manager cleanup
             if not isinstance(obj, ContextManager):
                 raise ValueError(f"Object {obj} does not implement context manager protocol")
-            cleanup_callback = lambda: obj.__exit__(None, None, None)
+            cleanup_callback = lambda: obj.__exit__(None, None, None)  # noqa: E731
 
         if key not in self:
             self[key] = CacheEntry(obj=obj, cleanup_callback=cleanup_callback)

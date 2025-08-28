@@ -1,14 +1,8 @@
-import atexit
-import gc
 import os
-import sys
-import threading
-import time
-from typing import Literal, Optional, overload
+from typing import Literal, overload
 
 import av
 import av.container
-from loguru import logger
 
 from ...utils.resource_cache import ResourceCache
 from ...utils.typing import PathLike
