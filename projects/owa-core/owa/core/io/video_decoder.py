@@ -99,16 +99,9 @@ class VideoDecoder:
     def __getitem__(self, key: Union[int, slice]) -> npt.NDArray[np.uint8]:
         """Simple indexing: decoder[0] or decoder[0:10:2]."""
         if isinstance(key, int):
-            # Single frame
-            if key < 0:
-                key = self.metadata.num_frames + key
-            pts = key / self.metadata.average_rate
-            frame = self._reader.read_frame(pts=pts)
-            frame_rgb = frame.to_ndarray(format="rgb24")  # [H, W, C]
-            return np.transpose(frame_rgb, (2, 0, 1)).astype(np.uint8)  # [C, H, W]
+            return self.get_frames_at([key]).data
 
         elif isinstance(key, slice):
-            # Multiple frames
             start, stop, step = key.indices(self.metadata.num_frames)
             indices = list(range(start, stop, step))
             return self.get_frames_at(indices).data
@@ -119,7 +112,7 @@ class VideoDecoder:
     def get_frames_at(self, indices: List[int], *, strategy: str = "sequential_per_keyframe_block") -> FrameBatch:
         """Get frames at specific indices."""
 
-        # TODO: much more efficient implementation
+        indices = [index % self.metadata.num_frames for index in indices]
         pts = [idx / self.metadata.average_rate for idx in indices]
         return self.get_frames_played_at(seconds=pts, strategy=strategy)
 
