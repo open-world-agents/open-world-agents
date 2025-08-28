@@ -27,7 +27,7 @@ class TorchCodecVideoDecoder(VideoDecoder):
             return
         super().__init__(str(source), **kwargs)
         self._cache_key = str(source)
-        self.cache.add_entry(self._cache_key, self)
+        self.cache.add_entry(self._cache_key, self, lambda: None)
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.cache.release_entry(self._cache_key)
