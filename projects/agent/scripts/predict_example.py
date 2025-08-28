@@ -17,7 +17,7 @@ logger.add(sys.stderr, level="INFO")
 
 # Configuration
 DEVICE = "cuda:0"
-MODEL_PATH = "/mnt/harbor/projects/owa/checkpoints/gidm/InternVL3-1B-hf_gidm-100ms-batch128-lr2e5"
+MODEL_PATH = "/mnt/harbor/users/jyjung/checkpoints/gidm-new/InternVL3-1B-hf_100ms-batch128-lr2e5-GIDM/checkpoint-6952"
 DATA_PATH = "/mnt/raid12/datasets/owa_game_dataset_filtered_448/milkclouds00@gmail.com/apex_legends/0805_01.mcap"
 MAX_CONTEXT_LENGTH = 1024
 MAX_NEW_TOKENS = 20
