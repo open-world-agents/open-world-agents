@@ -31,3 +31,14 @@ Following are files you can refer to.
 minimal_generation.py: official example generation code from huggingface transformers.
 cache_utils.py: code copied from transformers/cache_utils.py
 generate.py: contains how you can get input stream
+
+
+Related materials
+- https://huggingface.co/docs/transformers/main/kv_cache
+- https://huggingface.co/docs/transformers/main/cache_explanation
+- https://huggingface.co/docs/transformers/main/generation_strategies
+- src/transformers/cache_utils.py
+- src/transformers/generation/utils.py
+- src/transformers/masking_utils.py
+- src/transformers/models/internvl/modeling_internvl.py
+- src/transformers/models/qwen2/modeling_qwen2.py

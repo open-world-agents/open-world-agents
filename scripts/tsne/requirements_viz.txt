@@ -1,0 +1,7 @@
+# Requirements for visualize_tsne.py
+numpy
+matplotlib
+seaborn
+scikit-learn
+plotly
+tqdm
