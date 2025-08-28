@@ -11,7 +11,7 @@ import numpy as np
 import torch
 from loguru import logger
 
-from owa.core.io.video_decoder import TorchCodecVideoDecoder
+from owa.core.io.video_decoder import PyAVVideoDecoder, TorchCodecVideoDecoder  # noqa: F401
 from owa.msgs.desktop.screen import ScreenCaptured
 
 from .utils import resolve_episode_path
@@ -240,7 +240,7 @@ class FSLTransform:
         for video_path, group in video_groups.items():
             try:
                 # Create decoder for this video
-                decoder = TorchCodecVideoDecoder(video_path)
+                decoder = PyAVVideoDecoder(video_path)
 
                 # Batch decode all frames for this video
                 frame_batch = decoder.get_frames_played_at(seconds=group["timestamps"])
@@ -248,8 +248,12 @@ class FSLTransform:
                 # Store decoded frames in the corresponding ScreenCaptured objects
                 for i, frame_tensor in enumerate(frame_batch.data):
                     img_idx = group["indices"][i]
-                    # Convert from tensor [C, H, W] to numpy array [H, W, C] in BGRA format
-                    frame_rgb = frame_tensor.permute(1, 2, 0).cpu().numpy().astype(np.uint8)
+                    if isinstance(frame_tensor, np.ndarray):
+                        # Convert numpy array [C, H, W] to numpy array [H, W, C] in RGB format. ndarray does not have permute
+                        frame_rgb = frame_tensor.transpose(1, 2, 0).astype(np.uint8)
+                    else:
+                        # Convert from tensor [C, H, W] to numpy array [H, W, C] in BGRA format
+                        frame_rgb = frame_tensor.data.permute(1, 2, 0).cpu().numpy().astype(np.uint8)
                     # Convert RGB to BGRA (add alpha channel)
                     frame_bgra = np.concatenate(
                         [
