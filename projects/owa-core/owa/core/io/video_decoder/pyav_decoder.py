@@ -11,7 +11,7 @@ import numpy.typing as npt
 
 from owa.core.utils.typing import PathLike
 
-from .video import VideoReader
+from ..video import VideoReader
 
 
 @dataclass
@@ -53,7 +53,7 @@ class FrameBatch:
     __repr__ = _frame_repr
 
 
-class VideoDecoder:
+class PyAVVideoDecoder:
     """Minimal VideoDecoder using existing VideoReader."""
 
     def __init__(self, video_path: PathLike):

@@ -3,9 +3,8 @@ import time
 from typing import Callable
 
 import numpy as np
-from torchcodec.decoders import VideoDecoder as TorchCodecVideoDecoder
 
-from owa.core.io.video_decoder import VideoDecoder as OWAVideoDecoder
+from owa.core.io.video_decoder import PyAVVideoDecoder, TorchCodecVideoDecoder
 
 
 def benchmark(fn: Callable, max_time: float = 3.0) -> None:
@@ -29,7 +28,7 @@ def main():
     )
     args = parser.parse_args()
 
-    VideoDecoder = TorchCodecVideoDecoder if args.backend == "torchcodec" else OWAVideoDecoder
+    VideoDecoder = TorchCodecVideoDecoder if args.backend == "torchcodec" else PyAVVideoDecoder
     decoder = VideoDecoder(args.video_path)
 
     print(f"Using backend: {args.backend}")
@@ -39,7 +38,7 @@ def main():
 
     # Simple Indexing API
     print(f"{decoder[0].shape=}, {decoder[0].dtype=}")  # uint8 tensor of shape [C, H, W]
-    print(decoder[0:-1:20].shape)  # uint8 stacked tensor of shape [N, C, H, W]
+    # print(decoder[0:-1:20].shape)  # uint8 stacked tensor of shape [N, C, H, W]
 
     # # Indexing, with PTS and duration info:
     # print(decoder.get_frames_at(indices=[2, 100]))
@@ -68,7 +67,7 @@ def main():
     def benchmark_pattern(T, pattern_name):
         def f(T):
             for t in T:
-                # decoder = VideoDecoder(args.video_path)  # NOTE: comment this or not
+                decoder = VideoDecoder(args.video_path)  # NOTE: comment this or not
                 if args.backend == "pyav":
                     decoder.get_frames_played_at(seconds=t, strategy="sequential_per_keyframe_block")
                 else:
