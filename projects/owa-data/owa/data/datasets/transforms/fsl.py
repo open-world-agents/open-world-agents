@@ -4,13 +4,14 @@ import concurrent.futures
 import os
 import time
 import warnings
-from PIL import Image
 from dataclasses import dataclass
 from typing import Any, List, Optional
 
+import line_profiler
 import numpy as np
 import torch
 from loguru import logger
+from PIL import Image
 
 from owa.msgs.desktop.screen import ScreenCaptured
 
@@ -115,14 +116,13 @@ class FSLTransformConfig:
 
     load_images: bool = True
     mcap_root_directory: Optional[str] = None
-    image_processor: Any = None
     pad_token_id: int = 0
 
 
 class FSLTransform:
     """Clean, modular FSL transform class."""
 
-    def __init__(self, config: Optional[FSLTransformConfig] = None, **kwargs):
+    def __init__(self, config: Optional[FSLTransformConfig] = None, image_processor: Any = None, **kwargs):
         """Initialize FSL transform with configuration."""
         if config is None:
             config = FSLTransformConfig()
@@ -133,6 +133,7 @@ class FSLTransform:
                 setattr(config, key, value)
 
         self.config = config
+        self.image_processor = image_processor
         self.is_decoding_server_available = "VIDEO_DECODING_SERVER_URL" in os.environ
         self.stat_logger = FSLStatLogger()
 
@@ -140,6 +141,7 @@ class FSLTransform:
         """Transform batch for FSL stage."""
         return self.transform_batch(batch)
 
+    @line_profiler.profile
     def transform_batch(self, batch):
         """Transform batch - handles image loading on-the-fly."""
         batch_size = len(batch["input_ids"])
@@ -185,22 +187,13 @@ class FSLTransform:
                 try:
                     pil_image = img.to_pil_image(keep_av_open=True)
                     all_images.append(pil_image)
-                except ValueError as e:
-                    if len(all_images) == 0:
-                        logger.warning(f"Failed to load first image: {e}. Using black placeholder.")
-                        placeholder = Image.new("RGB", (448, 448), color="black")
-                        all_images.append(placeholder)
-                    else:
-                        logger.warning(f"Failed to load image: {e}. Using previous image.")
-                        all_images.append(all_images[-1])
-
                 except Exception as e:
                     if len(all_images) == 0:
-                        logger.warning(f"Failed to load first image: {e}. Using black placeholder.")
+                        warnings.warn(f"Failed to load first image: {e}. Using black placeholder.")
                         placeholder = Image.new("RGB", (448, 448), color="black")
                         all_images.append(placeholder)
                     else:
-                        logger.warning(f"Failed to load image: {e}. Using previous image.")
+                        warnings.warn(f"Failed to load image: {e}. Using previous image.")
                         all_images.append(all_images[-1])
 
             # Calculate image bits
@@ -208,19 +201,14 @@ class FSLTransform:
             total_image_bits += image_bits
 
             # Process with image processor if available
-            if self.config.image_processor is not None:
-                pixel_values = []
-                for image in all_images:
-                    processed = self.config.image_processor(image, return_tensors="pt")
-                    pixel_value = processed["pixel_values"].squeeze(0).squeeze(0)
-                    pixel_values.append(pixel_value)
-                # NOTE: SmolVLM2-256M-Video-Instruct expects [num_images, 3, 512, 512]
-                #       InternVL3 expects [num_images, 3, 448, 448], and if it got [0, 3, 512, 512] return error. fix this code to handle this.
-                #       [rank0]: ValueError: Tensor query has shape  with a zero dimension.
-                #       [rank0]: FlashAttention does not support inputs with dim=0.
-                #       [rank0]: Please check your input shapes or use SDPA instead.
-                #       We need to know InternVL3 can take [0, 3, 512, 512] as input. (Guess smolvlm2 can do)
-                results["images"].append(torch.stack(pixel_values) if pixel_values else torch.empty(0, 3, 512, 512))
+            if self.image_processor is not None:
+                if all_images:
+                    processed = self.image_processor(all_images, return_tensors="pt")
+                    pixel_values = processed["pixel_values"].squeeze(0)
+                else:
+                    # NOTE: SmolVLM2-256M-Video-Instruct expects [num_images, 3, 512, 512]
+                    pixel_values = torch.empty(0, 3, 512, 512)
+                results["images"].append(pixel_values)
             else:
                 results["images"].append(all_images)
 
@@ -245,9 +233,7 @@ def create_fsl_transform(
     image_processor=None, load_images: bool = True, mcap_root_directory: Optional[str] = None, **kwargs
 ):
     """Create FSL transform - maintains backward compatibility."""
-    config = FSLTransformConfig(
-        image_processor=image_processor, load_images=load_images, mcap_root_directory=mcap_root_directory, **kwargs
-    )
+    config = FSLTransformConfig(load_images=load_images, mcap_root_directory=mcap_root_directory, **kwargs)
 
-    transform = FSLTransform(config)
+    transform = FSLTransform(config, image_processor=image_processor)
     return transform.transform_batch

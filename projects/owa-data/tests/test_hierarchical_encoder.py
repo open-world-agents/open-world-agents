@@ -19,16 +19,18 @@ Timestamps    |    ✓     |    ✓     |    ✓     |     -      |     ✓     
 
 ACTUAL TEST BREAKDOWN:
 =====================
-FIDELITY (5): mouse_fidelity, keyboard_fidelity, mouse_small_values_exhaustive, timestamp_exhaustive, screen_fidelity, test_mouse_validation
+FIDELITY (9): mouse_fidelity, keyboard_fidelity, mouse_small_values_exhaustive, timestamp_exhaustive, screen_fidelity, mouse_validation, invalid_token_errors, unsupported_event_types, unsupported_input_errors
 EFFICIENCY (3): mouse_token_count, keyboard_token_count, screen_token_count
 EDGE CASES (6): extreme_mouse_values, extreme_timestamps, extreme_keyboard_values, extreme_screen_values, zero_values, basic_functionality
+MISCELLANEOUS (2): configuration_validation, quantization_roundtrip
 """
 
 import orjson
 import pytest
 
 from mcap_owa.highlevel.mcap_msg import McapMessage
-from owa.data.encoders.hierarchical_event_encoder import HierarchicalEventEncoder
+from owa.data.encoders.exceptions import InvalidInputError, InvalidTokenError, UnsupportedTokenError
+from owa.data.encoders.hierarchical_event_encoder import HierarchicalEventEncoder, HierarchicalEventEncoderConfig
 from owa.msgs.desktop.screen import ScreenCaptured
 
 # =============================================================================
@@ -278,6 +280,54 @@ class TestFidelity:
                     assert min_delta <= result["last_x"] <= max_delta
                     assert min_delta <= result["last_y"] <= max_delta
 
+    def test_invalid_token_errors(self, encoder):
+        """Test that invalid token formats raise appropriate errors."""
+        # Missing EVENT_START token
+        with pytest.raises(InvalidTokenError, match="Missing EVENT_START or EVENT_END tokens"):
+            encoder.decode("<KEYBOARD><0><0><0><press><65><EVENT_END>")
+
+        # Missing EVENT_END token
+        with pytest.raises(InvalidTokenError, match="Missing EVENT_START or EVENT_END tokens"):
+            encoder.decode("<EVENT_START><KEYBOARD><0><0><0><press><65>")
+
+        # Token sequence too short
+        with pytest.raises(InvalidTokenError, match="Token sequence too short"):
+            encoder.decode("<EVENT_START><KEYBOARD><EVENT_END>")
+
+        # Invalid token format - non-numeric token
+        with pytest.raises(InvalidTokenError, match="Invalid token format"):
+            encoder.decode("<EVENT_START><KEYBOARD><0><0><0><press><INVALID><EVENT_END>")
+
+        # Invalid event type token format (missing angle brackets)
+        with pytest.raises(InvalidTokenError, match="Expected 2 keyboard tokens"):
+            encoder.decode("<EVENT_START><KEYBOARD><0><0><0>invalid_action<65><EVENT_END>")
+
+        # Insufficient mouse tokens - should raise InvalidTokenError from our exceptions module
+        with pytest.raises(InvalidTokenError, match="Expected .* to .* mouse tokens"):
+            encoder.decode("<EVENT_START><MOUSE><0><0><0><0><EVENT_END>")
+
+    def test_unsupported_event_types(self, encoder):
+        """Test that unsupported event types raise appropriate errors."""
+        # Unknown event type (not KEYBOARD, MOUSE, or screen placeholder)
+        with pytest.raises(UnsupportedTokenError, match="Unknown event type"):
+            encoder.decode("<EVENT_START><UNKNOWN_EVENT><0><0><0><EVENT_END>")
+
+        # Invalid keyboard event type (not press/release) - use valid VK code but invalid action
+        with pytest.raises(UnsupportedTokenError, match="Unsupported event type"):
+            encoder.decode("<EVENT_START><KEYBOARD><0><0><0><65><invalid_action><EVENT_END>")
+
+    def test_unsupported_input_errors(self, encoder):
+        """Test that unsupported message inputs raise appropriate errors."""
+        # Unsupported topic
+        msg = McapMessage(
+            topic="unsupported_topic",
+            timestamp=1000000000,
+            message_type="test/Message",
+            message=b'{"test": "data"}',
+        )
+        with pytest.raises(InvalidInputError, match="Failed to decode message"):
+            encoder.encode(msg)
+
 
 # =============================================================================
 # 2. EFFICIENCY TESTS: Token count should be reasonable
@@ -341,9 +391,9 @@ class TestEfficiency:
         encoded, _ = encoder.encode(msg)
         token_count = encoded.count("<")
 
-        # Expected: EVENT_START + timestamp(3) + fake_image_placeholder + EVENT_END = 6
-        # (simplified: no prefix/suffix in encoder, just single <fake_image_placeholder> token)
-        assert token_count == 6, f"Expected exactly 6 tokens for screen event, got {token_count}"
+        # Expected: EVENT_START + SCREEN + timestamp(3) + fake_image_placeholder + EVENT_END = 7
+        # Format: <EVENT_START><SCREEN><3><0><0><fake_image_placeholder><EVENT_END>
+        assert token_count == 7, f"Expected exactly 7 tokens for screen event, got {token_count}"
 
 
 # =============================================================================
@@ -407,10 +457,8 @@ class TestEdgeCases:
                     message_type="desktop/RawMouseEvent",
                 )
 
-                # Should raise ValueError for invalid button_flags
-                with pytest.raises(
-                    ValueError, match=r"Mouse button_flags value .* is outside valid 3-digit hex range"
-                ):
+                # Should raise InvalidInputError for invalid button_flags (due to Pydantic validation)
+                with pytest.raises(InvalidInputError, match=r"Failed to decode message"):
                     encoder.encode(msg)
 
         # Get valid scroll range from encoder config
@@ -432,19 +480,19 @@ class TestEdgeCases:
                     message_type="desktop/RawMouseEvent",
                 )
 
-                # Should raise ValueError for invalid scroll values
-                with pytest.raises(ValueError, match=r"Mouse scroll value .* is outside valid range"):
+                # Should raise InvalidInputError for invalid scroll values
+                with pytest.raises(InvalidInputError, match=r"Mouse scroll value .* is outside valid range"):
                     encoder.encode(msg)
 
         # Test cases with valid scroll values and flags (should work)
-        min_delta_mouse, max_delta_mouse = encoder.config.mouse_delta_range
+        min_delta, max_delta = encoder.config.mouse_delta_range
         valid_cases = [
             {"last_x": 0, "last_y": 0, "button_flags": 0x400, "button_data": max_scroll * 120},  # Max valid scroll
             {"last_x": 0, "last_y": 0, "button_flags": 0x400, "button_data": min_scroll * 120},  # Min valid scroll
             {"last_x": 0, "last_y": 0, "button_flags": 0xFFF, "button_data": 0},  # Max valid 3-digit hex
             {
-                "last_x": max_delta_mouse,
-                "last_y": max_delta_mouse,
+                "last_x": max_delta,
+                "last_y": max_delta,
                 "button_flags": 0xFFF,
                 "button_data": 0,
             },  # At valid boundary
@@ -612,6 +660,59 @@ class TestEdgeCases:
         assert "<KEYBOARD>" in vocab
         assert "<press>" in vocab
         assert "<release>" in vocab
+
+
+# =============================================================================
+# 4. MISCELLANEOUS TESTS: Configuration, quantization, and other utilities
+# =============================================================================
+
+
+class TestMiscellaneous:
+    """Test configuration validation, quantization functions, and other utilities."""
+
+    def test_configuration_validation(self):
+        """Test configuration validation."""
+        # Valid configuration should work
+        encoder = HierarchicalEventEncoder()
+        assert encoder.config is not None
+
+        # Invalid configuration should raise error
+        with pytest.raises(InvalidInputError, match="base 300 produces digits > 255"):
+            config = HierarchicalEventEncoderConfig(timestamp_bases=[300])
+            HierarchicalEventEncoder(config)
+
+    def test_quantization_roundtrip(self):
+        """Test that quantization and reconstruction are inverse operations."""
+        from owa.data.encoders.hierarchical_event_encoder import digits_to_value, quantize_to_digits
+
+        # Test unsigned roundtrip with different base combinations
+        test_cases = [
+            # (bases, test_values)
+            ([10, 10, 10], [0, 1, 123, 456, 789, 999]),  # Standard decimal
+            ([16, 16], [0, 15, 255]),  # Hex-like bases
+            ([5, 5, 2], [0, 1, 24, 49]),  # Mixed bases
+            ([256], [0, 127, 255]),  # Single large base
+        ]
+
+        for bases, values in test_cases:
+            for value in values:
+                digits = quantize_to_digits(value, bases)
+                reconstructed = digits_to_value(digits, bases)
+                assert reconstructed == value, f"Failed unsigned roundtrip: {value} with bases {bases}"
+
+        # Test signed roundtrip with different ranges
+        signed_test_cases = [
+            # (bases, test_values)
+            ([2, 10, 10], [-99, -50, -1, 0, 1, 50, 99]),  # Standard signed
+            ([2, 20, 10], [-199, -100, 0, 100, 199]),  # Mouse delta range
+            ([2, 5], [-4, -2, 0, 2, 4]),  # Small signed range
+        ]
+
+        for bases, values in signed_test_cases:
+            for value in values:
+                digits = quantize_to_digits(value, bases)
+                reconstructed = digits_to_value(digits, bases, signed=True)
+                assert reconstructed == value, f"Failed signed roundtrip: {value} with bases {bases}"
 
 
 if __name__ == "__main__":

@@ -12,7 +12,7 @@ class FSLDatasetConfig:
 
     pad_token_id: int = 0
     max_sequence_length: int = 8192
-    include_samples_without_images: bool = True  # Whether to include samples that don't contain images when tokenized
+    include_samples_without_images: bool = False  # Whether to include samples that don't contain images when tokenized
 
 
 def _process_batch_to_sequences(batch, config: FSLDatasetConfig):
@@ -44,9 +44,6 @@ def _process_batch_to_sequences(batch, config: FSLDatasetConfig):
         event_episode_path = batch["episode_path"][i]
 
         if len(event_tokens) > config.max_sequence_length:
-            logger.warning(
-                f"Skipping an event of {len(event_tokens)=} because it is longer than {config.max_sequence_length=}"
-            )
             skipped_too_long += 1
             continue
 
@@ -55,9 +52,6 @@ def _process_batch_to_sequences(batch, config: FSLDatasetConfig):
         ):
             if current_tokens:
                 if not config.include_samples_without_images and len(current_images) == 0:
-                    # logger.warning(
-                    #     f"Skipping a sequence of {''.join(current_texts)} because it does not contain any images"
-                    # )
                     skipped_no_images += 1
                 else:
                     sequences.append(pad_sequence(current_tokens, current_texts, current_images, current_episode_path))
@@ -70,9 +64,6 @@ def _process_batch_to_sequences(batch, config: FSLDatasetConfig):
 
     if current_tokens:
         if not config.include_samples_without_images and len(current_images) == 0:
-            # logger.warning(
-            #     f"Skipping a sequence of {''.join(current_texts)} because it does not contain any images"
-            # )
             skipped_no_images += 1
         else:
             sequences.append(pad_sequence(current_tokens, current_texts, current_images, current_episode_path))

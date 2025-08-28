@@ -34,7 +34,8 @@ class BaseEventEncoder(ABC):
             Tuple containing encoded string and list of images for screen events
 
         Raises:
-            ValueError: If the mcap_message format is invalid
+            InvalidInputError: If the input is invalid
+            UnsupportedInputError: If the input is valid but encoder does not support it
         """
         pass
 
@@ -51,7 +52,8 @@ class BaseEventEncoder(ABC):
             McapMessage: Reconstructed message
 
         Raises:
-            ValueError: If encoded_data format is invalid
+            InvalidTokenError: If the token is invalid
+            UnsupportedTokenError: If the token is valid but decoder does not support it
         """
         pass
 

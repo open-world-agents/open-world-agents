@@ -28,6 +28,7 @@ def appsink_recorder_pipeline(
     show_cursor: bool = True,
     fps: float = 60,
     window_name: Optional[str] = None,
+    audio_window_name: Optional[str] = None,
     monitor_idx: Optional[int] = None,
     width: Optional[int] = None,
     height: Optional[int] = None,
@@ -42,6 +43,7 @@ def appsink_recorder_pipeline(
         enable_fpsdisplaysink: Whether to enable fpsdisplaysink.
         fps: The frame rate of the video.
         window_name: The name of the window to capture. If None, the entire screen will be captured.
+        audio_window_name: The name of the window to capture audio from. If None, uses window_name. If both are None, captures system audio.
         monitor_idx: The index of the monitor to capture. If None, the primary monitor will be captured.
         width: The width of the video. If None, the width will be determined by the source.
         height: The height of the video. If None, the height will be determined by the source.
@@ -74,7 +76,9 @@ def appsink_recorder_pipeline(
         src |= screen_src
 
     if record_audio:
-        src |= ElementFactory.wasapi2src(window_name=window_name) >> "audioconvert ! avenc_aac ! queue ! mux."
+        # Use audio_window_name if provided, otherwise fall back to window_name
+        audio_target = audio_window_name if audio_window_name is not None else window_name
+        src |= ElementFactory.wasapi2src(window_name=audio_target) >> "audioconvert ! avenc_aac ! queue ! mux."
     if record_timestamp:
         src |= "utctimestampsrc interval=1 ! subparse ! queue ! mux."
 
@@ -92,6 +96,7 @@ def subprocess_recorder_pipeline(
     show_cursor: bool = True,
     fps: float = 60,
     window_name: Optional[str] = None,
+    audio_window_name: Optional[str] = None,
     monitor_idx: Optional[int] = None,
     width: Optional[int] = None,
     height: Optional[int] = None,
@@ -106,6 +111,7 @@ def subprocess_recorder_pipeline(
         enable_fpsdisplaysink: Whether to enable fpsdisplaysink.
         fps: The frame rate of the video.
         window_name: The name of the window to capture. If None, the entire screen will be captured.
+        audio_window_name: The name of the window to capture audio from. If None, uses window_name. If both are None, captures system audio.
         monitor_idx: The index of the monitor to capture. If None, the primary monitor will be captured.
         width: The width of the video. If None, the width will be determined by the source.
         height: The height of the video. If None, the height will be determined by the source.
@@ -134,7 +140,9 @@ def subprocess_recorder_pipeline(
         src |= screen_src
 
     if record_audio:
-        src |= ElementFactory.wasapi2src(window_name=window_name) >> "audioconvert ! avenc_aac ! queue ! mux."
+        # Use audio_window_name if provided, otherwise fall back to window_name
+        audio_target = audio_window_name if audio_window_name is not None else window_name
+        src |= ElementFactory.wasapi2src(window_name=audio_target) >> "audioconvert ! avenc_aac ! queue ! mux."
     if record_timestamp:
         src |= "utctimestampsrc interval=1 ! subparse ! queue ! mux."
 

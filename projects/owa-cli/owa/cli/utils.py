@@ -19,25 +19,32 @@ def get_local_version(package_name: str = "owa.cli") -> str:
     return __version__
 
 
-def get_latest_release() -> str:
+def get_latest_release(
+    url: str = "https://api.github.com/repos/open-world-agents/open-world-agents/releases/latest",
+) -> str:
     # Skip GitHub API call if disabled via environment variable (e.g., during testing)
     if os.environ.get("OWA_DISABLE_VERSION_CHECK"):
         return get_local_version()  # Return the locally installed version as the default
 
-    url = "https://api.github.com/repos/open-world-agents/open-world-agents/releases/latest"
     response = requests.get(url, timeout=5)
     response.raise_for_status()
     tag = response.json()["tag_name"]
     return tag.lstrip("v")  # Remove leading "v" if present
 
 
-def check_for_update(package_name: str = "owa.cli", *, silent: bool = False) -> bool:
+def check_for_update(
+    package_name: str = "owa.cli",
+    *,
+    silent: bool = False,
+    url: str = "https://api.github.com/repos/open-world-agents/open-world-agents/releases/latest",
+) -> bool:
     """
     Check for updates and print a message if a new version is available.
 
     Args:
         package_name: Name of the package to check
         silent: If True, suppress all output
+        url: URL to check for the latest release
 
     Returns:
         bool: True if the local version is up to date, False otherwise.
@@ -48,7 +55,7 @@ def check_for_update(package_name: str = "owa.cli", *, silent: bool = False) -> 
 
     try:
         local_version = get_local_version(package_name)
-        latest_version = get_latest_release()
+        latest_version = get_latest_release(url)
         if parse_version(latest_version) > parse_version(local_version):
             if not silent:
                 print(f"""

@@ -26,3 +26,6 @@ fsl_dataset:
 # Processing options
 num_proc: 32
 fsl_workers: 4
+
+# Filtering options
+include_samples_without_images: False
