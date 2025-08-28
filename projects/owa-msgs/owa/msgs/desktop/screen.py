@@ -196,7 +196,7 @@ class ScreenCaptured(OWAMessage):
             raise ImportError("Pillow required for PIL conversion") from e
 
         rgb_array = self.to_rgb_array(keep_av_open=keep_av_open)
-        return Image.fromarray(rgb_array, mode="RGB")
+        return Image.fromarray(rgb_array)
 
     def resolve_relative_path(self, base_path: str) -> Self:
         """

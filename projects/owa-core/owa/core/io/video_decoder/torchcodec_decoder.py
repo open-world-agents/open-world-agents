@@ -1,12 +1,6 @@
 from typing import ClassVar
 
-try:
-    from torchcodec.decoders import VideoDecoder
-
-    TorchCodecAvailable = True
-except ImportError:
-    TorchCodecAvailable = False
-    VideoDecoder = None
+from torchcodec.decoders import VideoDecoder
 
 from owa.core.utils.resource_cache import ResourceCache
 from owa.core.utils.typing import PathLike
