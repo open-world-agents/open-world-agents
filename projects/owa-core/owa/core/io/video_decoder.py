@@ -116,41 +116,25 @@ class VideoDecoder:
         else:
             raise TypeError(f"Invalid key type: {type(key)}")
 
-    def get_frames_at(self, indices: List[int]) -> FrameBatch:
+    def get_frames_at(self, indices: List[int], *, strategy: str = "sequential_per_keyframe_block") -> FrameBatch:
         """Get frames at specific indices."""
         frames = []
         pts_list = []
         duration = 1.0 / self.metadata.average_rate
 
         # TODO: much more efficient implementation
-        for idx in indices:
-            pts = idx / self.metadata.average_rate
-            frame = self._reader.read_frame(pts=pts)
-            frame_rgb = frame.to_ndarray(format="rgb24")  # [H, W, C]
-            frame_chw = np.transpose(frame_rgb, (2, 0, 1)).astype(np.uint8)  # [C, H, W]
-            frames.append(frame_chw)
-            pts_list.append(pts)
+        pts = [idx / self.metadata.average_rate for idx in indices]
+        return self.get_frames_played_at(seconds=pts)
 
-        return FrameBatch(
-            data=np.stack(frames, axis=0),  # [N, C, H, W]
-            pts_seconds=np.array(pts_list, dtype=np.float64),
-            duration_seconds=np.full(len(indices), duration, dtype=np.float64),
-        )
-
-    def get_frames_played_at(self, seconds: List[float]) -> FrameBatch:
+    def get_frames_played_at(
+        self, seconds: List[float], *, strategy: str = "sequential_per_keyframe_block"
+    ) -> FrameBatch:
         """Get frames at specific time points."""
         frames = []
         pts_list = []
         duration = 1.0 / self.metadata.average_rate
 
-        # for pts in seconds:
-        #     frame = self._reader.read_frame(pts=pts)
-        #     frame_rgb = frame.to_ndarray(format="rgb24")  # [H, W, C]
-        #     frame_chw = np.transpose(frame_rgb, (2, 0, 1)).astype(np.uint8)  # [C, H, W]
-        #     frames.append(frame_chw)
-        #     pts_list.append(frame.time or pts)
-
-        av_frames = self._reader.read_frames_at(seconds)
+        av_frames = self._reader.get_frames_played_at(seconds, strategy=strategy)
         frames = [frame.to_ndarray(format="rgb24") for frame in av_frames]
         frames = [np.transpose(frame, (2, 0, 1)).astype(np.uint8) for frame in frames]
         pts_list = [frame.time for frame in av_frames]

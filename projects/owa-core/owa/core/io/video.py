@@ -5,6 +5,7 @@ This module provides VideoReader and VideoWriter classes for reading and writing
 video files using PyAV. Both local files and remote URLs (HTTP/HTTPS) are supported.
 """
 
+import enum
 import gc
 import os
 from fractions import Fraction
@@ -203,6 +204,12 @@ class VideoWriter:
         self.close()
 
 
+class BatchDecodingStrategy(enum.StrEnum):
+    SEPARATE = "separate"  # Decode each frame separately. Best at sparse query.
+    SEQUENTIAL_PER_KEYFRAME_BLOCK = "sequential_per_keyframe_block"  # Decode frames in batches per keyframe block. Better at dense query then separate, better at sparse query then sequential.
+    SEQUENTIAL = "sequential"  # Decode frames in batches. Best at dense query.
+
+
 class VideoReader:
     """VideoReader uses PyAV to read video frames with caching support.
 
@@ -245,55 +252,65 @@ class VideoReader:
                 raise ValueError("fps must be positive")
             yield from self._yield_frame_rated(float(start_pts), end_pts, fps)
 
-    def read_frames_at(self, seconds: list[float]) -> list[av.VideoFrame]:
+    def get_frames_played_at(
+        self,
+        seconds: list[float],
+        *,
+        strategy: BatchDecodingStrategy = BatchDecodingStrategy.SEQUENTIAL_PER_KEYFRAME_BLOCK,
+    ) -> list[av.VideoFrame]:
         """Return frames at specific time points using keyframe-aware reading."""
         if not seconds:
             return []
+
+        if strategy == BatchDecodingStrategy.SEPARATE:
+            return [self.read_frame(pts=s) for s in seconds]
 
         queries = sorted([(s, i) for i, s in enumerate(seconds)])
         frames: list[av.VideoFrame] = [None] * len(queries)
 
         # 1. Simplest logic, read all frames in one go
-        # start_pts = queries[0][0]
-        # found = 0
+        if strategy == BatchDecodingStrategy.SEQUENTIAL:
+            start_pts = queries[0][0]
+            found = 0
 
-        # for frame in self.read_frames(start_pts):  # do not specify end_pts to avoid early termination
-        #     while found < len(queries) and frame.time >= queries[found][0]:
-        #         frames[queries[found][1]] = frame
-        #         found += 1
-        #     if found >= len(queries):
-        #         break
+            for frame in self.read_frames(start_pts):  # do not specify end_pts to avoid early termination
+                while found < len(queries) and frame.time >= queries[found][0]:
+                    frames[queries[found][1]] = frame
+                    found += 1
+                if found >= len(queries):
+                    break
 
         # 2. Restart-on-keyframe logic.
         #    This method uses a two-loop approach to read frames in segments:
         #    - Outer loop: Manages seeking to different video segments
         #    - Inner loop: Reads frames until keyframe is detected or all targets found
         #    This approach is efficient both for inter-GOP and intra-GOP queries.
-        query_idx = 0
+        elif strategy == BatchDecodingStrategy.SEQUENTIAL_PER_KEYFRAME_BLOCK:
+            query_idx = 0
 
-        # Outer loop: restart/resume for each segment
-        while query_idx < len(queries):
-            target_time = queries[query_idx][0]
-            first_keyframe_seen = False
+            # Outer loop: restart/resume for each segment
+            while query_idx < len(queries):
+                target_time = queries[query_idx][0]
+                first_keyframe_seen = False
 
-            # Inner loop: read frames until keyframe detected or all targets found
-            for frame in self.read_frames(start_pts=target_time):
-                # Track keyframes
-                if frame.key_frame:
-                    if first_keyframe_seen:
-                        # Hit second keyframe - stop segment
+                # Inner loop: read frames until keyframe detected or all targets found
+                for frame in self.read_frames(start_pts=target_time):
+                    # Track keyframes
+                    if frame.key_frame:
+                        if first_keyframe_seen:
+                            # Hit second keyframe - stop segment
+                            break
+                        first_keyframe_seen = True
+
+                    # Match frames to queries in this segment
+                    while query_idx < len(queries) and frame.time >= queries[query_idx][0]:
+                        frames[queries[query_idx][1]] = frame
+                        query_idx += 1
+
+                    # Stop condition for inner loop
+                    if query_idx >= len(queries):
+                        # Found all remaining frames
                         break
-                    first_keyframe_seen = True
-
-                # Match frames to queries in this segment
-                while query_idx < len(queries) and frame.time >= queries[query_idx][0]:
-                    frames[queries[query_idx][1]] = frame
-                    query_idx += 1
-
-                # Stop condition for inner loop
-                if query_idx >= len(queries):
-                    # Found all remaining frames
-                    break
 
         if any(f is None for f in frames):
             missing_seconds = [s for i, s in enumerate(seconds) if frames[i] is None]
