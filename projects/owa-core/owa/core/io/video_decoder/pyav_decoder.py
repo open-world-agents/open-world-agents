@@ -11,7 +11,7 @@ import numpy.typing as npt
 
 from owa.core.utils.typing import PathLike
 
-from ..video import VideoReader
+from ..video import BatchDecodingStrategy, VideoReader
 
 
 @dataclass
@@ -109,7 +109,12 @@ class PyAVVideoDecoder:
         else:
             raise TypeError(f"Invalid key type: {type(key)}")
 
-    def get_frames_at(self, indices: List[int], *, strategy: str = "sequential_per_keyframe_block") -> FrameBatch:
+    def get_frames_at(
+        self,
+        indices: List[int],
+        *,
+        strategy: BatchDecodingStrategy = BatchDecodingStrategy.SEQUENTIAL_PER_KEYFRAME_BLOCK,
+    ) -> FrameBatch:
         """Get frames at specific indices."""
 
         indices = [index % self.metadata.num_frames for index in indices]
@@ -117,7 +122,10 @@ class PyAVVideoDecoder:
         return self.get_frames_played_at(seconds=pts, strategy=strategy)
 
     def get_frames_played_at(
-        self, seconds: List[float], *, strategy: str = "sequential_per_keyframe_block"
+        self,
+        seconds: List[float],
+        *,
+        strategy: BatchDecodingStrategy = BatchDecodingStrategy.SEQUENTIAL_PER_KEYFRAME_BLOCK,
     ) -> FrameBatch:
         """Get frames at specific time points."""
         frames = []
