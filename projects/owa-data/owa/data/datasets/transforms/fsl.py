@@ -7,6 +7,7 @@ import warnings
 from dataclasses import dataclass
 from typing import Any, List, Optional
 
+import line_profiler
 import numpy as np
 import torch
 from loguru import logger
@@ -141,6 +142,7 @@ class FSLTransform:
         """Transform batch for FSL stage."""
         return self.transform_batch(batch)
 
+    @line_profiler.profile
     def transform_batch(self, batch):
         """Transform batch - handles image loading on-the-fly."""
         batch_size = len(batch["input_ids"])
