@@ -1,6 +1,7 @@
 import json
 import os
 import pickle
+import warnings
 from dataclasses import dataclass
 from typing import Optional, TextIO, cast
 
@@ -161,6 +162,14 @@ class OWAEvaluatorBatched:
             "mouse_move_signed_pe_x": [],
             "mouse_move_signed_pe_y": [],
             "mouse_move_direction_errors": [],
+            "mouse_move_accuracy_1000_correct": 0,
+            "mouse_move_accuracy_1000_total": 0,
+            "mouse_move_accuracy_100_correct": 0,
+            "mouse_move_accuracy_100_total": 0,
+            "mouse_move_accuracy_10_correct": 0,
+            "mouse_move_accuracy_10_total": 0,
+            "mouse_move_accuracy_1_correct": 0,
+            "mouse_move_accuracy_1_total": 0,
             "timestamp_squared_error": 0,
             "timestamp_gt_values": [],
             "timestamp_pred_values": [],
@@ -180,6 +189,23 @@ class OWAEvaluatorBatched:
             "mouse_op_total": 0,
             "mouse_nop_total": 0,
             "screen_total": 0,
+            # Per-event type timestamp metrics
+            "keyboard_timestamp_squared_error": 0,
+            "keyboard_timestamp_gt_values": [],
+            "keyboard_timestamp_absolute_errors": [],
+            "keyboard_timestamp_signed_errors": [],
+            "mouse_op_timestamp_squared_error": 0,
+            "mouse_op_timestamp_gt_values": [],
+            "mouse_op_timestamp_absolute_errors": [],
+            "mouse_op_timestamp_signed_errors": [],
+            "mouse_nop_timestamp_squared_error": 0,
+            "mouse_nop_timestamp_gt_values": [],
+            "mouse_nop_timestamp_absolute_errors": [],
+            "mouse_nop_timestamp_signed_errors": [],
+            "screen_timestamp_squared_error": 0,
+            "screen_timestamp_gt_values": [],
+            "screen_timestamp_absolute_errors": [],
+            "screen_timestamp_signed_errors": [],
         }
 
     @staticmethod
@@ -239,6 +265,18 @@ class OWAEvaluatorBatched:
         if direction_error is not None:
             self.metrics["mouse_move_direction_errors"].append(direction_error)
 
+        # Compute mouse move accuracy at different precision levels
+        # Check if predicted and ground truth coordinates match when rounded to different precision levels
+        for precision in [1000, 100, 10, 1]:
+            pred_x_rounded = pred_decoded.dx // precision
+            pred_y_rounded = pred_decoded.dy // precision
+            gt_x_rounded = gt_decoded.dx // precision
+            gt_y_rounded = gt_decoded.dy // precision
+
+            is_correct = (pred_x_rounded == gt_x_rounded) and (pred_y_rounded == gt_y_rounded)
+            self.metrics[f"mouse_move_accuracy_{precision}_correct"] += int(is_correct)
+            self.metrics[f"mouse_move_accuracy_{precision}_total"] += 1
+
     def _process_mouse_action_metrics(self, pred_event: McapMessage, gt_event: McapMessage) -> None:
         """Process mouse action metrics (button flags and scroll data)."""
         pred_decoded = pred_event.decoded
@@ -251,15 +289,24 @@ class OWAEvaluatorBatched:
             self.metrics["mouse_scroll_correct"] += int(pred_decoded.button_data == gt_decoded.button_data)
             self.metrics["mouse_scroll_total"] += 1
 
-    def _process_timestamp_metrics(self, pred_event: McapMessage, gt_event: McapMessage) -> None:
+    def _process_timestamp_metrics(self, pred_event: McapMessage, gt_event: McapMessage, event_type: str) -> None:
         """Process timestamp metrics (R², absolute errors, and signed errors for quartiles)."""
         timestamp_error = pred_event.timestamp - gt_event.timestamp
         timestamp_abs_error = abs(timestamp_error)
+
+        # Global timestamp metrics
         self.metrics["timestamp_squared_error"] += timestamp_error**2
         self.metrics["timestamp_gt_values"].append(gt_event.timestamp)
         self.metrics["timestamp_pred_values"].append(pred_event.timestamp)
         self.metrics["timestamp_absolute_errors"].append(timestamp_abs_error)
         self.metrics["timestamp_signed_errors"].append(timestamp_error)
+
+        # Per-event-type timestamp metrics
+        if event_type in ["keyboard", "mouse_op", "mouse_nop", "screen"]:
+            self.metrics[f"{event_type}_timestamp_squared_error"] += timestamp_error**2
+            self.metrics[f"{event_type}_timestamp_gt_values"].append(gt_event.timestamp)
+            self.metrics[f"{event_type}_timestamp_absolute_errors"].append(timestamp_abs_error)
+            self.metrics[f"{event_type}_timestamp_signed_errors"].append(timestamp_error)
 
     def __call__(self, eval_pred: EvalPrediction, compute_result: bool = False) -> dict:
         """Placeholder metrics function for evaluation.
@@ -320,23 +367,27 @@ class OWAEvaluatorBatched:
                 # Count total events
                 self.metrics["total_events"] += 1
 
+                gt_event = gt_events[0]
+                # Determine event types using the _determine_event_type method. TODO: use mouse_op/nop separated metric!
+                try:
+                    gt_event_type = self._determine_event_type(gt_event)
+                except ValueError:
+                    warnings.warn(f"GT event type must be known but it's unknown: {gt_event}")
+                    continue
+
+                if gt_event_type in ["keyboard", "mouse_op", "mouse_nop", "screen"]:
+                    self.metrics[f"{gt_event_type}_total"] += 1
+
+                # If not comparable, skip
                 if not (len(pred_events) == len(gt_events) == 1):
                     continue
 
                 pred_event = pred_events[0]
-                gt_event = gt_events[0]
-
-                # Determine event types using the _determine_event_type method. TODO: use mouse_op/nop separated metric!
                 try:
                     pred_event_type = self._determine_event_type(pred_event)  # noqa: F841
-                    gt_event_type = self._determine_event_type(gt_event)
                 except ValueError:
-                    # Skip events with unknown types
+                    # pred event can be unknown. In that case we do not count for metrics.
                     continue
-
-                # Count total events by type
-                if gt_event_type in ["keyboard", "mouse_op", "mouse_nop", "screen"]:
-                    self.metrics[f"{gt_event_type}_total"] += 1
 
                 # Use topic here instead of event_type to allow comparing mouse_nop and mouse_op
                 if pred_event.topic != gt_event.topic:
@@ -356,7 +407,7 @@ class OWAEvaluatorBatched:
                     self._process_mouse_action_metrics(pred_event, gt_event)
 
                 # Process timestamp metrics for all event types
-                self._process_timestamp_metrics(pred_event, gt_event)
+                self._process_timestamp_metrics(pred_event, gt_event, gt_event_type)
 
         # Return metrics only for the last batch
         if compute_result:
@@ -405,6 +456,15 @@ class OWAEvaluatorBatched:
                 final_metrics["mouse_scroll_accuracy"] = (
                     self.metrics["mouse_scroll_correct"] / self.metrics["mouse_scroll_total"]
                 )
+
+            # Calculate mouse move accuracy metrics at different precision levels
+            for precision in [1000, 100, 10, 1]:
+                total_key = f"mouse_move_accuracy_{precision}_total"
+                correct_key = f"mouse_move_accuracy_{precision}_correct"
+                if self.metrics[total_key] > 0:
+                    final_metrics[f"mouse_move_accuracy_{precision}"] = (
+                        self.metrics[correct_key] / self.metrics[total_key]
+                    )
 
             # Calculate R² and percentile metrics for mouse movement (2D vector)
             if len(self.metrics["mouse_move_gt_values"]) > 0:
@@ -490,6 +550,45 @@ class OWAEvaluatorBatched:
                 final_metrics["timestamp_signed_error_iqm"] = iqm_signed
                 final_metrics["timestamp_signed_error_ci_lower"] = ci_lower_signed
                 final_metrics["timestamp_signed_error_ci_upper"] = ci_upper_signed
+
+            # Calculate per-event-type timestamp metrics
+            for event_type in ["keyboard", "mouse_op", "mouse_nop", "screen"]:
+                gt_values_key = f"{event_type}_timestamp_gt_values"
+                squared_error_key = f"{event_type}_timestamp_squared_error"
+                abs_errors_key = f"{event_type}_timestamp_absolute_errors"
+                signed_errors_key = f"{event_type}_timestamp_signed_errors"
+
+                # Calculate R² for this event type
+                if len(self.metrics[gt_values_key]) > 0:
+                    gt_timestamps = np.array(self.metrics[gt_values_key])
+                    mean_gt_timestamp = np.mean(gt_timestamps)
+                    ss_tot_timestamp = np.sum((gt_timestamps - mean_gt_timestamp) ** 2)
+
+                    if ss_tot_timestamp > 0:
+                        final_metrics[f"{event_type}_timestamp_r2"] = 1 - (
+                            self.metrics[squared_error_key] / ss_tot_timestamp
+                        )
+                    else:
+                        final_metrics[f"{event_type}_timestamp_r2"] = 1.0  # Perfect prediction if no variance
+
+                # Calculate percentiles for absolute errors
+                if len(self.metrics[abs_errors_key]) > 0:
+                    abs_errors = np.array(self.metrics[abs_errors_key])
+                    final_metrics[f"{event_type}_timestamp_abs_error_p0"] = np.percentile(abs_errors, 0)
+                    final_metrics[f"{event_type}_timestamp_abs_error_p25"] = np.percentile(abs_errors, 25)
+                    final_metrics[f"{event_type}_timestamp_abs_error_p50"] = np.percentile(abs_errors, 50)
+                    final_metrics[f"{event_type}_timestamp_abs_error_p75"] = np.percentile(abs_errors, 75)
+                    final_metrics[f"{event_type}_timestamp_abs_error_p95"] = np.percentile(abs_errors, 95)
+                    final_metrics[f"{event_type}_timestamp_abs_error_p100"] = np.percentile(abs_errors, 100)
+
+                # Calculate IQM with 95% stratified bootstrap CIs for signed errors
+                if len(self.metrics[signed_errors_key]) > 0:
+                    signed_errors = np.array(self.metrics[signed_errors_key])
+                    iqm_signed = interquartile_mean(signed_errors)
+                    ci_lower_signed, ci_upper_signed = stratified_bootstrap_ci(signed_errors)
+                    final_metrics[f"{event_type}_timestamp_signed_error_iqm"] = iqm_signed
+                    final_metrics[f"{event_type}_timestamp_signed_error_ci_lower"] = ci_lower_signed
+                    final_metrics[f"{event_type}_timestamp_signed_error_ci_upper"] = ci_upper_signed
 
         return final_metrics
 
@@ -581,6 +680,15 @@ def print_evaluation_results(
         if key in metrics:
             print(f"  {label:<15}: {metrics[key]:>12.3%}", file=file)
 
+    # Mouse move accuracy metrics at different precision levels
+    mouse_move_accuracy_keys = [k for k in metrics.keys() if k.startswith("mouse_move_accuracy_")]
+    if mouse_move_accuracy_keys:
+        print("  Mouse Move Accuracy:", file=file)
+        for precision in [1000, 100, 10, 1]:
+            key = f"mouse_move_accuracy_{precision}"
+            if key in metrics:
+                print(f"    ±{precision} pixels: {metrics[key]:>12.3%}", file=file)
+
     # Mouse movement metrics
     print("\n🖱️  MOUSE MOVE METRICS", file=file)
     print(f"{'─' * 40}", file=file)
@@ -671,6 +779,54 @@ def print_evaluation_results(
         else:
             bias_interpretation = f"Model predicts {abs(iqm):.3f}ms too early"
         print(f"    Interpretation: {bias_interpretation}", file=file)
+
+    # Per-event-type timestamp metrics
+    event_types = ["keyboard", "mouse_op", "mouse_nop", "screen"]
+    event_type_names = {"keyboard": "Keyboard", "mouse_op": "Mouse Op", "mouse_nop": "Mouse NoOp", "screen": "Screen"}
+
+    for event_type in event_types:
+        r2_key = f"{event_type}_timestamp_r2"
+        abs_error_keys = [k for k in metrics.keys() if k.startswith(f"{event_type}_timestamp_abs_error_p")]
+        signed_error_iqm_key = f"{event_type}_timestamp_signed_error_iqm"
+
+        # Only show section if we have data for this event type
+        if r2_key in metrics or abs_error_keys or signed_error_iqm_key in metrics:
+            print(f"\n⏰ {event_type_names[event_type].upper()} TIMESTAMP METRICS", file=file)
+            print(f"{'─' * 40}", file=file)
+
+            # R² Score
+            if r2_key in metrics:
+                print(f"  R² Score: {metrics[r2_key]:>12.3f}", file=file)
+
+            # Absolute error percentiles
+            if abs_error_keys:
+                print("  Absolute Error Percentiles (ms):", file=file)
+                percentiles = ["p0", "p25", "p50", "p75", "p95", "p100"]
+                values = [metrics.get(f"{event_type}_timestamp_abs_error_{p}", 0) / 1_000_000 for p in percentiles]
+                print(
+                    f"    P0: {values[0]:>12.3f}  P25: {values[1]:>12.3f}  P50: {values[2]:>12.3f}  P75: {values[3]:>12.3f}  P95: {values[4]:>12.3f}  P100: {values[5]:>12.3f}",
+                    file=file,
+                )
+
+            # Signed error IQM with 95% stratified bootstrap CIs
+            if signed_error_iqm_key in metrics:
+                print("  Signed Error - IQM with 95% stratified bootstrap CIs (ms):", file=file)
+                iqm = metrics.get(f"{event_type}_timestamp_signed_error_iqm", 0) / 1_000_000
+                ci_lower = metrics.get(f"{event_type}_timestamp_signed_error_ci_lower", 0) / 1_000_000
+                ci_upper = metrics.get(f"{event_type}_timestamp_signed_error_ci_upper", 0) / 1_000_000
+                print(
+                    f"    IQM: {iqm:>12.3f}  [95% CI: {ci_lower:>12.3f}, {ci_upper:>12.3f}]",
+                    file=file,
+                )
+
+                # Add interpretation for signed errors using IQM
+                if abs(iqm) < 0.001:  # Less than 1μs (0.001ms)
+                    bias_interpretation = "No significant timing bias"
+                elif iqm > 0:
+                    bias_interpretation = f"Model predicts {iqm:.3f}ms too late"
+                else:
+                    bias_interpretation = f"Model predicts {abs(iqm):.3f}ms too early"
+                print(f"    Interpretation: {bias_interpretation}", file=file)
 
     print(f"\n{'=' * 60}\n", file=file)
 

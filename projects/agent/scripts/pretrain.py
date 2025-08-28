@@ -143,8 +143,8 @@ def main():
             use_fast=True,
         )
         assert processor.image_processor.do_image_splitting is False, "Failed to disable image splitting"
-        assert processor.image_processor.__class__.__name__ == "SmolVLM2ImageProcessorFast", (
-            f"Expected SmolVLM2ImageProcessorFast, got {processor.image_processor.__class__}"
+        assert processor.image_processor.__class__.__name__ == "SmolVLMImageProcessorFast", (
+            f"Expected SmolVLMImageProcessorFast, got {processor.image_processor.__class__}"
         )
         accelerator.print("Configured SmolVLM2/default processor")
 

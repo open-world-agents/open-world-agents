@@ -25,6 +25,13 @@ accelerate launch --config_file=accelerate_configs/deepspeed_zero1.yaml \
     pretrain.py --config pretrain_config.yaml
 ```
 
+3.1 For the smart people who want to set efficient deepspeed (like jyjung)
+```bash
+accelerate launch --config_file=accelerate_configs/multi_gpu.yaml \
+    pretrain.py --config pretrain_config.yaml
+```
+and just change deepspeed value `deepspeed: "deepspeed_configs/zero1.json"` in `pretrain_config.yaml`
+
 ### Validation
 
 You can validate the configuration by running with `--help` to see all parsed parameters:

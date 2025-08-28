@@ -44,6 +44,11 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'filtered_files_page' %}active{% endif %}" href="{{ url_for('filtered_files_page') }}">
+                            <i class="bi bi-funnel"></i> Filtered Files
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link {% if request.endpoint == 'analytics_page' %}active{% endif %}" href="{{ url_for('analytics_page') }}">
                             <i class="bi bi-graph-up"></i> Analytics
                         </a>

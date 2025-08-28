@@ -74,6 +74,10 @@ def process_raw_events_file(
 
                 # Process all ready events
                 for mcap_message_obj in ready_events:
+                    # Apply time shift if applicable
+                    if time_shift_seconds is not None and action_topics is not None and topic in action_topics:
+                        mcap_message_obj.timestamp += int(time_shift_seconds * 1e9)
+
                     # Serialize McapMessage to bytes using model_dump_json
                     mcap_message_bytes = mcap_message_obj.model_dump_json().encode("utf-8")
 
@@ -92,16 +96,7 @@ def process_raw_events_file(
                         }
                     )
 
-    if time_shift_seconds is None or not action_topics:
-        return events
-
-    action_topics_set = set(action_topics)
-    time_shift_ns = int(time_shift_seconds * 1e9)
-
-    for event in events:
-        if event["topic"] in action_topics_set:
-            event["timestamp_ns"] += time_shift_ns
-
+    # Sort events by timestamp (needed for time shift)
     events.sort(key=lambda e: e["timestamp_ns"])
     return events
 
@@ -259,20 +254,20 @@ def main(
         raise typer.BadParameter("--test_percent must be between 0 and 1 (exclusive)")
 
     # Parse rate settings or use defaults
-    rate_settings = parse_rate_argument(rate) if rate else {"mouse/raw": 20.0, "screen": 10.0}
+    rate_settings = parse_rate_argument(rate) if rate else {"mouse/raw": 20.0, "screen": 20.0}
     topics_to_keep = keep_topic if keep_topic else ["screen", "keyboard", "mouse/raw"]
 
     # Define action topics that should be time-shifted
     action_topics = action_topic if action_topic else ["keyboard", "mouse/raw"]
 
     # Gather MCAP files
-    train_files = sorted(train_dir.glob("*.mcap"))
+    train_files = sorted(train_dir.rglob("*.mcap"))
     if not train_files:
         raise typer.BadParameter(f"No MCAP files found in train-dir: {train_dir}")
 
     # Determine test files
     if test_dir:
-        test_files = sorted(test_dir.glob("*.mcap"))
+        test_files = sorted(test_dir.rglob("*.mcap"))
         if not test_files:
             raise typer.BadParameter(f"No MCAP files found in test-dir: {test_dir}")
         # Check for overlap
