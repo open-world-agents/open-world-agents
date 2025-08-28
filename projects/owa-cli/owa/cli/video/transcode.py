@@ -8,7 +8,7 @@ import typer
 def build_ffmpeg_cmd(
     input_path: Path,
     output_path: Path,
-    fps: float = 60.0,
+    fps: Optional[float] = None,
     width: Optional[int] = None,
     height: Optional[int] = None,
     codec: str = "libx264",
@@ -87,7 +87,7 @@ def build_ffmpeg_cmd(
 def transcode(
     input_path: Path,
     output_path: Path,
-    fps: float = 60.0,
+    fps: Optional[float] = None,
     width: Optional[int] = None,
     height: Optional[int] = None,
     codec: str = "libx264",
@@ -116,7 +116,7 @@ def transcode(
 def main(
     input_path: str = typer.Argument(..., help="Input video file"),
     output_path: str = typer.Argument(..., help="Output video file"),
-    fps: float = typer.Option(60.0, "--fps", "-f", help="Target FPS"),
+    fps: Optional[float] = typer.Option(None, "--fps", "-f", help="Target FPS"),
     width: Optional[int] = typer.Option(None, "--width", "-w", help="Target width"),
     height: Optional[int] = typer.Option(None, "--height", "-h", help="Target height"),
     codec: str = typer.Option("libx264", "--codec", "-c", help="Video codec"),
