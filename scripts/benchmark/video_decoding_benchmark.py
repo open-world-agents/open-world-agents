@@ -69,7 +69,10 @@ def main():
         def f(T):
             for t in T:
                 # decoder = VideoDecoder(args.video_path)  # NOTE: comment this or not
-                decoder.get_frames_played_at(seconds=t, strategy="sequential")
+                if args.backend == "pyav":
+                    decoder.get_frames_played_at(seconds=t, strategy="sequential_per_keyframe_block")
+                else:
+                    decoder.get_frames_played_at(seconds=t)
 
         print(f"{pattern_name}")
         benchmark(lambda: f(T))
