@@ -18,6 +18,8 @@ class CacheEntry:
 
 
 class ResourceCache(dict[str, CacheEntry]):
+    """Cache for managing resources with reference counting and cleanup callbacks. Note that this cache is not thread-safe. It's safe for multiprocess but does not share cache between processes."""
+
     def __init__(self, *args, max_size: int = 0, **kwargs):
         self.max_size = max_size
         super().__init__(*args, **kwargs)
@@ -35,7 +37,7 @@ class ResourceCache(dict[str, CacheEntry]):
             # Default to context manager cleanup
             if not isinstance(obj, ContextManager):
                 raise ValueError(f"Object {obj} does not implement context manager protocol")
-            cleanup_callback = obj.__exit__
+            cleanup_callback = lambda: obj.__exit__(None, None, None)
 
         if key not in self:
             self[key] = CacheEntry(obj=obj, cleanup_callback=cleanup_callback)

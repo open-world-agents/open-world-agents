@@ -7,6 +7,8 @@ from owa.core.utils.typing import PathLike
 
 
 class TorchCodecVideoDecoder(VideoDecoder):
+    """VideoDecoder that caches instances by path."""
+
     cache: ClassVar[ResourceCache] = ResourceCache(max_size=10)
     _skip_init = False
 
@@ -24,8 +26,8 @@ class TorchCodecVideoDecoder(VideoDecoder):
         if getattr(self, "_skip_init", False):
             return
         super().__init__(str(source), **kwargs)
-        self.cache_key = str(source)
-        self.cache.add_entry(self.cache_key, self)
+        self._cache_key = str(source)
+        self.cache.add_entry(self._cache_key, self)
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.cache.release_entry(self.cache_key)
+        self.cache.release_entry(self._cache_key)
