@@ -266,7 +266,7 @@ class VideoReader:
             return [self.read_frame(pts=s) for s in seconds]
 
         queries = sorted([(s, i) for i, s in enumerate(seconds)])
-        frames: list[av.VideoFrame] = [None] * len(queries)
+        frames: list[av.VideoFrame] = [None] * len(queries)  # type: ignore
 
         # 1. Simplest logic, read all frames in one go
         if strategy == BatchDecodingStrategy.SEQUENTIAL:

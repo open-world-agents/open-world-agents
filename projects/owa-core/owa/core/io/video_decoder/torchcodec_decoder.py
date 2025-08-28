@@ -1,6 +1,12 @@
 from typing import ClassVar
 
-from torchcodec.decoders import VideoDecoder
+try:
+    from torchcodec.decoders import VideoDecoder
+
+    TorchCodecAvailable = True
+except ImportError:
+    TorchCodecAvailable = False
+    VideoDecoder = None
 
 from owa.core.utils.resource_cache import ResourceCache
 from owa.core.utils.typing import PathLike
@@ -27,6 +33,7 @@ class TorchCodecVideoDecoder(VideoDecoder):
             return
         super().__init__(str(source), **kwargs)
         self._cache_key = str(source)
+        # TorchCodec does not have a context manager protocol, so we use a no-op cleanup
         self.cache.add_entry(self._cache_key, self, lambda: None)
 
     def __exit__(self, exc_type, exc_value, traceback):

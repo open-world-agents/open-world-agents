@@ -69,7 +69,7 @@ class ResourceCache(dict[str, CacheEntry]):
 
     def _cleanup_if_needed(self):
         """Remove least recently used entries if cache exceeds max_size"""
-        if self.max_size == 0 or len(self) < self.max_size:
+        if self.max_size == 0 or len(self) <= self.max_size:
             return
 
         # Find entries with no references and sort by last used time

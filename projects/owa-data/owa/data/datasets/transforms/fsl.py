@@ -233,7 +233,7 @@ class FSLTransform:
                     warnings.warn(f"Failed to load image at index {idx}: {e}. Using placeholder.", UserWarning)
 
     def _batch_decode_images(self, image_msgs: List[ScreenCaptured]) -> None:
-        """Batch decode images using TorchCodecVideoDecoder."""
+        """Batch decode images."""
         if not image_msgs:
             return
 
