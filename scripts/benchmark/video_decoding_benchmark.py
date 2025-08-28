@@ -37,7 +37,7 @@ def main():
     print()
 
     # Simple Indexing API
-    print(f"{decoder[0].shape=}, {decoder[0].dtype=}")  # uint8 tensor of shape [C, H, W]
+    print(f"{decoder[0].shape=}, {decoder[0].dtype=}, {decoder[0].device=}")  # uint8 tensor of shape [C, H, W]
     # print(decoder[0:-1:20].shape)  # uint8 stacked tensor of shape [N, C, H, W]
 
     # # Indexing, with PTS and duration info:
