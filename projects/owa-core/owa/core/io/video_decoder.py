@@ -118,13 +118,10 @@ class VideoDecoder:
 
     def get_frames_at(self, indices: List[int], *, strategy: str = "sequential_per_keyframe_block") -> FrameBatch:
         """Get frames at specific indices."""
-        frames = []
-        pts_list = []
-        duration = 1.0 / self.metadata.average_rate
 
         # TODO: much more efficient implementation
         pts = [idx / self.metadata.average_rate for idx in indices]
-        return self.get_frames_played_at(seconds=pts)
+        return self.get_frames_played_at(seconds=pts, strategy=strategy)
 
     def get_frames_played_at(
         self, seconds: List[float], *, strategy: str = "sequential_per_keyframe_block"
