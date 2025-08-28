@@ -1,33 +1,33 @@
 """Exception classes for event encoders."""
 
 
-class EventEncodingError(Exception):
+class EventEncoderError(Exception):
     """Base exception for event encoding/decoding failures."""
 
     pass
 
 
 # ENCODING EXCEPTIONS
-class UnsupportedInputError(EventEncodingError):
+class UnsupportedInputError(EventEncoderError):
     """Raised when input is valid but encoder does not support it."""
 
     pass
 
 
-class InvalidInputError(EventEncodingError):
+class InvalidInputError(EventEncoderError):
     """Raised when input is invalid."""
 
     pass
 
 
 # DECODING EXCEPTIONS
-class UnsupportedTokenError(EventEncodingError):
+class UnsupportedTokenError(EventEncoderError):
     """Raised when token is valid but decoder does not support it."""
 
     pass
 
 
-class InvalidTokenError(EventEncodingError):
+class InvalidTokenError(EventEncoderError):
     """Raised when token is invalid."""
 
     pass
