@@ -1,10 +1,11 @@
 """
-Video I/O utilities.
+Video I/O utilities using PyAV.
 
-This module provides VideoReader and VideoWriter classes for reading and writing
-video files using PyAV. Both local files and remote URLs (HTTP/HTTPS) are supported.
+Provides VideoReader and VideoWriter classes for local files and remote URLs
+with support for variable and constant frame rate encoding/decoding.
 """
 
+import enum
 import gc
 import os
 from fractions import Fraction
@@ -18,7 +19,7 @@ from loguru import logger
 from ..utils.typing import PathLike
 from . import cached_av
 
-# Constants
+# Frame duplicate detection tolerance
 DUPLICATE_TOLERANCE_SECOND: Fraction = Fraction(1, 120)
 
 # Type aliases
@@ -33,33 +34,26 @@ GC_COLLECTION_INTERVAL = 10
 
 def _normalize_video_path(video_path: PathLike) -> Union[str, Path]:
     """
-    Normalize video path for use with PyAV.
-
-    Args:
-        video_path: Input video file path or URL
-
-    Returns:
-        str for URLs, Path for local files
+    Normalize video path for PyAV. Returns string for URLs, Path for local files.
 
     Raises:
-        ValueError: If URL scheme is not supported or path is invalid
+        ValueError: If URL scheme is unsupported
         FileNotFoundError: If local file does not exist
     """
     if isinstance(video_path, str):
-        # Check if it's any kind of URL (not just http/https)
         if "://" in video_path:
-            # Validate that we only support HTTP/HTTPS
+            # Validate URL scheme - only HTTP/HTTPS supported
             if not (video_path.startswith("http://") or video_path.startswith("https://")):
                 raise ValueError(f"Unsupported URL scheme. Only http:// and https:// are supported, got: {video_path}")
             return video_path
         else:
-            # It's a string path, convert to Path and validate
+            # Convert string to Path and validate existence
             local_path = Path(video_path)
             if not local_path.exists():
                 raise FileNotFoundError(f"Video file not found: {local_path}")
             return local_path
     else:
-        # Convert to Path for local files and validate existence
+        # Handle Path-like objects and validate existence
         local_path = Path(video_path)
         if not local_path.exists():
             raise FileNotFoundError(f"Video file not found: {local_path}")
@@ -79,6 +73,8 @@ class VideoWriter:
         self, video_path: Union[str, os.PathLike, Path], fps: Optional[float] = None, vfr: bool = False, **kwargs
     ):
         """
+        Initialize video writer.
+
         Args:
             video_path: Output video file path
             fps: Frames per second (required for CFR or when pts not provided)
@@ -122,7 +118,7 @@ class VideoWriter:
         pts: Optional[Union[int, SECOND_TYPE]] = None,
         pts_unit: PTSUnit = "pts",
     ) -> Dict[str, Any]:
-        """Write a frame to the video."""
+        """Write frame to video with optional timestamp."""
         global _CALLED_TIMES
         _CALLED_TIMES += 1
         if _CALLED_TIMES % GC_COLLECTION_INTERVAL == 0:
@@ -203,17 +199,22 @@ class VideoWriter:
         self.close()
 
 
-class VideoReader:
-    """VideoReader uses PyAV to read video frames with caching support.
+class BatchDecodingStrategy(enum.StrEnum):
+    SEPARATE = "separate"  # Decode each frame separately. Best at sparse query.
+    SEQUENTIAL_PER_KEYFRAME_BLOCK = "sequential_per_keyframe_block"  # Decode frames in batches per keyframe block. Better at dense query then separate, better at sparse query then sequential.
+    SEQUENTIAL = "sequential"  # Decode frames in batches. Best at dense query.
 
-    Supports both local video files and remote URLs (HTTP/HTTPS).
-    """
+
+class VideoReader:
+    """PyAV-based video reader with caching support for local files and URLs."""
 
     def __init__(self, video_path: PathLike, *, keep_av_open: bool = False):
         """
+        Initialize video reader.
+
         Args:
             video_path: Input video file path or URL (HTTP/HTTPS)
-            keep_av_open: Keep AV container open in cache instead of forcing closure
+            keep_av_open: Keep AV container open in cache
         """
         self.video_path = _normalize_video_path(video_path)
         self.container = cached_av.open(self.video_path, "r", keep_av_open=keep_av_open)
@@ -245,22 +246,66 @@ class VideoReader:
                 raise ValueError("fps must be positive")
             yield from self._yield_frame_rated(float(start_pts), end_pts, fps)
 
-    def read_frames_at(self, seconds: list[float]) -> list[av.VideoFrame]:
-        """Return frames at specific time points."""
+    def get_frames_played_at(
+        self,
+        seconds: list[float],
+        *,
+        strategy: BatchDecodingStrategy = BatchDecodingStrategy.SEQUENTIAL_PER_KEYFRAME_BLOCK,
+    ) -> list[av.VideoFrame]:
+        """Return frames at specific time points using keyframe-aware reading."""
         if not seconds:
             return []
 
+        # Decode each frame separately
+        if strategy == BatchDecodingStrategy.SEPARATE:
+            return [self.read_frame(pts=s) for s in seconds]
+
         queries = sorted([(s, i) for i, s in enumerate(seconds)])
         frames: list[av.VideoFrame] = [None] * len(queries)  # type: ignore
-        start_pts = queries[0][0]
-        found = 0
 
-        for frame in self.read_frames(start_pts):  # do not specify end_pts to avoid early termination
-            while found < len(queries) and frame.time >= queries[found][0]:
-                frames[queries[found][1]] = frame
-                found += 1
-            if found >= len(queries):
-                break
+        # Read all frames in one go
+        if strategy == BatchDecodingStrategy.SEQUENTIAL:
+            start_pts = queries[0][0]
+            found = 0
+
+            for frame in self.read_frames(start_pts):  # do not specify end_pts to avoid early termination
+                while found < len(queries) and frame.time >= queries[found][0]:
+                    frames[queries[found][1]] = frame
+                    found += 1
+                if found >= len(queries):
+                    break
+
+        # Restart-on-keyframe logic:
+        #    This method uses a two-loop approach to read frames in segments:
+        #    - Outer loop: Manages seeking to different video segments
+        #    - Inner loop: Reads frames until keyframe is detected or all targets found
+        #    This approach is efficient both for inter-GOP and intra-GOP queries.
+        elif strategy == BatchDecodingStrategy.SEQUENTIAL_PER_KEYFRAME_BLOCK:
+            query_idx = 0
+
+            # Outer loop: restart/resume for each segment
+            while query_idx < len(queries):
+                target_time = queries[query_idx][0]
+                first_keyframe_seen = False
+
+                # Inner loop: read frames until keyframe detected or all targets found
+                for frame in self.read_frames(start_pts=target_time):
+                    # Track keyframes
+                    if frame.key_frame:
+                        if first_keyframe_seen:
+                            # Hit second keyframe - stop segment
+                            break
+                        first_keyframe_seen = True
+
+                    # Match frames to queries in this segment
+                    while query_idx < len(queries) and frame.time >= queries[query_idx][0]:
+                        frames[queries[query_idx][1]] = frame
+                        query_idx += 1
+
+                    # Stop condition for inner loop
+                    if query_idx >= len(queries):
+                        # Found all remaining frames
+                        break
 
         if any(f is None for f in frames):
             missing_seconds = [s for i, s in enumerate(seconds) if frames[i] is None]
@@ -272,7 +317,8 @@ class VideoReader:
         """Yield all frames in time range."""
         # Seek to start position
         timestamp_ts = int(av.time_base * start_pts)
-        self.container.seek(timestamp_ts)
+        # NOTE: seek with anyframe=False must present before decoding to ensure flawless decoding
+        self.container.seek(timestamp_ts, any_frame=False)
 
         # Yield frames in interval
         for frame in self.container.decode(video=0):

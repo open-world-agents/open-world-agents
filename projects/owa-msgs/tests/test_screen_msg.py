@@ -486,7 +486,7 @@ class TestScreenCaptured:
         media_ref = MediaRef(uri="test.mp4", pts_ns=2000000000)
         screen_msg2 = ScreenCaptured(utc_ns=1741608540328534500, media_ref=media_ref)
         repr_str3 = str(screen_msg2)
-        assert "video@2000000000ns" in repr_str3
+        assert "video@2.000s" in repr_str3
 
     # === Remote URL Tests (merged from test_screen_remote.py) ===
 
@@ -557,7 +557,8 @@ class TestScreenCaptured:
             # === Test String Representation ===
             str_repr = str(screen_msg)
             if media_type == "video":
-                assert f"video@{pts_ns}ns" in str_repr, "Should show video timestamp"
+                expected_seconds = pts_ns / 1_000_000_000  # Convert ns to seconds
+                assert f"video@{expected_seconds:.3f}s" in str_repr, "Should show video timestamp"
             else:
                 assert "external" in str_repr, "Should show external reference"
 
@@ -640,7 +641,7 @@ class TestScreenCaptured:
             },
         )
         str_repr = str(screen_msg)
-        assert "video@1500000000ns" in str_repr, "Should show video timestamp"
+        assert "video@1.500s" in str_repr, "Should show video timestamp"
 
         # Test remote image
         screen_msg = ScreenCaptured(utc_ns=1741608540328534500, media_ref={"uri": "https://example.com/image.jpg"})

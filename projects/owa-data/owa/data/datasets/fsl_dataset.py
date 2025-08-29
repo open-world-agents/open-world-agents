@@ -16,7 +16,7 @@ class FSLDatasetConfig:
 
 
 def _process_batch_to_sequences(batch, config: FSLDatasetConfig):
-    """Process a batch of events into FSL sequences using datasets.map."""
+    """Process a batch of events into FSL sequences."""
 
     def pad_sequence(tokens, texts, images, episode_path):
         padded_tokens = tokens + [config.pad_token_id] * (config.max_sequence_length - len(tokens))
