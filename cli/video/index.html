@@ -1819,23 +1819,31 @@
 </tbody>
 </table>
 <h5 id="owl-video-transcode">owl video transcode<a class="headerlink" href="#owl-video-transcode" title="Permanent link">&para;</a></h5>
-<p>Transcode video with fps/resolution/quality control.</p>
-<p>This command maintains all video, audio, and subtitle streams while applying
-professional encoding settings for maximum compatibility.</p>
-<p>Key Parameters:
-- fps: Target frame rate (default: 60) - higher fps for smooth motion
-- keyint: Keyframe interval (default: 30) - lower = better seeking, higher = better compression
-- scenecut: Scene change detection (0=disable for consistent GOP, 40=default adaptive)
-- crf: Quality level (18=high, 23=default, 28=lower) - lower numbers = better quality</p>
+<p>Transcode video files with professional encoding settings.</p>
+<p>Options:
+    fps: Target frame rate (forces constant frame rate output)
+    width/height: Target resolution in pixels (maintains aspect ratio if only one specified)
+    codec: Video codec (libx264 for H.264, libx265 for H.265)
+    crf: Quality level (0-51, lower=better quality, 18=high, 23=default, 28=smaller file)
+    keyint: Keyframe interval/GOP size (lower=better seeking, higher=better compression)
+    min-keyint: Minimum keyframe interval (optional, for fine control)
+    scenecut: Scene change detection (0=disable for consistent GOP, 40=default adaptive)
+    dry-run: Show command without executing</p>
 <p>Examples:
-  # Basic transcoding with defaults (60fps, keyint=30)
-  owl video transcode input.mkv output.mkv</p>
-<p># Custom resolution and frame rate
-  owl video transcode input.mkv output.mkv --fps 30 --width 1920 --height 1080</p>
-<p># High quality with fixed keyframes (good for streaming)
-  owl video transcode input.mkv output.mkv --crf 18 --keyint 60 --scenecut 0</p>
-<p># Screen recording optimization
-  owl video transcode input.mkv output.mkv --fps 30 --keyint 30 --scenecut 0</p>
+    # Basic transcoding
+    owa video transcode input.mkv output.mkv</p>
+<div class="highlight"><pre><span></span><code># Custom resolution and frame rate
+owa video transcode input.mkv output.mkv --fps 30 --width 1920 --height 1080
+
+# High quality encoding for archival
+owa video transcode input.mkv output.mkv --crf 18 --keyint 60 --scenecut 0
+
+# Streaming-optimized (consistent keyframes)
+owa video transcode input.mkv output.mkv --keyint 30 --scenecut 0
+
+# Preview command without execution
+owa video transcode input.mkv output.mkv --dry-run
+</code></pre></div>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>owl video transcode [OPTIONS] INPUT_PATH OUTPUT_PATH
 </code></pre></div>
@@ -1854,7 +1862,7 @@ professional encoding settings for maximum compatibility.</p>
 <td><code>--fps</code>, <code>-f</code></td>
 <td>float</td>
 <td>Target FPS</td>
-<td><code>60.0</code></td>
+<td>None</td>
 </tr>
 <tr>
 <td><code>--width</code>, <code>-w</code></td>
