@@ -1,12 +1,8 @@
-"""
-Desktop screen capture message definitions.
-
-Minimal, clean design focused on essential functionality.
-"""
+"""Desktop screen capture message definitions."""
 
 import warnings
 from pathlib import Path, PurePosixPath
-from typing import Optional, Self, Tuple
+from typing import Optional, Self, Tuple, cast
 
 import cv2
 import numpy as np
@@ -15,10 +11,11 @@ from pydantic.json_schema import SkipJsonSchema
 
 from owa.core.io import encode_to_base64, load_image_as_bgra, load_video_frame_as_bgra
 from owa.core.message import OWAMessage
+from owa.core.time import TimeUnits
 
 
 class MediaRef(BaseModel):
-    """Simple media reference."""
+    """Media reference for images and video frames."""
 
     uri: str = Field(
         ...,
@@ -195,7 +192,7 @@ class ScreenCaptured(OWAMessage):
             raise ImportError("Pillow required for PIL conversion") from e
 
         rgb_array = self.to_rgb_array(keep_av_open=keep_av_open)
-        return Image.fromarray(rgb_array, mode="RGB")
+        return Image.fromarray(rgb_array)
 
     def resolve_relative_path(self, base_path: str) -> Self:
         """
@@ -229,7 +226,7 @@ class ScreenCaptured(OWAMessage):
             if self.media_ref.is_embedded:
                 parts.append("embedded")
             elif self.media_ref.is_video:
-                parts.append(f"video@{self.media_ref.pts_ns}ns")
+                parts.append(f"video@{cast(int, self.media_ref.pts_ns) / TimeUnits.SECOND:.3f}s")
             else:
                 parts.append("external")
         return f"ScreenCaptured({', '.join(parts)})"

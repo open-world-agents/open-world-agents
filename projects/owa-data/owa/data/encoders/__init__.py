@@ -1,4 +1,11 @@
 from .base_encoder import BaseEventEncoder
+from .exceptions import (
+    EventEncoderError,
+    InvalidInputError,
+    InvalidTokenError,
+    UnsupportedInputError,
+    UnsupportedTokenError,
+)
 from .hierarchical_event_encoder import HierarchicalEventEncoder, HierarchicalEventEncoderConfig
 from .json_event_encoder import JSONEventEncoder, JSONEventEncoderConfig
 
@@ -19,6 +26,11 @@ def create_encoder(encoder_type: str, **kwargs) -> BaseEventEncoder:
 
 __all__ = [
     "BaseEventEncoder",
+    "EventEncoderError",
+    "InvalidInputError",
+    "InvalidTokenError",
+    "UnsupportedInputError",
+    "UnsupportedTokenError",
     "create_encoder",
     "JSONEventEncoder",
     "HierarchicalEventEncoder",

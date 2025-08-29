@@ -1,6 +1,6 @@
 import re
 from dataclasses import dataclass
-from typing import Iterator, TypedDict
+from typing import Iterator, Literal, TypedDict, overload
 
 import numpy as np
 import numpy.typing as npt
@@ -18,14 +18,14 @@ from .datasets import Dataset, DatasetStage
 class EpisodeTokenizerConfig:
     """Configuration for EpisodeTokenizer."""
 
-    # Real image token that will be repeated in the final tokenized sequence. f"{image_token_prefix}{image_token * image_token_length}{image_token_suffix}
+    # Real image token pattern: f"{image_token_prefix}{image_token * image_token_length}{image_token_suffix}"
     image_token_prefix: str
     image_token: str
     image_token_length: int
     image_token_suffix: str
 
     encoder_type: str = "hierarchical"
-    # Internal placeholder token used by encoders (not a real token, not in vocab)
+    # Internal placeholder token used by encoders (not in vocab)
     fake_image_placeholder: str = "<fake_image_placeholder>"
     episode_start_token: str = "<EPISODE_START>"
     episode_end_token: str = "<EPISODE_END>"
@@ -94,13 +94,34 @@ class EpisodeTokenizer:
         self.tokenizer = tokenizer
         self.is_prepared = True
 
+    @overload
     def tokenize_event(
         self,
         mcap_msg: McapMessage,
         *,
         is_first: bool = False,
         is_last: bool = False,
-    ) -> TokenizedEvent:
+        return_dict: Literal[True] = True,
+    ) -> TokenizedEvent: ...
+
+    @overload
+    def tokenize_event(
+        self,
+        mcap_msg: McapMessage,
+        *,
+        is_first: bool = False,
+        is_last: bool = False,
+        return_dict: Literal[False],
+    ) -> npt.NDArray[np.int64]: ...
+
+    def tokenize_event(
+        self,
+        mcap_msg: McapMessage,
+        *,
+        is_first: bool = False,
+        is_last: bool = False,
+        return_dict: bool = True,
+    ) -> TokenizedEvent | npt.NDArray[np.int64]:
         if not self.is_prepared:
             raise RuntimeError("EpisodeTokenizer must be prepared by `prepare_model` before tokenizing")
 
@@ -118,17 +139,20 @@ class EpisodeTokenizer:
         # EventEncoder outputs fake_image_placeholder, we convert to real image tokens
         replacement = f"{self.config.image_token_prefix}{self.config.image_token * self.config.image_token_length}{self.config.image_token_suffix}"
         encoded_text = encoded_text.replace(self.config.fake_image_placeholder, replacement)
-        token_ids = self.tokenizer.encode(encoded_text, add_special_tokens=False)
+        token_ids = self.tokenizer.encode(encoded_text, add_special_tokens=False, return_tensors="np")[0]
 
-        return TokenizedEvent(
-            text=encoded_text,
-            images=images,
-            token_ids=token_ids,
-            total_token_count=len(token_ids),
-        )
+        if return_dict:
+            return TokenizedEvent(
+                text=encoded_text,
+                images=images,
+                token_ids=token_ids,
+                total_token_count=len(token_ids),
+            )
+        else:
+            return token_ids
 
-    def decode_event(self, tokenized_event: dict) -> McapMessage:
-        text = tokenized_event["text"]
+    def decode_event(self, token_ids: npt.NDArray[np.int64]) -> McapMessage:
+        text = self.tokenizer.decode(token_ids, skip_special_tokens=False)
         # Convert repeated image token sequences back to fake_image_placeholder
         # Pattern: prefix + (image_token * image_token_length) + suffix -> fake_image_placeholder
         assert self.config.image_token not in text, (
@@ -137,7 +161,7 @@ class EpisodeTokenizer:
         repeated_image_pattern = f"{self.config.image_token_prefix}{self.config.image_token_suffix}"
         text = text.replace(repeated_image_pattern, self.config.fake_image_placeholder)
 
-        return self.encoder.decode(text, tokenized_event["images"])
+        return self.encoder.decode(text)
 
     def tokenize_episode(
         self,

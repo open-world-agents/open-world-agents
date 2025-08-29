@@ -19,6 +19,7 @@ dependencies = [
     "owa-core",
     "owa-msgs",
     "mcap-owa-support",
+    "line-profiler>=5.0.0",
 ]
 
 [build-system]

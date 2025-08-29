@@ -1,5 +1,6 @@
 import argparse
 
+import line_profiler
 import torch
 from accelerate import Accelerator
 from loguru import logger
@@ -26,6 +27,7 @@ class DummyDataset(torch.utils.data.Dataset):
         return 1000000
 
 
+@line_profiler.profile
 def main():
     parser = argparse.ArgumentParser(description="Multi-GPU FSL dataset loader")
     parser.add_argument(
@@ -95,7 +97,7 @@ def main():
             stage="fsl",
             load_images=True,
             image_processor=processor.image_processor,
-            mcap_root_directory=None,
+            mcap_root_directory="/raid/datasets/owa/mcaps/vpt",
         )
 
     train_ds = ConcatDataset(train_datasets)
@@ -108,15 +110,15 @@ def main():
         batch_size=args.batch_size,
         shuffle=True,
         num_workers=args.num_workers,
-        prefetch_factor=2,
+        # prefetch_factor=2,
         # persistent_workers=True,
         pin_memory=True,
-        collate_fn=lambda examples: collate_fn_for_model(examples, max_sequence_length=1024, processor=processor),
+        collate_fn=lambda examples: collate_fn_for_model(examples, max_sequence_length=4096, processor=processor),
     )
     print(f"Using collate function for model type: {model_type}")
 
     # 5) (Optional) A dummy model so you can do a full prepare()
-    model = torch.nn.Linear(1024, 1)
+    model = torch.nn.Linear(4096, 1)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
     # 6) Let Accelerator wrap model, optimizer, and dataloader

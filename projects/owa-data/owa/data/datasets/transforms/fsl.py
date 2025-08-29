@@ -1,4 +1,4 @@
-"""FSL Transform class for clean, modular image processing."""
+"""FSL Transform class for modular image processing."""
 
 import concurrent.futures
 import os
@@ -7,10 +7,13 @@ import warnings
 from dataclasses import dataclass
 from typing import Any, List, Optional
 
+import line_profiler
 import numpy as np
 import torch
 from loguru import logger
+from PIL import Image
 
+from owa.core.io.video_decoder import PyAVVideoDecoder, TorchCodecVideoDecoder  # noqa: F401
 from owa.msgs.desktop.screen import ScreenCaptured
 
 from .utils import resolve_episode_path
@@ -114,14 +117,13 @@ class FSLTransformConfig:
 
     load_images: bool = True
     mcap_root_directory: Optional[str] = None
-    image_processor: Any = None
     pad_token_id: int = 0
 
 
 class FSLTransform:
     """Clean, modular FSL transform class."""
 
-    def __init__(self, config: Optional[FSLTransformConfig] = None, **kwargs):
+    def __init__(self, config: Optional[FSLTransformConfig] = None, image_processor: Any = None, **kwargs):
         """Initialize FSL transform with configuration."""
         if config is None:
             config = FSLTransformConfig()
@@ -132,6 +134,7 @@ class FSLTransform:
                 setattr(config, key, value)
 
         self.config = config
+        self.image_processor = image_processor
         self.is_decoding_server_available = "VIDEO_DECODING_SERVER_URL" in os.environ
         self.stat_logger = FSLStatLogger()
 
@@ -139,6 +142,7 @@ class FSLTransform:
         """Transform batch for FSL stage."""
         return self.transform_batch(batch)
 
+    @line_profiler.profile
     def transform_batch(self, batch):
         """Transform batch - handles image loading on-the-fly."""
         batch_size = len(batch["input_ids"])
@@ -178,22 +182,41 @@ class FSLTransform:
             if self.is_decoding_server_available and image_msgs:
                 self._preload_images_parallel(image_msgs)
 
-            # Convert to PIL images
-            all_images = [img.to_pil_image(keep_av_open=True) for img in image_msgs]
+            # Batch decode images
+            self._batch_decode_images(image_msgs)
+
+            # Load images with error handling
+            all_images = []
+            for img in image_msgs:
+                try:
+                    pil_image = img.to_pil_image(keep_av_open=True)
+                    all_images.append(pil_image)
+                except Exception as e:
+                    if len(all_images) == 0:
+                        warnings.warn(f"Failed to load first image: {e}. Using black placeholder.")
+                        placeholder = Image.new("RGB", (448, 448), color="black")
+                        all_images.append(placeholder)
+                    else:
+                        warnings.warn(f"Failed to load image: {e}. Using previous image.")
+                        all_images.append(all_images[-1])
 
             # Calculate image bits
             image_bits = sum(image.width * image.height * 3 for image in all_images)
             total_image_bits += image_bits
 
             # Process with image processor if available
-            if self.config.image_processor is not None:
-                pixel_values = []
-                for image in all_images:
-                    processed = self.config.image_processor(image, return_tensors="pt")
-                    pixel_value = processed["pixel_values"].squeeze(0).squeeze(0)
-                    pixel_values.append(pixel_value)
-                # NOTE: SmolVLM2-256M-Video-Instruct expects [num_images, 3, 512, 512]
-                results["images"].append(torch.stack(pixel_values) if pixel_values else torch.empty(0, 3, 512, 512))
+            if self.image_processor is not None:
+                if all_images:
+                    processed = self.image_processor(all_images, return_tensors="pt")
+                    pixel_values = processed["pixel_values"]
+                    # NOTE: SmolVLMImageProcessor returns [batch, max_num_images, 3, height, width]
+                    # while InternVL's ImageProcessor returns [num_images, 3, height, width]
+                    if pixel_values.dim() == 5:  # [1, num_images, 3, height, width]
+                        pixel_values = pixel_values.squeeze(0)
+                else:
+                    # NOTE: InternVL3 expectes (448, 448) while SmolVLM2 expects (512, 512)
+                    pixel_values = torch.empty(0, 3, 448, 448)
+                results["images"].append(pixel_values)
             else:
                 results["images"].append(all_images)
 
@@ -213,14 +236,66 @@ class FSLTransform:
                     image_msgs[idx].frame_arr = np.zeros((512, 512, 3), dtype=np.uint8)
                     warnings.warn(f"Failed to load image at index {idx}: {e}. Using placeholder.", UserWarning)
 
+    def _batch_decode_images(self, image_msgs: List[ScreenCaptured]) -> None:
+        """Batch decode images."""
+        if not image_msgs:
+            return
+
+        # Group images by video path for efficient batch processing
+        video_groups = {}
+        for idx, img_msg in enumerate(image_msgs):
+            if img_msg.media_ref is None or not img_msg.media_ref.is_video or img_msg.media_ref.pts_ns is None:
+                continue
+
+            video_path = img_msg.media_ref.uri
+            if video_path not in video_groups:
+                video_groups[video_path] = {"indices": [], "timestamps": []}
+
+            video_groups[video_path]["indices"].append(idx)
+            # Convert nanoseconds to seconds
+            timestamp_sec = img_msg.media_ref.pts_ns / 1_000_000_000
+            video_groups[video_path]["timestamps"].append(timestamp_sec)
+
+        # Process each video group with batch decoding
+        for video_path, group in video_groups.items():
+            try:
+                # Create decoder for this video
+                decoder = PyAVVideoDecoder(video_path)
+
+                # Batch decode all frames for this video
+                frame_batch = decoder.get_frames_played_at(seconds=group["timestamps"])
+
+                # Store decoded frames in the corresponding ScreenCaptured objects
+                for i, frame_tensor in enumerate(frame_batch.data):
+                    img_idx = group["indices"][i]
+                    if isinstance(frame_tensor, np.ndarray):
+                        # Convert numpy array [C, H, W] to numpy array [H, W, C] in RGB format. ndarray does not have permute
+                        frame_rgb = frame_tensor.transpose(1, 2, 0).astype(np.uint8)
+                    else:
+                        # Convert from tensor [C, H, W] to numpy array [H, W, C] in BGRA format
+                        frame_rgb = frame_tensor.data.permute(1, 2, 0).cpu().numpy().astype(np.uint8)
+                    # Convert RGB to BGRA (add alpha channel)
+                    frame_bgra = np.concatenate(
+                        [
+                            frame_rgb[:, :, [2, 1, 0]],  # BGR
+                            np.full((frame_rgb.shape[0], frame_rgb.shape[1], 1), 255, dtype=np.uint8),  # Alpha
+                        ],
+                        axis=2,
+                    )
+
+                    # Store in frame_arr
+                    image_msgs[img_idx].frame_arr = frame_bgra
+
+            except Exception as e:
+                # If batch decoding fails, fall back to individual decoding
+                logger.warning(f"Batch decoding failed for {video_path}: {e}. Falling back to individual decoding.")
+
 
 def create_fsl_transform(
     image_processor=None, load_images: bool = True, mcap_root_directory: Optional[str] = None, **kwargs
 ):
     """Create FSL transform - maintains backward compatibility."""
-    config = FSLTransformConfig(
-        image_processor=image_processor, load_images=load_images, mcap_root_directory=mcap_root_directory, **kwargs
-    )
+    config = FSLTransformConfig(load_images=load_images, mcap_root_directory=mcap_root_directory, **kwargs)
 
-    transform = FSLTransform(config)
+    transform = FSLTransform(config, image_processor=image_processor)
     return transform.transform_batch
