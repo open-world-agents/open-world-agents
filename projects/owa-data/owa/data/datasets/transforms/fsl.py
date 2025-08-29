@@ -208,10 +208,14 @@ class FSLTransform:
             if self.image_processor is not None:
                 if all_images:
                     processed = self.image_processor(all_images, return_tensors="pt")
-                    pixel_values = processed["pixel_values"].squeeze(0)
+                    pixel_values = processed["pixel_values"]
+                    # NOTE: SmolVLMImageProcessor returns [batch, max_num_images, 3, height, width]
+                    # while InternVL's ImageProcessor returns [num_images, 3, height, width]
+                    if pixel_values.dim() == 5:  # [1, num_images, 3, height, width]
+                        pixel_values = pixel_values.squeeze(0)
                 else:
-                    # NOTE: SmolVLM2-256M-Video-Instruct expects [num_images, 3, 512, 512]
-                    pixel_values = torch.empty(0, 3, 512, 512)
+                    # NOTE: InternVL3 expectes (448, 448) while SmolVLM2 expects (512, 512)
+                    pixel_values = torch.empty(0, 3, 448, 448)
                 results["images"].append(pixel_values)
             else:
                 results["images"].append(all_images)
