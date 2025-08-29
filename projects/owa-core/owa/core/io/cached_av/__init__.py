@@ -10,7 +10,7 @@ from .input_container_mixin import InputContainerMixin
 
 DEFAULT_CACHE_SIZE = int(os.environ.get("AV_CACHE_SIZE", 10))
 
-# Global cache instance
+# Global container cache for efficient video file access
 _container_cache = ResourceCache(max_size=DEFAULT_CACHE_SIZE)
 
 
@@ -25,20 +25,21 @@ def open(file: PathLike, mode: Literal["w"], **kwargs) -> av.container.OutputCon
 
 
 def open(file: PathLike, mode: Literal["r", "w"], *, keep_av_open: bool = False, **kwargs):
-    """Open video file with caching for read mode, direct av.open for write mode.
+    """
+    Open video container with optional caching for read operations.
 
     Args:
-        file: Path to video file
-        mode: Open mode ('r' for read, 'w' for write)
-        keep_av_open: If True, keep container in cache when closed. If False, force cleanup.
+        file: Video file path or URL
+        mode: Access mode ('r' for read, 'w' for write)
+        keep_av_open: Enable caching for read containers
         **kwargs: Additional arguments passed to av.open
     """
     if mode == "r":
         if not keep_av_open:
-            # Don't cache if keep_av_open=False - just return direct av.open
+            # Direct access without caching
             return av.open(file, "r", **kwargs)
 
-        # Cache only when keep_av_open=True
+        # Use cached container when keep_av_open=True
         cache_key = str(file)
         if cache_key not in _container_cache:
             return MockedInputContainer(file, **kwargs)
@@ -48,12 +49,12 @@ def open(file: PathLike, mode: Literal["r", "w"], *, keep_av_open: bool = False,
 
 
 def cleanup_cache():
-    """Manually cleanup all cached containers."""
+    """Clear all cached video containers from memory."""
     _container_cache.clear()
 
 
 class MockedInputContainer(InputContainerMixin):
-    """Wrapper for av.InputContainer that tracks references and usage for caching."""
+    """Cached wrapper for PyAV InputContainer with reference counting."""
 
     def __init__(self, file: PathLike, **kwargs):
         self._cache_key = str(file)
@@ -64,7 +65,7 @@ class MockedInputContainer(InputContainerMixin):
         return self
 
     def close(self):
-        """Decrement reference count and cleanup if no longer referenced."""
+        """Release container reference and cleanup when no longer needed."""
         _container_cache.release_entry(self._cache_key)
 
 

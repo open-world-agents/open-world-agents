@@ -10,13 +10,15 @@ except ImportError:
 
 
 class ModelType(StrEnum):
+    """Supported vision-language model types for data collation."""
+
     INTERNVL = "internvl"
     SMOLVLM = "smolvlm"
     UNKNOWN = "unknown"
 
 
 def detect_model_type(model_name_or_path: str) -> ModelType:
-    """Detect the model based on config.model_type"""
+    """Detect model type from HuggingFace model configuration."""
     from transformers import AutoConfig
 
     config = AutoConfig.from_pretrained(model_name_or_path)
@@ -29,20 +31,21 @@ def detect_model_type(model_name_or_path: str) -> ModelType:
 
 
 @line_profiler.profile
-def collate_fn_smolvlm2(examples, max_sequence_length: int | None = None, processor: ProcessorMixin | None = None):
-    """Collate function for FSL Dataset, specifically for SmolVLM2/Idefics3."""
+def collate_fn_smolvlm2(examples, max_sequence_length: int | None = None, processor=None):
+    """Collate function for SmolVLM2/Idefics3 with image padding."""
     input_ids_list = []
     attention_mask_list = []
     pixel_values_list = []
 
     for example in examples:
-        input_ids_list.append(example["input_ids"])  # [seq_len,]
-        attention_mask_list.append(example["attention_mask"])  # [seq_len,]
-        pixel_values_list.append(example["images"])  # [num_images, channels, height, width]
+        input_ids_list.append(example["input_ids"])
+        attention_mask_list.append(example["attention_mask"])
+        pixel_values_list.append(example["images"])
         assert isinstance(example["images"], torch.Tensor), f"Expected tensor, got {type(example['images'])}"
 
     max_num_images = max([len(images) for images in pixel_values_list], default=0)
-    # Pad images to max_num_images
+
+    # Pad image sequences to uniform length
     for idx, images in enumerate(pixel_values_list):
         if len(images) < max_num_images:
             # NOTE: Idefics3/SmolVLM expect all-zero image to be a padding image. see: https://github.com/huggingface/transformers/blob/69b158260fcb679ea3bfbc1e6a358545ee53ee28/src/transformers/models/idefics3/modeling_idefics3.py#L693
@@ -62,10 +65,8 @@ def collate_fn_smolvlm2(examples, max_sequence_length: int | None = None, proces
     # NOTE: we shift the labels inside the model, so we don't need to do it here
     labels = input_ids.clone()
     if processor is not None:
-        # Ignore padding tokens in the loss computation
+        # Mask padding and image tokens from loss computation
         labels[labels == processor.tokenizer.pad_token_id] = -100
-
-        # Ignore the image token index in the loss computation
         labels[labels == processor.tokenizer.image_token_id] = -100
         assert (labels[attention_mask == 0] == -100).all()
     else:
@@ -123,15 +124,7 @@ def collate_fn_internvl3(examples, max_sequence_length: int | None = None, proce
 
 
 def get_collate_fn(model_name_or_path: str):
-    """
-    Get the appropriate collate function based on model type.
-
-    Args:
-        model_name_or_path: Model name or path
-
-    Returns:
-        Appropriate collate function for the model type
-    """
+    """Get the appropriate collate function based on model type."""
     model_type = detect_model_type(model_name_or_path)
 
     if model_type == ModelType.INTERNVL:

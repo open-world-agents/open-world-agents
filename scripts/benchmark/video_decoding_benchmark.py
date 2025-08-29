@@ -8,7 +8,7 @@ from owa.core.io.video_decoder import PyAVVideoDecoder, TorchCodecVideoDecoder
 
 
 def benchmark(fn: Callable, max_time: float = 3.0) -> None:
-    """Benchmark a function, reporting mean/std/percentile."""
+    """Benchmark a function, reporting mean/std/percentile statistics."""
     results = []
     start_time = time.time()
     while time.time() - start_time < max_time:

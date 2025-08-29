@@ -18,14 +18,14 @@ from .datasets import Dataset, DatasetStage
 class EpisodeTokenizerConfig:
     """Configuration for EpisodeTokenizer."""
 
-    # Real image token that will be repeated in the final tokenized sequence. f"{image_token_prefix}{image_token * image_token_length}{image_token_suffix}
+    # Real image token pattern: f"{image_token_prefix}{image_token * image_token_length}{image_token_suffix}"
     image_token_prefix: str
     image_token: str
     image_token_length: int
     image_token_suffix: str
 
     encoder_type: str = "hierarchical"
-    # Internal placeholder token used by encoders (not a real token, not in vocab)
+    # Internal placeholder token used by encoders (not in vocab)
     fake_image_placeholder: str = "<fake_image_placeholder>"
     episode_start_token: str = "<EPISODE_START>"
     episode_end_token: str = "<EPISODE_END>"

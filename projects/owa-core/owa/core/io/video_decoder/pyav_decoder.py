@@ -1,4 +1,4 @@
-"""Clean and minimal VideoDecoder that mocks torchcodec's behavior."""
+"""PyAV-based video decoder with TorchCodec-compatible interface."""
 
 import dataclasses
 from dataclasses import dataclass
@@ -16,7 +16,7 @@ from ..video import BatchDecodingStrategy, VideoReader
 
 @dataclass
 class VideoStreamMetadata:
-    """Video metadata."""
+    """Video stream metadata container."""
 
     num_frames: int
     duration_seconds: Fraction
@@ -44,7 +44,7 @@ def _frame_repr(self):
 
 @dataclass
 class FrameBatch:
-    """Frame batch with timing info."""
+    """Batch of video frames with timing information in NCHW format."""
 
     data: npt.NDArray[np.uint8]  # [N, C, H, W]
     pts_seconds: npt.NDArray[np.float64]  # [N]
@@ -54,7 +54,7 @@ class FrameBatch:
 
 
 class PyAVVideoDecoder:
-    """Minimal VideoDecoder using existing VideoReader."""
+    """TorchCodec-compatible video decoder built on PyAV."""
 
     def __init__(self, video_path: PathLike):
         self.video_path = video_path
@@ -62,11 +62,11 @@ class PyAVVideoDecoder:
         self._metadata = self._extract_metadata()
 
     def _extract_metadata(self) -> VideoStreamMetadata:
-        """Extract basic metadata."""
+        """Extract video stream metadata from container."""
         container = self._reader.container
         stream = container.streams.video[0]
 
-        # Get basic properties
+        # Determine video duration
         if stream.duration and stream.time_base:
             duration_seconds = stream.duration * stream.time_base
         elif container.duration:
@@ -74,11 +74,13 @@ class PyAVVideoDecoder:
         else:
             raise ValueError("Failed to determine duration")
 
+        # Determine frame rate
         if stream.average_rate:
             average_rate = stream.average_rate
         else:
             raise ValueError("Failed to determine average rate")
 
+        # Determine frame count
         if stream.frames:
             num_frames = stream.frames
         else:
@@ -94,10 +96,11 @@ class PyAVVideoDecoder:
 
     @property
     def metadata(self) -> VideoStreamMetadata:
+        """Access video stream metadata."""
         return self._metadata
 
     def __getitem__(self, key: Union[int, slice]) -> npt.NDArray[np.uint8]:
-        """Simple indexing: decoder[0] or decoder[0:10:2]."""
+        """Enable array-like indexing for frame access."""
         if isinstance(key, int):
             return self.get_frames_at([key]).data
 
@@ -115,8 +118,7 @@ class PyAVVideoDecoder:
         *,
         strategy: BatchDecodingStrategy = BatchDecodingStrategy.SEQUENTIAL_PER_KEYFRAME_BLOCK,
     ) -> FrameBatch:
-        """Get frames at specific indices."""
-
+        """Retrieve frames at specific frame indices."""
         indices = [index % self.metadata.num_frames for index in indices]
         pts = [idx / self.metadata.average_rate for idx in indices]
         return self.get_frames_played_at(seconds=pts, strategy=strategy)
@@ -127,9 +129,7 @@ class PyAVVideoDecoder:
         *,
         strategy: BatchDecodingStrategy = BatchDecodingStrategy.SEQUENTIAL_PER_KEYFRAME_BLOCK,
     ) -> FrameBatch:
-        """Get frames at specific time points."""
-        frames = []
-        pts_list = []
+        """Retrieve frames at specific timestamps."""
         duration = 1.0 / self.metadata.average_rate
 
         av_frames = self._reader.get_frames_played_at(seconds, strategy=strategy)
@@ -144,7 +144,7 @@ class PyAVVideoDecoder:
         )
 
     def close(self):
-        """Clean up resources."""
+        """Release video decoder resources."""
         if hasattr(self, "_reader"):
             self._reader.close()
 

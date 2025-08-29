@@ -1,8 +1,4 @@
-"""
-Desktop screen capture message definitions.
-
-Minimal, clean design focused on essential functionality.
-"""
+"""Desktop screen capture message definitions."""
 
 import warnings
 from pathlib import Path, PurePosixPath
@@ -19,7 +15,7 @@ from owa.core.time import TimeUnits
 
 
 class MediaRef(BaseModel):
-    """Simple media reference."""
+    """Media reference for images and video frames."""
 
     uri: str = Field(
         ...,

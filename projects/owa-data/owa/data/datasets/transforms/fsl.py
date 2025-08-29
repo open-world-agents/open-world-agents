@@ -1,4 +1,4 @@
-"""FSL Transform class for clean, modular image processing."""
+"""FSL Transform class for modular image processing."""
 
 import concurrent.futures
 import os

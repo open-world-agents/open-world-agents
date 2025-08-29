@@ -2,15 +2,15 @@ from owa.core.utils.typing import PathLike
 
 from .pyav_decoder import PyAVVideoDecoder
 
-# Import TorchCodecVideoDecoder with graceful fallback
+# Conditional import with graceful fallback for optional dependency
 try:
     from .torchcodec_decoder import TorchCodecVideoDecoder
 
     __all__ = ["PyAVVideoDecoder", "TorchCodecVideoDecoder"]
 except ImportError:
-    # TorchCodec not available, provide a placeholder class that gives helpful error messages
+    # Provide informative error when TorchCodec is unavailable
     class TorchCodecVideoDecoder:
-        """Placeholder class when TorchCodec is not available."""
+        """Placeholder for TorchCodec decoder when dependency is not installed."""
 
         def __init__(self, source: PathLike, **kwargs):
             raise ImportError("TorchCodec is not available. Please install it with: pip install torchcodec>=0.4.0")
