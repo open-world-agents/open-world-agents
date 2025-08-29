@@ -58,6 +58,7 @@ class OWADatasetMixin:
         """Set appropriate transform for a dataset based on its stage."""
         stage = stage or self.stage
         mcap_root_directory = mcap_root_directory or self.mcap_root_directory
+        self.mcap_root_directory = mcap_root_directory
         if mcap_root_directory is None:
             raise ValueError("mcap_root_directory must be set")
 
@@ -70,6 +71,7 @@ class OWADatasetMixin:
         """Set appropriate transform for a dataset based on its stage."""
         stage = stage or self.stage
         mcap_root_directory = mcap_root_directory or self.mcap_root_directory
+        self.mcap_root_directory = mcap_root_directory
         if mcap_root_directory is None:
             raise ValueError("mcap_root_directory must be set")
 
