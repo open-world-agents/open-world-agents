@@ -188,6 +188,7 @@ class VideoReader:
                         # Found all remaining frames
                         break
 
+                # If no progress made in inner loop, raise error. It's to prevent infinite loops.
                 if query_idx_before_segment == query_idx:
                     raise ValueError("No matching frames found for query.")
 
