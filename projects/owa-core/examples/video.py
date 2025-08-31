@@ -1,4 +1,3 @@
-# Example usage
 from fractions import Fraction
 from pathlib import Path
 
@@ -8,7 +7,6 @@ from loguru import logger
 from owa.core.io.video import VideoReader, VideoWriter
 
 if __name__ == "__main__":
-    # Example usage
     video_path = Path("test.mp4")
 
     # Write a test video (VFR)
