@@ -51,6 +51,8 @@ class VideoReader:
     def _extract_metadata(self) -> VideoStreamMetadata:
         """Extract video stream metadata from container."""
         container = self.container
+        if not container.streams.video:
+            raise ValueError(f"No video streams found in {self.video_path}")
         stream = container.streams.video[0]
 
         # Determine video duration
@@ -180,7 +182,9 @@ class VideoReader:
 
                 # If no progress made in inner loop, raise error. It's to prevent infinite loops.
                 if query_idx_before_segment == query_idx:
-                    raise ValueError("No matching frames found for query.")
+                    raise ValueError(
+                        f"No matching frames found for query starting at {target_time:.3f}s. This may indicate a corrupted video file or a decoding issue."
+                    )
 
         if any(f is None for f in frames):
             missing_seconds = [s for i, s in enumerate(seconds) if frames[i] is None]
