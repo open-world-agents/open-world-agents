@@ -1,20 +1,10 @@
-"""
-Video I/O utilities using PyAV.
-
-Provides VideoReader and VideoWriter classes for local files and remote URLs
-with support for variable and constant frame rate encoding/decoding.
-"""
-
 import enum
 import gc
 from dataclasses import dataclass
 from fractions import Fraction
-from pathlib import Path
 from typing import Generator, Optional
 
 import av
-import numpy as np
-from loguru import logger
 
 from ...utils.typing import PathLike
 from .. import cached_av
