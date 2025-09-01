@@ -15,8 +15,6 @@ tokenizer_name: "HuggingFaceTB/SmolVLM2-256M-Video-Instruct"
 #   image_token: "<image>"
 #   image_token_length: 64
 #   image_token_suffix: "<fake_token_around_image>"
-#   episode_start_token: "<EPISODE_START>"
-#   episode_end_token: "<EPISODE_END>"
 
 # FSL dataset configuration
 fsl_dataset:

@@ -4,6 +4,7 @@ from typing import Iterator, Literal, TypedDict, overload
 
 import numpy as np
 import numpy.typing as npt
+from loguru import logger
 from transformers.tokenization_utils import PreTrainedTokenizer
 
 from mcap_owa.highlevel import McapMessage
@@ -12,6 +13,7 @@ from owa.msgs.desktop.screen import ScreenCaptured
 
 from .collator import ModelType, detect_model_type
 from .datasets import Dataset, DatasetStage
+from .semantic_init import apply_semantic_initialization
 
 
 @dataclass
@@ -27,8 +29,6 @@ class EpisodeTokenizerConfig:
     encoder_type: str = "hierarchical"
     # Internal placeholder token used by encoders (not in vocab)
     fake_image_placeholder: str = "<fake_image_placeholder>"
-    episode_start_token: str = "<EPISODE_START>"
-    episode_end_token: str = "<EPISODE_END>"
 
 
 class TokenizedEvent(TypedDict):
@@ -59,8 +59,6 @@ class EpisodeTokenizer:
                 image_token="<IMG_CONTEXT>",
                 image_token_length=256,
                 image_token_suffix="</img>",
-                episode_start_token="<EPISODE_START>",
-                episode_end_token="<EPISODE_END>",
             )
         else:
             # SmolVLM2 and other models configuration
@@ -71,8 +69,6 @@ class EpisodeTokenizer:
                 image_token="<image>",
                 image_token_length=64,
                 image_token_suffix="<fake_token_around_image>",
-                episode_start_token="<EPISODE_START>",
-                episode_end_token="<EPISODE_END>",
             )
         return cls(episode_tokenizer_config, **kwargs)
 
@@ -83,14 +79,26 @@ class EpisodeTokenizer:
             self.config.image_token,
             self.config.image_token_prefix,
             self.config.image_token_suffix,
-            self.config.episode_start_token,
-            self.config.episode_end_token,
         }
 
-    def prepare_model(self, *, tokenizer: PreTrainedTokenizer, model=None):
+    def prepare_model(self, *, tokenizer: PreTrainedTokenizer, model=None, apply_semantic_init: bool = True):
+        special_tokens = self.get_vocab()
+        vocab = tokenizer.get_vocab()
+        if all(tok in vocab for tok in special_tokens):
+            logger.warning("Model already has expanded vocab, skipping token addition")
+            self.tokenizer = tokenizer
+            self.is_prepared = True
+            return
+
+        # Add new tokens to tokenizer
         tokenizer.add_tokens(sorted(self.get_vocab()))  # NOTE: set is unordered in python
+        logger.warning(f"Adding {len(self.get_vocab())} new tokens to tokenizer")
         if model is not None:
             model.resize_token_embeddings(len(tokenizer))
+
+            if apply_semantic_init:
+                apply_semantic_initialization(tokenizer, model)
+
         self.tokenizer = tokenizer
         self.is_prepared = True
 
@@ -99,8 +107,6 @@ class EpisodeTokenizer:
         self,
         mcap_msg: McapMessage,
         *,
-        is_first: bool = False,
-        is_last: bool = False,
         return_dict: Literal[True] = True,
     ) -> TokenizedEvent: ...
 
@@ -109,8 +115,6 @@ class EpisodeTokenizer:
         self,
         mcap_msg: McapMessage,
         *,
-        is_first: bool = False,
-        is_last: bool = False,
         return_dict: Literal[False],
     ) -> npt.NDArray[np.int64]: ...
 
@@ -118,22 +122,12 @@ class EpisodeTokenizer:
         self,
         mcap_msg: McapMessage,
         *,
-        is_first: bool = False,
-        is_last: bool = False,
         return_dict: bool = True,
     ) -> TokenizedEvent | npt.NDArray[np.int64]:
         if not self.is_prepared:
             raise RuntimeError("EpisodeTokenizer must be prepared by `prepare_model` before tokenizing")
 
         encoded_text, images = self.encoder.encode(mcap_msg)
-
-        # Add episode start/end tokens if needed
-        prefix = suffix = ""
-        if is_first:
-            prefix = self.config.episode_start_token
-        if is_last:
-            suffix = self.config.episode_end_token
-        encoded_text = f"{prefix}{encoded_text}{suffix}"
 
         # Replace fake image placeholder with prefix + repeated real image tokens + suffix
         # EventEncoder outputs fake_image_placeholder, we convert to real image tokens
@@ -166,27 +160,9 @@ class EpisodeTokenizer:
     def tokenize_episode(
         self,
         mcap_messages: Iterator[McapMessage],
-        *,
-        append_episode_start_token: bool = False,
-        append_episode_end_token: bool = False,
     ) -> Iterator[TokenizedEvent]:
-        iterator = iter(mcap_messages)
-        prev_msg = None
-        current_msg = next(iterator, None)
-
-        while current_msg is not None:
-            next_msg = next(iterator, None)
-            is_first = prev_msg is None
-            is_last = next_msg is None
-
-            yield self.tokenize_event(
-                current_msg,
-                is_first=is_first and append_episode_start_token,
-                is_last=is_last and append_episode_end_token,
-            )
-
-            prev_msg = current_msg
-            current_msg = next_msg
+        for mcap_msg in mcap_messages:
+            yield self.tokenize_event(mcap_msg)
 
     def decode_episode(
         self,
@@ -210,12 +186,6 @@ class EpisodeTokenizer:
             # Input is token IDs
             text = self.tokenizer.decode(input_ids_or_text, skip_special_tokens=False)
 
-        # Remove episode start/end tokens if present
-        if text.startswith(self.config.episode_start_token):
-            text = text[len(self.config.episode_start_token) :]
-        if text.endswith(self.config.episode_end_token):
-            text = text[: -len(self.config.episode_end_token)]
-
         # Parse all events between <EVENT_START> and <EVENT_END> tokens
         event_strings = re.findall(r"<EVENT_START>.*?<EVENT_END>", text)
 
@@ -224,7 +194,13 @@ class EpisodeTokenizer:
         timestamp_bias = 0
         for event_string in event_strings:
             try:
-                event = self.decode_event({"text": event_string, "images": None})
+                # Convert repeated image token sequences back to fake_image_placeholder
+                # Pattern: prefix + (image_token * image_token_length) + suffix -> fake_image_placeholder
+                processed_event_string = event_string.replace(
+                    f"{self.config.image_token_prefix}{self.config.image_token_suffix}",
+                    self.config.fake_image_placeholder,
+                )
+                event = self.encoder.decode(processed_event_string)
                 # Since HierarchicalEventEncoder uses modular arithmetic for timestamp encoding,
                 # we need to adjust the timestamp if it's smaller than the previous one
                 if event.timestamp < previous_timestamp:
@@ -246,18 +222,10 @@ class EpisodeTokenizer:
             raise ValueError(f"Expected Dataset from `owa.data.datasets`, got {type(event_dataset)}")
 
         # Tokenize each event in the dataset
-        def process_event(event, idx):
-            is_first = is_last = False
-            # Add episode start token
-            if idx == 0 or (idx > 0 and event["episode_path"] != event_dataset[idx - 1]["episode_path"]):
-                is_first = True
-            # Add episode end token
-            if idx < len(event_dataset) - 1 and event["episode_path"] != event_dataset[idx + 1]["episode_path"]:
-                is_last = True
-
+        def process_event(event):
             episode_path = event["episode_path"]
             mcap_message = McapMessage.model_validate_json(event["mcap_message"])
-            tokenized_event = self.tokenize_event(mcap_message, is_first=is_first, is_last=is_last)
+            tokenized_event = self.tokenize_event(mcap_message)
 
             return {
                 "episode_path": episode_path,
@@ -270,7 +238,6 @@ class EpisodeTokenizer:
         # Tokenize the dataset
         tokenized_dataset = event_dataset.map(
             process_event,
-            with_indices=True,
             desc="Tokenizing event dataset",
             remove_columns=event_dataset.column_names,
             **map_kwargs,

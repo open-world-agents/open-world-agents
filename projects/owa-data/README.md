@@ -183,9 +183,8 @@ Core component for Fixed Sequence Length processing that prepares tokenized even
 1. **Tokenization-aware packing**: Uses actual tokenizer to calculate sequence lengths
 2. **Lazy image loading**: Images loaded on-the-fly for memory efficiency
 3. **Automatic sequence splitting**: Long episodes split across multiple sequences
-4. **Episode boundary tokens**: Configurable `<EPISODE_START>` and `<EPISODE_END>` tokens
-5. **Enable random access**: Allow starting iteration from any position for sequence packing
-6. **Simple implementation**: Clean, readable code with minimal complexity
+4. **Enable random access**: Allow starting iteration from any position for sequence packing
+5. **Simple implementation**: Clean, readable code with minimal complexity
 
 ### Complete Examples
 

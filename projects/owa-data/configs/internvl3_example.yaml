@@ -15,8 +15,6 @@ tokenizer_name: "OpenGVLab/InternVL3-1B-hf"
 #   image_token: "<IMG_CONTEXT>"
 #   image_token_length: 256
 #   image_token_suffix: "</img>"
-#   episode_start_token: "<EPISODE_START>"
-#   episode_end_token: "<EPISODE_END>"
 
 # FSL dataset configuration
 fsl_dataset:
