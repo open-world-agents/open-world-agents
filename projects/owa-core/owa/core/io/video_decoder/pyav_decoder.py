@@ -2,27 +2,13 @@
 
 import dataclasses
 from dataclasses import dataclass
-from fractions import Fraction
 from typing import List, Union
 
-import av
 import numpy as np
 import numpy.typing as npt
 
-from owa.core.utils.typing import PathLike
-
-from ..video import BatchDecodingStrategy, VideoReader
-
-
-@dataclass
-class VideoStreamMetadata:
-    """Video stream metadata container."""
-
-    num_frames: int
-    duration_seconds: Fraction
-    average_rate: Fraction
-    width: int
-    height: int
+from ...utils.typing import PathLike
+from ..video.reader import BatchDecodingStrategy, VideoReader, VideoStreamMetadata
 
 
 # Copied from https://github.com/pytorch/torchcodec/blob/main/src/torchcodec/_frame.py#L14-L27
@@ -59,45 +45,11 @@ class PyAVVideoDecoder:
     def __init__(self, video_path: PathLike):
         self.video_path = video_path
         self._reader = VideoReader(video_path, keep_av_open=True)
-        self._metadata = self._extract_metadata()
-
-    def _extract_metadata(self) -> VideoStreamMetadata:
-        """Extract video stream metadata from container."""
-        container = self._reader.container
-        stream = container.streams.video[0]
-
-        # Determine video duration
-        if stream.duration and stream.time_base:
-            duration_seconds = stream.duration * stream.time_base
-        elif container.duration:
-            duration_seconds = container.duration * Fraction(1, av.time_base)
-        else:
-            raise ValueError("Failed to determine duration")
-
-        # Determine frame rate
-        if stream.average_rate:
-            average_rate = stream.average_rate
-        else:
-            raise ValueError("Failed to determine average rate")
-
-        # Determine frame count
-        if stream.frames:
-            num_frames = stream.frames
-        else:
-            num_frames = int(duration_seconds * average_rate)
-
-        return VideoStreamMetadata(
-            num_frames=num_frames,
-            duration_seconds=duration_seconds,
-            average_rate=average_rate,
-            width=stream.width,
-            height=stream.height,
-        )
 
     @property
     def metadata(self) -> VideoStreamMetadata:
         """Access video stream metadata."""
-        return self._metadata
+        return self._reader.metadata
 
     def __getitem__(self, key: Union[int, slice]) -> npt.NDArray[np.uint8]:
         """Enable array-like indexing for frame access."""
