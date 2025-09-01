@@ -93,12 +93,7 @@ def main():
 
     # 3) Apply FSL transform for on-the-fly processing and concatenate datasets
     for train_ds in train_datasets:
-        train_ds.auto_set_transform(
-            stage="fsl",
-            load_images=True,
-            image_processor=processor.image_processor,
-            mcap_root_directory="/raid/datasets/owa/mcaps/vpt",
-        )
+        train_ds.auto_set_transform(stage="fsl", load_images=True, image_processor=processor.image_processor)
 
     train_ds = ConcatDataset(train_datasets)
     # train_ds = DummyDataset()
