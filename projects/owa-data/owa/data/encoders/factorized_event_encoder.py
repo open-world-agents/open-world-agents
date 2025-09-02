@@ -211,14 +211,14 @@ class FactorizedEventEncoder(BaseEventEncoder):
 
     def _verify_configuration(self) -> None:
         """Verify that all configuration values will produce valid tokens."""
-        # Check that all bases produce digits within token range <0> to <255>
+        # Check that all bases produce digits within token range <0> to <9>
         for name, bases in [
             ("timestamp", self.config.timestamp_bases),
-            ("mouse_delta", [2] + self.config.mouse_delta_bases),  # Include sign bit
-            ("mouse_scroll", [2] + self.config.mouse_scroll_bases),  # Include sign bit
+            ("mouse_delta", self.config.mouse_delta_bases),
+            ("mouse_scroll", self.config.mouse_scroll_bases),
         ]:
-            if max(bases) > 256:
-                raise InvalidInputError(f"{name} base {max(bases)} produces digits > 255")
+            if max(bases) > 10:
+                raise InvalidInputError(f"{name} base {max(bases)} produces digits > 9, which is not supported.")
 
     @property
     def vocab(self) -> Set[str]:
