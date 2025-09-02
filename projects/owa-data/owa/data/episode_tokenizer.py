@@ -161,7 +161,7 @@ class EpisodeTokenizer:
             model.resize_token_embeddings(len(tokenizer))
 
             if apply_semantic_init:
-                apply_semantic_initialization(tokenizer, model)
+                apply_semantic_initialization(tokenizer, model, self.config.encoder_type)
 
         self.tokenizer = tokenizer
         self.is_prepared = True

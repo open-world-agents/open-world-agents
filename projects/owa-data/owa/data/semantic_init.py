@@ -14,7 +14,7 @@ from loguru import logger
 from transformers.tokenization_utils import PreTrainedTokenizer
 
 
-def apply_semantic_initialization(tokenizer: PreTrainedTokenizer, model: Any) -> None:
+def apply_semantic_initialization(tokenizer: PreTrainedTokenizer, model: Any, encoder_type: str) -> None:
     """
     Apply semantic initialization to hierarchical event tokens.
 
@@ -24,20 +24,68 @@ def apply_semantic_initialization(tokenizer: PreTrainedTokenizer, model: Any) ->
     Args:
         tokenizer: The tokenizer containing the special tokens
         model: The model with embedding weights to initialize
+        encoder_type: The type of encoder used in the tokenizer
     """
     logger.warning("Applying semantic initialization to new tokens")
 
-    # Initialize basic numeric and semantic tokens
-    _init_basic_tokens(tokenizer, model)
+    # find out if tokenizer is expanded by hierarchical or factorized
+    # if factorized, initialize factorized tokens
+    # if hierarchical, initialize hierarchical tokens
+    if encoder_type == "hierarchical":
+        # Initialize basic numeric and semantic tokens
+        _init_hierarchical_basic_tokens(tokenizer, model)
+    elif encoder_type == "factorized":
+        # Initialize basic numeric and semantic tokens
+        _init_factorized_basic_tokens(tokenizer, model)
 
-    # Initialize keyboard VK tokens
-    _init_keyboard_vk_tokens(tokenizer, model)
+        # Initialize keyboard VK tokens
+        _init_keyboard_vk_tokens(tokenizer, model)
 
-    # Initialize mouse button tokens
-    _init_mouse_button_tokens(tokenizer, model)
+        # Initialize mouse button tokens
+        _init_mouse_button_tokens(tokenizer, model)
+    else:
+        raise ValueError(f"Invalid encoder type: {encoder_type}")
 
 
-def _init_basic_tokens(tokenizer: PreTrainedTokenizer, model: Any) -> None:
+def _init_hierarchical_basic_tokens(tokenizer: PreTrainedTokenizer, model: Any) -> None:
+    # add semantic init <0> ~ <15> tokens from 0 ~ 15
+    for i in range(16):
+        new_token_idx = tokenizer.convert_tokens_to_ids(f"<{i}>")
+        if new_token_idx != tokenizer.unk_token_id:
+            try:
+                semantic_token_ids = tokenizer(str(i), add_special_tokens=False)["input_ids"]
+                if semantic_token_ids:  # Only if semantic text was tokenized successfully
+                    semantic_embedding = model.get_input_embeddings().weight.data[semantic_token_ids].mean(dim=0)
+                    model.get_input_embeddings().weight.data[new_token_idx] = semantic_embedding
+            except Exception:
+                logger.warning(f"Failed to initialize token <{i}>")
+                pass
+
+    # Initialize semantic tokens from their natural language equivalents
+    semantic_mappings = {
+        "<KEYBOARD>": "keyboard",
+        "<MOUSE>": "mouse",
+        "<SCREEN>": "screen",
+        "<press>": "press",
+        "<release>": "release",
+        "<EVENT_START>": "event start",
+        "<EVENT_END>": "event end",
+    }
+
+    for new_token, semantic_word in semantic_mappings.items():
+        new_token_idx = tokenizer.convert_tokens_to_ids(new_token)
+        if new_token_idx != tokenizer.unk_token_id:
+            try:
+                semantic_token_ids = tokenizer(semantic_word, add_special_tokens=False)["input_ids"]
+                if semantic_token_ids:  # Only if semantic text was tokenized successfully
+                    semantic_embedding = model.get_input_embeddings().weight.data[semantic_token_ids].mean(dim=0)
+                    model.get_input_embeddings().weight.data[new_token_idx] = semantic_embedding
+            except Exception:
+                logger.warning(f"Failed to initialize token {new_token}")
+                pass
+
+
+def _init_factorized_basic_tokens(tokenizer: PreTrainedTokenizer, model: Any) -> None:
     """Initialize basic numeric and semantic tokens using mean() method for consistency."""
 
     # Initialize numeric tokens <0> ~ <9> from their string representations
@@ -58,10 +106,12 @@ def _init_basic_tokens(tokenizer: PreTrainedTokenizer, model: Any) -> None:
         "<KEYBOARD>": "keyboard",
         "<MOUSE>": "mouse",
         "<SCREEN>": "screen",
-        "<SIGN_PLUS>": "+",
-        "<SIGN_MINUS>": "-",
         "<press>": "press",
         "<release>": "release",
+        "<EVENT_START>": "event start",
+        "<EVENT_END>": "event end",
+        "<SIGN_PLUS>": "+",
+        "<SIGN_MINUS>": "-",
     }
 
     for new_token, semantic_word in semantic_mappings.items():
