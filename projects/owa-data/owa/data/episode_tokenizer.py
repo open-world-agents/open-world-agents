@@ -8,7 +8,7 @@ from loguru import logger
 from transformers.tokenization_utils import PreTrainedTokenizer
 
 from mcap_owa.highlevel import McapMessage
-from owa.data.encoders import HierarchicalEventEncoder, create_encoder
+from owa.data.encoders import HierarchicalEventEncoder, FactorizedEventEncoder, create_encoder
 from owa.msgs.desktop.screen import ScreenCaptured
 
 from .collator import ModelType, detect_model_type
@@ -172,9 +172,10 @@ class EpisodeTokenizer:
         adjust_timestamp: bool = True,
     ) -> Iterator[McapMessage]:
         """Decode token IDs or tokenized text back to the original McapMessage format."""
-        if not isinstance(self.encoder, HierarchicalEventEncoder):
+        if not isinstance(self.encoder, (HierarchicalEventEncoder, FactorizedEventEncoder)):
             raise NotImplementedError(
-                "EpisodeTokenizer.decode_episode is only implemented for HierarchicalEventEncoder"
+                f"EpisodeTokenizer.decode_episode is only implemented for HierarchicalEventEncoder and FactorizedEventEncoder, "
+                f"got {type(self.encoder)}"
             )
 
         # Convert token IDs back to text (if input is token IDs)
@@ -201,12 +202,16 @@ class EpisodeTokenizer:
                     self.config.fake_image_placeholder,
                 )
                 event = self.encoder.decode(processed_event_string)
-                # Since HierarchicalEventEncoder uses modular arithmetic for timestamp encoding,
-                # we need to adjust the timestamp if it's smaller than the previous one
-                if event.timestamp < previous_timestamp:
-                    timestamp_bias += self.encoder.config.timestamp_range
-                # Adjust timestamp with bias
+                # Handle timestamp adjustment for both encoder types
                 if adjust_timestamp:
+                    # Get timestamp range from encoder config (both encoders have this property)
+                    timestamp_range = self.encoder.config.timestamp_range
+
+                    # Adjust timestamp if it's smaller than the previous one (modular arithmetic)
+                    if event.timestamp < previous_timestamp:
+                        timestamp_bias += timestamp_range
+
+                    # Apply timestamp bias
                     event.timestamp += timestamp_bias
 
                 yield event
