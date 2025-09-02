@@ -80,12 +80,12 @@ class TestBothEncoders:
     def test_basic_keyboard_fidelity(self, encoder, encoder_type, subtests):
         """Basic keyboard events should round-trip without data loss on both encoders."""
         test_cases = [
-            ("press", 65),   # A key
-            ("release", 65), # A key
-            ("press", 13),   # Enter
-            ("release", 13), # Enter
-            ("press", 32),   # Space
-            ("release", 32), # Space
+            ("press", 65),  # A key
+            ("release", 65),  # A key
+            ("press", 13),  # Enter
+            ("release", 13),  # Enter
+            ("press", 32),  # Space
+            ("release", 32),  # Space
         ]
 
         for event_type, vk in test_cases:

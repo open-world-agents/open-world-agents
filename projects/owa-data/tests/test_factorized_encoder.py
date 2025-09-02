@@ -230,10 +230,10 @@ class TestFidelity:
         )
 
         encoded, images = encoder.encode(msg)
-        
+
         # Should contain VK_65 token for A key
         assert "<VK_65>" in encoded, f"Expected <VK_65> token in encoded string: {encoded}"
-        
+
         # Test that factorized encoder uses MB tokens for mouse buttons
         original = {"last_x": 0, "last_y": 0, "button_flags": 1, "button_data": 0}  # Left button
         msg = McapMessage(
@@ -244,10 +244,10 @@ class TestFidelity:
         )
 
         encoded, images = encoder.encode(msg)
-        
+
         # Should contain MB tokens for button flags
         assert any(f"<MB_{i}>" in encoded for i in range(16)), f"Expected MB tokens in encoded string: {encoded}"
-        
+
         # Test that factorized encoder uses SIGN tokens for negative values
         original = {"last_x": -5, "last_y": 3, "button_flags": 0, "button_data": 0}
         msg = McapMessage(
@@ -258,7 +258,7 @@ class TestFidelity:
         )
 
         encoded, images = encoder.encode(msg)
-        
+
         # Should contain SIGN tokens for signed values
         assert "<SIGN_MINUS>" in encoded, f"Expected <SIGN_MINUS> token in encoded string: {encoded}"
         assert "<SIGN_PLUS>" in encoded, f"Expected <SIGN_PLUS> token in encoded string: {encoded}"
