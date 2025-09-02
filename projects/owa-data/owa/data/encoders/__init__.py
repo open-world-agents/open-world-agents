@@ -7,6 +7,7 @@ from .exceptions import (
     UnsupportedTokenError,
 )
 from .hierarchical_event_encoder import HierarchicalEventEncoder, HierarchicalEventEncoderConfig
+from .factorized_event_encoder import FactorizedEventEncoder, FactorizedEventEncoderConfig
 from .json_event_encoder import JSONEventEncoder, JSONEventEncoderConfig
 
 
@@ -14,6 +15,7 @@ def create_encoder(encoder_type: str, **kwargs) -> BaseEventEncoder:
     """Create an encoder instance based on the specified type."""
     encoders = {
         "hierarchical": HierarchicalEventEncoder,
+        "factorized": FactorizedEventEncoder,
         "json": JSONEventEncoder,
     }
 

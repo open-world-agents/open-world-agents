@@ -5,6 +5,7 @@ from typing import Iterator, Literal, TypedDict, overload
 import numpy as np
 import numpy.typing as npt
 from loguru import logger
+from transformers import AutoTokenizer
 from transformers.tokenization_utils import PreTrainedTokenizer
 
 from mcap_owa.highlevel import McapMessage
@@ -48,12 +49,14 @@ class EpisodeTokenizer:
         self.is_prepared = False
 
     @classmethod
-    def from_transformers_model(cls, model_name_or_path: str, **kwargs):
+    def from_transformers_model(cls, model_name_or_path: str, encoder_type: str | None = None, **kwargs):
         model_type = detect_model_type(model_name_or_path)
+
+        # Get base configuration for the model type
         if model_type == ModelType.INTERNVL:
             # InternVL3 configuration
-            episode_tokenizer_config = EpisodeTokenizerConfig(
-                encoder_type="hierarchical",
+            base_config = EpisodeTokenizerConfig(
+                encoder_type="hierarchical",  # Will be overridden
                 fake_image_placeholder="<fake_image_placeholder>",
                 image_token_prefix="<img>",
                 image_token="<IMG_CONTEXT>",
@@ -62,15 +65,76 @@ class EpisodeTokenizer:
             )
         else:
             # SmolVLM2 and other models configuration
-            episode_tokenizer_config = EpisodeTokenizerConfig(
-                encoder_type="hierarchical",
+            base_config = EpisodeTokenizerConfig(
+                encoder_type="hierarchical",  # Will be overridden
                 fake_image_placeholder="<fake_image_placeholder>",
                 image_token_prefix="<fake_token_around_image><global-img>",
                 image_token="<image>",
                 image_token_length=64,
                 image_token_suffix="<fake_token_around_image>",
             )
-        return cls(episode_tokenizer_config, **kwargs)
+
+        # Handle encoder type detection/validation
+        if encoder_type is None:
+            # Try to detect encoder type from model's tokenizer vocab
+            tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
+            tokenizer_vocab = set(tokenizer.get_vocab().keys())
+            detected_encoder_type = cls.detect_encoder_type(tokenizer_vocab, base_config)
+
+            if detected_encoder_type is None:
+                raise ValueError(
+                    f"Cannot auto-detect encoder type for model '{model_name_or_path}'. "
+                    f"The tokenizer vocabulary appears to be unexpanded (original model vocab). "
+                    f"Please specify encoder_type explicitly: 'hierarchical' or 'factorized'."
+                )
+
+            encoder_type = detected_encoder_type
+            logger.info(f"Auto-detected encoder type: {encoder_type}")
+        else:
+            logger.info(f"Using explicit encoder type: {encoder_type}")
+
+        # Apply encoder type and any additional overrides
+        final_config = EpisodeTokenizerConfig(**{**base_config.__dict__, "encoder_type": encoder_type, **kwargs})
+        return cls(final_config)
+
+    @classmethod
+    def detect_encoder_type(cls, tokenizer_vocab: set[str], base_config: EpisodeTokenizerConfig) -> str | None:
+        """Detect encoder type from tokenizer vocabulary."""
+        # Test hierarchical encoder vocab
+        hierarchical_config = EpisodeTokenizerConfig(**{**base_config.__dict__, "encoder_type": "hierarchical"})
+        hierarchical_tokenizer = cls(hierarchical_config)
+        hierarchical_vocab = hierarchical_tokenizer.get_vocab()
+
+        # Test factorized encoder vocab
+        factorized_config = EpisodeTokenizerConfig(**{**base_config.__dict__, "encoder_type": "factorized"})
+        factorized_tokenizer = cls(factorized_config)
+        factorized_vocab = factorized_tokenizer.get_vocab()
+
+        # Check if tokenizer vocab contains all tokens from either encoder
+        hierarchical_match = hierarchical_vocab.issubset(tokenizer_vocab)
+        factorized_match = factorized_vocab.issubset(tokenizer_vocab)
+
+        # Determine encoder type based on vocab match
+        if hierarchical_match and factorized_match:
+            # Both match - this shouldn't happen. Raise error
+            raise ValueError(
+                f"Tokenizer vocab matches both hierarchical and factorized encoders. "
+                f"Expected only one match. Please report this issue."
+            )
+        elif hierarchical_match:
+            return "hierarchical"
+        elif factorized_match:
+            return "factorized"
+        elif len(tokenizer_vocab.intersection(hierarchical_vocab)) > len(base_config.__dict__):
+            # Vocab has some encoder tokens but not complete - likely expanded but corrupted
+            raise ValueError(
+                f"Tokenizer vocab appears to be expanded (has {len(tokenizer_vocab.intersection(hierarchical_vocab))} "
+                f"encoder tokens) but doesn't match any known encoder type. "
+                f"Expected hierarchical ({len(hierarchical_vocab)} tokens) or factorized ({len(factorized_vocab)} tokens)."
+            )
+        else:
+            # Vocab is not expanded
+            return None
 
     def get_vocab(self) -> set[str]:
         # NOTE: fake_image_placeholder is NOT included as it's not a real token

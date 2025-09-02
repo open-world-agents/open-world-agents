@@ -8,8 +8,8 @@
 tokenizer_name: "OpenGVLab/InternVL3-1B-hf"
 
 # Episode tokenizer configuration to override (optional). Defaults are determined from tokenizer_name
-# episode_tokenize_config:
-#   encoder_type: "hierarchical"
+episode_tokenize_config:
+  encoder_type: "hierarchical"  # Options: "hierarchical", "factorized"
 #   fake_image_placeholder: "<fake_image_placeholder>"
 #   image_token_prefix: "<img>"
 #   image_token: "<IMG_CONTEXT>"
