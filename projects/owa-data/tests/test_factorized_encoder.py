@@ -24,7 +24,6 @@ import orjson
 import pytest
 
 from mcap_owa.highlevel.mcap_msg import McapMessage
-from owa.data.encoders.exceptions import InvalidInputError, InvalidTokenError, UnsupportedTokenError
 from owa.data.encoders.factorized_event_encoder import FactorizedEventEncoder, FactorizedEventEncoderConfig
 from owa.msgs.desktop.screen import ScreenCaptured
 

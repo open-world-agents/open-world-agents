@@ -118,8 +118,8 @@ class EpisodeTokenizer:
         if hierarchical_match and factorized_match:
             # Both match - this shouldn't happen. Raise error
             raise ValueError(
-                f"Tokenizer vocab matches both hierarchical and factorized encoders. "
-                f"Expected only one match. Please report this issue."
+                "Tokenizer vocab matches both hierarchical and factorized encoders. "
+                "Expected only one match. Please report this issue."
             )
         elif hierarchical_match:
             return "hierarchical"

@@ -37,5 +37,7 @@ __all__ = [
     "JSONEventEncoder",
     "HierarchicalEventEncoder",
     "HierarchicalEventEncoderConfig",
+    "FactorizedEventEncoder",
+    "FactorizedEventEncoderConfig",
     "JSONEventEncoderConfig",
 ]
