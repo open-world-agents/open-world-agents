@@ -5,6 +5,7 @@ from typing_extensions import Annotated
 
 from mcap_owa.highlevel import OWAMcapReader
 from owa.env.desktop.constants import VK
+from owa.msgs.desktop.mouse import RawMouseEvent
 
 # Constants
 MIN_MOUSE_CLICK_DURATION_NS = 500_000_000  # 500ms in nanoseconds
@@ -223,15 +224,15 @@ def convert(
 
         # Button flag mappings for RawMouseEvent
         BUTTON_PRESS_FLAGS = {
-            0x0001: "left",  # RI_MOUSE_LEFT_BUTTON_DOWN
-            0x0004: "right",  # RI_MOUSE_RIGHT_BUTTON_DOWN
-            0x0010: "middle",  # RI_MOUSE_MIDDLE_BUTTON_DOWN
+            RawMouseEvent.ButtonFlags.RI_MOUSE_LEFT_BUTTON_DOWN: "left",
+            RawMouseEvent.ButtonFlags.RI_MOUSE_RIGHT_BUTTON_DOWN: "right",
+            RawMouseEvent.ButtonFlags.RI_MOUSE_MIDDLE_BUTTON_DOWN: "middle",
         }
 
         BUTTON_RELEASE_FLAGS = {
-            0x0002: "left",  # RI_MOUSE_LEFT_BUTTON_UP
-            0x0008: "right",  # RI_MOUSE_RIGHT_BUTTON_UP
-            0x0020: "middle",  # RI_MOUSE_MIDDLE_BUTTON_UP
+            RawMouseEvent.ButtonFlags.RI_MOUSE_LEFT_BUTTON_UP: "left",
+            RawMouseEvent.ButtonFlags.RI_MOUSE_RIGHT_BUTTON_UP: "right",
+            RawMouseEvent.ButtonFlags.RI_MOUSE_MIDDLE_BUTTON_UP: "middle",
         }
 
         for mcap_msg in all_messages:
