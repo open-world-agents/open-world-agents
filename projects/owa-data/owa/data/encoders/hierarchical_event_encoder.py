@@ -267,21 +267,26 @@ class HierarchicalEventEncoder(BaseEventEncoder):
 
     def _encode_mouse_data(self, event: RawMouseEvent) -> List[str]:
         """Encode mouse data: movement + flags + optional scroll."""
-        # Validate mouse delta range
+        # Validate mouse delta range and clamp values without modifying input
         min_delta, max_delta = self.config.mouse_delta_range
         if not (min_delta <= event.dx <= max_delta) or not (min_delta <= event.dy <= max_delta):
             warnings.warn(
                 f"Mouse delta value ({event.dx},{event.dy}) is outside valid range ({min_delta}, {max_delta}). Clamping."
             )
-            event.last_x = max(min_delta, min(max_delta, event.last_x))
-            event.last_y = max(min_delta, min(max_delta, event.last_y))
+            # Use clamped values for encoding without modifying the input event
+            dx = max(min_delta, min(max_delta, event.dx))
+            dy = max(min_delta, min(max_delta, event.dy))
+        else:
+            # Use original values when no clamping is needed
+            dx = event.dx
+            dy = event.dy
 
         tokens = []
 
         # Encode movement deltas with sign bit
         signed_bases = [2] + self.config.mouse_delta_bases
-        digits_dx = quantize_to_digits(event.dx, signed_bases)
-        digits_dy = quantize_to_digits(event.dy, signed_bases)
+        digits_dx = quantize_to_digits(dx, signed_bases)
+        digits_dy = quantize_to_digits(dy, signed_bases)
         # Interleave dx and dy digits: <dx0><dy0><dx1><dy1>...
         for digit_dx, digit_dy in zip(digits_dx, digits_dy):
             tokens.extend([f"<{digit_dx}>", f"<{digit_dy}>"])

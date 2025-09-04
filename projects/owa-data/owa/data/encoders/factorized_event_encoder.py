@@ -275,37 +275,42 @@ class FactorizedEventEncoder(BaseEventEncoder):
 
     def _encode_mouse_data(self, event: RawMouseEvent) -> List[str]:
         """Encode mouse data: movement + flags + optional scroll."""
-        # Validate mouse delta range
+        # Validate mouse delta range and clamp values without modifying input
         min_delta, max_delta = self.config.mouse_delta_range
         if not (min_delta <= event.dx <= max_delta) or not (min_delta <= event.dy <= max_delta):
             warnings.warn(
                 f"Mouse delta value ({event.dx},{event.dy}) is outside valid range ({min_delta}, {max_delta}). Clamping."
             )
-            event.last_x = max(min_delta, min(max_delta, event.last_x))
-            event.last_y = max(min_delta, min(max_delta, event.last_y))
+            # Use clamped values for encoding without modifying the input event
+            dx = max(min_delta, min(max_delta, event.dx))
+            dy = max(min_delta, min(max_delta, event.dy))
+        else:
+            # Use original values when no clamping is needed
+            dx = event.dx
+            dy = event.dy
 
         tokens = []
 
         # Encode movement deltas sequentially: dx first, then dy
         # dx encoding: sign token + magnitude digits
-        if event.dx >= 0:
+        if dx >= 0:
             tokens.append(EventToken.SIGN_PLUS.value)
-            dx_magnitude = event.dx
+            dx_magnitude = dx
         else:
             tokens.append(EventToken.SIGN_MINUS.value)
-            dx_magnitude = -event.dx
+            dx_magnitude = -dx
 
         # Encode dx magnitude digits
         digits_dx = quantize_to_digits(dx_magnitude, self.config.mouse_delta_bases)
         tokens.extend([f"<{digit}>" for digit in digits_dx])
 
         # dy encoding: sign token + magnitude digits
-        if event.dy >= 0:
+        if dy >= 0:
             tokens.append(EventToken.SIGN_PLUS.value)
-            dy_magnitude = event.dy
+            dy_magnitude = dy
         else:
             tokens.append(EventToken.SIGN_MINUS.value)
-            dy_magnitude = -event.dy
+            dy_magnitude = -dy
 
         # Encode dy magnitude digits
         digits_dy = quantize_to_digits(dy_magnitude, self.config.mouse_delta_bases)
