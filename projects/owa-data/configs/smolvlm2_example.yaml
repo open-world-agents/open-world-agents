@@ -21,6 +21,8 @@ fsl_dataset:
   pad_token_id: 0 # overrided from tokenizer automatically
   max_sequence_length: 4096
   include_samples_without_images: False
+  skip_first_t_seconds_for_action: null
+  time_shift_seconds: null
 
 # Processing options
 num_proc: 32

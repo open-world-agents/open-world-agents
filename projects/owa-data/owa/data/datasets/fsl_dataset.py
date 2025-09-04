@@ -14,45 +14,23 @@ class FSLDatasetConfig:
     max_sequence_length: int = 8192
     include_samples_without_images: bool = False  # Whether to include samples that don't contain images when tokenized
 
-    # Time shift options
-    time_shift_seconds: float | None = None  # Time shift in seconds to add to action topics
-    action_topics: list[str] = field(
-        default_factory=lambda: ["keyboard", "mouse/raw"]
-    )  # Topics to apply time shift to
-
+    # Topics to apply time shift to
+    action_topics: list[str] = field(default_factory=lambda: ["keyboard", "mouse/raw"])
     skip_first_t_seconds_for_action: float | None = None  # Skip the first t seconds of action topics per sample
-    normalize_timestamps_per_sample: bool = False  # Normalize timestamps to start at 0 per sample
+    time_shift_seconds: float | None = None  # Time shift in seconds to add to action topics
 
 
 def _process_batch_to_sequences(batch, config: FSLDatasetConfig):
     """Process a batch of tokenized events into FSL sequences."""
 
     def pad_sequence(items):
-        # Apply time shift to action topics if specified
-        if config.time_shift_seconds is not None:
-            for i, topic in enumerate(items["topic"]):
-                if topic in config.action_topics:
-                    items["timestamp_ns"][i] += int(config.time_shift_seconds * 1e9)
-
-            # Sort by timestamp
-            sorted_items = sorted(
-                zip(items["timestamp_ns"], items["topic"], items["text"], items["images"], items["token_ids"]),
-                key=lambda x: x[0],
-            )
-            items = {
-                "timestamp_ns": [x[0] for x in sorted_items],
-                "topic": [x[1] for x in sorted_items],
-                "text": [x[2] for x in sorted_items],
-                "images": [x[3] for x in sorted_items],
-                "token_ids": [x[4] for x in sorted_items],
-            }
-
-        # Skip the first t seconds of action topics if specified
+        # Skip the first t seconds of action topics if specified. NOTE: order of skip and time shift is important
         if config.skip_first_t_seconds_for_action is not None:
             first_action_timestamp = min(
                 items["timestamp_ns"][i] for i, topic in enumerate(items["topic"]) if topic not in config.action_topics
             )
             skip_threshold = first_action_timestamp + int(config.skip_first_t_seconds_for_action * 1e9)
+            before_skip = len(items["timestamp_ns"])
             items = {
                 key: [
                     val
@@ -61,14 +39,21 @@ def _process_batch_to_sequences(batch, config: FSLDatasetConfig):
                 ]
                 for key in items.keys()
             }
+            logger.debug(f"Skipped {before_skip - len(items['timestamp_ns'])} action events")
 
-        # Normalize timestamps to start at 0 if specified
-        if config.normalize_timestamps_per_sample:
-            min_timestamp = min(items["timestamp_ns"])
-            items["timestamp_ns"] = [ts - min_timestamp for ts in items["timestamp_ns"]]
+        # Apply time shift to action topics if specified. NOTE: order of skip and time shift is important
+        if config.time_shift_seconds is not None:
+            for i, topic in enumerate(items["topic"]):
+                if topic in config.action_topics:
+                    items["timestamp_ns"][i] += int(config.time_shift_seconds * 1e9)
+
+            # Sort by timestamp
+            sorted_intems = sorted((val, i) for i, val in enumerate(items["timestamp_ns"]))
+            items = {key: [val[i] for _, i in sorted_intems] for key, val in items.items()}
+            logger.debug(f"Time shifted {len(items['timestamp_ns'])} action events")
 
         tokens = sum(items["token_ids"], [])
-        texts = sum(items["text"], [])
+        texts = "".join(items["text"])
         images = sum(items["images"], [])
         episode_path = items["episode_path"][0]
 
@@ -79,7 +64,7 @@ def _process_batch_to_sequences(batch, config: FSLDatasetConfig):
         return {
             "input_ids": padded_tokens,
             "attention_mask": attention_mask,
-            "texts": "".join(texts),
+            "texts": texts,
             "images": images,
             "episode_path": episode_path,
         }

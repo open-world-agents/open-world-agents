@@ -31,6 +31,8 @@ python scripts/02A_event_to_fsl.py \
   --input_dir $EVENT_DATASET_DIR \
   --output_dir $FSL_DATASET_DIR \
   --fsl_dataset.max_sequence_length 4096 \
+  --fsl_dataset.skip_first_t_seconds_for_action null \
+  --fsl_dataset.time_shift_seconds null \
   --fsl_workers 16
 
 # 2B. Path B: Event Dataset → Binned Dataset (for traditional training)
@@ -122,6 +124,8 @@ python scripts/02A_event_to_fsl.py \
   --input-dir $EVENT_DATASET_DIR \
   --output-dir $FSL_DATASET_DIR \
   --fsl_dataset.max_sequence_length 4096 \
+  --fsl_dataset.skip_first_t_seconds_for_action null \
+  --fsl_dataset.time_shift_seconds null \
   --fsl_workers 16
 ```
 
