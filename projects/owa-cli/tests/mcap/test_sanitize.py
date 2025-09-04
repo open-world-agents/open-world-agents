@@ -7,6 +7,7 @@ This module tests the core sanitization functionality of the sanitize command.
 from unittest.mock import patch
 
 from owa.cli.mcap import app as mcap_app
+from owa.cli.mcap.sanitize import auto_detect_most_frequent_window
 
 
 class TestSanitizeIntegration:
@@ -250,3 +251,90 @@ class TestSanitizeIntegration:
             )
 
             assert result.exit_code == 0
+
+    def test_auto_detect_window_functionality(self, tmp_path, cli_runner):
+        """Test auto-detect window functionality."""
+        test_file = tmp_path / "test.mcap"
+
+        with (
+            patch("owa.cli.mcap.sanitize.OWAMcapReader") as mock_reader,
+            patch("owa.cli.mcap.sanitize.OWAMcapWriter"),
+        ):
+            # Mock reader to return window messages with different frequencies
+            mock_reader_instance = mock_reader.return_value.__enter__.return_value
+            mock_reader_instance.iter_messages.return_value = [
+                # Most frequent window (3 times)
+                type(
+                    "MockMessage",
+                    (),
+                    {
+                        "topic": "window",
+                        "decoded": type("MockDecoded", (), {"title": "Main App"})(),
+                        "timestamp": 1000,
+                    },
+                )(),
+                type("MockMessage", (), {"topic": "keyboard", "decoded": {"key": "a"}, "timestamp": 1001})(),
+                type(
+                    "MockMessage",
+                    (),
+                    {
+                        "topic": "window",
+                        "decoded": type("MockDecoded", (), {"title": "Main App"})(),
+                        "timestamp": 2000,
+                    },
+                )(),
+                type("MockMessage", (), {"topic": "mouse", "decoded": {"x": 100, "y": 200}, "timestamp": 2001})(),
+                type(
+                    "MockMessage",
+                    (),
+                    {
+                        "topic": "window",
+                        "decoded": type("MockDecoded", (), {"title": "Main App"})(),
+                        "timestamp": 3000,
+                    },
+                )(),
+                # Less frequent window (1 time)
+                type(
+                    "MockMessage",
+                    (),
+                    {
+                        "topic": "window",
+                        "decoded": type("MockDecoded", (), {"title": "Other App"})(),
+                        "timestamp": 4000,
+                    },
+                )(),
+                type("MockMessage", (), {"topic": "keyboard", "decoded": {"key": "b"}, "timestamp": 4001})(),
+            ]
+
+            # Create the test file
+            test_file.write_bytes(b"mock mcap content")
+
+            # Run sanitize command with auto-detect (increase max-removal-ratio to allow the test to pass)
+            result = cli_runner.invoke(
+                mcap_app, ["sanitize", str(test_file), "--auto-detect-window", "--max-removal-ratio", "0.5", "--yes"]
+            )
+
+            assert result.exit_code == 0
+            assert "Auto-detected most frequent window: 'Main App'" in result.output
+
+    def test_auto_detect_window_validation(self, tmp_path, cli_runner):
+        """Test validation when both --keep-window and --auto-detect-window are specified."""
+        test_file = tmp_path / "test.mcap"
+        test_file.write_bytes(b"mock mcap content")
+
+        result = cli_runner.invoke(
+            mcap_app, ["sanitize", str(test_file), "--keep-window", "Test", "--auto-detect-window"]
+        )
+
+        assert result.exit_code == 1
+        assert "Cannot specify both --keep-window and --auto-detect-window" in result.output
+
+    def test_auto_detect_window_no_options(self, tmp_path, cli_runner):
+        """Test validation when neither --keep-window nor --auto-detect-window are specified."""
+        test_file = tmp_path / "test.mcap"
+        test_file.write_bytes(b"mock mcap content")
+
+        result = cli_runner.invoke(mcap_app, ["sanitize", str(test_file)])
+
+        assert result.exit_code == 1
+        assert "Must specify either --keep-window or --auto-detect-window" in result.output

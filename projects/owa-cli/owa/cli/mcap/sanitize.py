@@ -8,9 +8,10 @@ capabilities for data safety.
 
 import shutil
 import tempfile
+from collections import Counter
 from contextlib import contextmanager
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 import typer
 from rich.console import Console
@@ -38,6 +39,47 @@ def safe_temp_file(mode="wb", suffix=".mcap"):
     finally:
         if temp_path.exists():
             temp_path.unlink()
+
+
+def auto_detect_most_frequent_window(file_path: Path, console: Console) -> Optional[str]:
+    """
+    Auto-detect the most frequent window title in an MCAP file.
+
+    Args:
+        file_path: Path to the MCAP file to analyze
+        console: Rich console for output
+
+    Returns:
+        The most frequent window title, or None if no windows found
+    """
+    window_counter = Counter()
+
+    with OWAMcapReader(file_path) as reader:
+        for mcap_msg in reader.iter_messages(topics=["window"]):
+            # Handle both dict and object formats
+            if hasattr(mcap_msg.decoded, "title"):
+                window_title = mcap_msg.decoded.title
+            elif isinstance(mcap_msg.decoded, dict):
+                window_title = mcap_msg.decoded.get("title", "")
+            else:
+                window_title = ""
+
+            if window_title.strip():  # Only count non-empty titles
+                window_counter[window_title] += 1
+
+    if not window_counter:
+        return None
+
+    most_common_window, count = window_counter.most_common(1)[0]
+    console.print(f"[blue]Auto-detected most frequent window: '{most_common_window}' ({count} occurrences)[/blue]")
+
+    # Show top 3 windows for context
+    if len(window_counter) > 1:
+        console.print("[dim]Other frequent windows:[/dim]")
+        for window, count in window_counter.most_common(3)[1:]:
+            console.print(f"[dim]  - '{window}' ({count} occurrences)[/dim]")
+
+    return most_common_window
 
 
 def window_matches_target(window_title: str, target_window: str, exact_match: bool) -> bool:
@@ -198,7 +240,10 @@ def sanitize_mcap_file(
 
 def sanitize(
     files: Annotated[List[Path], typer.Argument(help="MCAP files to sanitize (supports glob patterns)")],
-    keep_window: Annotated[str, typer.Option("--keep-window", help="Window name to keep events for")],
+    keep_window: Annotated[Optional[str], typer.Option("--keep-window", help="Window name to keep events for")] = None,
+    auto_detect_window: Annotated[
+        bool, typer.Option("--auto-detect-window", help="Auto-detect the most frequent window to keep")
+    ] = False,
     exact: Annotated[
         bool, typer.Option("--exact/--substring", help="Use exact window name matching (default: substring)")
     ] = False,
@@ -236,6 +281,7 @@ def sanitize(
         owl mcap sanitize *.mcap --keep-window "Work App" --exact
         owl mcap sanitize data.mcap --keep-window "Browser" --dry-run
         owl mcap sanitize data.mcap --keep-window "App" --max-removal-ratio 0.95
+        owl mcap sanitize recording.mcap --auto-detect-window
     """
 
     # Validate inputs
@@ -243,7 +289,16 @@ def sanitize(
         console.print("[red]No files specified[/red]")
         raise typer.Exit(1)
 
-    if not keep_window.strip():
+    # Validate window specification
+    if auto_detect_window and keep_window:
+        console.print("[red]Cannot specify both --keep-window and --auto-detect-window[/red]")
+        raise typer.Exit(1)
+
+    if not auto_detect_window and not keep_window:
+        console.print("[red]Must specify either --keep-window or --auto-detect-window[/red]")
+        raise typer.Exit(1)
+
+    if keep_window and not keep_window.strip():
         console.print("[red]Window name cannot be empty[/red]")
         raise typer.Exit(1)
 
@@ -260,6 +315,22 @@ def sanitize(
     if not valid_files:
         console.print("[yellow]No valid MCAP files found[/yellow]")
         return
+
+    # Auto-detect window if requested
+    if auto_detect_window:
+        console.print("[bold blue]Auto-detecting most frequent window...[/bold blue]")
+
+        # Use the first file for auto-detection
+        detected_window = auto_detect_most_frequent_window(valid_files[0], console)
+        if not detected_window:
+            console.print("[red]No windows found in MCAP file for auto-detection[/red]")
+            raise typer.Exit(1)
+
+        keep_window = detected_window
+        console.print(f"[green]Using auto-detected window: '{keep_window}'[/green]")
+
+    # At this point, keep_window should be set (either provided or auto-detected)
+    assert keep_window is not None, "keep_window should be set by now"
 
     # Display operation summary
     console.print("[bold blue]MCAP Sanitization Tool[/bold blue]")
