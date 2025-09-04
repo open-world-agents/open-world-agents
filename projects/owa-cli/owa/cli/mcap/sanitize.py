@@ -55,12 +55,6 @@ def auto_detect_most_frequent_window(file_path: Path, console: Console) -> Optio
     most_common_window, count = window_counter.most_common(1)[0]
     console.print(f"[blue]Auto-detected most frequent window: '{most_common_window}' ({count} occurrences)[/blue]")
 
-    # Show top 3 windows for context
-    if len(window_counter) > 1:
-        console.print("[dim]Other frequent windows:[/dim]")
-        for window, count in window_counter.most_common(3)[1:]:
-            console.print(f"[dim]  - '{window}' ({count} occurrences)[/dim]")
-
     return most_common_window
 
 
@@ -299,25 +293,12 @@ def sanitize(
         console.print("[yellow]No valid MCAP files found[/yellow]")
         return
 
-    # Auto-detect window if requested
-    if auto_detect_window:
-        console.print("[bold blue]Auto-detecting most frequent window...[/bold blue]")
-
-        # Use the first file for auto-detection
-        detected_window = auto_detect_most_frequent_window(valid_files[0], console)
-        if not detected_window:
-            console.print("[red]No windows found in MCAP file for auto-detection[/red]")
-            raise typer.Exit(1)
-
-        keep_window = detected_window
-        console.print(f"[green]Using auto-detected window: '{keep_window}'[/green]")
-
-    # At this point, keep_window should be set (either provided or auto-detected)
-    assert keep_window is not None, "keep_window should be set by now"
-
     # Display operation summary
     console.print("[bold blue]MCAP Sanitization Tool[/bold blue]")
-    console.print(f"Window filter: '{keep_window}' ({'exact' if exact else 'substring'} match)")
+    if auto_detect_window:
+        console.print("Window filter: Auto-detect per file")
+    else:
+        console.print(f"Window filter: '{keep_window}' ({'exact' if exact else 'substring'} match)")
     console.print(f"Files to process: {len(valid_files)}")
 
     if dry_run:
@@ -346,9 +327,30 @@ def sanitize(
             task = progress.add_task(f"Processing {file_path.name} ({i}/{len(valid_files)})", total=None)
 
             try:
+                # Determine window for this specific file
+                current_keep_window = keep_window
+                if auto_detect_window:
+                    if verbose:
+                        console.print(f"[blue]Auto-detecting window for {file_path.name}...[/blue]")
+
+                    detected_window = auto_detect_most_frequent_window(file_path, console)
+                    if not detected_window:
+                        console.print(f"[red]No windows found in {file_path.name} for auto-detection[/red]")
+                        failed_sanitizations += 1
+                        continue
+
+                    current_keep_window = detected_window
+                    if verbose:
+                        console.print(
+                            f"[green]Using auto-detected window for {file_path.name}: '{current_keep_window}'[/green]"
+                        )
+
+                # At this point, current_keep_window should be set (either provided or auto-detected)
+                assert current_keep_window is not None, "current_keep_window should be set by now"
+
                 result = sanitize_mcap_file(
                     file_path=file_path,
-                    keep_window=keep_window,
+                    keep_window=current_keep_window,
                     exact_match=exact,
                     console=console,
                     dry_run=dry_run,
@@ -366,8 +368,10 @@ def sanitize(
                         removed = result["removed_messages"]
                         percentage = (removed / total * 100) if total > 0 else 0
 
+                        # Show window used if auto-detecting
+                        window_info = f" (window: '{current_keep_window}')" if auto_detect_window else ""
                         console.print(
-                            f"[green]✓ {file_path.name}: {removed} messages removed ({percentage:.1f}%)[/green]"
+                            f"[green]✓ {file_path.name}: {removed} messages removed ({percentage:.1f}%){window_info}[/green]"
                         )
                 else:
                     failed_sanitizations += 1
