@@ -7,9 +7,7 @@ capabilities for data safety.
 """
 
 import shutil
-import tempfile
 from collections import Counter
-from contextlib import contextmanager
 from pathlib import Path
 from typing import List, Optional
 
@@ -18,27 +16,11 @@ from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from typing_extensions import Annotated
 
+import owa.core.utils.tempfile as tempfile
 from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
 from owa.core.utils.backup import BackupContext
 
 from ..console import console
-
-
-@contextmanager
-def safe_temp_file(mode="wb", suffix=".mcap"):
-    """
-    Context manager for temporary files that works reliably on Windows.
-
-    This handles the Windows file locking issue: https://stackoverflow.com/a/23212515
-    """
-    with tempfile.NamedTemporaryFile(mode=mode, suffix=suffix, delete=False) as temp_file:
-        temp_path = Path(temp_file.name)
-
-    try:
-        yield temp_file, temp_path
-    finally:
-        if temp_path.exists():
-            temp_path.unlink()
 
 
 def auto_detect_most_frequent_window(file_path: Path, console: Console) -> Optional[str]:
@@ -202,8 +184,9 @@ def sanitize_mcap_file(
     # Use combined context managers for safe file operations
     with (
         BackupContext(file_path, console=console, keep_backup=keep_backup) as backup_ctx,
-        safe_temp_file(mode="wb", suffix=".mcap") as (temp_file, temp_path),
+        tempfile.NamedTemporaryFile(mode="wb", suffix=".mcap") as temp_file,
     ):
+        temp_path = Path(temp_file.name)
         # Second pass: write sanitized file
         keep_current_events = False
 

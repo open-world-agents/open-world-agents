@@ -5,12 +5,11 @@ This module tests the new generic type support for McapMessage[T],
 ensuring type safety, backward compatibility, and proper IDE support.
 """
 
-import tempfile
-
 import pytest
-from owa.core.message import OWAMessage
 
 from mcap_owa.highlevel import McapMessage, OWAMcapReader, OWAMcapWriter
+from owa.core.message import OWAMessage
+from owa.core.utils.tempfile import NamedTemporaryFile
 
 
 # Mock message types for testing generic functionality
@@ -37,7 +36,7 @@ class MockMouseEvent(OWAMessage):
 @pytest.fixture
 def temp_mcap_file():
     """Create a temporary MCAP file for testing."""
-    with tempfile.NamedTemporaryFile(suffix=".mcap", delete=False) as f:
+    with NamedTemporaryFile(suffix=".mcap") as f:
         yield f.name
 
 
