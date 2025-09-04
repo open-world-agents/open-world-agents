@@ -17,7 +17,7 @@ class FSLDatasetConfig:
     # Topics to apply time shift to
     action_topics: list[str] = field(default_factory=lambda: ["keyboard", "mouse/raw"])
     skip_first_t_seconds_for_action: float | None = None  # Skip the first t seconds of action topics per sample
-    time_shift_seconds: float | None = None  # Time shift in seconds to add to action topics
+    time_shift_seconds_for_action: float | None = None  # Time shift in seconds to add to action topics
 
 
 def _process_batch_to_sequences(batch, config: FSLDatasetConfig):
@@ -42,10 +42,10 @@ def _process_batch_to_sequences(batch, config: FSLDatasetConfig):
             logger.debug(f"Skipped {before_skip - len(items['timestamp_ns'])} action events")
 
         # Apply time shift to action topics if specified. NOTE: order of skip and time shift is important
-        if config.time_shift_seconds is not None:
+        if config.time_shift_seconds_for_action is not None:
             for i, topic in enumerate(items["topic"]):
                 if topic in config.action_topics:
-                    items["timestamp_ns"][i] += int(config.time_shift_seconds * 1e9)
+                    items["timestamp_ns"][i] += int(config.time_shift_seconds_for_action * 1e9)
 
             # Sort by timestamp
             sorted_intems = sorted((val, i) for i, val in enumerate(items["timestamp_ns"]))
