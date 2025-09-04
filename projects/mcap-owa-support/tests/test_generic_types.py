@@ -6,18 +6,19 @@ ensuring type safety, backward compatibility, and proper IDE support.
 """
 
 import tempfile
+import warnings
 
 import pytest
-from owa.core.message import OWAMessage
 
 from mcap_owa.highlevel import McapMessage, OWAMcapReader, OWAMcapWriter
+from owa.core.message import OWAMessage
 
 
 # Mock message types for testing generic functionality
 class MockKeyboardEvent(OWAMessage):
     """Mock keyboard event for testing generic types."""
 
-    _type = "test.generic.KeyboardEvent"
+    _type = "test/KeyboardEvent"
     event_type: str
     vk: int
     timestamp: int = 0
@@ -26,7 +27,7 @@ class MockKeyboardEvent(OWAMessage):
 class MockMouseEvent(OWAMessage):
     """Mock mouse event for testing generic types."""
 
-    _type = "test.generic.MouseEvent"
+    _type = "test/MouseEvent"
     event_type: str
     button: str
     x: int
@@ -53,12 +54,15 @@ class TestGenericTypes:
             writer.write_message(keyboard_event, topic="/keyboard", timestamp=1000)
 
         # Read message without generic type annotation (backward compatibility)
-        with OWAMcapReader(temp_mcap_file, decode_args={"return_dict_on_failure": True}) as reader:
-            for msg in reader.iter_messages():
-                decoded = msg.decoded
-                assert decoded.event_type == "press"
-                assert decoded.vk == 65
-                break
+        # Suppress warnings for mock messages not in registry
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", "Domain-based message.*not found in registry.*", UserWarning)
+            with OWAMcapReader(temp_mcap_file, decode_args={"return_dict_on_failure": True}) as reader:
+                for msg in reader.iter_messages():
+                    decoded = msg.decoded
+                    assert decoded.event_type == "press"
+                    assert decoded.vk == 65
+                    break
 
     def test_generic_type_annotations(self, temp_mcap_file):
         """Test that generic type annotations work correctly."""
@@ -69,11 +73,14 @@ class TestGenericTypes:
             writer.write_message(keyboard_event, topic="/keyboard", timestamp=1000)
 
         # Read with type annotations
-        with OWAMcapReader(temp_mcap_file, decode_args={"return_dict_on_failure": True}) as reader:
-            for msg in reader.iter_messages():
-                # Type-safe access
-                typed_msg: McapMessage[MockKeyboardEvent] = msg
-                decoded = typed_msg.decoded
-                assert decoded.event_type == "press"
-                assert decoded.vk == 65
-                break
+        # Suppress warnings for mock messages not in registry
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", "Domain-based message.*not found in registry.*", UserWarning)
+            with OWAMcapReader(temp_mcap_file, decode_args={"return_dict_on_failure": True}) as reader:
+                for msg in reader.iter_messages():
+                    # Type-safe access
+                    typed_msg: McapMessage[MockKeyboardEvent] = msg
+                    decoded = typed_msg.decoded
+                    assert decoded.event_type == "press"
+                    assert decoded.vk == 65
+                    break
