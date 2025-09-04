@@ -39,7 +39,7 @@ def _process_batch_to_sequences(batch, config: FSLDatasetConfig):
                 ]
                 for key in items.keys()
             }
-            logger.debug(f"Skipped {before_skip - len(items['timestamp_ns'])} action events")
+            logger.trace(f"Skipped {before_skip - len(items['timestamp_ns'])} action events")
 
         # Apply time shift to action topics if specified. NOTE: order of skip and time shift is important
         if config.time_shift_seconds_for_action is not None:
@@ -50,7 +50,7 @@ def _process_batch_to_sequences(batch, config: FSLDatasetConfig):
             # Sort by timestamp
             sorted_items = sorted((val, i) for i, val in enumerate(items["timestamp_ns"]))
             items = {key: [val[i] for _, i in sorted_items] for key, val in items.items()}
-            logger.debug(f"Time shifted {len(items['timestamp_ns'])} action events")
+            logger.trace(f"Time shifted {len(items['timestamp_ns'])} action events")
 
         tokens = sum(items["token_ids"], [])
         texts = "".join(items["text"])
