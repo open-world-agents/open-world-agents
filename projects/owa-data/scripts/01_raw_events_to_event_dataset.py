@@ -230,8 +230,15 @@ def create_event_dataset(
 
 @app.command()
 def main(
-    train_dir: Path = typer.Option(..., "--train-dir", help="Directory containing MCAP files for training"),
+    train_dir: Optional[Path] = typer.Option(None, "--train-dir", help="Directory containing MCAP files for training"),
+    train_files: Optional[List[str]] = typer.Option(
+        None, "--train-files", help="List of MCAP file paths for training"
+    ),
     test_dir: Optional[Path] = typer.Option(None, "--test-dir", help="Directory containing MCAP files for testing"),
+    test_files: Optional[List[str]] = typer.Option(None, "--test-files", help="List of MCAP file paths for testing"),
+    test_only: bool = typer.Option(
+        False, "--test-only", help="Create test dataset only (requires --test-dir or --test-files)"
+    ),
     test_percent: float = typer.Option(0.1, "--test_percent", help="Fraction of training files for test set"),
     max_test_files: int = typer.Option(32, "--max-test-files", help="Maximum number of test files"),
     rate: Optional[List[str]] = typer.Option(None, "--rate", help="Rate-limiting per topic in 'topic=Hz' format"),
@@ -249,6 +256,19 @@ def main(
 ):
     """Generate event dataset from raw MCAP files."""
 
+    # Validate test-only mode
+    if test_only:
+        if not test_dir and not test_files:
+            raise typer.BadParameter("--test-only requires either --test-dir or --test-files")
+        if train_dir or train_files:
+            raise typer.BadParameter("--test-only cannot be used with --train-dir or --train-files")
+    else:
+        # Original validation for non-test-only mode
+        if not train_dir and not train_files:
+            raise typer.BadParameter("Must specify either --train-dir or --train-files")
+        if train_dir and train_files:
+            raise typer.BadParameter("Cannot specify both --train-dir and --train-files")
+
     # Validate test_percent
     if test_percent <= 0 or test_percent >= 1:
         raise typer.BadParameter("--test_percent must be between 0 and 1 (exclusive)")
@@ -260,31 +280,135 @@ def main(
     # Define action topics that should be time-shifted
     action_topics = action_topic if action_topic else ["keyboard", "mouse/raw"]
 
+    if test_only:
+        # Test-only mode: only process test files
+        if test_dir:
+            test_file_paths = sorted(test_dir.rglob("*.mcap"))
+            if not test_file_paths:
+                raise typer.BadParameter(f"No MCAP files found in test-dir: {test_dir}")
+            mcap_root_directory = str(test_dir)
+        else:  # test_files
+            test_file_paths = [Path(f) for f in test_files]
+            missing_files = [f for f in test_file_paths if not f.exists()]
+            if missing_files:
+                raise typer.BadParameter(f"Missing test files: {[str(f) for f in missing_files[:5]]}")
+            # Use common parent directory as root
+            if test_file_paths:
+                try:
+                    common_parent = Path(test_file_paths[0]).parent
+                    for file_path in test_file_paths[1:]:
+                        while not str(file_path).startswith(str(common_parent)):
+                            common_parent = common_parent.parent
+                            if common_parent == common_parent.parent:
+                                common_parent = None
+                                break
+                        if common_parent is None:
+                            break
+                    mcap_root_directory = str(common_parent) if common_parent else None
+                except Exception:
+                    mcap_root_directory = None
+
+        print(f"Processing {len(test_file_paths)} test files with {num_workers} workers (test-only mode)")
+        if time_shift is not None and action_topics:
+            print(f"Applying {time_shift}s time shift to action topics: {action_topics}")
+        else:
+            print("No time shift applied")
+
+        # Confirm if no output directory
+        if not output_dir:
+            if not typer.confirm("No --output-dir given. Continue without saving to disk?", default=False):
+                raise typer.Exit(1)
+
+        # Create test dataset only
+        test_dataset = create_event_dataset(
+            test_file_paths,
+            rate_settings,
+            topics_to_keep,
+            num_workers,
+            "test",
+            mcap_root_directory,
+            time_shift,
+            action_topics,
+        )
+
+        # Create DatasetDict with only test split
+        dataset_dict = DatasetDict({"test": test_dataset})
+        print(f"Created {len(test_dataset):,} test examples")
+
+        # Save to disk if requested
+        if output_dir:
+            output_dir.mkdir(parents=True, exist_ok=True)
+            print(f"Saving to {output_dir}")
+            dataset_dict.save_to_disk(str(output_dir))
+            print("Saved successfully")
+
+        return
+
     # Gather MCAP files
-    train_files = sorted(train_dir.rglob("*.mcap"))
-    if not train_files:
-        raise typer.BadParameter(f"No MCAP files found in train-dir: {train_dir}")
+    if train_dir:
+        # Original behavior: gather files from directory
+        train_file_paths = sorted(train_dir.rglob("*.mcap"))
+        if not train_file_paths:
+            raise typer.BadParameter(f"No MCAP files found in train-dir: {train_dir}")
+        mcap_root_directory = str(train_dir)
+    else:
+        # New behavior: use provided file list
+        train_file_paths = [Path(f) for f in train_files]
+        # Validate all files exist
+        missing_files = [f for f in train_file_paths if not f.exists()]
+        if missing_files:
+            raise typer.BadParameter(f"Missing files: {[str(f) for f in missing_files[:5]]}")
+        # Use common parent directory as root, or None if files are scattered
+        if train_file_paths:
+            try:
+                # Try to find common parent directory
+                common_parent = Path(train_file_paths[0]).parent
+                for file_path in train_file_paths[1:]:
+                    while not str(file_path).startswith(str(common_parent)):
+                        common_parent = common_parent.parent
+                        if common_parent == common_parent.parent:  # Reached filesystem root
+                            common_parent = None
+                            break
+                    if common_parent is None:
+                        break
+                mcap_root_directory = str(common_parent) if common_parent else None
+            except Exception:
+                mcap_root_directory = None
 
     # Determine test files
     if test_dir:
-        test_files = sorted(test_dir.rglob("*.mcap"))
-        if not test_files:
+        test_file_paths = sorted(test_dir.rglob("*.mcap"))
+        if not test_file_paths:
             raise typer.BadParameter(f"No MCAP files found in test-dir: {test_dir}")
         # Check for overlap
-        train_set = set(str(p) for p in train_files)
-        overlap = set(str(p) for p in test_files).intersection(train_set)
+        train_set = set(str(p) for p in train_file_paths)
+        overlap = set(str(p) for p in test_file_paths).intersection(train_set)
         if overlap:
             raise typer.BadParameter(f"Same files present in train-dir and test-dir: {len(overlap)} files")
+    elif test_files:
+        test_file_paths = [Path(f) for f in test_files]
+        # Validate all files exist
+        missing_files = [f for f in test_file_paths if not f.exists()]
+        if missing_files:
+            raise typer.BadParameter(f"Missing test files: {[str(f) for f in missing_files[:5]]}")
+        # Check for overlap
+        train_set = set(str(p) for p in train_file_paths)
+        overlap = set(str(p) for p in test_file_paths).intersection(train_set)
+        if overlap:
+            raise typer.BadParameter(f"Same files present in train and test file lists: {len(overlap)} files")
     else:
-        shuffled = train_files.copy()
+        # Split train files into train/test
+        shuffled = train_file_paths.copy()
         rng = np.random.default_rng(42)  # Fixed seed for reproducibility
         shuffled_index = rng.permutation(len(shuffled))
         shuffled = [shuffled[i] for i in shuffled_index]
         test_count = min(max(1, int(len(shuffled) * test_percent)), max_test_files)
-        test_files = shuffled[:test_count]
-        train_files = shuffled[test_count:]
+        test_file_paths = shuffled[:test_count]
+        train_file_paths = shuffled[test_count:]
 
-    print(f"Processing {len(train_files)} train files, {len(test_files)} test files with {num_workers} workers")
+    print(
+        f"Processing {len(train_file_paths)} train files, {len(test_file_paths)} test files with {num_workers} workers"
+    )
     if time_shift is not None and action_topics:
         print(f"Applying {time_shift}s time shift to action topics: {action_topics}")
     else:
@@ -296,9 +420,8 @@ def main(
             raise typer.Exit(1)
 
     # Create event datasets
-    mcap_root_directory = str(train_dir)
     train_dataset = create_event_dataset(
-        train_files,
+        train_file_paths,
         rate_settings,
         topics_to_keep,
         num_workers,
@@ -308,7 +431,14 @@ def main(
         action_topics,
     )
     test_dataset = create_event_dataset(
-        test_files, rate_settings, topics_to_keep, num_workers, "test", mcap_root_directory, time_shift, action_topics
+        test_file_paths,
+        rate_settings,
+        topics_to_keep,
+        num_workers,
+        "test",
+        mcap_root_directory,
+        time_shift,
+        action_topics,
     )
 
     # Combine into DatasetDict
