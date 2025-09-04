@@ -4,7 +4,7 @@ Tests for rename_uri command functionality.
 This module tests the core URI renaming functionality of the rename_uri command.
 """
 
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from owa.cli.mcap import app as mcap_app
 
@@ -24,23 +24,18 @@ class TestRenameUriIntegration:
         ):
             # Mock reader to return some test messages
             mock_reader_instance = mock_reader.return_value.__enter__.return_value
+
+            # Create mock objects using Mock for better readability
+            mock_media_ref = Mock(uri="any_video.mkv", pts_ns=123456)
+            mock_decoded_screen = Mock(media_ref=mock_media_ref)
+            mock_screen_message = Mock(topic="screen", decoded=mock_decoded_screen, timestamp=1000)
+
+            mock_decoded_keyboard = Mock(key="a")
+            mock_keyboard_message = Mock(topic="keyboard", decoded=mock_decoded_keyboard, timestamp=1001)
+
             mock_reader_instance.iter_messages.return_value = [
-                # Mock screen message with media_ref
-                type(
-                    "MockMessage",
-                    (),
-                    {
-                        "topic": "screen",
-                        "decoded": type(
-                            "MockDecoded",
-                            (),
-                            {"media_ref": type("MockMediaRef", (), {"uri": "any_video.mkv", "pts_ns": 123456})()},
-                        )(),
-                        "timestamp": 1000,
-                    },
-                )(),
-                # Mock other message
-                type("MockMessage", (), {"topic": "keyboard", "decoded": {"key": "a"}, "timestamp": 1001})(),
+                mock_screen_message,
+                mock_keyboard_message,
             ]
 
             # Create the test file
@@ -71,20 +66,14 @@ class TestRenameUriIntegration:
         ):
             # Mock reader to work initially
             mock_reader_instance = mock_reader.return_value.__enter__.return_value
+
+            # Create mock objects using Mock for better readability
+            mock_media_ref = Mock(uri="any_video.mkv", pts_ns=123456)
+            mock_decoded_screen = Mock(media_ref=mock_media_ref)
+            mock_screen_message = Mock(topic="screen", decoded=mock_decoded_screen, timestamp=1000)
+
             mock_reader_instance.iter_messages.return_value = [
-                type(
-                    "MockMessage",
-                    (),
-                    {
-                        "topic": "screen",
-                        "decoded": type(
-                            "MockDecoded",
-                            (),
-                            {"media_ref": type("MockMediaRef", (), {"uri": "any_video.mkv", "pts_ns": 123456})()},
-                        )(),
-                        "timestamp": 1000,
-                    },
-                )(),
+                mock_screen_message,
             ]
 
             # Mock writer to fail during writing
@@ -112,20 +101,14 @@ class TestRenameUriIntegration:
             patch("owa.cli.mcap.rename_uri.MediaRef"),
         ):
             mock_reader_instance = mock_reader.return_value.__enter__.return_value
+
+            # Create mock objects using Mock for better readability
+            mock_media_ref = Mock(uri="any_video.mkv", pts_ns=123456)
+            mock_decoded_screen = Mock(media_ref=mock_media_ref)
+            mock_screen_message = Mock(topic="screen", decoded=mock_decoded_screen, timestamp=1000)
+
             mock_reader_instance.iter_messages.return_value = [
-                type(
-                    "MockMessage",
-                    (),
-                    {
-                        "topic": "screen",
-                        "decoded": type(
-                            "MockDecoded",
-                            (),
-                            {"media_ref": type("MockMediaRef", (), {"uri": "any_video.mkv", "pts_ns": 123456})()},
-                        )(),
-                        "timestamp": 1000,
-                    },
-                )(),
+                mock_screen_message,
             ]
 
             # Run rename_uri on multiple files
@@ -151,20 +134,14 @@ class TestRenameUriIntegration:
 
         with patch("owa.cli.mcap.rename_uri.OWAMcapReader") as mock_reader:
             mock_reader_instance = mock_reader.return_value.__enter__.return_value
+
+            # Create mock objects using Mock for better readability
+            mock_media_ref = Mock(uri="any_video.mkv", pts_ns=123456)
+            mock_decoded_screen = Mock(media_ref=mock_media_ref)
+            mock_screen_message = Mock(topic="screen", decoded=mock_decoded_screen, timestamp=1000)
+
             mock_reader_instance.iter_messages.return_value = [
-                type(
-                    "MockMessage",
-                    (),
-                    {
-                        "topic": "screen",
-                        "decoded": type(
-                            "MockDecoded",
-                            (),
-                            {"media_ref": type("MockMediaRef", (), {"uri": "any_video.mkv", "pts_ns": 123456})()},
-                        )(),
-                        "timestamp": 1000,
-                    },
-                )(),
+                mock_screen_message,
             ]
 
             # Run rename_uri in dry-run mode
@@ -183,8 +160,8 @@ class TestRenameUriIntegration:
             # Original file should be unchanged
             assert test_file.read_bytes() == original_content
 
-    def test_rename_uri_no_matching_uris(self, tmp_path, cli_runner):
-        """Test behavior when no matching URIs are found."""
+    def test_rename_uri_with_mixed_message_types(self, tmp_path, cli_runner):
+        """Test behavior with mixed message types."""
         test_file = tmp_path / "test.mcap"
         test_file.write_bytes(b"content")
 
@@ -193,27 +170,18 @@ class TestRenameUriIntegration:
             patch("owa.cli.mcap.rename_uri.OWAMcapWriter"),
         ):
             mock_reader_instance = mock_reader.return_value.__enter__.return_value
+
+            # Create mock objects using Mock for better readability
+            mock_media_ref = Mock(uri="different_video.mkv", pts_ns=123456)
+            mock_decoded_screen = Mock(media_ref=mock_media_ref)
+            mock_screen_message = Mock(topic="screen", decoded=mock_decoded_screen, timestamp=1000)
+
+            mock_decoded_keyboard = Mock(key="a")
+            mock_keyboard_message = Mock(topic="keyboard", decoded=mock_decoded_keyboard, timestamp=1001)
+
             mock_reader_instance.iter_messages.return_value = [
-                # Screen message with different URI
-                type(
-                    "MockMessage",
-                    (),
-                    {
-                        "topic": "screen",
-                        "decoded": type(
-                            "MockDecoded",
-                            (),
-                            {
-                                "media_ref": type(
-                                    "MockMediaRef", (), {"uri": "different_video.mkv", "pts_ns": 123456}
-                                )()
-                            },
-                        )(),
-                        "timestamp": 1000,
-                    },
-                )(),
-                # Non-screen message
-                type("MockMessage", (), {"topic": "keyboard", "decoded": {"key": "a"}, "timestamp": 1001})(),
+                mock_screen_message,
+                mock_keyboard_message,
             ]
 
             result = cli_runner.invoke(
@@ -229,8 +197,8 @@ class TestRenameUriIntegration:
 
             assert result.exit_code == 0
 
-    def test_rename_uri_valid_operation(self, tmp_path, cli_runner):
-        """Test behavior with valid URI parameter."""
+    def test_rename_uri_with_empty_mcap_file(self, tmp_path, cli_runner):
+        """Test behavior with empty MCAP file."""
         test_file = tmp_path / "test.mcap"
         test_file.write_bytes(b"content")
 

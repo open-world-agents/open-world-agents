@@ -22,6 +22,17 @@ from owa.msgs.desktop.screen import MediaRef
 from ..console import console
 
 
+def _is_modifiable_screen_message(mcap_msg) -> bool:
+    """Check if an MCAP message is a screen message with a modifiable URI."""
+    message = mcap_msg.decoded
+    return (
+        mcap_msg.topic == "screen"
+        and hasattr(message, "media_ref")
+        and message.media_ref
+        and hasattr(message.media_ref, "uri")
+    )
+
+
 def rename_uri_in_mcap_file(
     file_path: Path,
     new_uri: str,
@@ -68,11 +79,7 @@ def rename_uri_in_mcap_file(
                 screen_messages += 1
 
                 # Check if message has media_ref with URI
-                if (
-                    hasattr(mcap_msg.decoded, "media_ref")
-                    and mcap_msg.decoded.media_ref
-                    and hasattr(mcap_msg.decoded.media_ref, "uri")
-                ):
+                if _is_modifiable_screen_message(mcap_msg):
                     current_uri = mcap_msg.decoded.media_ref.uri
                     original_uris.add(current_uri)
 
@@ -120,12 +127,7 @@ def rename_uri_in_mcap_file(
                 message = mcap_msg.decoded
 
                 # Modify all screen messages with media_ref
-                if (
-                    mcap_msg.topic == "screen"
-                    and hasattr(message, "media_ref")
-                    and message.media_ref
-                    and hasattr(message.media_ref, "uri")
-                ):
+                if _is_modifiable_screen_message(mcap_msg):
                     # Create a new MediaRef with the updated URI
                     new_media_ref = MediaRef(uri=new_uri, pts_ns=message.media_ref.pts_ns)
 
@@ -136,7 +138,7 @@ def rename_uri_in_mcap_file(
                 writer.write_message(message, topic=mcap_msg.topic, timestamp=mcap_msg.timestamp)
 
         # Replace original file with modified version (after writer is closed)
-        shutil.copy2(temp_path, file_path)
+        shutil.move(str(temp_path), file_path)
 
         return {
             "file_path": file_path,
