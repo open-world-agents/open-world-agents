@@ -10,9 +10,9 @@ from owa.core.message import OWAMessage
 
 
 class ValidMessage(OWAMessage):
-    """A message with a valid _type that points to itself."""
+    """A message with a valid _type that uses domain-based format."""
 
-    _type = "owa.core.message.OWAMessage"  # Use a valid existing class for testing
+    _type = "test/ValidMessage"  # Use domain-based format
     data: str
 
 
@@ -21,24 +21,23 @@ class TestMessageVerification:
 
     def test_valid_message_verification(self):
         """Test that a message with valid _type passes verification."""
-        # This will issue a warning about class mismatch but still return True
+        # Domain-based messages should pass verification without warnings
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             result = ValidMessage.verify_type()
             assert result is True
-            # Should have a warning about class mismatch
-            assert len(w) == 1
-            assert "Class mismatch" in str(w[0].message)
+            # No warnings should be issued for valid domain-based messages
+            assert len(w) == 0
 
-    def test_invalid_module_verification(self):
-        """Test that a message with invalid module in _type fails verification."""
+    def test_invalid_format_verification_old_style(self):
+        """Test that a message with old module-based format fails verification."""
 
-        class InvalidModuleMessage(OWAMessage):
-            _type = "nonexistent.module.InvalidMessage"
+        class InvalidFormatMessage(OWAMessage):
+            _type = "nonexistent.module.InvalidMessage"  # Old format should be rejected
             data: str
 
-        with pytest.raises(ImportError, match="Module 'nonexistent.module' specified in _type"):
-            InvalidModuleMessage.verify_type()
+        with pytest.raises(ValueError, match="Invalid _type format.*Expected format: 'domain/MessageType'"):
+            InvalidFormatMessage.verify_type()
 
     def test_invalid_format_verification(self):
         """Test that a message with invalid _type format fails verification."""
@@ -62,28 +61,24 @@ class TestMessageVerification:
 
     def test_automatic_verification_on_creation(self):
         """Test that verification is automatically called when creating message instances."""
-        # Valid message should create with class mismatch warning
+        # Valid domain-based message should create without warnings
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             msg = ValidMessage(data="test")  # noqa: F841
-            assert len(w) == 1  # Should have class mismatch warning
-            assert "Class mismatch" in str(w[0].message)
+            assert len(w) == 0  # No warnings for valid domain-based messages
 
-    def test_class_mismatch_warning(self):
-        """Test that a warning is issued when _type points to a different class."""
+    def test_old_format_rejection_on_creation(self):
+        """Test that old module-based format is rejected during message creation."""
 
-        class MismatchedMessage(OWAMessage):
-            # This _type points to OWAMessage, not MismatchedMessage
+        class OldFormatMessage(OWAMessage):
+            # This uses old module-based format which should be rejected
             _type = "owa.core.message.OWAMessage"
             data: str
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            result = MismatchedMessage.verify_type()
-
-            # Should still return True but issue a warning
-            assert result is True
+            msg = OldFormatMessage(data="test")  # noqa: F841
+            # Should have a warning about verification failure
             assert len(w) == 1
-            assert "Class mismatch" in str(w[0].message)
-            assert "OWAMessage" in str(w[0].message)
-            assert "MismatchedMessage" in str(w[0].message)
+            assert "Message type verification failed" in str(w[0].message)
+            assert "Invalid _type format" in str(w[0].message)
