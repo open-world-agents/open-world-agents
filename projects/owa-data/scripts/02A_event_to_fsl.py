@@ -45,18 +45,12 @@ class Config:
     num_proc: int = 32  # Number of processes for tokenization
     fsl_workers: int = 4  # Number of workers for FSL processing
 
-    # Filtering options
-    include_samples_without_images: bool = False  # Whether to include samples that don't contain images when tokenized
-
 
 def main(cfg: Config):
     """Convert event dataset to FSL dataset format."""
     print(f"Loading event dataset from: {cfg.input_dir}")
     print(f"Output directory: {cfg.output_dir}")
     print(f"Tokenizer: {cfg.tokenizer_name}")
-    print(f"Max sequence length: {cfg.fsl_dataset.max_sequence_length}")
-    print(f"Include samples without images: {cfg.include_samples_without_images}")
-
     print(f"Episode tokenizer cfg: {cfg.episode_tokenize_config}")
 
     # Load event dataset
@@ -90,11 +84,7 @@ def main(cfg: Config):
 
     # Configure FSL dataset
     cfg.fsl_dataset.pad_token_id = tokenizer.pad_token_id
-    cfg.fsl_dataset.include_samples_without_images = cfg.include_samples_without_images
-    print("FSL dataset cfg:")
-    print(f"  - Pad token ID: {cfg.fsl_dataset.pad_token_id}")
-    print(f"  - Max sequence length: {cfg.fsl_dataset.max_sequence_length}")
-    print(f"  - Include samples without images: {cfg.fsl_dataset.include_samples_without_images}")
+    print(f"FSL dataset cfg: {cfg.fsl_dataset}")
 
     processed_datasets = {}
 

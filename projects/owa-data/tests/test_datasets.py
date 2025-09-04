@@ -4,12 +4,11 @@ Test for owa.data.datasets - focuses on essential functionality and configuratio
 """
 
 import json
-import tempfile
-from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
 
+from owa.core.utils.tempfile import NamedTemporaryFile
 from owa.data.datasets import (
     DatasetConfig,
     DatasetStage,
@@ -21,6 +20,13 @@ from owa.data.datasets.transforms import (
     create_fsl_transform,
     resolve_episode_path,
 )
+
+
+@pytest.fixture
+def temp_json_file():
+    """Create a temporary JSON file for testing."""
+    with NamedTemporaryFile(mode="w", suffix=".json") as f:
+        yield f.name
 
 
 class TestDatasetConfig:
@@ -52,29 +58,23 @@ class TestDatasetConfig:
         assert restored_config.stage == DatasetStage.BINNED
         assert restored_config.mcap_root_directory == "/test/path"
 
-    def test_config_json_io(self):
+    def test_config_json_io(self, temp_json_file):
         """Test configuration JSON file I/O."""
         config = DatasetConfig(stage=DatasetStage.TOKENIZED, mcap_root_directory="/json/test")
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
-            json_path = f.name
+        # Test to_json
+        config.to_json(temp_json_file)
 
-        try:
-            # Test to_json
-            config.to_json(json_path)
+        # Verify file contents
+        with open(temp_json_file, "r") as f:
+            data = json.load(f)
+        assert data["stage"] == "tokenized"
+        assert data["mcap_root_directory"] == "/json/test"
 
-            # Verify file contents
-            with open(json_path, "r") as f:
-                data = json.load(f)
-            assert data["stage"] == "tokenized"
-            assert data["mcap_root_directory"] == "/json/test"
-
-            # Test from_json
-            restored_config = DatasetConfig.from_json(json_path)
-            assert restored_config.stage == DatasetStage.TOKENIZED
-            assert restored_config.mcap_root_directory == "/json/test"
-        finally:
-            Path(json_path).unlink(missing_ok=True)
+        # Test from_json
+        restored_config = DatasetConfig.from_json(temp_json_file)
+        assert restored_config.stage == DatasetStage.TOKENIZED
+        assert restored_config.mcap_root_directory == "/json/test"
 
 
 class TestDatasetStage:

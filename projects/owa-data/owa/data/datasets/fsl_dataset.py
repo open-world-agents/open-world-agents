@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from loguru import logger
 
@@ -14,23 +14,63 @@ class FSLDatasetConfig:
     max_sequence_length: int = 8192
     include_samples_without_images: bool = False  # Whether to include samples that don't contain images when tokenized
 
+    # Topics to apply time shift to
+    action_topics: list[str] = field(default_factory=lambda: ["keyboard", "mouse/raw"])
+    skip_first_t_seconds_for_action: float | None = None  # Skip the first t seconds of action topics per sample
+    time_shift_seconds_for_action: float | None = None  # Time shift in seconds to add to action topics
+
 
 def _process_batch_to_sequences(batch, config: FSLDatasetConfig):
-    """Process a batch of events into FSL sequences."""
+    """Process a batch of tokenized events into FSL sequences."""
 
-    def pad_sequence(tokens, texts, images, episode_path):
+    def pad_sequence(items):
+        # Skip the first t seconds of action topics if specified. NOTE: order of skip and time shift is important
+        if config.skip_first_t_seconds_for_action is not None:
+            first_action_timestamp = min(
+                items["timestamp_ns"][i] for i, topic in enumerate(items["topic"]) if topic not in config.action_topics
+            )
+            skip_threshold = first_action_timestamp + int(config.skip_first_t_seconds_for_action * 1e9)
+            before_skip = len(items["timestamp_ns"])
+            items = {
+                key: [
+                    val
+                    for i, val in enumerate(items[key])
+                    if (items["topic"][i] not in config.action_topics or items["timestamp_ns"][i] >= skip_threshold)
+                ]
+                for key in items.keys()
+            }
+            logger.debug(f"Skipped {before_skip - len(items['timestamp_ns'])} action events")
+
+        # Apply time shift to action topics if specified. NOTE: order of skip and time shift is important
+        if config.time_shift_seconds_for_action is not None:
+            for i, topic in enumerate(items["topic"]):
+                if topic in config.action_topics:
+                    items["timestamp_ns"][i] += int(config.time_shift_seconds_for_action * 1e9)
+
+            # Sort by timestamp
+            sorted_items = sorted((val, i) for i, val in enumerate(items["timestamp_ns"]))
+            items = {key: [val[i] for _, i in sorted_items] for key, val in items.items()}
+            logger.debug(f"Time shifted {len(items['timestamp_ns'])} action events")
+
+        tokens = sum(items["token_ids"], [])
+        texts = "".join(items["text"])
+        images = sum(items["images"], [])
+        episode_path = items["episode_path"][0]
+
+        # Calculate attention mask and pad tokens to max sequence length
         padded_tokens = tokens + [config.pad_token_id] * (config.max_sequence_length - len(tokens))
         attention_mask = [1] * len(tokens) + [0] * (config.max_sequence_length - len(tokens))
+
         return {
             "input_ids": padded_tokens,
             "attention_mask": attention_mask,
-            "texts": "".join(texts),
+            "texts": texts,
             "images": images,
             "episode_path": episode_path,
         }
 
     sequences = []
-    current_tokens, current_texts, current_images, current_episode_path = [], [], [], None
+    items, current_tokens_count, current_episode_path = {}, 0, None
 
     # Track filtering statistics
     skipped_no_images = 0
@@ -38,35 +78,42 @@ def _process_batch_to_sequences(batch, config: FSLDatasetConfig):
 
     # Process all events in the batch
     for i in range(len(batch["token_ids"])):
-        event_tokens = list(batch["token_ids"][i])
-        event_text = batch["text"][i]
-        event_images = list(batch["images"][i])
-        event_episode_path = batch["episode_path"][i]
+        item = {
+            "episode_path": batch["episode_path"][i],
+            "topic": batch["topic"][i],
+            "timestamp_ns": batch["timestamp_ns"][i],
+            "text": batch["text"][i],
+            "images": batch["images"][i],
+            "token_ids": batch["token_ids"][i],
+            "total_token_count": batch["total_token_count"][i],
+        }
 
-        if len(event_tokens) > config.max_sequence_length:
+        if len(item["token_ids"]) > config.max_sequence_length:
             skipped_too_long += 1
             continue
 
-        if len(current_tokens) + len(event_tokens) > config.max_sequence_length or (
-            current_episode_path is not None and current_episode_path != event_episode_path
+        if current_tokens_count + len(item["token_ids"]) > config.max_sequence_length or (
+            current_episode_path is not None and current_episode_path != item["episode_path"]
         ):
-            if current_tokens:
-                if not config.include_samples_without_images and len(current_images) == 0:
+            if current_tokens_count:
+                if not config.include_samples_without_images and len(items["images"]) == 0:
                     skipped_no_images += 1
                 else:
-                    sequences.append(pad_sequence(current_tokens, current_texts, current_images, current_episode_path))
-            current_tokens, current_texts, current_images, current_episode_path = [], [], [], None
+                    sequences.append(pad_sequence(items))
+            items = {}
+            current_tokens_count = 0
+            current_episode_path = None
 
-        current_tokens.extend(event_tokens)
-        current_texts.append(event_text)
-        current_images.extend(event_images)
-        current_episode_path = event_episode_path
+        for key in item.keys():
+            items.setdefault(key, []).append(item[key])
+        current_episode_path = item["episode_path"]
+        current_tokens_count += len(item["token_ids"])
 
-    if current_tokens:
-        if not config.include_samples_without_images and len(current_images) == 0:
+    if current_tokens_count:
+        if not config.include_samples_without_images and len(items["images"]) == 0:
             skipped_no_images += 1
         else:
-            sequences.append(pad_sequence(current_tokens, current_texts, current_images, current_episode_path))
+            sequences.append(pad_sequence(items))
 
     # Log filtering statistics if any events were skipped
     if skipped_too_long > 0 or skipped_no_images > 0:

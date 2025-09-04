@@ -10,8 +10,9 @@ import orjson
 import pytest
 
 from mcap_owa.highlevel.mcap_msg import McapMessage
-from owa.data.encoders.hierarchical_event_encoder import HierarchicalEventEncoder
+from owa.data.encoders.exceptions import InvalidInputError, InvalidTokenError
 from owa.data.encoders.factorized_event_encoder import FactorizedEventEncoder
+from owa.data.encoders.hierarchical_event_encoder import HierarchicalEventEncoder
 from owa.msgs.desktop.screen import ScreenCaptured
 
 
@@ -233,6 +234,138 @@ class TestBothEncoders:
             # Factorized should use SIGN tokens
             assert "<SIGN_MINUS>" in encoded, f"Factorized encoder should use <SIGN_MINUS> token: {encoded}"
             assert "<SIGN_PLUS>" in encoded, f"Factorized encoder should use <SIGN_PLUS> token: {encoded}"
+
+    def test_mouse_validation(self, encoder, encoder_type, subtests):
+        """Both encoders should validate input ranges and warn for invalid delta values."""
+        min_delta, max_delta = encoder.config.mouse_delta_range
+
+        # Test boundary values (should work)
+        valid_cases = [
+            (max_delta, max_delta),  # At positive boundary
+            (min_delta, min_delta),  # At negative boundary
+            (0, 0),  # Zero
+        ]
+
+        for dx, dy in valid_cases:
+            with subtests.test(encoder=encoder_type, case="valid", dx=dx, dy=dy):
+                data = {"last_x": dx, "last_y": dy, "button_flags": 0, "button_data": 0}
+                msg = McapMessage(
+                    topic="mouse/raw",
+                    timestamp=1000000000,
+                    message=orjson.dumps(data),
+                    message_type="desktop/RawMouseEvent",
+                )
+
+                # Should work without errors
+                encoded, images = encoder.encode(msg)
+                decoded = encoder.decode(encoded, images)
+                result = orjson.loads(decoded.message)
+                assert result["last_x"] == dx, f"[{encoder_type}] X value not preserved"
+                assert result["last_y"] == dy, f"[{encoder_type}] Y value not preserved"
+
+        # Test invalid values (should issue warnings and clamp values)
+        invalid_cases = [
+            (max_delta + 1, 0),  # X too large
+            (min_delta - 1, 0),  # X too small
+        ]
+
+        for dx, dy in invalid_cases:
+            with subtests.test(encoder=encoder_type, case="invalid", dx=dx, dy=dy):
+                data = {"last_x": dx, "last_y": dy, "button_flags": 0, "button_data": 0}
+                msg = McapMessage(
+                    topic="mouse/raw",
+                    timestamp=1000000000,
+                    message=orjson.dumps(data),
+                    message_type="desktop/RawMouseEvent",
+                )
+
+                # Should issue warning and work (with clamping)
+                with pytest.warns(UserWarning, match=r"Mouse delta value .* is outside valid range"):
+                    encoded, images = encoder.encode(msg)
+                    decoded = encoder.decode(encoded, images)
+                    result = orjson.loads(decoded.message)
+                    # Values should be clamped to valid range
+                    assert min_delta <= result["last_x"] <= max_delta, f"[{encoder_type}] X not clamped properly"
+                    assert min_delta <= result["last_y"] <= max_delta, f"[{encoder_type}] Y not clamped properly"
+
+    def test_invalid_token_errors(self, encoder, encoder_type):
+        """Both encoders should handle invalid token formats appropriately."""
+        # Missing EVENT_START token
+        with pytest.raises(InvalidTokenError, match="Missing EVENT_START or EVENT_END tokens"):
+            encoder.decode("<KEYBOARD><0><0><0><press><65><EVENT_END>")
+
+        # Missing EVENT_END token
+        with pytest.raises(InvalidTokenError, match="Missing EVENT_START or EVENT_END tokens"):
+            encoder.decode("<EVENT_START><KEYBOARD><0><0><0><press><65>")
+
+        # Token sequence too short
+        with pytest.raises(InvalidTokenError, match="Token sequence too short"):
+            encoder.decode("<EVENT_START><KEYBOARD><EVENT_END>")
+
+    def test_unsupported_input_errors(self, encoder, encoder_type):
+        """Both encoders should handle unsupported message inputs appropriately."""
+        # Unsupported topic
+        msg = McapMessage(
+            topic="unsupported_topic",
+            timestamp=1000000000,
+            message_type="test/Message",
+            message=b'{"test": "data"}',
+        )
+        with pytest.raises(InvalidInputError, match="Failed to decode message"):
+            encoder.encode(msg)
+
+    def test_extreme_timestamps(self, encoder, encoder_type, subtests):
+        """Both encoders should handle extreme timestamp values gracefully."""
+        extreme_timestamps = [
+            0,  # Minimum
+            9223372036854775807,  # Maximum int64
+            1000000000000000000,  # Very large
+        ]
+
+        for ts in extreme_timestamps:
+            with subtests.test(encoder=encoder_type, timestamp=ts):
+                data = {"last_x": 10, "last_y": 10, "button_flags": 0, "button_data": 0}
+                msg = McapMessage(
+                    topic="mouse/raw",
+                    timestamp=ts,
+                    message=orjson.dumps(data),
+                    message_type="desktop/RawMouseEvent",
+                )
+
+                # Should handle gracefully (may quantize large timestamps)
+                encoded, images = encoder.encode(msg)
+                decoded = encoder.decode(encoded, images)
+
+                # Should produce valid timestamp
+                assert isinstance(decoded.timestamp, int), f"[{encoder_type}] Invalid timestamp type"
+                assert decoded.timestamp >= 0, f"[{encoder_type}] Negative timestamp"
+
+    def test_extreme_keyboard_values(self, encoder, encoder_type, subtests):
+        """Both encoders should handle extreme keyboard values gracefully."""
+        extreme_cases = [
+            ("press", 0),  # Minimum VK
+            ("release", 255),  # Maximum standard VK
+            ("press", 65535),  # Very large VK
+        ]
+
+        for event_type, vk in extreme_cases:
+            with subtests.test(encoder=encoder_type, event_type=event_type, vk=vk):
+                data = {"event_type": event_type, "vk": vk}
+                msg = McapMessage(
+                    topic="keyboard",
+                    timestamp=4000000000 + vk,
+                    message=orjson.dumps(data),
+                    message_type="desktop/KeyboardEvent",
+                )
+
+                # Should handle gracefully
+                encoded, images = encoder.encode(msg)
+                decoded = encoder.decode(encoded, images)
+                result = orjson.loads(decoded.message)
+
+                # Should produce valid results
+                assert result["event_type"] == event_type, f"[{encoder_type}] Event type not preserved"
+                assert isinstance(result["vk"], int), f"[{encoder_type}] VK not integer"
 
 
 class TestEncoderComparison:
