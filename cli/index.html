@@ -1465,6 +1465,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#owl-mcap-rename-uri" class="md-nav__link">
+    <span class="md-ellipsis">
+      rename-uri
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#owl-mcap-sanitize" class="md-nav__link">
     <span class="md-ellipsis">
       sanitize
@@ -2136,6 +2145,15 @@
   <a href="#owl-mcap-record" class="md-nav__link">
     <span class="md-ellipsis">
       record
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#owl-mcap-rename-uri" class="md-nav__link">
+    <span class="md-ellipsis">
+      rename-uri
     </span>
   </a>
   
@@ -3076,6 +3094,67 @@ are removed after successful rollback.</p>
 </tr>
 </tbody>
 </table>
+<h5 id="owl-mcap-rename-uri">owl mcap rename-uri<a class="headerlink" href="#owl-mcap-rename-uri" title="Permanent link">&para;</a></h5>
+<p>Rename URIs in mediaref fields of screen topic events in MCAP files.</p>
+<p>This command processes MCAP files to set all URIs in the mediaref fields
+of screen topic events to the specified new URI. This is useful for updating
+file paths or URLs when media files have been moved or renamed.</p>
+<p>Examples:
+    owl mcap rename-uri recording.mcap --uri "new_video.mkv"
+    owl mcap rename-uri *.mcap --uri "/new/path/video.mp4"
+    owl mcap rename-uri data.mcap --uri "http://new.com/video" --dry-run</p>
+<p><strong>Usage:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>owl mcap rename-uri [OPTIONS] FILES...
+</code></pre></div>
+<p><strong>Options:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--uri</code></td>
+<td>text</td>
+<td>URI to use for all screen topic events</td>
+<td>_required</td>
+</tr>
+<tr>
+<td><code>--dry-run</code></td>
+<td>boolean</td>
+<td>Show what would be changed without making modifications</td>
+<td><code>False</code></td>
+</tr>
+<tr>
+<td><code>--verbose</code>, <code>-v</code></td>
+<td>boolean</td>
+<td>Show detailed processing information</td>
+<td><code>False</code></td>
+</tr>
+<tr>
+<td><code>--yes</code>, <code>-y</code></td>
+<td>boolean</td>
+<td>Skip confirmation prompt</td>
+<td><code>False</code></td>
+</tr>
+<tr>
+<td><code>--keep-backups</code> / <code>--no-backups</code></td>
+<td>boolean</td>
+<td>Keep backup files after processing</td>
+<td><code>True</code></td>
+</tr>
+<tr>
+<td><code>--help</code></td>
+<td>boolean</td>
+<td>Show this message and exit.</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
 <h5 id="owl-mcap-sanitize">owl mcap sanitize<a class="headerlink" href="#owl-mcap-sanitize" title="Permanent link">&para;</a></h5>
 <p>Sanitize MCAP files by keeping only events when a specific window is active.</p>
 <p>This command filters MCAP files to retain only the events that occurred when
@@ -3088,9 +3167,10 @@ messages would be removed, preventing accidental over-sanitization. Use
     owl mcap sanitize recording.mcap --keep-window "Notepad"
     owl mcap sanitize *.mcap --keep-window "Work App" --exact
     owl mcap sanitize data.mcap --keep-window "Browser" --dry-run
-    owl mcap sanitize data.mcap --keep-window "App" --max-removal-ratio 0.95</p>
+    owl mcap sanitize data.mcap --keep-window "App" --max-removal-ratio 0.95
+    owl mcap sanitize recording.mcap --auto-detect-window</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>owl mcap sanitize [OPTIONS] FILES...
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>owl mcap sanitize [OPTIONS] FILES...
 </code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -3107,7 +3187,13 @@ messages would be removed, preventing accidental over-sanitization. Use
 <td><code>--keep-window</code></td>
 <td>text</td>
 <td>Window name to keep events for</td>
-<td>_required</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>--auto-detect-window</code></td>
+<td>boolean</td>
+<td>Auto-detect the most frequent window to keep</td>
+<td><code>False</code></td>
 </tr>
 <tr>
 <td><code>--exact</code> / <code>--substring</code></td>
@@ -3156,7 +3242,7 @@ messages would be removed, preventing accidental over-sanitization. Use
 <h4 id="owl-messages">owl messages<a class="headerlink" href="#owl-messages" title="Permanent link">&para;</a></h4>
 <p>Message registry management commands</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>owl messages [OPTIONS] COMMAND [ARGS]...
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>owl messages [OPTIONS] COMMAND [ARGS]...
 </code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -3180,7 +3266,7 @@ messages would be removed, preventing accidental over-sanitization. Use
 <h5 id="owl-messages-list">owl messages list<a class="headerlink" href="#owl-messages-list" title="Permanent link">&para;</a></h5>
 <p>List and search message types</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>owl messages list [OPTIONS] [MESSAGE_TYPES]...
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>owl messages list [OPTIONS] [MESSAGE_TYPES]...
 </code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -3240,7 +3326,7 @@ messages would be removed, preventing accidental over-sanitization. Use
 <h5 id="owl-messages-show">owl messages show<a class="headerlink" href="#owl-messages-show" title="Permanent link">&para;</a></h5>
 <p>Show detailed information about a specific message type</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>owl messages show [OPTIONS] MESSAGE_TYPE
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>owl messages show [OPTIONS] MESSAGE_TYPE
 </code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -3276,7 +3362,7 @@ messages would be removed, preventing accidental over-sanitization. Use
 <h5 id="owl-messages-validate">owl messages validate<a class="headerlink" href="#owl-messages-validate" title="Permanent link">&para;</a></h5>
 <p>Validate message registry and definitions</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>owl messages validate [OPTIONS]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>owl messages validate [OPTIONS]
 </code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -3304,23 +3390,23 @@ messages would be removed, preventing accidental over-sanitization. Use
 </tbody>
 </table>
 <h2 id="common-workflows">Common Workflows<a class="headerlink" href="#common-workflows" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="c1"># Record and analyze data</span>
-<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>ocap<span class="w"> </span>my-session
-<a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a>owl<span class="w"> </span>mcap<span class="w"> </span>info<span class="w"> </span>my-session.mcap
-<a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a>owl<span class="w"> </span>mcap<span class="w"> </span>convert<span class="w"> </span>my-session.mcap
-<a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a>
-<a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a><span class="c1"># Environment management</span>
-<a id="__codelineno-27-7" name="__codelineno-27-7" href="#__codelineno-27-7"></a>owl<span class="w"> </span>env<span class="w"> </span>list
-<a id="__codelineno-27-8" name="__codelineno-27-8" href="#__codelineno-27-8"></a>owl<span class="w"> </span>env<span class="w"> </span>validate<span class="w"> </span>desktop
-<a id="__codelineno-27-9" name="__codelineno-27-9" href="#__codelineno-27-9"></a>
-<a id="__codelineno-27-10" name="__codelineno-27-10" href="#__codelineno-27-10"></a><span class="c1"># Data processing</span>
-<a id="__codelineno-27-11" name="__codelineno-27-11" href="#__codelineno-27-11"></a>owl<span class="w"> </span>mcap<span class="w"> </span>info<span class="w"> </span>*.mcap
-<a id="__codelineno-27-12" name="__codelineno-27-12" href="#__codelineno-27-12"></a>owl<span class="w"> </span>video<span class="w"> </span>probe<span class="w"> </span>session.mkv
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="c1"># Record and analyze data</span>
+<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>ocap<span class="w"> </span>my-session
+<a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a>owl<span class="w"> </span>mcap<span class="w"> </span>info<span class="w"> </span>my-session.mcap
+<a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a>owl<span class="w"> </span>mcap<span class="w"> </span>convert<span class="w"> </span>my-session.mcap
+<a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a>
+<a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a><span class="c1"># Environment management</span>
+<a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a>owl<span class="w"> </span>env<span class="w"> </span>list
+<a id="__codelineno-28-8" name="__codelineno-28-8" href="#__codelineno-28-8"></a>owl<span class="w"> </span>env<span class="w"> </span>validate<span class="w"> </span>desktop
+<a id="__codelineno-28-9" name="__codelineno-28-9" href="#__codelineno-28-9"></a>
+<a id="__codelineno-28-10" name="__codelineno-28-10" href="#__codelineno-28-10"></a><span class="c1"># Data processing</span>
+<a id="__codelineno-28-11" name="__codelineno-28-11" href="#__codelineno-28-11"></a>owl<span class="w"> </span>mcap<span class="w"> </span>info<span class="w"> </span>*.mcap
+<a id="__codelineno-28-12" name="__codelineno-28-12" href="#__codelineno-28-12"></a>owl<span class="w"> </span>video<span class="w"> </span>probe<span class="w"> </span>session.mkv
 </code></pre></div>
 <h2 id="getting-help">Getting Help<a class="headerlink" href="#getting-help" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>owl<span class="w"> </span>--help<span class="w">                              </span><span class="c1"># General help</span>
-<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>owl<span class="w"> </span>mcap<span class="w"> </span>--help<span class="w">                         </span><span class="c1"># Command group help</span>
-<a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a>owl<span class="w"> </span>mcap<span class="w"> </span>info<span class="w"> </span>--help<span class="w">                    </span><span class="c1"># Specific command help</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>owl<span class="w"> </span>--help<span class="w">                              </span><span class="c1"># General help</span>
+<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>owl<span class="w"> </span>mcap<span class="w"> </span>--help<span class="w">                         </span><span class="c1"># Command group help</span>
+<a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a>owl<span class="w"> </span>mcap<span class="w"> </span>info<span class="w"> </span>--help<span class="w">                    </span><span class="c1"># Specific command help</span>
 </code></pre></div>
 <h2 id="related-documentation">Related Documentation<a class="headerlink" href="#related-documentation" title="Permanent link">&para;</a></h2>
 <ul>

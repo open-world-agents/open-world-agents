@@ -1391,6 +1391,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#owl-mcap-rename-uri" class="md-nav__link">
+    <span class="md-ellipsis">
+      rename-uri
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#owl-mcap-sanitize" class="md-nav__link">
     <span class="md-ellipsis">
       sanitize
@@ -1795,6 +1804,15 @@
   <a href="#owl-mcap-record" class="md-nav__link">
     <span class="md-ellipsis">
       record
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#owl-mcap-rename-uri" class="md-nav__link">
+    <span class="md-ellipsis">
+      rename-uri
     </span>
   </a>
   
@@ -2274,6 +2292,67 @@ are removed after successful rollback.</p>
 </tr>
 </tbody>
 </table>
+<h5 id="owl-mcap-rename-uri">owl mcap rename-uri<a class="headerlink" href="#owl-mcap-rename-uri" title="Permanent link">&para;</a></h5>
+<p>Rename URIs in mediaref fields of screen topic events in MCAP files.</p>
+<p>This command processes MCAP files to set all URIs in the mediaref fields
+of screen topic events to the specified new URI. This is useful for updating
+file paths or URLs when media files have been moved or renamed.</p>
+<p>Examples:
+    owl mcap rename-uri recording.mcap --uri "new_video.mkv"
+    owl mcap rename-uri *.mcap --uri "/new/path/video.mp4"
+    owl mcap rename-uri data.mcap --uri "http://new.com/video" --dry-run</p>
+<p><strong>Usage:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>owl mcap rename-uri [OPTIONS] FILES...
+</code></pre></div>
+<p><strong>Options:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--uri</code></td>
+<td>text</td>
+<td>URI to use for all screen topic events</td>
+<td>_required</td>
+</tr>
+<tr>
+<td><code>--dry-run</code></td>
+<td>boolean</td>
+<td>Show what would be changed without making modifications</td>
+<td><code>False</code></td>
+</tr>
+<tr>
+<td><code>--verbose</code>, <code>-v</code></td>
+<td>boolean</td>
+<td>Show detailed processing information</td>
+<td><code>False</code></td>
+</tr>
+<tr>
+<td><code>--yes</code>, <code>-y</code></td>
+<td>boolean</td>
+<td>Skip confirmation prompt</td>
+<td><code>False</code></td>
+</tr>
+<tr>
+<td><code>--keep-backups</code> / <code>--no-backups</code></td>
+<td>boolean</td>
+<td>Keep backup files after processing</td>
+<td><code>True</code></td>
+</tr>
+<tr>
+<td><code>--help</code></td>
+<td>boolean</td>
+<td>Show this message and exit.</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
 <h5 id="owl-mcap-sanitize">owl mcap sanitize<a class="headerlink" href="#owl-mcap-sanitize" title="Permanent link">&para;</a></h5>
 <p>Sanitize MCAP files by keeping only events when a specific window is active.</p>
 <p>This command filters MCAP files to retain only the events that occurred when
@@ -2286,9 +2365,10 @@ messages would be removed, preventing accidental over-sanitization. Use
     owl mcap sanitize recording.mcap --keep-window "Notepad"
     owl mcap sanitize *.mcap --keep-window "Work App" --exact
     owl mcap sanitize data.mcap --keep-window "Browser" --dry-run
-    owl mcap sanitize data.mcap --keep-window "App" --max-removal-ratio 0.95</p>
+    owl mcap sanitize data.mcap --keep-window "App" --max-removal-ratio 0.95
+    owl mcap sanitize recording.mcap --auto-detect-window</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>owl mcap sanitize [OPTIONS] FILES...
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>owl mcap sanitize [OPTIONS] FILES...
 </code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -2305,7 +2385,13 @@ messages would be removed, preventing accidental over-sanitization. Use
 <td><code>--keep-window</code></td>
 <td>text</td>
 <td>Window name to keep events for</td>
-<td>_required</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>--auto-detect-window</code></td>
+<td>boolean</td>
+<td>Auto-detect the most frequent window to keep</td>
+<td><code>False</code></td>
 </tr>
 <tr>
 <td><code>--exact</code> / <code>--substring</code></td>
