@@ -9,7 +9,7 @@ from transformers import AutoTokenizer
 from transformers.tokenization_utils import PreTrainedTokenizer
 
 from mcap_owa.highlevel import McapMessage
-from owa.data.encoders import HierarchicalEventEncoder, FactorizedEventEncoder, create_encoder
+from owa.data.encoders import FactorizedEventEncoder, HierarchicalEventEncoder, create_encoder
 from owa.msgs.desktop.screen import ScreenCaptured
 
 from .collator import ModelType, detect_model_type
@@ -292,15 +292,16 @@ class EpisodeTokenizer:
 
         # Tokenize each event in the dataset
         def process_event(event):
-            episode_path = event["episode_path"]
             mcap_message = McapMessage.model_validate_json(event["mcap_message"])
             tokenized_event = self.tokenize_event(mcap_message)
 
             return {
-                "episode_path": episode_path,
+                "episode_path": event["episode_path"],
+                "topic": event["topic"],
+                "timestamp_ns": event["timestamp_ns"],
                 "text": tokenized_event["text"],
-                "token_ids": tokenized_event["token_ids"],
                 "images": [image.model_dump_json() for image in tokenized_event["images"]],
+                "token_ids": tokenized_event["token_ids"],
                 "total_token_count": tokenized_event["total_token_count"],
             }
 

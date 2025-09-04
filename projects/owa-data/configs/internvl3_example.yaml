@@ -20,10 +20,8 @@ episode_tokenize_config:
 fsl_dataset:
   pad_token_id: 0 # overrided from tokenizer automatically
   max_sequence_length: 4096
+  include_samples_without_images: False
 
 # Processing options
 num_proc: 32
 fsl_workers: 4
-
-# Filtering options
-include_samples_without_images: False
