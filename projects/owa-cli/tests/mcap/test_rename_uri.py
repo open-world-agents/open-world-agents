@@ -20,7 +20,7 @@ class TestRenameUriIntegration:
         with (
             patch("owa.cli.mcap.rename_uri.OWAMcapReader") as mock_reader,
             patch("owa.cli.mcap.rename_uri.OWAMcapWriter"),
-            patch("owa.cli.mcap.rename_uri.MediaRef") as mock_media_ref,
+            patch("owa.cli.mcap.rename_uri.MediaRef"),
         ):
             # Mock reader to return some test messages
             mock_reader_instance = mock_reader.return_value.__enter__.return_value

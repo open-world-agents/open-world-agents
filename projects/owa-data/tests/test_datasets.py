@@ -4,7 +4,6 @@ Test for owa.data.datasets - focuses on essential functionality and configuratio
 """
 
 import json
-from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest

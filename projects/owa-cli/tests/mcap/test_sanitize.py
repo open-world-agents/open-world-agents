@@ -7,7 +7,6 @@ This module tests the core sanitization functionality of the sanitize command.
 from unittest.mock import patch
 
 from owa.cli.mcap import app as mcap_app
-from owa.cli.mcap.sanitize import auto_detect_most_frequent_window
 
 
 class TestSanitizeIntegration:
