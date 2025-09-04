@@ -13,16 +13,16 @@ and use mock message types instead of importing from other packages.
 import warnings
 
 import pytest
-from owa.core.message import OWAMessage
 
 from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
+from owa.core.message import OWAMessage
 
 
 # Mock message types for testing (instead of importing from other packages)
 class MockKeyboardEvent(OWAMessage):
     """Mock keyboard event for testing MCAP functionality."""
 
-    _type = "test.msg.KeyboardEvent"
+    _type = "test/KeyboardEvent"
     event_type: str
     vk: int
     timestamp: int = 0
@@ -31,7 +31,7 @@ class MockKeyboardEvent(OWAMessage):
 class MockMouseEvent(OWAMessage):
     """Mock mouse event for testing MCAP functionality."""
 
-    _type = "test.msg.MouseEvent"
+    _type = "test/MouseEvent"
     event_type: str
     button: str
     x: int
@@ -63,7 +63,7 @@ def test_write_and_read_messages(temp_mcap_file):
 
     # Suppress warnings only for reading mock messages and version compatibility
     with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", "Failed to import module for schema 'test.msg.*", UserWarning)
+        warnings.filterwarnings("ignore", "Domain-based message.*not found in registry.*", UserWarning)
         warnings.filterwarnings("ignore", "Reader version.*may not be compatible with writer version.*", UserWarning)
 
         with OWAMcapReader(file_path, decode_args={"return_dict_on_failure": True}) as reader:
@@ -91,7 +91,7 @@ def test_mcap_message_object(temp_mcap_file):
 
     # Suppress warnings only for reading mock messages and version compatibility
     with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", "Failed to import module for schema 'test.msg.*", UserWarning)
+        warnings.filterwarnings("ignore", "Domain-based message.*not found in registry.*", UserWarning)
         warnings.filterwarnings("ignore", "Reader version.*may not be compatible with writer version.*", UserWarning)
 
         with OWAMcapReader(file_path, decode_args={"return_dict_on_failure": True}) as reader:
@@ -103,7 +103,7 @@ def test_mcap_message_object(temp_mcap_file):
             assert msg.topic == topic
             assert msg.timestamp == 1000
             assert isinstance(msg.message, bytes)
-            assert msg.message_type == "test.msg.KeyboardEvent"
+            assert msg.message_type == "test/KeyboardEvent"
 
             # Test lazy decoded property
             decoded = msg.decoded
@@ -133,14 +133,14 @@ def test_schema_based_filtering(temp_mcap_file):
 
     # Suppress warnings only for reading mock messages and version compatibility
     with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", "Failed to import module for schema 'test.msg.*", UserWarning)
+        warnings.filterwarnings("ignore", "Domain-based message.*not found in registry.*", UserWarning)
         warnings.filterwarnings("ignore", "Reader version.*may not be compatible with writer version.*", UserWarning)
 
         with OWAMcapReader(file_path, decode_args={"return_dict_on_failure": True}) as reader:
             # Filter by schema name
-            keyboard_messages = [msg for msg in reader.iter_messages() if msg.message_type == "test.msg.KeyboardEvent"]
+            keyboard_messages = [msg for msg in reader.iter_messages() if msg.message_type == "test/KeyboardEvent"]
 
-            mouse_messages = [msg for msg in reader.iter_messages() if msg.message_type == "test.msg.MouseEvent"]
+            mouse_messages = [msg for msg in reader.iter_messages() if msg.message_type == "test/MouseEvent"]
 
             assert len(keyboard_messages) == 2
             assert keyboard_messages[0].decoded.event_type == "press"
@@ -169,7 +169,7 @@ def test_multiple_message_types(temp_mcap_file):
 
     # Suppress warnings only for reading mock messages and version compatibility
     with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", "Failed to import module for schema 'test.msg.*", UserWarning)
+        warnings.filterwarnings("ignore", "Domain-based message.*not found in registry.*", UserWarning)
         warnings.filterwarnings("ignore", "Reader version.*may not be compatible with writer version.*", UserWarning)
 
         with OWAMcapReader(file_path, decode_args={"return_dict_on_failure": True}) as reader:
@@ -179,14 +179,14 @@ def test_multiple_message_types(temp_mcap_file):
             # Check first message (keyboard)
             keyboard_msg = messages[0]
             assert keyboard_msg.topic == "/keyboard"
-            assert keyboard_msg.message_type == "test.msg.KeyboardEvent"
+            assert keyboard_msg.message_type == "test/KeyboardEvent"
             assert keyboard_msg.decoded.event_type == "press"
             assert keyboard_msg.decoded.vk == 65
 
             # Check second message (mouse)
             mouse_msg = messages[1]
             assert mouse_msg.topic == "/mouse"
-            assert mouse_msg.message_type == "test.msg.MouseEvent"
+            assert mouse_msg.message_type == "test/MouseEvent"
             assert mouse_msg.decoded.event_type == "move"
             assert mouse_msg.decoded.x == 150
             assert mouse_msg.decoded.y == 250

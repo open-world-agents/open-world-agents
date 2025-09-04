@@ -1,4 +1,3 @@
-import importlib
 import io
 import warnings
 from typing import Any, Callable, TypeAlias
@@ -24,31 +23,24 @@ def create_message_decoder(message_type: str, fallback: bool = False) -> DecodeF
     """
     Create a decode function for a specific OWA message type/schema name.
 
-    This internal function attempts to create a decoder for the specified message type by:
-    1. First trying the new domain-based format (domain/MessageType) via MESSAGES registry
-    2. Then trying the old module-based format (module.path.ClassName) via importlib
-    3. Finally falling back to dictionary decoding with EasyDict
+    This function attempts to create a decoder for the specified message type using
+    the domain-based format (domain/MessageType) via the MESSAGES registry. If the
+    message type is not found and fallback is enabled, it falls back to dictionary
+    decoding with EasyDict.
 
-    :param message_type: The message type or schema name (e.g., "desktop/KeyboardEvent" or "owa.env.desktop.msg.KeyboardState")
-    :return: DecodeFunction that can decode messages of this type, or None if unsupported
+    :param message_type: The message type or schema name (e.g., "desktop/KeyboardEvent")
+    :param fallback: Whether to fall back to dictionary decoding on failure
+    :return: DecodeFunction that can decode messages of this type
+    :raises ValueError: If message type is unsupported and fallback is disabled
     """
     cls = None
 
-    # Try new domain-based format first
-    if MESSAGES and "/" in message_type:
+    # Try to find message class in registry
+    if MESSAGES:
         try:
             cls = MESSAGES[message_type]
         except KeyError:
-            pass  # Fall through to old format or dictionary decoding
-
-    # Try old module-based format for backward compatibility
-    if cls is None and "." in message_type:
-        try:
-            module, class_name = message_type.rsplit(".", 1)  # e.g. "owa.env.desktop.msg.KeyboardState"
-            mod = importlib.import_module(module)
-            cls = getattr(mod, class_name)
-        except (ValueError, ImportError, AttributeError):
-            pass  # Fall through to dictionary decoding
+            pass  # Fall through to fallback handling
 
     if cls is None:
         if fallback:
@@ -58,7 +50,8 @@ def create_message_decoder(message_type: str, fallback: bool = False) -> DecodeF
                 )
             else:
                 warnings.warn(
-                    f"Failed to import module for schema '{message_type}'. Falling back to dictionary decoding."
+                    f"Message type '{message_type}' not found in registry (expected domain-based format 'domain/MessageType'). "
+                    f"Falling back to dictionary decoding."
                 )
             return dict_decoder
 
