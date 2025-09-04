@@ -48,8 +48,8 @@ def _process_batch_to_sequences(batch, config: FSLDatasetConfig):
                     items["timestamp_ns"][i] += int(config.time_shift_seconds * 1e9)
 
             # Sort by timestamp
-            sorted_intems = sorted((val, i) for i, val in enumerate(items["timestamp_ns"]))
-            items = {key: [val[i] for _, i in sorted_intems] for key, val in items.items()}
+            sorted_items = sorted((val, i) for i, val in enumerate(items["timestamp_ns"]))
+            items = {key: [val[i] for _, i in sorted_items] for key, val in items.items()}
             logger.debug(f"Time shifted {len(items['timestamp_ns'])} action events")
 
         tokens = sum(items["token_ids"], [])
