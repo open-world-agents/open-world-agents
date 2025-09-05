@@ -115,6 +115,13 @@ def collate_fn_internvl3(examples, max_sequence_length: int | None = None, proce
     else:
         labels[attention_mask == 0] = -100
 
+    if pixel_values.shape[0] == 0:
+        return {
+            "input_ids": input_ids,
+            "attention_mask": attention_mask,
+            "labels": labels,
+        }
+
     return {
         "input_ids": input_ids,
         "attention_mask": attention_mask,

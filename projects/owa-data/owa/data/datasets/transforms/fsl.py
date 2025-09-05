@@ -120,6 +120,7 @@ class FSLTransformConfig:
     pad_token_id: int = 0
 
 
+@line_profiler.profile
 class FSLTransform:
     """Clean, modular FSL transform class."""
 
@@ -142,7 +143,6 @@ class FSLTransform:
         """Transform batch for FSL stage."""
         return self.transform_batch(batch)
 
-    @line_profiler.profile
     def transform_batch(self, batch):
         """Transform batch - handles image loading on-the-fly."""
         batch_size = len(batch["input_ids"])
@@ -206,17 +206,30 @@ class FSLTransform:
 
             # Process with image processor if available
             if self.image_processor is not None:
-                if all_images:
-                    processed = self.image_processor(all_images, return_tensors="pt")
-                    pixel_values = processed["pixel_values"]
-                    # NOTE: SmolVLMImageProcessor returns [batch, max_num_images, 3, height, width]
-                    # while InternVL's ImageProcessor returns [num_images, 3, height, width]
-                    if pixel_values.dim() == 5:  # [1, num_images, 3, height, width]
-                        pixel_values = pixel_values.squeeze(0)
+                # NOTE: SmolVLMImageProcessor is 2x slower in batched setting. WOW!
+                assert self.image_processor.is_fast, "Expected fast image processor"
+                if self.image_processor.__class__.__name__ == "SmolVLMImageProcessorFast":
+                    pixel_values = []
+                    for image in all_images:
+                        processed = self.image_processor(image, return_tensors="pt")  # 100ms / image
+                        pixel_value = processed["pixel_values"].squeeze(0).squeeze(0)
+                        pixel_values.append(pixel_value)
+                    results["images"].append(
+                        torch.stack(pixel_values) if pixel_values else torch.empty(0, 3, 512, 512)
+                    )
                 else:
-                    # NOTE: InternVL3 expectes (448, 448) while SmolVLM2 expects (512, 512)
-                    pixel_values = torch.empty(0, 3, 448, 448)
-                results["images"].append(pixel_values)
+                    # NOTE: InternVLImageProcessor is bit faster in batched setting
+                    if all_images:
+                        processed = self.image_processor(all_images, return_tensors="pt")
+                        pixel_values = processed["pixel_values"]
+                        # NOTE: SmolVLMImageProcessor returns [batch, max_num_images, 3, height, width]
+                        # while InternVL's ImageProcessor returns [num_images, 3, height, width]
+                        if pixel_values.dim() == 5:  # [1, num_images, 3, height, width]
+                            pixel_values = pixel_values.squeeze(0)
+                    else:
+                        # NOTE: InternVL3 expectes (448, 448) while SmolVLM2 expects (512, 512)
+                        pixel_values = torch.empty(0, 3, 448, 448)
+                    results["images"].append(pixel_values)
             else:
                 results["images"].append(all_images)
 

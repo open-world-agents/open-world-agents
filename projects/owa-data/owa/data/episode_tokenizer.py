@@ -4,14 +4,17 @@ from typing import Iterator, Literal, TypedDict, overload
 
 import numpy as np
 import numpy.typing as npt
+from loguru import logger
+from transformers import AutoTokenizer
 from transformers.tokenization_utils import PreTrainedTokenizer
 
 from mcap_owa.highlevel import McapMessage
-from owa.data.encoders import HierarchicalEventEncoder, create_encoder
+from owa.data.encoders import FactorizedEventEncoder, HierarchicalEventEncoder, create_encoder
 from owa.msgs.desktop.screen import ScreenCaptured
 
 from .collator import ModelType, detect_model_type
 from .datasets import Dataset, DatasetStage
+from .semantic_init import apply_semantic_initialization
 
 
 @dataclass
@@ -27,8 +30,6 @@ class EpisodeTokenizerConfig:
     encoder_type: str = "hierarchical"
     # Internal placeholder token used by encoders (not in vocab)
     fake_image_placeholder: str = "<fake_image_placeholder>"
-    episode_start_token: str = "<EPISODE_START>"
-    episode_end_token: str = "<EPISODE_END>"
 
 
 class TokenizedEvent(TypedDict):
@@ -48,33 +49,92 @@ class EpisodeTokenizer:
         self.is_prepared = False
 
     @classmethod
-    def from_transformers_model(cls, model_name_or_path: str, **kwargs):
+    def from_transformers_model(cls, model_name_or_path: str, encoder_type: str | None = None, **kwargs):
         model_type = detect_model_type(model_name_or_path)
+
+        # Get base configuration for the model type
         if model_type == ModelType.INTERNVL:
             # InternVL3 configuration
-            episode_tokenizer_config = EpisodeTokenizerConfig(
-                encoder_type="hierarchical",
+            base_config = EpisodeTokenizerConfig(
+                encoder_type="hierarchical",  # Will be overridden
                 fake_image_placeholder="<fake_image_placeholder>",
                 image_token_prefix="<img>",
                 image_token="<IMG_CONTEXT>",
                 image_token_length=256,
                 image_token_suffix="</img>",
-                episode_start_token="<EPISODE_START>",
-                episode_end_token="<EPISODE_END>",
             )
         else:
             # SmolVLM2 and other models configuration
-            episode_tokenizer_config = EpisodeTokenizerConfig(
-                encoder_type="hierarchical",
+            base_config = EpisodeTokenizerConfig(
+                encoder_type="hierarchical",  # Will be overridden
                 fake_image_placeholder="<fake_image_placeholder>",
                 image_token_prefix="<fake_token_around_image><global-img>",
                 image_token="<image>",
                 image_token_length=64,
                 image_token_suffix="<fake_token_around_image>",
-                episode_start_token="<EPISODE_START>",
-                episode_end_token="<EPISODE_END>",
             )
-        return cls(episode_tokenizer_config, **kwargs)
+
+        # Handle encoder type detection/validation
+        if encoder_type is None:
+            # Try to detect encoder type from model's tokenizer vocab
+            tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
+            tokenizer_vocab = set(tokenizer.get_vocab().keys())
+            detected_encoder_type = cls.detect_encoder_type(tokenizer_vocab, base_config)
+
+            if detected_encoder_type is None:
+                raise ValueError(
+                    f"Cannot auto-detect encoder type for model '{model_name_or_path}'. "
+                    f"The tokenizer vocabulary appears to be unexpanded (original model vocab). "
+                    f"Please specify encoder_type explicitly: 'hierarchical' or 'factorized'."
+                )
+
+            encoder_type = detected_encoder_type
+            logger.info(f"Auto-detected encoder type: {encoder_type}")
+        else:
+            logger.info(f"Using explicit encoder type: {encoder_type}")
+
+        # Apply encoder type and any additional overrides
+        final_config = EpisodeTokenizerConfig(**{**base_config.__dict__, "encoder_type": encoder_type, **kwargs})
+        return cls(final_config)
+
+    @classmethod
+    def detect_encoder_type(cls, tokenizer_vocab: set[str], base_config: EpisodeTokenizerConfig) -> str | None:
+        """Detect encoder type from tokenizer vocabulary."""
+        # Test hierarchical encoder vocab
+        hierarchical_config = EpisodeTokenizerConfig(**{**base_config.__dict__, "encoder_type": "hierarchical"})
+        hierarchical_tokenizer = cls(hierarchical_config)
+        hierarchical_vocab = hierarchical_tokenizer.get_vocab()
+
+        # Test factorized encoder vocab
+        factorized_config = EpisodeTokenizerConfig(**{**base_config.__dict__, "encoder_type": "factorized"})
+        factorized_tokenizer = cls(factorized_config)
+        factorized_vocab = factorized_tokenizer.get_vocab()
+
+        # Check if tokenizer vocab contains all tokens from either encoder
+        hierarchical_match = hierarchical_vocab.issubset(tokenizer_vocab)
+        factorized_match = factorized_vocab.issubset(tokenizer_vocab)
+
+        # Determine encoder type based on vocab match
+        if hierarchical_match and factorized_match:
+            # Both match - this shouldn't happen. Raise error
+            raise ValueError(
+                "Tokenizer vocab matches both hierarchical and factorized encoders. "
+                "Expected only one match. Please report this issue."
+            )
+        elif hierarchical_match:
+            return "hierarchical"
+        elif factorized_match:
+            return "factorized"
+        elif len(tokenizer_vocab.intersection(hierarchical_vocab)) > len(base_config.__dict__):
+            # Vocab has some encoder tokens but not complete - likely expanded but corrupted
+            raise ValueError(
+                f"Tokenizer vocab appears to be expanded (has {len(tokenizer_vocab.intersection(hierarchical_vocab))} "
+                f"encoder tokens) but doesn't match any known encoder type. "
+                f"Expected hierarchical ({len(hierarchical_vocab)} tokens) or factorized ({len(factorized_vocab)} tokens)."
+            )
+        else:
+            # Vocab is not expanded
+            return None
 
     def get_vocab(self) -> set[str]:
         # NOTE: fake_image_placeholder is NOT included as it's not a real token
@@ -83,14 +143,26 @@ class EpisodeTokenizer:
             self.config.image_token,
             self.config.image_token_prefix,
             self.config.image_token_suffix,
-            self.config.episode_start_token,
-            self.config.episode_end_token,
         }
 
-    def prepare_model(self, *, tokenizer: PreTrainedTokenizer, model=None):
+    def prepare_model(self, *, tokenizer: PreTrainedTokenizer, model=None, apply_semantic_init: bool = True):
+        special_tokens = self.get_vocab()
+        vocab = tokenizer.get_vocab()
+        if all(tok in vocab for tok in special_tokens):
+            logger.warning("Model already has expanded vocab, skipping token addition")
+            self.tokenizer = tokenizer
+            self.is_prepared = True
+            return
+
+        # Add new tokens to tokenizer
         tokenizer.add_tokens(sorted(self.get_vocab()))  # NOTE: set is unordered in python
+        logger.warning(f"Adding {len(self.get_vocab())} new tokens to tokenizer")
         if model is not None:
             model.resize_token_embeddings(len(tokenizer))
+
+            if apply_semantic_init:
+                apply_semantic_initialization(tokenizer, model, self.config.encoder_type)
+
         self.tokenizer = tokenizer
         self.is_prepared = True
 
@@ -99,8 +171,6 @@ class EpisodeTokenizer:
         self,
         mcap_msg: McapMessage,
         *,
-        is_first: bool = False,
-        is_last: bool = False,
         return_dict: Literal[True] = True,
     ) -> TokenizedEvent: ...
 
@@ -109,8 +179,6 @@ class EpisodeTokenizer:
         self,
         mcap_msg: McapMessage,
         *,
-        is_first: bool = False,
-        is_last: bool = False,
         return_dict: Literal[False],
     ) -> npt.NDArray[np.int64]: ...
 
@@ -118,22 +186,12 @@ class EpisodeTokenizer:
         self,
         mcap_msg: McapMessage,
         *,
-        is_first: bool = False,
-        is_last: bool = False,
         return_dict: bool = True,
     ) -> TokenizedEvent | npt.NDArray[np.int64]:
         if not self.is_prepared:
             raise RuntimeError("EpisodeTokenizer must be prepared by `prepare_model` before tokenizing")
 
         encoded_text, images = self.encoder.encode(mcap_msg)
-
-        # Add episode start/end tokens if needed
-        prefix = suffix = ""
-        if is_first:
-            prefix = self.config.episode_start_token
-        if is_last:
-            suffix = self.config.episode_end_token
-        encoded_text = f"{prefix}{encoded_text}{suffix}"
 
         # Replace fake image placeholder with prefix + repeated real image tokens + suffix
         # EventEncoder outputs fake_image_placeholder, we convert to real image tokens
@@ -166,27 +224,9 @@ class EpisodeTokenizer:
     def tokenize_episode(
         self,
         mcap_messages: Iterator[McapMessage],
-        *,
-        append_episode_start_token: bool = False,
-        append_episode_end_token: bool = False,
     ) -> Iterator[TokenizedEvent]:
-        iterator = iter(mcap_messages)
-        prev_msg = None
-        current_msg = next(iterator, None)
-
-        while current_msg is not None:
-            next_msg = next(iterator, None)
-            is_first = prev_msg is None
-            is_last = next_msg is None
-
-            yield self.tokenize_event(
-                current_msg,
-                is_first=is_first and append_episode_start_token,
-                is_last=is_last and append_episode_end_token,
-            )
-
-            prev_msg = current_msg
-            current_msg = next_msg
+        for mcap_msg in mcap_messages:
+            yield self.tokenize_event(mcap_msg)
 
     def decode_episode(
         self,
@@ -196,9 +236,10 @@ class EpisodeTokenizer:
         adjust_timestamp: bool = True,
     ) -> Iterator[McapMessage]:
         """Decode token IDs or tokenized text back to the original McapMessage format."""
-        if not isinstance(self.encoder, HierarchicalEventEncoder):
+        if not isinstance(self.encoder, (HierarchicalEventEncoder, FactorizedEventEncoder)):
             raise NotImplementedError(
-                "EpisodeTokenizer.decode_episode is only implemented for HierarchicalEventEncoder"
+                f"EpisodeTokenizer.decode_episode is only implemented for HierarchicalEventEncoder and FactorizedEventEncoder, "
+                f"got {type(self.encoder)}"
             )
 
         # Convert token IDs back to text (if input is token IDs)
@@ -210,12 +251,6 @@ class EpisodeTokenizer:
             # Input is token IDs
             text = self.tokenizer.decode(input_ids_or_text, skip_special_tokens=False)
 
-        # Remove episode start/end tokens if present
-        if text.startswith(self.config.episode_start_token):
-            text = text[len(self.config.episode_start_token) :]
-        if text.endswith(self.config.episode_end_token):
-            text = text[: -len(self.config.episode_end_token)]
-
         # Parse all events between <EVENT_START> and <EVENT_END> tokens
         event_strings = re.findall(r"<EVENT_START>.*?<EVENT_END>", text)
 
@@ -224,13 +259,23 @@ class EpisodeTokenizer:
         timestamp_bias = 0
         for event_string in event_strings:
             try:
-                event = self.decode_event({"text": event_string, "images": None})
-                # Since HierarchicalEventEncoder uses modular arithmetic for timestamp encoding,
-                # we need to adjust the timestamp if it's smaller than the previous one
-                if event.timestamp < previous_timestamp:
-                    timestamp_bias += self.encoder.config.timestamp_range
-                # Adjust timestamp with bias
+                # Convert repeated image token sequences back to fake_image_placeholder
+                # Pattern: prefix + (image_token * image_token_length) + suffix -> fake_image_placeholder
+                processed_event_string = event_string.replace(
+                    f"{self.config.image_token_prefix}{self.config.image_token_suffix}",
+                    self.config.fake_image_placeholder,
+                )
+                event = self.encoder.decode(processed_event_string)
+                # Handle timestamp adjustment for both encoder types
                 if adjust_timestamp:
+                    # Get timestamp range from encoder config (both encoders have this property)
+                    timestamp_range = self.encoder.config.timestamp_range
+
+                    # Adjust timestamp if it's smaller than the previous one (modular arithmetic)
+                    if event.timestamp < previous_timestamp:
+                        timestamp_bias += timestamp_range
+
+                    # Apply timestamp bias
                     event.timestamp += timestamp_bias
 
                 yield event
@@ -246,31 +291,23 @@ class EpisodeTokenizer:
             raise ValueError(f"Expected Dataset from `owa.data.datasets`, got {type(event_dataset)}")
 
         # Tokenize each event in the dataset
-        def process_event(event, idx):
-            is_first = is_last = False
-            # Add episode start token
-            if idx == 0 or (idx > 0 and event["episode_path"] != event_dataset[idx - 1]["episode_path"]):
-                is_first = True
-            # Add episode end token
-            if idx < len(event_dataset) - 1 and event["episode_path"] != event_dataset[idx + 1]["episode_path"]:
-                is_last = True
-
-            episode_path = event["episode_path"]
+        def process_event(event):
             mcap_message = McapMessage.model_validate_json(event["mcap_message"])
-            tokenized_event = self.tokenize_event(mcap_message, is_first=is_first, is_last=is_last)
+            tokenized_event = self.tokenize_event(mcap_message)
 
             return {
-                "episode_path": episode_path,
+                "episode_path": event["episode_path"],
+                "topic": event["topic"],
+                "timestamp_ns": event["timestamp_ns"],
                 "text": tokenized_event["text"],
-                "token_ids": tokenized_event["token_ids"],
                 "images": [image.model_dump_json() for image in tokenized_event["images"]],
+                "token_ids": tokenized_event["token_ids"],
                 "total_token_count": tokenized_event["total_token_count"],
             }
 
         # Tokenize the dataset
         tokenized_dataset = event_dataset.map(
             process_event,
-            with_indices=True,
             desc="Tokenizing event dataset",
             remove_columns=event_dataset.column_names,
             **map_kwargs,
