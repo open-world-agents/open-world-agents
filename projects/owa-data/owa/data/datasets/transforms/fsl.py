@@ -237,7 +237,7 @@ class FSLTransform:
                     warnings.warn(f"Failed to load image at index {idx}: {e}. Using placeholder.", UserWarning)
 
     def _batch_decode_images(self, image_msgs: List[ScreenCaptured]) -> None:
-        """Batch decode images."""
+        """Batch decode images"""
         if not image_msgs:
             return
 
@@ -248,6 +248,10 @@ class FSLTransform:
                 continue
 
             video_path = img_msg.media_ref.uri
+            # TODO: Remove this line
+            # change video path /raid into /mnt/raid12
+            # video_path = video_path.replace("/raid", "/mnt/raid12")
+
             if video_path not in video_groups:
                 video_groups[video_path] = {"indices": [], "timestamps": []}
 
@@ -258,6 +262,7 @@ class FSLTransform:
 
         # Process each video group with batch decoding
         for video_path, group in video_groups.items():
+            decoder = None
             try:
                 # Create decoder for this video
                 decoder = PyAVVideoDecoder(video_path)
@@ -286,9 +291,27 @@ class FSLTransform:
                     # Store in frame_arr
                     image_msgs[img_idx].frame_arr = frame_bgra
 
+                    # Clear intermediate tensors to free memory
+                    del frame_tensor, frame_rgb
+
+                # Clear frame batch to free memory
+                del frame_batch
+
             except Exception as e:
                 # If batch decoding fails, fall back to individual decoding
                 logger.warning(f"Batch decoding failed for {video_path}: {e}. Falling back to individual decoding.")
+            finally:
+                # Explicitly close decoder to free resources
+                if decoder is not None:
+                    try:
+                        decoder.close()
+                    except:
+                        pass
+                    del decoder
+
+                # Force garbage collection after processing each video
+                import gc
+                gc.collect()
 
 
 def create_fsl_transform(
