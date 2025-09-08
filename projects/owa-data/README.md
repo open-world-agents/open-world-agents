@@ -31,6 +31,8 @@ python scripts/02A_event_to_fsl.py \
   --input_dir $EVENT_DATASET_DIR \
   --output_dir $FSL_DATASET_DIR \
   --fsl_dataset.max_sequence_length 4096 \
+  --fsl_dataset.skip_first_t_seconds_for_action null \
+  --fsl_dataset.time_shift_seconds_for_action null \
   --fsl_workers 16
 
 # 2B. Path B: Event Dataset → Binned Dataset (for traditional training)
@@ -122,6 +124,8 @@ python scripts/02A_event_to_fsl.py \
   --input-dir $EVENT_DATASET_DIR \
   --output-dir $FSL_DATASET_DIR \
   --fsl_dataset.max_sequence_length 4096 \
+  --fsl_dataset.skip_first_t_seconds_for_action null \
+  --fsl_dataset.time_shift_seconds_for_action null \
   --fsl_workers 16
 ```
 
@@ -183,9 +187,8 @@ Core component for Fixed Sequence Length processing that prepares tokenized even
 1. **Tokenization-aware packing**: Uses actual tokenizer to calculate sequence lengths
 2. **Lazy image loading**: Images loaded on-the-fly for memory efficiency
 3. **Automatic sequence splitting**: Long episodes split across multiple sequences
-4. **Episode boundary tokens**: Configurable `<EPISODE_START>` and `<EPISODE_END>` tokens
-5. **Enable random access**: Allow starting iteration from any position for sequence packing
-6. **Simple implementation**: Clean, readable code with minimal complexity
+4. **Enable random access**: Allow starting iteration from any position for sequence packing
+5. **Simple implementation**: Clean, readable code with minimal complexity
 
 ### Complete Examples
 
