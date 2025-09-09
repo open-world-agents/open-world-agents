@@ -84,7 +84,7 @@ def main(cfg: Config):
         tokenizer.pad_token = tokenizer.eos_token
 
     # Initialize episode tokenizer
-    episode_tokenizer = EpisodeTokenizer.from_transformers_model(cfg.tokenizer_name, **cfg.episode_tokenize_config)
+    episode_tokenizer = EpisodeTokenizer.from_transformers(cfg.tokenizer_name, **cfg.episode_tokenize_config)
     episode_tokenizer.prepare_model(tokenizer=tokenizer)
 
     # Configure FSL dataset

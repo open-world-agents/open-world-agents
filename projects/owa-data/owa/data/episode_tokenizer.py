@@ -49,7 +49,7 @@ class EpisodeTokenizer:
         self.is_prepared = False
 
     @classmethod
-    def from_transformers_model(cls, model_name_or_path: str, encoder_type: str | None = None, **kwargs):
+    def from_transformers(cls, model_name_or_path: str, encoder_type: str | None = None, **kwargs):
         model_type = detect_model_type(model_name_or_path)
 
         # Get base configuration for the model type
