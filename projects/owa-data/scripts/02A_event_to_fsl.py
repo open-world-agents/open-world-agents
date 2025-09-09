@@ -16,6 +16,7 @@ from pathlib import Path
 
 from jsonargparse import auto_cli
 from loguru import logger
+from tqdm import tqdm
 from transformers import AutoTokenizer
 
 from owa.data.datasets import DatasetDict, DatasetStage, load_from_disk
@@ -24,6 +25,10 @@ from owa.data.episode_tokenizer import EpisodeTokenizer
 
 # Re-enable logging for owa.data
 logger.enable("owa.data")
+
+logger.remove()
+# how to use loguru with tqdm: https://github.com/Delgan/loguru/issues/135
+logger.add(lambda msg: tqdm.write(msg, end=""), filter={"owa.ocap": "DEBUG", "owa.env.gst": "INFO"}, colorize=True)
 
 
 @dataclass
