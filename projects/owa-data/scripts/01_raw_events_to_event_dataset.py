@@ -89,20 +89,12 @@ def main(
             raise typer.Exit(1)
 
     # Create configuration object
-    config = McapToEventConfig(
-        rate_settings=rate_settings,
-        keep_topics=topics_to_keep,
-        num_workers=num_workers,
-    )
+    config = McapToEventConfig(rate_settings=rate_settings, keep_topics=topics_to_keep, num_workers=num_workers)
 
     # Create event datasets
     mcap_root_directory = str(train_dir)
-    train_dataset = build_event_dataset(
-        episode_paths=train_files, config=config, split="train", mcap_root_directory=mcap_root_directory
-    )
-    test_dataset = build_event_dataset(
-        episode_paths=test_files, config=config, split="test", mcap_root_directory=mcap_root_directory
-    )
+    train_dataset = build_event_dataset(train_files, config=config, mcap_root_directory=mcap_root_directory)
+    test_dataset = build_event_dataset(test_files, config=config, mcap_root_directory=mcap_root_directory)
 
     # Combine into DatasetDict
     dataset_dict = DatasetDict({"train": train_dataset, "test": test_dataset})

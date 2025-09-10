@@ -56,15 +56,12 @@ def main(cfg: Config):
         fsl_workers=cfg.fsl_workers,
     )
 
-    logger.info(f"Input directory: {cfg.input_dir}")
-    logger.info(f"Output directory: {cfg.output_dir}")
-
     # Load event dataset
     logger.info(f"Loading event dataset from: {cfg.input_dir}")
     event_dataset = load_from_disk(str(cfg.input_dir))
 
     # Create FSL dataset
-    final_dataset = build_fsl_dataset(event_dataset, event_to_fsl_config)
+    final_dataset = build_fsl_dataset(event_dataset, config=event_to_fsl_config)
 
     # Save dataset
     logger.info(f"Saving FSL dataset to: {cfg.output_dir}")

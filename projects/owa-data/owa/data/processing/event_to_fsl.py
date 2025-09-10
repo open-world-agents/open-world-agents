@@ -27,6 +27,7 @@ class EventToFSLConfig:
 
 def build_fsl_dataset(
     event_dataset: Union[Dataset, DatasetDict],
+    *,
     config: EventToFSLConfig,
 ) -> Union[Dataset, DatasetDict]:
     """

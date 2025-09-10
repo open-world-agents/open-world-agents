@@ -127,6 +127,7 @@ def _yield_events(
 
 def build_event_dataset(
     episode_paths: List[Path],
+    *,
     config: McapToEventConfig,
     mcap_root_directory: Optional[str] = None,
 ) -> Dataset:
