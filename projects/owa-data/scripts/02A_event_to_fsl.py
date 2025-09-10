@@ -13,8 +13,9 @@ from jsonargparse import auto_cli
 from loguru import logger
 from tqdm import tqdm
 
+from owa.data.datasets import load_from_disk
 from owa.data.datasets.fsl_dataset import FSLDatasetConfig
-from owa.data.processing.event_to_fsl import EventToFSLConfig, create_fsl_dataset_from_events_and_save
+from owa.data.processing import EventToFSLConfig, build_fsl_dataset
 
 # Re-enable logging for owa.data
 logger.enable("owa.data")
@@ -55,12 +56,21 @@ def main(cfg: Config):
         fsl_workers=cfg.fsl_workers,
     )
 
-    # Use the source function to perform the conversion
-    create_fsl_dataset_from_events_and_save(
-        input_dir=cfg.input_dir,
-        output_dir=cfg.output_dir,
-        config=event_to_fsl_config,
-    )
+    logger.info(f"Input directory: {cfg.input_dir}")
+    logger.info(f"Output directory: {cfg.output_dir}")
+
+    # Load event dataset
+    logger.info(f"Loading event dataset from: {cfg.input_dir}")
+    event_dataset = load_from_disk(str(cfg.input_dir))
+
+    # Create FSL dataset
+    final_dataset = build_fsl_dataset(event_dataset, event_to_fsl_config)
+
+    # Save dataset
+    logger.info(f"Saving FSL dataset to: {cfg.output_dir}")
+    final_dataset.save_to_disk(str(cfg.output_dir))
+
+    logger.info("FSL dataset saved successfully!")
 
 
 if __name__ == "__main__":

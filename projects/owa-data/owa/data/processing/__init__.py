@@ -1,11 +1,7 @@
 """Processing module for OWA data pipeline."""
 
-from .event_to_fsl import create_fsl_dataset_from_events
-from .mcap_to_events import create_event_dataset_from_mcaps
+from .event_to_fsl import EventToFSLConfig, build_fsl_dataset
+from .mcap_to_event import McapToEventConfig, build_event_dataset
 from .resampler import create_resampler
 
-__all__ = [
-    "create_resampler",
-    "create_event_dataset_from_mcaps",
-    "create_fsl_dataset_from_events",
-]
+__all__ = ["create_resampler", "build_event_dataset", "build_fsl_dataset", "EventToFSLConfig", "McapToEventConfig"]

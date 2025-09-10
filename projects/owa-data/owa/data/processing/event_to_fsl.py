@@ -4,8 +4,7 @@ from typing import Union
 from loguru import logger
 from transformers import AutoTokenizer
 
-from owa.core.utils.typing import PathLike
-from owa.data.datasets import Dataset, DatasetDict, DatasetStage, load_from_disk
+from owa.data.datasets import Dataset, DatasetDict, DatasetStage
 from owa.data.datasets.fsl_dataset import FSLDatasetConfig, precompute_fsl_dataset
 from owa.data.episode_tokenizer import EpisodeTokenizer
 
@@ -26,7 +25,7 @@ class EventToFSLConfig:
     fsl_workers: int = 4  # Number of workers for FSL processing
 
 
-def create_fsl_dataset_from_events(
+def build_fsl_dataset(
     event_dataset: Union[Dataset, DatasetDict],
     config: EventToFSLConfig,
 ) -> Union[Dataset, DatasetDict]:
@@ -64,7 +63,7 @@ def create_fsl_dataset_from_events(
     if first_dataset.owa_config.stage != DatasetStage.EVENT:
         raise ValueError(
             f"Input dataset must be EVENT stage, got {first_dataset.owa_config.stage}. "
-            "Use create_event_dataset_from_mcaps to create event datasets first."
+            "Use build_event_dataset to create event datasets first."
         )
 
     # Load tokenizer
@@ -119,36 +118,4 @@ def create_fsl_dataset_from_events(
         logger.info(f"Created {len(ds):,} FSL sequences ({split_name})")
 
     logger.info("FSL dataset creation completed successfully!")
-    return final_dataset
-
-
-def create_fsl_dataset_from_events_and_save(
-    input_dir: PathLike, output_dir: PathLike, config: EventToFSLConfig
-) -> Union[Dataset, DatasetDict]:
-    """
-    Convert event dataset to FSL dataset and save to disk.
-
-    Args:
-        input_dir: Input event dataset directory
-        output_dir: Output FSL dataset directory
-        config: Configuration for the conversion process
-
-    Returns:
-        FSL dataset (Dataset or DatasetDict)
-    """
-    logger.info(f"Input directory: {input_dir}")
-    logger.info(f"Output directory: {output_dir}")
-
-    # Load event dataset
-    logger.info(f"Loading event dataset from: {input_dir}")
-    event_dataset = load_from_disk(str(input_dir))
-
-    # Create FSL dataset
-    final_dataset = create_fsl_dataset_from_events(event_dataset, config)
-
-    # Save dataset
-    logger.info(f"Saving FSL dataset to: {output_dir}")
-    final_dataset.save_to_disk(str(output_dir))
-
-    logger.info("FSL dataset saved successfully!")
     return final_dataset

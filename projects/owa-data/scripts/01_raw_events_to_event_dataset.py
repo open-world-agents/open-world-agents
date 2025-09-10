@@ -9,7 +9,7 @@ import typer
 from datasets import DatasetDict
 from loguru import logger
 
-from owa.data.processing import create_event_dataset_from_mcaps
+from owa.data.processing import McapToEventConfig, build_event_dataset
 
 # Re-enable logging for owa.data
 logger.enable("owa.data")
@@ -88,13 +88,20 @@ def main(
         if not typer.confirm("No --output-dir given. Continue without saving to disk?", default=False):
             raise typer.Exit(1)
 
+    # Create configuration object
+    config = McapToEventConfig(
+        rate_settings=rate_settings,
+        keep_topics=topics_to_keep,
+        num_workers=num_workers,
+    )
+
     # Create event datasets
     mcap_root_directory = str(train_dir)
-    train_dataset = create_event_dataset_from_mcaps(
-        train_files, rate_settings, topics_to_keep, num_workers, "train", mcap_root_directory
+    train_dataset = build_event_dataset(
+        episode_paths=train_files, config=config, split="train", mcap_root_directory=mcap_root_directory
     )
-    test_dataset = create_event_dataset_from_mcaps(
-        test_files, rate_settings, topics_to_keep, num_workers, "test", mcap_root_directory
+    test_dataset = build_event_dataset(
+        episode_paths=test_files, config=config, split="test", mcap_root_directory=mcap_root_directory
     )
 
     # Combine into DatasetDict

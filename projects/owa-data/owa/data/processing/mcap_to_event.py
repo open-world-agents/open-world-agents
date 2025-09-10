@@ -1,21 +1,32 @@
-"""MCAP to events processing functionality for OWA data pipeline."""
-
 import warnings
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, Generator, List, Optional, cast
 
+from datasets import Dataset as HFDataset
+from datasets import Features, Value
 from tqdm import tqdm
 
 from mcap_owa.highlevel import OWAMcapReader
+from owa.data.datasets import Dataset, DatasetConfig, DatasetStage
 from owa.data.interval.selector import InactivityFilter
 from owa.data.processing.resampler import EventResampler, create_resampler
 
 
-def process_raw_events_file(
+@dataclass
+class McapToEventConfig:
+    """Configuration for MCAP to events conversion."""
+
+    rate_settings: Dict[str, float]  # Mapping from topic to desired rate (Hz) for resampling
+    keep_topics: Optional[List[str]] = None  # Optional list of topics to keep. If None, all topics are kept
+    num_workers: int = 4  # Number of worker processes for parallel file processing
+    interval_extractor: InactivityFilter = field(default_factory=InactivityFilter)
+
+
+def _mcap_to_events(
     episode_path: str,
-    rate_settings: Dict[str, float],
-    keep_topics: Optional[List[str]] = None,
+    config: McapToEventConfig,
     mcap_root_directory: Optional[str] = None,
 ) -> List[Dict]:
     """
@@ -23,27 +34,27 @@ def process_raw_events_file(
 
     Args:
         episode_path: Path to the MCAP file to process
-        rate_settings: Mapping from topic to desired rate (Hz) for resampling
-        keep_topics: Optional list of topics to keep. If None, all topics are kept
+        config: Configuration object containing rate settings, topics, and other parameters
         mcap_root_directory: Optional root directory for storing relative paths
 
     Returns:
         List of event dictionaries containing processed events
     """
     events: List[Dict] = []
-    interval_extractor = InactivityFilter()
-    valid_intervals = interval_extractor.extract_intervals(Path(episode_path))
+    valid_intervals = config.interval_extractor.extract_intervals(Path(episode_path))
 
     # Initialize resamplers for all topics
     resamplers: Dict[str, EventResampler] = {}
-    for topic in keep_topics or []:
-        rate_hz = rate_settings.get(topic, 0)  # 0 = no rate limit
+    for topic in config.keep_topics or []:
+        rate_hz = config.rate_settings.get(topic, 0)  # 0 = no rate limit
         min_interval_ns = 0 if rate_hz == 0 else int((1.0 / rate_hz) * 1e9)
         resamplers[topic] = create_resampler(topic, min_interval_ns=min_interval_ns)
 
     with OWAMcapReader(Path(episode_path)) as reader:
         for interval in valid_intervals:
-            for mcap_msg in reader.iter_messages(start_time=interval.start, end_time=interval.end, topics=keep_topics):
+            for mcap_msg in reader.iter_messages(
+                start_time=interval.start, end_time=interval.end, topics=config.keep_topics
+            ):
                 topic = mcap_msg.topic
 
                 # Process event through resampler
@@ -73,23 +84,19 @@ def process_raw_events_file(
     return events
 
 
-def generate_event_examples(
+def _yield_events(
     episode_paths: List[str],
-    rate_settings: Dict[str, float],
-    keep_topics: Optional[List[str]] = None,
-    num_workers: int = 4,
+    config: McapToEventConfig,
     mcap_root_directory: Optional[str] = None,
     on_error: Optional[Callable[[str, BaseException], None]] = None,
-):
+) -> Generator[Dict, None, None]:
     """
     Generator function that yields event examples by processing each raw events file
-    in parallel using multiple processes.
+    in parallel using multiple processes. Events within same mcap file is grouped together.
 
     Args:
         episode_paths: List of MCAP file paths (strings).
-        rate_settings: Mapping from topic to desired rate (Hz).
-        keep_topics: Optional list of topics to keep. If None, all topics are kept.
-        num_workers: Number of parallel worker processes.
+        config: Configuration object containing rate settings, topics, and other parameters.
         mcap_root_directory: Optional root directory for storing relative paths.
         on_error: Optional callback function to handle errors.
 
@@ -97,10 +104,9 @@ def generate_event_examples(
         Individual event dictionaries suitable for Hugging Face Dataset.
     """
     total_files = len(episode_paths)
-    with ProcessPoolExecutor(max_workers=num_workers) as executor:
+    with ProcessPoolExecutor(max_workers=config.num_workers) as executor:
         future_to_path = {
-            executor.submit(process_raw_events_file, fp, rate_settings, keep_topics, mcap_root_directory): fp
-            for fp in episode_paths
+            executor.submit(_mcap_to_events, fp, config, mcap_root_directory): fp for fp in episode_paths
         }
         with tqdm(total=total_files, desc="Processing files", unit="file") as pbar:
             for future in as_completed(future_to_path):
@@ -119,34 +125,23 @@ def generate_event_examples(
                     pbar.update(1)
 
 
-def create_event_dataset_from_mcaps(
+def build_event_dataset(
     episode_paths: List[Path],
-    rate_settings: Dict[str, float],
-    keep_topics: Optional[List[str]] = None,
-    num_workers: int = 4,
-    split: str = "train",
+    config: McapToEventConfig,
     mcap_root_directory: Optional[str] = None,
-):
+) -> Dataset:
     """
     Create a Hugging Face event dataset from the given MCAP file paths by streaming
     examples from a generator.
 
     Args:
         episode_paths: List of pathlib.Path objects pointing to MCAP files.
-        rate_settings: Mapping from topic to rate (Hz) to apply drop-only downsampling.
-        keep_topics: Optional list of topics to keep. If None, all topics are kept.
-        num_workers: Number of worker processes for parallel file processing.
-        split: Dataset split name (default: "train").
+        config: Configuration object containing rate settings, topics, and other parameters.
         mcap_root_directory: Optional root directory for storing relative paths.
 
     Returns:
         A Hugging Face Dataset containing the combined events.
     """
-    from datasets import Dataset as HFDataset
-    from datasets import DatasetInfo as HFDatasetInfo
-    from datasets import Features, Value
-
-    from owa.data.datasets import Dataset, DatasetConfig, DatasetStage
 
     episode_path_strs = [str(fp) for fp in episode_paths]
 
@@ -162,37 +157,21 @@ def create_event_dataset_from_mcaps(
 
     # Create HF Dataset first
     hf_dataset = HFDataset.from_generator(
-        generate_event_examples,
+        _yield_events,
         gen_kwargs={
             "episode_paths": episode_path_strs,
-            "rate_settings": rate_settings,
-            "keep_topics": keep_topics,
-            "num_workers": num_workers,
+            "config": config,
             "mcap_root_directory": mcap_root_directory,
         },
         features=features,
-        split=split,
     )
+    hf_dataset = cast(HFDataset, hf_dataset)
 
-    # Update dataset info
-    info_to_update = HFDatasetInfo(
-        description="",
-        dataset_name="open-world-agents/goat",
-        homepage="https://github.com/open-world-agents",
+    # Convert to unified Dataset using from_hf_dataset method
+    owa_config = DatasetConfig(
+        stage=DatasetStage.EVENT,
+        mcap_root_directory=mcap_root_directory,
     )
-    hf_dataset.info.update(info_to_update)
-
-    # Convert to unified Dataset
-    event_dataset = Dataset(
-        arrow_table=hf_dataset.data,
-        info=hf_dataset.info,
-        split=hf_dataset.split,
-        indices_table=hf_dataset._indices,
-        fingerprint=hf_dataset._fingerprint,
-        owa_config=DatasetConfig(
-            stage=DatasetStage.EVENT,
-            mcap_root_directory=mcap_root_directory,
-        ),
-    )
+    event_dataset = Dataset.from_hf_dataset(hf_dataset, owa_config=owa_config)
 
     return event_dataset
