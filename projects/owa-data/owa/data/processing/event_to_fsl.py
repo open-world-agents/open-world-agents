@@ -26,9 +26,7 @@ class EventToFSLConfig:
 
 
 def build_fsl_dataset(
-    event_dataset: Union[Dataset, DatasetDict],
-    *,
-    config: EventToFSLConfig,
+    event_dataset: Union[Dataset, DatasetDict], *, config: EventToFSLConfig
 ) -> Union[Dataset, DatasetDict]:
     """
     Convert event dataset to FSL (Fixed Sequence Length) dataset format.

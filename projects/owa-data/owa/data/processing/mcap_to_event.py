@@ -126,10 +126,7 @@ def _yield_events(
 
 
 def build_event_dataset(
-    episode_paths: List[Path],
-    *,
-    config: McapToEventConfig,
-    mcap_root_directory: Optional[str] = None,
+    episode_paths: List[Path], *, config: McapToEventConfig, mcap_root_directory: Optional[str] = None
 ) -> Dataset:
     """
     Create a Hugging Face event dataset from the given MCAP file paths by streaming
