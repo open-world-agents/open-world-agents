@@ -9,7 +9,7 @@ import typer
 from datasets import DatasetDict
 from loguru import logger
 
-from owa.data.processing.raw_events import create_event_dataset_from_mcaps
+from owa.data.processing import create_event_dataset_from_mcaps
 
 # Re-enable logging for owa.data
 logger.enable("owa.data")

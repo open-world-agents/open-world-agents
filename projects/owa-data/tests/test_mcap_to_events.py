@@ -1,23 +1,22 @@
-"""Tests for raw event processing functionality."""
+"""Tests for MCAP to events processing functionality."""
 
 from unittest.mock import Mock, patch
 
-
-from owa.data.processing.raw_events import process_raw_events_file, generate_event_examples
+from owa.data.processing.mcap_to_events import generate_event_examples, process_raw_events_file
 
 
 class TestProcessRawEventsFile:
     """Test the process_raw_events_file function."""
 
     def test_import_availability(self):
-        """Test that the function can be imported from the raw_events module."""
-        # Test import from raw_events module
-        from owa.data.processing.raw_events import process_raw_events_file
+        """Test that the function can be imported from the mcap_to_events module."""
+        # Test import from mcap_to_events module
+        from owa.data.processing.mcap_to_events import process_raw_events_file
 
         assert callable(process_raw_events_file)
 
-    @patch("owa.data.processing.raw_events.OWAMcapReader")
-    @patch("owa.data.processing.raw_events.InactivityFilter")
+    @patch("owa.data.processing.mcap_to_events.OWAMcapReader")
+    @patch("owa.data.processing.mcap_to_events.InactivityFilter")
     def test_process_raw_events_file_basic(self, mock_filter, mock_reader):
         """Test basic functionality of process_raw_events_file."""
         # Mock the interval extractor
@@ -37,7 +36,7 @@ class TestProcessRawEventsFile:
         mock_reader.return_value.__enter__.return_value = mock_reader_instance
 
         # Mock the resampler
-        with patch("owa.data.processing.raw_events.create_resampler") as mock_create_resampler:
+        with patch("owa.data.processing.mcap_to_events.create_resampler") as mock_create_resampler:
             mock_resampler = Mock()
             mock_resampler.pop_event.return_value = [mock_message]
             mock_create_resampler.return_value = mock_resampler
@@ -56,8 +55,8 @@ class TestProcessRawEventsFile:
             assert event["message_type"] == "desktop/ScreenCaptured"
             assert event["mcap_message"] == b'{"test": "data"}'
 
-    @patch("owa.data.processing.raw_events.OWAMcapReader")
-    @patch("owa.data.processing.raw_events.InactivityFilter")
+    @patch("owa.data.processing.mcap_to_events.OWAMcapReader")
+    @patch("owa.data.processing.mcap_to_events.InactivityFilter")
     def test_process_raw_events_file_with_root_directory(self, mock_filter, mock_reader):
         """Test process_raw_events_file with mcap_root_directory parameter."""
         # Mock the interval extractor
@@ -77,7 +76,7 @@ class TestProcessRawEventsFile:
         mock_reader.return_value.__enter__.return_value = mock_reader_instance
 
         # Mock the resampler
-        with patch("owa.data.processing.raw_events.create_resampler") as mock_create_resampler:
+        with patch("owa.data.processing.mcap_to_events.create_resampler") as mock_create_resampler:
             mock_resampler = Mock()
             mock_resampler.pop_event.return_value = [mock_message]
             mock_create_resampler.return_value = mock_resampler
@@ -95,8 +94,8 @@ class TestProcessRawEventsFile:
             event = result[0]
             assert event["episode_path"] == "data/episode.mcap"
 
-    @patch("owa.data.processing.raw_events.OWAMcapReader")
-    @patch("owa.data.processing.raw_events.InactivityFilter")
+    @patch("owa.data.processing.mcap_to_events.OWAMcapReader")
+    @patch("owa.data.processing.mcap_to_events.InactivityFilter")
     def test_process_raw_events_file_empty_topics(self, mock_filter, mock_reader):
         """Test process_raw_events_file with empty keep_topics."""
         mock_intervals = Mock()
@@ -117,14 +116,14 @@ class TestGenerateEventExamples:
     """Test the generate_event_examples function."""
 
     def test_import_availability(self):
-        """Test that the function can be imported from the raw_events module."""
-        # Test import from raw_events module
-        from owa.data.processing.raw_events import generate_event_examples
+        """Test that the function can be imported from the mcap_to_events module."""
+        # Test import from mcap_to_events module
+        from owa.data.processing.mcap_to_events import generate_event_examples
 
         assert callable(generate_event_examples)
 
-    @patch("owa.data.processing.raw_events.ProcessPoolExecutor")
-    @patch("owa.data.processing.raw_events.process_raw_events_file")
+    @patch("owa.data.processing.mcap_to_events.ProcessPoolExecutor")
+    @patch("owa.data.processing.mcap_to_events.process_raw_events_file")
     def test_generate_event_examples_basic(self, mock_process_file, mock_executor):
         """Test basic functionality of generate_event_examples."""
         # Mock the process_raw_events_file function
@@ -149,7 +148,7 @@ class TestGenerateEventExamples:
         mock_executor.return_value = mock_executor_instance
 
         # Mock as_completed to return the future immediately
-        with patch("owa.data.processing.raw_events.as_completed") as mock_as_completed:
+        with patch("owa.data.processing.mcap_to_events.as_completed") as mock_as_completed:
             mock_as_completed.return_value = [mock_future]
 
             # Test the generator
@@ -166,7 +165,7 @@ class TestGenerateEventExamples:
             assert event["topic"] == "screen"
             assert event["timestamp_ns"] == 1000
 
-    @patch("owa.data.processing.raw_events.ProcessPoolExecutor")
+    @patch("owa.data.processing.mcap_to_events.ProcessPoolExecutor")
     def test_generate_event_examples_error_handling(self, mock_executor):
         """Test error handling in generate_event_examples."""
         # Mock the executor to raise an exception
@@ -180,7 +179,7 @@ class TestGenerateEventExamples:
         mock_executor.return_value = mock_executor_instance
 
         # Mock as_completed to return the future immediately
-        with patch("owa.data.processing.raw_events.as_completed") as mock_as_completed:
+        with patch("owa.data.processing.mcap_to_events.as_completed") as mock_as_completed:
             mock_as_completed.return_value = [mock_future]
 
             # Test that the generator handles errors gracefully
@@ -195,10 +194,10 @@ class TestGenerateEventExamples:
 
 
 class TestIntegration:
-    """Integration tests for raw event processing."""
+    """Integration tests for MCAP to events processing."""
 
-    @patch("owa.data.processing.raw_events.OWAMcapReader")
-    @patch("owa.data.processing.raw_events.InactivityFilter")
+    @patch("owa.data.processing.mcap_to_events.OWAMcapReader")
+    @patch("owa.data.processing.mcap_to_events.InactivityFilter")
     def test_functions_work_together(self, mock_filter, mock_reader):
         """Test that the functions can work together in a realistic scenario."""
         # This is a basic integration test that verifies the functions exist
@@ -218,7 +217,7 @@ class TestIntegration:
         assert isinstance(result, list)
 
         # Test that generate_event_examples can be called
-        with patch("owa.data.processing.raw_events.ProcessPoolExecutor") as mock_executor:
+        with patch("owa.data.processing.mcap_to_events.ProcessPoolExecutor") as mock_executor:
             mock_executor_instance = Mock()
             mock_executor_instance.__enter__ = Mock(return_value=mock_executor_instance)
             mock_executor_instance.__exit__ = Mock(return_value=None)

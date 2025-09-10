@@ -1,4 +1,4 @@
-"""Raw event processing functionality for OWA data pipeline."""
+"""MCAP to events processing functionality for OWA data pipeline."""
 
 import warnings
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -142,9 +142,10 @@ def create_event_dataset_from_mcaps(
     Returns:
         A Hugging Face Dataset containing the combined events.
     """
-    from datasets import Features, Value
     from datasets import Dataset as HFDataset
     from datasets import DatasetInfo as HFDatasetInfo
+    from datasets import Features, Value
+
     from owa.data.datasets import Dataset, DatasetConfig, DatasetStage
 
     episode_path_strs = [str(fp) for fp in episode_paths]
