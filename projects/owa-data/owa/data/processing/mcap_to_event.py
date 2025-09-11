@@ -45,17 +45,18 @@ def _mcap_to_events(
 
     # Initialize resamplers for all topics
     resamplers: Dict[str, EventResampler] = {}
-    for topic in config.keep_topics or []:
-        rate_hz = config.rate_settings.get(topic, 0)  # 0 = no rate limit
-        min_interval_ns = 0 if rate_hz == 0 else int((1.0 / rate_hz) * 1e9)
-        resamplers[topic] = create_resampler(topic, min_interval_ns=min_interval_ns)
-
     with OWAMcapReader(Path(episode_path)) as reader:
         for interval in valid_intervals:
             for mcap_msg in reader.iter_messages(
                 start_time=interval.start, end_time=interval.end, topics=config.keep_topics
             ):
                 topic = mcap_msg.topic
+
+                # Lazily initialize resampler on first encounter
+                if topic not in resamplers:
+                    rate_hz = config.rate_settings.get(topic, 0)  # 0 = no rate limit
+                    min_interval_ns = 0 if rate_hz == 0 else int((1.0 / rate_hz) * 1e9)
+                    resamplers[topic] = create_resampler(topic, min_interval_ns=min_interval_ns)
 
                 # Process event through resampler
                 resamplers[topic].add_event(mcap_msg)
