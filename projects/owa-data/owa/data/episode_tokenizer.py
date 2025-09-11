@@ -27,7 +27,7 @@ class EpisodeTokenizerConfig:
     image_token_length: int
     image_token_suffix: str
 
-    encoder_type: str = "hierarchical"
+    encoder_type: str = "factorized"
     # Internal placeholder token used by encoders (not in vocab)
     fake_image_placeholder: str = "<fake_image_placeholder>"
 
