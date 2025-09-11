@@ -49,21 +49,12 @@ def build_fsl_dataset(
 
     ds_dict = event_dataset
 
-    # Validate input dataset stage
     if isinstance(ds_dict, DatasetDict):
         logger.info(f"Loaded DatasetDict with splits: {list(ds_dict.keys())}")
-        first_dataset = next(iter(ds_dict.values()))
         splits = list(ds_dict.keys())
     else:
         logger.info("Loaded single Dataset")
-        first_dataset = ds_dict
         splits = [None]
-
-    if first_dataset.owa_config.stage != DatasetStage.EVENT:
-        raise ValueError(
-            f"Input dataset must be EVENT stage, got {first_dataset.owa_config.stage}. "
-            "Use build_event_dataset to create event datasets first."
-        )
 
     # Load tokenizer
     logger.info(f"Loading tokenizer: {config.tokenizer_name}")
@@ -83,6 +74,10 @@ def build_fsl_dataset(
 
     for split in splits:
         ds = ds_dict[split] if split else ds_dict
+
+        if ds.owa_config.stage != DatasetStage.EVENT:
+            raise ValueError(f"Input dataset must be EVENT stage, got {ds.owa_config.stage}")
+
         split_name = split if split else "train"
         logger.info(f"Processing {len(ds):,} events from {split_name} split")
 
