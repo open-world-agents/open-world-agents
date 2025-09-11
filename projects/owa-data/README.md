@@ -21,13 +21,16 @@ export BINNED_DATASET_DIR="/mnt/harbor/projects/owa/data/vpt-bin"
 python scripts/01_raw_events_to_event_dataset.py \
   --config configs/mcap_to_event_example.yaml \
   --input_dir $MCAP_DIR \
-  --output_dir $EVENT_DATASET_DIR
+  --output_dir $EVENT_DATASET_DIR \
+  --mcap_to_event_config.num_workers 4
 
 # 2A. Path A: Event Dataset → FSL Dataset (for transformer training)
 python scripts/02A_event_to_fsl.py \
   --config configs/internvl3_example.yaml \
   --input_dir $EVENT_DATASET_DIR \
-  --output_dir $FSL_DATASET_DIR
+  --output_dir $FSL_DATASET_DIR \
+  --event_to_fsl_config.num_proc 32 \
+  --event_to_fsl_config.fsl_workers 4
 
 # 2B. Path B: Event Dataset → Binned Dataset (for traditional training)
 python scripts/02B_event_dataset_to_binned_dataset.py \
