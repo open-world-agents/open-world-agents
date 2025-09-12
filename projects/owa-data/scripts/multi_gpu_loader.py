@@ -73,23 +73,25 @@ def main():
 
     # Configure processor based on model type
     if model_type == ModelType.INTERNVL:
-        # InternVL3 configuration: disable multi-crop for efficiency
+        # InternVL configuration: disable multi-crop for efficiency
         processor = AutoProcessor.from_pretrained(args.model)
         processor.image_processor = AutoImageProcessor.from_pretrained(
-            args.model,
-            use_fast=True,
-            crop_to_patches=False,  # InternVL3-specific: disable multi-crop
+            args.model, use_fast=True, crop_to_patches=False
         )
-        print("Configured InternVL3 processor with multi-crop disabled")
+        print("Configured InternVL processor with multi-crop disabled")
     else:
-        # SmolVLM2 and other models configuration
-        processor = AutoProcessor.from_pretrained(args.model, do_image_splitting=False)
-        processor.image_processor = AutoImageProcessor.from_pretrained(
-            args.model,
-            use_fast=True,
-            do_image_splitting=False,  # SmolVLM2-specific: disable image splitting
+        # SmolVLM and other models configuration
+        processor = AutoProcessor.from_pretrained(args.model)
+        from owa.agent.models.smolvlm import SmolVLMProcessorLikeGotOcr2ImageProcessorFast
+
+        processor.image_processor = SmolVLMProcessorLikeGotOcr2ImageProcessorFast.from_pretrained(
+            "OpenGVLab/InternVL3-1B-hf", crop_to_patches=False
         )
-        print("Configured SmolVLM2/default processor")
+        assert processor.image_processor.crop_to_patches is False, "Failed to disable multi-crop"
+        assert processor.image_processor.__class__.__name__ == "SmolVLMProcessorLikeGotOcr2ImageProcessorFast", (
+            f"Expected SmolVLMProcessorLikeGotOcr2ImageProcessorFast, got {processor.image_processor.__class__}"
+        )
+        print("Configured SmolVLM processor(image_processor patched to InternVL) with multi-crop disabled")
 
     # 3) Apply FSL transform for on-the-fly processing and concatenate datasets
     for train_ds in train_datasets:
