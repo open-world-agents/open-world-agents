@@ -9,7 +9,7 @@ from .utils import resolve_episode_path
 
 
 def create_event_transform(
-    encoder_type: str = "hierarchical", load_images: bool = True, mcap_root_directory: Optional[str] = None
+    encoder_type: str = "factorized", load_images: bool = True, mcap_root_directory: Optional[str] = None
 ):
     """Create transform for EVENT stage."""
 

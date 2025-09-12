@@ -20,6 +20,7 @@ dependencies = [
     "owa-msgs",
     "mcap-owa-support",
     "line-profiler>=5.0.0",
+    "transformers>=4.51.3",
 ]
 
 [build-system]

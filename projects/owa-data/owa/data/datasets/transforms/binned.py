@@ -10,7 +10,7 @@ from .utils import resolve_episode_path
 
 def create_binned_transform(
     instruction: str = "Complete the computer task",
-    encoder_type: str = "hierarchical",
+    encoder_type: str = "factorized",
     load_images: bool = True,
     encode_actions: bool = True,
     mcap_root_directory: Optional[str] = None,
