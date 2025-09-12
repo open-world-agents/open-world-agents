@@ -1,9 +1,9 @@
 """Transform module for OWA datasets."""
 
-from .event import create_event_transform
 from .binned import create_binned_transform
+from .event import create_event_transform
+from .fsl import FSLTransform, FSLTransformConfig, create_fsl_transform
 from .tokenized import create_tokenized_transform
-from .fsl import create_fsl_transform, FSLTransform, FSLTransformConfig
 from .utils import resolve_episode_path
 
 
