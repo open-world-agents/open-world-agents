@@ -6,8 +6,8 @@ from .exceptions import (
     UnsupportedInputError,
     UnsupportedTokenError,
 )
-from .hierarchical_event_encoder import HierarchicalEventEncoder, HierarchicalEventEncoderConfig
 from .factorized_event_encoder import FactorizedEventEncoder, FactorizedEventEncoderConfig
+from .hierarchical_event_encoder import HierarchicalEventEncoder, HierarchicalEventEncoderConfig
 from .json_event_encoder import JSONEventEncoder, JSONEventEncoderConfig
 
 

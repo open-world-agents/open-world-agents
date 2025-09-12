@@ -2,10 +2,10 @@ import warnings
 from io import BytesIO
 
 from mcap.reader import make_reader
-from owa.core.message import OWAMessage
 
 from mcap_owa.decoder import DecoderFactory
 from mcap_owa.writer import Writer as OWAWriter
+from owa.core.message import OWAMessage
 
 
 class String(OWAMessage):
