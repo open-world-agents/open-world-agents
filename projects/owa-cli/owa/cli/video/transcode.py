@@ -54,10 +54,11 @@ def build_ffmpeg_cmd(
             params.append(f"keyint={keyint}")
         if min_keyint:
             params.append(f"min-keyint={min_keyint}")
-        if scenecut == 0:
-            params.append("no-scenecut=1")
-        elif scenecut is not None:
-            params.append(f"scenecut={scenecut}")
+        if scenecut is not None:
+            if scenecut == 0:
+                params.append("no-scenecut=1")
+            else:
+                params.append(f"scenecut={scenecut}")
 
         param_flag = "-x264-params" if codec == "libx264" else "-x265-params"
         cmd.extend([param_flag, ":".join(params)])
