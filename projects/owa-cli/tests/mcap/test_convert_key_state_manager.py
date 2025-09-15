@@ -6,7 +6,7 @@ This script tests various keyboard input scenarios to verify the key state manag
 
 import sys
 
-from owa.cli.mcap.convert import KeyStateManager, KeyState
+from owa.cli.mcap.convert import KeyState, KeyStateManager
 from owa.env.desktop.constants import VK
 
 

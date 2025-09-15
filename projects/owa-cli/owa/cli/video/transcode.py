@@ -15,7 +15,7 @@ def build_ffmpeg_cmd(
     crf: Optional[int] = None,
     keyint: int = 30,
     min_keyint: Optional[int] = None,
-    scenecut: Optional[int] = None,
+    scenecut: Optional[int] = 0,
 ) -> list[str]:
     """Build FFmpeg command with optimized settings for video compatibility."""
     cmd = ["ffmpeg", "-i", str(input_path)]
@@ -54,8 +54,10 @@ def build_ffmpeg_cmd(
             params.append(f"keyint={keyint}")
         if min_keyint:
             params.append(f"min-keyint={min_keyint}")
-        if scenecut is not None:
-            params.append("no-scenecut=1" if scenecut == 0 else f"scenecut={scenecut}")
+        if scenecut == 0:
+            params.append("no-scenecut=1")
+        elif scenecut is not None:
+            params.append(f"scenecut={scenecut}")
 
         param_flag = "-x264-params" if codec == "libx264" else "-x265-params"
         cmd.extend([param_flag, ":".join(params)])
@@ -83,7 +85,7 @@ def transcode(
     crf: Optional[int] = None,
     keyint: int = 30,
     min_keyint: Optional[int] = None,
-    scenecut: Optional[int] = None,
+    scenecut: Optional[int] = 0,
     dry_run: bool = False,
 ) -> str:
     """Execute video transcoding with specified parameters."""
@@ -112,7 +114,7 @@ def main(
     crf: Optional[int] = typer.Option(None, "--crf", help="Quality (0-51, lower=better)"),
     keyint: int = typer.Option(30, "--keyint", "-k", help="Keyframe interval"),
     min_keyint: Optional[int] = typer.Option(None, "--min-keyint", help="Min keyframe interval"),
-    scenecut: Optional[int] = typer.Option(None, "--scenecut", help="Scene cut threshold (0=disable)"),
+    scenecut: Optional[int] = typer.Option(0, "--scenecut", help="Scene cut threshold (0=disable, default: 0)"),
     dry_run: bool = typer.Option(False, "--dry-run", help="Show command only"),
 ):
     """
@@ -125,7 +127,7 @@ def main(
         crf: Quality level (0-51, lower=better quality, 18=high, 23=default, 28=smaller file)
         keyint: Keyframe interval/GOP size (lower=better seeking, higher=better compression)
         min-keyint: Minimum keyframe interval (optional, for fine control)
-        scenecut: Scene change detection (0=disable for consistent GOP, 40=default adaptive)
+        scenecut: Scene change detection (0=disable for consistent GOP [default], 40=adaptive)
         dry-run: Show command without executing
 
     Examples:

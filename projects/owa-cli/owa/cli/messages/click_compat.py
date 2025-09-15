@@ -6,6 +6,7 @@ so that mkdocs-click can generate documentation for it.
 """
 
 import typer.main
+
 from . import app
 
 # Convert the Typer app to a Click command for mkdocs-click
