@@ -208,7 +208,8 @@ class FSLTransform:
             if self.image_processor is not None:
                 # NOTE: SmolVLMImageProcessor is 2x slower in batched setting. WOW!
                 assert self.image_processor.is_fast, "Expected fast image processor"
-                if self.image_processor.__class__.__name__ == "SmolVLMImageProcessorFast":
+                image_processor_cls_name = self.image_processor.__class__.__name__
+                if image_processor_cls_name == "SmolVLMImageProcessorFast":
                     pixel_values = []
                     for image in all_images:
                         processed = self.image_processor(image, return_tensors="pt")  # 100ms / image
@@ -217,7 +218,10 @@ class FSLTransform:
                     results["images"].append(
                         torch.stack(pixel_values) if pixel_values else torch.empty(0, 3, 512, 512)
                     )
-                else:
+                elif image_processor_cls_name in (
+                    "GotOcr2ImageProcessorFast",
+                    "SmolVLMLikeGotOcr2ImageProcessorFast",
+                ):
                     # NOTE: InternVLImageProcessor is bit faster in batched setting
                     if all_images:
                         processed = self.image_processor(all_images, return_tensors="pt")
@@ -228,8 +232,13 @@ class FSLTransform:
                             pixel_values = pixel_values.squeeze(0)
                     else:
                         # NOTE: InternVL3 expectes (448, 448) while SmolVLM2 expects (512, 512)
-                        pixel_values = torch.empty(0, 3, 448, 448)
+                        if image_processor_cls_name == "SmolVLMLikeGotOcr2ImageProcessorFast":
+                            pixel_values = torch.empty(0, 3, 512, 512)
+                        else:
+                            pixel_values = torch.empty(0, 3, 448, 448)
                     results["images"].append(pixel_values)
+                else:
+                    raise NotImplementedError(f"Unsupported image processor: {image_processor_cls_name}")
             else:
                 results["images"].append(all_images)
 

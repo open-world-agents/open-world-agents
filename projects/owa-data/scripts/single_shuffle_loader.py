@@ -42,6 +42,9 @@ def main():
     else:
         # SmolVLM and other models configuration
         processor = AutoProcessor.from_pretrained(args.model)
+        # processor.image_processor = AutoImageProcessor.from_pretrained(
+        #     args.model, use_fast=True, do_image_splitting=False
+        # )
         from owa.agent.models.smolvlm import SmolVLMLikeGotOcr2ImageProcessorFast
 
         processor.image_processor = SmolVLMLikeGotOcr2ImageProcessorFast.from_pretrained(

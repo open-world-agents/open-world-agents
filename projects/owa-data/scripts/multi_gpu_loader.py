@@ -82,6 +82,9 @@ def main():
     else:
         # SmolVLM and other models configuration
         processor = AutoProcessor.from_pretrained(args.model)
+        # processor.image_processor = AutoImageProcessor.from_pretrained(
+        #     args.model, use_fast=True, do_image_splitting=False
+        # )
         from owa.agent.models.smolvlm import SmolVLMLikeGotOcr2ImageProcessorFast
 
         processor.image_processor = SmolVLMLikeGotOcr2ImageProcessorFast.from_pretrained(
@@ -110,12 +113,12 @@ def main():
         # prefetch_factor=2,
         # persistent_workers=True,
         pin_memory=True,
-        collate_fn=lambda examples: collate_fn_for_model(examples, max_sequence_length=4096, processor=processor),
+        collate_fn=lambda examples: collate_fn_for_model(examples, max_sequence_length=8192, processor=processor),
     )
     print(f"Using collate function for model type: {model_type}")
 
     # 5) (Optional) A dummy model so you can do a full prepare()
-    model = torch.nn.Linear(4096, 1)
+    model = torch.nn.Linear(8192, 1)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
     # 6) Let Accelerator wrap model, optimizer, and dataloader
