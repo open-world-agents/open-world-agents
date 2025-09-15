@@ -18,7 +18,7 @@
       
       
       <link rel="icon" href="../../images/owa-logo.jpg">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.19">
     
     
       
@@ -1827,7 +1827,7 @@
     crf: Quality level (0-51, lower=better quality, 18=high, 23=default, 28=smaller file)
     keyint: Keyframe interval/GOP size (lower=better seeking, higher=better compression)
     min-keyint: Minimum keyframe interval (optional, for fine control)
-    scenecut: Scene change detection (0=disable for consistent GOP, 40=default adaptive)
+    scenecut: Scene change detection (0=disable for consistent GOP [default], 40=adaptive)
     dry-run: Show command without executing</p>
 <p>Examples:
     # Basic transcoding
@@ -1903,8 +1903,8 @@ owa video transcode input.mkv output.mkv --dry-run
 <tr>
 <td><code>--scenecut</code></td>
 <td>integer</td>
-<td>Scene cut threshold (0=disable)</td>
-<td>None</td>
+<td>Scene cut threshold (0=disable, default: 0)</td>
+<td><code>0</code></td>
 </tr>
 <tr>
 <td><code>--dry-run</code></td>
