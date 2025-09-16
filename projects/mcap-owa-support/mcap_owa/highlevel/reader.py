@@ -6,9 +6,10 @@ from typing import Iterable, Iterator, Optional
 
 import requests
 from mcap.reader import McapReader, make_reader
-from owa.core.utils.typing import PathLike
 from packaging import version
 from packaging.specifiers import SpecifierSet
+
+from owa.core.utils.typing import PathLike
 
 from .. import __version__
 from ..decoder import DecoderFactory

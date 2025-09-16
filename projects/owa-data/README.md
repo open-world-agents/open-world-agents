@@ -12,26 +12,25 @@ Raw MCAP Data → Event Dataset → [Path A] FSL Dataset → VLA Training Ready
 ## Quick Start
 ```bash
 # Set variables
-export MCAP_TRAIN_DIR="/mnt/raid12/datasets/owa/mcaps/vpt"
+export MCAP_DIR="/mnt/raid12/datasets/owa/mcaps/vpt"
 export EVENT_DATASET_DIR="/mnt/harbor/projects/owa/data/vpt-event"
 export FSL_DATASET_DIR="/mnt/harbor/projects/owa/data/vpt-fsl-internvl3"
 export BINNED_DATASET_DIR="/mnt/harbor/projects/owa/data/vpt-bin"
 
 # 1. Process MCAP → Event Dataset
 python scripts/01_raw_events_to_event_dataset.py \
-  --train-dir $MCAP_TRAIN_DIR \
-  --output-dir $EVENT_DATASET_DIR \
-  --rate screen=20 --rate mouse/raw=20 \
-  --keep-topic screen --keep-topic keyboard --keep-topic mouse/raw \
-  --num-workers 4
+  --config configs/mcap_to_event_example.yaml \
+  --input_dir $MCAP_DIR \
+  --output_dir $EVENT_DATASET_DIR \
+  --mcap_to_event_config.num_workers 4
 
 # 2A. Path A: Event Dataset → FSL Dataset (for transformer training)
 python scripts/02A_event_to_fsl.py \
   --config configs/internvl3_example.yaml \
   --input_dir $EVENT_DATASET_DIR \
   --output_dir $FSL_DATASET_DIR \
-  --fsl_dataset.max_sequence_length 4096 \
-  --fsl_workers 16
+  --event_to_fsl_config.num_proc 32 \
+  --event_to_fsl_config.fsl_workers 4
 
 # 2B. Path B: Event Dataset → Binned Dataset (for traditional training)
 python scripts/02B_event_dataset_to_binned_dataset.py \
@@ -101,11 +100,9 @@ After creating event datasets from raw MCAP files, you have two processing paths
 
 ```bash
 python scripts/01_raw_events_to_event_dataset.py \
-  --train-dir $MCAP_TRAIN_DIR \
-  --test-dir $MCAP_TEST_DIR \
-  --output-dir $EVENT_DATASET_DIR \
-  --rate screen=20 --rate mouse/raw=20 \
-  --keep-topic screen --keep-topic keyboard --keep-topic mouse/raw
+  --config configs/mcap_to_event_example.yaml \
+  --input_dir $MCAP_DIR \
+  --output_dir $EVENT_DATASET_DIR
 ```
 
 **Schema**: `episode_path` (string), `topic` (string), `timestamp_ns` (int64), `message_type` (string), `mcap_message` (binary)
@@ -119,10 +116,8 @@ python scripts/01_raw_events_to_event_dataset.py \
 ```bash
 python scripts/02A_event_to_fsl.py \
   --config configs/internvl3_example.yaml \
-  --input-dir $EVENT_DATASET_DIR \
-  --output-dir $FSL_DATASET_DIR \
-  --fsl_dataset.max_sequence_length 4096 \
-  --fsl_workers 16
+  --input_dir $EVENT_DATASET_DIR \
+  --output_dir $FSL_DATASET_DIR
 ```
 
 **Schema**: `input_ids` (sequence), `attention_mask` (sequence), `texts` (string), `images` (sequence), `episode_path` (string)

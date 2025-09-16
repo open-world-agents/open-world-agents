@@ -9,7 +9,8 @@ All initialization uses the mean() method for consistency across different token
 - Multiple tokens: mean([x,y,z]) = average (better semantic representation)
 """
 
-from typing import Dict, Any
+from typing import Any, Dict
+
 from loguru import logger
 from transformers.tokenization_utils import PreTrainedTokenizer
 

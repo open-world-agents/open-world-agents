@@ -1,5 +1,6 @@
 from loguru import logger
 
+# Only expose the most essential factory functions
 from .encoders import create_encoder
 from .processing import create_resampler
 

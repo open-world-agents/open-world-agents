@@ -24,6 +24,7 @@ import orjson
 import pytest
 
 from mcap_owa.highlevel.mcap_msg import McapMessage
+from owa.data.encoders.exceptions import InvalidInputError, InvalidTokenError, UnsupportedTokenError
 from owa.data.encoders.factorized_event_encoder import FactorizedEventEncoder, FactorizedEventEncoderConfig
 from owa.msgs.desktop.screen import ScreenCaptured
 
@@ -155,10 +156,10 @@ class TestFidelity:
 
     def test_timestamp_exhaustive(self, encoder, subtests):
         """Exhaustive test for timestamp encoding/decoding within reasonable range."""
-        # Test range: 0 to 10 seconds in nanoseconds (factorized has smaller range than hierarchical)
-        test_range_ns = 10 * 10**9  # 10 seconds total range
+        # Test range: 0 to encoder's timestamp range (factorized: 10s, hierarchical: 16s)
+        test_range_ns = encoder.config.timestamp_range
 
-        # Test every 100ms within the range (100 values)
+        # Test every 100ms within the range
         step_ns = 100_000_000  # 100ms in nanoseconds
 
         for ts in range(0, test_range_ns, step_ns):
@@ -263,6 +264,98 @@ class TestFidelity:
         assert "<SIGN_MINUS>" in encoded, f"Expected <SIGN_MINUS> token in encoded string: {encoded}"
         assert "<SIGN_PLUS>" in encoded, f"Expected <SIGN_PLUS> token in encoded string: {encoded}"
 
+    def test_mouse_validation(self, encoder, subtests):
+        """Mouse encoder should validate input ranges and warn for invalid delta values."""
+        min_delta, max_delta = encoder.config.mouse_delta_range
+
+        # Test boundary values (should work)
+        valid_cases = [
+            (max_delta, max_delta),  # At positive boundary
+            (min_delta, min_delta),  # At negative boundary
+            (0, 0),  # Zero
+            (max_delta, min_delta),  # Mixed boundaries
+        ]
+
+        for dx, dy in valid_cases:
+            with subtests.test(case="valid", dx=dx, dy=dy):
+                data = {"last_x": dx, "last_y": dy, "button_flags": 0, "button_data": 0}
+                msg = McapMessage(
+                    topic="mouse/raw",
+                    timestamp=1000000000,
+                    message=orjson.dumps(data),
+                    message_type="desktop/RawMouseEvent",
+                )
+
+                # Should work without errors
+                encoded, images = encoder.encode(msg)
+                decoded = encoder.decode(encoded, images)
+                result = orjson.loads(decoded.message)
+                assert result["last_x"] == dx
+                assert result["last_y"] == dy
+
+        # Test invalid values (should issue warnings and clamp values)
+        invalid_cases = [
+            (max_delta + 1, 0),  # X too large
+            (min_delta - 1, 0),  # X too small
+            (0, max_delta + 1),  # Y too large
+            (0, min_delta - 1),  # Y too small
+        ]
+
+        for dx, dy in invalid_cases:
+            with subtests.test(case="invalid", dx=dx, dy=dy):
+                data = {"last_x": dx, "last_y": dy, "button_flags": 0, "button_data": 0}
+                msg = McapMessage(
+                    topic="mouse/raw",
+                    timestamp=1000000000,
+                    message=orjson.dumps(data),
+                    message_type="desktop/RawMouseEvent",
+                )
+
+                # Should issue warning and work (with clamping)
+                with pytest.warns(UserWarning, match=r"Mouse delta value .* is outside valid range"):
+                    encoded, images = encoder.encode(msg)
+                    decoded = encoder.decode(encoded, images)
+                    result = orjson.loads(decoded.message)
+                    # Values should be clamped to valid range
+                    assert min_delta <= result["last_x"] <= max_delta
+                    assert min_delta <= result["last_y"] <= max_delta
+
+    def test_invalid_token_errors(self, encoder):
+        """Test that invalid token formats raise appropriate errors."""
+        # Missing EVENT_START token
+        with pytest.raises(InvalidTokenError, match="Missing EVENT_START or EVENT_END tokens"):
+            encoder.decode("<KEYBOARD><0><0><0><VK_65><press><EVENT_END>")
+
+        # Missing EVENT_END token
+        with pytest.raises(InvalidTokenError, match="Missing EVENT_START or EVENT_END tokens"):
+            encoder.decode("<EVENT_START><KEYBOARD><0><0><0><VK_65><press>")
+
+        # Token sequence too short
+        with pytest.raises(InvalidTokenError, match="Token sequence too short"):
+            encoder.decode("<EVENT_START><KEYBOARD><EVENT_END>")
+
+        # Invalid VK token format - non-VK token where VK expected
+        with pytest.raises(InvalidTokenError, match="Invalid VK token format"):
+            encoder.decode("<EVENT_START><KEYBOARD><0><0><0><INVALID><press><EVENT_END>")
+
+    def test_unsupported_event_types(self, encoder):
+        """Test that unsupported event types raise appropriate errors."""
+        # Unknown event type (not KEYBOARD, MOUSE, or screen placeholder)
+        with pytest.raises(UnsupportedTokenError, match="Unknown event type"):
+            encoder.decode("<EVENT_START><UNKNOWN_EVENT><0><0><0><EVENT_END>")
+
+    def test_unsupported_input_errors(self, encoder):
+        """Test that unsupported message inputs raise appropriate errors."""
+        # Unsupported topic
+        msg = McapMessage(
+            topic="unsupported_topic",
+            timestamp=1000000000,
+            message_type="test/Message",
+            message=b'{"test": "data"}',
+        )
+        with pytest.raises(InvalidInputError, match="Failed to decode message"):
+            encoder.encode(msg)
+
 
 # =============================================================================
 # 2. EFFICIENCY TESTS: Token count should be reasonable
@@ -347,19 +440,21 @@ class TestEdgeCases:
         return FactorizedEventEncoder()
 
     def test_extreme_mouse_values(self, encoder, subtests):
-        """Extreme mouse values should be handled gracefully."""
-        # Test cases with extreme mouse deltas
-        extreme_cases = [
-            {"last_x": 1000, "last_y": 0, "button_flags": 0, "button_data": 0},
-            {"last_x": -1000, "last_y": 0, "button_flags": 0, "button_data": 0},
-            {"last_x": 0, "last_y": 1000, "button_flags": 0, "button_data": 0},
-            {"last_x": 0, "last_y": -1000, "button_flags": 0, "button_data": 0},
+        """Extreme mouse values should issue warnings for deltas and raise errors for button_flags."""
+        min_delta, max_delta = encoder.config.mouse_delta_range
+
+        # Test cases with out-of-range mouse deltas (should warn and clamp)
+        invalid_delta_cases = [
+            {"last_x": max_delta + 1, "last_y": 0, "button_flags": 0, "button_data": 0},
+            {"last_x": min_delta - 1, "last_y": 0, "button_flags": 0, "button_data": 0},
+            {"last_x": 0, "last_y": max_delta + 1, "button_flags": 0, "button_data": 0},
+            {"last_x": 0, "last_y": min_delta - 1, "button_flags": 0, "button_data": 0},
             {"last_x": 10000, "last_y": 10000, "button_flags": 0, "button_data": 0},
             {"last_x": -50000, "last_y": 50000, "button_flags": 0, "button_data": 0},
         ]
 
-        for i, data in enumerate(extreme_cases):
-            with subtests.test(case="extreme_delta", index=i, data=data):
+        for i, data in enumerate(invalid_delta_cases):
+            with subtests.test(case="invalid_delta", index=i, data=data):
                 msg = McapMessage(
                     topic="mouse/raw",
                     timestamp=1000000000 + i,
@@ -367,14 +462,95 @@ class TestEdgeCases:
                     message_type="desktop/RawMouseEvent",
                 )
 
-                # Should handle gracefully (may quantize or clamp extreme values)
+                # Should warn for out-of-range mouse deltas and work (with clamping)
+                with pytest.warns(UserWarning, match=r"Mouse delta value .* is outside valid range"):
+                    encoded, images = encoder.encode(msg)
+                    decoded = encoder.decode(encoded, images)
+                    result = orjson.loads(decoded.message)
+                    # Values should be clamped to valid range
+                    assert min_delta <= result["last_x"] <= max_delta
+                    assert min_delta <= result["last_y"] <= max_delta
+
+        # Test cases with invalid button_flags (should still raise ValueError)
+        invalid_button_cases = [
+            {"last_x": 0, "last_y": 0, "button_flags": 0xFFFF, "button_data": 0},  # 4-digit hex
+            {"last_x": 0, "last_y": 0, "button_flags": 0x1000, "button_data": 0},  # Just above 3-digit hex
+            {"last_x": 0, "last_y": 0, "button_flags": 0x12345, "button_data": 0},  # 5-digit hex
+            {"last_x": 0, "last_y": 0, "button_flags": 65536, "button_data": 0},  # Large decimal value
+        ]
+
+        for i, data in enumerate(invalid_button_cases):
+            with subtests.test(case="invalid_button", index=i, data=data):
+                msg = McapMessage(
+                    topic="mouse/raw",
+                    timestamp=1000000000 + i + 100,
+                    message=orjson.dumps(data),
+                    message_type="desktop/RawMouseEvent",
+                )
+
+                # Should raise InvalidInputError for invalid button_flags (due to Pydantic validation)
+                with pytest.raises(InvalidInputError, match=r"Failed to decode message"):
+                    encoder.encode(msg)
+
+        # Get valid scroll range from encoder config
+        min_scroll, max_scroll = encoder.config.mouse_scroll_range
+
+        # Test cases with extreme scroll values (should raise ValueError)
+        invalid_scroll_cases = [
+            {"last_x": 0, "last_y": 0, "button_flags": 0x400, "button_data": (max_scroll + 1) * 120},  # Just above max
+            {"last_x": 0, "last_y": 0, "button_flags": 0x400, "button_data": (min_scroll - 1) * 120},  # Just below min
+            {"last_x": 0, "last_y": 0, "button_flags": 0x400, "button_data": 32767},  # Very large value
+        ]
+
+        for i, data in enumerate(invalid_scroll_cases):
+            with subtests.test(case="invalid_scroll", index=i, data=data):
+                msg = McapMessage(
+                    topic="mouse/raw",
+                    timestamp=2000000000 + i,
+                    message=orjson.dumps(data),
+                    message_type="desktop/RawMouseEvent",
+                )
+
+                # Should raise InvalidInputError for invalid scroll values
+                with pytest.raises(InvalidInputError, match=r"Mouse scroll value .* is outside valid range"):
+                    encoder.encode(msg)
+
+        # Test cases with valid scroll values and flags (should work)
+        min_delta, max_delta = encoder.config.mouse_delta_range
+        valid_cases = [
+            {"last_x": 0, "last_y": 0, "button_flags": 0x400, "button_data": max_scroll * 120},  # Max valid scroll
+            {"last_x": 0, "last_y": 0, "button_flags": 0x400, "button_data": min_scroll * 120},  # Min valid scroll
+            {"last_x": 0, "last_y": 0, "button_flags": 0xFFF, "button_data": 0},  # Max valid 3-digit hex
+            {
+                "last_x": max_delta,
+                "last_y": max_delta,
+                "button_flags": 0xFFF,
+                "button_data": 0,
+            },  # At valid boundary
+        ]
+
+        for i, data in enumerate(valid_cases):
+            with subtests.test(case="valid", index=i, data=data):
+                msg = McapMessage(
+                    topic="mouse/raw",
+                    timestamp=3000000000 + i,
+                    message=orjson.dumps(data),
+                    message_type="desktop/RawMouseEvent",
+                )
+
+                # Should work without errors
                 encoded, images = encoder.encode(msg)
                 decoded = encoder.decode(encoded, images)
                 result = orjson.loads(decoded.message)
 
-                # Should produce valid results
-                assert isinstance(result["last_x"], int)
-                assert isinstance(result["last_y"], int)
+                # Should produce valid results by checking for data fidelity
+                assert result["last_x"] == data["last_x"]
+                assert result["last_y"] == data["last_y"]
+                assert result["button_flags"] == data["button_flags"]
+                expected_data = (
+                    (data["button_data"] // 120) * 120 if data["button_flags"] & 0x400 else data["button_data"]
+                )
+                assert result["button_data"] == expected_data
 
     def test_extreme_timestamps(self, encoder, subtests):
         """Extreme timestamp values should be handled gracefully."""
@@ -402,6 +578,40 @@ class TestEdgeCases:
                 assert isinstance(decoded.timestamp, int)
                 assert decoded.timestamp >= 0
 
+    def test_extreme_keyboard_values(self, encoder, subtests):
+        """Extreme keyboard values should be handled gracefully."""
+        extreme_cases = [
+            # Extreme VK codes
+            ("press", 0),  # Minimum VK
+            ("release", 0),  # Minimum VK
+            ("press", 255),  # Maximum standard VK
+            ("release", 255),  # Maximum standard VK
+            ("press", 65535),  # Very large VK
+            ("release", 65535),  # Very large VK
+            # All event types with extreme VKs
+            ("press", 1000),
+            ("release", 1000),
+        ]
+
+        for event_type, vk in extreme_cases:
+            with subtests.test(event_type=event_type, vk=vk):
+                data = {"event_type": event_type, "vk": vk}
+                msg = McapMessage(
+                    topic="keyboard",
+                    timestamp=4000000000 + vk,
+                    message=orjson.dumps(data),
+                    message_type="desktop/KeyboardEvent",
+                )
+
+                # Should handle gracefully
+                encoded, images = encoder.encode(msg)
+                decoded = encoder.decode(encoded, images)
+                result = orjson.loads(decoded.message)
+
+                # Should produce valid results
+                assert result["event_type"] == event_type
+                assert isinstance(result["vk"], int)
+
     def test_zero_values(self, encoder):
         """Zero values should be handled correctly."""
         # Zero mouse movement
@@ -421,6 +631,52 @@ class TestEdgeCases:
         assert result["last_y"] == 0
         assert result["button_flags"] == 0
         assert result["button_data"] == 0
+
+    def test_extreme_screen_values(self, encoder, subtests):
+        """Extreme screen values should be handled gracefully."""
+        extreme_cases = [
+            # Extreme resolutions
+            {"utc_ns": 0, "source_shape": [1, 1], "shape": [1, 1], "media_ref": {"uri": "tiny.png"}},
+            {
+                "utc_ns": 9223372036854775807,
+                "source_shape": [7680, 4320],
+                "shape": [7680, 4320],
+                "media_ref": {"uri": "8k.png"},
+            },
+            # Extreme timestamps
+            {
+                "utc_ns": 1000000000000000000,
+                "source_shape": [1920, 1080],
+                "shape": [1920, 1080],
+                "media_ref": {"uri": "future.png"},
+            },
+            # Different source vs processed shapes
+            {
+                "utc_ns": 5000000000,
+                "source_shape": [3840, 2160],
+                "shape": [1920, 1080],
+                "media_ref": {"uri": "downscaled.png"},
+            },
+        ]
+
+        for i, data in enumerate(extreme_cases):
+            with subtests.test(index=i, utc_ns=data["utc_ns"], uri=data["media_ref"]["uri"]):
+                msg = McapMessage(
+                    topic="screen",
+                    timestamp=6000000000 + i,
+                    message=orjson.dumps(data),
+                    message_type="desktop/ScreenCaptured",
+                )
+
+                # Should handle gracefully without crashing
+                encoded, images = encoder.encode(msg)
+                decoded = encoder.decode(encoded, images)
+
+                # Should produce valid results
+                assert len(images) == 1
+                assert isinstance(images[0], ScreenCaptured)
+                assert isinstance(decoded.timestamp, int)
+                assert decoded.topic == "screen"
 
     def test_basic_functionality(self, encoder):
         """Basic encoder functionality should work."""
@@ -483,6 +739,39 @@ class TestMiscellaneous:
         # Should have action tokens
         assert "<press>" in vocab
         assert "<release>" in vocab
+
+    def test_quantization_roundtrip(self):
+        """Test that quantization and reconstruction are inverse operations."""
+        from owa.data.encoders.factorized_event_encoder import digits_to_value, quantize_to_digits
+
+        # Test unsigned roundtrip with different base combinations
+        test_cases = [
+            # (bases, test_values)
+            ([10, 10, 10], [0, 1, 123, 456, 789, 999]),  # Standard decimal
+            ([16, 16], [0, 15, 255]),  # Hex-like bases
+            ([5, 5, 2], [0, 1, 24, 49]),  # Mixed bases
+            ([256], [0, 127, 255]),  # Single large base
+        ]
+
+        for bases, values in test_cases:
+            for value in values:
+                digits = quantize_to_digits(value, bases)
+                reconstructed = digits_to_value(digits, bases)
+                assert reconstructed == value, f"Failed unsigned roundtrip: {value} with bases {bases}"
+
+        # Test magnitude-only roundtrip (factorized encoder uses separate sign tokens)
+        magnitude_test_cases = [
+            # (bases, test_values) - only positive values since signs are handled separately
+            ([10, 10], [0, 1, 50, 99]),  # Standard magnitude
+            ([20, 10], [0, 100, 199]),  # Mouse delta magnitude range
+            ([5], [0, 2, 4]),  # Small magnitude range
+        ]
+
+        for bases, values in magnitude_test_cases:
+            for value in values:
+                digits = quantize_to_digits(value, bases)
+                reconstructed = digits_to_value(digits, bases)
+                assert reconstructed == value, f"Failed magnitude roundtrip: {value} with bases {bases}"
 
 
 if __name__ == "__main__":

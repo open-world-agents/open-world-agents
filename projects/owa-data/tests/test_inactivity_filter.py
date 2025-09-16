@@ -1,9 +1,9 @@
-import tempfile
 from pathlib import Path
 
 import pytest
 
 from owa.core.time import TimeUnits
+from owa.core.utils.tempfile import NamedTemporaryFile
 from owa.data.interval.selector import InactivityFilter
 
 
@@ -39,14 +39,14 @@ class MockReader:
         yield from messages
 
 
-def create_test_mcap_file(messages: list[MockMessage]) -> Path:
-    """Create a temporary MCAP file with test messages."""
-    temp_file = tempfile.NamedTemporaryFile(suffix=".mcap", delete=False)
-    temp_path = Path(temp_file.name)
-    temp_file.close()
+@pytest.fixture
+def temp_mcap_file():
+    """Create a temporary MCAP file for testing.
 
-    # For testing, we'll mock the OWAMcapReader to return our test messages
-    return temp_path
+    Note: This creates an empty file. Test messages are provided via mocking OWAMcapReader.
+    """
+    with NamedTemporaryFile(suffix=".mcap") as temp_file:
+        yield Path(temp_file.name)
 
 
 class TestInactivityFilter:
@@ -64,7 +64,7 @@ class TestInactivityFilter:
         assert filter_obj.screen_inactivity_threshold == 2.0
         assert filter_obj.input_inactivity_threshold == 10.0
 
-    def test_no_screen_events(self, monkeypatch):
+    def test_no_screen_events(self, monkeypatch, temp_mcap_file):
         """Test behavior when no screen events are present."""
         messages = [
             MockMessage("keyboard", int(1.0 * TimeUnits.SECOND)),
@@ -77,12 +77,10 @@ class TestInactivityFilter:
         monkeypatch.setattr("owa.data.interval.selector.OWAMcapReader", mock_reader_constructor)
 
         filter_obj = InactivityFilter()
-        temp_path = create_test_mcap_file(messages)
-
-        result = filter_obj.extract_intervals(temp_path)
+        result = filter_obj.extract_intervals(temp_mcap_file)
         assert result.is_empty
 
-    def test_screen_boundary_detection(self, monkeypatch):
+    def test_screen_boundary_detection(self, monkeypatch, temp_mcap_file):
         """Test screen boundary interval detection."""
         messages = [
             MockMessage("screen", int(1.0 * TimeUnits.SECOND)),
@@ -97,13 +95,11 @@ class TestInactivityFilter:
         monkeypatch.setattr("owa.data.interval.selector.OWAMcapReader", mock_reader_constructor)
 
         filter_obj = InactivityFilter()
-        temp_path = create_test_mcap_file(messages)
-
-        boundary = filter_obj._get_screen_boundary_interval(temp_path)
+        boundary = filter_obj._get_screen_boundary_interval(temp_mcap_file)
         assert not boundary.is_empty
         assert boundary.to_tuples() == [(int(1.0 * TimeUnits.SECOND), int(5.0 * TimeUnits.SECOND))]
 
-    def test_screen_activity_with_small_gaps(self, monkeypatch):
+    def test_screen_activity_with_small_gaps(self, monkeypatch, temp_mcap_file):
         """Test screen activity intervals with gaps smaller than threshold."""
         messages = [
             MockMessage("screen", int(1.0 * TimeUnits.SECOND)),
@@ -117,15 +113,13 @@ class TestInactivityFilter:
         monkeypatch.setattr("owa.data.interval.selector.OWAMcapReader", mock_reader_constructor)
 
         filter_obj = InactivityFilter()
-        temp_path = create_test_mcap_file(messages)
-
-        activity = filter_obj._get_topic_activity_intervals(temp_path, ["screen"], 1.0)
+        activity = filter_obj._get_topic_activity_intervals(temp_mcap_file, ["screen"], 1.0)
         assert not activity.is_empty
         # Should be one continuous interval
         assert len(activity) == 1
         assert activity.to_tuples() == [(int(1.0 * TimeUnits.SECOND), int(2.0 * TimeUnits.SECOND))]
 
-    def test_screen_activity_with_large_gaps(self, monkeypatch):
+    def test_screen_activity_with_large_gaps(self, monkeypatch, temp_mcap_file):
         """Test screen activity intervals with gaps larger than threshold."""
         messages = [
             MockMessage("screen", int(1.0 * TimeUnits.SECOND)),
@@ -140,9 +134,7 @@ class TestInactivityFilter:
         monkeypatch.setattr("owa.data.interval.selector.OWAMcapReader", mock_reader_constructor)
 
         filter_obj = InactivityFilter()
-        temp_path = create_test_mcap_file(messages)
-
-        activity = filter_obj._get_topic_activity_intervals(temp_path, ["screen"], 1.0)
+        activity = filter_obj._get_topic_activity_intervals(temp_mcap_file, ["screen"], 1.0)
         assert not activity.is_empty
         # Should be two separate intervals
         assert len(activity) == 2
@@ -152,7 +144,7 @@ class TestInactivityFilter:
         ]
         assert activity.to_tuples() == expected
 
-    def test_input_device_activity_with_different_threshold(self, monkeypatch):
+    def test_input_device_activity_with_different_threshold(self, monkeypatch, temp_mcap_file):
         """Test input device activity intervals with 5-second threshold."""
         messages = [
             MockMessage("keyboard", int(1.0 * TimeUnits.SECOND)),
@@ -168,9 +160,7 @@ class TestInactivityFilter:
         monkeypatch.setattr("owa.data.interval.selector.OWAMcapReader", mock_reader_constructor)
 
         filter_obj = InactivityFilter()
-        temp_path = create_test_mcap_file(messages)
-
-        activity = filter_obj._get_topic_activity_intervals(temp_path, ["keyboard", "mouse/raw"], 5.0)
+        activity = filter_obj._get_topic_activity_intervals(temp_mcap_file, ["keyboard", "mouse/raw"], 5.0)
         assert not activity.is_empty
         # Should be two separate intervals due to 6s gap
         assert len(activity) == 2
@@ -180,7 +170,7 @@ class TestInactivityFilter:
         ]
         assert activity.to_tuples() == expected
 
-    def test_composite_interval_operations(self, monkeypatch):
+    def test_composite_interval_operations(self, monkeypatch, temp_mcap_file):
         """Test the full composite interval operations in extract_intervals."""
         # Create a scenario with screen events and input events
         messages = [
@@ -200,9 +190,7 @@ class TestInactivityFilter:
         monkeypatch.setattr("owa.data.interval.selector.OWAMcapReader", mock_reader_constructor)
 
         filter_obj = InactivityFilter()
-        temp_path = create_test_mcap_file(messages)
-
-        result = filter_obj.extract_intervals(temp_path)
+        result = filter_obj.extract_intervals(temp_mcap_file)
         assert not result.is_empty
 
         # The result should be the intersection of screen activity, input activity,

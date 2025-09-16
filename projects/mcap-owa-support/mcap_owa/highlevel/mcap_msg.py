@@ -2,12 +2,12 @@ import functools
 from typing import Generic, TypeVar
 
 from mcap.records import Channel, Message, Schema
-
-# Import here to avoid circular imports
-from owa.core.message import BaseMessage
 from pydantic import BaseModel
 
 from mcap_owa.decode_utils import get_decode_function
+
+# Import here to avoid circular imports
+from owa.core.message import BaseMessage
 
 # TypeVar for the decoded message type, bounded by BaseMessage
 T = TypeVar("T", bound=BaseMessage)
