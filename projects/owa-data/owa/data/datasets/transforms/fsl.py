@@ -120,7 +120,7 @@ class FSLTransformConfig:
     pad_token_id: int = 0
 
 
-@line_profiler.profile
+
 class FSLTransform:
     """Clean, modular FSL transform class."""
 

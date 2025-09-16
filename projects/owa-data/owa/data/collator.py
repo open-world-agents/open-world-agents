@@ -26,7 +26,7 @@ def detect_model_type(model_name_or_path: str) -> ModelType:
         return ModelType.UNKNOWN
 
 
-@line_profiler.profile
+
 def collate_fn_smolvlm2(examples, max_sequence_length: int | None = None, processor: "ProcessorMixin | None" = None):
     """Collate function for SmolVLM2/Idefics3 with image padding."""
     input_ids_list = []
@@ -77,7 +77,7 @@ def collate_fn_smolvlm2(examples, max_sequence_length: int | None = None, proces
     return batch
 
 
-@line_profiler.profile
+
 def collate_fn_internvl3(examples, max_sequence_length: int | None = None, processor: "ProcessorMixin | None" = None):
     """Collate function for InternVL3 with flattened image processing."""
     input_ids_list = []
