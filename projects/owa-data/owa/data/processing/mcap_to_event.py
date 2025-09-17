@@ -59,8 +59,8 @@ def _mcap_to_events(
                     resamplers[topic] = create_resampler(topic, min_interval_ns=min_interval_ns)
 
                 # Process event through resampler
+                ready_events = resamplers[topic].pop_event(now=mcap_msg.timestamp)  # NOTE: you MUST pop first
                 resamplers[topic].add_event(mcap_msg)
-                ready_events = resamplers[topic].pop_event()
 
                 # Process all ready events
                 for mcap_message_obj in ready_events:
@@ -81,6 +81,9 @@ def _mcap_to_events(
                             "mcap_message": mcap_message_bytes,  # Store serialized bytes
                         }
                     )
+
+    # Resampler may cause events not in order
+    events.sort(key=lambda e: e["timestamp_ns"])
 
     return events
 

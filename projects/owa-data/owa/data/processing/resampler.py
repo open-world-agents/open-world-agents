@@ -16,7 +16,7 @@ class EventResampler(ABC):
         pass
 
     @abstractmethod
-    def pop_event(self) -> List[McapMessage]:
+    def pop_event(self, now: int) -> List[McapMessage]:
         """Pop ready events from the resampler."""
         pass
 
@@ -35,11 +35,58 @@ class DropResampler(EventResampler):
             self.last_emitted_timestamp = mcap_msg.timestamp
             self.ready_events.append(mcap_msg)
 
-    def pop_event(self) -> List[McapMessage]:
+    def pop_event(self, now: int) -> List[McapMessage]:
         """Pop all ready events."""
         events = self.ready_events
         self.ready_events = []
         return events
+
+
+class KeyboardUniformResampler(EventResampler):
+    """Resample keyboard events to a uniform interval.
+
+    Common keypress: if we press a key, event repeat starts at 500ms, then every 30ms.
+    Output of resampler: press events with timestamp at min_interval_ns interval
+    """
+
+    def __init__(self, *, min_interval_ns: int):
+        self.min_interval_ns = min_interval_ns
+        self.keys = {}  # key -> (is_pressed,  last_popped_timestamp)
+
+    def add_event(self, mcap_msg: McapMessage) -> None:
+        """Add event if enough time has passed."""
+        key = mcap_msg.decoded.vk
+        if key not in self.keys:
+            self.keys[key] = [False, None]
+        if mcap_msg.decoded.event_type == "press":
+            self.keys[key][0] = "press"
+        else:
+            self.keys[key][0] = "release"
+            self.keys[key][1] = None  # reset popped timestamp
+
+    def pop_event(self, now: int) -> List[McapMessage]:
+        """Pop all ready events."""
+        ready_events = []
+        for key in self.keys:
+            # we must repeat event between self.min_interval_ns after last_popped_timestamp
+            if self.keys[key][0] != "press":
+                continue
+            while self.keys[key][1] is None or (now - self.keys[key][1]) >= self.min_interval_ns:
+                from owa.msgs.desktop.keyboard import KeyboardEvent
+
+                new_timestamp = self.keys[key][1] + self.min_interval_ns if self.keys[key][1] is not None else now
+
+                ready_events.append(
+                    McapMessage(
+                        topic="keyboard",
+                        timestamp=new_timestamp,
+                        message=KeyboardEvent(event_type="press", vk=key, timestamp=new_timestamp).model_dump_json(),
+                        message_type="desktop/KeyboardEvent",
+                    )
+                )
+                self.keys[key][1] = new_timestamp
+        ready_events.sort(key=lambda e: e.timestamp)
+        return ready_events
 
 
 class PassThroughResampler(EventResampler):
@@ -52,7 +99,7 @@ class PassThroughResampler(EventResampler):
         """Add all events without filtering."""
         self.ready_events.append(mcap_msg)
 
-    def pop_event(self) -> List[McapMessage]:
+    def pop_event(self, now: int) -> List[McapMessage]:
         """Pop all ready events."""
         events = self.ready_events
         self.ready_events = []
@@ -112,7 +159,7 @@ class MouseAggregationResampler(EventResampler):
             # Pass through non-movement events (clicks, etc.)
             self.ready_events.append(mcap_msg)
 
-    def pop_event(self) -> List[McapMessage]:
+    def pop_event(self, now: int) -> List[McapMessage]:
         """Pop all ready events."""
         events = self.ready_events
         self.ready_events = []
@@ -126,6 +173,7 @@ def create_resampler(topic: str, *, min_interval_ns: int = 0, **kwargs) -> Event
 
     resampler_map = {
         "mouse/raw": MouseAggregationResampler,
+        "keyboard": KeyboardUniformResampler,
     }
     resampler_class = resampler_map.get(topic, DropResampler)
     return resampler_class(min_interval_ns=min_interval_ns, **kwargs)

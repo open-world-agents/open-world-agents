@@ -10,7 +10,7 @@ mcap_to_event_config:
   rate_settings:
     "mouse/raw": 20.0
     "screen": 20.0
-    "keyboard": 0  # No rate limit for keyboard events
+    "keyboard": 20.0
 
   # Topics to keep (if null, all topics are kept)
   keep_topics:
