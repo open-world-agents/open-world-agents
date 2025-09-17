@@ -43,10 +43,10 @@ def _mcap_to_events(
     events: List[Dict] = []
     valid_intervals = config.interval_extractor.extract_intervals(Path(episode_path))
 
-    # Initialize resamplers for all topics
-    resamplers: Dict[str, EventResampler] = {}
     with OWAMcapReader(Path(episode_path)) as reader:
         for interval in valid_intervals:
+            # Initialize resamplers for all topics. NOTE: resampler init must be here
+            resamplers: Dict[str, EventResampler] = {}
             for mcap_msg in reader.iter_messages(
                 start_time=interval.start, end_time=interval.end, topics=config.keep_topics
             ):
@@ -59,8 +59,8 @@ def _mcap_to_events(
                     resamplers[topic] = create_resampler(topic, min_interval_ns=min_interval_ns)
 
                 # Process event through resampler
+                ready_events = resamplers[topic].pop_event(now=mcap_msg.timestamp)  # NOTE: you MUST pop first
                 resamplers[topic].add_event(mcap_msg)
-                ready_events = resamplers[topic].pop_event()
 
                 # Process all ready events
                 for mcap_message_obj in ready_events:
@@ -81,6 +81,9 @@ def _mcap_to_events(
                             "mcap_message": mcap_message_bytes,  # Store serialized bytes
                         }
                     )
+
+    # Resampler may cause events not in order
+    events.sort(key=lambda e: e["timestamp_ns"])
 
     return events
 
