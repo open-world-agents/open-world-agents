@@ -43,10 +43,10 @@ def _mcap_to_events(
     events: List[Dict] = []
     valid_intervals = config.interval_extractor.extract_intervals(Path(episode_path))
 
-    # Initialize resamplers for all topics
-    resamplers: Dict[str, EventResampler] = {}
     with OWAMcapReader(Path(episode_path)) as reader:
         for interval in valid_intervals:
+            # Initialize resamplers for all topics. NOTE: resampler init must be here
+            resamplers: Dict[str, EventResampler] = {}
             for mcap_msg in reader.iter_messages(
                 start_time=interval.start, end_time=interval.end, topics=config.keep_topics
             ):
