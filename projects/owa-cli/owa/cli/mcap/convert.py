@@ -157,7 +157,7 @@ def convert(
     mcap_path: Annotated[Path, typer.Argument(help="Path to the input .mcap file")],
     topics: Annotated[
         list[str], typer.Option(help="Comma-separated list of topics to include in the subtitle file")
-    ] = ["mouse/raw", "keyboard"],
+    ] = ["mouse/raw", "mouse", "keyboard"],
     output_srt: Annotated[Path | None, typer.Argument(help="Path to the output .srt file")] = None,
 ):
     """
@@ -195,7 +195,8 @@ def convert(
         # Initialize key state manager
         key_state_manager = KeyStateManager()
 
-        subtitle_counter = 0
+        # Store all completed events with timestamps for chronological ordering
+        completed_events = []  # List of (timestamp, event_type, subtitle_content)
 
         def handle_mouse_button_press(button_name: str, timestamp: int):
             """Handle mouse button press event."""
@@ -205,19 +206,18 @@ def convert(
 
         def handle_mouse_button_release(button_name: str, timestamp: int):
             """Handle mouse button release event."""
-            nonlocal subtitle_counter
             if button_name in mouse_button_states:
                 press_timestamp = mouse_button_states[button_name]
                 # Find the corresponding press event
                 for i, (press_ts, btn_name, msg_content) in enumerate(pending_mouse_events):
                     if press_ts == press_timestamp and btn_name == button_name:
-                        subtitle_counter += 1
                         start = format_timestamp(press_timestamp - start_time)
                         # Ensure minimum duration for mouse clicks
                         actual_duration = timestamp - press_timestamp
                         end_timestamp = press_timestamp + max(actual_duration, MIN_MOUSE_CLICK_DURATION_NS)
                         end = format_timestamp(end_timestamp - start_time)
-                        subtitles.append(f"{subtitle_counter}\n{start} --> {end}\n[mouse] {msg_content}\n")
+                        subtitle_content = f"{start} --> {end}\n[mouse] {msg_content}"
+                        completed_events.append((press_timestamp, "mouse", subtitle_content))
                         pending_mouse_events.pop(i)
                         break
                 del mouse_button_states[button_name]
@@ -253,6 +253,22 @@ def convert(
                             handle_mouse_button_release(button_name, mcap_msg.timestamp)
                             break
 
+            # Handle mouse events from "mouse" topic (different format)
+            elif mcap_msg.topic == "mouse":
+                if (
+                    hasattr(mcap_msg.decoded, "event_type")
+                    and mcap_msg.decoded.event_type == "click"
+                    and hasattr(mcap_msg.decoded, "button")
+                    and hasattr(mcap_msg.decoded, "pressed")
+                ):
+                    button_name = mcap_msg.decoded.button
+                    is_pressed = mcap_msg.decoded.pressed
+
+                    if is_pressed:
+                        handle_mouse_button_press(button_name, mcap_msg.timestamp)
+                    else:
+                        handle_mouse_button_release(button_name, mcap_msg.timestamp)
+
             # Handle keyboard events with state management
             elif mcap_msg.topic == "keyboard":
                 if hasattr(mcap_msg.decoded, "event_type") and hasattr(mcap_msg.decoded, "vk"):
@@ -262,21 +278,28 @@ def convert(
 
         # Handle any remaining unpaired mouse press events (use default duration)
         for press_timestamp, button_name, message_content in pending_mouse_events:
-            subtitle_counter += 1
             start = format_timestamp(press_timestamp - start_time)
             end = format_timestamp(press_timestamp - start_time + MIN_MOUSE_CLICK_DURATION_NS)
-            subtitles.append(f"{subtitle_counter}\n{start} --> {end}\n[mouse] {message_content}\n")
+            subtitle_content = f"{start} --> {end}\n[mouse] {message_content}"
+            completed_events.append((press_timestamp, "mouse", subtitle_content))
 
         # Finalize any remaining keyboard key states and add keyboard subtitles
         key_state_manager.finalize_remaining_subtitles()
         keyboard_subtitles = key_state_manager.get_completed_subtitles()
 
-        # Add keyboard subtitles to the main list
+        # Add keyboard subtitles to the completed events list
         for key_start_time, key_end_time, key_message_content in keyboard_subtitles:
-            subtitle_counter += 1
             start = format_timestamp(key_start_time - start_time)
             end = format_timestamp(key_end_time - start_time)
-            subtitles.append(f"{subtitle_counter}\n{start} --> {end}\n[keyboard] {key_message_content}\n")
+            subtitle_content = f"{start} --> {end}\n[keyboard] {key_message_content}"
+            completed_events.append((key_start_time, "keyboard", subtitle_content))
+
+        # Sort all events by timestamp to maintain chronological order
+        completed_events.sort(key=lambda x: x[0])
+
+        # Generate final subtitles with sequential numbering
+        for i, (_, _, subtitle_content) in enumerate(completed_events, 1):
+            subtitles.append(f"{i}\n{subtitle_content}\n")
 
     output_srt.write_text("\n".join(subtitles), encoding="utf-8")
     print(f"Subtitle file saved as {output_srt}")
