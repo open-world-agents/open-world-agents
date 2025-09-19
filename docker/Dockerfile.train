@@ -27,7 +27,7 @@ RUN --mount=type=cache,target=${HOME}/.cache/uv,sharing=locked \
 # =============================================================================
 # Stage 2: Flash Attention Builder (with CUDA build tools)
 # =============================================================================
-FROM nvidia/cuda:12.6.3-devel-ubuntu24.04 AS flash-attn-builder
+FROM nvidia/cuda:12.8.1-devel-ubuntu24.04 AS flash-attn-builder
 
 ARG CONDA_INSTALL_PATH
 
