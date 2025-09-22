@@ -1,3 +1,4 @@
+from collections import namedtuple
 from pathlib import Path
 
 import typer
@@ -163,6 +164,9 @@ def convert(
     """
     Convert an `.mcap` file into an `.srt` subtitle file. After the conversion, you may play `.mkv` file and verify the sanity of data.
     """
+    # Define namedtuple for completed events
+    CompletedEvent = namedtuple("CompletedEvent", ["timestamp", "content"])
+
     if output_srt is None:
         output_srt = mcap_path.with_suffix(".srt")
 
@@ -196,7 +200,7 @@ def convert(
         key_state_manager = KeyStateManager()
 
         # Store all completed events with timestamps for chronological ordering
-        completed_events = []  # List of (timestamp, event_type, subtitle_content)
+        completed_events: list[CompletedEvent] = []
 
         def handle_mouse_button_press(button_name: str, timestamp: int):
             """Handle mouse button press event."""
@@ -217,7 +221,7 @@ def convert(
                         end_timestamp = press_timestamp + max(actual_duration, MIN_MOUSE_CLICK_DURATION_NS)
                         end = format_timestamp(end_timestamp - start_time)
                         subtitle_content = f"{start} --> {end}\n[mouse] {msg_content}"
-                        completed_events.append((press_timestamp, "mouse", subtitle_content))
+                        completed_events.append(CompletedEvent(press_timestamp, subtitle_content))
                         pending_mouse_events.pop(i)
                         break
                 del mouse_button_states[button_name]
@@ -256,10 +260,9 @@ def convert(
             # Handle mouse events from "mouse" topic (different format)
             elif mcap_msg.topic == "mouse":
                 if (
-                    hasattr(mcap_msg.decoded, "event_type")
-                    and mcap_msg.decoded.event_type == "click"
-                    and hasattr(mcap_msg.decoded, "button")
-                    and hasattr(mcap_msg.decoded, "pressed")
+                    getattr(mcap_msg.decoded, "event_type", None) == "click"
+                    and mcap_msg.decoded.button is not None
+                    and mcap_msg.decoded.pressed is not None
                 ):
                     button_name = mcap_msg.decoded.button
                     is_pressed = mcap_msg.decoded.pressed
@@ -281,7 +284,7 @@ def convert(
             start = format_timestamp(press_timestamp - start_time)
             end = format_timestamp(press_timestamp - start_time + MIN_MOUSE_CLICK_DURATION_NS)
             subtitle_content = f"{start} --> {end}\n[mouse] {message_content}"
-            completed_events.append((press_timestamp, "mouse", subtitle_content))
+            completed_events.append(CompletedEvent(press_timestamp, subtitle_content))
 
         # Finalize any remaining keyboard key states and add keyboard subtitles
         key_state_manager.finalize_remaining_subtitles()
@@ -292,14 +295,14 @@ def convert(
             start = format_timestamp(key_start_time - start_time)
             end = format_timestamp(key_end_time - start_time)
             subtitle_content = f"{start} --> {end}\n[keyboard] {key_message_content}"
-            completed_events.append((key_start_time, "keyboard", subtitle_content))
+            completed_events.append(CompletedEvent(key_start_time, subtitle_content))
 
         # Sort all events by timestamp to maintain chronological order
-        completed_events.sort(key=lambda x: x[0])
+        completed_events.sort(key=lambda event: event.timestamp)
 
         # Generate final subtitles with sequential numbering
-        for i, (_, _, subtitle_content) in enumerate(completed_events, 1):
-            subtitles.append(f"{i}\n{subtitle_content}\n")
+        for i, event in enumerate(completed_events, 1):
+            subtitles.append(f"{i}\n{event.content}\n")
 
     output_srt.write_text("\n".join(subtitles), encoding="utf-8")
     print(f"Subtitle file saved as {output_srt}")
