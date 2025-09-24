@@ -67,7 +67,7 @@ def _mcap_to_events(
                     events.append(
                         {
                             "episode_path": stored_episode_path,
-                            "topic": mcap_msg.topic,
+                            "topic": mcap_message_obj.topic,
                             "timestamp_ns": mcap_message_obj.timestamp,
                             "message_type": mcap_message_obj.message_type,
                             "mcap_message": mcap_message_bytes,  # Store serialized bytes
