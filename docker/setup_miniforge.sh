@@ -24,8 +24,7 @@ rm miniforge.sh
     --set always_yes true \
     --set show_channel_urls true
 
-# Install additional tools and clean up
-"$CONDA_INSTALL_PATH/bin/pip" install uv virtual-uv
+# Clean up
 "$CONDA_INSTALL_PATH/bin/conda" clean -afy
 
 echo "Miniforge installation completed at: $CONDA_INSTALL_PATH"
