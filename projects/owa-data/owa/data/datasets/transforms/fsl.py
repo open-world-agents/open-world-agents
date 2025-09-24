@@ -18,6 +18,8 @@ from owa.msgs.desktop.screen import ScreenCaptured
 
 from .utils import resolve_episode_path
 
+USE_TORCHCODEC = False
+
 
 class FSLStatLogger:
     """Performance statistics logger with exponential moving averages."""
@@ -30,17 +32,17 @@ class FSLStatLogger:
         self.last_log_time = self.start_time
 
         # Cumulative totals
-        self._totals = {"tokens": 0, "images": 0, "image_bits": 0}
+        self._totals = {"tokens": 0, "images": 0, "image_bytes": 0}
         # Recent metrics (since last log)
-        self._recent = {"tokens": 0, "images": 0, "samples": 0, "image_bits": 0}
+        self._recent = {"tokens": 0, "images": 0, "samples": 0, "image_bytes": 0}
         # Exponential moving averages
-        self._emas = {"samples_per_sec": None, "tokens_per_sec": None, "images_per_sec": None, "image_bitrate": None}
+        self._emas = {"samples_per_sec": None, "tokens_per_sec": None, "images_per_sec": None, "image_byterate": None}
 
-    def update(self, count: int, tokens: int, images: int, image_bits: int):
+    def update(self, count: int, tokens: int, images: int, image_bytes: int):
         self.count += count
 
         # Update totals and recent metrics
-        for key, value in zip(["tokens", "images", "image_bits"], [tokens, images, image_bits]):
+        for key, value in zip(["tokens", "images", "image_bytes"], [tokens, images, image_bytes]):
             self._totals[key] += value
             self._recent[key] += value
         self._recent["samples"] += count
@@ -74,7 +76,7 @@ class FSLStatLogger:
             "samples_per_sec": samples / safe_elapsed,
             "tokens_per_sec": metrics["tokens"] / safe_elapsed,
             "images_per_sec": metrics["images"] / safe_elapsed,
-            "image_bitrate": metrics["image_bits"] / safe_elapsed,
+            "image_byterate": metrics["image_bytes"] / safe_elapsed,
         }
 
     def _update_emas(self, recent_rates: dict):
@@ -89,26 +91,26 @@ class FSLStatLogger:
     def _format_rates(self, rates: dict) -> str:
         return (
             f"{rates['samples_per_sec']:.1f}s/s, {rates['tokens_per_sec']:,.0f}t/s, "
-            f"{rates['images_per_sec']:.1f}i/s, {self._format_bitrate(rates['image_bitrate'])}"
+            f"{rates['images_per_sec']:.1f}i/s, {self._format_byterate(rates['image_byterate'])}"
         )
 
     def _format_ema_string(self) -> str:
         # All EMAs should be non-None when this is called
         assert all(ema is not None for ema in self._emas.values())
-        image_bitrate = self._emas["image_bitrate"]
-        assert image_bitrate is not None  # Type hint for mypy
+        image_byterate = self._emas["image_byterate"]
+        assert image_byterate is not None  # Type hint for mypy
         return (
             f" | EMA: {self._emas['samples_per_sec']:.1f}s/s, "
             f"{self._emas['tokens_per_sec']:,.0f}t/s, {self._emas['images_per_sec']:.1f}i/s, "
-            f"{self._format_bitrate(image_bitrate)}"
+            f"{self._format_byterate(image_byterate)}"
         )
 
     @staticmethod
-    def _format_bitrate(bits_per_sec: float) -> str:
-        for unit, threshold in [("Gb/s", 1e9), ("Mb/s", 1e6), ("Kb/s", 1e3)]:
-            if bits_per_sec >= threshold:
-                return f"{bits_per_sec / threshold:.1f}{unit}"
-        return f"{bits_per_sec:.0f}b/s"
+    def _format_byterate(bytes_per_sec: float) -> str:
+        for unit, threshold in [("GB/s", 1024**3), ("MB/s", 1024**2), ("KB/s", 1024)]:
+            if bytes_per_sec >= threshold:
+                return f"{bytes_per_sec / threshold:.1f}{unit}"
+        return f"{bytes_per_sec:.0f}B/s"
 
 
 @dataclass
@@ -157,7 +159,7 @@ class FSLTransform:
         # Track metrics for logging
         total_tokens = 0
         total_images = 0
-        total_image_bits = 0
+        total_image_bytes = 0
 
         for i in range(batch_size):
             image_msgs_json = batch["images"][i]
@@ -200,9 +202,9 @@ class FSLTransform:
                         warnings.warn(f"Failed to load image: {e}. Using previous image.")
                         all_images.append(all_images[-1])
 
-            # Calculate image bits
-            image_bits = sum(image.width * image.height * 3 for image in all_images)
-            total_image_bits += image_bits
+            # Calculate image bytes
+            image_bytes = sum(image.width * image.height * 3 for image in all_images)
+            total_image_bytes += image_bytes
 
             # Process with image processor if available
             if self.image_processor is not None:
@@ -243,7 +245,7 @@ class FSLTransform:
                 results["images"].append(all_images)
 
         # Update statistics
-        self.stat_logger.update(batch_size, total_tokens, total_images, total_image_bits)
+        self.stat_logger.update(batch_size, total_tokens, total_images, total_image_bytes)
 
         return results
 
@@ -282,7 +284,10 @@ class FSLTransform:
         for video_path, group in video_groups.items():
             try:
                 # Create decoder for this video
-                decoder = PyAVVideoDecoder(video_path)
+                if not USE_TORCHCODEC:
+                    decoder = PyAVVideoDecoder(video_path)
+                else:
+                    decoder = TorchCodecVideoDecoder(video_path)
 
                 # Batch decode all frames for this video
                 frame_batch = decoder.get_frames_played_at(seconds=group["timestamps"])
