@@ -7,6 +7,7 @@ from typing import List
 
 from mcap_owa.highlevel import McapMessage
 from owa.core.time import TimeUnits
+from owa.msgs.desktop.keyboard import KeyboardEvent
 from owa.msgs.desktop.mouse import RawMouseEvent
 
 
@@ -110,14 +111,19 @@ class KeyboardUniformResampler(EventResampler):
 
     def step(self, now: int) -> None:
         """Process queued events and generate synthetic press events for held keys."""
+        # Move events from input to output queue
+        ready_events = []
         while self.input_queue and self.input_queue[0].timestamp <= now:
-            self.output_queue.append(self.input_queue.popleft())
-        self.output_queue.extend(self._create_events(now))
-        self.output_queue.sort(key=lambda x: x.timestamp)
+            ready_events.append(self.input_queue.popleft())
+
+        # Generate synthetic events
+        synthetic_events = self._create_events(now)
+
+        # Combine and sort all events
+        self.output_queue.extend(sorted(ready_events + synthetic_events, key=lambda x: x.timestamp))
 
     def _create_events(self, until_now: int) -> List[McapMessage]:
         """Generate synthetic press events for keys that are currently held down."""
-        from owa.msgs.desktop.keyboard import KeyboardEvent
 
         events = []
         for key, state in self.keys.items():
