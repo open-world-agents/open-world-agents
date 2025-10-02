@@ -161,7 +161,7 @@ def test_decode_consistency(mcap_file_with_mixed_messages):
 def empty_mcap_file(tmp_path):
     """Create empty MCAP file for edge case testing."""
     file_path = tmp_path / "empty.mcap"
-    with OWAMcapWriter(file_path) as writer:
+    with OWAMcapWriter(file_path) as writer:  # noqa: F841
         pass  # Write no messages
     return str(file_path)
 
