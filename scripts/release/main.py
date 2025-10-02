@@ -19,6 +19,9 @@ from pathlib import Path
 from typing import List, Set
 
 import typer
+from packaging.requirements import Requirement
+from rich.console import Console
+from rich.panel import Panel
 
 # Use tomllib for Python 3.11+, tomli for older versions
 if sys.version_info >= (3, 11):
@@ -29,16 +32,6 @@ else:
     except ImportError:
         raise ImportError("tomli is required for Python < 3.11. Install with: pip install tomli")
 
-try:
-    from packaging.requirements import Requirement
-except ImportError:
-    raise ImportError("packaging is required. Install with: pip install packaging")
-
-try:
-    from rich.console import Console
-    from rich.panel import Panel
-except ImportError:
-    raise ImportError("rich is required. Install with: pip install rich")
 
 app = typer.Typer(help="OWA Release Manager - A tool for managing OWA package releases")
 console = Console()
