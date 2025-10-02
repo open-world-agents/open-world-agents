@@ -105,7 +105,7 @@ class FSLStatLogger:
 
     @staticmethod
     def _format_byterate(bytes_per_sec: float) -> str:
-        for unit, threshold in [("GB/s", 1024**3), ("MB/s", 1024**2), ("KB/s", 1024)]:
+        for unit, threshold in [("GiB/s", 1024**3), ("MiB/s", 1024**2), ("KiB/s", 1024)]:
             if bytes_per_sec >= threshold:
                 return f"{bytes_per_sec / threshold:.1f}{unit}"
         return f"{bytes_per_sec:.0f}B/s"
