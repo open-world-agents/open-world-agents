@@ -13,6 +13,7 @@ from owa.core.utils.typing import PathLike
 
 from .. import __version__
 from ..decoder import DecoderFactory
+from ..types import DecodeArgs
 from .mcap_msg import McapMessage
 
 
@@ -24,7 +25,7 @@ class OWAMcapReader:
     in an MCAP file, with support for both local filesystem paths and remote HTTP/HTTPS URLs.
     """
 
-    def __init__(self, file_path: PathLike, *, decode_args: dict = {}):
+    def __init__(self, file_path: PathLike, *, decode_args: DecodeArgs = {}):
         """
         Initialize an OWA MCAP reader.
 
@@ -32,8 +33,19 @@ class OWAMcapReader:
                           - A local file path (string or Path object)
                           - A network URL (http:// or https:// protocol)
                           e.g., "https://huggingface.co/datasets/.../example.mcap"
-        :param return_dict: If True, always return dictionary decoder for messages
-        :param return_dict_on_failure: If True, fall back to dictionary decoder on failure
+        :param decode_args: Dictionary controlling message decoding behavior. Available options:
+                           - 'return_dict' (bool, default=False): If True, always decode messages
+                             as dictionaries (EasyDict objects) instead of typed OWA message objects.
+                             Use this when you want simple dictionary access to message fields.
+                           - 'return_dict_on_failure' (bool, default=False): If True, fall back to
+                             dictionary decoding when typed decoding fails. Use this for robust
+                             reading of files that may contain unknown or malformed message types.
+
+                           Common usage patterns:
+                           - {} or {"return_dict": False}: Default typed decoding (recommended)
+                           - {"return_dict": True}: Always use dictionary decoding
+                           - {"return_dict_on_failure": True}: Typed with fallback (robust)
+                           - {"return_dict": True, "return_dict_on_failure": True}: Always dict (redundant)
         """
         self.file_path = file_path
 
