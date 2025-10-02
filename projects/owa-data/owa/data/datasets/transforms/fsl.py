@@ -18,8 +18,6 @@ from owa.msgs.desktop.screen import ScreenCaptured
 
 from .utils import resolve_episode_path
 
-USE_TORCHCODEC = False
-
 
 class FSLStatLogger:
     """Performance statistics logger with exponential moving averages."""
@@ -115,11 +113,22 @@ class FSLStatLogger:
 
 @dataclass
 class FSLTransformConfig:
-    """Configuration for FSL transform."""
+    """Configuration for FSL transform.
+
+    Args:
+        load_images: Whether to load images during transformation.
+        mcap_root_directory: Root directory for MCAP files.
+        pad_token_id: Token ID used for padding.
+        use_batch_decoding_api: Video decoding API to use. Valid values:
+            - "owa": Use PyAV-based decoder (default)
+            - "torchcodec": Use TorchCodec-based decoder
+            - "no": Disable batch decoding entirely
+    """
 
     load_images: bool = True
     mcap_root_directory: Optional[str] = None
     pad_token_id: int = 0
+    use_batch_decoding_api: str = "owa"
 
 
 @line_profiler.profile
@@ -184,8 +193,9 @@ class FSLTransform:
             if self.is_decoding_server_available and image_msgs:
                 self._preload_images_parallel(image_msgs)
 
-            # Batch decode images
-            self._batch_decode_images(image_msgs)
+            # Batch decode images (if enabled)
+            if self.config.use_batch_decoding_api != "no":
+                self._batch_decode_images(image_msgs)
 
             # Load images with error handling
             all_images = []
@@ -284,10 +294,12 @@ class FSLTransform:
         for video_path, group in video_groups.items():
             try:
                 # Create decoder for this video
-                if not USE_TORCHCODEC:
+                if self.config.use_batch_decoding_api == "owa":
                     decoder = PyAVVideoDecoder(video_path)
-                else:
+                elif self.config.use_batch_decoding_api == "torchcodec":
                     decoder = TorchCodecVideoDecoder(video_path)
+                else:
+                    raise ValueError(f"Invalid use_batch_decoding_api: '{self.config.use_batch_decoding_api}'.")
 
                 # Batch decode all frames for this video
                 frame_batch = decoder.get_frames_played_at(seconds=group["timestamps"])
@@ -321,7 +333,15 @@ class FSLTransform:
 def create_fsl_transform(
     image_processor=None, load_images: bool = True, mcap_root_directory: Optional[str] = None, **kwargs
 ):
-    """Create FSL transform - maintains backward compatibility."""
+    """Create FSL transform - maintains backward compatibility.
+
+    Args:
+        image_processor: Image processor to use for transforming images.
+        load_images: Whether to load images during transformation.
+        mcap_root_directory: Root directory for MCAP files.
+        **kwargs: Additional configuration parameters, including:
+            - use_batch_decoding_api: Video decoding API ("owa", "torchcodec", or "no")
+    """
     config = FSLTransformConfig(load_images=load_images, mcap_root_directory=mcap_root_directory, **kwargs)
 
     transform = FSLTransform(config, image_processor=image_processor)
