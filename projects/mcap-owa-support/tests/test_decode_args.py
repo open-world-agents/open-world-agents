@@ -142,8 +142,8 @@ def test_decode_consistency(mcap_file_with_mixed_messages):
                 for msg in reader.iter_messages():
                     decoded = msg.decoded
                     # Convert to dict for comparison
-                    if hasattr(decoded, "__dict__"):
-                        content = {k: v for k, v in decoded.__dict__.items() if not k.startswith("_")}
+                    if isinstance(decoded, OWAMessage):
+                        content = decoded.model_dump()
                     else:
                         content = dict(decoded)
                     messages.append((msg.topic, msg.message_type, content))
