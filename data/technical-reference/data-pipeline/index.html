@@ -840,18 +840,17 @@
 <h2 id="quick-demo-3-commands-to-vla-training">Quick Demo: 3 Commands to VLA Training<a class="headerlink" href="#quick-demo-3-commands-to-vla-training" title="Permanent link">¶</a></h2>
 <p><strong>Step 1: Process raw MCAP files</strong></p>
 <div class="termy" data-termynal="" data-ty-macos="" data-ty-title="bash"><span data-ty="input" data-ty-prompt="$">python scripts/01_raw_events_to_event_dataset.py \
-  --train-dir /data/mcaps/game-session \
-  --output-dir /data/event-dataset \
-  --rate mouse=60 --rate screen=20 \
-  --keep-topic screen --keep-topic keyboard</span><span data-ty="">🔄 Raw Events to Event Dataset<br/>📁 Loading from: /data/mcaps/game-session<br/>📊 Found 3 train, 1 test files</span><span data-ty="progress"></span><span data-ty="">✓ Created 24,907 train, 20,471 test examples<br/>💾 Saving to /data/event-dataset<br/>✓ Saved successfully<br/>🎉 Completed in 3.9s (0.1min)<br/></span></div>
+  --config configs/mcap_to_event_example.yaml \
+  --input_dir /data/mcaps/game-session \
+  --output_dir /data/event-dataset</span><span data-ty="">🔄 Raw Events to Event Dataset<br/>📁 Loading from: /data/mcaps/game-session<br/>📊 Found 3 train, 1 test files</span><span data-ty="progress"></span><span data-ty="">✓ Created 24,907 train, 20,471 test examples<br/>💾 Saving to /data/event-dataset<br/>✓ Saved successfully<br/>🎉 Completed in 3.9s (0.1min)<br/></span></div>
 <p><strong>Step 2: Create time bins (optional)</strong></p>
-<div class="termy" data-termynal="" data-ty-macos="" data-ty-title="bash"><span data-ty="input" data-ty-prompt="$">python scripts/02_event_dataset_to_binned_dataset.py \
+<div class="termy" data-termynal="" data-ty-macos="" data-ty-title="bash"><span data-ty="input" data-ty-prompt="$">python scripts/02B_event_dataset_to_binned_dataset.py \
   --input-dir /data/event-dataset \
   --output-dir /data/binned-dataset \
   --fps 10 \
   --filter-empty-actions</span><span data-ty="">🗂️ Event Dataset to Binned Dataset<br/>📁 Loading from: /data/event-dataset<br/>📊 Found 3 files to process</span><span data-ty="progress"></span><span data-ty="">✓ Created 2,235 binned entries for train split<br/>✓ Created 1,772 binned entries for test split<br/>💾 Saving to /data/binned-dataset<br/>✓ Saved 4,007 total binned entries<br/>🎉 Completed in 4.0s (0.1min)<br/></span></div>
 <p><strong>Step 3: Train your model</strong></p>
-<div class="termy" data-termynal="" data-ty-macos="" data-ty-title="bash"><span data-ty="input" data-ty-prompt="$">python</span><span data-ty="">&gt;&gt;&gt; from datasets import load_from_disk<br/>&gt;&gt;&gt; from owa.data import create_binned_dataset_transform<br/>&gt;&gt;&gt;<br/>&gt;&gt;&gt; # Load and transform dataset<br/>&gt;&gt;&gt; dataset = load_from_disk("/data/binned-dataset")<br/>&gt;&gt;&gt; transform = create_binned_dataset_transform(<br/>...     encoder_type="hierarchical",<br/>...     instruction="Complete the computer task"<br/>... )<br/>&gt;&gt;&gt; dataset.set_transform(transform)<br/>&gt;&gt;&gt;<br/>&gt;&gt;&gt; # Use in training<br/>&gt;&gt;&gt; for sample in dataset["train"].take(1):<br/>...     print(f"Images: {len(sample['images'])} frames")<br/>...     print(f"Actions: {sample['encoded_events'][:3]}...")<br/>...     print(f"Instruction: {sample['instruction']}")<br/>Images: 12 frames<br/>Actions: ['&lt;EVENT_START&gt;mouse_move&lt;EVENT_END&gt;', '&lt;EVENT_START&gt;key_press:w&lt;EVENT_END&gt;', '&lt;EVENT_START&gt;mouse_click:left&lt;EVENT_END&gt;']...<br/>Instruction: Complete the computer task<br/></span></div>
+<div class="termy" data-termynal="" data-ty-macos="" data-ty-title="bash"><span data-ty="input" data-ty-prompt="$">python</span><span data-ty="">&gt;&gt;&gt; from owa.data.datasets import load_from_disk<br/>&gt;&gt;&gt;<br/>&gt;&gt;&gt; # Load and transform dataset<br/>&gt;&gt;&gt; dataset = load_from_disk("/data/binned-dataset")<br/>&gt;&gt;&gt; dataset["train"].auto_set_transform(stage="binned", instruction="Complete the computer task")<br/>&gt;&gt;&gt;<br/>&gt;&gt;&gt; # Use in training<br/>&gt;&gt;&gt; for sample in dataset["train"].take(1):<br/>...     print(f"Images: {len(sample['images'])} frames")<br/>...     print(f"Actions: {sample['encoded_events'][:3]}...")<br/>...     print(f"Instruction: {sample['instruction']}")<br/>Images: 12 frames<br/>Actions: ['&lt;EVENT_START&gt;mouse_move&lt;EVENT_END&gt;', '&lt;EVENT_START&gt;key_press:w&lt;EVENT_END&gt;', '&lt;EVENT_START&gt;mouse_click:left&lt;EVENT_END&gt;']...<br/>Instruction: Complete the computer task<br/></span></div>
 <p>That's it! Your MCAP recordings are now ready for VLA training.</p>
 <hr/>
 <p>The <strong>OWA Data Pipeline</strong> is a streamlined 2-stage processing system that transforms raw MCAP recordings into training-ready datasets for Vision-Language-Action (VLA) models. This pipeline bridges the gap between desktop interaction capture and foundation model training.</p>
@@ -881,23 +880,22 @@
 <li><strong>🤗 Native HuggingFace</strong>: Event/binned dataset is a true HuggingFace <code>datasets.Dataset</code> with <code>set_transform()</code>, not wrappers.
 <div class="highlight"><pre><span></span><code><a href="#__codelineno-1-1" id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="c1"># Since event/binned datasets are true HuggingFace datasets,</span>
 <a href="#__codelineno-1-2" id="__codelineno-1-2" name="__codelineno-1-2"></a><span class="c1"># they can be loaded directly into training pipelines</span>
-<a href="#__codelineno-1-3" id="__codelineno-1-3" name="__codelineno-1-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_from_disk</span>
+<a href="#__codelineno-1-3" id="__codelineno-1-3" name="__codelineno-1-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.data.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_from_disk</span>
 <a href="#__codelineno-1-4" id="__codelineno-1-4" name="__codelineno-1-4"></a><span class="n">dataset</span> <span class="o">=</span> <span class="n">load_from_disk</span><span class="p">(</span><span class="s2">"/data/event-dataset"</span><span class="p">)</span>
 <a href="#__codelineno-1-5" id="__codelineno-1-5" name="__codelineno-1-5"></a><span class="n">dataset</span> <span class="o">=</span> <span class="n">load_from_disk</span><span class="p">(</span><span class="s2">"/data/binned-dataset"</span><span class="p">)</span>
 <a href="#__codelineno-1-6" id="__codelineno-1-6" name="__codelineno-1-6"></a>
 <a href="#__codelineno-1-7" id="__codelineno-1-7" name="__codelineno-1-7"></a><span class="c1"># Transform to VLA training format is applied on-the-fly during training</span>
-<a href="#__codelineno-1-8" id="__codelineno-1-8" name="__codelineno-1-8"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_binned_dataset_transform</span>
-<a href="#__codelineno-1-9" id="__codelineno-1-9" name="__codelineno-1-9"></a><span class="n">transform</span> <span class="o">=</span> <span class="n">create_binned_dataset_transform</span><span class="p">(</span>
+<a href="#__codelineno-1-8" id="__codelineno-1-8" name="__codelineno-1-8"></a><span class="n">dataset</span><span class="p">[</span><span class="s2">"train"</span><span class="p">]</span><span class="o">.</span><span class="n">auto_set_transform</span><span class="p">(</span>
+<a href="#__codelineno-1-9" id="__codelineno-1-9" name="__codelineno-1-9"></a>    <span class="n">stage</span><span class="o">=</span><span class="s2">"binned"</span><span class="p">,</span>
 <a href="#__codelineno-1-10" id="__codelineno-1-10" name="__codelineno-1-10"></a>    <span class="n">encoder_type</span><span class="o">=</span><span class="s2">"hierarchical"</span><span class="p">,</span>
-<a href="#__codelineno-1-11" id="__codelineno-1-11" name="__codelineno-1-11"></a>    <span class="n">instruction</span><span class="o">=</span><span class="s2">"Complete the computer task"</span><span class="p">,</span>
+<a href="#__codelineno-1-11" id="__codelineno-1-11" name="__codelineno-1-11"></a>    <span class="n">instruction</span><span class="o">=</span><span class="s2">"Complete the computer task"</span>
 <a href="#__codelineno-1-12" id="__codelineno-1-12" name="__codelineno-1-12"></a><span class="p">)</span>
-<a href="#__codelineno-1-13" id="__codelineno-1-13" name="__codelineno-1-13"></a><span class="n">dataset</span><span class="o">.</span><span class="n">set_transform</span><span class="p">(</span><span class="n">transform</span><span class="p">)</span>
-<a href="#__codelineno-1-14" id="__codelineno-1-14" name="__codelineno-1-14"></a>
-<a href="#__codelineno-1-15" id="__codelineno-1-15" name="__codelineno-1-15"></a><span class="c1"># Use in training</span>
-<a href="#__codelineno-1-16" id="__codelineno-1-16" name="__codelineno-1-16"></a><span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">dataset</span><span class="p">[</span><span class="s2">"train"</span><span class="p">]</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="mi">1</span><span class="p">):</span>
-<a href="#__codelineno-1-17" id="__codelineno-1-17" name="__codelineno-1-17"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Images: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s1">'images'</span><span class="p">])</span><span class="si">}</span><span class="s2"> frames"</span><span class="p">)</span>
-<a href="#__codelineno-1-18" id="__codelineno-1-18" name="__codelineno-1-18"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Actions: </span><span class="si">{</span><span class="n">sample</span><span class="p">[</span><span class="s1">'encoded_events'</span><span class="p">][:</span><span class="mi">3</span><span class="p">]</span><span class="si">}</span><span class="s2">..."</span><span class="p">)</span>
-<a href="#__codelineno-1-19" id="__codelineno-1-19" name="__codelineno-1-19"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Instruction: </span><span class="si">{</span><span class="n">sample</span><span class="p">[</span><span class="s1">'instruction'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<a href="#__codelineno-1-13" id="__codelineno-1-13" name="__codelineno-1-13"></a>
+<a href="#__codelineno-1-14" id="__codelineno-1-14" name="__codelineno-1-14"></a><span class="c1"># Use in training</span>
+<a href="#__codelineno-1-15" id="__codelineno-1-15" name="__codelineno-1-15"></a><span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">dataset</span><span class="p">[</span><span class="s2">"train"</span><span class="p">]</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="mi">1</span><span class="p">):</span>
+<a href="#__codelineno-1-16" id="__codelineno-1-16" name="__codelineno-1-16"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Images: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s1">'images'</span><span class="p">])</span><span class="si">}</span><span class="s2"> frames"</span><span class="p">)</span>
+<a href="#__codelineno-1-17" id="__codelineno-1-17" name="__codelineno-1-17"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Actions: </span><span class="si">{</span><span class="n">sample</span><span class="p">[</span><span class="s1">'encoded_events'</span><span class="p">][:</span><span class="mi">3</span><span class="p">]</span><span class="si">}</span><span class="s2">..."</span><span class="p">)</span>
+<a href="#__codelineno-1-18" id="__codelineno-1-18" name="__codelineno-1-18"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Instruction: </span><span class="si">{</span><span class="n">sample</span><span class="p">[</span><span class="s1">'instruction'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </code></pre></div></li>
 <li><strong>⚡ Compute-optimized, On-the-Fly Processing</strong>: During preprocess stage, media is not loaded. During training, only the required media is loaded on-demand.</li>
 </ul>
@@ -1035,51 +1033,43 @@
 <div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio"><input id="__tabbed_1_2" name="__tabbed_1" type="radio"><div class="tabbed-labels"><label for="__tabbed_1_1">Event Dataset Transform</label><label for="__tabbed_1_2">Binned Dataset Transform</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a href="#__codelineno-6-1" id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_from_disk</span>
-<a href="#__codelineno-6-2" id="__codelineno-6-2" name="__codelineno-6-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_event_dataset_transform</span>
-<a href="#__codelineno-6-3" id="__codelineno-6-3" name="__codelineno-6-3"></a>
-<a href="#__codelineno-6-4" id="__codelineno-6-4" name="__codelineno-6-4"></a><span class="c1"># Load dataset</span>
-<a href="#__codelineno-6-5" id="__codelineno-6-5" name="__codelineno-6-5"></a><span class="n">dataset</span> <span class="o">=</span> <span class="n">load_from_disk</span><span class="p">(</span><span class="s2">"/path/to/event-dataset"</span><span class="p">)</span>
-<a href="#__codelineno-6-6" id="__codelineno-6-6" name="__codelineno-6-6"></a>
-<a href="#__codelineno-6-7" id="__codelineno-6-7" name="__codelineno-6-7"></a><span class="c1"># Create transform</span>
-<a href="#__codelineno-6-8" id="__codelineno-6-8" name="__codelineno-6-8"></a><span class="n">transform</span> <span class="o">=</span> <span class="n">create_event_dataset_transform</span><span class="p">(</span>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-6-1" id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.data.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_from_disk</span>
+<a href="#__codelineno-6-2" id="__codelineno-6-2" name="__codelineno-6-2"></a>
+<a href="#__codelineno-6-3" id="__codelineno-6-3" name="__codelineno-6-3"></a><span class="c1"># Load dataset</span>
+<a href="#__codelineno-6-4" id="__codelineno-6-4" name="__codelineno-6-4"></a><span class="n">dataset</span> <span class="o">=</span> <span class="n">load_from_disk</span><span class="p">(</span><span class="s2">"/path/to/event-dataset"</span><span class="p">)</span>
+<a href="#__codelineno-6-5" id="__codelineno-6-5" name="__codelineno-6-5"></a>
+<a href="#__codelineno-6-6" id="__codelineno-6-6" name="__codelineno-6-6"></a><span class="c1"># Apply transform using auto_set_transform</span>
+<a href="#__codelineno-6-7" id="__codelineno-6-7" name="__codelineno-6-7"></a><span class="n">dataset</span><span class="p">[</span><span class="s2">"train"</span><span class="p">]</span><span class="o">.</span><span class="n">auto_set_transform</span><span class="p">(</span>
+<a href="#__codelineno-6-8" id="__codelineno-6-8" name="__codelineno-6-8"></a>    <span class="n">stage</span><span class="o">=</span><span class="s2">"event"</span><span class="p">,</span>
 <a href="#__codelineno-6-9" id="__codelineno-6-9" name="__codelineno-6-9"></a>    <span class="n">encoder_type</span><span class="o">=</span><span class="s2">"hierarchical"</span><span class="p">,</span>
-<a href="#__codelineno-6-10" id="__codelineno-6-10" name="__codelineno-6-10"></a>    <span class="n">load_images</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<a href="#__codelineno-6-11" id="__codelineno-6-11" name="__codelineno-6-11"></a>    <span class="n">encode_actions</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<a href="#__codelineno-6-12" id="__codelineno-6-12" name="__codelineno-6-12"></a><span class="p">)</span>
-<a href="#__codelineno-6-13" id="__codelineno-6-13" name="__codelineno-6-13"></a>
-<a href="#__codelineno-6-14" id="__codelineno-6-14" name="__codelineno-6-14"></a><span class="c1"># Apply transform</span>
-<a href="#__codelineno-6-15" id="__codelineno-6-15" name="__codelineno-6-15"></a><span class="n">dataset</span><span class="o">.</span><span class="n">set_transform</span><span class="p">(</span><span class="n">transform</span><span class="p">)</span>
-<a href="#__codelineno-6-16" id="__codelineno-6-16" name="__codelineno-6-16"></a>
-<a href="#__codelineno-6-17" id="__codelineno-6-17" name="__codelineno-6-17"></a><span class="c1"># Use in training</span>
-<a href="#__codelineno-6-18" id="__codelineno-6-18" name="__codelineno-6-18"></a><span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">dataset</span><span class="p">[</span><span class="s2">"train"</span><span class="p">]:</span>
-<a href="#__codelineno-6-19" id="__codelineno-6-19" name="__codelineno-6-19"></a>    <span class="n">images</span> <span class="o">=</span> <span class="n">sample</span><span class="p">[</span><span class="s2">"images"</span><span class="p">]</span>          <span class="c1"># List[PIL.Image]</span>
-<a href="#__codelineno-6-20" id="__codelineno-6-20" name="__codelineno-6-20"></a>    <span class="n">events</span> <span class="o">=</span> <span class="n">sample</span><span class="p">[</span><span class="s2">"encoded_events"</span><span class="p">]</span>  <span class="c1"># List[str]</span>
+<a href="#__codelineno-6-10" id="__codelineno-6-10" name="__codelineno-6-10"></a>    <span class="n">load_images</span><span class="o">=</span><span class="kc">True</span>
+<a href="#__codelineno-6-11" id="__codelineno-6-11" name="__codelineno-6-11"></a><span class="p">)</span>
+<a href="#__codelineno-6-12" id="__codelineno-6-12" name="__codelineno-6-12"></a>
+<a href="#__codelineno-6-13" id="__codelineno-6-13" name="__codelineno-6-13"></a><span class="c1"># Use in training</span>
+<a href="#__codelineno-6-14" id="__codelineno-6-14" name="__codelineno-6-14"></a><span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">dataset</span><span class="p">[</span><span class="s2">"train"</span><span class="p">]:</span>
+<a href="#__codelineno-6-15" id="__codelineno-6-15" name="__codelineno-6-15"></a>    <span class="n">images</span> <span class="o">=</span> <span class="n">sample</span><span class="p">[</span><span class="s2">"images"</span><span class="p">]</span>          <span class="c1"># List[PIL.Image]</span>
+<a href="#__codelineno-6-16" id="__codelineno-6-16" name="__codelineno-6-16"></a>    <span class="n">events</span> <span class="o">=</span> <span class="n">sample</span><span class="p">[</span><span class="s2">"encoded_events"</span><span class="p">]</span>  <span class="c1"># List[str]</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a href="#__codelineno-7-1" id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_from_disk</span>
-<a href="#__codelineno-7-2" id="__codelineno-7-2" name="__codelineno-7-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_binned_dataset_transform</span>
-<a href="#__codelineno-7-3" id="__codelineno-7-3" name="__codelineno-7-3"></a>
-<a href="#__codelineno-7-4" id="__codelineno-7-4" name="__codelineno-7-4"></a><span class="c1"># Load dataset</span>
-<a href="#__codelineno-7-5" id="__codelineno-7-5" name="__codelineno-7-5"></a><span class="n">dataset</span> <span class="o">=</span> <span class="n">load_from_disk</span><span class="p">(</span><span class="s2">"/path/to/binned-dataset"</span><span class="p">)</span>
-<a href="#__codelineno-7-6" id="__codelineno-7-6" name="__codelineno-7-6"></a>
-<a href="#__codelineno-7-7" id="__codelineno-7-7" name="__codelineno-7-7"></a><span class="c1"># Create transform</span>
-<a href="#__codelineno-7-8" id="__codelineno-7-8" name="__codelineno-7-8"></a><span class="n">transform</span> <span class="o">=</span> <span class="n">create_binned_dataset_transform</span><span class="p">(</span>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-7-1" id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.data.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_from_disk</span>
+<a href="#__codelineno-7-2" id="__codelineno-7-2" name="__codelineno-7-2"></a>
+<a href="#__codelineno-7-3" id="__codelineno-7-3" name="__codelineno-7-3"></a><span class="c1"># Load dataset</span>
+<a href="#__codelineno-7-4" id="__codelineno-7-4" name="__codelineno-7-4"></a><span class="n">dataset</span> <span class="o">=</span> <span class="n">load_from_disk</span><span class="p">(</span><span class="s2">"/path/to/binned-dataset"</span><span class="p">)</span>
+<a href="#__codelineno-7-5" id="__codelineno-7-5" name="__codelineno-7-5"></a>
+<a href="#__codelineno-7-6" id="__codelineno-7-6" name="__codelineno-7-6"></a><span class="c1"># Apply transform using auto_set_transform</span>
+<a href="#__codelineno-7-7" id="__codelineno-7-7" name="__codelineno-7-7"></a><span class="n">dataset</span><span class="p">[</span><span class="s2">"train"</span><span class="p">]</span><span class="o">.</span><span class="n">auto_set_transform</span><span class="p">(</span>
+<a href="#__codelineno-7-8" id="__codelineno-7-8" name="__codelineno-7-8"></a>    <span class="n">stage</span><span class="o">=</span><span class="s2">"binned"</span><span class="p">,</span>
 <a href="#__codelineno-7-9" id="__codelineno-7-9" name="__codelineno-7-9"></a>    <span class="n">encoder_type</span><span class="o">=</span><span class="s2">"hierarchical"</span><span class="p">,</span>
 <a href="#__codelineno-7-10" id="__codelineno-7-10" name="__codelineno-7-10"></a>    <span class="n">instruction</span><span class="o">=</span><span class="s2">"Complete the computer task"</span><span class="p">,</span>
-<a href="#__codelineno-7-11" id="__codelineno-7-11" name="__codelineno-7-11"></a>    <span class="n">load_images</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<a href="#__codelineno-7-12" id="__codelineno-7-12" name="__codelineno-7-12"></a>    <span class="n">encode_actions</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<a href="#__codelineno-7-13" id="__codelineno-7-13" name="__codelineno-7-13"></a><span class="p">)</span>
-<a href="#__codelineno-7-14" id="__codelineno-7-14" name="__codelineno-7-14"></a>
-<a href="#__codelineno-7-15" id="__codelineno-7-15" name="__codelineno-7-15"></a><span class="c1"># Apply transform</span>
-<a href="#__codelineno-7-16" id="__codelineno-7-16" name="__codelineno-7-16"></a><span class="n">dataset</span><span class="o">.</span><span class="n">set_transform</span><span class="p">(</span><span class="n">transform</span><span class="p">)</span>
-<a href="#__codelineno-7-17" id="__codelineno-7-17" name="__codelineno-7-17"></a>
-<a href="#__codelineno-7-18" id="__codelineno-7-18" name="__codelineno-7-18"></a><span class="c1"># Use in training</span>
-<a href="#__codelineno-7-19" id="__codelineno-7-19" name="__codelineno-7-19"></a><span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">dataset</span><span class="p">[</span><span class="s2">"train"</span><span class="p">]:</span>
-<a href="#__codelineno-7-20" id="__codelineno-7-20" name="__codelineno-7-20"></a>    <span class="n">images</span> <span class="o">=</span> <span class="n">sample</span><span class="p">[</span><span class="s2">"images"</span><span class="p">]</span>          <span class="c1"># List[PIL.Image]</span>
-<a href="#__codelineno-7-21" id="__codelineno-7-21" name="__codelineno-7-21"></a>    <span class="n">actions</span> <span class="o">=</span> <span class="n">sample</span><span class="p">[</span><span class="s2">"encoded_events"</span><span class="p">]</span> <span class="c1"># List[str]</span>
-<a href="#__codelineno-7-22" id="__codelineno-7-22" name="__codelineno-7-22"></a>    <span class="n">instruction</span> <span class="o">=</span> <span class="n">sample</span><span class="p">[</span><span class="s2">"instruction"</span><span class="p">]</span> <span class="c1"># str</span>
+<a href="#__codelineno-7-11" id="__codelineno-7-11" name="__codelineno-7-11"></a>    <span class="n">load_images</span><span class="o">=</span><span class="kc">True</span>
+<a href="#__codelineno-7-12" id="__codelineno-7-12" name="__codelineno-7-12"></a><span class="p">)</span>
+<a href="#__codelineno-7-13" id="__codelineno-7-13" name="__codelineno-7-13"></a>
+<a href="#__codelineno-7-14" id="__codelineno-7-14" name="__codelineno-7-14"></a><span class="c1"># Use in training</span>
+<a href="#__codelineno-7-15" id="__codelineno-7-15" name="__codelineno-7-15"></a><span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">dataset</span><span class="p">[</span><span class="s2">"train"</span><span class="p">]:</span>
+<a href="#__codelineno-7-16" id="__codelineno-7-16" name="__codelineno-7-16"></a>    <span class="n">images</span> <span class="o">=</span> <span class="n">sample</span><span class="p">[</span><span class="s2">"images"</span><span class="p">]</span>          <span class="c1"># List[PIL.Image]</span>
+<a href="#__codelineno-7-17" id="__codelineno-7-17" name="__codelineno-7-17"></a>    <span class="n">actions</span> <span class="o">=</span> <span class="n">sample</span><span class="p">[</span><span class="s2">"encoded_events"</span><span class="p">]</span> <span class="c1"># List[str]</span>
+<a href="#__codelineno-7-18" id="__codelineno-7-18" name="__codelineno-7-18"></a>    <span class="n">instruction</span> <span class="o">=</span> <span class="n">sample</span><span class="p">[</span><span class="s2">"instruction"</span><span class="p">]</span> <span class="c1"># str</span>
 </code></pre></div>
 </div>
 </div>
@@ -1098,8 +1088,8 @@
 <tr>
 <td><code>encoder_type</code></td>
 <td>Event encoding strategy</td>
-<td><code>hierarchical</code>, <code>json</code></td>
-<td><code>hierarchical</code></td>
+<td><code>hierarchical</code>, <code>factorized</code>, <code>json</code></td>
+<td><code>factorized</code></td>
 </tr>
 <tr>
 <td><code>load_images</code></td>
@@ -1134,7 +1124,7 @@
 <span class="md-icon" title="Last update">
 <svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"></path></svg>
 </span>
-<span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="July 27, 2025 10:41:35 UTC">July 27, 2025 10:41:35</span>
+<span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="October 10, 2025 10:40:49 UTC">October 10, 2025 10:40:49</span>
 </span>
 </aside>
 </article>
