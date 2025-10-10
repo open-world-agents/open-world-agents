@@ -520,17 +520,15 @@ $ python train.py --dataset ./event-dataset
 ```py
 # Since event/binned datasets are true HuggingFace datasets,
 # they can be loaded directly into training pipelines
-from datasets import load_from_disk
+from owa.data.datasets import load_from_disk
 dataset = load_from_disk("/data/event-dataset")
 
 # Transform to VLA training format is applied on-the-fly during training
-from owa.data import create_event_dataset_transform
-transform = create_event_dataset_transform(
+dataset["train"].auto_set_transform(
+    stage="event",
     encoder_type="hierarchical",
-    load_images=True,
-    encode_actions=True,
+    load_images=True
 )
-dataset.set_transform(transform)
 
 # Use in training
 for sample in dataset["train"].take(1):
