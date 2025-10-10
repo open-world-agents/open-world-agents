@@ -17,7 +17,7 @@ dependencies = [
     "opencv-python>=4.11.0",
 ]
 
-# Entry point declaration for built-in std plugin
+# entry points for plugin discovery
 [project.entry-points."owa.env.plugins"]
 std = "owa.env.plugins.std:plugin_spec"
 

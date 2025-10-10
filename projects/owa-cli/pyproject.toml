@@ -10,6 +10,7 @@ dependencies = [
     "mcap-owa-support==0.6.1",
     "orjson>=3.10.15",
     "owa-core==0.6.1",
+    "owa-msgs==0.6.1",
     "packaging>=25.0",
     "plotext>=5.3.2",
     "pydantic>=2.10.6",
@@ -23,6 +24,7 @@ dependencies = [
 [tool.uv.sources]
 owa-core = { path = "../owa-core", editable = true }
 mcap-owa-support = { path = "../mcap-owa-support", editable = true }
+owa-msgs = { path = "../owa-msgs", editable = true }
 
 [build-system]
 requires = ["hatchling"]

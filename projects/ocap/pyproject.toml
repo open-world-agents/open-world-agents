@@ -13,8 +13,8 @@ dependencies = [
 
 [tool.uv.sources]
 owa-cli = { path = "../owa-cli", editable = true }
-owa-env-gst = { path = "../owa-env-gst", editable = true }
 owa-env-desktop = { path = "../owa-env-desktop", editable = true }
+owa-env-gst = { path = "../owa-env-gst", editable = true }
 
 [build-system]
 requires = ["hatchling"]
