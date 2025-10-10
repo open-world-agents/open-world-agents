@@ -2,6 +2,13 @@
 
 from .event_to_fsl import EventToFSLConfig, build_fsl_dataset
 from .mcap_to_event import McapToEventConfig, build_event_dataset
-from .resampler import create_resampler
+from .resampler import EventResamplerDict, create_resampler
 
-__all__ = ["create_resampler", "build_event_dataset", "build_fsl_dataset", "EventToFSLConfig", "McapToEventConfig"]
+__all__ = [
+    "EventToFSLConfig",
+    "build_fsl_dataset",
+    "McapToEventConfig",
+    "build_event_dataset",
+    "EventResamplerDict",
+    "create_resampler",
+]

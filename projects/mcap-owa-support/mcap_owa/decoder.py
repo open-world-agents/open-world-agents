@@ -5,10 +5,11 @@ from mcap.records import Schema
 from mcap.well_known import MessageEncoding, SchemaEncoding
 
 from .decode_utils import dict_decoder, get_decode_function
+from .types import DecodeArgs
 
 
 class DecoderFactory(McapDecoderFactory):
-    def __init__(self, *, decode_args: dict = {}):
+    def __init__(self, *, decode_args: DecodeArgs = {}):
         """Initialize the decoder factory.
 
         :param decode_args: Dictionary of decode arguments (return_dict, return_dict_on_failure)

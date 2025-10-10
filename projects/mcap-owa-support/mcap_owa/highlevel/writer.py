@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Union
+from typing import Dict, Optional, Union, overload
 
 from owa.core import OWAMessage
 
@@ -11,7 +11,13 @@ class OWAMcapWriter(_Writer):
     A high-level interface for writing OWA messages to MCAP files.
     """
 
-    def write_message(
+    @overload
+    def write_message(self, message: McapMessage, topic: Optional[str] = None, timestamp: Optional[int] = None): ...
+
+    @overload
+    def write_message(self, message: OWAMessage, topic: str, timestamp: int): ...
+
+    def write_message(  # type: ignore[override]
         self, message: Union[McapMessage, OWAMessage], topic: Optional[str] = None, timestamp: Optional[int] = None
     ):
         """

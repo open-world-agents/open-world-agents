@@ -11,7 +11,7 @@ from tqdm import tqdm
 from mcap_owa.highlevel import OWAMcapReader
 from owa.data.datasets import Dataset, DatasetConfig, DatasetStage
 from owa.data.interval.selector import InactivityFilter
-from owa.data.processing.resampler import EventResampler, create_resampler
+from owa.data.processing.resampler import EventResamplerDict
 
 
 @dataclass
@@ -43,27 +43,19 @@ def _mcap_to_events(
     events: List[Dict] = []
     valid_intervals = config.interval_extractor.extract_intervals(Path(episode_path))
 
-    # Initialize resamplers for all topics
-    resamplers: Dict[str, EventResampler] = {}
     with OWAMcapReader(Path(episode_path)) as reader:
         for interval in valid_intervals:
+            # Initialize resamplers for all topics. NOTE: resampler init must be here
+            resamplers = EventResamplerDict(config.rate_settings)
             for mcap_msg in reader.iter_messages(
                 start_time=interval.start, end_time=interval.end, topics=config.keep_topics
             ):
-                topic = mcap_msg.topic
-
-                # Lazily initialize resampler on first encounter
-                if topic not in resamplers:
-                    rate_hz = config.rate_settings.get(topic, 0)  # 0 = no rate limit
-                    min_interval_ns = 0 if rate_hz == 0 else int((1.0 / rate_hz) * 1e9)
-                    resamplers[topic] = create_resampler(topic, min_interval_ns=min_interval_ns)
-
                 # Process event through resampler
-                resamplers[topic].add_event(mcap_msg)
-                ready_events = resamplers[topic].pop_event()
+                resamplers.add_event(mcap_msg)
+                resamplers.step(mcap_msg.timestamp)
 
                 # Process all ready events
-                for mcap_message_obj in ready_events:
+                for mcap_message_obj in resamplers.pop_events():
                     # Serialize McapMessage to bytes using model_dump_json
                     mcap_message_bytes = mcap_message_obj.model_dump_json().encode("utf-8")
 
@@ -75,7 +67,7 @@ def _mcap_to_events(
                     events.append(
                         {
                             "episode_path": stored_episode_path,
-                            "topic": topic,
+                            "topic": mcap_message_obj.topic,
                             "timestamp_ns": mcap_message_obj.timestamp,
                             "message_type": mcap_message_obj.message_type,
                             "mcap_message": mcap_message_bytes,  # Store serialized bytes
