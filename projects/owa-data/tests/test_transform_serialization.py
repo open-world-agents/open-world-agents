@@ -29,95 +29,87 @@ def can_serialize_with_either(obj):
     """Test if object can be serialized with either pickle or dill.
 
     Returns:
-        list: List of successful serialized objects. Each element is a tuple of
-              (serializer_name, serialized_data) for successful serializations.
+        tuple: A tuple containing:
+            - list: A list of names of successful serialization methods.
+            - dict: A dictionary of exceptions encountered, keyed by serializer name.
     """
-    successful_pickles = []
+    successful_methods = []
+    errors = {}
 
     # Try pickle first
     try:
-        serialized_data = pickle.dumps(obj)
-        successful_pickles.append(("pickle", serialized_data))
-    except Exception:
-        pass
+        pickle.dumps(obj)
+        successful_methods.append("pickle")
+    except Exception as e:
+        errors["pickle"] = e
 
     # Try dill if available
     if HAS_DILL and dill is not None:
         try:
-            serialized_data = dill.dumps(obj)
-            successful_pickles.append(("dill", serialized_data))
-        except Exception:
-            pass
+            dill.dumps(obj)
+            successful_methods.append("dill")
+        except Exception as e:
+            errors["dill"] = e
 
-    return successful_pickles
+    return successful_methods, errors
 
 
 class TestTransformSerialization:
     """Test serialization of all dataset transforms."""
 
-    def test_event_transform_serialization(self, record_property):
-        """Test event transform serialization with pickle/dill."""
-        transform = create_event_transform(
-            encoder_type="factorized", load_images=True, mcap_root_directory="/test/mcap"
-        )
+    @pytest.mark.parametrize(
+        "transform_name, create_transform_fn",
+        [
+            (
+                "event",
+                lambda: create_event_transform(
+                    encoder_type="factorized", load_images=True, mcap_root_directory="/test/mcap"
+                ),
+            ),
+            (
+                "binned",
+                lambda: create_binned_transform(
+                    instruction="Complete the computer task",
+                    encoder_type="factorized",
+                    load_images=True,
+                    encode_actions=True,
+                    mcap_root_directory="/test/mcap",
+                ),
+            ),
+            ("tokenized", create_tokenized_transform),
+        ],
+        ids=["event_transform", "binned_transform", "tokenized_transform"],
+    )
+    def test_transform_serialization(self, record_property, transform_name, create_transform_fn):
+        """Test various transform serializations with pickle/dill."""
+        transform = create_transform_fn()
 
         # Must be serializable with either pickle or dill
-        successful_pickles = can_serialize_with_either(transform)
-        method_names = [method for method, _ in successful_pickles]
+        successful_methods, errors = can_serialize_with_either(transform)
 
         # Record which methods succeeded for test reporting
-        record_property("serialization_methods", ", ".join(method_names) if method_names else "none")
-
-        assert len(successful_pickles) > 0, (
-            f"Transform should be serializable with at least one method. Tried: pickle, dill. Succeeded with: {', '.join(method_names) if method_names else 'none'}"
+        record_property(
+            f"{transform_name}_serialization_methods", ", ".join(successful_methods) if successful_methods else "none"
         )
 
-    def test_binned_transform_serialization(self, record_property):
-        """Test binned transform serialization with pickle/dill."""
-        transform = create_binned_transform(
-            instruction="Complete the computer task",
-            encoder_type="factorized",
-            load_images=True,
-            encode_actions=True,
-            mcap_root_directory="/test/mcap",
-        )
-
-        # Must be serializable with either pickle or dill
-        successful_pickles = can_serialize_with_either(transform)
-        method_names = [method for method, _ in successful_pickles]
-
-        # Record which methods succeeded for test reporting
-        record_property("serialization_methods", ", ".join(method_names) if method_names else "none")
-
-        assert len(successful_pickles) > 0, (
-            f"Transform should be serializable with at least one method. Tried: pickle, dill. Succeeded with: {', '.join(method_names) if method_names else 'none'}"
-        )
-
-    def test_tokenized_transform_serialization(self, record_property):
-        """Test tokenized transform serialization with pickle/dill."""
-        transform = create_tokenized_transform()
-
-        # Must be serializable with either pickle or dill
-        successful_pickles = can_serialize_with_either(transform)
-        method_names = [method for method, _ in successful_pickles]
-
-        # Record which methods succeeded for test reporting
-        record_property("serialization_methods", ", ".join(method_names) if method_names else "none")
-
-        assert len(successful_pickles) > 0, (
-            f"Transform should be serializable with at least one method. Tried: pickle, dill. Succeeded with: {', '.join(method_names) if method_names else 'none'}"
+        assert successful_methods, (
+            f"{transform_name.capitalize()} transform should be serializable with at least one method. "
+            f"Succeeded with: {', '.join(successful_methods) if successful_methods else 'none'}. "
+            f"Errors: {errors}"
         )
 
     def test_fsl_transform_serialization(self, record_property):
         """Test FSL transform serialization (function, config, and class)."""
         # Test 1: Function creation
         transform_func = create_fsl_transform(load_images=True, mcap_root_directory="/test/mcap", pad_token_id=42)
-        successful_pickles = can_serialize_with_either(transform_func)
-        method_names = [method for method, _ in successful_pickles]
+        successful_methods, errors = can_serialize_with_either(transform_func)
 
-        record_property("fsl_function_serialization_methods", ", ".join(method_names) if method_names else "none")
-        assert len(successful_pickles) > 0, (
-            f"FSL function should be serializable. Succeeded with: {', '.join(method_names) if method_names else 'none'}"
+        record_property(
+            "fsl_function_serialization_methods", ", ".join(successful_methods) if successful_methods else "none"
+        )
+        assert successful_methods, (
+            f"FSL function should be serializable. Succeeded with: {', '.join(successful_methods) if successful_methods else 'none'}. "
+            f"Errors: {errors}"
         )
 
         # Verify function is callable after deserialization
@@ -127,12 +119,14 @@ class TestTransformSerialization:
 
         # Test 2: Config serialization
         config = FSLTransformConfig(load_images=True, mcap_root_directory="/test/mcap", pad_token_id=42)
-        successful_pickles = can_serialize_with_either(config)
-        method_names = [method for method, _ in successful_pickles]
+        successful_methods, errors = can_serialize_with_either(config)
 
-        record_property("fsl_config_serialization_methods", ", ".join(method_names) if method_names else "none")
-        assert len(successful_pickles) > 0, (
-            f"FSL config should be serializable. Succeeded with: {', '.join(method_names) if method_names else 'none'}"
+        record_property(
+            "fsl_config_serialization_methods", ", ".join(successful_methods) if successful_methods else "none"
+        )
+        assert successful_methods, (
+            f"FSL config should be serializable. Succeeded with: {', '.join(successful_methods) if successful_methods else 'none'}. "
+            f"Errors: {errors}"
         )
 
         # Verify config data preservation
@@ -159,12 +153,14 @@ class TestTransformSerialization:
 
         # Test 2: None config should work (uses default)
         transform_none_config = FSLTransform(config=None)
-        successful_pickles = can_serialize_with_either(transform_none_config)
-        method_names = [method for method, _ in successful_pickles]
+        successful_methods, errors = can_serialize_with_either(transform_none_config)
 
-        record_property("fsl_none_config_serialization_methods", ", ".join(method_names) if method_names else "none")
-        assert len(successful_pickles) > 0, (
-            f"FSL transform with None config should be serializable. Succeeded with: {', '.join(method_names) if method_names else 'none'}"
+        record_property(
+            "fsl_none_config_serialization_methods", ", ".join(successful_methods) if successful_methods else "none"
+        )
+        assert successful_methods, (
+            f"FSL transform with None config should be serializable. Succeeded with: {', '.join(successful_methods) if successful_methods else 'none'}. "
+            f"Errors: {errors}"
         )
 
         # Verify None config creates default config
@@ -181,12 +177,13 @@ class TestTransformSerialization:
         for stage in stages:
             transform = create_transform(stage, "/test/mcap")
             # All transforms must be serializable with either pickle or dill
-            successful_pickles = can_serialize_with_either(transform)
-            method_names = [method for method, _ in successful_pickles]
-            all_results[stage.name] = method_names
+            successful_methods, errors = can_serialize_with_either(transform)
+            all_results[stage.name] = successful_methods
 
-            assert len(successful_pickles) > 0, (
-                f"{stage} transform should be serializable with at least one method. Tried: pickle, dill. Succeeded with: {', '.join(method_names) if method_names else 'none'}"
+            assert successful_methods, (
+                f"{stage} transform should be serializable with at least one method. "
+                f"Succeeded with: {', '.join(successful_methods) if successful_methods else 'none'}. "
+                f"Errors: {errors}"
             )
 
         # Record results for all stages
