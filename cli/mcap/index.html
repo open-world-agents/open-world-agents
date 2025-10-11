@@ -790,7 +790,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../data/getting-started/recording-data/" class="md-nav__link">
+      <a href="https://github.com/open-world-agents/ocap" class="md-nav__link">
         
   
   
@@ -1382,15 +1382,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#owl-mcap-record" class="md-nav__link">
-    <span class="md-ellipsis">
-      record
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#owl-mcap-rename-uri" class="md-nav__link">
     <span class="md-ellipsis">
       rename-uri
@@ -1801,15 +1792,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#owl-mcap-record" class="md-nav__link">
-    <span class="md-ellipsis">
-      record
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#owl-mcap-rename-uri" class="md-nav__link">
     <span class="md-ellipsis">
       rename-uri
@@ -2190,108 +2172,6 @@ are removed after successful rollback.</p>
 </tr>
 </tbody>
 </table>
-<h5 id="owl-mcap-record">owl mcap record<a class="headerlink" href="#owl-mcap-record" title="Permanent link">&para;</a></h5>
-<p>Record screen, keyboard, mouse, and window events to an <code>.mcap</code> and <code>.mkv</code> file.</p>
-<p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>owl mcap record [OPTIONS] FILE_LOCATION
-</code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--record-audio</code> / <code>--no-record-audio</code></td>
-<td>boolean</td>
-<td>Whether to record audio</td>
-<td><code>True</code></td>
-</tr>
-<tr>
-<td><code>--record-video</code> / <code>--no-record-video</code></td>
-<td>boolean</td>
-<td>Whether to record video</td>
-<td><code>True</code></td>
-</tr>
-<tr>
-<td><code>--record-timestamp</code> / <code>--no-record-timestamp</code></td>
-<td>boolean</td>
-<td>Whether to record timestamp</td>
-<td><code>True</code></td>
-</tr>
-<tr>
-<td><code>--show-cursor</code> / <code>--no-show-cursor</code></td>
-<td>boolean</td>
-<td>Whether to show the cursor in the capture</td>
-<td><code>True</code></td>
-</tr>
-<tr>
-<td><code>--fps</code></td>
-<td>float</td>
-<td>The frame rate of the video. Default is 60 fps.</td>
-<td><code>60.0</code></td>
-</tr>
-<tr>
-<td><code>--window-name</code></td>
-<td>text</td>
-<td>The name of the window to capture, substring of window name is supported</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--monitor-idx</code></td>
-<td>integer</td>
-<td>The index of the monitor to capture</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--width</code></td>
-<td>integer</td>
-<td>The width of the video. If None, the width will be determined by the source.</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--height</code></td>
-<td>integer</td>
-<td>The height of the video. If None, the height will be determined by the source.</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--additional-args</code></td>
-<td>text</td>
-<td>Additional arguments to pass to the pipeline. For detail, see https://gstreamer.freedesktop.org/documentation/d3d11/d3d11screencapturesrc.html</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--start-after</code></td>
-<td>float</td>
-<td>Delay recording start by this many seconds. Shows countdown during delay.</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--stop-after</code></td>
-<td>float</td>
-<td>Automatically stop recording after this many seconds from start.</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--health-check-interval</code></td>
-<td>float</td>
-<td>Interval in seconds for checking resource health. Set to 0 to disable.</td>
-<td><code>5.0</code></td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h5 id="owl-mcap-rename-uri">owl mcap rename-uri<a class="headerlink" href="#owl-mcap-rename-uri" title="Permanent link">&para;</a></h5>
 <p>Rename URIs in mediaref fields of screen topic events in MCAP files.</p>
 <p>This command processes MCAP files to set all URIs in the mediaref fields
@@ -2302,7 +2182,7 @@ file paths or URLs when media files have been moved or renamed.</p>
     owl mcap rename-uri *.mcap --uri "/new/path/video.mp4"
     owl mcap rename-uri data.mcap --uri "http://new.com/video" --dry-run</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>owl mcap rename-uri [OPTIONS] FILES...
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>owl mcap rename-uri [OPTIONS] FILES...
 </code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -2368,7 +2248,7 @@ messages would be removed, preventing accidental over-sanitization. Use
     owl mcap sanitize data.mcap --keep-window "App" --max-removal-ratio 0.95
     owl mcap sanitize recording.mcap --auto-detect-window</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>owl mcap sanitize [OPTIONS] FILES...
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>owl mcap sanitize [OPTIONS] FILES...
 </code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
