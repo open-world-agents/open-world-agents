@@ -4,6 +4,8 @@ import gi
 
 gi.require_version("Gst", "1.0")
 
+from typing import cast
+
 from gi.repository import GLib, Gst
 from loguru import logger
 
@@ -40,44 +42,32 @@ class BaseGstPipelineRunner(Runnable):
     A generalized GStreamer pipeline runner that manages pipeline lifecycle and callbacks.
     """
 
-    def on_configure(self, pipeline_description: str, *, do_not_modify_appsink_properties: bool = False) -> bool:
+    def on_configure(self, pipeline_description: str, *, do_not_modify_appsink_properties: bool = False):
         """
         Configure the GStreamer pipeline.
 
         Args:
             pipeline_description: GStreamer pipeline description string
             start_time: Starting time position in seconds (optional)
-
-        Returns:
-            bool: Configuration success status
         """
         self.pipeline_description = pipeline_description
         self._do_not_modify_appsink_properties = do_not_modify_appsink_properties
+        self._is_cleaned_up = False
 
-        self.pipeline = None
-        self.main_loop = None
-        self.appsinks = []
-
-        try:
-            self.pipeline: Gst.Pipeline = Gst.parse_launch(self.pipeline_description)
-        except Exception as e:
-            logger.error(f"Failed to create pipeline: {e}")
-            return False
+        self.pipeline: Gst.Pipeline = cast(Gst.Pipeline, Gst.parse_launch(self.pipeline_description))
+        self.appsinks: list[Gst.Element] = []
 
         if not self.pipeline:
-            logger.error("Failed to create pipeline from description.")
-            return False
+            raise ValueError("Failed to create pipeline from description.")
 
-        self.main_loop = GLib.MainLoop()
+        self.main_loop: GLib.MainLoop = GLib.MainLoop()
 
         # Setup bus message handling
         bus = self.pipeline.get_bus()
         bus.add_signal_watch()
         bus.connect("message", on_message, self.main_loop)
 
-        return True
-
-    def loop(self):
+    def loop(self, *args, **kwargs) -> None:
         try:
             self._loop()
         finally:
@@ -90,18 +80,15 @@ class BaseGstPipelineRunner(Runnable):
 
     def cleanup(self):
         """Clean up pipeline resources."""
-        if self.main_loop:
+        if not self._is_cleaned_up:
             self.main_loop.quit()
-        if self.pipeline:
             self.pipeline.set_state(Gst.State.NULL)
 
-        self.pipeline = None
-        self.appsinks = []
-        self.main_loop = None
+        self._is_cleaned_up = True
 
     def stop(self):
         """Stop the pipeline gracefully."""
-        if self.pipeline:
+        if not self._is_cleaned_up:
             self.pipeline.send_event(Gst.Event.new_eos())
             # After sending EOS, `on_message` will handle the EOS signal and quit the loop
 
