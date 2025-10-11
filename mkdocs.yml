@@ -111,7 +111,7 @@ nav:
     - Overview: data/index.md
     - Getting Started:
       - Why OWAMcap?: data/getting-started/why-owamcap.md
-      - Recording Data: data/getting-started/recording-data.md
+      - Recording Data: https://github.com/open-world-agents/ocap
       - Exploring Data: data/getting-started/exploring-data.md
     - Technical Reference:
       - OWAMcap Format Guide: data/technical-reference/format-guide.md

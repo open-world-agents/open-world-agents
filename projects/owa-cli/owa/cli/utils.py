@@ -1,4 +1,5 @@
 import os
+import sys
 
 import requests
 from packaging.version import parse as parse_version
@@ -6,9 +7,10 @@ from rich import print
 
 
 def get_local_version(package_name: str = "owa.cli") -> str:
-    try:
+    """Get the version of the locally installed package."""
+    if sys.version_info >= (3, 8):
         from importlib.metadata import version
-    except ImportError:  # For Python <3.8
+    else:
         from importlib_metadata import version
 
     try:
@@ -22,6 +24,7 @@ def get_local_version(package_name: str = "owa.cli") -> str:
 def get_latest_release(
     url: str = "https://api.github.com/repos/open-world-agents/open-world-agents/releases/latest",
 ) -> str:
+    """Get the latest release version from GitHub."""
     # Skip GitHub API call if disabled via environment variable (e.g., during testing)
     if os.environ.get("OWA_DISABLE_VERSION_CHECK"):
         return get_local_version()  # Return the locally installed version as the default
