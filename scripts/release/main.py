@@ -106,7 +106,7 @@ def run_git_command(command: List[str], verbose: bool = False) -> str:
     return result.stdout.strip()
 
 
-def run_command(command: List[str], cwd: Path = None, verbose: bool = False) -> str:
+def run_command(command: List[str], cwd: Path | None = None, verbose: bool = False) -> str:
     """Run a shell command."""
     if verbose:
         console.print(f"[dim]$ {' '.join(command)}[/dim]")
@@ -153,6 +153,8 @@ def version(
         if tag_name in existing_tags:
             console.print(f"[bold red]✗ Error: Tag '{tag_name}' already exists. Aborting version update.[/bold red]")
             raise typer.Exit(code=1)
+    else:
+        tag_name = None
 
     # Process each package
     package_dirs = get_package_dirs()
@@ -220,8 +222,7 @@ def version(
             console.print(f"   [green]✓[/green] Committed changes with message: [bold]{commit_message}[/bold]")
 
             # Step 5: Create tag if requested
-            if tag:
-                tag_name = f"v{value}"
+            if tag_name:
                 run_git_command(["tag", tag_name])
                 console.print(f"   [green]✓[/green] Created tag: [bold]{tag_name}[/bold]")
 
@@ -231,19 +232,19 @@ def version(
                 run_git_command(["push", "origin", "main"])
                 console.print("   [green]✓[/green] Pushed changes to remote")
 
-                if tag:
+                if tag_name:
                     run_git_command(["push", "origin", tag_name])
                     console.print(f"   [green]✓[/green] Pushed tag {tag_name} to remote")
             else:
                 push_commands = ["git push origin main"]
-                if tag:
+                if tag_name:
                     push_commands.append(f"git push origin {tag_name}")
 
                 console.print("\n[blue]To push changes to remote:[/blue]")
                 console.print(f"[cyan]  {' && '.join(push_commands)}[/cyan]")
         else:
             console.print("   [yellow]⚠[/yellow] No files were modified. Nothing to commit.")
-            if tag:
+            if tag_name:
                 console.print("   [yellow]⚠[/yellow] Cannot create tag without committing changes.")
 
     console.print(
