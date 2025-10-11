@@ -80,6 +80,11 @@ def check_element(gst, element_name):
     diagnostic_info = []
     diagnostic_info.append(f"Element '{element_name}' is NOT available")
 
+    # Get plugin search paths
+    paths = os.environ.get("GST_PLUGIN_PATH", "").split(os.pathsep)
+    paths.append(os.environ.get("GST_PLUGIN_SYSTEM_PATH", ""))
+    diagnostic_info.append(f"GST plugin search paths: {paths}")
+
     # List similar element names
     all_elements = [f.get_name() for f in registry.get_feature_list(gst.ElementFactory)]
     similar_elements = [e for e in all_elements if any(part in e.lower() for part in element_name.lower().split("_"))]
@@ -104,7 +109,7 @@ def test_required_plugins(gstreamer):
         if not is_loaded:
             missing_plugins.append(plugin)
 
-    required_elements = ["d3d11screencapturesrc", "nvd3d11h265enc", "wasapi2src"]
+    required_elements = ["d3d11screencapturesrc", "nvd3d11h265enc", "wasapi2src", "utctimestampsrc"]
     missing_elements = []
 
     for element in required_elements:
