@@ -40,7 +40,6 @@ console = Console()
 PROJECTS = [
     ".",
     "projects/mcap-owa-support",
-    "projects/ocap",
     "projects/owa-cli",
     "projects/owa-core",
     "projects/owa-env-desktop",

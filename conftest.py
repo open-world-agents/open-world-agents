@@ -15,7 +15,5 @@ def pytest_runtest_setup(item):
         pytest.skip("Skipping tests that require physical display on GitHub Actions")
 
     # Skip Windows-specific tests on non-Windows platforms
-    if os.name != "nt" and (
-        "projects/owa-env-gst" in test_path or "projects/owa-env-desktop" in test_path or "projects/ocap" in test_path
-    ):
+    if os.name != "nt" and ("projects/owa-env-gst" in test_path or "projects/owa-env-desktop" in test_path):
         pytest.skip("Skipping Windows-specific tests on non-Windows platform")
