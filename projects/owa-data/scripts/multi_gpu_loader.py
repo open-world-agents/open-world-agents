@@ -1,6 +1,5 @@
 import argparse
 
-import line_profiler
 import torch
 from accelerate import Accelerator
 from loguru import logger

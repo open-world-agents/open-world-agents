@@ -7,7 +7,6 @@ import warnings
 from dataclasses import dataclass
 from typing import Any, List, Optional
 
-import line_profiler
 import numpy as np
 import torch
 from loguru import logger
@@ -344,7 +343,7 @@ class FSLTransform:
                 if decoder is not None:
                     try:
                         decoder.close()
-                    except:
+                    except Exception:
                         pass
                     del decoder
 
