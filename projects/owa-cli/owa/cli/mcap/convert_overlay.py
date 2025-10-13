@@ -7,11 +7,11 @@ from tqdm import tqdm
 from typing_extensions import Annotated
 
 from mcap_owa.highlevel import OWAMcapReader
+from owa.cli.mcap.convert import KeyStateManager
 from owa.core.io.video import VideoWriter
 from owa.core.time import TimeUnits
 from owa.env.desktop.constants import VK
 from owa.msgs.desktop.mouse import RawMouseEvent
-from owa.cli.mcap.convert import KeyStateManager
 
 # Keyboard layout for visualization (full compact keyboard)
 # Format: (row, col, width, label, vk_code, is_arrow)
