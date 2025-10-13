@@ -7,6 +7,7 @@ import warnings
 from dataclasses import dataclass
 from typing import Any, List, Optional
 
+import line_profiler
 import numpy as np
 import torch
 from loguru import logger
@@ -128,6 +129,7 @@ class FSLTransformConfig:
     mcap_root_directory: Optional[str] = None
     pad_token_id: int = 0
     use_batch_decoding_api: str = "owa"
+
 
 @line_profiler.profile
 class FSLTransform:
@@ -269,7 +271,7 @@ class FSLTransform:
                     warnings.warn(f"Failed to load image at index {idx}: {e}. Using placeholder.", UserWarning)
 
     def _batch_decode_images(self, image_msgs: List[ScreenCaptured]) -> None:
-        """Batch decode images"""
+        """Batch decode images."""
         if not image_msgs:
             return
 
@@ -280,10 +282,6 @@ class FSLTransform:
                 continue
 
             video_path = img_msg.media_ref.uri
-            # TODO: Remove this line
-            # change video path /raid into /mnt/raid12
-            # video_path = video_path.replace("/raid", "/mnt/raid12")
-
             if video_path not in video_groups:
                 video_groups[video_path] = {"indices": [], "timestamps": []}
 
@@ -345,11 +343,6 @@ class FSLTransform:
                     except Exception:
                         pass
                     del decoder
-
-                # Force garbage collection after processing each video
-                import gc
-
-                gc.collect()
 
 
 def create_fsl_transform(
