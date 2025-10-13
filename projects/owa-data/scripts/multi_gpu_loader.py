@@ -26,7 +26,6 @@ class DummyDataset(torch.utils.data.Dataset):
         return 1000000
 
 
-
 def main():
     parser = argparse.ArgumentParser(description="Multi-GPU FSL dataset loader")
     parser.add_argument(

@@ -7,7 +7,6 @@ VIDEO_PATH = "../../tmp/output.mkv"
 MAX_FRAMES = 10**9
 
 
-
 def test_gst():
     with GstMKVReader(VIDEO_PATH) as reader:
         for idx, frame in tqdm(enumerate(reader.iter_frames())):
@@ -16,14 +15,12 @@ def test_gst():
             print(frame["pts"], frame["data"].shape)
 
 
-
 def test_av():
     with PyAVMKVReader(VIDEO_PATH) as reader:
         for idx, frame in tqdm(enumerate(reader.iter_frames())):
             if idx == MAX_FRAMES:
                 break
             print(frame["pts"], frame["data"].shape)
-
 
 
 def test_decord():

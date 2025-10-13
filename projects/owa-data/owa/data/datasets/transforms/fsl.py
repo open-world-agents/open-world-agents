@@ -130,7 +130,6 @@ class FSLTransformConfig:
     use_batch_decoding_api: str = "owa"
 
 
-
 class FSLTransform:
     """Clean, modular FSL transform class."""
 
@@ -349,6 +348,7 @@ class FSLTransform:
 
                 # Force garbage collection after processing each video
                 import gc
+
                 gc.collect()
 
 
