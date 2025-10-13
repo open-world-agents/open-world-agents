@@ -9,3 +9,4 @@ dependencies:
   - open-world-agents::gstreamer-bundle
   - graphite2=1.3.14=he0c23c2_0
   - gettext=0.21.1=h5728263_0
+  - pygobject=3.50.0=py311h4b77af6_1

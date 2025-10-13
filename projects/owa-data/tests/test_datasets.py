@@ -4,6 +4,7 @@ Test for owa.data.datasets - focuses on essential functionality and configuratio
 """
 
 import json
+import os
 from unittest.mock import Mock, patch
 
 import pytest
@@ -131,6 +132,7 @@ class TestDatasetDiscovery:
             assert "Warning: Could not list datasets" in mock_print.call_args[0][0]
 
     @pytest.mark.network
+    @pytest.mark.skipif(os.environ.get("GITHUB_ACTIONS") == "true", reason="Skip network tests in GitHub Actions")
     def test_list_datasets_network(self):
         """Test actual dataset listing from HuggingFace (requires network)."""
         datasets = list_datasets()
@@ -240,6 +242,7 @@ class TestDatasetLoading:
             load_dataset("test/path")
 
     @pytest.mark.network
+    @pytest.mark.skipif(os.environ.get("GITHUB_ACTIONS") == "true", reason="Skip network tests in GitHub Actions")
     def test_load_example_dataset_network(self):
         """Test loading example dataset from HuggingFace (requires network)."""
         from owa.data.datasets import load_dataset

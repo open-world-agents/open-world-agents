@@ -110,7 +110,7 @@ class ListenerMixin(RunnableMixin):
         return self
 
     @abstractmethod
-    def loop(self):
+    def loop(self, *args, **kwargs) -> None:
         """
         Main execution loop. Must be implemented by subclasses.
 
@@ -149,7 +149,7 @@ class ListenerThread(ListenerMixin, RunnableThread):
         self.loop(**kwargs)
 
     @abstractmethod
-    def loop(self, stop_event: threading.Event, callback: Callable):
+    def loop(self, *, stop_event: threading.Event, callback: Callable) -> None:
         """
         Main thread execution loop. Must be implemented by subclasses.
 
@@ -185,10 +185,12 @@ class ListenerProcess(ListenerMixin, RunnableProcess):
         kwargs = {}
         if "stop_event" in inspect.signature(self.loop).parameters:
             kwargs["stop_event"] = self._stop_event
+        if "callback" in inspect.signature(self.loop).parameters:
+            kwargs["callback"] = self.callback
         self.loop(**kwargs)
 
     @abstractmethod
-    def loop(self, stop_event: mpEvent, callback: Callable):
+    def loop(self, *, stop_event: mpEvent, callback: Callable) -> None:
         """
         Main process execution loop. Must be implemented by subclasses.
 

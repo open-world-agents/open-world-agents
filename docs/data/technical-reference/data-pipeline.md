@@ -8,10 +8,9 @@
 
 ```
 $ python scripts/01_raw_events_to_event_dataset.py \
-  --train-dir /data/mcaps/game-session \
-  --output-dir /data/event-dataset \
-  --rate mouse=60 --rate screen=20 \
-  --keep-topic screen --keep-topic keyboard
+  --config configs/mcap_to_event_example.yaml \
+  --input_dir /data/mcaps/game-session \
+  --output_dir /data/event-dataset
 🔄 Raw Events to Event Dataset
 📁 Loading from: /data/mcaps/game-session
 📊 Found 3 train, 1 test files
@@ -27,7 +26,7 @@ $ python scripts/01_raw_events_to_event_dataset.py \
 <!-- termynal -->
 
 ```
-$ python scripts/02_event_dataset_to_binned_dataset.py \
+$ python scripts/02B_event_dataset_to_binned_dataset.py \
   --input-dir /data/event-dataset \
   --output-dir /data/binned-dataset \
   --fps 10 \
@@ -49,16 +48,11 @@ $ python scripts/02_event_dataset_to_binned_dataset.py \
 
 ```
 $ python
->>> from datasets import load_from_disk
->>> from owa.data import create_binned_dataset_transform
+>>> from owa.data.datasets import load_from_disk
 >>>
 >>> # Load and transform dataset
 >>> dataset = load_from_disk("/data/binned-dataset")
->>> transform = create_binned_dataset_transform(
-...     encoder_type="hierarchical",
-...     instruction="Complete the computer task"
-... )
->>> dataset.set_transform(transform)
+>>> dataset["train"].auto_set_transform(stage="binned", instruction="Complete the computer task")
 >>>
 >>> # Use in training
 >>> for sample in dataset["train"].take(1):
@@ -108,17 +102,16 @@ graph LR
 ```py
 # Since event/binned datasets are true HuggingFace datasets,
 # they can be loaded directly into training pipelines
-from datasets import load_from_disk
+from owa.data.datasets import load_from_disk
 dataset = load_from_disk("/data/event-dataset")
 dataset = load_from_disk("/data/binned-dataset")
 
 # Transform to VLA training format is applied on-the-fly during training
-from owa.data import create_binned_dataset_transform
-transform = create_binned_dataset_transform(
+dataset["train"].auto_set_transform(
+    stage="binned",
     encoder_type="hierarchical",
-    instruction="Complete the computer task",
+    instruction="Complete the computer task"
 )
-dataset.set_transform(transform)
 
 # Use in training
 for sample in dataset["train"].take(1):
@@ -239,22 +232,18 @@ Both Event Dataset and Binned Dataset support the same transform interface:
 === "Event Dataset Transform"
 
     ```python
-    from datasets import load_from_disk
-    from owa.data import create_event_dataset_transform
-    
+    from owa.data.datasets import load_from_disk
+
     # Load dataset
     dataset = load_from_disk("/path/to/event-dataset")
-    
-    # Create transform
-    transform = create_event_dataset_transform(
+
+    # Apply transform using auto_set_transform
+    dataset["train"].auto_set_transform(
+        stage="event",
         encoder_type="hierarchical",
-        load_images=True,
-        encode_actions=True,
+        load_images=True
     )
-    
-    # Apply transform
-    dataset.set_transform(transform)
-    
+
     # Use in training
     for sample in dataset["train"]:
         images = sample["images"]          # List[PIL.Image]
@@ -264,23 +253,19 @@ Both Event Dataset and Binned Dataset support the same transform interface:
 === "Binned Dataset Transform"
 
     ```python
-    from datasets import load_from_disk
-    from owa.data import create_binned_dataset_transform
-    
+    from owa.data.datasets import load_from_disk
+
     # Load dataset
     dataset = load_from_disk("/path/to/binned-dataset")
-    
-    # Create transform
-    transform = create_binned_dataset_transform(
+
+    # Apply transform using auto_set_transform
+    dataset["train"].auto_set_transform(
+        stage="binned",
         encoder_type="hierarchical",
         instruction="Complete the computer task",
-        load_images=True,
-        encode_actions=True,
+        load_images=True
     )
-    
-    # Apply transform
-    dataset.set_transform(transform)
-    
+
     # Use in training
     for sample in dataset["train"]:
         images = sample["images"]          # List[PIL.Image]
@@ -292,7 +277,7 @@ Both Event Dataset and Binned Dataset support the same transform interface:
 
 | Parameter | Description | Options | Default |
 |-----------|-------------|---------|---------|
-| `encoder_type` | Event encoding strategy | `hierarchical`, `json` | `hierarchical` |
+| `encoder_type` | Event encoding strategy | `hierarchical`, `factorized`, `json` | `factorized` |
 | `load_images` | Load screen images | `True`, `False` | `True` |
 | `encode_actions` | Encode action events | `True`, `False` | `True` |
 | `instruction` | Task instruction (Binned only) | Any string | `"Complete the task"` |

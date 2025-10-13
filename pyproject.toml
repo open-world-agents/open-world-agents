@@ -6,7 +6,6 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "mcap-owa-support==0.6.1",
-    "ocap==0.6.1",
     "owa-cli==0.6.1",
     "owa-core==0.6.1",
     "owa-env-desktop==0.6.1",
@@ -41,7 +40,6 @@ dev = [
 
 [tool.uv.sources]
 mcap-owa-support = { path = "projects/mcap-owa-support", editable = true }
-ocap = { path = "projects/ocap", editable = true }
 owa-cli = { path = "projects/owa-cli", editable = true }
 owa-core = { path = "projects/owa-core", editable = true }
 owa-env-desktop = { path = "projects/owa-env-desktop", editable = true }

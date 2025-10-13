@@ -3,7 +3,7 @@ import multiprocessing as mp
 import threading
 from abc import ABC, abstractmethod
 from multiprocessing.synchronize import Event as mpEvent
-from typing import Self
+from typing import Self, TypeAlias
 
 
 class RunnableSessionContextManager:
@@ -99,7 +99,7 @@ class RunnableMixin(ABC):
         return self
 
     # Methods for subclasses to implement
-    def on_configure(self, *args, **kwargs):
+    def on_configure(self, *args, **kwargs) -> None:
         """
         Optional method for configuration.
 
@@ -110,10 +110,9 @@ class RunnableMixin(ABC):
             *args: Positional arguments passed from configure.
             **kwargs: Keyword arguments passed from configure.
         """
-        pass
 
     @abstractmethod
-    def loop(self, *args, **kwargs):
+    def loop(self, *args, **kwargs) -> None:
         """
         Main execution loop. Must be implemented by subclasses.
         This method contains the main logic that runs while the runnable is active.
@@ -161,7 +160,7 @@ class RunnableThread(threading.Thread, RunnableMixin):
         self._stop_event.set()
 
     @abstractmethod
-    def loop(self, stop_event: threading.Event):
+    def loop(self, *, stop_event: threading.Event) -> None:
         """
         Main thread execution loop. Must be implemented by subclasses.
 
@@ -170,7 +169,6 @@ class RunnableThread(threading.Thread, RunnableMixin):
                                         Check this event regularly and exit when it's set.
                                         If this argument is not present, the loop will be called without it.
         """
-        pass
 
 
 class RunnableProcess(mp.Process, RunnableMixin):
@@ -209,7 +207,7 @@ class RunnableProcess(mp.Process, RunnableMixin):
         self._stop_event.set()
 
     @abstractmethod
-    def loop(self, stop_event: mpEvent):
+    def loop(self, *, stop_event: mpEvent) -> None:
         """
         Main process execution loop. Must be implemented by subclasses.
 
@@ -218,8 +216,7 @@ class RunnableProcess(mp.Process, RunnableMixin):
                                                 Check this event regularly and exit when it's set.
                                                 If this argument is not present, the loop will be called without it.
         """
-        pass
 
 
 # Default implementation is thread-based for better compatibility and easier use
-Runnable = RunnableThread
+Runnable: TypeAlias = RunnableThread

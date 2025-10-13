@@ -18,7 +18,7 @@ pip install uv virtual-uv
 # Waiting for `--no-editable`. related issue: https://github.com/astral-sh/uv/issues/13087
 find . -name "pyproject.toml" -exec cp {} {}.bak \;
 find . -name "pyproject.toml" -exec sed -i 's/editable = true/editable = false/g' {} +
-uv pip install projects/ocap
+uv pip install .
 find . -name "pyproject.toml.bak" -exec sh -c 'mv -f "$1" "${1%.bak}"' _ {} \;
 
 
