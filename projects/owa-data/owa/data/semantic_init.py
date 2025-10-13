@@ -27,7 +27,7 @@ def apply_semantic_initialization(tokenizer: PreTrainedTokenizer, model: Any, en
         model: The model with embedding weights to initialize
         encoder_type: The type of encoder used in the tokenizer
     """
-    logger.warning("Applying semantic initialization to new tokens")
+    logger.info("Applying semantic initialization to new tokens")
 
     # find out if tokenizer is expanded by hierarchical or factorized
     # if factorized, initialize factorized tokens
@@ -69,8 +69,8 @@ def _init_hierarchical_basic_tokens(tokenizer: PreTrainedTokenizer, model: Any) 
         "<SCREEN>": "screen",
         "<press>": "press",
         "<release>": "release",
-        "<EVENT_START>": "event start",
-        "<EVENT_END>": "event end",
+        "<EVENT_START>": "<|im_start|>",
+        "<EVENT_END>": "<|im_end|>",
     }
 
     for new_token, semantic_word in semantic_mappings.items():
@@ -109,8 +109,8 @@ def _init_factorized_basic_tokens(tokenizer: PreTrainedTokenizer, model: Any) ->
         "<SCREEN>": "screen",
         "<press>": "press",
         "<release>": "release",
-        "<EVENT_START>": "event start",
-        "<EVENT_END>": "event end",
+        "<EVENT_START>": "<|im_start|>",
+        "<EVENT_END>": "<|im_end|>",
         "<SIGN_PLUS>": "+",
         "<SIGN_MINUS>": "-",
     }

@@ -292,6 +292,7 @@ class FSLTransform:
 
         # Process each video group with batch decoding
         for video_path, group in video_groups.items():
+            decoder = None
             try:
                 # Create decoder for this video
                 if self.config.use_batch_decoding == "owa":
@@ -325,9 +326,23 @@ class FSLTransform:
                     # Store in frame_arr
                     image_msgs[img_idx].frame_arr = frame_bgra
 
+                    # Clear intermediate tensors to free memory
+                    del frame_tensor, frame_rgb
+
+                # Clear frame batch to free memory
+                del frame_batch
+
             except Exception as e:
                 # If batch decoding fails, fall back to individual decoding
                 logger.warning(f"Batch decoding failed for {video_path}: {e}. Falling back to individual decoding.")
+            finally:
+                # Explicitly close decoder to free resources
+                if decoder is not None:
+                    try:
+                        decoder.close()
+                    except Exception:
+                        pass
+                    del decoder
 
 
 def create_fsl_transform(

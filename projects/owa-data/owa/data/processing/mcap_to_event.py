@@ -74,6 +74,9 @@ def _mcap_to_events(
                         }
                     )
 
+    # Resampler may cause events not in order
+    events.sort(key=lambda e: e["timestamp_ns"])
+
     return events
 
 
