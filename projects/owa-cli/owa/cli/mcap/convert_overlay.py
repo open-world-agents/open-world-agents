@@ -32,7 +32,6 @@ KEYBOARD_LAYOUT = [
     (0, 11, 1, "F11", VK.F11, False),
     (0, 12, 1, "F12", VK.F12, False),
     (0, 13, 1, "BACK", VK.BACK, False),
-
     # Row 1: ~, 1-9, 0, -, =, \
     (1, 0, 1, "~", VK.OEM_3, False),
     (1, 1, 1, "1", VK.KEY_1, False),
@@ -48,7 +47,6 @@ KEYBOARD_LAYOUT = [
     (1, 11, 1, "-", VK.OEM_MINUS, False),
     (1, 12, 1, "=", VK.OEM_PLUS, False),
     (1, 13, 1, "\\", VK.OEM_5, False),
-
     # Row 2: TAB, Q-P, [, ], ENTER
     (2, 0, 1, "TAB", VK.TAB, False),
     (2, 1, 1, "Q", VK.KEY_Q, False),
@@ -64,7 +62,6 @@ KEYBOARD_LAYOUT = [
     (2, 11, 1, "[", VK.OEM_4, False),
     (2, 12, 1, "]", VK.OEM_6, False),
     (2, 13, 1, "ENTER", VK.RETURN, False),
-
     # Row 3: CAPS, A-L, ;, ', UP, SHIFT
     (3, 0, 1, "CAPS", VK.CAPITAL, False),
     (3, 1, 1, "A", VK.KEY_A, False),
@@ -80,7 +77,6 @@ KEYBOARD_LAYOUT = [
     (3, 11, 1, "'", VK.OEM_7, False),
     (3, 12, 1, "UP", VK.UP, True),
     (3, 13, 1, "SHIFT", VK.RSHIFT, False),
-
     # Row 4: SHIFT, Z-M, comma, period, /, LEFT, DOWN, RIGHT
     (4, 0, 1, "SHIFT", VK.LSHIFT, False),
     (4, 1, 1, "Z", VK.KEY_Z, False),
@@ -96,7 +92,6 @@ KEYBOARD_LAYOUT = [
     (4, 11, 1, "LEFT", VK.LEFT, True),
     (4, 12, 1, "DOWN", VK.DOWN, True),
     (4, 13, 1, "RIGHT", VK.RIGHT, True),
-
     # Row 5: CTRL, WIN, ALT, SPACE (8 units), ALT, WIN, CTRL
     (5, 0, 1, "CTRL", VK.LCONTROL, False),
     (5, 1, 1, "WIN", VK.LWIN, False),
@@ -120,6 +115,7 @@ BUTTON_RELEASE_FLAGS = {
     RawMouseEvent.ButtonFlags.RI_MOUSE_MIDDLE_BUTTON_UP: "middle",
 }
 
+
 def draw_arrow(frame: np.ndarray, center_x: int, center_y: int, direction: str, color: tuple, size: int = 10) -> None:
     """
     Draw an arrow symbol on the frame with anti-aliasing for smooth edges.
@@ -134,32 +130,44 @@ def draw_arrow(frame: np.ndarray, center_x: int, center_y: int, direction: str, 
     """
     if direction == "UP":
         # Triangle pointing up
-        pts = np.array([
-            [center_x, center_y - size],
-            [center_x - size, center_y + size//2],
-            [center_x + size, center_y + size//2]
-        ], np.int32)
+        pts = np.array(
+            [
+                [center_x, center_y - size],
+                [center_x - size, center_y + size // 2],
+                [center_x + size, center_y + size // 2],
+            ],
+            np.int32,
+        )
     elif direction == "DOWN":
         # Triangle pointing down
-        pts = np.array([
-            [center_x, center_y + size],
-            [center_x - size, center_y - size//2],
-            [center_x + size, center_y - size//2]
-        ], np.int32)
+        pts = np.array(
+            [
+                [center_x, center_y + size],
+                [center_x - size, center_y - size // 2],
+                [center_x + size, center_y - size // 2],
+            ],
+            np.int32,
+        )
     elif direction == "LEFT":
         # Triangle pointing left
-        pts = np.array([
-            [center_x - size, center_y],
-            [center_x + size//2, center_y - size],
-            [center_x + size//2, center_y + size]
-        ], np.int32)
+        pts = np.array(
+            [
+                [center_x - size, center_y],
+                [center_x + size // 2, center_y - size],
+                [center_x + size // 2, center_y + size],
+            ],
+            np.int32,
+        )
     elif direction == "RIGHT":
         # Triangle pointing right
-        pts = np.array([
-            [center_x + size, center_y],
-            [center_x - size//2, center_y - size],
-            [center_x - size//2, center_y + size]
-        ], np.int32)
+        pts = np.array(
+            [
+                [center_x + size, center_y],
+                [center_x - size // 2, center_y - size],
+                [center_x - size // 2, center_y + size],
+            ],
+            np.int32,
+        )
     else:
         return
 
@@ -197,10 +205,28 @@ def draw_mouse_figure(frame: np.ndarray, x: int, y: int, active_buttons: set) ->
     center_y = y + mouse_height // 2
 
     # Draw filled ellipse for mouse body with anti-aliasing
-    cv2.ellipse(frame, (center_x, center_y), (mouse_width // 2, mouse_height // 2),
-                0, 0, 360, bg_color, -1, lineType=cv2.LINE_AA)
-    cv2.ellipse(frame, (center_x, center_y), (mouse_width // 2, mouse_height // 2),
-                0, 0, 360, border_color, 2, lineType=cv2.LINE_AA)
+    cv2.ellipse(
+        frame,
+        (center_x, center_y),
+        (mouse_width // 2, mouse_height // 2),
+        0,
+        0,
+        360,
+        bg_color,
+        -1,
+        lineType=cv2.LINE_AA,
+    )
+    cv2.ellipse(
+        frame,
+        (center_x, center_y),
+        (mouse_width // 2, mouse_height // 2),
+        0,
+        0,
+        360,
+        border_color,
+        2,
+        lineType=cv2.LINE_AA,
+    )
 
     # Button dimensions - quadrant shape that fits the mouse ellipse
     middle_button_width = int(mouse_width * 0.16)  # 16% of width for middle button
@@ -271,25 +297,41 @@ def draw_mouse_figure(frame: np.ndarray, x: int, y: int, active_buttons: set) ->
     middle_x = x + mouse_width // 2 - middle_button_width // 2
     middle_height = int(ellipse_b * 0.6)  # Proportional to ellipse height
     middle_y = y + int(mouse_height * 0.1)  # Position in upper portion
-    cv2.rectangle(frame, (middle_x, middle_y),
-                  (middle_x + middle_button_width, middle_y + middle_height),
-                  middle_color, -1, lineType=cv2.LINE_AA)
-    cv2.rectangle(frame, (middle_x, middle_y),
-                  (middle_x + middle_button_width, middle_y + middle_height),
-                  border_color, 2, lineType=cv2.LINE_AA)
+    cv2.rectangle(
+        frame,
+        (middle_x, middle_y),
+        (middle_x + middle_button_width, middle_y + middle_height),
+        middle_color,
+        -1,
+        lineType=cv2.LINE_AA,
+    )
+    cv2.rectangle(
+        frame,
+        (middle_x, middle_y),
+        (middle_x + middle_button_width, middle_y + middle_height),
+        border_color,
+        2,
+        lineType=cv2.LINE_AA,
+    )
     # Add scroll wheel lines
     line_y1 = middle_y + middle_height // 3
     line_y2 = middle_y + 2 * middle_height // 3
-    cv2.line(frame, (middle_x + 2, line_y1), (middle_x + middle_button_width - 2, line_y1),
-             border_color, 1)
-    cv2.line(frame, (middle_x + 2, line_y2), (middle_x + middle_button_width - 2, line_y2),
-             border_color, 1)
+    cv2.line(frame, (middle_x + 2, line_y1), (middle_x + middle_button_width - 2, line_y1), border_color, 1)
+    cv2.line(frame, (middle_x + 2, line_y2), (middle_x + middle_button_width - 2, line_y2), border_color, 1)
 
 
-
-def draw_mouse_minimap(frame: np.ndarray, mouse_x: int, mouse_y: int, minimap_x: int, minimap_y: int,
-                       minimap_width: int, minimap_height: int, frame_width: int, frame_height: int,
-                       active_mouse_buttons: set) -> None:
+def draw_mouse_minimap(
+    frame: np.ndarray,
+    mouse_x: int,
+    mouse_y: int,
+    minimap_x: int,
+    minimap_y: int,
+    minimap_width: int,
+    minimap_height: int,
+    frame_width: int,
+    frame_height: int,
+    active_mouse_buttons: set,
+) -> None:
     """
     Draw a bounded rectangular minimap showing mouse position.
 
@@ -308,9 +350,14 @@ def draw_mouse_minimap(frame: np.ndarray, mouse_x: int, mouse_y: int, minimap_x:
     # Draw minimap border (white border with no background for transparency)
     border_color = (255, 255, 255)  # White border
     border_thickness = 1
-    cv2.rectangle(frame, (minimap_x, minimap_y),
-                  (minimap_x + minimap_width, minimap_y + minimap_height),
-                  border_color, border_thickness, lineType=cv2.LINE_AA)
+    cv2.rectangle(
+        frame,
+        (minimap_x, minimap_y),
+        (minimap_x + minimap_width, minimap_y + minimap_height),
+        border_color,
+        border_thickness,
+        lineType=cv2.LINE_AA,
+    )
 
     # Map mouse position from full frame to minimap coordinates
     # Normalize mouse position to [0, 1] range
@@ -345,9 +392,16 @@ def draw_mouse_minimap(frame: np.ndarray, mouse_x: int, mouse_y: int, minimap_x:
         cv2.circle(frame, (minimap_cursor_x, minimap_cursor_y), cursor_radius + 7, color, 1, lineType=cv2.LINE_AA)
 
 
-def draw_overlay(frame: np.ndarray, active_keys: set, active_mouse_buttons: set,
-                          mouse_x: int, mouse_y: int, frame_width: int, frame_height: int,
-                          overlay_height: int) -> np.ndarray:
+def draw_overlay(
+    frame: np.ndarray,
+    active_keys: set,
+    active_mouse_buttons: set,
+    mouse_x: int,
+    mouse_y: int,
+    frame_width: int,
+    frame_height: int,
+    overlay_height: int,
+) -> np.ndarray:
     """
     Draw a keyboard UI overlay on the frame showing which keys are pressed.
 
@@ -426,15 +480,16 @@ def draw_overlay(frame: np.ndarray, active_keys: set, active_mouse_buttons: set,
             text_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, font_scale, 1)[0]
 
             # If text is too wide, reduce font scale to fit
-            max_width = w - 2   # Leave 1px padding on each side
+            max_width = w - 2  # Leave 1px padding on each side
             if text_size[0] > max_width:
                 font_scale = font_scale * (max_width / text_size[0])
                 text_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, font_scale, 1)[0]
 
             text_x = x + (w - text_size[0]) // 2
             text_y = y + (h + text_size[1]) // 2
-            cv2.putText(overlay, label, (text_x, text_y),
-                       cv2.FONT_HERSHEY_SIMPLEX, font_scale, text_color, 1, cv2.LINE_AA)
+            cv2.putText(
+                overlay, label, (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, font_scale, text_color, 1, cv2.LINE_AA
+            )
 
     # Draw mouse figure on the right side of the keyboard
     mouse_figure_x = start_x + bg_width + 10
@@ -454,23 +509,43 @@ def draw_overlay(frame: np.ndarray, active_keys: set, active_mouse_buttons: set,
     minimap_width = 150
     minimap_height = 100
 
-    draw_mouse_minimap(frame, mouse_x, mouse_y, minimap_x, minimap_y,
-                      minimap_width, minimap_height, frame_width, frame_height,
-                      active_mouse_buttons)
+    draw_mouse_minimap(
+        frame,
+        mouse_x,
+        mouse_y,
+        minimap_x,
+        minimap_y,
+        minimap_width,
+        minimap_height,
+        frame_width,
+        frame_height,
+        active_mouse_buttons,
+    )
 
     return frame
 
 
 def convert_overlay(
     mcap_path: Annotated[Path, typer.Argument(help="Path to the input .mcap file")],
-    topics: Annotated[
-        list[str], typer.Option(help="Comma-separated list of topics to include in the overlay")
-    ] = ["mouse/raw", "keyboard"],
-    output_video: Annotated[Path | None, typer.Argument(help="Path to the output video file. Defaults to <input_video>.mp4")] = None,
-    fps: Annotated[float | None, typer.Option(help="Output video frame rate (default: use original MCAP frame rate)")] = None,
-    max_duration_seconds: Annotated[float | None, typer.Option(help="Maximum duration in seconds to generate (default: entire video)")] = None,
-    original_width: Annotated[int, typer.Option(help="Original recording width resolution for mouse movement scaling")] = 2560,
-    original_height: Annotated[int, typer.Option(help="Original recording height resolution for mouse movement scaling")] = 1440,
+    topics: Annotated[list[str], typer.Option(help="Comma-separated list of topics to include in the overlay")] = [
+        "mouse/raw",
+        "keyboard",
+    ],
+    output_video: Annotated[
+        Path | None, typer.Argument(help="Path to the output video file. Defaults to <input_video>.mp4")
+    ] = None,
+    fps: Annotated[
+        float | None, typer.Option(help="Output video frame rate (default: use original MCAP frame rate)")
+    ] = None,
+    max_duration_seconds: Annotated[
+        float | None, typer.Option(help="Maximum duration in seconds to generate (default: entire video)")
+    ] = None,
+    original_width: Annotated[
+        int, typer.Option(help="Original recording width resolution for mouse movement scaling")
+    ] = 2560,
+    original_height: Annotated[
+        int, typer.Option(help="Original recording height resolution for mouse movement scaling")
+    ] = 1440,
 ):
     """
     Convert an `.mcap` file into a video with overlays showing mouse clicks and keyboard presses.
@@ -517,7 +592,9 @@ def convert_overlay(
             duration_seconds = (recording_end_time - recording_start_time) / TimeUnits.SECOND
             original_fps = screen_message_count / duration_seconds if duration_seconds > 0 else 30.0
             fps = original_fps
-            typer.echo(f"Using original frame rate: {fps:.2f} FPS ({screen_message_count} frames over {duration_seconds:.2f}s)")
+            typer.echo(
+                f"Using original frame rate: {fps:.2f} FPS ({screen_message_count} frames over {duration_seconds:.2f}s)"
+            )
         else:
             typer.echo(f"Using specified frame rate: {fps:.2f} FPS")
 
@@ -538,7 +615,9 @@ def convert_overlay(
         scale_x = frame_width / original_width
         scale_y = frame_height / original_height
 
-        typer.echo(f"Mouse movement scaling: {scale_x:.3f}x (width {original_width} -> {frame_width}), {scale_y:.3f}x (height {original_height} -> {frame_height})")
+        typer.echo(
+            f"Mouse movement scaling: {scale_x:.3f}x (width {original_width} -> {frame_width}), {scale_y:.3f}x (height {original_height} -> {frame_height})"
+        )
 
         # Build timelines for events and mouse positions in a single pass
         mouse_positions = {}  # timestamp -> (x, y)
@@ -663,8 +742,16 @@ def convert_overlay(
                                     pass
 
                     # Draw keyboard UI overlay with mouse minimap in the black space
-                    frame = draw_overlay(expanded_frame, active_vk_codes, set(active_mouse_buttons.keys()),
-                                                  current_mouse_x, current_mouse_y, frame_width, frame_height, overlay_height)
+                    frame = draw_overlay(
+                        expanded_frame,
+                        active_vk_codes,
+                        set(active_mouse_buttons.keys()),
+                        current_mouse_x,
+                        current_mouse_y,
+                        frame_width,
+                        frame_height,
+                        overlay_height,
+                    )
 
                     # Write frame
                     writer.write_frame(frame)
