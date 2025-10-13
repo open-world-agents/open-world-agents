@@ -1,5 +1,6 @@
 from enum import StrEnum
 
+import line_profiler
 import torch
 from transformers import ProcessorMixin
 
