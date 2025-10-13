@@ -129,7 +129,7 @@ class FSLTransformConfig:
     pad_token_id: int = 0
     use_batch_decoding_api: str = "owa"
 
-
+@line_profiler.profile
 class FSLTransform:
     """Clean, modular FSL transform class."""
 

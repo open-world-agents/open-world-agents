@@ -7,6 +7,7 @@ VIDEO_PATH = "../../tmp/output.mkv"
 MAX_FRAMES = 10**9
 
 
+@line_profiler.profile
 def test_gst():
     with GstMKVReader(VIDEO_PATH) as reader:
         for idx, frame in tqdm(enumerate(reader.iter_frames())):
@@ -15,6 +16,7 @@ def test_gst():
             print(frame["pts"], frame["data"].shape)
 
 
+@line_profiler.profile
 def test_av():
     with PyAVMKVReader(VIDEO_PATH) as reader:
         for idx, frame in tqdm(enumerate(reader.iter_frames())):
@@ -23,6 +25,7 @@ def test_av():
             print(frame["pts"], frame["data"].shape)
 
 
+@line_profiler.profile
 def test_decord():
     vr = VideoReader(VIDEO_PATH, ctx=cpu(0))
     for idx in tqdm(range(len(vr))):
