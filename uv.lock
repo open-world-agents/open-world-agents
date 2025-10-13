@@ -1148,23 +1148,6 @@ wheels = [
 ]
 
 [[package]]
-name = "ocap"
-version = "0.6.1"
-source = { editable = "projects/ocap" }
-dependencies = [
-    { name = "owa-cli" },
-    { name = "owa-env-desktop" },
-    { name = "owa-env-gst" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "owa-cli", editable = "projects/owa-cli" },
-    { name = "owa-env-desktop", editable = "projects/owa-env-desktop" },
-    { name = "owa-env-gst", editable = "projects/owa-env-gst" },
-]
-
-[[package]]
 name = "opencv-python"
 version = "4.11.0.86"
 source = { registry = "https://pypi.org/simple" }
@@ -1251,7 +1234,6 @@ version = "0.6.1"
 source = { editable = "." }
 dependencies = [
     { name = "mcap-owa-support" },
-    { name = "ocap" },
     { name = "owa-cli" },
     { name = "owa-core" },
     { name = "owa-env-desktop" },
@@ -1295,7 +1277,6 @@ requires-dist = [
     { name = "mkdocs-redirects", marker = "extra == 'docs'", specifier = ">=1.2.2" },
     { name = "mkdocstrings", extras = ["python"], marker = "extra == 'docs'", specifier = ">=0.24.0" },
     { name = "mkdocstrings-owa", marker = "extra == 'docs'", specifier = ">=1.16.12" },
-    { name = "ocap", editable = "projects/ocap" },
     { name = "owa-cli", editable = "projects/owa-cli" },
     { name = "owa-core", editable = "projects/owa-core" },
     { name = "owa-env-desktop", editable = "projects/owa-env-desktop" },
@@ -1326,6 +1307,7 @@ dependencies = [
     { name = "mcap-owa-support" },
     { name = "orjson" },
     { name = "owa-core" },
+    { name = "owa-msgs" },
     { name = "packaging" },
     { name = "plotext" },
     { name = "pydantic" },
@@ -1342,6 +1324,7 @@ requires-dist = [
     { name = "mcap-owa-support", editable = "projects/mcap-owa-support" },
     { name = "orjson", specifier = ">=3.10.15" },
     { name = "owa-core", editable = "projects/owa-core" },
+    { name = "owa-msgs", editable = "projects/owa-msgs" },
     { name = "packaging", specifier = ">=25.0" },
     { name = "plotext", specifier = ">=5.3.2" },
     { name = "pydantic", specifier = ">=2.10.6" },

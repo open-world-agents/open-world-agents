@@ -80,6 +80,11 @@ def check_element(gst, element_name):
     diagnostic_info = []
     diagnostic_info.append(f"Element '{element_name}' is NOT available")
 
+    # Get plugin search paths
+    paths = os.environ.get("GST_PLUGIN_PATH", "").split(os.pathsep)
+    paths.append(os.environ.get("GST_PLUGIN_SYSTEM_PATH", ""))
+    diagnostic_info.append(f"GST plugin search paths: {paths}")
+
     # List similar element names
     all_elements = [f.get_name() for f in registry.get_feature_list(gst.ElementFactory)]
     similar_elements = [e for e in all_elements if any(part in e.lower() for part in element_name.lower().split("_"))]
@@ -104,7 +109,7 @@ def test_required_plugins(gstreamer):
         if not is_loaded:
             missing_plugins.append(plugin)
 
-    required_elements = ["d3d11screencapturesrc", "nvd3d11h265enc", "wasapi2src"]
+    required_elements = ["d3d11screencapturesrc", "nvd3d11h265enc", "wasapi2src", "utctimestampsrc"]
     missing_elements = []
 
     for element in required_elements:
@@ -114,17 +119,24 @@ def test_required_plugins(gstreamer):
             missing_elements.append(element)
 
     if missing_plugins or missing_elements:
-        pytest.skip(f"Missing plugins: {missing_plugins}, Missing elements: {missing_elements}")
+        pytest.fail(
+            f"Required GStreamer dependencies are missing! Plugins: {missing_plugins}, Elements: {missing_elements}"
+        )
 
 
 def test_subprocess_recorder(gstreamer):
     Gst, pipeline_builder = gstreamer
 
     # Check required elements before running test
-    for element in ["d3d11screencapturesrc", "nvd3d11h265enc", "wasapi2src"]:
+    missing_elements = []
+    for element in ["d3d11screencapturesrc", "nvd3d11h265enc", "wasapi2src", "utctimestampsrc"]:
         is_available, info = check_element(Gst, element)
+        print(info)  # Print for pytest output
         if not is_available:
-            pytest.skip(info)
+            missing_elements.append(element)
+
+    if missing_elements:
+        pytest.fail(f"Required GStreamer elements are missing for subprocess recorder test: {missing_elements}")
 
     pipeline = pipeline_builder.subprocess_recorder_pipeline(
         filesink_location="test.mkv",
@@ -152,8 +164,10 @@ def test_screen_capture(gstreamer):
     Gst, pipeline_builder = gstreamer
 
     # Check required elements before running test
-    if not check_element(Gst, "d3d11screencapturesrc")[0]:
-        pytest.skip("d3d11screencapturesrc element not available")
+    is_available, info = check_element(Gst, "d3d11screencapturesrc")
+    print(info)  # Print for pytest output
+    if not is_available:
+        pytest.fail("Required GStreamer element 'd3d11screencapturesrc' is not available for screen capture test")
 
     pipeline = pipeline_builder.screen_capture_pipeline()
     expected_pipeline = (

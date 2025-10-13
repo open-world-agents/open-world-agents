@@ -1,24 +1,9 @@
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
 [project]
 name = "owa-msgs"
 version = "0.6.1"
 description = "Core message definitions for Open World Agents"
 readme = "README.md"
 license = { text = "MIT" }
-authors = [
-    { name = "Open World Agents Team" },
-]
-classifiers = [
-    "Development Status :: 4 - Beta",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-]
 requires-python = ">=3.11"
 dependencies = [
     "owa-core==0.6.1",
@@ -28,14 +13,7 @@ dependencies = [
     "opencv-python>=4.11.0",
 ]
 
-[tool.uv.sources]
-owa-core = { path = "../owa-core", editable = true }
-
-[project.urls]
-Homepage = "https://github.com/open-world-agents/open-world-agents"
-Repository = "https://github.com/open-world-agents/open-world-agents"
-Documentation = "https://open-world-agents.github.io/open-world-agents/"
-
+# entry points for message discovery
 [project.entry-points."owa.msgs"]
 "desktop/KeyboardEvent" = "owa.msgs.desktop.keyboard:KeyboardEvent"
 "desktop/KeyboardState" = "owa.msgs.desktop.keyboard:KeyboardState"
@@ -46,17 +24,15 @@ Documentation = "https://open-world-agents.github.io/open-world-agents/"
 "desktop/WindowInfo" = "owa.msgs.desktop.window:WindowInfo"
 "desktop/ScreenCaptured" = "owa.msgs.desktop.screen:ScreenCaptured"
 
+[tool.uv.sources]
+owa-core = { path = "../owa-core", editable = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [tool.hatch.build.targets.wheel]
 packages = ["owa"]
-
-[tool.hatch.build.targets.sdist]
-include = [
-    "owa/",
-    "README.md",
-]
-
-[tool.ruff]
-extend = "../../ruff.toml"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

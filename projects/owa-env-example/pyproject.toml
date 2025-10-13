@@ -9,7 +9,7 @@ dependencies = [
     "owa-core>=0.4.0"
 ]
 
-# Entry point declaration for plugin discovery
+# entry points for plugin discovery
 [project.entry-points."owa.env.plugins"]
 example = "owa.env.plugins.example:plugin_spec"
 
