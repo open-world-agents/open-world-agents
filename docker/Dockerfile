@@ -23,8 +23,12 @@ RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     chmod +x /tmp/setup_miniforge.sh && \
     /tmp/setup_miniforge.sh ${MINIFORGE_VERSION} ${CONDA_INSTALL_PATH} && \
     rm -f /tmp/setup_miniforge.sh
+ENV PATH="${CONDA_INSTALL_PATH}/bin:${PATH}"
 
-ENV VUV_ALLOW_BASE=true PATH="${CONDA_INSTALL_PATH}/bin:${PATH}"
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+RUN uv tool install virtual-uv
+ENV VUV_ALLOW_BASE=true
 
 # Default configuration
 SHELL ["/bin/bash", "-c"]

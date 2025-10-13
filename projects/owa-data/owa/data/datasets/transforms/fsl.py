@@ -30,17 +30,17 @@ class FSLStatLogger:
         self.last_log_time = self.start_time
 
         # Cumulative totals
-        self._totals = {"tokens": 0, "images": 0, "image_bits": 0}
+        self._totals = {"tokens": 0, "images": 0, "image_bytes": 0}
         # Recent metrics (since last log)
-        self._recent = {"tokens": 0, "images": 0, "samples": 0, "image_bits": 0}
+        self._recent = {"tokens": 0, "images": 0, "samples": 0, "image_bytes": 0}
         # Exponential moving averages
-        self._emas = {"samples_per_sec": None, "tokens_per_sec": None, "images_per_sec": None, "image_bitrate": None}
+        self._emas = {"samples_per_sec": None, "tokens_per_sec": None, "images_per_sec": None, "image_byterate": None}
 
-    def update(self, count: int, tokens: int, images: int, image_bits: int):
+    def update(self, count: int, tokens: int, images: int, image_bytes: int):
         self.count += count
 
         # Update totals and recent metrics
-        for key, value in zip(["tokens", "images", "image_bits"], [tokens, images, image_bits]):
+        for key, value in zip(["tokens", "images", "image_bytes"], [tokens, images, image_bytes]):
             self._totals[key] += value
             self._recent[key] += value
         self._recent["samples"] += count
@@ -74,7 +74,7 @@ class FSLStatLogger:
             "samples_per_sec": samples / safe_elapsed,
             "tokens_per_sec": metrics["tokens"] / safe_elapsed,
             "images_per_sec": metrics["images"] / safe_elapsed,
-            "image_bitrate": metrics["image_bits"] / safe_elapsed,
+            "image_byterate": metrics["image_bytes"] / safe_elapsed,
         }
 
     def _update_emas(self, recent_rates: dict):
@@ -89,35 +89,46 @@ class FSLStatLogger:
     def _format_rates(self, rates: dict) -> str:
         return (
             f"{rates['samples_per_sec']:.1f}s/s, {rates['tokens_per_sec']:,.0f}t/s, "
-            f"{rates['images_per_sec']:.1f}i/s, {self._format_bitrate(rates['image_bitrate'])}"
+            f"{rates['images_per_sec']:.1f}i/s, {self._format_byterate(rates['image_byterate'])}"
         )
 
     def _format_ema_string(self) -> str:
         # All EMAs should be non-None when this is called
         assert all(ema is not None for ema in self._emas.values())
-        image_bitrate = self._emas["image_bitrate"]
-        assert image_bitrate is not None  # Type hint for mypy
+        image_byterate = self._emas["image_byterate"]
+        assert image_byterate is not None  # Type hint for mypy
         return (
             f" | EMA: {self._emas['samples_per_sec']:.1f}s/s, "
             f"{self._emas['tokens_per_sec']:,.0f}t/s, {self._emas['images_per_sec']:.1f}i/s, "
-            f"{self._format_bitrate(image_bitrate)}"
+            f"{self._format_byterate(image_byterate)}"
         )
 
     @staticmethod
-    def _format_bitrate(bits_per_sec: float) -> str:
-        for unit, threshold in [("Gb/s", 1e9), ("Mb/s", 1e6), ("Kb/s", 1e3)]:
-            if bits_per_sec >= threshold:
-                return f"{bits_per_sec / threshold:.1f}{unit}"
-        return f"{bits_per_sec:.0f}b/s"
+    def _format_byterate(bytes_per_sec: float) -> str:
+        for unit, threshold in [("GiB/s", 1024**3), ("MiB/s", 1024**2), ("KiB/s", 1024)]:
+            if bytes_per_sec >= threshold:
+                return f"{bytes_per_sec / threshold:.1f}{unit}"
+        return f"{bytes_per_sec:.0f}B/s"
 
 
 @dataclass
 class FSLTransformConfig:
-    """Configuration for FSL transform."""
+    """Configuration for FSL transform.
+
+    Args:
+        load_images: Whether to load images during transformation.
+        mcap_root_directory: Root directory for MCAP files.
+        pad_token_id: Token ID used for padding.
+        use_batch_decoding_api: Video decoding API to use. Valid values:
+            - "owa": Use PyAV-based decoder (default)
+            - "torchcodec": Use TorchCodec-based decoder
+            - "no": Disable batch decoding entirely
+    """
 
     load_images: bool = True
     mcap_root_directory: Optional[str] = None
     pad_token_id: int = 0
+    use_batch_decoding_api: str = "owa"
 
 
 
@@ -157,7 +168,7 @@ class FSLTransform:
         # Track metrics for logging
         total_tokens = 0
         total_images = 0
-        total_image_bits = 0
+        total_image_bytes = 0
 
         for i in range(batch_size):
             image_msgs_json = batch["images"][i]
@@ -182,8 +193,9 @@ class FSLTransform:
             if self.is_decoding_server_available and image_msgs:
                 self._preload_images_parallel(image_msgs)
 
-            # Batch decode images
-            self._batch_decode_images(image_msgs)
+            # Batch decode images (if enabled)
+            if self.config.use_batch_decoding_api != "no":
+                self._batch_decode_images(image_msgs)
 
             # Load images with error handling
             all_images = []
@@ -200,9 +212,9 @@ class FSLTransform:
                         warnings.warn(f"Failed to load image: {e}. Using previous image.")
                         all_images.append(all_images[-1])
 
-            # Calculate image bits
-            image_bits = sum(image.width * image.height * 3 for image in all_images)
-            total_image_bits += image_bits
+            # Calculate image bytes
+            image_bytes = sum(image.width * image.height * 3 for image in all_images)
+            total_image_bytes += image_bytes
 
             # Process with image processor if available
             if self.image_processor is not None:
@@ -243,7 +255,7 @@ class FSLTransform:
                 results["images"].append(all_images)
 
         # Update statistics
-        self.stat_logger.update(batch_size, total_tokens, total_images, total_image_bits)
+        self.stat_logger.update(batch_size, total_tokens, total_images, total_image_bytes)
 
         return results
 
@@ -287,7 +299,12 @@ class FSLTransform:
             decoder = None
             try:
                 # Create decoder for this video
-                decoder = PyAVVideoDecoder(video_path)
+                if self.config.use_batch_decoding_api == "owa":
+                    decoder = PyAVVideoDecoder(video_path)
+                elif self.config.use_batch_decoding_api == "torchcodec":
+                    decoder = TorchCodecVideoDecoder(video_path)
+                else:
+                    raise ValueError(f"Invalid use_batch_decoding_api: '{self.config.use_batch_decoding_api}'.")
 
                 # Batch decode all frames for this video
                 frame_batch = decoder.get_frames_played_at(seconds=group["timestamps"])
@@ -339,7 +356,15 @@ class FSLTransform:
 def create_fsl_transform(
     image_processor=None, load_images: bool = True, mcap_root_directory: Optional[str] = None, **kwargs
 ):
-    """Create FSL transform - maintains backward compatibility."""
+    """Create FSL transform - maintains backward compatibility.
+
+    Args:
+        image_processor: Image processor to use for transforming images.
+        load_images: Whether to load images during transformation.
+        mcap_root_directory: Root directory for MCAP files.
+        **kwargs: Additional configuration parameters, including:
+            - use_batch_decoding_api: Video decoding API ("owa", "torchcodec", or "no")
+    """
     config = FSLTransformConfig(load_images=load_images, mcap_root_directory=mcap_root_directory, **kwargs)
 
     transform = FSLTransform(config, image_processor=image_processor)
