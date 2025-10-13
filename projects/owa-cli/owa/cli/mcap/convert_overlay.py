@@ -371,7 +371,7 @@ def draw_overlay(frame: np.ndarray, active_keys: set, active_mouse_buttons: set,
     # Background for keyboard UI (full compact layout)
     # 14 columns (0-13) + margins
     bg_width = int(14 * (key_size + key_margin))  # Width to fit 14 columns with 1px margins
-    bg_height = int(6 * (key_size + key_margin))  # Height to fit 6 rows with 1px margins
+    # bg_height = int(6 * (key_size + key_margin))  # Height to fit 6 rows with 1px margins
 
     # Position overlays in the black space at the bottom
     start_x = 10  # Small left margin
@@ -396,11 +396,9 @@ def draw_overlay(frame: np.ndarray, active_keys: set, active_mouse_buttons: set,
         if is_pressed:
             bg_color = (80, 176, 171)  # Teal when pressed
             text_color = (255, 255, 255)  # White text/arrow
-            border_color = (255, 255, 255)  # White border
         else:
             bg_color = (107, 107, 107)  # Gray when not pressed
             text_color = (255, 255, 255)  # White text/arrow
-            border_color = (100, 100, 100)  # Gray border
 
         # Draw key background on overlay
         cv2.rectangle(overlay, (x, y), (x + w, y + h), bg_color, -1)
@@ -484,7 +482,6 @@ def convert_overlay(
         # Find the first screen message to get the recording start time and pts offset
         recording_start_time = None
         recording_end_time = None
-        pts_offset = 0
         screen_message_count = 0
         frame_width = None
         frame_height = None
