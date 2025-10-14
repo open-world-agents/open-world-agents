@@ -32,6 +32,9 @@ class TorchCodecVideoDecoder(VideoDecoder):
         # Register with cache using no-op cleanup (TorchCodec handles cleanup internally)
         self.cache.add_entry(self._cache_key, self, lambda: None)
 
+    def __enter__(self):
+        return self
+
     def __exit__(self, exc_type, exc_value, traceback):
         """Release cache reference when used as context manager."""
         self.cache.release_entry(self._cache_key)

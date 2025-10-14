@@ -294,55 +294,50 @@ class FSLTransform:
         for video_path, group in video_groups.items():
             decoder = None
             try:
-                # Create decoder for this video
+                # Create decoder for this video using context manager for proper resource cleanup
                 if self.config.use_batch_decoding == "owa":
-                    decoder = PyAVVideoDecoder(video_path)
+                    with PyAVVideoDecoder(video_path) as decoder:
+                        self._process_video_group(decoder, group, image_msgs)
                 elif self.config.use_batch_decoding == "torchcodec":
-                    decoder = TorchCodecVideoDecoder(video_path)
+                    with TorchCodecVideoDecoder(video_path) as decoder:
+                        self._process_video_group(decoder, group, image_msgs)
                 else:
                     raise ValueError(f"Invalid use_batch_decoding: '{self.config.use_batch_decoding}'.")
 
-                # Batch decode all frames for this video
-                frame_batch = decoder.get_frames_played_at(seconds=group["timestamps"])
+            except Exception:
+                logger.exception(f"Batch decoding failed for {video_path}. Falling back to individual decoding.")
 
-                # Store decoded frames in the corresponding ScreenCaptured objects
-                for i, frame_tensor in enumerate(frame_batch.data):
-                    img_idx = group["indices"][i]
-                    if isinstance(frame_tensor, np.ndarray):
-                        # Convert numpy array [C, H, W] to numpy array [H, W, C] in RGB format. ndarray does not have permute
-                        frame_rgb = frame_tensor.transpose(1, 2, 0).astype(np.uint8)
-                    else:
-                        # Convert from tensor [C, H, W] to numpy array [H, W, C] in BGRA format
-                        frame_rgb = frame_tensor.data.permute(1, 2, 0).cpu().numpy().astype(np.uint8)
-                    # Convert RGB to BGRA (add alpha channel)
-                    frame_bgra = np.concatenate(
-                        [
-                            frame_rgb[:, :, [2, 1, 0]],  # BGR
-                            np.full((frame_rgb.shape[0], frame_rgb.shape[1], 1), 255, dtype=np.uint8),  # Alpha
-                        ],
-                        axis=2,
-                    )
+    def _process_video_group(self, decoder, group: dict, image_msgs: List[ScreenCaptured]) -> None:
+        """Process a group of frames from a single video using the provided decoder."""
+        # Batch decode all frames for this video
+        frame_batch = decoder.get_frames_played_at(seconds=group["timestamps"])
 
-                    # Store in frame_arr
-                    image_msgs[img_idx].frame_arr = frame_bgra
+        # Store decoded frames in the corresponding ScreenCaptured objects
+        for i, frame_tensor in enumerate(frame_batch.data):
+            img_idx = group["indices"][i]
+            if isinstance(frame_tensor, np.ndarray):
+                # Convert numpy array [C, H, W] to numpy array [H, W, C] in RGB format. ndarray does not have permute
+                frame_rgb = frame_tensor.transpose(1, 2, 0).astype(np.uint8)
+            else:
+                # Convert from tensor [C, H, W] to numpy array [H, W, C] in BGRA format
+                frame_rgb = frame_tensor.data.permute(1, 2, 0).cpu().numpy().astype(np.uint8)
+            # Convert RGB to BGRA (add alpha channel)
+            frame_bgra = np.concatenate(
+                [
+                    frame_rgb[:, :, [2, 1, 0]],  # BGR
+                    np.full((frame_rgb.shape[0], frame_rgb.shape[1], 1), 255, dtype=np.uint8),  # Alpha
+                ],
+                axis=2,
+            )
 
-                    # Clear intermediate tensors to free memory
-                    del frame_tensor, frame_rgb
+            # Store in frame_arr
+            image_msgs[img_idx].frame_arr = frame_bgra
 
-                # Clear frame batch to free memory
-                del frame_batch
+            # Clear intermediate tensors to free memory
+            del frame_tensor, frame_rgb
 
-            except Exception as e:
-                # If batch decoding fails, fall back to individual decoding
-                logger.warning(f"Batch decoding failed for {video_path}: {e}. Falling back to individual decoding.")
-            finally:
-                # Explicitly close decoder to free resources
-                if decoder is not None:
-                    try:
-                        decoder.close()
-                    except Exception:
-                        pass
-                    del decoder
+        # Clear frame batch to free memory
+        del frame_batch
 
 
 def create_fsl_transform(
