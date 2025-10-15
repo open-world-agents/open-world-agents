@@ -11,7 +11,7 @@ Download our example dataset to follow along:
 
 ??? demo "Preview: example.mkv"
     <video controls>
-    <source src="../example.mkv" type="video/mp4">
+    <source src="../../examples/example.mkv" type="video/mp4">
     </video>
 
 ## 🔍 Exploration Workflows
@@ -25,7 +25,7 @@ Choose the approach that fits your use case:
 **[OWA Dataset Visualizer](https://huggingface.co/spaces/open-world-agents/visualize_dataset)** provides synchronized playback of video and events.
 
 <div align="center">
-  <img src="../viewer.png" alt="OWA Dataset Visualizer"/>
+  <img src="../../examples/viewer.png" alt="OWA Dataset Visualizer"/>
 </div>
 
 **Quick Start**:
