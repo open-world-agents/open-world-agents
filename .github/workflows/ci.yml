@@ -47,15 +47,15 @@ jobs:
         run: owl env docs
 
       - name: Validate all plugin documentation
-        run: owl --silent env docs --validate --strict --output-format json
+        run: owl --silent env docs --strict --output-format json
 
       - name: Validate individual plugins
         run: |
           echo "Validating individual plugins..."
-          owl --silent env docs --validate --strict --output-format json example
-          owl --silent env docs --validate --strict --output-format json std
-          owl --silent env docs --validate --strict --output-format json desktop
-          owl --silent env docs --validate --strict --output-format json gst
+          owl --silent env docs --strict --output-format json example
+          owl --silent env docs --strict --output-format json std
+          owl --silent env docs --strict --output-format json desktop
+          owl --silent env docs --strict --output-format json gst
 
   test-ubuntu:
     runs-on: ubuntu-latest
