@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 from mcap_owa.highlevel import OWAMcapReader
 from owa.data.datasets import Dataset, DatasetConfig, DatasetStage
-from owa.data.interval.selector import InactivityFilter
+from owa.data.interval import IntervalExtractorConfig
 from owa.data.processing.resampler import EventResamplerDict
 
 
@@ -21,7 +21,7 @@ class McapToEventConfig:
     rate_settings: Dict[str, float]  # Mapping from topic to desired rate (Hz) for resampling
     keep_topics: Optional[List[str]] = None  # Optional list of topics to keep. If None, all topics are kept
     num_workers: int = 4  # Number of worker processes for parallel file processing
-    interval_extractor: InactivityFilter = field(default_factory=InactivityFilter)
+    interval_extractor_config: IntervalExtractorConfig = field(default_factory=IntervalExtractorConfig)
 
 
 def _mcap_to_events(
@@ -41,7 +41,8 @@ def _mcap_to_events(
         List of event dictionaries containing processed events
     """
     events: List[Dict] = []
-    valid_intervals = config.interval_extractor.extract_intervals(Path(episode_path))
+    interval_extractor = config.interval_extractor_config.create_extractor()
+    valid_intervals = interval_extractor.extract_intervals(Path(episode_path))
 
     with OWAMcapReader(Path(episode_path)) as reader:
         for interval in valid_intervals:
@@ -165,6 +166,7 @@ def build_event_dataset(
     owa_config = DatasetConfig(
         stage=DatasetStage.EVENT,
         mcap_root_directory=mcap_root_directory,
+        mcap_to_event_config=config,
     )
     event_dataset = Dataset.from_hf_dataset(hf_dataset, owa_config=owa_config)
 

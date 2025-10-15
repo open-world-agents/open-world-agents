@@ -3,13 +3,9 @@ import warnings
 from typing import Any, Callable, TypeAlias
 
 import orjson
-from easydict import EasyDict
 
-try:
-    from owa.core import MESSAGES
-except ImportError:
-    # Fallback if owa.core is not available
-    MESSAGES = None
+from owa.core import MESSAGES
+from owa.core.utils import EasyDict
 
 # Type alias for decode functions
 DecodeFunction: TypeAlias = Callable[[bytes], Any]

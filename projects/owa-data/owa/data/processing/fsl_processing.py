@@ -1,11 +1,11 @@
+import copy
 from collections import defaultdict
 from dataclasses import dataclass, field
 
 from loguru import logger
 from tqdm import tqdm
 
-from .config import DatasetConfig, DatasetStage
-from .dataset import Dataset
+from owa.data.datasets import Dataset, DatasetStage
 
 
 @dataclass
@@ -186,7 +186,7 @@ def precompute_fsl_dataset(
     Returns:
         Pre-computed FSL dataset
     """
-    config = FSLDatasetConfig(**(config.__dict__ | kwargs))
+    config = FSLDatasetConfig(**{**config.__dict__, **kwargs})
     logger.info(
         f"Pre-computing FSL sequences using datasets.map with batch_size={batch_size:,}, num_workers={num_workers}"
     )
@@ -203,9 +203,8 @@ def precompute_fsl_dataset(
     )
 
     # Create OWA Dataset with FSL stage
-    owa_config = DatasetConfig(
-        stage=DatasetStage.FSL, mcap_root_directory=tokenized_dataset.owa_config.mcap_root_directory
-    )
+    owa_config = copy.deepcopy(tokenized_dataset.owa_config)
+    owa_config.stage = DatasetStage.FSL
 
     fsl_dataset = Dataset.from_hf_dataset(mapped_dataset, owa_config=owa_config)
 

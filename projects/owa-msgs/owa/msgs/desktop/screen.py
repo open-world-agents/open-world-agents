@@ -58,17 +58,21 @@ class MediaRef(BaseModel):
             return True  # Embedded data is always "valid"
         return Path(self.uri).exists()
 
-    def resolve_relative_path(self, base_path: str) -> "MediaRef":
+    def resolve_relative_path(self, base_path: str, allow_nonlocal: bool = False) -> "MediaRef":
         """
         Resolve relative path against a base path.
 
         Args:
             base_path: Base path (typically MCAP file path) to resolve against
+            allow_nonlocal: Allow non-local paths (embedded, remote) to be resolved
 
         Returns:
             New MediaRef with resolved absolute path
         """
         if not self.is_local:
+            if allow_nonlocal:
+                return self
+
             warnings.warn(f"Cannot resolve non-local path: {self.uri}")
             return self  # Nothing to resolve for non-local paths
 
@@ -194,12 +198,13 @@ class ScreenCaptured(OWAMessage):
         rgb_array = self.to_rgb_array(keep_av_open=keep_av_open)
         return Image.fromarray(rgb_array)
 
-    def resolve_relative_path(self, base_path: str) -> Self:
+    def resolve_relative_path(self, base_path: str, **kwargs) -> Self:
         """
         Resolve relative paths in media_ref against a base path.
 
         Args:
             base_path: Base path (typically MCAP file path) to resolve against
+            **kwargs: Additional arguments passed to MediaRef.resolve_relative_path()
 
         Returns:
             Self for method chaining
@@ -207,7 +212,7 @@ class ScreenCaptured(OWAMessage):
         if self.media_ref is None:
             return self
 
-        self.media_ref = self.media_ref.resolve_relative_path(base_path)
+        self.media_ref = self.media_ref.resolve_relative_path(base_path, **kwargs)
         return self
 
     def __str__(self) -> str:
