@@ -29,7 +29,16 @@ def create_binned_transform(
                 if mcap_msg.message_type == "desktop/ScreenCaptured":
                     screen = mcap_msg.decoded
                     screen.resolve_relative_path(episode_paths[i])
-                screen_value = screen.to_pil_image(keep_av_open=True) if load_images else screen
+                if load_images:
+                    try:
+                        screen_value = screen.to_pil_image(keep_av_open=True)
+                    except Exception as e:
+                        import warnings
+
+                        warnings.warn(f"Failed to load image: {e}. Skipping frame.")
+                        continue
+                else:
+                    screen_value = screen
                 _state.append(screen_value)
             for msg in batch["actions"][i]:
                 mcap_msg = McapMessage.model_validate_json(msg.decode("utf-8"))
