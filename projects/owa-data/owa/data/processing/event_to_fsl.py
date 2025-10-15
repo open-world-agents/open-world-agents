@@ -5,8 +5,9 @@ from loguru import logger
 from transformers import AutoTokenizer
 
 from owa.data.datasets import Dataset, DatasetDict, DatasetStage
-from owa.data.datasets.fsl_dataset import FSLDatasetConfig, precompute_fsl_dataset
 from owa.data.episode_tokenizer import EpisodeTokenizer
+
+from .fsl_processing import FSLDatasetConfig, precompute_fsl_dataset
 
 
 @dataclass
@@ -91,6 +92,7 @@ def build_fsl_dataset(
         fsl_dataset = precompute_fsl_dataset(
             tokenized_dataset, config=config.fsl_dataset, num_workers=config.fsl_workers
         )
+        fsl_dataset.owa_config.event_to_fsl_config = config
         logger.info(f"Created {len(fsl_dataset):,} FSL sequences for {split_name} split")
 
         processed_datasets[split_name] = fsl_dataset
