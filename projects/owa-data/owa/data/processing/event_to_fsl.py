@@ -5,8 +5,9 @@ from loguru import logger
 from transformers import AutoTokenizer
 
 from owa.data.datasets import Dataset, DatasetDict, DatasetStage
-from owa.data.datasets.fsl_dataset import FSLDatasetConfig, precompute_fsl_dataset
 from owa.data.episode_tokenizer import EpisodeTokenizer
+
+from .fsl_processing import FSLDatasetConfig, precompute_fsl_dataset
 
 
 @dataclass
