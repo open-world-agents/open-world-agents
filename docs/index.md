@@ -33,7 +33,7 @@ OWA consists of the following core components:
 - 🌍 **[Environment Framework](env/index.md)** - Universal interface for native desktop automation ("USB-C of desktop agents") with pre-built plugins for desktop control, high-performance screen capture (6x faster), and zero-configuration plugin system
 - 📊 **[Data Infrastructure](data/index.md)** - Complete desktop agent data pipeline from recording to training with `OWAMcap` format - a [universal standard](data/getting-started/why-owamcap.md) powered by [mcap](https://mcap.dev/)
 - 🛠️ **[CLI Tools](cli/index.md)** - Command-line utilities (`owl`) for recording, analyzing, and managing agent data
-- 🤖 **[Examples](examples/)** - Complete implementations and training pipelines for multimodal agents
+- 🤖 **[Examples](examples/index.md)** - Complete implementations and training pipelines for multimodal agents
 <!-- END-SYNC: core-components-list -->
 
 ---

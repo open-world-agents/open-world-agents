@@ -128,7 +128,7 @@ $ python train.py --dataset ./event-dataset
     ```
 
 !!! note "Learn More"
-    - [Agent Examples](examples/) - Complete implementations and training pipelines
+    - [Agent Examples](examples/index.md) - Complete implementations and training pipelines
     - [Multimodal Game Agent](examples/multimodal_game_agent.md) - Vision-based game playing
     - [GUI Agent](examples/gui_agent.md) - General desktop automation
     - [Usage with LLMs](examples/usage_with_llm.md) - Integration patterns
@@ -187,7 +187,7 @@ $ python train.py --dataset ./event-dataset
 
 !!! success "Your Journey Continues"
 
-    1. :material-code-braces: **Explore Examples**: Start with [Agent Examples](examples/) to see complete implementations
+    1. :material-code-braces: **Explore Examples**: Start with [Agent Examples](examples/index.md) to see complete implementations
 
     2. :material-account-group: **Join the Community**: Browse and contribute [datasets](https://huggingface.co/datasets?other=OWA)
 
@@ -197,5 +197,5 @@ $ python train.py --dataset ./event-dataset
 
 !!! tip "Quick Links"
     - **Need help?** → [FAQ](faq_dev.md) or [Community Support](help_with_owa.md)
-    - **Ready to build?** → [Agent Examples](examples/)
+    - **Ready to build?** → [Agent Examples](examples/index.md)
     - **Want to contribute?** → [Contributing Guide](contributing.md)
