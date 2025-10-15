@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from loguru import logger
 from tqdm import tqdm
 
-from .config import DatasetConfig, DatasetStage
+from .config import DatasetStage
 from .dataset import Dataset
 
 
