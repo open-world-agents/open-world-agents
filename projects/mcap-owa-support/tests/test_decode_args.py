@@ -7,11 +7,11 @@ Tests all decode_args configurations with minimal code and maximum coverage.
 import warnings
 
 import pytest
-from easydict import EasyDict
 
 from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
 from mcap_owa.types import DecodeArgs
 from owa.core.message import OWAMessage
+from owa.core.utils import EasyDict
 
 
 class KnownMessage(OWAMessage):
