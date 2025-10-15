@@ -20,24 +20,33 @@ class DatasetStage(StrEnum):
 
 @dataclass
 class DatasetConfig:
-    """Minimal configuration for OWA datasets with only essential metadata."""
+    """Configuration for OWA datasets with predefined common fields."""
 
+    # Core fields
     stage: DatasetStage = DatasetStage.UNKNOWN
     mcap_root_directory: Optional[str] = None
 
+    # Common configuration fields
+    mcap_to_event_config: Optional[Any] = None
+    event_to_fsl_config: Optional[Any] = None
+
     def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
         return asdict(self)
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "DatasetConfig":
+        """Create instance from dictionary."""
         return cls(**data)
 
     @classmethod
     def from_json(cls, path: PathLike) -> "DatasetConfig":
+        """Load configuration from JSON file."""
         with open(path, "r") as f:
             data = json.load(f)
         return cls.from_dict(data)
 
     def to_json(self, path: PathLike) -> None:
+        """Save configuration to JSON file."""
         with open(path, "w") as f:
             json.dump(self.to_dict(), f, indent=4)

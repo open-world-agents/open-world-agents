@@ -1,3 +1,4 @@
+import copy
 from collections import defaultdict
 from dataclasses import dataclass, field
 
@@ -203,9 +204,8 @@ def precompute_fsl_dataset(
     )
 
     # Create OWA Dataset with FSL stage
-    owa_config = DatasetConfig(
-        stage=DatasetStage.FSL, mcap_root_directory=tokenized_dataset.owa_config.mcap_root_directory
-    )
+    owa_config = copy.deepcopy(tokenized_dataset.owa_config)
+    owa_config.stage = DatasetStage.FSL
 
     fsl_dataset = Dataset.from_hf_dataset(mapped_dataset, owa_config=owa_config)
 

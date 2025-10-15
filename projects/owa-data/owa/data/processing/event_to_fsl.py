@@ -91,6 +91,7 @@ def build_fsl_dataset(
         fsl_dataset = precompute_fsl_dataset(
             tokenized_dataset, config=config.fsl_dataset, num_workers=config.fsl_workers
         )
+        fsl_dataset.owa_config.event_to_fsl_config = config
         logger.info(f"Created {len(fsl_dataset):,} FSL sequences for {split_name} split")
 
         processed_datasets[split_name] = fsl_dataset

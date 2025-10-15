@@ -21,5 +21,9 @@ mcap_to_event_config:
   # Number of worker processes for parallel file processing
   num_workers: 4
 
-  # Interval extractor configuration (uses default InactivityFilter)
-  # interval_extractor: {}
+  # Interval extractor configuration
+  interval_extractor_config:
+    class_name: "InactivityFilter"
+    kwargs:
+      screen_inactivity_threshold: 1.0
+      input_inactivity_threshold: 5.0
