@@ -33,10 +33,11 @@ class ScreenCapture(ScreenListener):
 
         Args:
             *args: Additional positional arguments for screen capture configuration.
-            fps (float): Frames per second for capture.
-            window_name (str, optional): Window to capture. If None, captures entire screen.
-            monitor_idx (int, optional): Monitor index to capture.
             **kwargs: Additional keyword arguments for screen capture configuration.
+                Supported options include:
+                - fps (float): Frames per second for capture.
+                - window_name (str, optional): Window to capture. If None, captures entire screen.
+                - monitor_idx (int, optional): Monitor index to capture.
 
         Returns:
             ScreenCapture: Configured screen capture instance.

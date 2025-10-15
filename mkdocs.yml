@@ -54,7 +54,7 @@ plugins:
             merge_init_into_class: true
             show_signature_annotations: true
             signature_crossrefs: true
-          import:
+          inventories:
             - url: https://docs.python.org/3/objects.inv
               domains: [py, std]
             - url: https://typing-extensions.readthedocs.io/en/latest/objects.inv
@@ -111,7 +111,7 @@ nav:
     - Overview: data/index.md
     - Getting Started:
       - Why OWAMcap?: data/getting-started/why-owamcap.md
-      - Recording Data: https://github.com/open-world-agents/ocap
+      - Recording Data: data/getting-started/recording-data.md
       - Exploring Data: data/getting-started/exploring-data.md
     - Technical Reference:
       - OWAMcap Format Guide: data/technical-reference/format-guide.md

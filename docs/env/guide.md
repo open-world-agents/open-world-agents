@@ -212,7 +212,7 @@ Explore and manage plugins with the `owl env` command:
         owl env validate ./plugin.yaml
 
         # Check documentation quality
-        owl env docs --validate
+        owl env docs
 
         # View ecosystem statistics
         owl env stats --namespaces

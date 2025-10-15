@@ -3,7 +3,7 @@
 Interactive web-based visualization tool for exploring OWAMcap datasets with synchronized playback of screen recordings and interaction events.
 
 <div align="center">
-  <img src="../examples/viewer.png" alt="OWA Dataset Visualizer"/>
+  <img src="../../examples/viewer.png" alt="OWA Dataset Visualizer"/>
 </div>
 
 ## 🌐 Public Hosted Viewer

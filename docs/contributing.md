@@ -41,7 +41,7 @@ Before submitting a PR, run these OWA-specific checks:
     OWA validates environment plugin documentation automatically:
 
     ```bash
-    owl env docs --validate --strict
+    owl env docs --strict
     ```
 
 === "Test Suite"
@@ -71,7 +71,7 @@ vuv install --extra docs  # Install MkDocs and dependencies
 vuv run mkdocs serve       # Serve locally at http://localhost:8000
 ```
 
-Documentation validation happens automatically in CI via `owl env docs --validate --strict`.
+Documentation validation happens automatically in CI via `owl env docs --strict`.
 
 ## Monorepo Development
 
