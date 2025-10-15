@@ -3,6 +3,7 @@ Tests for the unified owl env docs command.
 """
 
 import json
+import re
 from unittest.mock import Mock, patch
 
 import pytest
@@ -62,9 +63,11 @@ class TestUnifiedDocsCommand:
         """Test docs command help shows unified interface."""
         result = runner.invoke(env_app, ["docs", "--help"])
         assert result.exit_code == 0
-        assert "Validate plugin documentation quality" in result.stdout
-        assert "--output-format" in result.stdout
-        assert "table or json" in result.stdout
+        # Remove ANSI color codes for reliable string matching
+        clean_output = re.sub(r"\x1b\[[0-9;]*m", "", result.stdout)
+        assert "Validate plugin documentation quality" in clean_output
+        assert "--output-format" in clean_output
+        assert "table or json" in clean_output
 
     @patch("owa.cli.env.docs.DocumentationValidator")
     def test_docs_table_format_default(self, mock_validator_class, runner, mock_validator):
