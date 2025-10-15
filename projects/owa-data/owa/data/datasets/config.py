@@ -1,8 +1,7 @@
 """Dataset configuration classes."""
 
-import json
 from enum import StrEnum
-from typing import Any, Dict, Optional
+from typing import Optional
 
 from datasets.utils.typing import PathLike
 from pydantic import BaseModel
