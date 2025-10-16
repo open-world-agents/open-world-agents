@@ -13,7 +13,6 @@ dependencies = [
     "jsonargparse>=4.32.1",
     "tqdm>=4.67.1",
     "webdataset>=1.0.2",
-    "tritonclient[http]>=2.59.0",
     "torch>=2.5.1",
     "orjson>=3.10.15",
     "owa-core",
