@@ -4,26 +4,29 @@
 # input_dir: /configure-via-CLI
 # output_dir: /configure-via-CLI
 
-# Model configuration
-tokenizer_name: "OpenGVLab/InternVL3_5-1B-HF"
+# EventToFSL configuration
+event_to_fsl_config:
+  # Model configuration
+  tokenizer_name: "OpenGVLab/InternVL3_5-1B-HF"
 
-# Episode tokenizer configuration to override (optional). Defaults are determined from tokenizer_name
-episode_tokenize_config:
-  encoder_type: "factorized"  # Options: "hierarchical", "factorized"
-#   fake_image_placeholder: "<fake_image_placeholder>"
-#   image_token_prefix: "<img>"
-#   image_token: "<IMG_CONTEXT>"
-#   image_token_length: 256
-#   image_token_suffix: "</img>"
+  # Episode tokenizer configuration to override (optional). Defaults are determined from tokenizer_name
+  episode_tokenize_config:
+    encoder_type: "factorized"  # Options: "hierarchical", "factorized"
+  #   fake_image_placeholder: "<fake_image_placeholder>"
+  #   image_token_prefix: "<img>"
+  #   image_token: "<IMG_CONTEXT>"
+  #   image_token_length: 256
+  #   image_token_suffix: "</img>"
 
-# FSL dataset configuration
-fsl_dataset:
-  pad_token_id: 0 # overrided from tokenizer automatically
-  max_sequence_length: 4096
+  # FSL dataset configuration
+  fsl_dataset:
+    pad_token_id: 0 # overrided from tokenizer automatically
+    max_sequence_length: 4096
+    include_samples_without_images: False
+    action_topics: ["keyboard", "mouse/raw"]  # Topics to apply time shift and skip logic to
+    skip_first_t_seconds_for_action: null
+    time_shift_seconds_for_action: null
 
-# Processing options
-num_proc: 32
-fsl_workers: 4
-
-# Filtering options
-include_samples_without_images: False
+  # Processing options
+  num_proc: 32
+  fsl_workers: 4
