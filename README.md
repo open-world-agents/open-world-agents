@@ -1,16 +1,20 @@
 <div align="center">
   <img src="docs/images/owa-logo.jpg" alt="Open World Agents" width="300"/>
-  
+
   # 🚀 Open World Agents
-  
+
   **Everything you need to build state-of-the-art foundation multimodal desktop agent, end-to-end.**
-  
+
   [![Documentation](https://img.shields.io/badge/docs-mkdocs-blue)](https://open-world-agents.github.io/open-world-agents/)
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
   [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
   [![GitHub stars](https://img.shields.io/github/stars/open-world-agents/open-world-agents?style=social)](https://github.com/open-world-agents/open-world-agents/stargazers)
-  
+
 </div>
+
+> **⚠️ Active Development Notice**: This codebase is in active development and its API/components may be changed afterward. This includes moving blocks of components to other repositories.
+
+> **📄 Research Paper**: This project was first introduced and developed for the D2E project. For more details, see [D2E: Scaling Vision-Action Pretraining on Desktop Data for Transfer to Embodied AI](https://worv-ai.github.io/d2e/). If you find this work useful, please cite our paper.
 
 ## 🚀 Quick Start: Record → Train in 3 Steps
 
@@ -39,10 +43,6 @@ Open World Agents is a comprehensive framework for building AI agents that inter
 - **🛠️ [CLI Tools](https://open-world-agents.github.io/open-world-agents/cli/)**: Command-line utilities (`owl`) for recording, analyzing, and managing agent data
 - **🤖 [Examples](https://open-world-agents.github.io/open-world-agents/examples/)**: Complete implementations and training pipelines for multimodal agents
 <!-- END-SYNC: core-components-list -->
-
-For more details, see the D2E paper below.
-
-[D2E: Scaling Vision-Action Pretraining on Desktop Data for Transfer to Embodied AI](https://worv-ai.github.io/d2e/)
 
 ## Why OWA?
 
