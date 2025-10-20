@@ -12,7 +12,7 @@
 
 </div>
 
-> **⚠️ Active Development Notice**: This codebase is in active development and its API/components may be changed afterward. This includes moving blocks of components to other repositories.
+> **⚠️ Active Development Notice**: This codebase is under active development. APIs and components may change, and some may be moved to separate repositories. Documentation may be incomplete or reference features still in development.
 
 > **📄 Research Paper**: This project was first introduced and developed for the D2E project. For more details, see [D2E: Scaling Vision-Action Pretraining on Desktop Data for Transfer to Embodied AI](https://worv-ai.github.io/d2e/). If you find this work useful, please cite our paper.
 
