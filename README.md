@@ -40,6 +40,10 @@ Open World Agents is a comprehensive framework for building AI agents that inter
 - **🤖 [Examples](https://open-world-agents.github.io/open-world-agents/examples/)**: Complete implementations and training pipelines for multimodal agents
 <!-- END-SYNC: core-components-list -->
 
+For more details, see the D2E paper below.
+
+[D2E: Scaling Vision-Action Pretraining on Desktop Data for Transfer to Embodied AI](https://worv-ai.github.io/d2e/)
+
 ## Why OWA?
 
 **Fragmented tools make desktop AI development painful.** Most solutions force you to:
@@ -414,3 +418,16 @@ Please see our [Contributing Guide](https://open-world-agents.github.io/open-wor
 ## License
 
 This project is released under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## Citation
+
+If you find this work useful, please cite our paper:
+
+```
+@article{choi2025d2e,
+  title={D2E: Scaling Vision-Action Pretraining on Desktop Data for Transfer to Embodied AI},
+  author={Choi, Suwhan and Jung, Jaeyoon and Seong, Haebin and Kim, Minchan and Kim, Minyeong and Cho, Yongjun and Kim, Yoonshik and Park, Yubeen and Yu, Youngjae and Lee, Yunsung},
+  journal={arXiv preprint arXiv:2510.05684},
+  year={2025}
+}
+```
