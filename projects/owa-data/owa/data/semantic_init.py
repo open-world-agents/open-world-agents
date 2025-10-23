@@ -56,8 +56,9 @@ def _initialize_token_with_semantic(
     try:
         semantic_token_ids = tokenizer(semantic_text, add_special_tokens=False)["input_ids"]
         if semantic_token_ids:
-            semantic_embedding = model.get_input_embeddings().weight.data[semantic_token_ids].mean(dim=0)
-            model.get_input_embeddings().weight.data[token_idx] = semantic_embedding
+            input_embeddings = model.get_input_embeddings()
+            semantic_embedding = input_embeddings.weight.data[semantic_token_ids].mean(dim=0)
+            input_embeddings.weight.data[token_idx] = semantic_embedding
     except Exception:
         logger.warning(f"Failed to initialize token {token}")
 
