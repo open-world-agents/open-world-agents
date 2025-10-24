@@ -354,7 +354,7 @@ version = "0.6.1"
 source = { editable = "." }
 dependencies = [
     { name = "bettercam", marker = "sys_platform == 'win32'" },
-    { name = "evdev" },
+    { name = "evdev", marker = "sys_platform == 'linux'" },
     { name = "opencv-python" },
     { name = "owa-core" },
     { name = "owa-msgs" },
@@ -368,7 +368,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "bettercam", marker = "sys_platform == 'win32'", specifier = ">=1.0.0" },
-    { name = "evdev", specifier = "<1.9.2" },
+    { name = "evdev", marker = "sys_platform == 'linux'", specifier = "<1.9.2" },
     { name = "opencv-python", specifier = ">=4.11.0" },
     { name = "owa-core", editable = "../owa-core" },
     { name = "owa-msgs", editable = "../owa-msgs" },

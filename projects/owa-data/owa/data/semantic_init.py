@@ -9,7 +9,7 @@ All initialization uses the mean() method for consistency across different token
 - Multiple tokens: mean([x,y,z]) = average (better semantic representation)
 """
 
-from typing import Any, Dict
+from typing import Any
 
 from loguru import logger
 from transformers.tokenization_utils import PreTrainedTokenizer
@@ -29,40 +29,52 @@ def apply_semantic_initialization(tokenizer: PreTrainedTokenizer, model: Any, en
     """
     logger.info("Applying semantic initialization to new tokens")
 
-    # find out if tokenizer is expanded by hierarchical or factorized
-    # if factorized, initialize factorized tokens
-    # if hierarchical, initialize hierarchical tokens
     if encoder_type == "hierarchical":
-        # Initialize basic numeric and semantic tokens
-        _init_hierarchical_basic_tokens(tokenizer, model)
+        _init_hierarchical_tokens(tokenizer, model)
     elif encoder_type == "factorized":
-        # Initialize basic numeric and semantic tokens
-        _init_factorized_basic_tokens(tokenizer, model)
-
-        # Initialize keyboard VK tokens
-        _init_keyboard_vk_tokens(tokenizer, model)
-
-        # Initialize mouse button tokens
-        _init_mouse_button_tokens(tokenizer, model)
+        _init_factorized_tokens(tokenizer, model)
     else:
         raise ValueError(f"Invalid encoder type: {encoder_type}")
 
 
-def _init_hierarchical_basic_tokens(tokenizer: PreTrainedTokenizer, model: Any) -> None:
-    # add semantic init <0> ~ <15> tokens from 0 ~ 15
-    for i in range(16):
-        new_token_idx = tokenizer.convert_tokens_to_ids(f"<{i}>")
-        if new_token_idx != tokenizer.unk_token_id:
-            try:
-                semantic_token_ids = tokenizer(str(i), add_special_tokens=False)["input_ids"]
-                if semantic_token_ids:  # Only if semantic text was tokenized successfully
-                    semantic_embedding = model.get_input_embeddings().weight.data[semantic_token_ids].mean(dim=0)
-                    model.get_input_embeddings().weight.data[new_token_idx] = semantic_embedding
-            except Exception:
-                logger.warning(f"Failed to initialize token <{i}>")
-                pass
+def _initialize_token_with_semantic(
+    tokenizer: PreTrainedTokenizer, model: Any, token: str, semantic_text: str
+) -> None:
+    """
+    Initialize a single token with semantic embedding from related text.
 
-    # Initialize semantic tokens from their natural language equivalents
+    Args:
+        tokenizer: The tokenizer containing the token
+        model: The model with embedding weights to initialize
+        token: The token to initialize (e.g., "<KEYBOARD>")
+        semantic_text: The semantic text to derive embedding from (e.g., "keyboard")
+    """
+    token_idx = tokenizer.convert_tokens_to_ids(token)
+    if token_idx == tokenizer.unk_token_id:
+        return
+
+    try:
+        semantic_token_ids = tokenizer(semantic_text, add_special_tokens=False)["input_ids"]
+        if semantic_token_ids:
+            input_embeddings = model.get_input_embeddings()
+            semantic_embedding = input_embeddings.weight.data[semantic_token_ids].mean(dim=0)
+            input_embeddings.weight.data[token_idx] = semantic_embedding
+    except Exception:
+        logger.warning(f"Failed to initialize token {token}")
+
+
+# ============================================================================
+# ENCODER-SPECIFIC INITIALIZATION FUNCTIONS
+# ============================================================================
+
+
+def _init_hierarchical_tokens(tokenizer: PreTrainedTokenizer, model: Any) -> None:
+    """Initialize tokens for hierarchical encoder."""
+    # Initialize numeric tokens <0> ~ <15>
+    for i in range(16):
+        _initialize_token_with_semantic(tokenizer, model, f"<{i}>", str(i))
+
+    # Initialize semantic tokens
     semantic_mappings = {
         "<KEYBOARD>": "keyboard",
         "<MOUSE>": "mouse",
@@ -73,36 +85,17 @@ def _init_hierarchical_basic_tokens(tokenizer: PreTrainedTokenizer, model: Any) 
         "<EVENT_END>": "<|im_end|>",
     }
 
-    for new_token, semantic_word in semantic_mappings.items():
-        new_token_idx = tokenizer.convert_tokens_to_ids(new_token)
-        if new_token_idx != tokenizer.unk_token_id:
-            try:
-                semantic_token_ids = tokenizer(semantic_word, add_special_tokens=False)["input_ids"]
-                if semantic_token_ids:  # Only if semantic text was tokenized successfully
-                    semantic_embedding = model.get_input_embeddings().weight.data[semantic_token_ids].mean(dim=0)
-                    model.get_input_embeddings().weight.data[new_token_idx] = semantic_embedding
-            except Exception:
-                logger.warning(f"Failed to initialize token {new_token}")
-                pass
+    for token, semantic_text in semantic_mappings.items():
+        _initialize_token_with_semantic(tokenizer, model, token, semantic_text)
 
 
-def _init_factorized_basic_tokens(tokenizer: PreTrainedTokenizer, model: Any) -> None:
-    """Initialize basic numeric and semantic tokens using mean() method for consistency."""
-
-    # Initialize numeric tokens <0> ~ <9> from their string representations
+def _init_factorized_tokens(tokenizer: PreTrainedTokenizer, model: Any) -> None:
+    """Initialize tokens for factorized encoder."""
+    # Initialize numeric tokens <0> ~ <9>
     for i in range(10):
-        new_token_idx = tokenizer.convert_tokens_to_ids(f"<{i}>")
-        if new_token_idx != tokenizer.unk_token_id:
-            try:
-                semantic_token_ids = tokenizer(str(i), add_special_tokens=False)["input_ids"]
-                if semantic_token_ids:  # Only if semantic text was tokenized successfully
-                    semantic_embedding = model.get_input_embeddings().weight.data[semantic_token_ids].mean(dim=0)
-                    model.get_input_embeddings().weight.data[new_token_idx] = semantic_embedding
-            except Exception:
-                logger.warning(f"Failed to initialize token <{i}>")
-                pass
+        _initialize_token_with_semantic(tokenizer, model, f"<{i}>", str(i))
 
-    # Initialize semantic tokens from their natural language equivalents
+    # Initialize semantic tokens (common + factorized-specific)
     semantic_mappings = {
         "<KEYBOARD>": "keyboard",
         "<MOUSE>": "mouse",
@@ -115,46 +108,24 @@ def _init_factorized_basic_tokens(tokenizer: PreTrainedTokenizer, model: Any) ->
         "<SIGN_MINUS>": "-",
     }
 
-    for new_token, semantic_word in semantic_mappings.items():
-        new_token_idx = tokenizer.convert_tokens_to_ids(new_token)
-        if new_token_idx != tokenizer.unk_token_id:
-            try:
-                semantic_token_ids = tokenizer(semantic_word, add_special_tokens=False)["input_ids"]
-                if semantic_token_ids:  # Only if semantic text was tokenized successfully
-                    semantic_embedding = model.get_input_embeddings().weight.data[semantic_token_ids].mean(dim=0)
-                    model.get_input_embeddings().weight.data[new_token_idx] = semantic_embedding
-            except Exception:
-                logger.warning(f"Failed to initialize token {new_token}")
-                pass
+    for token, semantic_text in semantic_mappings.items():
+        _initialize_token_with_semantic(tokenizer, model, token, semantic_text)
+
+    # Initialize specialized tokens
+    _init_keyboard_vk_tokens(tokenizer, model)
+    _init_mouse_button_tokens(tokenizer, model)
+
+
+# ============================================================================
+# SPECIALIZED TOKEN INITIALIZATION FUNCTIONS
+# ============================================================================
 
 
 def _init_keyboard_vk_tokens(tokenizer: PreTrainedTokenizer, model: Any) -> None:
     """Initialize keyboard VK tokens with semantic embeddings."""
-
-    # Create mapping of VK codes to semantic descriptions
-    vk_semantics = _get_vk_semantics_mapping()
-
-    # Initialize VK tokens with semantic embeddings
-    for vk_code, semantic_text in vk_semantics.items():
-        vk_token = f"<VK_{vk_code}>"
-        vk_token_idx = tokenizer.convert_tokens_to_ids(vk_token)
-
-        if vk_token_idx != tokenizer.unk_token_id:  # Only if token exists in vocab
-            try:
-                semantic_token_ids = tokenizer(semantic_text, add_special_tokens=False)["input_ids"]
-                if semantic_token_ids:  # Only if semantic text was tokenized successfully
-                    semantic_embedding = model.get_input_embeddings().weight.data[semantic_token_ids].mean(dim=0)
-                    model.get_input_embeddings().weight.data[vk_token_idx] = semantic_embedding
-            except Exception:
-                logger.warning(f"Failed to initialize token {vk_token}")
-                pass
-
-
-def _get_vk_semantics_mapping() -> Dict[int, str]:
-    """Get mapping of VK codes to semantic descriptions."""
     from owa.env.desktop.constants import VK
 
-    return {
+    vk_semantics = {
         # Letter keys
         VK.KEY_A: "A",
         VK.KEY_B: "B",
@@ -248,13 +219,17 @@ def _get_vk_semantics_mapping() -> Dict[int, str]:
         VK.APPS: "MENU",
     }
 
+    for vk_code, semantic_text in vk_semantics.items():
+        vk_token = f"<VK_{vk_code}>"
+        _initialize_token_with_semantic(tokenizer, model, vk_token, semantic_text)
+
 
 def _init_mouse_button_tokens(tokenizer: PreTrainedTokenizer, model: Any) -> None:
-    """Initialize mouse button tokens with semantic embeddings."""
-    # Create mapping of mouse button flag hex digits to semantic descriptions
-    # Mouse button flags are encoded as 3-digit hex, each digit (0-15) gets its own token
+    """Initialize mouse button tokens with semantic embeddings.
+
+    Mouse button flags are encoded as 3-digit hex, each digit (0-15) gets its own token.
+    """
     button_semantics = {
-        # Common button flag patterns (hex digits 0-15)
         0: "no button",
         1: "left button down",
         2: "left button up",
@@ -265,25 +240,14 @@ def _init_mouse_button_tokens(tokenizer: PreTrainedTokenizer, model: Any) -> Non
         7: "button combination",
         8: "right button up",
         9: "button combination",
-        10: "button combination",  # 0xA
-        11: "button combination",  # 0xB
-        12: "button combination",  # 0xC
-        13: "button combination",  # 0xD
-        14: "button combination",  # 0xE
-        15: "button combination",  # 0xF
+        10: "button combination",
+        11: "button combination",
+        12: "button combination",
+        13: "button combination",
+        14: "button combination",
+        15: "button combination",
     }
 
-    # Initialize mouse button tokens with semantic embeddings
     for hex_digit, semantic_text in button_semantics.items():
         mb_token = f"<MB_{hex_digit}>"
-        mb_token_idx = tokenizer.convert_tokens_to_ids(mb_token)
-
-        if mb_token_idx != tokenizer.unk_token_id:  # Only if token exists in vocab
-            try:
-                semantic_token_ids = tokenizer(semantic_text, add_special_tokens=False)["input_ids"]
-                if semantic_token_ids:  # Only if semantic text was tokenized successfully
-                    semantic_embedding = model.get_input_embeddings().weight.data[semantic_token_ids].mean(dim=0)
-                    model.get_input_embeddings().weight.data[mb_token_idx] = semantic_embedding
-            except Exception:
-                logger.warning(f"Failed to initialize token {mb_token}")
-                pass
+        _initialize_token_with_semantic(tokenizer, model, mb_token, semantic_text)
