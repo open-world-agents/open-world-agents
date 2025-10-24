@@ -15,7 +15,7 @@ dependencies = [
     "opencv-python>=4.11.0",
     "pywin32>=307 ; sys_platform == 'win32'",
     "owa-msgs==0.6.1",
-    "evdev<1.9.2",
+    "evdev<1.9.2 ; sys_platform == 'linux'",
 ]
 
 [tool.uv.sources]
