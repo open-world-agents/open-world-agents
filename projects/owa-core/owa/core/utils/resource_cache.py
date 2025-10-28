@@ -4,22 +4,24 @@ import os
 import sys
 import time
 from dataclasses import dataclass
-from typing import Any, Callable, ContextManager
+from typing import Callable, ContextManager, Generic, TypeVar
 
 from loguru import logger
 
+T = TypeVar("T")
+
 
 @dataclass
-class CacheEntry:
+class CacheEntry(Generic[T]):
     """Container for cached resources with metadata."""
 
-    obj: Any
+    obj: T
     cleanup_callback: Callable
     last_used: float = 0.0
     refs: int = 0
 
 
-class ResourceCache(dict[str, CacheEntry]):
+class ResourceCache(Generic[T], dict[str, CacheEntry[T]]):
     """Reference-counted resource cache with LRU eviction and automatic cleanup."""
 
     def __init__(self, *args, max_size: int = 0, **kwargs):
@@ -33,7 +35,7 @@ class ResourceCache(dict[str, CacheEntry]):
             os.register_at_fork(before=lambda: (self.clear(), gc.collect()))
         atexit.register(self.clear)
 
-    def add_entry(self, key: str, obj: Any, cleanup_callback: Callable | None = None):
+    def add_entry(self, key: str, obj: T, cleanup_callback: Callable | None = None):
         """Add or update a cached resource with reference counting."""
         if cleanup_callback is None:
             # Default to context manager cleanup
@@ -55,7 +57,7 @@ class ResourceCache(dict[str, CacheEntry]):
         logger.debug(f"Released entry: {key=}, {self[key].refs=}")
         self._cleanup_if_needed()
 
-    def pop(self, key: str, default: Any | None = None) -> CacheEntry | Any | None:
+    def pop(self, key: str, default: CacheEntry[T] | None = None) -> CacheEntry[T] | None:  # type: ignore[override]
         """Remove and return cache entry with cleanup."""
         if key in self:
             self[key].cleanup_callback()

@@ -9,7 +9,7 @@ from owa.core.utils.typing import PathLike
 class TorchCodecVideoDecoder(VideoDecoder):
     """Cached TorchCodec video decoder for efficient resource management."""
 
-    cache: ClassVar[ResourceCache] = ResourceCache(max_size=10)
+    cache: ClassVar[ResourceCache[VideoDecoder]] = ResourceCache(max_size=10)
     _skip_init = False
 
     def __new__(cls, source: PathLike, **kwargs):
