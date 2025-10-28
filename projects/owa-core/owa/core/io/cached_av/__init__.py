@@ -11,7 +11,7 @@ from .input_container_mixin import InputContainerMixin
 DEFAULT_CACHE_SIZE = int(os.environ.get("AV_CACHE_SIZE", 10))
 
 # Global container cache for efficient video file access
-_container_cache: ResourceCache[av.container.InputContainer] = ResourceCache(max_size=DEFAULT_CACHE_SIZE)
+_container_cache: ResourceCache["MockedInputContainer"] = ResourceCache(max_size=DEFAULT_CACHE_SIZE)
 
 
 @overload
