@@ -388,7 +388,7 @@ wheels = [
 
 [[package]]
 name = "owa-core"
-version = "0.6.1"
+version = "0.6.2"
 source = { editable = "../owa-core" }
 dependencies = [
     { name = "av" },
