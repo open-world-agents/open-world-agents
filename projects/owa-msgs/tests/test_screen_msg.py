@@ -7,11 +7,12 @@ import os
 import cv2
 import numpy as np
 import pytest
+from mediaref import MediaRef
 from PIL import Image
 
 from owa.core.io.video import VideoWriter
 from owa.core.time import TimeUnits
-from owa.msgs.desktop.screen import MediaRef, ScreenCaptured
+from owa.msgs.desktop.screen import ScreenCaptured
 
 
 @pytest.fixture

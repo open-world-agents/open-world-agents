@@ -1,91 +1,15 @@
 """Desktop screen capture message definitions."""
 
-import warnings
-from pathlib import Path, PurePosixPath
 from typing import Optional, Self, Tuple, cast
 
 import cv2
 import numpy as np
-from pydantic import BaseModel, Field, model_validator
+from mediaref import DataURI, MediaRef
+from pydantic import Field, model_validator
 from pydantic.json_schema import SkipJsonSchema
 
-from owa.core.io import encode_to_base64, load_image_as_bgra, load_video_frame_as_bgra
 from owa.core.message import OWAMessage
 from owa.core.time import TimeUnits
-
-
-class MediaRef(BaseModel):
-    """Media reference for images and video frames."""
-
-    uri: str = Field(
-        ...,
-        description="URI(data:image/png;base64,... | file:///path | http[s]://...) or posix file path(/absolute/path | relative/path)",
-    )
-    pts_ns: Optional[int] = Field(default=None, description="Video frame timestamp in nanoseconds")
-
-    @property
-    def is_embedded(self) -> bool:
-        """True if this is embedded data (data URI)."""
-        return self.uri.startswith("data:")
-
-    @property
-    def is_video(self) -> bool:
-        """True if this references video media."""
-        return self.pts_ns is not None
-
-    @property
-    def is_remote(self) -> bool:
-        """True if this references a remote URL (http/https)."""
-        return self.uri.startswith(("http://", "https://"))
-
-    @property
-    def is_local(self) -> bool:
-        """True if this references a local file path (not embedded or remote)."""
-        return not self.is_embedded and not self.is_remote
-
-    @property
-    def is_relative_path(self) -> bool:
-        """True if this is a relative path (not absolute, not URI)."""
-        if self.is_embedded or self.is_remote or self.uri.startswith("file://"):
-            return False
-        return not PurePosixPath(self.uri).is_absolute()
-
-    def validate_uri(self) -> bool:
-        """Validate that the URI exists (local files only)."""
-        if self.is_remote:
-            raise NotImplementedError("Remote URI validation not implemented")
-        if self.is_embedded:
-            return True  # Embedded data is always "valid"
-        return Path(self.uri).exists()
-
-    def resolve_relative_path(self, base_path: str, allow_nonlocal: bool = False) -> "MediaRef":
-        """
-        Resolve relative path against a base path.
-
-        Args:
-            base_path: Base path (typically MCAP file path) to resolve against
-            allow_nonlocal: Allow non-local paths (embedded, remote) to be resolved
-
-        Returns:
-            New MediaRef with resolved absolute path
-        """
-        if not self.is_local:
-            if allow_nonlocal:
-                return self
-
-            warnings.warn(f"Cannot resolve non-local path: {self.uri}")
-            return self  # Nothing to resolve for non-local paths
-
-        if not self.is_relative_path:
-            return self  # Already absolute or not a local path
-
-        base_path_obj = Path(base_path)
-        # If base path is an MCAP file, use its parent directory
-        if base_path_obj.suffix == ".mcap":
-            base_path_obj = base_path_obj.parent
-
-        resolved_path = (base_path_obj / self.uri).as_posix()
-        return MediaRef(uri=resolved_path, pts_ns=self.pts_ns)
 
 
 class ScreenCaptured(OWAMessage):
@@ -158,13 +82,9 @@ class ScreenCaptured(OWAMessage):
         if self.media_ref is None:
             raise ValueError("No media reference available for loading")
 
-        # Load based on media type
-        if self.media_ref.is_video:
-            self.frame_arr = load_video_frame_as_bgra(
-                self.media_ref.uri, self.media_ref.pts_ns, keep_av_open=keep_av_open
-            )
-        else:
-            self.frame_arr = load_image_as_bgra(self.media_ref.uri)
+        # Load using mediaref package and convert RGB to BGRA
+        rgb_array = self.media_ref.to_rgb_array()
+        self.frame_arr = cv2.cvtColor(rgb_array, cv2.COLOR_RGB2BGRA)
 
         # Update shape
         h, w = self.frame_arr.shape[:2]
@@ -179,8 +99,12 @@ class ScreenCaptured(OWAMessage):
         if self.frame_arr is None:
             raise ValueError("No frame_arr available to embed")
 
-        base64_data = encode_to_base64(self.frame_arr, format, quality)
-        self.media_ref = MediaRef(uri=f"data:image/{format};base64,{base64_data}")
+        # Convert BGRA to RGB for mediaref
+        rgb_array = cv2.cvtColor(self.frame_arr, cv2.COLOR_BGRA2RGB)
+
+        # Use mediaref's DataURI.from_image to create data URI
+        data_uri = DataURI.from_image(rgb_array, format=format, quality=quality)
+        self.media_ref = MediaRef(uri=data_uri)
         return self
 
     def to_rgb_array(self, *, keep_av_open: bool = False) -> np.ndarray:
