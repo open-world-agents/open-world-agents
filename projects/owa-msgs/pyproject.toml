@@ -11,6 +11,7 @@ dependencies = [
     "annotated-types",
     "numpy>=2.3.0",
     "opencv-python>=4.11.0",
+    "mediaref>=0.3.0",
 ]
 
 # entry points for message discovery

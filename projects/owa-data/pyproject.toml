@@ -18,6 +18,7 @@ dependencies = [
     "owa-core",
     "owa-msgs",
     "mcap-owa-support",
+    "mediaref>=0.3.0",
     "line-profiler>=5.0.0",
     "transformers>=4.51.3",
 ]
