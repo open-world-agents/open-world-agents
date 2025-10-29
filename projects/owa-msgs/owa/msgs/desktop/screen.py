@@ -1,5 +1,6 @@
 """Desktop screen capture message definitions."""
 
+from pathlib import Path
 from typing import Optional, Self, Tuple, cast
 
 import cv2
@@ -122,12 +123,12 @@ class ScreenCaptured(OWAMessage):
         rgb_array = self.to_rgb_array(keep_av_open=keep_av_open)
         return Image.fromarray(rgb_array)
 
-    def resolve_relative_path(self, base_path: str, **kwargs) -> Self:
+    def resolve_relative_path(self, mcap_path: str, **kwargs) -> Self:
         """
         Resolve relative paths in media_ref against a base path.
 
         Args:
-            base_path: Base path (typically MCAP file path) to resolve against
+            mcap_path: MCAP file path or directory path to resolve against
             **kwargs: Additional arguments passed to MediaRef.resolve_relative_path()
 
         Returns:
@@ -135,6 +136,12 @@ class ScreenCaptured(OWAMessage):
         """
         if self.media_ref is None:
             return self
+
+        # If given path is an MCAP file, use its parent directory as base path
+        base_path_obj = Path(mcap_path)
+        if base_path_obj.suffix == ".mcap":
+            base_path_obj = base_path_obj.parent
+        base_path = base_path_obj.as_posix()
 
         self.media_ref = self.media_ref.resolve_relative_path(base_path, **kwargs)
         return self
