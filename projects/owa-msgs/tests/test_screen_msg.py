@@ -91,7 +91,7 @@ class TestScreenCaptured:
         # Verify file reference
         assert screen_msg.media_ref is not None
         assert screen_msg.media_ref.uri == str(sample_image_file)
-        assert screen_msg.media_ref.is_local
+        assert not screen_msg.media_ref.is_remote
         assert not screen_msg.media_ref.is_embedded
         assert screen_msg.frame_arr is None  # Not loaded yet
 
@@ -133,7 +133,6 @@ class TestScreenCaptured:
         assert screen_msg.media_ref is not None
         assert screen_msg.media_ref.is_remote
         assert not screen_msg.media_ref.is_embedded
-        assert not screen_msg.media_ref.is_local
         assert screen_msg.frame_arr is None  # Not loaded yet
 
     # === Image Access Methods (as documented in docstring) ===
@@ -401,7 +400,6 @@ class TestScreenCaptured:
             # === Verify Remote Reference Properties ===
             assert screen_msg.media_ref.is_remote, f"Should be detected as remote URL for {media_type}"
             assert not screen_msg.media_ref.is_embedded, f"Should not be embedded data for {media_type}"
-            assert not screen_msg.media_ref.is_local, f"Should not be local file for {media_type}"
             assert screen_msg.media_ref.uri == test_url
 
             # === Verify Media Type Detection ===
