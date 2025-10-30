@@ -147,25 +147,6 @@ class TestMessageRegistry:
             # Test __len__
             assert len(registry) == 2
 
-    def test_entry_points_type_error_fallback(self, create_mock_entry_point):
-        """Test fallback when entry_points() raises TypeError (Python < 3.10)."""
-        registry = MessageRegistry()
-        mock_entry_point = create_mock_entry_point("test/MockMessage", MockMessage)
-
-        # Mock entry_points to raise TypeError on first call, then return fallback
-        def mock_entry_points_with_fallback(*args, **kwargs):
-            if "group" in kwargs:
-                raise TypeError("entry_points() got an unexpected keyword argument 'group'")
-            else:
-                # Fallback call - return mock entry points
-                mock_eps = type("MockEntryPoints", (), {})()
-                mock_eps.get = lambda group, default=None: [mock_entry_point] if group == "owa.msgs" else default
-                return mock_eps
-
-        with patch("owa.core.messages.entry_points", side_effect=mock_entry_points_with_fallback):
-            message_class = registry["test/MockMessage"]
-            assert message_class is MockMessage
-
     def test_load_message_with_non_basemessage_class(self, create_mock_entry_point, capsys):
         """Test loading a message that doesn't inherit from BaseMessage."""
         registry = MessageRegistry()
