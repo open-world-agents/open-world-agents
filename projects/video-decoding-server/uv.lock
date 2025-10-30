@@ -263,11 +263,11 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "av", specifier = ">=14.2.0" },
-    { name = "loguru", specifier = ">=0.7.3" },
-    { name = "numpy", specifier = ">=2.2.3" },
-    { name = "opencv-python-headless", specifier = ">=4.11.0" },
-    { name = "pillow", specifier = ">=11.1.0" },
+    { name = "av", specifier = ">=15.0" },
+    { name = "loguru" },
+    { name = "numpy", specifier = ">=2.0" },
+    { name = "opencv-python-headless" },
+    { name = "pillow", specifier = ">=9.4.0" },
 ]
 
 [[package]]

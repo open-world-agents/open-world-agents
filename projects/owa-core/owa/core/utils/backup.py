@@ -2,12 +2,13 @@
 
 import shutil
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
-from rich.console import Console
+if TYPE_CHECKING:
+    from rich.console import Console
 
 
-class DummyConsole(Console):
+class DummyConsole:
     """A console that doesn't print anything."""
 
     def print(self, *args, **kwargs):
@@ -21,7 +22,7 @@ class BackupContext:
         self,
         file_path: Path,
         *,
-        console: Optional[Console] = None,
+        console: Optional["Console"] = None,
         backup_suffix: str = ".backup",
         keep_backup: bool = False,
     ):
@@ -36,15 +37,13 @@ class BackupContext:
         return file_path.with_suffix(f"{file_path.suffix}{suffix}")
 
     @staticmethod
-    def cleanup_backup(backup_path: Path, console: Console) -> None:
+    def cleanup_backup(backup_path: Path, console) -> None:
         """Clean up a single backup file."""
         backup_path.unlink(missing_ok=True)
         console.print(f"[dim]Backup cleaned up: {backup_path}[/dim]")
 
     @staticmethod
-    def rollback_from_backup(
-        file_path: Path, backup_path: Path, console: Console, delete_backup: bool = False
-    ) -> None:
+    def rollback_from_backup(file_path: Path, backup_path: Path, console, delete_backup: bool = False) -> None:
         """Rollback file by restoring from backup."""
         if not backup_path.exists():
             raise FileNotFoundError(f"Backup file not found: {backup_path}")

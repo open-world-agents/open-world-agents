@@ -317,24 +317,17 @@ dependencies = [
     { name = "av" },
     { name = "griffe" },
     { name = "loguru" },
-    { name = "opencv-python" },
-    { name = "pillow" },
     { name = "pydantic" },
     { name = "pyyaml" },
-    { name = "requests" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "av", specifier = ">=14.4.0" },
-    { name = "griffe", specifier = ">=1.7.3" },
-    { name = "importlib-metadata", marker = "python_full_version < '3.10'", specifier = ">=4.0.0" },
-    { name = "loguru", specifier = ">=0.7.3" },
-    { name = "opencv-python", specifier = ">=4.11.0" },
-    { name = "pillow", specifier = ">=10.0.0" },
-    { name = "pydantic", specifier = ">=2.10.6" },
-    { name = "pyyaml", specifier = ">=6.0.2" },
-    { name = "requests", specifier = ">=2.25.0" },
+    { name = "av", specifier = ">=15.0" },
+    { name = "griffe" },
+    { name = "loguru" },
+    { name = "pydantic", specifier = ">=2.0" },
+    { name = "pyyaml", specifier = ">=6.0" },
 ]
 
 [[package]]
@@ -354,10 +347,10 @@ dependencies = [
 requires-dist = [
     { name = "annotated-types" },
     { name = "mediaref", specifier = "~=0.3.1" },
-    { name = "numpy", specifier = ">=2.3.0" },
-    { name = "opencv-python", specifier = ">=4.11.0" },
+    { name = "numpy", specifier = ">=2.0" },
+    { name = "opencv-python" },
     { name = "owa-core", editable = "../owa-core" },
-    { name = "pydantic", specifier = ">=2.10.6" },
+    { name = "pydantic", specifier = ">=2.0" },
 ]
 
 [[package]]

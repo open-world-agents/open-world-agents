@@ -6,7 +6,8 @@ readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.11"
 dependencies = [
-    "owa-core>=0.4.0"
+    "loguru",
+    "owa-core>=0.6.2",
 ]
 
 # entry points for plugin discovery

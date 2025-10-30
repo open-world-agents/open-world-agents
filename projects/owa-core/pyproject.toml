@@ -6,13 +6,11 @@ readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.11"
 dependencies = [
-    "av>=14.4.0",
-    "loguru>=0.7.3",
-    "pydantic>=2.10.6",
-    "importlib-metadata>=4.0.0; python_version < '3.10'",
-    "griffe>=1.7.3",
-    "pyyaml>=6.0.2",
-    "opencv-python>=4.11.0",
+    "av>=15.0",
+    "griffe",
+    "loguru",
+    "pydantic>=2.0",
+    "pyyaml>=6.0",
 ]
 
 # entry points for plugin discovery
