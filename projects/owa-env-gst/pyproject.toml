@@ -8,7 +8,7 @@ requires-python = ">=3.11"
 dependencies = [
     "av>=15.0",
     "loguru",
-    "mediaref~=0.3.1",
+    "mediaref~=0.4.1",
     "numpy>=2.0",
     "opencv-python",
     "owa-core==0.6.2",

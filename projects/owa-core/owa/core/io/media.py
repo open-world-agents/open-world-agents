@@ -1,15 +1,5 @@
 """
-Legacy media utilities - DEPRECATED.
-
-This module is deprecated and kept only for backward compatibility with existing tests.
-New code should use the `mediaref` package instead.
-
-For new code, use:
-- mediaref.MediaRef for media references
-- mediaref.DataURI for data URI handling
-- MediaRef.to_rgb_array() for loading images/video frames
-
-Install: pip install mediaref[video]
+Legacy media utilities - DEPRECATED. Code here moved to `mediaref` package.
 """
 
 import os

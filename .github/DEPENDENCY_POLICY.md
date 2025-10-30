@@ -17,7 +17,7 @@
 | Type | Constraint | Example | Rationale |
 |------|-----------|---------|-----------|
 | **First-party** | `==X.Y.Z` | `owa-core==0.6.2` | Lockstep versioning |
-| **MediaRef** | `~=X.Y.Z` | `mediaref~=0.3.1` | Compatible release (patch updates only) |
+| **MediaRef** | `~=X.Y.Z` | `mediaref~=0.4.1` | Compatible release (patch updates only) |
 | **Breaking changes** | `>=X.Y.Z` | `pydantic>=2.0` | Minimum version for required API |
 | **Unstable APIs** | `>=latest` | `fastapi>=0.115.12` | Pin to latest known-working version |
 | **Stable APIs** | No constraint | `loguru` | Backward compatible |

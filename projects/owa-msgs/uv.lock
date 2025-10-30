@@ -196,7 +196,7 @@ wheels = [
 
 [[package]]
 name = "mediaref"
-version = "0.3.1"
+version = "0.4.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "loguru" },
@@ -206,9 +206,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/0f/54/1a69e4566ca9807fd095a6e74c26330b3b1f7eaf7d854f043c356d7ede32/mediaref-0.3.1.tar.gz", hash = "sha256:8be5a81229b0599c22b33028c7cfd348f9356d8fffa55d967662d0648494d685", size = 104994, upload-time = "2025-10-29T14:09:00.02Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e0/40/9108e91cc39bb3bc925b021bdb547d374ad914b8e1a281530fd1e7796321/mediaref-0.4.1.tar.gz", hash = "sha256:933024a8638f9d63e04c217b9dd11a16b87b9a6789a1d28c87c82c2a7f0975d8", size = 108463, upload-time = "2025-10-30T11:30:24.578Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/da/5a/a9c2fd459aa08c7749877bf4b771c6eecf66ca95cbb0a4d900b9210e7104/mediaref-0.3.1-py3-none-any.whl", hash = "sha256:7f7cf4e800aafc5954dd933c63eb7b219d86c8ca65d2869a411700351fe9c4c8", size = 33835, upload-time = "2025-10-29T14:08:58.947Z" },
+    { url = "https://files.pythonhosted.org/packages/23/c1/a02207de373f5264fcd0bfb9c01e3fb23b0f40876465e1fc10855b2dc2ec/mediaref-0.4.1-py3-none-any.whl", hash = "sha256:f8709aaee183163e4f97f96669a6162cfc9cf23216ce0ecb7090c39df4e5cf4c", size = 34692, upload-time = "2025-10-30T11:30:23.686Z" },
 ]
 
 [[package]]
@@ -346,7 +346,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "annotated-types" },
-    { name = "mediaref", specifier = "~=0.3.1" },
+    { name = "mediaref", specifier = "~=0.4.1" },
     { name = "numpy", specifier = ">=2.0" },
     { name = "opencv-python" },
     { name = "owa-core", editable = "../owa-core" },
