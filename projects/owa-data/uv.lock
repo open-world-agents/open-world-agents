@@ -342,6 +342,15 @@ wheels = [
 ]
 
 [[package]]
+name = "docstring-parser"
+version = "0.17.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/b2/9d/c3b43da9515bd270df0f80548d9944e389870713cc1fe2b8fb35fe2bcefd/docstring_parser-0.17.0.tar.gz", hash = "sha256:583de4a309722b3315439bb31d64ba3eebada841f2e2cee23b99df001434c912", size = 27442, upload-time = "2025-07-21T07:35:01.868Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/55/e2/2537ebcff11c1ee1ff17d8d0b6f4db75873e3b0fb32c2d4a2ee31ecb310a/docstring_parser-0.17.0-py3-none-any.whl", hash = "sha256:cf2569abd23dce8099b300f9b4fa8191e9582dda731fd533daf54c4551658708", size = 36896, upload-time = "2025-07-21T07:35:00.684Z" },
+]
+
+[[package]]
 name = "filelock"
 version = "3.20.0"
 source = { registry = "https://pypi.org/simple" }
@@ -562,6 +571,15 @@ wheels = [
 ]
 
 [[package]]
+name = "importlib-resources"
+version = "6.5.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/cf/8c/f834fbf984f691b4f7ff60f50b514cc3de5cc08abfc3295564dd89c5e2e7/importlib_resources-6.5.2.tar.gz", hash = "sha256:185f87adef5bcc288449d98fb4fba07cea78bc036455dd44c5fc4a2fe78fed2c", size = 44693, upload-time = "2025-01-03T18:51:56.698Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a4/ed/1f1afb2e9e7f38a545d628f864d562a5ae64fe6f7a10e28ffb9b185b4e89/importlib_resources-6.5.2-py3-none-any.whl", hash = "sha256:789cfdc3ed28c78b67a06acb8126751ced69a3d5f79c095a98298cd8a760ccec", size = 37461, upload-time = "2025-01-03T18:51:54.306Z" },
+]
+
+[[package]]
 name = "jinja2"
 version = "3.1.6"
 source = { registry = "https://pypi.org/simple" }
@@ -571,6 +589,24 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/df/bf/f7da0350254c0ed7c72f3e33cef02e048281fec7ecec5f032d4aac52226b/jinja2-3.1.6.tar.gz", hash = "sha256:0137fb05990d35f1275a587e9aee6d56da821fc83491a0fb838183be43f66d6d", size = 245115, upload-time = "2025-03-05T20:05:02.478Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/62/a1/3d680cbfd5f4b8f15abc1d571870c5fc3e594bb582bc3b64ea099db13e56/jinja2-3.1.6-py3-none-any.whl", hash = "sha256:85ece4451f492d0c13c5dd7c13a64681a86afae63a5f347908daf103ce6d2f67", size = 134899, upload-time = "2025-03-05T20:05:00.369Z" },
+]
+
+[[package]]
+name = "jsonargparse"
+version = "4.42.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pyyaml" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/32/ef/6bcc6d88e401af6d1c05c6a3f3955ebeae538711f1199e25c53326c921e5/jsonargparse-4.42.0.tar.gz", hash = "sha256:170551344f06500091ca6732bf93726c5aa79f4f2632a7f2a18d7a897ae2c5c1", size = 212273, upload-time = "2025-10-14T05:23:43.15Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0b/a1/3f06c00dc217baaa273b08022c00bc6c71d619c4d03325179b8fec80d90f/jsonargparse-4.42.0-py3-none-any.whl", hash = "sha256:d112bdaab22918ff5a8fb2d6036596f8527961922fd972b6e50afc6340514a28", size = 235760, upload-time = "2025-10-14T05:23:40.849Z" },
+]
+
+[package.optional-dependencies]
+signatures = [
+    { name = "docstring-parser" },
+    { name = "typeshed-client" },
 ]
 
 [[package]]
@@ -740,24 +776,20 @@ wheels = [
 name = "mcap-owa-support"
 source = { editable = "../mcap-owa-support" }
 dependencies = [
-    { name = "datasets" },
     { name = "mcap" },
     { name = "orjson" },
     { name = "owa-core" },
     { name = "packaging" },
-    { name = "pyarrow" },
     { name = "pydantic" },
     { name = "requests" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "datasets" },
     { name = "mcap", specifier = ">=1.0.0" },
     { name = "orjson" },
     { name = "owa-core", editable = "../owa-core" },
     { name = "packaging", specifier = ">=20.0" },
-    { name = "pyarrow" },
     { name = "pydantic", specifier = ">=2.0" },
     { name = "requests", specifier = ">=2.32.2" },
 ]
@@ -1234,7 +1266,6 @@ dependencies = [
     { name = "av" },
     { name = "griffe" },
     { name = "loguru" },
-    { name = "numpy" },
     { name = "pydantic" },
     { name = "pyyaml" },
 ]
@@ -1244,7 +1275,6 @@ requires-dist = [
     { name = "av", specifier = ">=15.0" },
     { name = "griffe" },
     { name = "loguru" },
-    { name = "numpy" },
     { name = "pydantic", specifier = ">=2.0" },
     { name = "pyyaml", specifier = ">=6.0" },
 ]
@@ -1257,6 +1287,7 @@ dependencies = [
     { name = "datasets" },
     { name = "fsspec" },
     { name = "huggingface-hub" },
+    { name = "jsonargparse", extra = ["signatures"] },
     { name = "line-profiler" },
     { name = "loguru" },
     { name = "mcap-owa-support" },
@@ -1276,6 +1307,7 @@ requires-dist = [
     { name = "datasets", specifier = ">=4.0" },
     { name = "fsspec" },
     { name = "huggingface-hub", specifier = ">=0.30.0" },
+    { name = "jsonargparse", extras = ["signatures"], specifier = ">=4.41.0" },
     { name = "line-profiler" },
     { name = "loguru" },
     { name = "mcap-owa-support", editable = "../mcap-owa-support" },
@@ -1300,7 +1332,6 @@ dependencies = [
     { name = "numpy" },
     { name = "opencv-python" },
     { name = "owa-core" },
-    { name = "pillow" },
     { name = "pydantic" },
 ]
 
@@ -1309,9 +1340,8 @@ requires-dist = [
     { name = "annotated-types" },
     { name = "mediaref", specifier = "~=0.3.1" },
     { name = "numpy", specifier = ">=2.0" },
-    { name = "opencv-python", specifier = ">=4.10.0" },
+    { name = "opencv-python" },
     { name = "owa-core", editable = "../owa-core" },
-    { name = "pillow" },
     { name = "pydantic", specifier = ">=2.0" },
 ]
 
@@ -2077,6 +2107,19 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/5c/38/db80e48b9220c9bce872b0f616ad0446cdf554a40b85c7865cbca99ab3c2/triton-3.5.0-cp313-cp313t-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:c83f2343e1a220a716c7b3ab9fccfcbe3ad4020d189549200e2d2e8d5868bed9", size = 170577179, upload-time = "2025-10-13T16:38:17.865Z" },
     { url = "https://files.pythonhosted.org/packages/ff/60/1810655d1d856c9a4fcc90ee8966d85f552d98c53a6589f95ab2cbe27bb8/triton-3.5.0-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:da0fa67ccd76c3dcfb0bffe1b1c57c685136a6bd33d141c24d9655d4185b1289", size = 170487949, upload-time = "2025-10-13T16:38:24.881Z" },
     { url = "https://files.pythonhosted.org/packages/fb/b7/1dec8433ac604c061173d0589d99217fe7bf90a70bdc375e745d044b8aad/triton-3.5.0-cp314-cp314t-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:317fe477ea8fd4524a6a8c499fb0a36984a56d0b75bf9c9cb6133a1c56d5a6e7", size = 170580176, upload-time = "2025-10-13T16:38:31.14Z" },
+]
+
+[[package]]
+name = "typeshed-client"
+version = "2.8.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "importlib-resources" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/fe/3e/4074d3505b4700a6bf13cb1bb2d1848bb8c78e902e3f9fe5916274c5d284/typeshed_client-2.8.2.tar.gz", hash = "sha256:9d8e29fb74574d87bf9a719f77131dc40f2aeea20e97d25d4a3dc2cc30debd31", size = 501617, upload-time = "2025-07-16T01:49:49.299Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/11/db/e7474719e90062df673057e865f94f67da2d0b4f671d8051020c74962c77/typeshed_client-2.8.2-py3-none-any.whl", hash = "sha256:4cf886d976c777689cd31889f13abf5bfb7797c82519b07e5969e541380c75ee", size = 760467, upload-time = "2025-07-16T01:49:47.758Z" },
 ]
 
 [[package]]

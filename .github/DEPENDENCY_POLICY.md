@@ -42,6 +42,7 @@
 | `transformers` | `>=4.52.1` | InternVL support introduced in 4.52.1 |
 | `huggingface_hub` | `>=0.30.0` | Aligned with transformers 4.52.1 requirements |
 | `jsonargparse[signatures]` | `>=4.41.0` | KEYWORD_ONLY parameter handling fix (#756) |
+| `line-profiler` | `>=4.1.0` | Global `@line_profiler.profile` decorator introduced |
 | `mcap` | `>=1.0.0` | MCAP 1.0 stable API |
 | `typer` | `>=0.20.0` | Modern features and bugfixes which affects UI/UX directly |
 | `rich` | `>=14.1.0` | Modern features and bugfixes which affects UI/UX directly |
@@ -63,7 +64,7 @@
 
 ### No Constraints (Stable APIs)
 
-`loguru`, `tqdm`, `orjson`, `annotated-types`, `jinja2`, `python-dotenv`, `diskcache`, `griffe`, `plotext`, `line-profiler`, `webdataset`, `pygobject-stubs`, `pygetwindow`, `bettercam`, `pydantic-settings`, `python-multipart`
+`loguru`, `tqdm`, `orjson`, `annotated-types`, `jinja2`, `python-dotenv`, `diskcache`, `griffe`, `plotext`, `webdataset`, `pygobject-stubs`, `pygetwindow`, `bettercam`, `pydantic-settings`, `python-multipart`
 
 ### Special Cases
 
