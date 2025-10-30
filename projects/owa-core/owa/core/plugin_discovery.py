@@ -2,18 +2,13 @@
 # Implements automatic plugin discovery and registration using Python entry points
 
 import sys
+from importlib.metadata import EntryPoint, entry_points
 from typing import Dict, Optional, Union
 
 from loguru import logger
 
 from .plugin_spec import PluginSpec
 from .registry import CALLABLES, LISTENERS, RUNNABLES
-
-# Import entry_points based on Python version
-if sys.version_info < (3, 10):
-    from importlib_metadata import EntryPoint, entry_points
-else:
-    from importlib.metadata import EntryPoint, entry_points
 
 
 class PluginDiscovery:
