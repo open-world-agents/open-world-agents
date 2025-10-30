@@ -7,11 +7,11 @@ license = { text = "MIT" }
 requires-python = ">=3.11"
 dependencies = [
     "owa-core==0.6.2",
-    "pillow>=11.1.0",
-    "av>=14.4.0",
-    "pygobject-stubs>=2.12.0",
-    "tqdm>=4.67.1",
-    "opencv-python>=4.11.0",
+    "pillow>=9.4.0",
+    "av>=15.0",
+    "pygobject-stubs",
+    "tqdm",
+    "opencv-python>=4.10.0",
     "owa-msgs==0.6.2",
     "mediaref~=0.3.1",
 ]

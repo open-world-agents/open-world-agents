@@ -790,17 +790,17 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "diskcache", specifier = ">=5.6.3" },
+    { name = "diskcache" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.115.12" },
-    { name = "huggingface-hub", specifier = ">=0.29.3" },
-    { name = "jinja2", specifier = ">=3.1.6" },
+    { name = "huggingface-hub", specifier = ">=0.30.0" },
+    { name = "jinja2" },
     { name = "mcap-owa-support", specifier = ">=0.6.2" },
     { name = "owa-cli", specifier = ">=0.6.2" },
     { name = "owa-core", specifier = ">=0.6.2" },
-    { name = "pydantic-settings", specifier = ">=2.9.1" },
-    { name = "python-dotenv", specifier = ">=1.1.0" },
-    { name = "python-multipart", specifier = ">=0.0.20" },
-    { name = "requests", specifier = ">=2.32.3" },
+    { name = "pydantic-settings" },
+    { name = "python-dotenv" },
+    { name = "python-multipart" },
+    { name = "requests", specifier = ">=2.32.2" },
 ]
 
 [[package]]

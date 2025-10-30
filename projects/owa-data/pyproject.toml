@@ -6,21 +6,21 @@ readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.11"
 dependencies = [
-    "datasets>=3.6.0",
-    "huggingface_hub>=0.34.0",
-    "rich>=13.7.0",
-    "typer>=0.15.1",
-    "jsonargparse>=4.32.1",
-    "tqdm>=4.67.1",
-    "webdataset>=1.0.2",
-    "torch>=2.5.1",
-    "orjson>=3.10.15",
+    "datasets>=4.0",
+    "huggingface_hub>=0.30.0",
+    "rich",
+    "typer",
+    "jsonargparse[signatures]>=4.27.7",
+    "tqdm",
+    "webdataset",
+    "torch>=2.0",
+    "orjson",
     "owa-core>=0.6.2",
     "owa-msgs>=0.6.2",
     "mcap-owa-support>=0.6.2",
     "mediaref~=0.3.1",
-    "line-profiler>=5.0.0",
-    "transformers>=4.51.3",
+    "line-profiler",
+    "transformers>=4.52.1",
 ]
 
 [build-system]

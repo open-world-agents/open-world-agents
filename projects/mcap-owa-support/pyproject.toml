@@ -7,11 +7,11 @@ license = { text = "MIT" }
 requires-python = ">=3.11"
 dependencies = [
     "owa-core==0.6.2",
-    "orjson>=3.10.15",
-    "mcap>=1.2.2",
-    "requests>=2.32.3",
-    "packaging>=25.0",
-    "pydantic>=2.11.7",
+    "orjson",
+    "mcap>=1.0.0",
+    "requests>=2.32.2",
+    "packaging>=20.0",
+    "pydantic>=2.0",
 ]
 
 [tool.uv.sources]

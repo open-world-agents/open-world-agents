@@ -175,12 +175,12 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "av", specifier = ">=14.4.0" },
-    { name = "griffe", specifier = ">=1.7.3" },
-    { name = "loguru", specifier = ">=0.7.3" },
-    { name = "opencv-python", specifier = ">=4.11.0" },
-    { name = "pydantic", specifier = ">=2.10.6" },
-    { name = "pyyaml", specifier = ">=6.0.2" },
+    { name = "av", specifier = ">=15.0" },
+    { name = "griffe" },
+    { name = "loguru" },
+    { name = "opencv-python", specifier = ">=4.10.0" },
+    { name = "pydantic", specifier = ">=2.0" },
+    { name = "pyyaml", specifier = ">=6.0" },
 ]
 
 [[package]]
