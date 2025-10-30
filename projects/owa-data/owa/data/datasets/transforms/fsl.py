@@ -291,8 +291,13 @@ class FSLTransform:
         # Process each video group with batch decoding
         for video_path, group in video_groups.items():
             try:
-                # Determine decoder backend
-                decoder = "pyav" if self.config.use_batch_decoding == "owa" else "torchcodec"
+                # Determine decoder backend and validate
+                if self.config.use_batch_decoding == "owa":
+                    decoder = "pyav"
+                elif self.config.use_batch_decoding == "torchcodec":
+                    decoder = "torchcodec"
+                else:
+                    raise ValueError(f"Invalid use_batch_decoding: '{self.config.use_batch_decoding}'")
 
                 # Use mediaref's batch_decode API
                 frames = batch_decode(group["refs"], decoder=decoder)
