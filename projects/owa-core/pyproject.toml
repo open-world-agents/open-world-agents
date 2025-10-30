@@ -12,8 +12,6 @@ dependencies = [
     "importlib-metadata>=4.0.0; python_version < '3.10'",
     "griffe>=1.7.3",
     "pyyaml>=6.0.2",
-    "pillow>=10.0.0",
-    "requests>=2.25.0",
     "opencv-python>=4.11.0",
 ]
 

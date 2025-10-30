@@ -11,9 +11,9 @@ import line_profiler
 import numpy as np
 import torch
 from loguru import logger
+from mediaref import batch_decode
 from PIL import Image
 
-from owa.core.io.video_decoder import PyAVVideoDecoder, TorchCodecVideoDecoder  # noqa: F401
 from owa.msgs.desktop.screen import ScreenCaptured
 
 from .utils import resolve_episode_path
@@ -271,7 +271,7 @@ class FSLTransform:
                     warnings.warn(f"Failed to load image at index {idx}: {e}. Using placeholder.", UserWarning)
 
     def _batch_decode_images(self, image_msgs: List[ScreenCaptured]) -> None:
-        """Batch decode images."""
+        """Batch decode images using mediaref's batch_decode API."""
         if not image_msgs:
             return
 
@@ -283,61 +283,41 @@ class FSLTransform:
 
             video_path = img_msg.media_ref.uri
             if video_path not in video_groups:
-                video_groups[video_path] = {"indices": [], "timestamps": []}
+                video_groups[video_path] = {"indices": [], "refs": []}
 
             video_groups[video_path]["indices"].append(idx)
-            # Convert nanoseconds to seconds
-            timestamp_sec = img_msg.media_ref.pts_ns / 1_000_000_000
-            video_groups[video_path]["timestamps"].append(timestamp_sec)
+            video_groups[video_path]["refs"].append(img_msg.media_ref)
 
         # Process each video group with batch decoding
         for video_path, group in video_groups.items():
-            decoder = None
             try:
-                # Create decoder for this video using context manager for proper resource cleanup
+                # Determine decoder backend and validate
                 if self.config.use_batch_decoding == "owa":
-                    with PyAVVideoDecoder(video_path) as decoder:
-                        self._process_video_group(decoder, group, image_msgs)
+                    decoder = "pyav"
                 elif self.config.use_batch_decoding == "torchcodec":
-                    with TorchCodecVideoDecoder(video_path) as decoder:
-                        self._process_video_group(decoder, group, image_msgs)
+                    decoder = "torchcodec"
                 else:
-                    raise ValueError(f"Invalid use_batch_decoding: '{self.config.use_batch_decoding}'.")
+                    raise ValueError(f"Invalid use_batch_decoding: '{self.config.use_batch_decoding}'")
+
+                # Use mediaref's batch_decode API
+                frames = batch_decode(group["refs"], decoder=decoder)
+
+                # Store decoded frames in the corresponding ScreenCaptured objects
+                for i, frame_rgb in enumerate(frames):
+                    img_idx = group["indices"][i]
+                    # batch_decode returns numpy arrays in [H, W, C] RGB format
+                    # Convert RGB to BGRA (add alpha channel)
+                    frame_bgra = np.concatenate(
+                        [
+                            frame_rgb[:, :, [2, 1, 0]],  # BGR
+                            np.full((frame_rgb.shape[0], frame_rgb.shape[1], 1), 255, dtype=np.uint8),  # Alpha
+                        ],
+                        axis=2,
+                    )
+                    image_msgs[img_idx].frame_arr = frame_bgra
 
             except Exception:
                 logger.exception(f"Batch decoding failed for {video_path}. Falling back to individual decoding.")
-
-    def _process_video_group(self, decoder, group: dict, image_msgs: List[ScreenCaptured]) -> None:
-        """Process a group of frames from a single video using the provided decoder."""
-        # Batch decode all frames for this video
-        frame_batch = decoder.get_frames_played_at(seconds=group["timestamps"])
-
-        # Store decoded frames in the corresponding ScreenCaptured objects
-        for i, frame_tensor in enumerate(frame_batch.data):
-            img_idx = group["indices"][i]
-            if isinstance(frame_tensor, np.ndarray):
-                # Convert numpy array [C, H, W] to numpy array [H, W, C] in RGB format. ndarray does not have permute
-                frame_rgb = frame_tensor.transpose(1, 2, 0).astype(np.uint8)
-            else:
-                # Convert from tensor [C, H, W] to numpy array [H, W, C] in BGRA format
-                frame_rgb = frame_tensor.data.permute(1, 2, 0).cpu().numpy().astype(np.uint8)
-            # Convert RGB to BGRA (add alpha channel)
-            frame_bgra = np.concatenate(
-                [
-                    frame_rgb[:, :, [2, 1, 0]],  # BGR
-                    np.full((frame_rgb.shape[0], frame_rgb.shape[1], 1), 255, dtype=np.uint8),  # Alpha
-                ],
-                axis=2,
-            )
-
-            # Store in frame_arr
-            image_msgs[img_idx].frame_arr = frame_bgra
-
-            # Clear intermediate tensors to free memory
-            del frame_tensor, frame_rgb
-
-        # Clear frame batch to free memory
-        del frame_batch
 
 
 def create_fsl_transform(
