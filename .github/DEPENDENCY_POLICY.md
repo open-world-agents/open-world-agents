@@ -41,7 +41,7 @@
 | `datasets` | `>=4.0` | HuggingFace Datasets 4.x API improvements |
 | `transformers` | `>=4.52.1` | InternVL support introduced in 4.52.1 |
 | `huggingface_hub` | `>=0.30.0` | Aligned with transformers 4.52.1 requirements |
-| `jsonargparse[signatures]` | `>=4.27.7` | I don't have idea but Lightning CLI has this constraint, so I believe them |
+| `jsonargparse[signatures]` | `>=4.41.0` | KEYWORD_ONLY parameter handling fix (#756) |
 | `mcap` | `>=1.0.0` | MCAP 1.0 stable API |
 | `typer` | `>=0.20.0` | Modern features and bugfixes which affects UI/UX directly |
 | `rich` | `>=14.1.0` | Modern features and bugfixes which affects UI/UX directly |
@@ -90,67 +90,3 @@ uv run scripts/release/main.py version 0.7.0
 uv lock --upgrade-package <package>
 uv lock --upgrade  # all packages
 ```
-
----
-
-## Verified Dependencies
-
-All dependencies have been audited (2025-10-30) and confirmed as actively used:
-
-### Core Packages
-- **`griffe`** (owa-core): Used in `documentation/validator.py` for OEP-0004 validation
-- **`pyyaml`** (owa-core): Used in `plugin_spec.py` for YAML plugin specs
-- **`annotated-types`** (owa-msgs): Used in `desktop/keyboard.py` for type constraints
-- **`requests`** (owa-cli, mcap-owa-support): GitHub API calls and remote MCAP file support
-- **`plotext`** (owa-cli): Terminal-based visualizations in `video/probe.py`
-- **`line-profiler`** (owa-data): Production profiling in `collator.py`
-- **`transformers`** (owa-data): ML model integration for tokenization
-
-### Removed Dependencies
-- **`importlib-metadata`**: Removed from owa-core (Python <3.10 support, project requires >=3.11)
-
----
-
-## Recent Changes (2025-10-30)
-
-### Completed
-1. ✅ **Removed dead code**: `importlib-metadata` from owa-core
-2. ✅ **Fixed version constraints**:
-   - `owa-data`: Added `>=0.6.2` to first-party deps
-   - `owa-env-example`: Updated `owa-core>=0.4.0` → `>=0.6.2`
-   - `owa-mcap-viewer`: Updated all first-party deps `>=0.5.6` → `>=0.6.2`
-3. ✅ **Verified all dependencies**: All packages have minimal, required dependencies only
-4. ✅ **Implemented full dependency policy** across all 9 packages:
-   - **Breaking changes**: Applied `>=X.Y.Z` constraints (pydantic>=2.0, numpy>=2.0, av>=15.0, pillow>=9.4.0, pyyaml>=6.0, packaging>=20.0, requests>=2.32.2, torch>=2.0, datasets>=4.0, transformers>=4.52.1, huggingface_hub>=0.30.0, jsonargparse[signatures]>=4.27.7)
-   - **Stable APIs**: Removed version constraints (loguru, rich, tqdm, typer, orjson, annotated-types, jinja2, python-dotenv, diskcache, griffe, plotext, line-profiler, webdataset, mcap, pygobject-stubs, pygetwindow, bettercam, pydantic-settings, python-multipart, opencv-python, opencv-python-headless)
-   - **Unstable APIs**: Maintained pin to latest (fastapi[standard]>=0.115.12)
-   - **Platform-specific**: Maintained constraints (pywin32>=307, pyobjc>=10.1, pynput>=1.8.0, evdev<1.9.2)
-   - **Special cases**: Maintained MediaRef `~=0.3.1` and first-party `==0.6.2`
-5. ✅ **Verified all changes**: All packages lock successfully, imports work, CLI functional
-6. ✅ **Applied stricter HuggingFace constraints**:
-   - `datasets>=4.0` (HuggingFace Datasets 4.x API improvements)
-   - `transformers>=4.52.1` (InternVL support)
-   - `huggingface_hub>=0.30.0` (aligned with transformers 4.52.1)
-   - `jsonargparse[signatures]>=4.27.7` (Lightning CLI compatibility)
-7. ✅ **Applied MCAP constraint**:
-   - `mcap>=1.0.0` (MCAP 1.0 stable API)
-8. ✅ **Cleaned up opencv-python dependencies**:
-   - Removed from `owa-core` (not used)
-   - Added to `owa-cli` (directly uses cv2)
-   - Removed from `owa-env-desktop` (gets transitively from owa-msgs)
-   - Removed version constraint `>=4.10.0` (no breaking changes requiring specific version)
-9. ✅ **Applied typer and rich constraints**:
-   - `typer>=0.20.0` (modern features and bugfixes)
-   - `rich>=14.1.0` (modern features and bugfixes)
-10. ✅ **Comprehensive dependency cleanup**:
-   - **owa-core**: Removed `rich` runtime dependency (only used in `TYPE_CHECKING`)
-   - **mcap-owa-support**: No changes (datasets/pyarrow are optional features)
-   - **owa-cli**: Removed unused `pydantic`, added missing `numpy>=2.0` (pygetwindow is optional feature)
-   - **owa-data**: Removed unused `jsonargparse`, `orjson`, `rich`, `typer`, `webdataset`; added missing `fsspec`, `loguru`, `numpy>=2.0`, `pillow>=9.4.0`, `pydantic>=2.0`
-   - **owa-env-desktop**: Added missing `loguru` and `numpy>=2.0`; sorted dependencies alphabetically (platform-specific deps are conditionally imported and kept)
-   - **owa-env-example**: Added missing `loguru`
-   - **owa-env-gst**: Removed unused `pillow`, added missing `loguru` and `numpy>=2.0`
-   - **owa-msgs**: No changes (pillow is optional feature for `to_pil_image()`)
-   - **owa-mcap-viewer**: Added missing `fsspec`, `jinja2`, `numpy>=2.0`, `pydantic>=2.0`; removed unused `python-multipart` (transitive from fastapi)
-11. ✅ **Standardized numpy version constraint**: All packages now consistently use `numpy>=2.0` (breaking changes constraint)
-12. ✅ **Removed opencv-python version constraint**: Changed from `opencv-python>=4.10.0` to `opencv-python` (no breaking changes requiring specific version)
