@@ -11,7 +11,6 @@ dependencies = [
     "pydantic>=2.0",
     "griffe",
     "pyyaml>=6.0",
-    "opencv-python>=4.10.0",
 ]
 
 # entry points for plugin discovery

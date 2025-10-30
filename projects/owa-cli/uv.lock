@@ -277,7 +277,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "mcap" },
+    { name = "mcap", specifier = ">=1.0.0" },
     { name = "orjson" },
     { name = "owa-core", editable = "../owa-core" },
     { name = "packaging", specifier = ">=20.0" },
@@ -485,6 +485,7 @@ dependencies = [
     { name = "loguru" },
     { name = "mcap-owa-support" },
     { name = "mediaref" },
+    { name = "opencv-python" },
     { name = "orjson" },
     { name = "owa-core" },
     { name = "owa-msgs" },
@@ -503,6 +504,7 @@ requires-dist = [
     { name = "loguru" },
     { name = "mcap-owa-support", editable = "../mcap-owa-support" },
     { name = "mediaref", specifier = "~=0.3.1" },
+    { name = "opencv-python", specifier = ">=4.10.0" },
     { name = "orjson" },
     { name = "owa-core", editable = "../owa-core" },
     { name = "owa-msgs", editable = "../owa-msgs" },
@@ -511,9 +513,9 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.0" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "requests", specifier = ">=2.32.2" },
-    { name = "rich" },
+    { name = "rich", specifier = ">=14.1.0" },
     { name = "tqdm" },
-    { name = "typer" },
+    { name = "typer", specifier = ">=0.20.0" },
 ]
 
 [[package]]
@@ -524,7 +526,6 @@ dependencies = [
     { name = "av" },
     { name = "griffe" },
     { name = "loguru" },
-    { name = "opencv-python" },
     { name = "pydantic" },
     { name = "pyyaml" },
 ]
@@ -534,7 +535,6 @@ requires-dist = [
     { name = "av", specifier = ">=15.0" },
     { name = "griffe" },
     { name = "loguru" },
-    { name = "opencv-python", specifier = ">=4.10.0" },
     { name = "pydantic", specifier = ">=2.0" },
     { name = "pyyaml", specifier = ">=6.0" },
 ]

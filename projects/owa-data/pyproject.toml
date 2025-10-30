@@ -8,8 +8,8 @@ requires-python = ">=3.11"
 dependencies = [
     "datasets>=4.0",
     "huggingface_hub>=0.30.0",
-    "rich",
-    "typer",
+    "rich>=14.1.0",
+    "typer>=0.20.0",
     "jsonargparse[signatures]>=4.27.7",
     "tqdm",
     "webdataset",
