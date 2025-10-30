@@ -1,5 +1,6 @@
 import enum
 import gc
+import warnings
 from dataclasses import dataclass
 from fractions import Fraction
 from typing import Generator, Optional
@@ -7,7 +8,6 @@ from typing import Generator, Optional
 import av
 
 from ...utils.typing import PathLike
-from .. import cached_av
 from .typing import SECOND_TYPE
 
 # Garbage collection counters for PyAV reference cycles
@@ -45,8 +45,14 @@ class VideoReader:
             keep_av_open: Keep AV container open in cache
         """
         self.video_path = video_path
-        self.container = cached_av.open(self.video_path, "r", keep_av_open=keep_av_open)
+        self.container = av.open(self.video_path, "r")
         self._metadata = self._extract_metadata()
+
+        if not keep_av_open:
+            warnings.warn(
+                "Support for keep_av_open moved to mediaref. Current VideoReader does not support it.",
+                DeprecationWarning,
+            )
 
     def _extract_metadata(self) -> VideoStreamMetadata:
         """Extract video stream metadata from container."""

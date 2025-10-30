@@ -11,7 +11,7 @@ import line_profiler
 import numpy as np
 import torch
 from loguru import logger
-from mediaref import MediaRef, batch_decode
+from mediaref import batch_decode
 from PIL import Image
 
 from owa.msgs.desktop.screen import ScreenCaptured
