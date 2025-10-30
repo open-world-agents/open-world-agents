@@ -7,9 +7,14 @@ This module tests the BackupContext system used across different projects.
 from unittest.mock import patch
 
 import pytest
-from rich.console import Console
 
 from owa.core.utils.backup import BackupContext, DummyConsole
+
+try:
+    from rich.console import Console
+except ImportError:
+    # Fallback to DummyConsole if rich is not available
+    Console = DummyConsole  # type: ignore
 
 
 class TestBackupContext:

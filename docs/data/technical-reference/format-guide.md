@@ -272,7 +272,7 @@ OWAMcap's key advantage is efficient media handling through external media refer
 === "Creating ScreenCaptured Messages"
 
     !!! tip "Understanding MediaRef"
-        MediaRef is OWAMcap's way of referencing media content. It supports multiple formats:
+        MediaRef is OWAMcap's way of referencing media content, powered by the [`mediaref`](https://github.com/open-world-agents/MediaRef) package. It supports multiple formats:
 
         - **File paths**: `/absolute/path` or `relative/path`
         - **File URIs**: `file:///path/to/file`
@@ -280,6 +280,8 @@ OWAMcap's key advantage is efficient media handling through external media refer
         - **Data URIs**: `data:image/png;base64,...` (embedded content)
 
         For videos, add `pts_ns` (presentation timestamp) to specify which frame.
+
+        The `mediaref` package is automatically installed with `owa-msgs` and provides efficient lazy loading and batch decoding capabilities.
 
     ```python
     from owa.core import MESSAGES

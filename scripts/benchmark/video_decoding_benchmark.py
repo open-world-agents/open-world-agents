@@ -3,8 +3,7 @@ import time
 from typing import Callable
 
 import numpy as np
-
-from owa.core.io.video_decoder import PyAVVideoDecoder, TorchCodecVideoDecoder
+from mediaref.video_decoder import PyAVVideoDecoder, TorchCodecVideoDecoder
 
 
 def benchmark(fn: Callable, max_time: float = 3.0) -> None:
