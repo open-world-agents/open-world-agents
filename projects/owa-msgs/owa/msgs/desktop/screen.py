@@ -84,7 +84,7 @@ class ScreenCaptured(OWAMessage):
             raise ValueError("No media reference available for loading")
 
         # Load using mediaref package and convert RGB to BGRA
-        rgb_array = self.media_ref.to_rgb_array()
+        rgb_array = self.media_ref.to_ndarray(format="bgra", keep_av_open=keep_av_open)
         self.frame_arr = cv2.cvtColor(rgb_array, cv2.COLOR_RGB2BGRA)
 
         # Update shape
