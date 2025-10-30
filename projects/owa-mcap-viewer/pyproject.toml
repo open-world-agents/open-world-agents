@@ -8,14 +8,16 @@ requires-python = ">=3.11"
 dependencies = [
     "diskcache",
     "fastapi[standard]>=0.115.12",
-    "huggingface-hub>=0.30.0",
+    "fsspec",
+    "huggingface_hub>=0.30.0",
     "jinja2",
     "mcap-owa-support>=0.6.2",
+    "numpy>=2.0",
     "owa-cli>=0.6.2",
     "owa-core>=0.6.2",
+    "pydantic>=2.0",
     "pydantic-settings",
     "python-dotenv",
-    "python-multipart",
     "requests>=2.32.2",
 ]
 

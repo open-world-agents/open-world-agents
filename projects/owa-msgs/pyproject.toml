@@ -6,12 +6,12 @@ readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.11"
 dependencies = [
+    "annotated-types",
+    "mediaref~=0.3.1",
+    "numpy>=2.0",
+    "opencv-python",
     "owa-core==0.6.2",
     "pydantic>=2.0",
-    "annotated-types",
-    "numpy>=2.0",
-    "opencv-python>=4.10.0",
-    "mediaref~=0.3.1",
 ]
 
 # entry points for message discovery

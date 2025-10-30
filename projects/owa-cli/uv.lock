@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version >= '3.12' and sys_platform == 'darwin'",
@@ -485,13 +485,13 @@ dependencies = [
     { name = "loguru" },
     { name = "mcap-owa-support" },
     { name = "mediaref" },
+    { name = "numpy" },
     { name = "opencv-python" },
     { name = "orjson" },
     { name = "owa-core" },
     { name = "owa-msgs" },
     { name = "packaging" },
     { name = "plotext" },
-    { name = "pydantic" },
     { name = "pyyaml" },
     { name = "requests" },
     { name = "rich" },
@@ -504,13 +504,13 @@ requires-dist = [
     { name = "loguru" },
     { name = "mcap-owa-support", editable = "../mcap-owa-support" },
     { name = "mediaref", specifier = "~=0.3.1" },
-    { name = "opencv-python", specifier = ">=4.10.0" },
+    { name = "numpy", specifier = ">=2.0" },
+    { name = "opencv-python" },
     { name = "orjson" },
     { name = "owa-core", editable = "../owa-core" },
     { name = "owa-msgs", editable = "../owa-msgs" },
     { name = "packaging", specifier = ">=20.0" },
     { name = "plotext" },
-    { name = "pydantic", specifier = ">=2.0" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "requests", specifier = ">=2.32.2" },
     { name = "rich", specifier = ">=14.1.0" },
@@ -557,7 +557,7 @@ requires-dist = [
     { name = "annotated-types" },
     { name = "mediaref", specifier = "~=0.3.1" },
     { name = "numpy", specifier = ">=2.0" },
-    { name = "opencv-python", specifier = ">=4.10.0" },
+    { name = "opencv-python" },
     { name = "owa-core", editable = "../owa-core" },
     { name = "pydantic", specifier = ">=2.0" },
 ]

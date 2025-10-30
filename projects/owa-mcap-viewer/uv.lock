@@ -777,14 +777,16 @@ source = { editable = "." }
 dependencies = [
     { name = "diskcache" },
     { name = "fastapi", extra = ["standard"] },
+    { name = "fsspec" },
     { name = "huggingface-hub" },
     { name = "jinja2" },
     { name = "mcap-owa-support" },
+    { name = "numpy" },
     { name = "owa-cli" },
     { name = "owa-core" },
+    { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "python-dotenv" },
-    { name = "python-multipart" },
     { name = "requests" },
 ]
 
@@ -792,14 +794,16 @@ dependencies = [
 requires-dist = [
     { name = "diskcache" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.115.12" },
+    { name = "fsspec" },
     { name = "huggingface-hub", specifier = ">=0.30.0" },
     { name = "jinja2" },
     { name = "mcap-owa-support", specifier = ">=0.6.2" },
+    { name = "numpy", specifier = ">=2.0" },
     { name = "owa-cli", specifier = ">=0.6.2" },
     { name = "owa-core", specifier = ">=0.6.2" },
+    { name = "pydantic", specifier = ">=2.0" },
     { name = "pydantic-settings" },
     { name = "python-dotenv" },
-    { name = "python-multipart" },
     { name = "requests", specifier = ">=2.32.2" },
 ]
 

@@ -7,9 +7,9 @@ license = { text = "MIT" }
 requires-python = ">=3.11"
 dependencies = [
     "av>=15.0",
+    "griffe",
     "loguru",
     "pydantic>=2.0",
-    "griffe",
     "pyyaml>=6.0",
 ]
 

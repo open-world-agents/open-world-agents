@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version >= '3.12' and sys_platform == 'darwin'",
@@ -317,7 +317,6 @@ dependencies = [
     { name = "av" },
     { name = "griffe" },
     { name = "loguru" },
-    { name = "opencv-python" },
     { name = "pydantic" },
     { name = "pyyaml" },
 ]
@@ -327,7 +326,6 @@ requires-dist = [
     { name = "av", specifier = ">=15.0" },
     { name = "griffe" },
     { name = "loguru" },
-    { name = "opencv-python", specifier = ">=4.10.0" },
     { name = "pydantic", specifier = ">=2.0" },
     { name = "pyyaml", specifier = ">=6.0" },
 ]
@@ -338,11 +336,12 @@ version = "0.6.2"
 source = { editable = "." }
 dependencies = [
     { name = "av" },
+    { name = "loguru" },
     { name = "mediaref" },
+    { name = "numpy" },
     { name = "opencv-python" },
     { name = "owa-core" },
     { name = "owa-msgs" },
-    { name = "pillow" },
     { name = "pygobject-stubs" },
     { name = "tqdm" },
 ]
@@ -350,11 +349,12 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "av", specifier = ">=15.0" },
+    { name = "loguru" },
     { name = "mediaref", specifier = "~=0.3.1" },
-    { name = "opencv-python", specifier = ">=4.10.0" },
+    { name = "numpy", specifier = ">=2.0" },
+    { name = "opencv-python" },
     { name = "owa-core", editable = "../owa-core" },
     { name = "owa-msgs", editable = "../owa-msgs" },
-    { name = "pillow", specifier = ">=9.4.0" },
     { name = "pygobject-stubs" },
     { name = "tqdm" },
 ]
@@ -377,7 +377,7 @@ requires-dist = [
     { name = "annotated-types" },
     { name = "mediaref", specifier = "~=0.3.1" },
     { name = "numpy", specifier = ">=2.0" },
-    { name = "opencv-python", specifier = ">=4.10.0" },
+    { name = "opencv-python" },
     { name = "owa-core", editable = "../owa-core" },
     { name = "pydantic", specifier = ">=2.0" },
 ]
