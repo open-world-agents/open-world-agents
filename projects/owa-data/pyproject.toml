@@ -13,7 +13,7 @@ dependencies = [
     "line-profiler>=4.1.0",
     "loguru",
     "mcap-owa-support>=0.6.2",
-    "mediaref~=0.3.1",
+    "mediaref~=0.4.1",
     "numpy>=2.0",
     "owa-core>=0.6.2",
     "owa-msgs>=0.6.2",
