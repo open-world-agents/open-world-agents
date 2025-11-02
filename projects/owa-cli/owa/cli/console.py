@@ -19,6 +19,7 @@ def _create_console() -> Console:
         environ["NO_COLOR"] = "1"
         environ["TERM"] = "dumb"
         environ["TTY_COMPATIBLE"] = "0"
+        environ["TTY_INTERACTIVE"] = "0"
         return Console(_environ=environ)
     else:
         # Normal console with default settings
