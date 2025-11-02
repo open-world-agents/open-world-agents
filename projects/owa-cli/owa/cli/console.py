@@ -23,7 +23,7 @@ def _create_console() -> Console:
         return Console(_environ=environ)
     else:
         # Normal console with default settings
-        return Console()
+        raise NotImplementedError("Console styling is not yet implemented")
 
 
 # Shared console instance for all CLI output
