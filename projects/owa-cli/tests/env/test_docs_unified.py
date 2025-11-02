@@ -7,6 +7,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
+from owa.cli.env import app as env_app
 from owa.core.documentation.validator import ComponentValidationResult, PluginValidationResult
 
 
@@ -50,7 +51,7 @@ def mock_validator():
 class TestUnifiedDocsCommand:
     """Test the unified docs command functionality."""
 
-    def test_docs_help(self, cli_runner, env_app):
+    def test_docs_help(self, cli_runner):
         """Test docs command help shows unified interface."""
         result = cli_runner.invoke(env_app, ["docs", "--help"])
         assert result.exit_code == 0
@@ -59,7 +60,7 @@ class TestUnifiedDocsCommand:
         assert "table or json" in result.stdout
 
     @patch("owa.cli.env.docs.DocumentationValidator")
-    def test_docs_table_format_default(self, mock_validator_class, cli_runner, mock_validator, env_app):
+    def test_docs_table_format_default(self, mock_validator_class, cli_runner, mock_validator):
         """Test docs command with table format (default)."""
         mock_validator_class.return_value = mock_validator
 
@@ -73,7 +74,7 @@ class TestUnifiedDocsCommand:
         assert "Improvements needed" in result.stdout
 
     @patch("owa.cli.env.docs.DocumentationValidator")
-    def test_docs_json_format(self, mock_validator_class, cli_runner, mock_validator, env_app):
+    def test_docs_json_format(self, mock_validator_class, cli_runner, mock_validator):
         """Test docs command with JSON format."""
         mock_validator_class.return_value = mock_validator
 
@@ -88,7 +89,7 @@ class TestUnifiedDocsCommand:
         assert output_data["plugins"]["good_plugin"]["status"] == "pass"
 
     @patch("owa.cli.env.docs.DocumentationValidator")
-    def test_docs_invalid_format(self, mock_validator_class, cli_runner, mock_validator, env_app):
+    def test_docs_invalid_format(self, mock_validator_class, cli_runner, mock_validator):
         """Test docs command with invalid format."""
         mock_validator_class.return_value = mock_validator
 
@@ -98,7 +99,7 @@ class TestUnifiedDocsCommand:
         assert "Must be 'table' or 'json'" in result.stdout
 
     @patch("owa.cli.env.docs.DocumentationValidator")
-    def test_docs_by_type_flag(self, mock_validator_class, cli_runner, mock_validator, env_app):
+    def test_docs_by_type_flag(self, mock_validator_class, cli_runner, mock_validator):
         """Test docs command with by-type flag."""
         mock_validator_class.return_value = mock_validator
 
@@ -108,7 +109,7 @@ class TestUnifiedDocsCommand:
         assert "by-type view" in result.stdout
 
     @patch("owa.cli.env.docs.DocumentationValidator")
-    def test_docs_specific_plugin(self, mock_validator_class, cli_runner, mock_validator, env_app):
+    def test_docs_specific_plugin(self, mock_validator_class, cli_runner, mock_validator):
         """Test docs command with specific plugin."""
         mock_validator_class.return_value = mock_validator
 
@@ -117,7 +118,7 @@ class TestUnifiedDocsCommand:
         mock_validator.validate_plugin.assert_called_once_with("good_plugin")
 
     @patch("owa.cli.env.docs.DocumentationValidator")
-    def test_docs_strict_mode(self, mock_validator_class, cli_runner, mock_validator, env_app):
+    def test_docs_strict_mode(self, mock_validator_class, cli_runner, mock_validator):
         """Test docs command with strict mode."""
         mock_validator_class.return_value = mock_validator
 
@@ -126,7 +127,7 @@ class TestUnifiedDocsCommand:
         mock_validator.validate_all_plugins.assert_called_once()
 
     @patch("owa.cli.env.docs.DocumentationValidator")
-    def test_docs_exit_codes(self, mock_validator_class, cli_runner, env_app):
+    def test_docs_exit_codes(self, mock_validator_class, cli_runner):
         """Test proper exit codes."""
         # Test success case
         mock_validator = Mock()
