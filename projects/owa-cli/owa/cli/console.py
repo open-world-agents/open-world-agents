@@ -21,7 +21,7 @@ def _create_console() -> Console:
         environ["TTY_COMPATIBLE"] = "1"
         environ["TTY_INTERACTIVE"] = "0"
         return Console(
-            color_system=None, force_terminal=False, force_interactive=False, no_color=True, _environ=environ
+            color_system=None, force_terminal=True, force_interactive=False, no_color=True, _environ=environ
         )
     else:
         # Normal console with default settings
