@@ -15,7 +15,7 @@ def _create_console() -> Console:
     disable_console_styling = os.environ.get("OWA_DISABLE_CONSOLE_STYLING")
     if disable_console_styling:
         # Disable all styling features. Reference: https://rich.readthedocs.io/en/latest/console.html
-        return Console(color_system=None, force_interactive=False, no_color=True)
+        return Console(color_system=None, force_terminal=False, force_interactive=False, no_color=True)
     else:
         # Normal console with default settings
         return Console()
