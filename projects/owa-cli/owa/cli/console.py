@@ -5,7 +5,6 @@ This module provides a centralized rich console instance that should be used
 across all owa-cli modules for consistent output formatting and styling.
 """
 
-import copy
 import os
 
 from rich.console import Console
@@ -21,7 +20,6 @@ def _create_console() -> Console:
         environ["TERM"] = "dumb"
         environ["TTY_COMPATIBLE"] = "1"
         environ["TTY_INTERACTIVE"] = "0"
-        return Console(_environ=environ)
         return Console(
             color_system=None, force_terminal=False, force_interactive=False, no_color=True, _environ=environ
         )
