@@ -18,9 +18,7 @@ def _create_console() -> Console:
         environ = os.environ.copy()
         environ["NO_COLOR"] = "1"
         environ["TERM"] = "dumb"
-        return Console(
-            color_system=None, force_terminal=False, force_interactive=False, no_color=True, _environ=environ
-        )
+        return Console(_environ=environ)
     else:
         # Normal console with default settings
         return Console()
