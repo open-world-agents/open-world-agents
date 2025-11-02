@@ -5,25 +5,12 @@ This module provides fixtures and utilities specific to MCAP testing,
 including test file management and common MCAP testing utilities.
 """
 
-import re
 import shutil
 import warnings
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-
-
-@pytest.fixture
-def strip_ansi_codes():
-    """Fixture that provides a function to strip ANSI escape codes from text."""
-
-    def _strip_ansi_codes(text: str) -> str:
-        """Strip ANSI escape codes from text for more reliable testing."""
-        ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
-        return ansi_escape.sub("", text)
-
-    return _strip_ansi_codes
 
 
 @pytest.fixture
