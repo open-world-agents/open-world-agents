@@ -20,10 +20,11 @@ def _create_console() -> Console:
         environ["TERM"] = "dumb"
         environ["TTY_COMPATIBLE"] = "0"
         environ["TTY_INTERACTIVE"] = "0"
+        print(environ)
         return Console(_environ=environ)
     else:
         # Normal console with default settings
-        raise NotImplementedError("Console styling is not yet implemented")
+        return Console()
 
 
 # Shared console instance for all CLI output

@@ -81,7 +81,7 @@ jobs:
         run: vuv install --dev
 
       - name: Run pytest
-        run: pytest
+        run: pytest -s
 
       - name: Install owa-data
         run: vuv pip install -e projects/owa-data
