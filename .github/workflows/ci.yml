@@ -79,6 +79,9 @@ jobs:
 
       - name: Install Dependencies
         run: vuv install --dev
+      
+      - name: diagnose
+        run: python -m rich.diagnose
 
       - name: Run pytest
         run: pytest -s
