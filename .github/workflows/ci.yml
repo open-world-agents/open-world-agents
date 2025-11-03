@@ -66,30 +66,25 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
 
-      - name: Setup Virtual Environment
-        uses: ./.github/actions/setup-venv
-        with:
-          python-version: '3.11'
-
-      - name: Setup uv Environment
-        uses: ./.github/actions/setup-uv
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v7
 
       - name: Install Dependencies
-        run: vuv install --dev
+        run: |
+          uv venv --python 3.11
+          uv sync --all-extras --dev
 
       - name: Run pytest
-        run: pytest -s
+        run: uv run pytest -s
 
       - name: Install owa-data
-        run: vuv pip install -e projects/owa-data
+        run: uv pip install -e projects/owa-data
         env:
           UV_TORCH_BACKEND: "cpu"
 
       - name: Run pytest on owa-data
-        run: pytest projects/owa-data
+        run: uv run pytest projects/owa-data
 
   test-windows:
     runs-on: windows-latest
