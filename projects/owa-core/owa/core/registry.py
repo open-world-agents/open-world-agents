@@ -16,4 +16,4 @@ CALLABLES: Registry[str, CallableCls] = Registry(name="callables")
 LISTENERS: Registry[str, Type[ListenerCls]] = Registry(name="listeners")
 RUNNABLES: Registry[str, Type[Runnable]] = Registry(name="runnables")
 
-__all__ = ["CALLABLES", "LISTENERS", "RUNNABLES", "Registry"]
+__all__ = ["CALLABLES", "LISTENERS", "RUNNABLES"]
