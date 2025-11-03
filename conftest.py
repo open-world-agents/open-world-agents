@@ -7,13 +7,6 @@ def pytest_configure():
     os.environ["OWA_DISABLE_CONSOLE_STYLING"] = "1"
     os.environ["OWA_DISABLE_VERSION_CHECK"] = "1"
 
-    # os.environ["NO_COLOR"] = "1"
-    # os.environ["TERM"] = "dumb"
-    # os.environ["TTY_COMPATIBLE"] = "1"
-    # os.environ["TTY_INTERACTIVE"] = "0"
-
-    print("@ pytest_configure called")
-
 
 def pytest_runtest_setup(item):
     """

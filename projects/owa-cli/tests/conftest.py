@@ -125,7 +125,8 @@ def no_version_check():
 @pytest.fixture
 def cli_runner():
     """Create a CLI runner for testing."""
-    print("@ cli_runner called")
+    # NOTE: OWA_DISABLE_CONSOLE_STYLING or equivalent configuration ALSO needed here to disable console styling.
+    # Only matters in Github Action, not local, can't guess why
     return CliRunner(
         charset="utf-8", env={"NO_COLOR": "1", "TERM": "dumb", "TTY_COMPATIBLE": "1", "TTY_INTERACTIVE": "0"}
     )

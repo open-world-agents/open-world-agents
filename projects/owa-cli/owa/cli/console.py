@@ -13,7 +13,6 @@ from rich.console import Console
 def _create_console() -> Console:
     """Create a console instance with appropriate settings."""
     disable_console_styling = os.environ.get("OWA_DISABLE_CONSOLE_STYLING")
-    print(f"OWA_DISABLE_CONSOLE_STYLING: {disable_console_styling}")
     if disable_console_styling:
         # Disable all styling features. Reference: https://rich.readthedocs.io/en/latest/console.html
         environ = os.environ.copy()
