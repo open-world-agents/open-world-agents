@@ -3,8 +3,9 @@ Tests for the registry system (owa.core.registry).
 """
 
 import pytest
+from lazyregistry import ImportString, Registry
 
-from owa.core.registry import CALLABLES, LISTENERS, RUNNABLES, LazyImportRegistry, Registry, RegistryType
+from owa.core.registry import CALLABLES, LISTENERS, RUNNABLES
 
 
 class TestRegistry:
@@ -12,25 +13,25 @@ class TestRegistry:
 
     def test_registry_initialization(self):
         """Test that registry initializes correctly."""
-        registry = Registry(RegistryType.CALLABLES)
-        assert len(registry._registry) == 0
-        assert registry.registry_type == RegistryType.CALLABLES
+        registry = Registry(name="test")
+        assert len(registry.data) == 0
+        assert registry.name == "test"
 
     def test_register_and_access(self):
         """Test registering and accessing objects."""
-        registry = Registry()
+        registry = Registry(name="test")
 
         def test_func():
             return "test"
 
-        registry.register("test", test_func)
+        registry.register("test", test_func, is_instance=True)
         assert "test" in registry
         assert registry["test"] is test_func
         assert registry.get("test") is test_func
 
     def test_get_with_default(self):
         """Test get() method with default values."""
-        registry = Registry()
+        registry = Registry(name="test")
 
         def default_func():
             return "default"
@@ -45,8 +46,8 @@ class TestRegistry:
 
     def test_extend(self):
         """Test extending registry with another registry."""
-        registry1 = Registry()
-        registry2 = Registry()
+        registry1 = Registry(name="test1")
+        registry2 = Registry(name="test2")
 
         def func1():
             return "func1"
@@ -54,10 +55,12 @@ class TestRegistry:
         def func2():
             return "func2"
 
-        registry1.register("func1", func1)
-        registry2.register("func2", func2)
+        registry1.register("func1", func1, is_instance=True)
+        registry2.register("func2", func2, is_instance=True)
 
-        registry1.extend(registry2)
+        # Manually extend by copying items
+        for key in registry2.keys():
+            registry1.register(key, registry2[key], is_instance=True)
 
         assert "func1" in registry1
         assert "func2" in registry1
@@ -66,87 +69,88 @@ class TestRegistry:
 
 
 class TestLazyImportRegistry:
-    """Test cases for LazyImportRegistry class."""
+    """Test cases for lazy import functionality."""
 
     def test_lazy_import_registry_inheritance(self):
-        """Test that LazyImportRegistry properly inherits from Registry."""
-        registry = LazyImportRegistry(RegistryType.CALLABLES)
+        """Test that Registry has all expected methods."""
+        registry = Registry(name="callables")
 
         # Test that it has Registry methods
         assert hasattr(registry, "register")
         assert hasattr(registry, "__getitem__")
         assert hasattr(registry, "__contains__")
         assert hasattr(registry, "get")
+        assert hasattr(registry, "data")
+        assert hasattr(registry, "name")
 
-        # Test that it has LazyImportRegistry-specific attributes
-        assert hasattr(registry, "_import_paths")
-        assert hasattr(registry, "_load_component")
-
-        # Test registry type
-        assert registry.registry_type == RegistryType.CALLABLES
+        # Test registry name
+        assert registry.name == "callables"
 
     def test_register_instance(self):
         """Test registering pre-loaded instances."""
-        registry = LazyImportRegistry(RegistryType.CALLABLES)
+        registry = Registry(name="callables")
 
         def test_func():
             return "test"
 
-        registry.register("test", obj_or_import_path=test_func, is_instance=True)
+        registry.register("test", test_func, is_instance=True)
         assert "test" in registry
         assert registry["test"] is test_func
 
     def test_register_import_path(self):
         """Test registering import paths for lazy loading."""
-        registry = LazyImportRegistry(RegistryType.CALLABLES)
+        registry = Registry(name="callables")
 
         # Register with import path
-        registry.register("operator_add", obj_or_import_path="operator:add")
-        assert "operator_add" in registry._import_paths
-        assert "operator_add" not in registry._registry  # Not loaded yet
+        registry.register("operator_add", "operator:add")
+
+        # Check it's stored as ImportString (not loaded yet)
+        assert "operator_add" in registry
+        assert isinstance(registry.data["operator_add"], ImportString)
 
         # Access should trigger loading
         add_func = registry["operator_add"]
         import operator
 
         assert add_func is operator.add
-        assert "operator_add" in registry._registry  # Now loaded
+        # After loading, it's no longer an ImportString
+        assert not isinstance(registry.data["operator_add"], ImportString)
 
     def test_eager_loading(self):
         """Test eager loading at registration time."""
-        registry = LazyImportRegistry(RegistryType.CALLABLES)
+        registry = Registry(name="callables")
 
         # Register with eager loading
-        registry.register("operator_sub", obj_or_import_path="operator:sub", eager_load=True)
+        registry.register("operator_sub", "operator:sub", eager_load=True)
 
-        # Should be loaded immediately
-        assert "operator_sub" in registry._registry
+        # Should be loaded immediately (not an ImportString)
+        assert not isinstance(registry.data["operator_sub"], ImportString)
         import operator
 
         assert registry["operator_sub"] is operator.sub
 
     def test_load_component_error_handling(self):
         """Test error handling during component loading."""
-        registry = LazyImportRegistry(RegistryType.CALLABLES)
+        registry = Registry(name="callables")
 
         # Register invalid import path
-        registry.register("invalid", obj_or_import_path="nonexistent.module:function")
+        registry.register("invalid", "nonexistent.module:function")
 
-        # Should raise ImportError when accessed
-        with pytest.raises(ImportError, match="Failed to load component 'invalid'"):
+        # Should raise error when accessed (ValidationError from pydantic)
+        with pytest.raises(Exception):  # lazyregistry raises ValidationError
             registry["invalid"]
 
     def test_namespace_name_pattern(self):
         """Test that the namespace/name pattern works correctly."""
-        registry = LazyImportRegistry(RegistryType.CALLABLES)
+        registry = Registry(name="callables")
 
         # Register components with namespace/name pattern
         def test_func():
             return "test"
 
-        registry.register("example/test", obj_or_import_path=test_func, is_instance=True)
-        registry.register("other/test", obj_or_import_path=test_func, is_instance=True)
-        registry.register("example/other", obj_or_import_path=test_func, is_instance=True)
+        registry.register("example/test", test_func, is_instance=True)
+        registry.register("other/test", test_func, is_instance=True)
+        registry.register("example/other", test_func, is_instance=True)
 
         # Test that components are properly separated by namespace
         assert "example/test" in registry
@@ -168,10 +172,10 @@ class TestGlobalRegistries:
 
     def test_global_registries_exist(self):
         """Test that global registries are properly initialized."""
-        assert isinstance(CALLABLES, LazyImportRegistry)
-        assert isinstance(LISTENERS, LazyImportRegistry)
-        assert isinstance(RUNNABLES, LazyImportRegistry)
+        assert isinstance(CALLABLES, Registry)
+        assert isinstance(LISTENERS, Registry)
+        assert isinstance(RUNNABLES, Registry)
 
-        assert CALLABLES.registry_type == RegistryType.CALLABLES
-        assert LISTENERS.registry_type == RegistryType.LISTENERS
-        assert RUNNABLES.registry_type == RegistryType.RUNNABLES
+        assert CALLABLES.name == "callables"
+        assert LISTENERS.name == "listeners"
+        assert RUNNABLES.name == "runnables"
