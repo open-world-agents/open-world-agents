@@ -12,6 +12,13 @@ import pytest
 from typer.testing import CliRunner
 
 
+def pytest_configure(config):
+    # Disable console styling to enable string comparison
+    os.environ["OWA_DISABLE_CONSOLE_STYLING"] = "1"
+    # Disable version checks to prevent GitHub API calls
+    os.environ["OWA_DISABLE_VERSION_CHECK"] = "1"
+
+
 @pytest.fixture(scope="session", autouse=True)
 def mock_github_api_calls():
     """
@@ -53,23 +60,6 @@ def mock_github_api_calls():
     with patch("owa.cli.utils.requests.get", side_effect=mock_requests_get):
         with patch("owa.cli.mcap.info.requests.get", side_effect=mock_requests_get):
             yield
-
-
-@pytest.fixture(scope="session", autouse=True)
-def disable_version_checks():
-    """
-    Disable version checks during testing by setting environment variable.
-
-    This provides an additional layer of protection against GitHub API calls
-    by setting a flag that can be checked by the application code.
-    """
-    original_value = os.environ.get("OWA_DISABLE_VERSION_CHECK")
-    os.environ["OWA_DISABLE_VERSION_CHECK"] = "1"
-    yield
-    if original_value is None:
-        os.environ.pop("OWA_DISABLE_VERSION_CHECK", None)
-    else:
-        os.environ["OWA_DISABLE_VERSION_CHECK"] = original_value
 
 
 @pytest.fixture
@@ -130,4 +120,8 @@ def no_version_check():
 @pytest.fixture
 def cli_runner():
     """Create a CLI runner for testing."""
-    return CliRunner(charset="utf-8")
+    # NOTE: OWA_DISABLE_CONSOLE_STYLING or equivalent configuration ALSO needed here to disable console styling.
+    # Only matters in Github Action, not local, can't guess why
+    return CliRunner(
+        charset="utf-8", env={"NO_COLOR": "1", "TERM": "dumb", "TTY_COMPATIBLE": "1", "TTY_INTERACTIVE": "0"}
+    )

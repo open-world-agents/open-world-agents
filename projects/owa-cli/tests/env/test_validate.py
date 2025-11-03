@@ -4,16 +4,9 @@ Tests for the owl env validate command.
 
 import pytest
 import yaml
-from typer.testing import CliRunner
 
 from owa.cli.env import app as env_app
 from owa.core.plugin_spec import PluginSpec
-
-
-@pytest.fixture
-def runner():
-    """Create a CLI runner for testing."""
-    return CliRunner()
 
 
 @pytest.fixture
@@ -50,51 +43,51 @@ def invalid_yaml_file(tmp_path):
     return str(yaml_file)
 
 
-def test_validate_yaml_file_success(runner, sample_yaml_file):
+def test_validate_yaml_file_success(cli_runner, sample_yaml_file):
     """Test successful validation of a YAML file."""
-    result = runner.invoke(env_app, ["validate", sample_yaml_file, "--no-check-imports"])
+    result = cli_runner.invoke(env_app, ["validate", sample_yaml_file, "--no-check-imports"])
     assert result.exit_code == 0
     assert "✅ Plugin Specification Valid" in result.stdout
     assert "test_plugin" in result.stdout
     assert "YAML file:" in result.stdout
 
 
-def test_validate_yaml_file_with_errors(runner, invalid_yaml_file):
+def test_validate_yaml_file_with_errors(cli_runner, invalid_yaml_file):
     """Test validation of a YAML file with import errors."""
-    result = runner.invoke(env_app, ["validate", invalid_yaml_file])
+    result = cli_runner.invoke(env_app, ["validate", invalid_yaml_file])
     assert result.exit_code == 1
     assert "Plugin Specification Invalid" in result.stdout
     assert "Import Validation Errors" in result.stdout
     assert "missing ':'" in result.stdout
 
 
-def test_validate_entry_point_success(runner):
+def test_validate_entry_point_success(cli_runner):
     """Test successful validation of an entry point."""
-    result = runner.invoke(env_app, ["validate", "owa.env.plugins.std:plugin_spec", "--no-check-imports"])
+    result = cli_runner.invoke(env_app, ["validate", "owa.env.plugins.std:plugin_spec", "--no-check-imports"])
     assert result.exit_code == 0
     assert "✅ Plugin Specification Valid" in result.stdout
     assert "std" in result.stdout
     assert "Entry point:" in result.stdout
 
 
-def test_validate_nonexistent_yaml_file(runner):
+def test_validate_nonexistent_yaml_file(cli_runner):
     """Test validation of a non-existent YAML file."""
-    result = runner.invoke(env_app, ["validate", "nonexistent.yaml"])
+    result = cli_runner.invoke(env_app, ["validate", "nonexistent.yaml"])
     assert result.exit_code == 1
     assert "YAML file not found" in result.stdout
 
 
-def test_validate_nonexistent_entry_point(runner):
+def test_validate_nonexistent_entry_point(cli_runner):
     """Test validation of a non-existent entry point."""
-    result = runner.invoke(env_app, ["validate", "nonexistent.module:plugin_spec"])
+    result = cli_runner.invoke(env_app, ["validate", "nonexistent.module:plugin_spec"])
     assert result.exit_code == 1
     assert "Entry point validation failed" in result.stdout
     assert "Cannot import module" in result.stdout
 
 
-def test_validate_verbose_mode(runner, sample_yaml_file):
+def test_validate_verbose_mode(cli_runner, sample_yaml_file):
     """Test validation with verbose mode."""
-    result = runner.invoke(env_app, ["validate", sample_yaml_file, "--verbose", "--no-check-imports"])
+    result = cli_runner.invoke(env_app, ["validate", sample_yaml_file, "--verbose", "--no-check-imports"])
     assert result.exit_code == 0
     assert "Detected input type: yaml" in result.stdout
 

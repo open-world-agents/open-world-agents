@@ -3,6 +3,13 @@ import os
 import pytest
 
 
+def pytest_configure():
+    # Disable console styling to enable string comparison
+    os.environ["OWA_DISABLE_CONSOLE_STYLING"] = "1"
+    # Disable version checks to prevent GitHub API calls
+    os.environ["OWA_DISABLE_VERSION_CHECK"] = "1"
+
+
 def pytest_runtest_setup(item):
     """
     Skip tests based on platform and environment conditions.
