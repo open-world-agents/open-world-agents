@@ -210,6 +210,18 @@ wheels = [
 ]
 
 [[package]]
+name = "lazyregistry"
+version = "0.1.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pydantic" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/13/f2/2e2ca4f2ba809da0f714e65b1e8d65e4a88118bdee4103c1129c90939cdd/lazyregistry-0.1.2.tar.gz", hash = "sha256:0110533bc7561abce5b1b90d80150621347078cb7ea73f8c62cfca586e1d7ffa", size = 14326, upload-time = "2025-11-03T07:56:17.825Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d3/69/57f199d96b3c7ee3bb5357ef400973da57942e7b928d2217f3e18869b8ff/lazyregistry-0.1.2-py3-none-any.whl", hash = "sha256:10e348fd8ace547a33bce814f9f073bfb54dc6a73bb61eb30465ef97fca42a70", size = 8828, upload-time = "2025-11-03T07:56:16.683Z" },
+]
+
+[[package]]
 name = "loguru"
 version = "0.7.3"
 source = { registry = "https://pypi.org/simple" }
@@ -344,6 +356,7 @@ source = { editable = "../owa-core" }
 dependencies = [
     { name = "av" },
     { name = "griffe" },
+    { name = "lazyregistry" },
     { name = "loguru" },
     { name = "pydantic" },
     { name = "pyyaml" },
@@ -353,6 +366,7 @@ dependencies = [
 requires-dist = [
     { name = "av", specifier = ">=15.0" },
     { name = "griffe" },
+    { name = "lazyregistry", specifier = "~=0.1.2" },
     { name = "loguru" },
     { name = "pydantic", specifier = ">=2.0" },
     { name = "pyyaml", specifier = ">=6.0" },
