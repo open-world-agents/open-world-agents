@@ -48,7 +48,10 @@ class EasyDict(UserDict):
         self[name] = value
 
     def __getattr__(self, name):
-        return self[name]
+        try:
+            return self[name]
+        except KeyError:
+            raise AttributeError(f"'EasyDict' object has no attribute '{name}'")
 
     def __getattribute__(self, name: str) -> Any:
         if name.startswith("__") and name.endswith("__"):
@@ -62,7 +65,10 @@ class EasyDict(UserDict):
         return super().__getattribute__(name)
 
     def __delattr__(self, name):
-        self.pop(name)
+        try:
+            del self[name]
+        except KeyError:
+            raise AttributeError(f"'EasyDict' object has no attribute '{name}'")
 
     # Newly added for Pydantic integration
     @classmethod
