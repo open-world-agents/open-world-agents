@@ -96,6 +96,8 @@ class TestPluginDiscovery:
 
     def test_register_plugin_components_callables(self, isolated_registries):
         """Test registering plugin components for callables."""
+        from lazyregistry import ImportString
+
         discovery = PluginDiscovery()
 
         plugin_spec = PluginSpec(
@@ -109,13 +111,16 @@ class TestPluginDiscovery:
         with patch("owa.core.plugin_discovery.CALLABLES", isolated_registries["callables"]):
             discovery._register_plugin_components("test_plugin", plugin_spec)
 
-            # Check that components were registered
-            assert "test/add" in isolated_registries["callables"]._import_paths
-            assert "test/mul" in isolated_registries["callables"]._import_paths
-            assert isolated_registries["callables"]._import_paths["test/add"] == "operator:add"
+            # Check that components were registered as lazy imports
+            assert "test/add" in isolated_registries["callables"]
+            assert "test/mul" in isolated_registries["callables"]
+            assert isinstance(isolated_registries["callables"].data["test/add"], ImportString)
+            assert str(isolated_registries["callables"].data["test/add"]) == "operator:add"
 
     def test_register_plugin_components_listeners(self, isolated_registries):
         """Test registering plugin components for listeners."""
+        from lazyregistry import ImportString
+
         discovery = PluginDiscovery()
 
         plugin_spec = PluginSpec(
@@ -129,12 +134,15 @@ class TestPluginDiscovery:
         with patch("owa.core.plugin_discovery.LISTENERS", isolated_registries["listeners"]):
             discovery._register_plugin_components("test_plugin", plugin_spec)
 
-            # Check that components were registered
-            assert "test/timer" in isolated_registries["listeners"]._import_paths
-            assert isolated_registries["listeners"]._import_paths["test/timer"] == "time:sleep"
+            # Check that components were registered as lazy imports
+            assert "test/timer" in isolated_registries["listeners"]
+            assert isinstance(isolated_registries["listeners"].data["test/timer"], ImportString)
+            assert str(isolated_registries["listeners"].data["test/timer"]) == "time:sleep"
 
     def test_register_plugin_components_runnables(self, isolated_registries):
         """Test registering plugin components for runnables."""
+        from lazyregistry import ImportString
+
         discovery = PluginDiscovery()
 
         plugin_spec = PluginSpec(
@@ -148,12 +156,15 @@ class TestPluginDiscovery:
         with patch("owa.core.plugin_discovery.RUNNABLES", isolated_registries["runnables"]):
             discovery._register_plugin_components("test_plugin", plugin_spec)
 
-            # Check that components were registered
-            assert "test/worker" in isolated_registries["runnables"]._import_paths
-            assert isolated_registries["runnables"]._import_paths["test/worker"] == "threading:Thread"
+            # Check that components were registered as lazy imports
+            assert "test/worker" in isolated_registries["runnables"]
+            assert isinstance(isolated_registries["runnables"].data["test/worker"], ImportString)
+            assert str(isolated_registries["runnables"].data["test/worker"]) == "threading:Thread"
 
     def test_register_plugin_components_all_types(self, isolated_registries):
         """Test registering plugin components for all component types."""
+        from lazyregistry import ImportString
+
         discovery = PluginDiscovery()
 
         plugin_spec = PluginSpec(
@@ -173,10 +184,13 @@ class TestPluginDiscovery:
                 with patch("owa.core.plugin_discovery.RUNNABLES", isolated_registries["runnables"]):
                     discovery._register_plugin_components("test_plugin", plugin_spec)
 
-                    # Check that all components were registered
-                    assert "test/add" in isolated_registries["callables"]._import_paths
-                    assert "test/timer" in isolated_registries["listeners"]._import_paths
-                    assert "test/worker" in isolated_registries["runnables"]._import_paths
+                    # Check that all components were registered as lazy imports
+                    assert "test/add" in isolated_registries["callables"]
+                    assert "test/timer" in isolated_registries["listeners"]
+                    assert "test/worker" in isolated_registries["runnables"]
+                    assert isinstance(isolated_registries["callables"].data["test/add"], ImportString)
+                    assert isinstance(isolated_registries["listeners"].data["test/timer"], ImportString)
+                    assert isinstance(isolated_registries["runnables"].data["test/worker"], ImportString)
 
     def test_register_plugin_components_empty_components(self, isolated_registries):
         """Test registering plugin with empty components."""
@@ -191,10 +205,12 @@ class TestPluginDiscovery:
             discovery._register_plugin_components("test_plugin", plugin_spec)
 
             # No components should be registered
-            assert len(isolated_registries["callables"]._import_paths) == 0
+            assert len(isolated_registries["callables"].data) == 0
 
     def test_discover_and_register_integration(self, isolated_registries):
         """Test full discover and register integration."""
+        from lazyregistry import ImportString
+
         discovery = PluginDiscovery()
 
         # Create mock entry point with valid plugin spec
@@ -218,8 +234,9 @@ class TestPluginDiscovery:
                 # Check that plugin was discovered
                 assert "test_plugin" in discovery.discovered_plugins
 
-                # Check that components were registered
-                assert "test/add" in isolated_registries["callables"]._import_paths
+                # Check that components were registered as lazy imports
+                assert "test/add" in isolated_registries["callables"]
+                assert isinstance(isolated_registries["callables"].data["test/add"], ImportString)
 
 
 class TestModuleFunctions:
@@ -227,6 +244,8 @@ class TestModuleFunctions:
 
     def test_discover_and_register_plugins(self, isolated_registries):
         """Test discover_and_register_plugins function."""
+        from lazyregistry import ImportString
+
         # Create mock entry point
         mock_entry_point = Mock()
         mock_entry_point.name = "test_plugin"
@@ -244,8 +263,9 @@ class TestModuleFunctions:
             with patch("owa.core.plugin_discovery.CALLABLES", isolated_registries["callables"]):
                 discover_and_register_plugins()
 
-                # Check that components were registered
-                assert "test/add" in isolated_registries["callables"]._import_paths
+                # Check that components were registered as lazy imports
+                assert "test/add" in isolated_registries["callables"]
+                assert isinstance(isolated_registries["callables"].data["test/add"], ImportString)
 
     def test_get_plugin_discovery_singleton(self):
         """Test get_plugin_discovery returns singleton instance."""

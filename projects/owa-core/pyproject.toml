@@ -8,6 +8,7 @@ requires-python = ">=3.11"
 dependencies = [
     "av>=15.0",
     "griffe",
+    "lazyregistry~=0.1.2",
     "loguru",
     "pydantic>=2.0",
     "pyyaml>=6.0",
