@@ -125,4 +125,15 @@ def no_version_check():
 @pytest.fixture
 def cli_runner():
     """Create a CLI runner for testing."""
-    return CliRunner(charset="utf-8")
+    print("@ cli_runner called")
+    return CliRunner(
+        charset="utf-8",
+        env={
+            "OWA_DISABLE_CONSOLE_STYLING": "1",
+            "OWA_DISABLE_VERSION_CHECK": "1",
+            "NO_COLOR": "1",
+            "TERM": "dumb",
+            "TTY_COMPATIBLE": "1",
+            "TTY_INTERACTIVE": "0",
+        },
+    )
