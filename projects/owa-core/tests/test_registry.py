@@ -3,7 +3,7 @@ Tests for the registry system (owa.core.registry).
 """
 
 import pytest
-from lazyregistry import Registry
+from lazyregistry import ImportString, Registry
 
 from owa.core.registry import CALLABLES, LISTENERS, RUNNABLES
 
@@ -99,8 +99,6 @@ class TestLazyImportRegistry:
 
     def test_register_import_path(self):
         """Test registering import paths for lazy loading."""
-        from lazyregistry import ImportString
-
         registry = Registry(name="callables")
 
         # Register with import path
@@ -126,8 +124,6 @@ class TestLazyImportRegistry:
         registry.register("operator_sub", "operator:sub", eager_load=True)
 
         # Should be loaded immediately (not an ImportString)
-        from lazyregistry import ImportString
-
         assert not isinstance(registry.data["operator_sub"], ImportString)
         import operator
 

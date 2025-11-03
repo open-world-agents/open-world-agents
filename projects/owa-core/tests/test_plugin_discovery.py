@@ -7,6 +7,8 @@ discovery, plugin registration, and error handling.
 
 from unittest.mock import Mock, patch
 
+from lazyregistry import ImportString
+
 from owa.core.plugin_discovery import PluginDiscovery, discover_and_register_plugins, get_plugin_discovery
 from owa.core.plugin_spec import PluginSpec
 
@@ -96,8 +98,6 @@ class TestPluginDiscovery:
 
     def test_register_plugin_components_callables(self, isolated_registries):
         """Test registering plugin components for callables."""
-        from lazyregistry import ImportString
-
         discovery = PluginDiscovery()
 
         plugin_spec = PluginSpec(
@@ -119,8 +119,6 @@ class TestPluginDiscovery:
 
     def test_register_plugin_components_listeners(self, isolated_registries):
         """Test registering plugin components for listeners."""
-        from lazyregistry import ImportString
-
         discovery = PluginDiscovery()
 
         plugin_spec = PluginSpec(
@@ -141,8 +139,6 @@ class TestPluginDiscovery:
 
     def test_register_plugin_components_runnables(self, isolated_registries):
         """Test registering plugin components for runnables."""
-        from lazyregistry import ImportString
-
         discovery = PluginDiscovery()
 
         plugin_spec = PluginSpec(
@@ -163,8 +159,6 @@ class TestPluginDiscovery:
 
     def test_register_plugin_components_all_types(self, isolated_registries):
         """Test registering plugin components for all component types."""
-        from lazyregistry import ImportString
-
         discovery = PluginDiscovery()
 
         plugin_spec = PluginSpec(
@@ -209,8 +203,6 @@ class TestPluginDiscovery:
 
     def test_discover_and_register_integration(self, isolated_registries):
         """Test full discover and register integration."""
-        from lazyregistry import ImportString
-
         discovery = PluginDiscovery()
 
         # Create mock entry point with valid plugin spec
@@ -244,8 +236,6 @@ class TestModuleFunctions:
 
     def test_discover_and_register_plugins(self, isolated_registries):
         """Test discover_and_register_plugins function."""
-        from lazyregistry import ImportString
-
         # Create mock entry point
         mock_entry_point = Mock()
         mock_entry_point.name = "test_plugin"
