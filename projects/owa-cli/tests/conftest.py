@@ -13,14 +13,9 @@ from typer.testing import CliRunner
 
 
 def pytest_configure(config):
-    """
-    Configure pytest environment before any tests run.
-
-    Sets environment variable to disable version checks during testing,
-    preventing unwanted GitHub API calls.
-    """
-    # Disable version checks to prevent GitHub API calls
+    # Disable console styling to enable string comparison
     os.environ["OWA_DISABLE_CONSOLE_STYLING"] = "1"
+    # Disable version checks to prevent GitHub API calls
     os.environ["OWA_DISABLE_VERSION_CHECK"] = "1"
 
 
