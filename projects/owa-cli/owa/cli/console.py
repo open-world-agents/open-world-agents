@@ -17,10 +17,7 @@ def _create_console() -> Console:
     if disable_console_styling:
         # Disable all styling features. Reference: https://rich.readthedocs.io/en/latest/console.html
         environ = os.environ.copy()
-        environ["NO_COLOR"] = "1"
-        environ["TERM"] = "dumb"
-        environ["TTY_COMPATIBLE"] = "1"
-        environ["TTY_INTERACTIVE"] = "0"
+        environ.update({"NO_COLOR": "1", "TERM": "dumb", "TTY_COMPATIBLE": "1", "TTY_INTERACTIVE": "0"})
         return Console(
             color_system=None,
             force_terminal=False,
