@@ -1,14 +1,18 @@
+import inspect
+from collections import UserDict
 from typing import Any
 
 from pydantic import GetCoreSchemaHandler
 from pydantic_core import CoreSchema, core_schema
 
 
-class EasyDict(dict):
+# More reference: https://github.com/makinacorpus/easydict
+class EasyDict(UserDict):
     """
     Dictionary with attribute-style access and Pydantic integration.
 
     Allows accessing dictionary values as attributes (works recursively).
+    Contains no heavy operation except the lightweight conversion at assignment time from native types to EasyDict.
     Useful for configuration objects, parsed JSON content, and nested data structures.
 
     Examples:
@@ -21,54 +25,46 @@ class EasyDict(dict):
         >>> data = EasyDict({'servers': [{'name': 'web1', 'ip': '192.168.1.1'}]})
         >>> data.servers[0].name
         'web1'
-
-    Original implementation from makinacorpus/easydict:
-    https://github.com/makinacorpus/easydict
-    Licensed under LGPL-3.0
     """
 
-    def __init__(self, d=None, **kwargs):
-        if d is None:
-            d = {}
-        else:
-            d = dict(d)
-        if kwargs:
-            d.update(**kwargs)
-        for k, v in d.items():
-            setattr(self, k, v)
-        # Class attributes
-        for k in self.__class__.__dict__.keys():
-            if not (k.startswith("__") and k.endswith("__")) and k not in ("update", "pop"):
-                setattr(self, k, getattr(self, k))
+    @staticmethod
+    def _convert_value(value):
+        """Recursively convert dictionaries to EasyDict and process sequences."""
+        if isinstance(value, dict) and not isinstance(value, EasyDict):
+            return EasyDict(value)
+        elif isinstance(value, (list, tuple)):
+            return type(value)(EasyDict._convert_value(item) for item in value)
+        return value
+
+    def __setitem__(self, key, value):
+        super().__setitem__(key, self._convert_value(value))
 
     def __setattr__(self, name, value):
-        if isinstance(value, (list, tuple)):
-            value = type(value)(self.__class__(x) if isinstance(x, dict) else x for x in value)
-        elif isinstance(value, dict) and not isinstance(value, EasyDict):
-            value = EasyDict(value)
-        super(EasyDict, self).__setattr__(name, value)
-        super(EasyDict, self).__setitem__(name, value)
+        # if setattr is called inside EasyDict, call normal setattr and return
+        frame = inspect.currentframe().f_back
+        caller_class = frame.f_locals.get("self", None).__class__.__name__
+        if caller_class == "EasyDict":
+            return super().__setattr__(name, value)
+        self[name] = value
 
-    __setitem__ = __setattr__
+    def __getattr__(self, name):
+        return self[name]
 
-    def update(self, e=None, **f):
-        d = e or dict()
-        d.update(f)
-        for k in d:
-            setattr(self, k, d[k])
+    def __getattribute__(self, name: str) -> Any:
+        if name.startswith("__") and name.endswith("__"):
+            return super().__getattribute__(name)
+        frame = inspect.currentframe().f_back
+        caller_class = frame.f_locals.get("self", None).__class__.__name__
+        # if getattribute is called outside EasyDict, hide `.data`
+        if caller_class != "EasyDict":
+            if name == "data":
+                return super().__getitem__(name)
+        return super().__getattribute__(name)
 
-    def pop(self, k, *args):
-        if hasattr(self, k):
-            delattr(self, k)
-        return super(EasyDict, self).pop(k, *args)
+    def __delattr__(self, name):
+        self.pop(name)
 
     # Newly added for Pydantic integration
     @classmethod
     def __get_pydantic_core_schema__(cls, source_type: Any, handler: GetCoreSchemaHandler) -> CoreSchema:
         return core_schema.no_info_after_validator_function(cls, handler(dict))
-
-
-if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod()
