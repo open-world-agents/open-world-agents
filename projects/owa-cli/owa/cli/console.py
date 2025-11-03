@@ -26,6 +26,7 @@ def _create_console() -> Console:
             force_interactive=False,
             no_color=True,
             legacy_windows=False,
+            highlight=False,
             _environ=environ,
         )
     else:
