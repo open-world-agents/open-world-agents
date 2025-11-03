@@ -119,7 +119,7 @@ class AppsinkRecorder(GstPipelineRunner):
                 notified_shape = (original_shape, shape)
 
             # Create ScreenCaptured with external video reference
-            from owa.msgs.desktop.screen import MediaRef
+            from mediaref import MediaRef
 
             screen_captured = ScreenCaptured(
                 utc_ns=frame_time_ns,

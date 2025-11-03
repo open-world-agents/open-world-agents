@@ -1,16 +1,20 @@
 <div align="center">
   <img src="docs/images/owa-logo.jpg" alt="Open World Agents" width="300"/>
-  
+
   # 🚀 Open World Agents
-  
+
   **Everything you need to build state-of-the-art foundation multimodal desktop agent, end-to-end.**
-  
+
   [![Documentation](https://img.shields.io/badge/docs-mkdocs-blue)](https://open-world-agents.github.io/open-world-agents/)
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
   [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
   [![GitHub stars](https://img.shields.io/github/stars/open-world-agents/open-world-agents?style=social)](https://github.com/open-world-agents/open-world-agents/stargazers)
-  
+
 </div>
+
+> **⚠️ Active Development Notice**: This codebase is under active development. APIs and components may change, and some may be moved to separate repositories. Documentation may be incomplete or reference features still in development.
+
+> **📄 Research Paper**: This project was first introduced and developed for the D2E project. For more details, see [D2E: Scaling Vision-Action Pretraining on Desktop Data for Transfer to Embodied AI](https://worv-ai.github.io/d2e/). If you find this work useful, please cite our paper.
 
 ## 🚀 Quick Start: Record → Train in 3 Steps
 
@@ -414,3 +418,16 @@ Please see our [Contributing Guide](https://open-world-agents.github.io/open-wor
 ## License
 
 This project is released under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## Citation
+
+If you find this work useful, please cite our paper:
+
+```
+@article{choi2025d2e,
+  title={D2E: Scaling Vision-Action Pretraining on Desktop Data for Transfer to Embodied AI},
+  author={Choi, Suwhan and Jung, Jaeyoon and Seong, Haebin and Kim, Minchan and Kim, Minyeong and Cho, Yongjun and Kim, Yoonshik and Park, Yubeen and Yu, Youngjae and Lee, Yunsung},
+  journal={arXiv preprint arXiv:2510.05684},
+  year={2025}
+}
+```

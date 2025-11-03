@@ -166,7 +166,7 @@ def build_event_dataset(
     owa_config = DatasetConfig(
         stage=DatasetStage.EVENT,
         mcap_root_directory=mcap_root_directory,
-        mcap_to_event_config=config,
+        mcap_to_event_config=config.__dict__,
     )
     event_dataset = Dataset.from_hf_dataset(hf_dataset, owa_config=owa_config)
 

@@ -5,12 +5,7 @@ This module implements the message registry system for centralized message manag
 providing automatic discovery of message types through Python entry points.
 """
 
-try:
-    from importlib.metadata import entry_points
-except ImportError:
-    # Python < 3.10 fallback
-    from importlib_metadata import entry_points
-
+from importlib.metadata import entry_points
 from typing import Dict, ItemsView, Iterator, KeysView, Type, ValuesView
 
 from .message import BaseMessage
@@ -39,11 +34,7 @@ class MessageRegistry:
         if self._loaded:
             return
 
-        try:
-            eps = entry_points(group="owa.msgs")
-        except TypeError:
-            # Python < 3.10 compatibility
-            eps = entry_points().get("owa.msgs", [])
+        eps = entry_points(group="owa.msgs")
 
         for entry_point in eps:
             try:

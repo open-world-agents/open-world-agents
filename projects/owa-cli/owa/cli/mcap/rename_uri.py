@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import List
 
 import typer
+from mediaref import MediaRef
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from typing_extensions import Annotated
@@ -17,7 +18,6 @@ from typing_extensions import Annotated
 from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
 from owa.core.utils.backup import BackupContext
 from owa.core.utils.tempfile import NamedTemporaryFile
-from owa.msgs.desktop.screen import MediaRef
 
 from ..console import console
 

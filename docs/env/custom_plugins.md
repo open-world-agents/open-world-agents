@@ -320,7 +320,7 @@ class MyRunnable(Runnable):
 
         **Debug command**:
         ```bash
-        owl env docs --validate yourplugin --output-format text
+        owl env docs yourplugin
         ```
 
         **Common causes & solutions**:
@@ -373,7 +373,7 @@ class MyRunnable(Runnable):
         owl env list yourplugin
 
         # Validate plugin specification
-        owl env docs --validate yourplugin --strict
+        owl env docs yourplugin --strict
 
         # Check for namespace conflicts
         owl env stats --namespaces

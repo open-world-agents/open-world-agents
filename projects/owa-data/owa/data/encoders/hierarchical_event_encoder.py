@@ -443,7 +443,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
 
             if not images:
                 warnings.warn("No image data provided for screen event", UserWarning)
-                from owa.msgs.desktop.screen import MediaRef
+                from mediaref import MediaRef
 
                 images = [ScreenCaptured(utc_ns=timestamp_ns, media_ref=MediaRef(uri="placeholder"))]
             return McapMessage(

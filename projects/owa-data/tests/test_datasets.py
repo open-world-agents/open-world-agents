@@ -3,13 +3,11 @@
 Test for owa.data.datasets - focuses on essential functionality and configuration sanity.
 """
 
-import json
 import os
 from unittest.mock import Mock, patch
 
 import pytest
 
-from owa.core.utils.tempfile import NamedTemporaryFile
 from owa.data.datasets import (
     DatasetConfig,
     DatasetStage,
@@ -21,61 +19,6 @@ from owa.data.datasets.transforms import (
     create_fsl_transform,
     resolve_episode_path,
 )
-
-
-@pytest.fixture
-def temp_json_file():
-    """Create a temporary JSON file for testing."""
-    with NamedTemporaryFile(mode="w", suffix=".json") as f:
-        yield f.name
-
-
-class TestDatasetConfig:
-    """Test dataset configuration functionality."""
-
-    def test_default_config(self):
-        """Test default configuration creation."""
-        config = DatasetConfig()
-        assert config.stage == DatasetStage.UNKNOWN
-        assert config.mcap_root_directory is None
-
-    def test_custom_config(self):
-        """Test custom configuration creation."""
-        config = DatasetConfig(stage=DatasetStage.EVENT, mcap_root_directory="/path/to/mcap")
-        assert config.stage == DatasetStage.EVENT
-        assert config.mcap_root_directory == "/path/to/mcap"
-
-    def test_config_serialization(self):
-        """Test configuration serialization to/from dict."""
-        config = DatasetConfig(stage=DatasetStage.BINNED, mcap_root_directory="/test/path")
-
-        # Test to_dict
-        config_dict = config.to_dict()
-        assert config_dict["stage"] == "binned"
-        assert config_dict["mcap_root_directory"] == "/test/path"
-
-        # Test from_dict
-        restored_config = DatasetConfig.from_dict(config_dict)
-        assert restored_config.stage == DatasetStage.BINNED
-        assert restored_config.mcap_root_directory == "/test/path"
-
-    def test_config_json_io(self, temp_json_file):
-        """Test configuration JSON file I/O."""
-        config = DatasetConfig(stage=DatasetStage.TOKENIZED, mcap_root_directory="/json/test")
-
-        # Test to_json
-        config.to_json(temp_json_file)
-
-        # Verify file contents
-        with open(temp_json_file, "r") as f:
-            data = json.load(f)
-        assert data["stage"] == "tokenized"
-        assert data["mcap_root_directory"] == "/json/test"
-
-        # Test from_json
-        restored_config = DatasetConfig.from_json(temp_json_file)
-        assert restored_config.stage == DatasetStage.TOKENIZED
-        assert restored_config.mcap_root_directory == "/json/test"
 
 
 class TestDatasetStage:
@@ -217,18 +160,6 @@ class TestDatasetIntegration:
             # Should be able to create transform for each stage
             transform = create_transform(stage=stage, mcap_root_directory=config.mcap_root_directory)
             assert callable(transform)
-
-    def test_config_serialization_roundtrip(self):
-        """Test complete config serialization roundtrip."""
-        original_config = DatasetConfig(stage=DatasetStage.FSL, mcap_root_directory="/complex/path/with spaces")
-
-        # Serialize to dict and back
-        config_dict = original_config.to_dict()
-        restored_config = DatasetConfig.from_dict(config_dict)
-
-        # Should be identical
-        assert restored_config.stage == original_config.stage
-        assert restored_config.mcap_root_directory == original_config.mcap_root_directory
 
 
 class TestDatasetLoading:

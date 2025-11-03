@@ -5,8 +5,7 @@ from dataclasses import dataclass, field
 from loguru import logger
 from tqdm import tqdm
 
-from .config import DatasetStage
-from .dataset import Dataset
+from owa.data.datasets import Dataset, DatasetStage
 
 
 @dataclass
@@ -187,7 +186,7 @@ def precompute_fsl_dataset(
     Returns:
         Pre-computed FSL dataset
     """
-    config = FSLDatasetConfig(**(config.__dict__ | kwargs))
+    config = FSLDatasetConfig(**{**config.__dict__, **kwargs})
     logger.info(
         f"Pre-computing FSL sequences using datasets.map with batch_size={batch_size:,}, num_workers={num_workers}"
     )

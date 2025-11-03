@@ -1,4 +1,6 @@
+import threading
 import time
+from typing import Callable
 
 from owa.core import Listener
 
@@ -73,7 +75,7 @@ class ClockTickListener(Listener):
         """
         self.interval = interval * S_TO_NS
 
-    def loop(self, *, stop_event, callback):
+    def loop(self, *, stop_event: threading.Event, callback: Callable[[], None]):
         """
         Main loop that executes callbacks at configured intervals.
 
