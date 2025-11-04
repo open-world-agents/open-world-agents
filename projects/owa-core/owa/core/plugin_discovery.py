@@ -117,7 +117,7 @@ class PluginDiscovery:
         if "callables" in plugin_spec.components:
             for name, import_path in plugin_spec.components["callables"].items():
                 full_name = f"{plugin_spec.namespace}/{name}"
-                CALLABLES.register(full_name, import_path)
+                CALLABLES[full_name] = import_path
                 registered_count += 1
                 logger.debug(f"Registered callable: {full_name} -> {import_path}")
 
@@ -125,7 +125,7 @@ class PluginDiscovery:
         if "listeners" in plugin_spec.components:
             for name, import_path in plugin_spec.components["listeners"].items():
                 full_name = f"{plugin_spec.namespace}/{name}"
-                LISTENERS.register(full_name, import_path)
+                LISTENERS[full_name] = import_path
                 registered_count += 1
                 logger.debug(f"Registered listener: {full_name} -> {import_path}")
 
@@ -133,7 +133,7 @@ class PluginDiscovery:
         if "runnables" in plugin_spec.components:
             for name, import_path in plugin_spec.components["runnables"].items():
                 full_name = f"{plugin_spec.namespace}/{name}"
-                RUNNABLES.register(full_name, import_path)
+                RUNNABLES[full_name] = import_path
                 registered_count += 1
                 logger.debug(f"Registered runnable: {full_name} -> {import_path}")
 

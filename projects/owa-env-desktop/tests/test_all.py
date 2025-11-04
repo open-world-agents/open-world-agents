@@ -51,7 +51,7 @@ def test_mouse_click():
 
     # Save the original function so we can restore it
     original_click = CALLABLES["desktop/mouse.click"]
-    CALLABLES.register("desktop/mouse.click", fake_click, is_instance=True)
+    CALLABLES["desktop/mouse.click"] = fake_click
 
     try:
         result = CALLABLES["desktop/mouse.click"]("left", 2)
@@ -59,7 +59,7 @@ def test_mouse_click():
         assert captured == [("left", 2)], f"Expected captured click data [('left', 2)], got {captured}"
     finally:
         # Restore the original function no matter what.
-        CALLABLES.register("desktop/mouse.click", original_click, is_instance=True)
+        CALLABLES["desktop/mouse.click"] = original_click
 
 
 def test_keyboard_listener():
