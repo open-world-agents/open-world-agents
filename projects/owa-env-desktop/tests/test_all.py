@@ -40,7 +40,7 @@ def test_get_window_by_title():
         )
 
 
-def test_mouse_click():
+def test_mouse_click(monkeypatch):
     # Test that the mouse-click callable can be triggered.
     # Instead of causing a real click, we'll replace it temporarily with a fake.
     captured = []
@@ -49,17 +49,12 @@ def test_mouse_click():
         captured.append((button, clicks))
         return "clicked"
 
-    # Save the original function so we can restore it
-    original_click = CALLABLES["desktop/mouse.click"]
-    CALLABLES.register("desktop/mouse.click", fake_click, is_instance=True)
+    # Use monkeypatch on the data dict directly to avoid triggering lazy loading
+    monkeypatch.setitem(CALLABLES.data, "desktop/mouse.click", fake_click)
 
-    try:
-        result = CALLABLES["desktop/mouse.click"]("left", 2)
-        assert result == "clicked", "Fake click did not return expected result"
-        assert captured == [("left", 2)], f"Expected captured click data [('left', 2)], got {captured}"
-    finally:
-        # Restore the original function no matter what.
-        CALLABLES.register("desktop/mouse.click", original_click, is_instance=True)
+    result = CALLABLES["desktop/mouse.click"]("left", 2)
+    assert result == "clicked", "Fake click did not return expected result"
+    assert captured == [("left", 2)], f"Expected captured click data [('left', 2)], got {captured}"
 
 
 def test_keyboard_listener():

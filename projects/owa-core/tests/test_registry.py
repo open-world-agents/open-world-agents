@@ -24,7 +24,7 @@ class TestRegistry:
         def test_func():
             return "test"
 
-        registry.register("test", test_func, is_instance=True)
+        registry["test"] = test_func
         assert "test" in registry
         assert registry["test"] is test_func
         assert registry.get("test") is test_func
@@ -55,12 +55,11 @@ class TestRegistry:
         def func2():
             return "func2"
 
-        registry1.register("func1", func1, is_instance=True)
-        registry2.register("func2", func2, is_instance=True)
+        registry1["func1"] = func1
+        registry2["func2"] = func2
 
-        # Manually extend by copying items
-        for key in registry2.keys():
-            registry1.register(key, registry2[key], is_instance=True)
+        # Use update() method to merge registries
+        registry1.update(registry2)
 
         assert "func1" in registry1
         assert "func2" in registry1
@@ -76,7 +75,7 @@ class TestLazyImportRegistry:
         registry = Registry(name="callables")
 
         # Test that it has Registry methods
-        assert hasattr(registry, "register")
+        assert hasattr(registry, "__setitem__")
         assert hasattr(registry, "__getitem__")
         assert hasattr(registry, "__contains__")
         assert hasattr(registry, "get")
@@ -93,7 +92,7 @@ class TestLazyImportRegistry:
         def test_func():
             return "test"
 
-        registry.register("test", test_func, is_instance=True)
+        registry["test"] = test_func
         assert "test" in registry
         assert registry["test"] is test_func
 
@@ -102,7 +101,7 @@ class TestLazyImportRegistry:
         registry = Registry(name="callables")
 
         # Register with import path
-        registry.register("operator_add", "operator:add")
+        registry["operator_add"] = "operator:add"
 
         # Check it's stored as ImportString (not loaded yet)
         assert "operator_add" in registry
@@ -120,8 +119,9 @@ class TestLazyImportRegistry:
         """Test eager loading at registration time."""
         registry = Registry(name="callables")
 
-        # Register with eager loading
-        registry.register("operator_sub", "operator:sub", eager_load=True)
+        # Enable eager loading via attribute
+        registry.eager_load = True
+        registry["operator_sub"] = "operator:sub"
 
         # Should be loaded immediately (not an ImportString)
         assert not isinstance(registry.data["operator_sub"], ImportString)
@@ -134,7 +134,7 @@ class TestLazyImportRegistry:
         registry = Registry(name="callables")
 
         # Register invalid import path
-        registry.register("invalid", "nonexistent.module:function")
+        registry["invalid"] = "nonexistent.module:function"
 
         # Should raise error when accessed (ValidationError from pydantic)
         with pytest.raises(Exception):  # lazyregistry raises ValidationError
@@ -148,9 +148,9 @@ class TestLazyImportRegistry:
         def test_func():
             return "test"
 
-        registry.register("example/test", test_func, is_instance=True)
-        registry.register("other/test", test_func, is_instance=True)
-        registry.register("example/other", test_func, is_instance=True)
+        registry["example/test"] = test_func
+        registry["other/test"] = test_func
+        registry["example/other"] = test_func
 
         # Test that components are properly separated by namespace
         assert "example/test" in registry

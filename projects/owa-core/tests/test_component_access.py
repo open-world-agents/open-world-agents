@@ -42,9 +42,9 @@ class TestComponentAccessAPI:
         def test_multiply(a, b):
             return a * b
 
-        test_registry.register("example/add", test_add, is_instance=True)
-        test_registry.register("example/multiply", test_multiply, is_instance=True)
-        test_registry.register("other/subtract", "operator:sub")
+        test_registry["example/add"] = test_add
+        test_registry["example/multiply"] = test_multiply
+        test_registry["other/subtract"] = "operator:sub"
 
         # Mock the global registries to use our isolated ones
         with patch("owa.core.component_access.CALLABLES", test_registry):
@@ -69,9 +69,9 @@ class TestComponentAccessAPI:
         def test_multiply(a, b):
             return a * b
 
-        test_registry.register("example/add", test_add, is_instance=True)
-        test_registry.register("example/multiply", test_multiply, is_instance=True)
-        test_registry.register("other/subtract", "operator:sub")
+        test_registry["example/add"] = test_add
+        test_registry["example/multiply"] = test_multiply
+        test_registry["other/subtract"] = "operator:sub"
 
         # Mock the global registries to use our isolated ones
         with patch("owa.core.component_access.CALLABLES", test_registry):
@@ -126,9 +126,9 @@ class TestGetNamespaceComponents:
         def test_multiply(a, b):
             return a * b
 
-        test_registry.register("example/add", test_add, is_instance=True)
-        test_registry.register("example/multiply", test_multiply, is_instance=True)
-        test_registry.register("other/subtract", "operator:sub")
+        test_registry["example/add"] = test_add
+        test_registry["example/multiply"] = test_multiply
+        test_registry["other/subtract"] = "operator:sub"
 
         # Test getting namespace components
         example_components = get_namespace_components(test_registry, "example")
@@ -146,7 +146,7 @@ class TestGetNamespaceComponents:
         test_registry = isolated_registries["callables"]
 
         # Register a component in a different namespace
-        test_registry.register("example/add", "operator:add")
+        test_registry["example/add"] = "operator:add"
 
         # Test getting from non-existent namespace
         empty_components = get_namespace_components(test_registry, "nonexistent")
@@ -172,8 +172,8 @@ class TestGetComponentInfo:
         def test_add(a, b):
             return a + b
 
-        test_registry.register("example/add", test_add, is_instance=True)
-        test_registry.register("example/multiply", "operator:mul")
+        test_registry["example/add"] = test_add
+        test_registry["example/multiply"] = "operator:mul"
 
         with patch("owa.core.component_access.CALLABLES", test_registry):
             info = get_component_info("callables")
@@ -197,9 +197,9 @@ class TestGetComponentInfo:
         test_registry = isolated_registries["callables"]
 
         # Register components in different namespaces
-        test_registry.register("example/add", "operator:add")
-        test_registry.register("example/multiply", "operator:mul")
-        test_registry.register("other/subtract", "operator:sub")
+        test_registry["example/add"] = "operator:add"
+        test_registry["example/multiply"] = "operator:mul"
+        test_registry["other/subtract"] = "operator:sub"
 
         with patch("owa.core.component_access.CALLABLES", test_registry):
             info = get_component_info("callables", namespace="example")
@@ -233,8 +233,8 @@ class TestGetComponentEdgeCases:
         def test_add(a, b):
             return a + b
 
-        test_registry.register("example/add", test_add, is_instance=True)
-        test_registry.register("example/multiply", "operator:mul")
+        test_registry["example/add"] = test_add
+        test_registry["example/multiply"] = "operator:mul"
 
         with patch("owa.core.component_access.CALLABLES", test_registry):
             all_components = get_component("callables")
@@ -251,9 +251,9 @@ class TestGetComponentEdgeCases:
         test_registry = isolated_registries["callables"]
 
         # Register test components
-        test_registry.register("example/add", "operator:add")
-        test_registry.register("example/multiply", "operator:mul")
-        test_registry.register("other/subtract", "operator:sub")
+        test_registry["example/add"] = "operator:add"
+        test_registry["example/multiply"] = "operator:mul"
+        test_registry["other/subtract"] = "operator:sub"
 
         with patch("owa.core.component_access.CALLABLES", test_registry):
             example_components = get_component("callables", namespace="example")
@@ -279,9 +279,9 @@ class TestListComponentsEdgeCases:
     def test_list_components_all_types(self, isolated_registries):
         """Test listing all component types."""
         # Register components in different registries
-        isolated_registries["callables"].register("example/add", "operator:add")
-        isolated_registries["listeners"].register("example/listener", "time:sleep")
-        isolated_registries["runnables"].register("example/runnable", "time:sleep")
+        isolated_registries["callables"]["example/add"] = "operator:add"
+        isolated_registries["listeners"]["example/listener"] = "time:sleep"
+        isolated_registries["runnables"]["example/runnable"] = "time:sleep"
 
         with patch("owa.core.component_access.CALLABLES", isolated_registries["callables"]):
             with patch("owa.core.component_access.LISTENERS", isolated_registries["listeners"]):
@@ -305,7 +305,7 @@ class TestListComponentsEdgeCases:
     def test_list_components_namespace_filter_no_matches(self, isolated_registries):
         """Test list_components with namespace filter that has no matches."""
         test_registry = isolated_registries["callables"]
-        test_registry.register("example/add", "operator:add")
+        test_registry["example/add"] = "operator:add"
 
         with patch("owa.core.component_access.CALLABLES", test_registry):
             result = list_components("callables", namespace="nonexistent")
