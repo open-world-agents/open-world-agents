@@ -58,9 +58,8 @@ class TestRegistry:
         registry1["func1"] = func1
         registry2["func2"] = func2
 
-        # Manually extend by copying items
-        for key in registry2.keys():
-            registry1[key] = registry2[key]
+        # Use update() method to merge registries
+        registry1.update(registry2)
 
         assert "func1" in registry1
         assert "func2" in registry1
