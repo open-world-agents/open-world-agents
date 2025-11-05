@@ -211,14 +211,14 @@ wheels = [
 
 [[package]]
 name = "lazyregistry"
-version = "0.2.0.post1"
+version = "0.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d2/49/b76a05d1a5787552d72c786c4e301a55ee3467f1cf5cc1d7dcc2ab6e6f8a/lazyregistry-0.2.0.post1.tar.gz", hash = "sha256:05b984c8ead72e06dd63549bfe696c5b27e26293f5b5dc443bd7275680705f27", size = 14884, upload-time = "2025-11-04T10:24:20.202Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/da/7c/31e556482d742f7bc2aed9fea8f66d0a2751df3bd01869524f2086c7f9f2/lazyregistry-0.3.0.tar.gz", hash = "sha256:2c8d20dc3a59ae31af2e27e5b063dbc76af30b0d62ccb9943c81ba649079f961", size = 15268, upload-time = "2025-11-05T04:27:16.708Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ab/e8/1d54f52123d5720d965db344e50cc3b98d45e36c3fe852773f5507ef2d86/lazyregistry-0.2.0.post1-py3-none-any.whl", hash = "sha256:e50abda3e71d90cdff91fef81743219f1d32dd87b78ce663342e8e5a5e94edd4", size = 9000, upload-time = "2025-11-04T10:24:18.685Z" },
+    { url = "https://files.pythonhosted.org/packages/9d/3c/ac27e38e7fcb9573c0a61f24215f5d2a706d729a850b493b2cdccab9a4ad/lazyregistry-0.3.0-py3-none-any.whl", hash = "sha256:035d7f1ba93f7632760637d65d29be1a9bb45616cd4b4b32fce5f2cd96f92b1f", size = 9274, upload-time = "2025-11-05T04:27:15.431Z" },
 ]
 
 [[package]]
@@ -366,7 +366,7 @@ dependencies = [
 requires-dist = [
     { name = "av", specifier = ">=15.0" },
     { name = "griffe" },
-    { name = "lazyregistry", specifier = "~=0.2.0" },
+    { name = "lazyregistry", specifier = ">=0.3.0" },
     { name = "loguru" },
     { name = "pydantic", specifier = ">=2.0" },
     { name = "pyyaml", specifier = ">=6.0" },
