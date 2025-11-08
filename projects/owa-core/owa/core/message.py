@@ -62,6 +62,8 @@ class BaseMessage(ABC):
         pass
 
 
+# TODO: define message with https://github.com/jcrist/msgspec
+# msgspec advantages: faster serde, lightweight encoded data, 5-60x faster, msgpack, ...
 class OWAMessage(BaseModel, BaseMessage):
     """
     Standard OWA message implementation using Pydantic.
