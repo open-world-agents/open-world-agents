@@ -1,6 +1,6 @@
 # Dependency Version Policy
 
-**Last Updated**: 2025-10-30 | **Repository Version**: 0.6.2
+**Last Updated**: 2025-11-24 | **Repository Version**: 0.6.3
 
 ## Constraint Strength Principle
 
@@ -68,7 +68,7 @@
 
 ### Special Cases
 
-- **MediaRef**: `~=0.3.1` (compatible release)
+- **MediaRef**: `~=0.4.1` (compatible release)
 - **Conda pygobject**: `=3.50.0` (exact - breaks plugin detection if changed)
 
 ---
