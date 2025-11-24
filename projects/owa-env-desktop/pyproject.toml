@@ -1,6 +1,6 @@
 [project]
 name = "owa-env-desktop"
-version = "0.6.2"
+version = "0.6.3"
 description = "Desktop environment plugin for Open World Agents with mouse, keyboard, and window control"
 readme = "README.md"
 license = { text = "MIT" }
@@ -10,8 +10,8 @@ dependencies = [
     "evdev<1.9.2 ; sys_platform == 'linux'",
     "loguru",
     "numpy>=2.0",
-    "owa-core==0.6.2",
-    "owa-msgs==0.6.2",
+    "owa-core==0.6.3",
+    "owa-msgs==0.6.3",
     "pygetwindow ; sys_platform == 'win32'",
     "pynput>=1.8.0",
     "pyobjc-framework-ApplicationServices>=10.1 ; sys_platform == 'darwin'",
