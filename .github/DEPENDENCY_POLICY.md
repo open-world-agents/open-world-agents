@@ -46,6 +46,7 @@
 | `mcap` | `>=1.0.0` | MCAP 1.0 stable API |
 | `typer` | `>=0.20.0` | Modern features and bugfixes which affects UI/UX directly |
 | `rich` | `>=14.1.0` | Modern features and bugfixes which affects UI/UX directly |
+| `lazyregistry` | `>=0.3.0` | API used in owa-core is stable from 0.3.0 onwards |
 
 ### Unstable APIs (Pin to Latest)
 
@@ -68,7 +69,7 @@
 
 ### Special Cases
 
-- **MediaRef**: `~=0.3.1` (compatible release)
+- **MediaRef**: `~=0.4.1` (compatible release)
 - **Conda pygobject**: `=3.50.0` (exact - breaks plugin detection if changed)
 
 ---

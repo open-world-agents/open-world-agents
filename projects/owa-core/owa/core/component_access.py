@@ -3,7 +3,9 @@
 
 from typing import Any, Dict, List, Optional
 
-from .registry import CALLABLES, LISTENERS, RUNNABLES, LazyImportRegistry
+from lazyregistry import ImportString, Registry
+
+from .registry import CALLABLES, LISTENERS, RUNNABLES
 
 
 def get_component(component_type: str, namespace: Optional[str] = None, name: Optional[str] = None) -> Any:
@@ -28,7 +30,7 @@ def get_component(component_type: str, namespace: Optional[str] = None, name: Op
         KeyError: If specific component is not found
     """
     registry = get_registry(component_type)
-    if not registry:
+    if registry is None:
         raise ValueError(f"Unknown component type: {component_type}")
 
     if namespace and name:
@@ -46,14 +48,14 @@ def get_component(component_type: str, namespace: Optional[str] = None, name: Op
     else:
         # Get all components
         all_components = {}
-        for component_name in _get_all_component_names(registry):
+        for component_name in registry.keys():
             component = registry.get(component_name)
             if component is not None:
                 all_components[component_name] = component
         return all_components
 
 
-def get_namespace_components(registry: LazyImportRegistry, namespace: str) -> Dict[str, Any]:
+def get_namespace_components(registry: Registry, namespace: str) -> Dict[str, Any]:
     """
     Get all components in a namespace as a dictionary.
 
@@ -67,7 +69,7 @@ def get_namespace_components(registry: LazyImportRegistry, namespace: str) -> Di
     prefix = f"{namespace}/"
     components = {}
 
-    for full_name in _get_all_component_names(registry):
+    for full_name in registry.keys():
         if full_name.startswith(prefix):
             component_name = full_name[len(prefix) :]  # Remove namespace prefix
             components[component_name] = registry[full_name]
@@ -99,10 +101,10 @@ def list_components(component_type: Optional[str] = None, namespace: Optional[st
 
     result = {}
     for reg_type, registry in registries.items():
-        if not registry:
+        if registry is None:
             continue
 
-        components = _get_all_component_names(registry)
+        components = list(registry.keys())
 
         if namespace:
             # Filter by namespace
@@ -114,7 +116,7 @@ def list_components(component_type: Optional[str] = None, namespace: Optional[st
     return result
 
 
-def get_registry(component_type: str) -> Optional[LazyImportRegistry]:
+def get_registry(component_type: str) -> Optional[Registry]:
     """
     Get the appropriate registry for component type.
 
@@ -132,22 +134,6 @@ def get_registry(component_type: str) -> Optional[LazyImportRegistry]:
     return registries.get(component_type)
 
 
-def _get_all_component_names(registry: LazyImportRegistry) -> List[str]:
-    """
-    Get all component names from a registry (both loaded and unloaded).
-
-    Args:
-        registry: Registry to get names from
-
-    Returns:
-        List of all component names
-    """
-    # Get names from both loaded components and import paths
-    loaded_names = set(registry._registry.keys())
-    import_names = set(registry._import_paths.keys())
-    return list(loaded_names | import_names)
-
-
 def get_component_info(component_type: str, namespace: Optional[str] = None) -> Dict[str, Dict[str, Any]]:
     """
     Get detailed information about components without loading them.
@@ -160,18 +146,21 @@ def get_component_info(component_type: str, namespace: Optional[str] = None) -> 
         Dictionary mapping component names to their info
     """
     registry = get_registry(component_type)
-    if not registry:
+    if registry is None:
         return {}
 
     info = {}
-    for name in _get_all_component_names(registry):
+    for name in registry.keys():
         if namespace and not name.startswith(f"{namespace}/"):
             continue
 
+        value = registry.data.get(name)
+        is_lazy = isinstance(value, ImportString)
+
         component_info = {
             "name": name,
-            "loaded": name in registry._registry,
-            "import_path": registry._import_paths.get(name),
+            "loaded": not is_lazy,
+            "import_path": str(value) if is_lazy else None,
         }
         info[name] = component_info
 

@@ -9,27 +9,23 @@ import pytest
 from owa.cli import app
 
 
-def test_migrate_help(cli_runner, strip_ansi_codes):
+def test_migrate_help(cli_runner):
     """Test migrate command help."""
     result = cli_runner.invoke(app, ["mcap", "migrate", "--help"])
     assert result.exit_code == 0, f"Migrate help failed: {result.stdout}"
-    # Strip ANSI codes for more reliable testing in CI environments
-    clean_output = strip_ansi_codes(result.stdout)
-    assert "MCAP migration commands" in clean_output
-    assert "run" in clean_output
-    assert "rollback" in clean_output
-    assert "cleanup" in clean_output
+    assert "MCAP migration commands" in result.stdout
+    assert "run" in result.stdout
+    assert "rollback" in result.stdout
+    assert "cleanup" in result.stdout
 
 
-def test_migrate_run_help(cli_runner, strip_ansi_codes):
+def test_migrate_run_help(cli_runner):
     """Test migrate run command help."""
     result = cli_runner.invoke(app, ["mcap", "migrate", "run", "--help"])
     assert result.exit_code == 0, f"Migrate run help failed: {result.stdout}"
-    # Strip ANSI codes for more reliable testing in CI environments
-    clean_output = strip_ansi_codes(result.stdout)
-    assert "Migrate MCAP files" in clean_output
-    assert "--target" in clean_output
-    assert "--dry-run" in clean_output
+    assert "Migrate MCAP files" in result.stdout
+    assert "--target" in result.stdout
+    assert "--dry-run" in result.stdout
 
 
 def test_migrate_nonexistent_file(cli_runner):
@@ -313,27 +309,23 @@ def test_migrate_with_empty_file(cli_runner, tmp_path, suppress_mcap_warnings):
     assert result.exit_code == 0, f"Migration failed: {result.stdout}"
 
 
-def test_migrate_rollback_help(cli_runner, strip_ansi_codes):
+def test_migrate_rollback_help(cli_runner):
     """Test migrate rollback command help."""
     result = cli_runner.invoke(app, ["mcap", "migrate", "rollback", "--help"])
     assert result.exit_code == 0, f"Rollback help failed: {result.stdout}"
-    # Strip ANSI codes for more reliable testing in CI environments
-    clean_output = strip_ansi_codes(result.stdout)
-    assert "Rollback MCAP files" in clean_output
-    assert "--yes" in clean_output
-    assert "--verbose" in clean_output
+    assert "Rollback MCAP files" in result.stdout
+    assert "--yes" in result.stdout
+    assert "--verbose" in result.stdout
 
 
-def test_migrate_cleanup_help(cli_runner, strip_ansi_codes):
+def test_migrate_cleanup_help(cli_runner):
     """Test migrate cleanup command help."""
     result = cli_runner.invoke(app, ["mcap", "migrate", "cleanup", "--help"])
     assert result.exit_code == 0, f"Cleanup help failed: {result.stdout}"
-    # Strip ANSI codes for more reliable testing in CI environments
-    clean_output = strip_ansi_codes(result.stdout)
-    assert "Clean up MCAP backup files" in clean_output
-    assert "--dry-run" in clean_output
-    assert "--yes" in clean_output
-    assert "--verbose" in clean_output
+    assert "Clean up MCAP backup files" in result.stdout
+    assert "--dry-run" in result.stdout
+    assert "--yes" in result.stdout
+    assert "--verbose" in result.stdout
 
 
 def test_migrate_rollback_no_backups(cli_runner, tmp_path):
@@ -452,20 +444,18 @@ def test_migrate_cleanup_with_patterns(cli_runner, tmp_path):
     assert "Would delete 3 backup files" in result.stdout  # Should find all 3 files
 
 
-def test_migrate_commands_help_consistency(cli_runner, strip_ansi_codes):
+def test_migrate_commands_help_consistency(cli_runner):
     """Test that all migrate subcommands have consistent help output."""
     # Test main migrate help
     result = cli_runner.invoke(app, ["mcap", "migrate", "--help"])
     assert result.exit_code == 0, f"Main migrate help failed: {result.stdout}"
-    clean_output = strip_ansi_codes(result.stdout)
-    assert "run" in clean_output
-    assert "rollback" in clean_output
-    assert "cleanup" in clean_output
+    assert "run" in result.stdout
+    assert "rollback" in result.stdout
+    assert "cleanup" in result.stdout
 
     # Test each subcommand has proper help
     for subcommand in ["run", "rollback", "cleanup"]:
         result = cli_runner.invoke(app, ["mcap", "migrate", subcommand, "--help"])
         assert result.exit_code == 0, f"{subcommand} help should work"
-        clean_output = strip_ansi_codes(result.stdout)
-        assert "--help" in clean_output
-        assert "Show this message and exit" in clean_output or "help" in clean_output.lower()
+        assert "--help" in result.stdout
+        assert "Show this message and exit" in result.stdout or "help" in result.stdout.lower()

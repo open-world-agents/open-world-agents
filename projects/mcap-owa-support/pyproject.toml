@@ -6,7 +6,7 @@ readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.11"
 dependencies = [
-    "owa-core==0.6.2",
+    "owa-core==0.6.3",
     "mcap>=1.0.0",
     "orjson",
     "packaging>=20.0",
