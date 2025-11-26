@@ -1,6 +1,6 @@
 [project]
 name = "owa-msgs"
-version = "0.6.3"
+version = "0.6.4"
 description = "Core message definitions for Open World Agents"
 readme = "README.md"
 license = { text = "MIT" }
@@ -10,7 +10,7 @@ dependencies = [
     "mediaref~=0.4.1",
     "numpy>=2.0",
     "opencv-python",
-    "owa-core==0.6.3",
+    "owa-core==0.6.4",
     "pydantic>=2.0",
 ]
 
