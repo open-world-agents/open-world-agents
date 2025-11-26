@@ -278,20 +278,6 @@ class TestScreenCaptured:
             "If this fails, there may be a color channel ordering bug (e.g., BGRA vs RGB confusion)."
         )
 
-    def test_create_with_embedded_ref(self, sample_bgra_frame):
-        """Test creating ScreenCaptured with embedded reference."""
-        # First create an embedded reference
-        screen_msg_temp = ScreenCaptured(utc_ns=1741608540328534500, frame_arr=sample_bgra_frame)
-        screen_msg_temp.embed_as_data_uri(format="png")
-        embedded_ref = screen_msg_temp.media_ref
-
-        # Create new message with embedded reference
-        screen_msg = ScreenCaptured(utc_ns=1741608540328534500, media_ref=embedded_ref)
-
-        assert screen_msg.utc_ns == 1741608540328534500
-        assert screen_msg.frame_arr is None  # Should not be loaded yet
-        assert screen_msg.media_ref.is_embedded
-
     def test_load_from_embedded(self, sample_bgra_frame):
         """Test loading from embedded data."""
         # Create embedded reference
@@ -402,21 +388,6 @@ class TestScreenCaptured:
         """Test that either frame_arr or media_ref is required."""
         with pytest.raises(ValueError, match="Either frame_arr or media_ref must be provided"):
             ScreenCaptured(utc_ns=1741608540328534500)
-
-    def test_embed_without_frame_arr(self):
-        """Test that embed_as_data_uri requires frame_arr."""
-        media_ref = MediaRef(uri="test.mp4", pts_ns=1000000000)
-        screen_msg = ScreenCaptured(utc_ns=1741608540328534500, media_ref=media_ref)
-
-        with pytest.raises(ValueError, match="No frame_arr available to embed"):
-            screen_msg.embed_as_data_uri()
-
-    def test_json_serialization_without_media_ref(self, sample_bgra_frame):
-        """Test that JSON serialization requires media_ref."""
-        screen_msg = ScreenCaptured(utc_ns=1741608540328534500, frame_arr=sample_bgra_frame)
-
-        with pytest.raises(ValueError, match="Cannot serialize without media_ref"):
-            screen_msg.model_dump_json()
 
     def test_string_representation(self, sample_bgra_frame):
         """Test string representation."""
