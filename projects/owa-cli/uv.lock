@@ -324,7 +324,7 @@ wheels = [
 
 [[package]]
 name = "mediaref"
-version = "0.4.3"
+version = "0.4.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "loguru" },
@@ -334,9 +334,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/03/47/a01a82f521ae90b7eb6097b55a7c06c742530f7f9351543ab6c65b6b9684/mediaref-0.4.3.tar.gz", hash = "sha256:a6435ed33b33b5fd761034c3d653c2abe84ad037d5a4edb9b894aefad1031b50", size = 117321, upload-time = "2025-11-17T06:30:13.808Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/db/8e/39d6bb32da80c29b4dd8e874a5c26b48bb779d2d30d4067c429d2ef8aeae/mediaref-0.4.4.tar.gz", hash = "sha256:10e6f214fe240baab0711694a5477ca76a0fa9a94ec36f79d440f92c89b0ea10", size = 118100, upload-time = "2025-11-25T07:58:58.494Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/18/62/23860e8ebd6d5570f91f2c648ab8eb813a0a55ae2834d2d8fea9fd7cb2ad/mediaref-0.4.3-py3-none-any.whl", hash = "sha256:22b8691c67b0e7ee19d970559508bd67ae40da545f5b2f3636231a922613564d", size = 35411, upload-time = "2025-11-17T06:30:12.887Z" },
+    { url = "https://files.pythonhosted.org/packages/95/5a/350ee6c2bbac5b5be091823daba3b129f041a4f32c7fde57ff9482518e3c/mediaref-0.4.4-py3-none-any.whl", hash = "sha256:f466bd7db40c5d7e7ffe6e1ad07d283a18757164d7a62bf477cc56ebb8a9db11", size = 35807, upload-time = "2025-11-25T07:58:57.358Z" },
 ]
 
 [[package]]

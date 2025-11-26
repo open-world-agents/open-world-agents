@@ -9,6 +9,7 @@ from pydantic import ValidationError
 
 from owa.msgs.desktop.keyboard import KeyboardEvent, KeyboardState
 from owa.msgs.desktop.mouse import MouseEvent, MouseState
+from owa.msgs.desktop.window import WindowInfo
 
 
 class TestKeyboardMessages:
@@ -166,6 +167,46 @@ class TestMouseMessages:
         # Invalid button in set
         with pytest.raises(ValidationError):
             MouseState(x=100, y=200, buttons={"invalid"})
+
+
+class TestWindowMessages:
+    """Test cases for window message types."""
+
+    def test_window_info_creation(self):
+        """Test creating WindowInfo instances."""
+        window = WindowInfo(title="Test Window", rect=(100, 200, 500, 600), hWnd=12345)
+
+        assert window.title == "Test Window"
+        assert window.rect == (100, 200, 500, 600)
+        assert window.hWnd == 12345
+        assert window._type == "desktop/WindowInfo"
+
+    def test_window_info_properties(self):
+        """Test WindowInfo computed properties."""
+        window = WindowInfo(title="Test", rect=(100, 200, 500, 600), hWnd=1)
+
+        assert window.width == 400  # 500 - 100
+        assert window.height == 400  # 600 - 200
+
+    def test_window_info_validation(self):
+        """Test WindowInfo validation."""
+        # Missing required fields
+        with pytest.raises(ValidationError):
+            WindowInfo(title="Test", rect=(100, 200, 500, 600))  # Missing hWnd
+
+        with pytest.raises(ValidationError):
+            WindowInfo(hWnd=1, rect=(100, 200, 500, 600))  # Missing title
+
+    def test_window_info_serialization(self):
+        """Test WindowInfo serialization."""
+        window = WindowInfo(title="Test Window", rect=(100, 200, 500, 600), hWnd=12345)
+
+        buffer = io.BytesIO()
+        window.serialize(buffer)
+
+        serialized = buffer.getvalue().decode("utf-8")
+        assert '"title":"Test Window"' in serialized
+        assert '"hWnd":12345' in serialized
 
 
 class TestMessageSchemas:
