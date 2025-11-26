@@ -1,6 +1,6 @@
 [project]
 name = "owa-env-gst"
-version = "0.6.3"
+version = "0.6.4"
 description = "High-performance GStreamer-based screen capture plugin for Open World Agents"
 readme = "README.md"
 license = { text = "MIT" }
@@ -11,8 +11,8 @@ dependencies = [
     "mediaref~=0.4.1",
     "numpy>=2.0",
     "opencv-python",
-    "owa-core==0.6.3",
-    "owa-msgs==0.6.3",
+    "owa-core==0.6.4",
+    "owa-msgs==0.6.4",
     "pygobject-stubs",
     "tqdm",
 ]
