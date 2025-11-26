@@ -389,6 +389,39 @@ class TestScreenCaptured:
         with pytest.raises(ValueError, match="Either frame_arr or media_ref must be provided"):
             ScreenCaptured(utc_ns=1741608540328534500)
 
+    def test_frame_arr_validation_errors(self):
+        """Test frame_arr dimension and format validation."""
+        # 1D array - not enough dimensions
+        with pytest.raises(ValueError, match="at least 2-dimensional"):
+            ScreenCaptured(utc_ns=1741608540328534500, frame_arr=np.zeros(100, dtype=np.uint8))
+
+        # RGB instead of BGRA - wrong number of channels
+        with pytest.raises(ValueError, match="BGRA format"):
+            ScreenCaptured(utc_ns=1741608540328534500, frame_arr=np.zeros((48, 64, 3), dtype=np.uint8))
+
+    def test_embed_and_serialization_errors(self, sample_bgra_frame):
+        """Test embedding and serialization error cases."""
+        # embed_as_data_uri requires frame_arr
+        media_ref = MediaRef(uri="test.mp4", pts_ns=1000000000)
+        screen_msg = ScreenCaptured(utc_ns=1741608540328534500, media_ref=media_ref)
+        with pytest.raises(ValueError, match="No frame_arr available to embed"):
+            screen_msg.embed_as_data_uri()
+
+        # JSON serialization requires media_ref
+        screen_msg2 = ScreenCaptured(utc_ns=1741608540328534500, frame_arr=sample_bgra_frame)
+        with pytest.raises(ValueError, match="Cannot serialize without media_ref"):
+            screen_msg2.model_dump_json()
+
+    def test_load_frame_array_without_media_ref(self, sample_bgra_frame):
+        """Test that load_frame_array fails without media_ref."""
+        # Create with frame_arr, then set it to None to simulate edge case
+        screen_msg = ScreenCaptured(utc_ns=1741608540328534500, frame_arr=sample_bgra_frame)
+        screen_msg.frame_arr = None
+        screen_msg.media_ref = None
+
+        with pytest.raises(ValueError, match="No media reference available for loading"):
+            screen_msg.load_frame_array()
+
     def test_string_representation(self, sample_bgra_frame):
         """Test string representation."""
         # Test with frame_arr only
