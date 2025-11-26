@@ -153,6 +153,20 @@ class TestScreenCaptured:
         expected_rgb = cv2.cvtColor(sample_bgra_frame, cv2.COLOR_BGRA2RGB)
         assert np.array_equal(rgb_array, expected_rgb)
 
+        # Verify specific pixel values to ensure correct channel ordering
+        # sample_bgra_frame[y, x] = [x*4, y*5, (x+y)*2, 255] in BGRA
+        # At position (0, 0): BGRA = [0, 0, 0, 255]
+        # RGB should be [0, 0, 0]
+        assert rgb_array[0, 0, 0] == 0, "RGB: Red should be 0 at (0,0)"
+        assert rgb_array[0, 0, 1] == 0, "RGB: Green should be 0 at (0,0)"
+        assert rgb_array[0, 0, 2] == 0, "RGB: Blue should be 0 at (0,0)"
+
+        # At position (10, 20): BGRA = [20*4=80, 10*5=50, (20+10)*2=60, 255]
+        # RGB should be [60, 50, 80] (R, G, B)
+        assert rgb_array[10, 20, 0] == 60, "RGB: Red should be 60 at (10,20)"
+        assert rgb_array[10, 20, 1] == 50, "RGB: Green should be 50 at (10,20)"
+        assert rgb_array[10, 20, 2] == 80, "RGB: Blue should be 80 at (10,20)"
+
     def test_to_pil_image(self, sample_bgra_frame):
         """Test: to_pil_image(): Get PIL Image object"""
         screen_msg = ScreenCaptured(utc_ns=1741608540328534500, frame_arr=sample_bgra_frame)
@@ -258,6 +272,12 @@ class TestScreenCaptured:
         assert loaded_frame.shape == sample_bgra_frame.shape
         assert loaded_frame.dtype == sample_bgra_frame.dtype
 
+        # PNG is lossless - verify exact pixel values match
+        assert np.array_equal(loaded_frame, sample_bgra_frame), (
+            "PNG roundtrip should preserve exact pixel values. "
+            "If this fails, there may be a color channel ordering bug (e.g., BGRA vs RGB confusion)."
+        )
+
     def test_create_with_embedded_ref(self, sample_bgra_frame):
         """Test creating ScreenCaptured with embedded reference."""
         # First create an embedded reference
@@ -291,6 +311,39 @@ class TestScreenCaptured:
         assert screen_msg.frame_arr is not None
         assert loaded_frame.shape[2] == 4  # BGRA format
         assert screen_msg.shape is not None
+
+        # Verify pixel values are correct (PNG is lossless)
+        assert np.array_equal(loaded_frame, sample_bgra_frame), (
+            "Loaded frame should match original. If this fails, check for color channel ordering bugs (BGRA vs RGB)."
+        )
+
+    def test_load_from_image_file_color_channels(self, sample_image_file):
+        """Test loading from image file verifies correct color channel ordering."""
+        # Create message from image file
+        media_ref = MediaRef(uri=str(sample_image_file))
+        screen_msg = ScreenCaptured(utc_ns=1741608540328534500, media_ref=media_ref)
+
+        # Load the frame
+        loaded_frame = screen_msg.load_frame_array()
+
+        # Verify shape and format
+        assert loaded_frame.shape == (48, 64, 4)  # BGRA format
+        assert loaded_frame.dtype == np.uint8
+
+        # The sample image was created with cv2.imwrite which expects BGR format
+        # test_image[:, :, 0] = 255 means Blue channel = 255 in the saved file
+        # When loaded as BGRA: B=255, G=0, R=0, A=255
+        # Check a sample of pixels to verify color channels are correct
+        assert loaded_frame[0, 0, 0] == 255, "Blue channel should be 255"
+        assert loaded_frame[0, 0, 1] == 0, "Green channel should be 0"
+        assert loaded_frame[0, 0, 2] == 0, "Red channel should be 0"
+        assert loaded_frame[0, 0, 3] == 255, "Alpha channel should be 255"
+
+        # Verify RGB conversion is correct
+        rgb_array = screen_msg.to_rgb_array()
+        assert rgb_array[0, 0, 0] == 0, "RGB: Red channel should be 0"
+        assert rgb_array[0, 0, 1] == 0, "RGB: Green channel should be 0"
+        assert rgb_array[0, 0, 2] == 255, "RGB: Blue channel should be 255"
 
     def test_create_with_external_video_ref(self, sample_video_file):
         """Test creating ScreenCaptured with external video reference."""
@@ -327,6 +380,23 @@ class TestScreenCaptured:
         assert loaded_frame.shape[2] == 4  # BGRA format
         assert screen_msg.shape is not None
         assert screen_msg.source_shape is not None
+
+        # Verify pixel values match expected frame content
+        # Frame 1 (index 1) should have all channels set to 1*50 = 50
+        # Note: Video compression is lossy, so we allow some tolerance
+        expected_value = 50
+        tolerance = 5  # Allow ±5 for video compression artifacts
+        # Check a sample of pixels (BGRA format)
+        assert abs(int(loaded_frame[0, 0, 0]) - expected_value) <= tolerance, (
+            f"Blue channel should be ~{expected_value}, got {loaded_frame[0, 0, 0]}"
+        )
+        assert abs(int(loaded_frame[0, 0, 1]) - expected_value) <= tolerance, (
+            f"Green channel should be ~{expected_value}, got {loaded_frame[0, 0, 1]}"
+        )
+        assert abs(int(loaded_frame[0, 0, 2]) - expected_value) <= tolerance, (
+            f"Red channel should be ~{expected_value}, got {loaded_frame[0, 0, 2]}"
+        )
+        assert loaded_frame[0, 0, 3] == 255, "Alpha channel should be 255"
 
     def test_validation_requires_frame_or_media_ref(self):
         """Test that either frame_arr or media_ref is required."""
