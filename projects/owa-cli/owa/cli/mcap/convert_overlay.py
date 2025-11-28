@@ -314,24 +314,26 @@ def draw_overlay(
 
 
 def convert_overlay(
-    mcap_path: Annotated[Path, typer.Argument(help="Path to the input .mcap file")],
-    topics: Annotated[list[str], typer.Option(help="Topics to include in overlay")] = ["mouse/raw", "keyboard"],
-    output_video: Annotated[Path | None, typer.Argument(help="Output video path")] = None,
-    fps: Annotated[float | None, typer.Option(help="Output frame rate")] = None,
-    max_duration_seconds: Annotated[float | None, typer.Option(help="Maximum duration in seconds")] = None,
-    original_width: Annotated[int, typer.Option(help="Original recording width")] = 2560,
-    original_height: Annotated[int, typer.Option(help="Original recording height")] = 1440,
-    force: Annotated[bool, typer.Option(help="Overwrite existing output file")] = False,
+    input_file: Annotated[Path, typer.Argument(help="Input MCAP file")],
+    output: Annotated[
+        Path | None, typer.Option("--output", "-o", help="Output video file (default: <input>.mp4)")
+    ] = None,
+    fps: Annotated[float | None, typer.Option(help="Output frame rate (default: auto-detect from recording)")] = None,
+    duration: Annotated[float | None, typer.Option("--duration", "-d", help="Maximum duration in seconds")] = None,
+    source_width: Annotated[int, typer.Option(help="Source screen width for mouse scaling")] = 2560,
+    source_height: Annotated[int, typer.Option(help="Source screen height for mouse scaling")] = 1440,
+    topics: Annotated[list[str], typer.Option(help="MCAP topics to process")] = ["mouse/raw", "keyboard"],
+    force: Annotated[bool, typer.Option("--force", "-f", help="Overwrite existing output file")] = False,
 ):
     """Convert MCAP file to video with keyboard/mouse overlays."""
-    output_video = output_video or mcap_path.with_suffix(".mp4")
+    output = output or input_file.with_suffix(".mp4")
 
     # Check if output file exists
-    if output_video.exists() and not force:
-        typer.echo(f"Error: {output_video} already exists. Use --force to overwrite.")
+    if output.exists() and not force:
+        typer.echo(f"Error: {output} already exists. Use --force to overwrite.")
         raise typer.Exit(1)
 
-    with OWAMcapReader(mcap_path) as reader:
+    with OWAMcapReader(input_file) as reader:
         # Get frame dimensions and timing from screen messages
         recording_start_time = recording_end_time = None
         screen_message_count = 0
@@ -341,7 +343,7 @@ def convert_overlay(
             if recording_start_time is None:
                 recording_start_time = mcap_msg.timestamp
                 try:
-                    msg = mcap_msg.decoded.resolve_relative_path(mcap_path)
+                    msg = mcap_msg.decoded.resolve_relative_path(input_file)
                     frame_width, frame_height = msg.to_pil_image().size
                     typer.echo(f"Detected frame size: {frame_width}x{frame_height}")
                 except Exception as e:
@@ -372,7 +374,7 @@ def convert_overlay(
         mouse_positions = {}
 
         center_x, center_y = frame_width // 2, frame_height // 2
-        scale_x, scale_y = frame_width / original_width, frame_height / original_height
+        scale_x, scale_y = frame_width / source_width, frame_height / source_height
         abs_x, abs_y = center_x, center_y
 
         typer.echo(f"Mouse scaling: {scale_x:.3f}x width, {scale_y:.3f}x height")
@@ -425,13 +427,13 @@ def convert_overlay(
         current_mouse_x, current_mouse_y = center_x, center_y
         screen_messages = [msg for msg in all_messages if msg.topic == "screen"]
 
-        if max_duration_seconds is not None:
-            max_timestamp = recording_start_time + int(max_duration_seconds * 1e9)
+        if duration is not None:
+            max_timestamp = recording_start_time + int(duration * 1e9)
             screen_messages = [msg for msg in screen_messages if msg.timestamp <= max_timestamp]
-            typer.echo(f"Limiting to {max_duration_seconds}s ({len(screen_messages)} frames)")
+            typer.echo(f"Limiting to {duration}s ({len(screen_messages)} frames)")
 
-        with VideoWriter(output_video, fps=fps, vfr=False) as writer:
-            typer.echo(f"Creating video: {output_video}")
+        with VideoWriter(output, fps=fps, vfr=False) as writer:
+            typer.echo(f"Creating video: {output}")
 
             for mcap_msg in tqdm(screen_messages, desc="Processing frames", unit="frame"):
                 current_timestamp = mcap_msg.timestamp
@@ -444,7 +446,7 @@ def convert_overlay(
                         break
 
                 # Get frame
-                msg = mcap_msg.decoded.resolve_relative_path(mcap_path)
+                msg = mcap_msg.decoded.resolve_relative_path(input_file)
                 frame = np.array(msg.to_pil_image())
 
                 # Expand frame with black space for overlay
@@ -483,7 +485,7 @@ def convert_overlay(
                 )
                 writer.write_frame(frame)
 
-        typer.echo(f"Video created: {output_video}")
+        typer.echo(f"Video created: {output}")
         typer.echo(f"Frames: {len(screen_messages)}, Duration: {len(screen_messages) / fps:.2f}s")
 
 
