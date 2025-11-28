@@ -2,6 +2,7 @@ from collections import namedtuple
 from pathlib import Path
 
 import typer
+from tqdm import tqdm
 from typing_extensions import Annotated
 
 from mcap_owa.highlevel import OWAMcapReader
@@ -159,7 +160,13 @@ def convert(
             typer.echo("No screen messages found.")
             raise typer.Exit()
 
-        all_messages = list(reader.iter_messages(topics=topics, start_time=start_time))
+        all_messages = list(
+            tqdm(
+                reader.iter_messages(topics=topics, start_time=start_time),
+                desc="Reading messages",
+                unit="msg",
+            )
+        )
         mouse_button_states = {}  # button_name -> press_timestamp
         pending_mouse_events = []  # (press_timestamp, button_name, message_content)
         key_state_manager = KeyStateManager()
@@ -184,7 +191,7 @@ def convert(
                     pending_mouse_events.pop(i)
                     break
 
-        for mcap_msg in all_messages:
+        for mcap_msg in tqdm(all_messages, desc="Processing events", unit="msg"):
             if mcap_msg.topic == "mouse/raw":
                 if hasattr(mcap_msg.decoded, "button_flags"):
                     button_flags = mcap_msg.decoded.button_flags

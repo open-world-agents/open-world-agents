@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import typer
+from tqdm import tqdm
 from typing_extensions import Annotated
 
 from mcap_owa.highlevel import OWAMcapReader
@@ -133,7 +134,15 @@ def overlay_ass(
         mouse_positions = {}  # timestamp -> (x, y)
         abs_x, abs_y = width // 2, height // 2  # Start at center
 
-        for mcap_msg in reader.iter_messages(topics=["keyboard", "mouse/raw", "mouse"], start_time=start_time):
+        all_messages = list(
+            tqdm(
+                reader.iter_messages(topics=["keyboard", "mouse/raw", "mouse"], start_time=start_time),
+                desc="Reading messages",
+                unit="msg",
+            )
+        )
+
+        for mcap_msg in tqdm(all_messages, desc="Processing events", unit="msg"):
             if mcap_msg.topic == "keyboard":
                 if hasattr(mcap_msg.decoded, "event_type") and hasattr(mcap_msg.decoded, "vk"):
                     key_manager.handle_key_event(mcap_msg.decoded.event_type, mcap_msg.decoded.vk, mcap_msg.timestamp)
