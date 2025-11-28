@@ -67,10 +67,13 @@ Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour,
 Style: Key,Arial,24,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,1,0,0,0,100,100,0,0,3,2,0,7,10,10,10,1
 Style: KeyPressed,Arial,24,&H00FFFFFF,&H000000FF,&H0050B0AB,&H8050B0AB,1,0,0,0,100,100,0,0,3,2,0,7,10,10,10,1
 Style: Mouse,Arial,20,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,1,0,0,0,100,100,0,0,3,2,0,7,10,10,10,1
+Style: Cursor,Arial,28,&H0000FFFF,&H000000FF,&H00000000,&H80000000,1,0,0,0,100,100,0,0,1,2,0,7,0,0,0,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
+
+CURSOR_SAMPLE_INTERVAL_NS = 100_000_000  # 100ms
 
 
 def format_ass_time(ns: int) -> str:
@@ -124,14 +127,17 @@ def overlay_ass(
             typer.echo("No screen messages found.")
             raise typer.Exit(1)
 
-        # Collect keyboard and mouse events
+        # Collect keyboard events, mouse click events, and mouse positions
         key_manager = KeyStateManager()
         mouse_events = []  # (timestamp, button, is_press)
+        mouse_positions = {}  # timestamp -> (x, y)
+        abs_x, abs_y = width // 2, height // 2  # Start at center
 
-        for mcap_msg in reader.iter_messages(topics=["keyboard", "mouse/raw"], start_time=start_time):
+        for mcap_msg in reader.iter_messages(topics=["keyboard", "mouse/raw", "mouse"], start_time=start_time):
             if mcap_msg.topic == "keyboard":
                 if hasattr(mcap_msg.decoded, "event_type") and hasattr(mcap_msg.decoded, "vk"):
                     key_manager.handle_key_event(mcap_msg.decoded.event_type, mcap_msg.decoded.vk, mcap_msg.timestamp)
+
             elif mcap_msg.topic == "mouse/raw":
                 if hasattr(mcap_msg.decoded, "button_flags"):
                     flags = mcap_msg.decoded.button_flags
@@ -141,6 +147,20 @@ def overlay_ass(
                     for flag, btn in BUTTON_RELEASE_FLAGS.items():
                         if flags & flag:
                             mouse_events.append((mcap_msg.timestamp, btn, False))
+                # Track relative mouse movement
+                if hasattr(mcap_msg.decoded, "last_x") and hasattr(mcap_msg.decoded, "last_y"):
+                    abs_x += mcap_msg.decoded.last_x
+                    abs_y += mcap_msg.decoded.last_y
+                    abs_x = max(0, min(width - 1, abs_x))
+                    abs_y = max(0, min(height - 1, abs_y))
+                    mouse_positions[mcap_msg.timestamp] = (abs_x, abs_y)
+
+            elif mcap_msg.topic == "mouse":
+                # Track absolute mouse position
+                if hasattr(mcap_msg.decoded, "x") and hasattr(mcap_msg.decoded, "y"):
+                    abs_x = mcap_msg.decoded.x
+                    abs_y = mcap_msg.decoded.y
+                    mouse_positions[mcap_msg.timestamp] = (abs_x, abs_y)
 
         key_manager.finalize_remaining_subtitles()
 
@@ -214,6 +234,28 @@ def overlay_ass(
     # Emit final state if any
     if last_change_time is not None and (active_keys or active_mouse):
         emit_state(last_change_time + 500_000_000)  # 500ms after last event
+
+    # Generate cursor movement events using \move() for smooth animation
+    if mouse_positions:
+        sorted_positions = sorted(mouse_positions.items())
+        # Sample positions at regular intervals
+        sampled = []
+        next_sample_time = sorted_positions[0][0]
+
+        for ts, pos in sorted_positions:
+            if ts >= next_sample_time:
+                sampled.append((ts, pos))
+                next_sample_time = ts + CURSOR_SAMPLE_INTERVAL_NS
+
+        # Generate \move() dialogue events between consecutive samples
+        for i in range(len(sampled) - 1):
+            t1_ns, (x1, y1) = sampled[i]
+            t2_ns, (x2, y2) = sampled[i + 1]
+            t1 = format_ass_time(t1_ns - start_time)
+            t2 = format_ass_time(t2_ns - start_time)
+            lines.append(f"Dialogue: 1,{t1},{t2},Cursor,,0,0,0,,{{\\move({int(x1)},{int(y1)},{int(x2)},{int(y2)})}}●")
+
+        typer.echo(f"Cursor positions: {len(sampled)} samples from {len(mouse_positions)} events")
 
     output.write_text("\n".join(lines), encoding="utf-8")
     typer.echo(f"ASS overlay saved: {output}")
