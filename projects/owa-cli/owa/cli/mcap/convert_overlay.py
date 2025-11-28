@@ -379,7 +379,7 @@ def convert_overlay(
 
         typer.echo(f"Mouse scaling: {scale_x:.3f}x width, {scale_y:.3f}x height")
 
-        for mcap_msg in all_messages:
+        for mcap_msg in tqdm(all_messages, desc="Processing messages", unit="msg"):
             if mcap_msg.topic == "keyboard":
                 if hasattr(mcap_msg.decoded, "event_type") and hasattr(mcap_msg.decoded, "vk"):
                     key_state_manager.handle_event(
