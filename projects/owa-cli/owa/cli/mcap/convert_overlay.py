@@ -7,7 +7,7 @@ from tqdm import tqdm
 from typing_extensions import Annotated
 
 from mcap_owa.highlevel import OWAMcapReader
-from owa.cli.mcap.convert import KeyStateManager
+from owa.cli.mcap.subtitle import KeyStateManager
 from owa.core.io.video import VideoWriter
 from owa.core.time import TimeUnits
 from owa.env.desktop.constants import VK
@@ -382,7 +382,7 @@ def convert_overlay(
         for mcap_msg in all_messages:
             if mcap_msg.topic == "keyboard":
                 if hasattr(mcap_msg.decoded, "event_type") and hasattr(mcap_msg.decoded, "vk"):
-                    key_state_manager.handle_key_event(
+                    key_state_manager.handle_event(
                         mcap_msg.decoded.event_type, mcap_msg.decoded.vk, mcap_msg.timestamp
                     )
 
@@ -420,8 +420,8 @@ def convert_overlay(
                     abs_y = mcap_msg.decoded.y * scale_y
                     mouse_positions[mcap_msg.timestamp] = (abs_x, abs_y)
 
-        key_state_manager.finalize_remaining_subtitles()
-        keyboard_events = key_state_manager.get_completed_subtitles()
+        key_state_manager.finalize()
+        keyboard_events = key_state_manager.completed
 
         # Render video
         current_mouse_x, current_mouse_y = center_x, center_y
