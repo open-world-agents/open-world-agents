@@ -114,7 +114,11 @@ This module utilizes `pynput` for input simulation after evaluating several alte
 
 ### Raw Mouse Input
 
-Raw mouse input capture is available to separate mouse position movement from game's center-locking and from user interactions. This enables access to unfiltered mouse movement data directly from the hardware, bypassing Windows pointer acceleration and game cursor manipulation.
+`mouse` captures screen cursor position (x, y) after Windows applies pointer acceleration. `mouse/raw` captures hardware movement deltas (dx, dy) before acceleration, directly from the HID device.
+
+Games lock the cursor to screen center and read raw input for camera control, so `mouse` position stays constant while `mouse/raw` captures actual player movements. **Most OWA datasets use `mouse/raw` for this reason.**
+
+Reference: [Windows RAWMOUSE structure](https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-rawmouse)
 
 ### Key Auto-Repeat Functionality
 
@@ -134,6 +138,7 @@ Key auto-repeat is a Windows feature where holding down a key generates multiple
 These settings can be accessed programmatically via `SystemParametersInfo` with `SPI_GETKEYBOARDDELAY` and `SPI_GETKEYBOARDSPEED` parameters.
 
 **References**:
+
 - [Keyboard Repeat Delay and Repeat Rate](https://learn.microsoft.com/en-us/windows/win32/inputdev/about-keyboard-input#keyboard-repeat-delay-and-repeat-rate) - Microsoft documentation on keyboard repeat behavior
 - [SystemParametersInfo Function](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-systemparametersinfoa) - Windows API for keyboard repeat parameters
 
