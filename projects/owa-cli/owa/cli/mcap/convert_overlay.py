@@ -1,3 +1,4 @@
+import bisect
 from pathlib import Path
 
 import cv2
@@ -7,7 +8,6 @@ from tqdm import tqdm
 from typing_extensions import Annotated
 
 from mcap_owa.highlevel import OWAMcapReader
-from owa.cli.mcap.subtitle import KeyStateManager
 from owa.core.io.video import VideoWriter
 from owa.core.time import TimeUnits
 from owa.env.desktop.constants import VK
@@ -105,6 +105,29 @@ BUTTON_RELEASE_FLAGS = {
     RawMouseEvent.ButtonFlags.RI_MOUSE_RIGHT_BUTTON_UP: "right",
     RawMouseEvent.ButtonFlags.RI_MOUSE_MIDDLE_BUTTON_UP: "middle",
 }
+
+MIN_KEY_DURATION_NS = 500_000_000  # 500ms minimum display duration
+
+
+class KeyTracker:
+    """Track keyboard press/release and output (start, end, vk) tuples."""
+
+    def __init__(self):
+        self._pressed: dict[int, int] = {}  # vk -> press_time
+        self.events: list[tuple[int, int, int]] = []  # (start, end, vk)
+
+    def handle(self, event_type: str, vk: int, timestamp: int):
+        if event_type == "press" and vk not in self._pressed:
+            self._pressed[vk] = timestamp
+        elif event_type == "release" and vk in self._pressed:
+            start = self._pressed.pop(vk)
+            end = start + max(timestamp - start, MIN_KEY_DURATION_NS)
+            self.events.append((start, end, vk))
+
+    def finalize(self):
+        for vk, start in self._pressed.items():
+            self.events.append((start, start + MIN_KEY_DURATION_NS, vk))
+        self._pressed.clear()
 
 
 def draw_arrow(frame: np.ndarray, center_x: int, center_y: int, direction: str, color: tuple, size: int = 10) -> None:
@@ -367,123 +390,100 @@ def convert_overlay(
         else:
             typer.echo(f"Using specified FPS: {fps:.2f}")
 
-        # Process all messages
+        # Collect events from messages
         all_messages = list(reader.iter_messages(topics=topics + ["screen"], start_time=recording_start_time))
-        key_state_manager = KeyStateManager()
-        mouse_click_timeline = []
-        mouse_positions = {}
+        key_tracker = KeyTracker()
+        mouse_clicks: list[tuple[int, str, bool]] = []
+        mouse_positions: dict[int, tuple[float, float]] = {}
 
         center_x, center_y = frame_width // 2, frame_height // 2
         scale_x, scale_y = frame_width / source_width, frame_height / source_height
-        abs_x, abs_y = center_x, center_y
+        abs_x, abs_y = float(center_x), float(center_y)
 
         typer.echo(f"Mouse scaling: {scale_x:.3f}x width, {scale_y:.3f}x height")
 
-        for mcap_msg in tqdm(all_messages, desc="Processing messages", unit="msg"):
-            if mcap_msg.topic == "keyboard":
-                if hasattr(mcap_msg.decoded, "event_type") and hasattr(mcap_msg.decoded, "vk"):
-                    key_state_manager.handle_event(
-                        mcap_msg.decoded.event_type, mcap_msg.decoded.vk, mcap_msg.timestamp
-                    )
-
-            elif mcap_msg.topic == "mouse/raw":
-                if hasattr(mcap_msg.decoded, "button_flags"):
-                    button_flags = mcap_msg.decoded.button_flags
-                    for flag, button_name in BUTTON_PRESS_FLAGS.items():
-                        if button_flags & flag:
-                            mouse_click_timeline.append((mcap_msg.timestamp, button_name, True))
+        for msg in tqdm(all_messages, desc="Processing messages", unit="msg"):
+            d = msg.decoded
+            if msg.topic == "keyboard" and hasattr(d, "event_type") and hasattr(d, "vk"):
+                key_tracker.handle(d.event_type, d.vk, msg.timestamp)
+            elif msg.topic == "mouse/raw":
+                if hasattr(d, "button_flags"):
+                    for flag, btn in BUTTON_PRESS_FLAGS.items():
+                        if d.button_flags & flag:
+                            mouse_clicks.append((msg.timestamp, btn, True))
                             break
-                    for flag, button_name in BUTTON_RELEASE_FLAGS.items():
-                        if button_flags & flag:
-                            mouse_click_timeline.append((mcap_msg.timestamp, button_name, False))
+                    for flag, btn in BUTTON_RELEASE_FLAGS.items():
+                        if d.button_flags & flag:
+                            mouse_clicks.append((msg.timestamp, btn, False))
                             break
+                if hasattr(d, "last_x") and hasattr(d, "last_y"):
+                    abs_x = max(0, min(frame_width - 1, abs_x + d.last_x * scale_x))
+                    abs_y = max(0, min(frame_height - 1, abs_y + d.last_y * scale_y))
+                    mouse_positions[msg.timestamp] = (abs_x, abs_y)
+            elif msg.topic == "mouse":
+                if getattr(d, "event_type", None) == "click" and d.button and d.pressed is not None:
+                    mouse_clicks.append((msg.timestamp, d.button, d.pressed))
+                if hasattr(d, "x") and hasattr(d, "y"):
+                    abs_x, abs_y = d.x * scale_x, d.y * scale_y
+                    mouse_positions[msg.timestamp] = (abs_x, abs_y)
 
-                if hasattr(mcap_msg.decoded, "last_x") and hasattr(mcap_msg.decoded, "last_y"):
-                    abs_x += mcap_msg.decoded.last_x * scale_x
-                    abs_y += mcap_msg.decoded.last_y * scale_y
-                    abs_x = max(0, min(frame_width - 1, abs_x))
-                    abs_y = max(0, min(frame_height - 1, abs_y))
-                    mouse_positions[mcap_msg.timestamp] = (abs_x, abs_y)
+        key_tracker.finalize()
 
-            elif mcap_msg.topic == "mouse":
-                if (
-                    getattr(mcap_msg.decoded, "event_type", None) == "click"
-                    and mcap_msg.decoded.button is not None
-                    and mcap_msg.decoded.pressed is not None
-                ):
-                    mouse_click_timeline.append(
-                        (mcap_msg.timestamp, mcap_msg.decoded.button, mcap_msg.decoded.pressed)
-                    )
-
-                if hasattr(mcap_msg.decoded, "x") and hasattr(mcap_msg.decoded, "y"):
-                    abs_x = mcap_msg.decoded.x * scale_x
-                    abs_y = mcap_msg.decoded.y * scale_y
-                    mouse_positions[mcap_msg.timestamp] = (abs_x, abs_y)
-
-        key_state_manager.finalize()
-        keyboard_events = key_state_manager.completed
-
-        # Render video
-        current_mouse_x, current_mouse_y = center_x, center_y
-        screen_messages = [msg for msg in all_messages if msg.topic == "screen"]
-
+        # Prepare sorted data for rendering
+        screen_messages = [m for m in all_messages if m.topic == "screen"]
         if duration is not None:
-            max_timestamp = recording_start_time + int(duration * 1e9)
-            screen_messages = [msg for msg in screen_messages if msg.timestamp <= max_timestamp]
+            max_ts = recording_start_time + int(duration * 1e9)
+            screen_messages = [m for m in screen_messages if m.timestamp <= max_ts]
             typer.echo(f"Limiting to {duration}s ({len(screen_messages)} frames)")
+
+        sorted_positions = sorted(mouse_positions.items())
+        pos_timestamps = [ts for ts, _ in sorted_positions]
+        sorted_clicks = sorted(mouse_clicks)
+        sorted_keys = sorted(key_tracker.events, key=lambda x: x[0])
+
+        # Render loop state
+        click_idx, key_idx = 0, 0
+        active_buttons: dict[str, int] = {}
+        active_keys: list[tuple[int, int, int]] = []  # (start, end, vk)
+        mouse_x, mouse_y = float(center_x), float(center_y)
 
         with VideoWriter(output, fps=fps, vfr=False) as writer:
             typer.echo(f"Creating video: {output}")
 
-            for mcap_msg in tqdm(screen_messages, desc="Processing frames", unit="frame"):
-                current_timestamp = mcap_msg.timestamp
+            for screen_msg in tqdm(screen_messages, desc="Processing frames", unit="frame"):
+                ts = screen_msg.timestamp
 
-                # Update mouse position
-                for ts, (x, y) in mouse_positions.items():
-                    if ts <= current_timestamp:
-                        current_mouse_x, current_mouse_y = x, y
-                    else:
-                        break
+                # Mouse position (binary search)
+                idx = bisect.bisect_right(pos_timestamps, ts)
+                if idx > 0:
+                    mouse_x, mouse_y = sorted_positions[idx - 1][1]
 
-                # Get frame
-                msg = mcap_msg.decoded.resolve_relative_path(input_file)
-                frame = np.array(msg.to_pil_image())
+                # Mouse buttons (incremental)
+                while click_idx < len(sorted_clicks) and sorted_clicks[click_idx][0] <= ts:
+                    _, btn, pressed = sorted_clicks[click_idx]
+                    click_idx += 1
+                    if pressed:
+                        active_buttons[btn] = ts
+                    elif btn in active_buttons:
+                        del active_buttons[btn]
 
-                # Expand frame with black space for overlay
-                overlay_height = 150
-                expanded_frame = np.zeros((frame_height + overlay_height, frame_width, 3), dtype=np.uint8)
-                expanded_frame[:frame_height, :] = frame
+                # Keyboard keys (incremental with expiration)
+                while key_idx < len(sorted_keys) and sorted_keys[key_idx][0] <= ts:
+                    active_keys.append(sorted_keys[key_idx])
+                    key_idx += 1
+                active_keys = [(s, e, vk) for s, e, vk in active_keys if ts <= e]
+                active_vk = {VK(vk) for _, _, vk in active_keys}
 
-                # Track active mouse buttons
-                active_mouse_buttons = {}
-                for click_ts, button_name, is_press in mouse_click_timeline:
-                    if click_ts > current_timestamp:
-                        break
-                    if is_press:
-                        active_mouse_buttons[button_name] = click_ts
-                    elif button_name in active_mouse_buttons:
-                        del active_mouse_buttons[button_name]
+                # Render frame
+                frame = np.array(screen_msg.decoded.resolve_relative_path(input_file).to_pil_image())
+                expanded = np.zeros((frame_height + 150, frame_width, 3), dtype=np.uint8)
+                expanded[:frame_height, :] = frame
 
-                # Track active keyboard keys
-                active_vk_codes = set()
-                for start_time, end_time, key_message in keyboard_events:
-                    if start_time <= current_timestamp <= end_time and key_message.startswith("press "):
-                        try:
-                            active_vk_codes.add(VK[key_message[6:]])
-                        except (KeyError, ValueError):
-                            pass
-
-                # Draw overlay and write frame
-                frame = draw_overlay(
-                    expanded_frame,
-                    active_vk_codes,
-                    set(active_mouse_buttons.keys()),
-                    current_mouse_x,
-                    current_mouse_y,
-                    frame_width,
-                    frame_height,
+                writer.write_frame(
+                    draw_overlay(
+                        expanded, active_vk, set(active_buttons), int(mouse_x), int(mouse_y), frame_width, frame_height
+                    )
                 )
-                writer.write_frame(frame)
 
         typer.echo(f"Video created: {output}")
         typer.echo(f"Frames: {len(screen_messages)}, Duration: {len(screen_messages) / fps:.2f}s")
