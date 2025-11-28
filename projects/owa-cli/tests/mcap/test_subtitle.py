@@ -2,7 +2,6 @@
 
 from unittest.mock import Mock, patch
 
-
 from owa.cli.mcap import app as mcap_app
 from owa.cli.mcap.subtitle import (
     KeyState,
@@ -12,6 +11,7 @@ from owa.cli.mcap.subtitle import (
     generate_ass,
     generate_srt,
     get_key_label,
+    pair_mouse_clicks,
 )
 from owa.env.desktop.constants import VK
 
@@ -84,6 +84,25 @@ class TestHelperFunctions:
         assert format_ass_time(1_000_000_000) == "0:00:01.00"
 
 
+class TestPairMouseClicks:
+    """Tests for pair_mouse_clicks helper."""
+
+    def test_empty(self):
+        assert pair_mouse_clicks([]) == []
+
+    def test_single_click(self):
+        events = [(1_000_000_000, "left", True), (1_100_000_000, "left", False)]
+        result = pair_mouse_clicks(events)
+        assert len(result) == 1
+        assert result[0][2] == "left"
+
+    def test_min_duration_enforced(self):
+        events = [(1_000_000_000, "left", True), (1_100_000_000, "left", False)]
+        result = pair_mouse_clicks(events)
+        press_ts, end_ts, _ = result[0]
+        assert end_ts - press_ts == 500_000_000  # MIN_DURATION_NS
+
+
 class TestGenerateSrt:
     """Tests for SRT generation."""
 
@@ -96,6 +115,11 @@ class TestGenerateSrt:
         result = generate_srt(0, events, [])
         assert "[keyboard] press A" in result
         assert "00:00:00,500" in result
+
+    def test_mouse_click(self):
+        mouse_events = [(500_000_000, "left", True), (600_000_000, "left", False)]
+        result = generate_srt(0, [], mouse_events)
+        assert "[mouse] left click" in result
 
 
 class TestGenerateAss:

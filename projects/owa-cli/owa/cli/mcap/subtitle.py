@@ -220,6 +220,13 @@ def subtitle(
                     mouse_positions[msg.timestamp] = (abs_x, abs_y)
 
             elif msg.topic == "mouse":
+                # Handle mouse click events from 'mouse' topic
+                if (
+                    getattr(msg.decoded, "event_type", None) == "click"
+                    and msg.decoded.button is not None
+                    and msg.decoded.pressed is not None
+                ):
+                    mouse_events.append((msg.timestamp, msg.decoded.button, msg.decoded.pressed))
                 if hasattr(msg.decoded, "x") and hasattr(msg.decoded, "y"):
                     abs_x, abs_y = msg.decoded.x, msg.decoded.y
                     mouse_positions[msg.timestamp] = (abs_x, abs_y)
@@ -238,27 +245,36 @@ def subtitle(
         typer.echo(f"Play with: mpv {input_file.with_suffix('.mkv')} --sub-file={output}")
 
 
+def pair_mouse_clicks(mouse_events: list) -> list[tuple[int, int, str]]:
+    """Pair mouse press/release events into completed clicks.
+
+    Returns list of (press_ts, release_ts, button) tuples.
+    """
+    completed = []
+    state = {}
+    for ts, button, is_press in sorted(mouse_events):
+        if is_press:
+            state[button] = ts
+        elif button in state:
+            press_ts = state.pop(button)
+            end_ts = press_ts + max(ts - press_ts, MIN_DURATION_NS)
+            completed.append((press_ts, end_ts, button))
+    return completed
+
+
 def generate_srt(start_time: int, keyboard_events: list, mouse_events: list) -> str:
     """Generate SRT format subtitle."""
     events = []
 
-    # Add keyboard events
     for press_time, release_time, label in keyboard_events:
         start = format_srt_time(press_time - start_time)
         end = format_srt_time(release_time - start_time)
         events.append(CompletedEvent(press_time, f"{start} --> {end}\n[keyboard] press {label}"))
 
-    # Process mouse click events
-    mouse_state = {}
-    for ts, button, is_press in sorted(mouse_events):
-        if is_press:
-            mouse_state[button] = ts
-        elif button in mouse_state:
-            press_ts = mouse_state.pop(button)
-            start = format_srt_time(press_ts - start_time)
-            end_ts = press_ts + max(ts - press_ts, MIN_DURATION_NS)
-            end = format_srt_time(end_ts - start_time)
-            events.append(CompletedEvent(press_ts, f"{start} --> {end}\n[mouse] {button} click"))
+    for press_ts, end_ts, button in pair_mouse_clicks(mouse_events):
+        start = format_srt_time(press_ts - start_time)
+        end = format_srt_time(end_ts - start_time)
+        events.append(CompletedEvent(press_ts, f"{start} --> {end}\n[mouse] {button} click"))
 
     events.sort(key=lambda e: e.timestamp)
     return "\n".join(f"{i}\n{e.content}\n" for i, e in enumerate(events, 1))
@@ -277,14 +293,9 @@ def generate_ass(
         all_events.append((press_time, "key", label, True))
         all_events.append((release_time, "key", label, False))
 
-    mouse_state = {}
-    for ts, button, is_press in sorted(mouse_events):
-        if is_press:
-            mouse_state[button] = ts
-        elif button in mouse_state:
-            press_ts = mouse_state.pop(button)
-            all_events.append((press_ts, "mouse", button.upper(), True))
-            all_events.append((ts, "mouse", button.upper(), False))
+    for press_ts, end_ts, button in pair_mouse_clicks(mouse_events):
+        all_events.append((press_ts, "mouse", button.upper(), True))
+        all_events.append((end_ts, "mouse", button.upper(), False))
 
     all_events.sort(key=lambda x: (x[0], not x[3]))
 
