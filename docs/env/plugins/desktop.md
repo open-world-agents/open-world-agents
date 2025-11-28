@@ -124,7 +124,7 @@ Reference: [Windows RAWMOUSE structure](https://learn.microsoft.com/en-us/window
 
 Key auto-repeat is a Windows feature where holding down a key generates multiple key events after an initial delay. When a user presses and holds a key, Windows first waits for the repeat delay period, then generates repeated `WM_KEYDOWN` messages at intervals determined by the repeat rate.
 
-How Windows auto-repeat works:
+**How Windows auto-repeat works:**
 
 1. Initial key press: First `WM_KEYDOWN` message is sent immediately with repeat count = 1
 2. Repeat delay: System waits for the configured delay (typically 250-1000ms)
@@ -132,6 +132,7 @@ How Windows auto-repeat works:
 4. Repeat count: Each repeated message includes an incremented repeat count in the message parameters
 
 System configuration via `SystemParametersInfo`:
+
 - Repeat delay: Time before auto-repeat begins (0-3 scale, maps to 250ms-1000ms, default: 500ms)
 - Repeat rate: Frequency of repeated characters (0-31 scale, maps to ~30ms-500ms intervals, default: 30ms)
 
@@ -139,19 +140,20 @@ References:
 - [Keyboard Repeat Delay and Repeat Rate](https://learn.microsoft.com/en-us/windows/win32/inputdev/about-keyboard-input#keyboard-repeat-delay-and-repeat-rate)
 - [SystemParametersInfo Function](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-systemparametersinfoa)
 
-Using OWA's `press_repeat` function:
+**Using OWA's `press_repeat` function:**
 
 ```python
 CALLABLES["desktop/keyboard.press_repeat"](key, press_time: float, initial_delay: float = 0.5, repeat_delay: float = 0.033)
 ```
 
 Parameters:
+
 - `key`: The key to press and repeat
 - `press_time`: Total duration to hold the key (seconds)
 - `initial_delay`: Time before repeating starts (default: 0.5s, matches Windows default)
 - `repeat_delay`: Interval between repeated keypresses (default: 0.033s ≈ 30ms, matches Windows default)
 
-Differences from true Windows auto-repeat:
+**Differences from true Windows auto-repeat:**
 
 The `press_repeat` function approximates Windows auto-repeat behavior but isn't identical:
 
@@ -164,7 +166,7 @@ Why the difference exists: Windows provides repeat detection through `WM_KEYDOWN
 
 Reference: [WM_KEYDOWN Message](https://learn.microsoft.com/en-us/windows/win32/inputdev/wm-keydown)
 
-Windows repeat count behavior:
+**Windows repeat count behavior:**
 
 The `WM_KEYDOWN` repeat count (bits 0-15) behaves differently than many developers expect:
 
