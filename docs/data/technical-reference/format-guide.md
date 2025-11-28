@@ -65,14 +65,14 @@
 
 OWAMcap combines the robustness of the MCAP container format with OWA's specialized message types for desktop environments, creating a powerful format for recording, analyzing, and training on human-computer interaction data.
 
-#### Key Terms
+**Key Terms:**
 
 !!! info "Essential Terminology"
     - **MCAP**: A modular container file format for heterogeneous, timestamped data (like a ZIP file for time-series data). Developed by [Foxglove](https://mcap.dev/), MCAP provides efficient random access, compression, and self-describing schemas. Widely adopted in robotics (ROS ecosystem), autonomous vehicles, and IoT applications for its performance and interoperability.
     - **Topic**: A named channel in MCAP files (e.g., "screen", "mouse") that groups related messages
     - **Lazy Loading**: Loading data only when needed, crucial for memory efficiency with large datasets
 
-#### What Makes a File "OWAMcap"
+**What Makes a File "OWAMcap":**
 
 === "Architecture Overview"
     ```
@@ -133,16 +133,16 @@ OWAMcap combines the robustness of the MCAP container format with OWA's speciali
     metadata: 0
     ```
 
-#### Key Features
+**Key Features:**
 
 <!-- SYNC-ID: owamcap-key-features -->
 - 🔄 **Universal Standard**: Unlike fragmented formats, enables seamless dataset combination for large-scale foundation models *(OWAMcap)*
 - 🎯 **High-Performance Multimodal Storage**: Lightweight [MCAP](https://mcap.dev/) container with nanosecond precision for synchronized data streams *(MCAP)*
 - 🔗 **Flexible MediaRef**: Smart references to both external and embedded media (file paths, URLs, data URIs, video frames) with lazy loading - keeps metadata files small while supporting rich media *(OWAMcap)* → [Learn more](#media-handling)
-- 🤗 **Training Pipeline Ready**: Native HuggingFace integration, seamless dataset loading, and direct compatibility with ML frameworks *(Ecosystem)* → [Browse datasets](https://huggingface.co/datasets?other=OWA) | [Data pipeline](https://open-world-agents.github.io/open-world-agents/data/technical-reference/data-pipeline/)
+- 🤗 **Training Pipeline Ready**: Native HuggingFace integration, seamless dataset loading, and direct compatibility with ML frameworks *(Ecosystem)* → [Browse datasets](https://huggingface.co/datasets?other=OWA) | [Data pipeline](../data-pipeline/)
 <!-- END-SYNC: owamcap-key-features -->
 
-#### Core Message Types
+**Core Message Types:**
 
 OWA provides standardized message types through the `owa-msgs` package for consistent desktop interaction recording:
 
@@ -425,9 +425,9 @@ OWAMcap's key advantage is efficient media handling through external media refer
 
 ### Storage & Performance
 
-OWAMcap achieves remarkable storage efficiency through external video references and intelligent compression:
+OWAMcap achieves remarkable storage efficiency through external video references and intelligent compression.
 
-#### Compression Benefits
+**Compression Benefits:**
 
 !!! info "Compression Performance"
     Compression performance varies significantly across formats. H.265 encoding achieves a 217.8× compression ratio compared to raw BGRA data while maintaining visual quality suitable for agent training, enabling practical storage of large-scale desktop interaction datasets.
@@ -468,7 +468,7 @@ Desktop screen capture at 600 × 800 resolution, 13 s @ 60 Hz:
 
 ### Extending OWAMcap
 
-#### Custom Message Types
+**Custom Message Types:**
 
 Need to store domain-specific data beyond standard desktop interactions? OWAMcap supports custom message types for sensors, gaming, robotics, and more.
 
@@ -617,7 +617,7 @@ $ python scripts/01_raw_events_to_event_dataset.py
 
 ### Migration & Troubleshooting
 
-#### File Migration
+**File Migration:**
 
 OWAMcap format evolves over time. When you encounter older files that need updating, use the migration tool:
 
@@ -627,7 +627,7 @@ OWAMcap format evolves over time. When you encounter older files that need updat
     - **Compatibility warnings** from OWA tools
     - **Performance issues** with legacy file formats
 
-**Migration Commands:**
+Migration commands:
 
 ```bash
 # Check if migration is needed
@@ -654,7 +654,7 @@ owl mcap migrate run old_file.mcap --output new_file.mcap
 !!! info "Complete Migration Reference"
     For detailed information about all migration commands and options, see the [OWA CLI - MCAP Commands](../../cli/mcap.md) documentation.
 
-#### Common Issues
+**Common Issues:**
 
 !!! warning "File Not Found Errors"
     When video files are missing:
