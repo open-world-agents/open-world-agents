@@ -802,56 +802,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Key Auto-Repeat Functionality">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#how-windows-auto-repeat-works" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        How Windows Auto-Repeat Works
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#using-owas-press_repeat-function" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Using OWA's press_repeat Function
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#differences-from-true-windows-auto-repeat" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Differences from True Windows Auto-Repeat
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#technical-details-windows-repeat-count-behavior" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Technical Details: Windows Repeat Count Behavior
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
         
       </ul>
@@ -2439,56 +2389,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Key Auto-Repeat Functionality">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#how-windows-auto-repeat-works" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        How Windows Auto-Repeat Works
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#using-owas-press_repeat-function" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Using OWA's press_repeat Function
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#differences-from-true-windows-auto-repeat" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Differences from True Windows Auto-Repeat
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#technical-details-windows-repeat-count-behavior" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Technical Details: Windows Repeat Count Behavior
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
         
       </ul>
@@ -3166,63 +3066,68 @@
 </div>
 <h2 id="technical-details">Technical Details<a class="headerlink" href="#technical-details" title="Permanent link">&para;</a></h2>
 <h3 id="library-selection-rationale">Library Selection Rationale<a class="headerlink" href="#library-selection-rationale" title="Permanent link">&para;</a></h3>
-<p>This module utilizes <code>pynput</code> for input simulation after evaluating several alternatives:</p>
+<p>This module uses <code>pynput</code> for input simulation after evaluating several alternatives:</p>
 <ul>
 <li>
-<p><strong>Why not PyAutoGUI?</strong> Though widely used, <a href="https://github.com/asweigart/pyautogui">PyAutoGUI</a> uses deprecated Windows APIs (<code>keybd_event/mouse_event</code>) rather than the modern <code>SendInput</code> method. These older APIs fail in DirectX applications and games. Additionally, PyAutoGUI has seen limited maintenance (last significant update was over 2 years ago).</p>
+<p><a href="https://github.com/asweigart/pyautogui">PyAutoGUI</a> uses deprecated Windows APIs (<code>keybd_event/mouse_event</code>) instead of modern <code>SendInput</code>, which fail in DirectX applications and games. Additionally, PyAutoGUI has seen limited maintenance (last significant update was over 2 years ago).</p>
 </li>
 <li>
-<p><strong>Alternative Solutions:</strong> Libraries like <a href="https://github.com/learncodebygaming/pydirectinput">pydirectinput</a> and <a href="https://github.com/ReggX/pydirectinput_rgx">pydirectinput_rgx</a> address the Windows API issue by using <code>SendInput</code>, but they lack input capturing capabilities which are essential for our use case.</p>
+<p><a href="https://github.com/learncodebygaming/pydirectinput">pydirectinput</a> and <a href="https://github.com/ReggX/pydirectinput_rgx">pydirectinput_rgx</a> use <code>SendInput</code> but lack input capturing capabilities.</p>
 </li>
 <li>
-<p><strong>Other Options:</strong> We also evaluated <a href="https://github.com/boppreh/keyboard">keyboard</a> and <a href="https://github.com/boppreh/mouse">mouse</a> libraries but found them inadequately maintained with several unresolved bugs that could impact reliability.</p>
+<p><a href="https://github.com/boppreh/keyboard">keyboard</a> and <a href="https://github.com/boppreh/mouse">mouse</a> libraries have unresolved bugs that impact reliability.</p>
 </li>
 </ul>
 <h3 id="raw-mouse-input">Raw Mouse Input<a class="headerlink" href="#raw-mouse-input" title="Permanent link">&para;</a></h3>
-<p>Raw mouse input capture is available to separate mouse position movement from game's center-locking and from user interactions. This enables access to unfiltered mouse movement data directly from the hardware, bypassing Windows pointer acceleration and game cursor manipulation.</p>
+<p><code>mouse</code> captures screen cursor position (x, y) after Windows applies pointer acceleration. <code>mouse/raw</code> captures hardware movement deltas (dx, dy) before acceleration, directly from the HID device.</p>
+<p>Games lock the cursor to screen center and read raw input for camera control, so <code>mouse</code> position stays constant while <code>mouse/raw</code> captures actual player movements. Most OWA datasets use <code>mouse/raw</code> for this reason.</p>
+<p>Reference: <a href="https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-rawmouse">Windows RAWMOUSE structure</a></p>
 <h3 id="key-auto-repeat-functionality">Key Auto-Repeat Functionality<a class="headerlink" href="#key-auto-repeat-functionality" title="Permanent link">&para;</a></h3>
-<p>Key auto-repeat is a Windows feature where holding down a key generates multiple key events after an initial delay. When a user presses and holds a key, Windows first waits for the <strong>repeat delay</strong> period, then generates repeated <code>WM_KEYDOWN</code> messages at intervals determined by the <strong>repeat rate</strong>.</p>
-<h4 id="how-windows-auto-repeat-works">How Windows Auto-Repeat Works<a class="headerlink" href="#how-windows-auto-repeat-works" title="Permanent link">&para;</a></h4>
+<p>Key auto-repeat is a Windows feature where holding down a key generates multiple key events after an initial delay. When a user presses and holds a key, Windows first waits for the repeat delay period, then generates repeated <code>WM_KEYDOWN</code> messages at intervals determined by the repeat rate.</p>
+<p><strong>How Windows auto-repeat works:</strong></p>
 <ol>
-<li><strong>Initial Key Press</strong>: First <code>WM_KEYDOWN</code> message is sent immediately with repeat count = 1</li>
-<li><strong>Repeat Delay</strong>: System waits for the configured delay (typically 250-1000ms)</li>
-<li><strong>Repeated Events</strong>: Additional <code>WM_KEYDOWN</code> messages are sent at the repeat rate interval (typically 30ms)</li>
-<li><strong>Repeat Count</strong>: Each repeated message includes an incremented repeat count in the message parameters</li>
+<li>Initial key press: First <code>WM_KEYDOWN</code> message is sent immediately with repeat count = 1</li>
+<li>Repeat delay: System waits for the configured delay (typically 250-1000ms)</li>
+<li>Repeated events: Additional <code>WM_KEYDOWN</code> messages are sent at the repeat rate interval (typically 30ms)</li>
+<li>Repeat count: Each repeated message includes an incremented repeat count in the message parameters</li>
 </ol>
-<p><strong>System Configuration</strong>: Windows allows users to configure auto-repeat behavior through:
-- <strong>Repeat Delay</strong>: Time before auto-repeat begins (0-3 scale, maps to 250ms-1000ms, default: 500ms)
-- <strong>Repeat Rate</strong>: Frequency of repeated characters (0-31 scale, maps to ~30ms-500ms intervals, default: 30ms)</p>
-<p>These settings can be accessed programmatically via <code>SystemParametersInfo</code> with <code>SPI_GETKEYBOARDDELAY</code> and <code>SPI_GETKEYBOARDSPEED</code> parameters.</p>
-<p><strong>References</strong>:
-- <a href="https://learn.microsoft.com/en-us/windows/win32/inputdev/about-keyboard-input#keyboard-repeat-delay-and-repeat-rate">Keyboard Repeat Delay and Repeat Rate</a> - Microsoft documentation on keyboard repeat behavior
-- <a href="https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-systemparametersinfoa">SystemParametersInfo Function</a> - Windows API for keyboard repeat parameters</p>
-<h4 id="using-owas-press_repeat-function">Using OWA's press_repeat Function<a class="headerlink" href="#using-owas-press_repeat-function" title="Permanent link">&para;</a></h4>
-<p>For simulating key auto-repeat behavior, use the dedicated function:</p>
+<p>System configuration via <code>SystemParametersInfo</code>:</p>
+<ul>
+<li>Repeat delay: Time before auto-repeat begins (0-3 scale, maps to 250ms-1000ms, default: 500ms)</li>
+<li>Repeat rate: Frequency of repeated characters (0-31 scale, maps to ~30ms-500ms intervals, default: 30ms)</li>
+</ul>
+<p>References:
+- <a href="https://learn.microsoft.com/en-us/windows/win32/inputdev/about-keyboard-input#keyboard-repeat-delay-and-repeat-rate">Keyboard Repeat Delay and Repeat Rate</a>
+- <a href="https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-systemparametersinfoa">SystemParametersInfo Function</a></p>
+<p><strong>Using OWA's <code>press_repeat</code> function:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">CALLABLES</span><span class="p">[</span><span class="s2">&quot;desktop/keyboard.press_repeat&quot;</span><span class="p">](</span><span class="n">key</span><span class="p">,</span> <span class="n">press_time</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">initial_delay</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">repeat_delay</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.033</span><span class="p">)</span>
 </code></pre></div>
-<p><strong>Parameters:</strong>
-- <code>key</code>: The key to press and repeat
-- <code>press_time</code>: Total duration to hold the key (seconds)
-- <code>initial_delay</code>: Time before repeating starts (default: 0.5s, matches Windows default)
-- <code>repeat_delay</code>: Interval between repeated keypresses (default: 0.033s ≈ 30ms, matches Windows default)</p>
-<h4 id="differences-from-true-windows-auto-repeat">Differences from True Windows Auto-Repeat<a class="headerlink" href="#differences-from-true-windows-auto-repeat" title="Permanent link">&para;</a></h4>
-<p>The <code>press_repeat</code> function <strong>approximates</strong> Windows auto-repeat behavior but isn't identical:</p>
-<p><strong>OS Auto-Repeat vs OWA Implementation:</strong>
-- <strong>OS Auto-Repeat</strong>: <code>WM_KEYDOWN</code> messages include repeat flag (bit 30) and repeat count
-- <strong>OWA Implementation</strong>: Multiple <code>WM_KEYDOWN</code> messages without repeat flags (each appears as individual key press)</p>
+<p>Parameters:</p>
+<ul>
+<li><code>key</code>: The key to press and repeat</li>
+<li><code>press_time</code>: Total duration to hold the key (seconds)</li>
+<li><code>initial_delay</code>: Time before repeating starts (default: 0.5s, matches Windows default)</li>
+<li><code>repeat_delay</code>: Interval between repeated keypresses (default: 0.033s ≈ 30ms, matches Windows default)</li>
+</ul>
+<p><strong>Differences from true Windows auto-repeat:</strong></p>
+<p>The <code>press_repeat</code> function approximates Windows auto-repeat behavior but isn't identical:</p>
+<ul>
+<li>OS auto-repeat: <code>WM_KEYDOWN</code> messages include repeat flag (bit 30) and repeat count</li>
+<li>OWA implementation: Multiple <code>WM_KEYDOWN</code> messages without repeat flags (each appears as individual key press)</li>
+</ul>
 <p>The difference is small and commonly ignored by applications, making this approach effective for most automation scenarios.</p>
-<p><strong>Why the difference exists</strong>: Windows provides repeat detection through <code>WM_KEYDOWN</code> message parameters, but pynput does not expose these Windows-specific details. Since the primary use case is <strong>triggering</strong> repeat behavior rather than detecting it, this limitation doesn't affect the functionality.</p>
-<p><strong>Reference</strong>: <a href="https://learn.microsoft.com/en-us/windows/win32/inputdev/wm-keydown">WM_KEYDOWN Message</a> - Official Windows documentation for key press events and message parameters</p>
-<h4 id="technical-details-windows-repeat-count-behavior">Technical Details: Windows Repeat Count Behavior<a class="headerlink" href="#technical-details-windows-repeat-count-behavior" title="Permanent link">&para;</a></h4>
+<p>Why the difference exists: Windows provides repeat detection through <code>WM_KEYDOWN</code> message parameters, but pynput does not expose these Windows-specific details. Since the primary use case is triggering repeat behavior rather than detecting it, this limitation doesn't affect the functionality.</p>
+<p>Reference: <a href="https://learn.microsoft.com/en-us/windows/win32/inputdev/wm-keydown">WM_KEYDOWN Message</a></p>
+<p><strong>Windows repeat count behavior:</strong></p>
 <p>The <code>WM_KEYDOWN</code> repeat count (bits 0-15) behaves differently than many developers expect:</p>
 <ul>
-<li><strong>Not cumulative</strong>: Each message contains the repeat count since the last processed <code>WM_KEYDOWN</code>, not a running total</li>
-<li><strong>Usually 1</strong>: In typical applications with fast message processing, the repeat count is almost always 1</li>
-<li><strong>Higher values possible</strong>: Only occurs when message processing is slow enough for multiple repeats to queue up</li>
+<li>Not cumulative: Each message contains the repeat count since the last processed <code>WM_KEYDOWN</code>, not a running total</li>
+<li>Usually 1: In typical applications with fast message processing, the repeat count is almost always 1</li>
+<li>Higher values possible: Only occurs when message processing is slow enough for multiple repeats to queue up</li>
 </ul>
-<p><strong>Example</strong>: If you hold a key and your message loop processes messages quickly, you'll receive multiple <code>WM_KEYDOWN</code> messages each with repeat count = 1. Only when processing is delayed (e.g., by adding <code>Sleep(1000)</code> in the handler) will you see higher repeat counts like 20-30.</p>
+<p>Example: If you hold a key and your message loop processes messages quickly, you'll receive multiple <code>WM_KEYDOWN</code> messages each with repeat count = 1. Only when processing is delayed (e.g., by adding <code>Sleep(1000)</code> in the handler) will you see higher repeat counts like 20-30.</p>
 <p>This design allows responsive applications to process key events immediately rather than waiting for the key release.</p>
-<p><strong>Reference</strong>: <a href="https://stackoverflow.com/questions/44897991/wm-keydown-repeat-count">WM_KEYDOWN repeat count behavior explained</a> - Stack Overflow discussion with practical examples</p>
+<p>Reference: <a href="https://stackoverflow.com/questions/44897991/wm-keydown-repeat-count">WM_KEYDOWN repeat count behavior explained</a></p>
 <div class="admonition info">
 <p class="admonition-title">Implementation</p>
 <p>See <a href="https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-env-desktop">owa-env-desktop source</a> for detailed implementation.</p>
@@ -6300,7 +6205,7 @@ about the currently active window, including title, position, and handle.</p>
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="August 7, 2025 07:07:19 UTC">August 7, 2025 07:07:19</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="November 28, 2025 03:00:21 UTC">November 28, 2025 03:00:21</span>
   </span>
 
     
