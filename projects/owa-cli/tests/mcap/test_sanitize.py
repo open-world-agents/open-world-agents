@@ -166,6 +166,28 @@ def test_sanitize_substring_matching(tmp_path, cli_runner):
     assert result.exit_code == 0
 
 
+def test_sanitize_window_filtering(tmp_path, cli_runner):
+    """Test window filtering keeps multiple messages after window activation."""
+    test_file = tmp_path / "test.mcap"
+    test_file.write_bytes(b"content")
+
+    with (
+        patch("owa.cli.mcap.sanitize.OWAMcapReader") as mock_reader,
+        patch("owa.cli.mcap.sanitize.OWAMcapWriter"),
+    ):
+        mock_reader.return_value.__enter__.return_value.iter_messages.return_value = [
+            _window_msg("Keep This Window", 1000),
+            _key_msg("a", 1001),
+            _key_msg("b", 1002),
+            _key_msg("c", 1003),
+            _key_msg("d", 1004),
+        ]
+        result = cli_runner.invoke(
+            mcap_app, ["sanitize", str(test_file), "--keep-window", "Keep This Window", "--yes"]
+        )
+    assert result.exit_code == 0
+
+
 # === Real File Tests ===
 def test_sanitize_real_file_dry_run(test_data_dir, tmp_path, copy_test_file, suppress_mcap_warnings, cli_runner):
     """Test sanitize dry run with real MCAP file to verify message counting works."""

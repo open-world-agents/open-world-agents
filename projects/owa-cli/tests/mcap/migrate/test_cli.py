@@ -379,3 +379,132 @@ def test_script_migrator_verify_success(tmp_path):
     with patch("subprocess.run", return_value=MagicMock(returncode=0, stdout=success_json, stderr="")):
         result = migrator.verify_migration(tmp_path / "test.mcap", None, verbose=False)
     assert result.success
+
+
+def test_script_migrator_json_success_false_on_zero_exit(tmp_path):
+    """Test handling JSON with success=false even when exit code is 0."""
+    script = tmp_path / "test.py"
+    script.write_text("print('test')")
+    migrator = ScriptMigrator(script, "0.3.0", "0.4.0")
+
+    error_json = '{"success": false, "changes_made": 0, "error": "Validation failed", "from_version": "0.3.0", "to_version": "0.4.0"}'
+    with patch("subprocess.run", return_value=MagicMock(returncode=0, stdout=error_json, stderr="")):
+        result = migrator.migrate(tmp_path / "test.mcap", verbose=False)
+    assert not result.success
+    assert result.error == "Validation failed"
+    assert result.changes_made == 0
+
+
+def test_get_highest_reachable_version_ranges():
+    """Test highest reachable version with version ranges."""
+    from packaging.version import Version
+
+    orchestrator = MigrationOrchestrator()
+
+    # Get the actual highest reachable version dynamically
+    all_target_versions = [m.to_version for m in orchestrator.script_migrators]
+    if all_target_versions:
+        expected_highest = str(max(Version(v) for v in all_target_versions))
+    else:
+        expected_highest = "0.4.2"
+
+    # Test version 0.3.1 (between 0.3.0 and 0.3.2) should reach the highest available
+    highest = orchestrator.get_highest_reachable_version("0.3.1")
+    assert highest == expected_highest
+
+    # Test version 0.3.5 (between 0.3.2 and 0.4.2) should reach the highest available
+    highest = orchestrator.get_highest_reachable_version("0.3.5")
+    assert highest == expected_highest
+
+
+def test_filename_pattern_parsing():
+    """Test that the filename pattern parsing works correctly."""
+    import re
+
+    version_pattern = re.compile(r"^v(\d+_\d+_\d+)_to_v(\d+_\d+_\d+)\.py$")
+
+    # Test valid patterns
+    valid_cases = [
+        ("v0_3_0_to_v0_3_2.py", "0.3.0", "0.3.2"),
+        ("v0_3_2_to_v0_4_1.py", "0.3.2", "0.4.1"),
+        ("v1_0_0_to_v2_0_0.py", "1.0.0", "2.0.0"),
+    ]
+    for filename, expected_from, expected_to in valid_cases:
+        match = version_pattern.match(filename)
+        assert match is not None, f"Pattern should match {filename}"
+        assert match.group(1).replace("_", ".") == expected_from
+        assert match.group(2).replace("_", ".") == expected_to
+
+    # Test invalid patterns
+    invalid_cases = ["v0_3_0_to_v0_3_2.txt", "0_3_0_to_v0_3_2.py", "random_file.py"]
+    for filename in invalid_cases:
+        assert version_pattern.match(filename) is None, f"Pattern should not match {filename}"
+
+
+def test_detect_files_no_files():
+    """Test detection when no files are provided."""
+    from owa.cli.mcap.migrate import detect_files_needing_migration
+
+    console = MagicMock()
+    result = detect_files_needing_migration([], console, False, None)
+    assert result == []
+    console.print.assert_called_with("[yellow]No valid MCAP files found[/yellow]")
+
+
+def test_detect_files_with_non_existent_file():
+    """Test detection with non-existent file."""
+    from pathlib import Path
+
+    from owa.cli.mcap.migrate import detect_files_needing_migration
+
+    console = MagicMock()
+    non_existent_file = Path("/non/existent/file.mcap")
+
+    result = detect_files_needing_migration([non_existent_file], console, False, None)
+    assert result == []
+    console.print.assert_any_call(f"[red]File not found: {non_existent_file}[/red]")
+
+
+def test_migrate_rollback_with_missing_current(cli_runner, tmp_path):
+    """Test rollback when current file is missing (restore scenario)."""
+    backup_file = tmp_path / "missing.mcap.backup"
+    backup_file.write_text("backup content")
+    original_file = tmp_path / "missing.mcap"
+
+    result = cli_runner.invoke(app, ["mcap", "migrate", "rollback", str(original_file), "--yes", "--verbose"])
+    assert result.exit_code == 0
+    assert "Rollback Complete" in result.stdout
+
+    # Verify file was restored
+    assert original_file.exists()
+    assert original_file.read_text() == "backup content"
+    assert not backup_file.exists()
+
+
+def test_migration_produces_expected_output(
+    cli_runner, test_data_dir, tmp_path, copy_test_file, suppress_mcap_warnings
+):
+    """Test that migrating 0.3.2.mcap produces expected output."""
+    from packaging.version import Version
+
+    source_file = test_data_dir / "0.3.2.mcap"
+    if not source_file.exists():
+        pytest.skip("Required test file not found")
+
+    test_file = copy_test_file(test_data_dir, "0.3.2.mcap", tmp_path)
+    orchestrator = MigrationOrchestrator()
+    original_version = orchestrator.detect_version(test_file)
+
+    # Migrate up to v0.5.0 first to prevent false-positive verification failure
+    result = cli_runner.invoke(app, ["mcap", "migrate", "run", str(test_file), "--yes", "-t", "0.5.0", "--no-backups"])
+    assert result.exit_code == 0, f"Migration failed: {result.stdout}"
+
+    # Now run to the latest version
+    result = cli_runner.invoke(app, ["mcap", "migrate", "run", str(test_file)], input="y\n")
+    assert result.exit_code == 0, f"Migration failed: {result.stdout}"
+    assert "Migration successful" in result.stdout
+
+    # Verify the migrated file has a higher version
+    migrated_version = orchestrator.detect_version(test_file)
+    assert migrated_version != "unknown"
+    assert Version(migrated_version) > Version(original_version)
