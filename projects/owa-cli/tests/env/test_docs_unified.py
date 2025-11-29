@@ -1,4 +1,6 @@
-"""Tests for owl env docs command."""
+"""
+Tests for the unified owl env docs command.
+"""
 
 import json
 from unittest.mock import Mock, patch
@@ -11,6 +13,7 @@ from owa.core.documentation.validator import ComponentValidationResult, PluginVa
 
 @pytest.fixture
 def mock_validator():
+    """Create a mock DocumentationValidator."""
     validator = Mock()
     good = PluginValidationResult(
         plugin_name="good_plugin",
@@ -40,6 +43,7 @@ def mock_validator():
 
 
 def test_docs_help(cli_runner):
+    """Test docs command help shows unified interface."""
     result = cli_runner.invoke(env_app, ["docs", "--help"])
     assert result.exit_code == 0
     assert "--output-format" in result.stdout
@@ -47,6 +51,7 @@ def test_docs_help(cli_runner):
 
 @patch("owa.cli.env.docs.DocumentationValidator")
 def test_docs_table_format(mock_cls, cli_runner, mock_validator):
+    """Test docs command with table format (default)."""
     mock_cls.return_value = mock_validator
     result = cli_runner.invoke(env_app, ["docs"])
     assert result.exit_code == 1
@@ -56,6 +61,7 @@ def test_docs_table_format(mock_cls, cli_runner, mock_validator):
 
 @patch("owa.cli.env.docs.DocumentationValidator")
 def test_docs_json_format(mock_cls, cli_runner, mock_validator):
+    """Test docs command with JSON format."""
     mock_cls.return_value = mock_validator
     result = cli_runner.invoke(env_app, ["docs", "--output-format=json"])
     assert result.exit_code == 1
@@ -66,6 +72,7 @@ def test_docs_json_format(mock_cls, cli_runner, mock_validator):
 
 @patch("owa.cli.env.docs.DocumentationValidator")
 def test_docs_invalid_format(mock_cls, cli_runner, mock_validator):
+    """Test docs command with invalid format."""
     mock_cls.return_value = mock_validator
     result = cli_runner.invoke(env_app, ["docs", "--output-format=invalid"])
     assert result.exit_code == 2
@@ -73,6 +80,7 @@ def test_docs_invalid_format(mock_cls, cli_runner, mock_validator):
 
 @patch("owa.cli.env.docs.DocumentationValidator")
 def test_docs_specific_plugin(mock_cls, cli_runner, mock_validator):
+    """Test docs command with specific plugin."""
     mock_cls.return_value = mock_validator
     result = cli_runner.invoke(env_app, ["docs", "good_plugin"])
     assert result.exit_code == 0

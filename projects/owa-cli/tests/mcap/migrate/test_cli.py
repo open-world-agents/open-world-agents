@@ -1,4 +1,6 @@
-"""Tests for owl mcap migrate CLI."""
+"""
+Tests for the `owl mcap migrate` CLI command.
+"""
 
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -11,12 +13,14 @@ from owa.cli.mcap.migrate import MigrationOrchestrator, ScriptMigrator
 
 # === CLI Help Tests ===
 def test_migrate_help(cli_runner):
+    """Test migrate command help."""
     result = cli_runner.invoke(app, ["mcap", "migrate", "--help"])
     assert result.exit_code == 0
     assert "run" in result.stdout
 
 
 def test_migrate_run_help(cli_runner):
+    """Test migrate run command help."""
     result = cli_runner.invoke(app, ["mcap", "migrate", "run", "--help"])
     assert result.exit_code == 0
     assert "--dry-run" in result.stdout
@@ -24,11 +28,13 @@ def test_migrate_run_help(cli_runner):
 
 # === Basic Error Handling ===
 def test_migrate_nonexistent_file(cli_runner):
+    """Test migration with non-existent file."""
     result = cli_runner.invoke(app, ["mcap", "migrate", "run", "nonexistent.mcap"])
     assert "File not found" in result.stdout
 
 
 def test_migrate_non_mcap_file(cli_runner, tmp_path):
+    """Test migration with non-MCAP file."""
     test_file = tmp_path / "test.txt"
     test_file.write_text("not mcap")
     result = cli_runner.invoke(app, ["mcap", "migrate", "run", str(test_file)])
@@ -37,6 +43,7 @@ def test_migrate_non_mcap_file(cli_runner, tmp_path):
 
 # === Dry Run Tests ===
 def test_migrate_dry_run(cli_runner, test_data_dir, tmp_path, copy_test_file, suppress_mcap_warnings):
+    """Test dry run mode doesn't modify files."""
     test_file = copy_test_file(test_data_dir, "0.3.2.mcap", tmp_path)
     original_mtime = test_file.stat().st_mtime
 
