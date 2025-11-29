@@ -1628,17 +1628,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#owl-mcap-convert" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        convert
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#owl-mcap-convert-overlay" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1726,6 +1715,17 @@
     <span class="md-ellipsis">
       
         sanitize
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#owl-mcap-subtitle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        subtitle
       
     </span>
   </a>
@@ -2443,17 +2443,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#owl-mcap-convert" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        convert
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#owl-mcap-convert-overlay" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2541,6 +2530,17 @@
     <span class="md-ellipsis">
       
         sanitize
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#owl-mcap-subtitle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        subtitle
       
     </span>
   </a>
@@ -3156,40 +3156,10 @@
 </tr>
 </tbody>
 </table>
-<h5 id="owl-mcap-convert">owl mcap convert<a class="headerlink" href="#owl-mcap-convert" title="Permanent link">&para;</a></h5>
-<p>Convert an <code>.mcap</code> file into an <code>.srt</code> subtitle file. After the conversion, you may play <code>.mkv</code> file and verify the sanity of data.</p>
-<p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>owl mcap convert [OPTIONS] MCAP_PATH [OUTPUT_SRT]
-</code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--topics</code></td>
-<td>text</td>
-<td>Comma-separated list of topics to include in the subtitle file</td>
-<td><code>['mouse/raw', 'mouse', 'keyboard']</code></td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h5 id="owl-mcap-convert-overlay">owl mcap convert-overlay<a class="headerlink" href="#owl-mcap-convert-overlay" title="Permanent link">&para;</a></h5>
-<p>Convert an <code>.mcap</code> file into a video with overlays showing mouse clicks and keyboard presses.</p>
+<p>Convert MCAP file to video with keyboard/mouse overlays.</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>owl mcap convert-overlay [OPTIONS] MCAP_PATH [OUTPUT_VIDEO]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>owl mcap convert-overlay [OPTIONS] INPUT_FILE
 </code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -3203,34 +3173,46 @@
 </thead>
 <tbody>
 <tr>
-<td><code>--topics</code></td>
-<td>text</td>
-<td>Comma-separated list of topics to include in the overlay</td>
-<td><code>['mouse/raw', 'keyboard']</code></td>
+<td><code>--output</code>, <code>-o</code></td>
+<td>path</td>
+<td>Output video file (default: <input>.mp4)</td>
+<td>None</td>
 </tr>
 <tr>
 <td><code>--fps</code></td>
 <td>float</td>
-<td>Output video frame rate (default: use original MCAP frame rate)</td>
+<td>Output frame rate (default: auto-detect from recording)</td>
 <td>None</td>
 </tr>
 <tr>
-<td><code>--max-duration-seconds</code></td>
+<td><code>--duration</code>, <code>-d</code></td>
 <td>float</td>
-<td>Maximum duration in seconds to generate (default: entire video)</td>
+<td>Maximum duration in seconds</td>
 <td>None</td>
 </tr>
 <tr>
-<td><code>--original-width</code></td>
+<td><code>--source-width</code></td>
 <td>integer</td>
-<td>Original recording width resolution for mouse movement scaling</td>
+<td>Source screen width for mouse scaling</td>
 <td><code>2560</code></td>
 </tr>
 <tr>
-<td><code>--original-height</code></td>
+<td><code>--source-height</code></td>
 <td>integer</td>
-<td>Original recording height resolution for mouse movement scaling</td>
+<td>Source screen height for mouse scaling</td>
 <td><code>1440</code></td>
+</tr>
+<tr>
+<td><code>--topics</code></td>
+<td>text</td>
+<td>MCAP topics to process</td>
+<td><code>['mouse/raw', 'keyboard']</code></td>
+</tr>
+<tr>
+<td><code>--force</code>, <code>-f</code></td>
+<td>boolean</td>
+<td>Overwrite existing output file</td>
+<td><code>False</code></td>
 </tr>
 <tr>
 <td><code>--help</code></td>
@@ -3243,7 +3225,7 @@
 <h5 id="owl-mcap-info">owl mcap info<a class="headerlink" href="#owl-mcap-info" title="Permanent link">&para;</a></h5>
 <p>Display information about the .mcap file(s). Shows detailed info for single file, summary for multiple files.</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>owl mcap info [OPTIONS] MCAP_PATHS...
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>owl mcap info [OPTIONS] MCAP_PATHS...
 </code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -3273,7 +3255,7 @@
 <h5 id="owl-mcap-migrate">owl mcap migrate<a class="headerlink" href="#owl-mcap-migrate" title="Permanent link">&para;</a></h5>
 <p>MCAP migration commands with rollback and cleanup support.</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>owl mcap migrate [OPTIONS] COMMAND [ARGS]...
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>owl mcap migrate [OPTIONS] COMMAND [ARGS]...
 </code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -3304,7 +3286,7 @@ and removes them after confirmation. Use --dry-run to preview what would be dele
     owl mcap migrate cleanup /path/to/backups  # Clean backup files in specific directory
     owl mcap migrate cleanup file.mcap         # Clean backup for specific MCAP file</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>owl mcap migrate cleanup [OPTIONS] [PATTERNS]...
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>owl mcap migrate cleanup [OPTIONS] [PATTERNS]...
 </code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -3349,7 +3331,7 @@ and removes them after confirmation. Use --dry-run to preview what would be dele
 MCAP files and restores the original files from the backups. The backup files
 are removed after successful rollback.</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>owl mcap migrate rollback [OPTIONS] FILES...
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>owl mcap migrate rollback [OPTIONS] FILES...
 </code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -3385,7 +3367,7 @@ are removed after successful rollback.</p>
 <h6 id="owl-mcap-migrate-run">owl mcap migrate run<a class="headerlink" href="#owl-mcap-migrate-run" title="Permanent link">&para;</a></h6>
 <p>Migrate MCAP files to the highest reachable version with automatic version detection.</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>owl mcap migrate run [OPTIONS] FILES...
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>owl mcap migrate run [OPTIONS] FILES...
 </code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -3446,7 +3428,7 @@ file paths or URLs when media files have been moved or renamed.</p>
     owl mcap rename-uri *.mcap --uri "/new/path/video.mp4"
     owl mcap rename-uri data.mcap --uri "http://new.com/video" --dry-run</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>owl mcap rename-uri [OPTIONS] FILES...
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>owl mcap rename-uri [OPTIONS] FILES...
 </code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -3512,7 +3494,7 @@ messages would be removed, preventing accidental over-sanitization. Use
     owl mcap sanitize data.mcap --keep-window "App" --max-removal-ratio 0.95
     owl mcap sanitize recording.mcap --auto-detect-window</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>owl mcap sanitize [OPTIONS] FILES...
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>owl mcap sanitize [OPTIONS] FILES...
 </code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -3572,6 +3554,54 @@ messages would be removed, preventing accidental over-sanitization. Use
 <td>float range (between <code>0.0</code> and <code>1.0</code>)</td>
 <td>Maximum ratio of messages that can be removed (0.0-1.0). Safety feature to prevent accidental over-sanitization.</td>
 <td><code>0.2</code></td>
+</tr>
+<tr>
+<td><code>--help</code></td>
+<td>boolean</td>
+<td>Show this message and exit.</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
+<h5 id="owl-mcap-subtitle">owl mcap subtitle<a class="headerlink" href="#owl-mcap-subtitle" title="Permanent link">&para;</a></h5>
+<p>Generate subtitle file from MCAP recording for playback verification.</p>
+<p><strong>Usage:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>owl mcap subtitle [OPTIONS] INPUT_FILE
+</code></pre></div>
+<p><strong>Options:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--output</code>, <code>-o</code></td>
+<td>path</td>
+<td>Output file path</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>--format</code>, <code>-f</code></td>
+<td>choice (<code>srt</code> &#x7C; <code>ass</code>)</td>
+<td>Output format</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>--width</code></td>
+<td>integer</td>
+<td>Video width (ASS only)</td>
+<td><code>1920</code></td>
+</tr>
+<tr>
+<td><code>--height</code></td>
+<td>integer</td>
+<td>Video height (ASS only)</td>
+<td><code>1080</code></td>
 </tr>
 <tr>
 <td><code>--help</code></td>
