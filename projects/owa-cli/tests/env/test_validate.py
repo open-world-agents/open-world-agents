@@ -68,6 +68,7 @@ def test_validate_nonexistent(cli_runner):
     """Test validation of a non-existent YAML file."""
     result = cli_runner.invoke(env_app, ["validate", "nonexistent.yaml"])
     assert result.exit_code == 1
+    assert "YAML file not found" in result.stdout
 
 
 def test_plugin_spec_from_yaml(tmp_path):
