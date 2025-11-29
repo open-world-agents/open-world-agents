@@ -34,14 +34,16 @@ def test_sanitize_success(tmp_path, cli_runner):
 
     with (
         patch("owa.cli.mcap.sanitize.OWAMcapReader") as mock_reader,
-        patch("owa.cli.mcap.sanitize.OWAMcapWriter"),
+        patch("owa.cli.mcap.sanitize.OWAMcapWriter") as mock_writer,
     ):
-        mock_reader.return_value.__enter__.return_value.iter_messages.return_value = [
-            _window_msg("Test"),
-            _key_msg("a"),
-        ]
+        messages = [_window_msg("Test"), _key_msg("a")]
+        mock_reader.return_value.__enter__.return_value.iter_messages.return_value = messages
         result = cli_runner.invoke(mcap_app, ["sanitize", str(test_file), "--keep-window", "Test", "--yes"])
+
+        # Verify writer was called and received messages
+        mock_writer.return_value.__enter__.return_value.write_message.assert_called()
     assert result.exit_code == 0
+    assert "Sanitization complete" in result.output or "Success" in result.output or "1" in result.output
 
 
 def test_sanitize_failure(tmp_path, cli_runner):
@@ -116,7 +118,7 @@ def test_sanitize_multiple_files(tmp_path, cli_runner):
 
     with (
         patch("owa.cli.mcap.sanitize.OWAMcapReader") as mock_reader,
-        patch("owa.cli.mcap.sanitize.OWAMcapWriter"),
+        patch("owa.cli.mcap.sanitize.OWAMcapWriter") as mock_writer,
     ):
         mock_reader.return_value.__enter__.return_value.iter_messages.return_value = [
             _window_msg("Test"),
@@ -125,6 +127,8 @@ def test_sanitize_multiple_files(tmp_path, cli_runner):
         result = cli_runner.invoke(
             mcap_app, ["sanitize", str(test_file1), str(test_file2), "--keep-window", "Test", "--yes"]
         )
+        # Writer should be called for both files (2 files × 2 messages each)
+        assert mock_writer.return_value.__enter__.return_value.write_message.call_count == 4
     assert result.exit_code == 0
 
 
@@ -135,7 +139,7 @@ def test_sanitize_exact_matching(tmp_path, cli_runner):
 
     with (
         patch("owa.cli.mcap.sanitize.OWAMcapReader") as mock_reader,
-        patch("owa.cli.mcap.sanitize.OWAMcapWriter"),
+        patch("owa.cli.mcap.sanitize.OWAMcapWriter") as mock_writer,
     ):
         mock_reader.return_value.__enter__.return_value.iter_messages.return_value = [
             _window_msg("Exact Window"),
@@ -144,6 +148,8 @@ def test_sanitize_exact_matching(tmp_path, cli_runner):
         result = cli_runner.invoke(
             mcap_app, ["sanitize", str(test_file), "--keep-window", "Exact Window", "--exact", "--yes"]
         )
+        # Verify messages were written
+        assert mock_writer.return_value.__enter__.return_value.write_message.call_count == 2
     assert result.exit_code == 0
 
 
@@ -154,7 +160,7 @@ def test_sanitize_substring_matching(tmp_path, cli_runner):
 
     with (
         patch("owa.cli.mcap.sanitize.OWAMcapReader") as mock_reader,
-        patch("owa.cli.mcap.sanitize.OWAMcapWriter"),
+        patch("owa.cli.mcap.sanitize.OWAMcapWriter") as mock_writer,
     ):
         mock_reader.return_value.__enter__.return_value.iter_messages.return_value = [
             _window_msg("My Test Window Application"),
@@ -163,6 +169,8 @@ def test_sanitize_substring_matching(tmp_path, cli_runner):
         result = cli_runner.invoke(
             mcap_app, ["sanitize", str(test_file), "--keep-window", "Test Window", "--substring", "--yes"]
         )
+        # Verify messages were written (substring match should keep both)
+        assert mock_writer.return_value.__enter__.return_value.write_message.call_count == 2
     assert result.exit_code == 0
 
 
@@ -173,18 +181,23 @@ def test_sanitize_window_filtering(tmp_path, cli_runner):
 
     with (
         patch("owa.cli.mcap.sanitize.OWAMcapReader") as mock_reader,
-        patch("owa.cli.mcap.sanitize.OWAMcapWriter"),
+        patch("owa.cli.mcap.sanitize.OWAMcapWriter") as mock_writer,
     ):
-        mock_reader.return_value.__enter__.return_value.iter_messages.return_value = [
+        messages = [
             _window_msg("Keep This Window", 1000),
             _key_msg("a", 1001),
             _key_msg("b", 1002),
             _key_msg("c", 1003),
             _key_msg("d", 1004),
         ]
+        mock_reader.return_value.__enter__.return_value.iter_messages.return_value = messages
         result = cli_runner.invoke(
             mcap_app, ["sanitize", str(test_file), "--keep-window", "Keep This Window", "--yes"]
         )
+
+        # Verify all 5 messages were written (window + 4 keyboard events)
+        writer_instance = mock_writer.return_value.__enter__.return_value
+        assert writer_instance.write_message.call_count == 5
     assert result.exit_code == 0
 
 

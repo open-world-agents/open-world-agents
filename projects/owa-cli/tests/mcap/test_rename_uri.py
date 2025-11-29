@@ -15,12 +15,18 @@ def test_rename_uri_success(tmp_path, cli_runner):
 
     with (
         patch("owa.cli.mcap.rename_uri.OWAMcapReader") as mock_reader,
-        patch("owa.cli.mcap.rename_uri.OWAMcapWriter"),
-        patch("owa.cli.mcap.rename_uri.MediaRef"),
+        patch("owa.cli.mcap.rename_uri.OWAMcapWriter") as mock_writer,
+        patch("owa.cli.mcap.rename_uri.MediaRef") as mock_media_ref,
     ):
         mock_reader.return_value.__enter__.return_value.iter_messages.return_value = [_screen_msg()]
         result = cli_runner.invoke(mcap_app, ["rename-uri", str(test_file), "--uri", "new.mkv", "--yes"])
+
+        # Verify writer was called
+        mock_writer.return_value.__enter__.return_value.write_message.assert_called()
+        # Verify MediaRef was created with new URI
+        mock_media_ref.assert_called()
     assert result.exit_code == 0
+    assert "Success" in result.output or "Renamed" in result.output or "1" in result.output
 
 
 def test_rename_uri_failure(tmp_path, cli_runner):
@@ -65,11 +71,15 @@ def test_rename_uri_multiple_files(tmp_path, cli_runner):
 
     with (
         patch("owa.cli.mcap.rename_uri.OWAMcapReader") as mock_reader,
-        patch("owa.cli.mcap.rename_uri.OWAMcapWriter"),
-        patch("owa.cli.mcap.rename_uri.MediaRef"),
+        patch("owa.cli.mcap.rename_uri.OWAMcapWriter") as mock_writer,
+        patch("owa.cli.mcap.rename_uri.MediaRef") as mock_media_ref,
     ):
         mock_reader.return_value.__enter__.return_value.iter_messages.return_value = [_screen_msg()]
         result = cli_runner.invoke(mcap_app, ["rename-uri", str(file1), str(file2), "--uri", "new.mkv", "--yes"])
+
+        # Both files should have been processed
+        assert mock_writer.return_value.__enter__.return_value.write_message.call_count == 2
+        assert mock_media_ref.call_count == 2
     assert result.exit_code == 0
 
 
@@ -80,14 +90,18 @@ def test_rename_uri_with_mixed_message_types(tmp_path, cli_runner):
 
     with (
         patch("owa.cli.mcap.rename_uri.OWAMcapReader") as mock_reader,
-        patch("owa.cli.mcap.rename_uri.OWAMcapWriter"),
-        patch("owa.cli.mcap.rename_uri.MediaRef"),
+        patch("owa.cli.mcap.rename_uri.OWAMcapWriter") as mock_writer,
+        patch("owa.cli.mcap.rename_uri.MediaRef") as mock_media_ref,
     ):
         mock_reader.return_value.__enter__.return_value.iter_messages.return_value = [
             _screen_msg(),
             Mock(topic="keyboard", decoded=Mock(key="a"), timestamp=1001),
         ]
         result = cli_runner.invoke(mcap_app, ["rename-uri", str(test_file), "--uri", "new.mkv", "--yes"])
+
+        # Both messages should be written, but only screen message gets MediaRef update
+        assert mock_writer.return_value.__enter__.return_value.write_message.call_count == 2
+        assert mock_media_ref.call_count == 1  # Only screen message has media_ref
     assert result.exit_code == 0
 
 
@@ -98,8 +112,11 @@ def test_rename_uri_with_empty_mcap_file(tmp_path, cli_runner):
 
     with (
         patch("owa.cli.mcap.rename_uri.OWAMcapReader") as mock_reader,
-        patch("owa.cli.mcap.rename_uri.OWAMcapWriter"),
+        patch("owa.cli.mcap.rename_uri.OWAMcapWriter") as mock_writer,
     ):
         mock_reader.return_value.__enter__.return_value.iter_messages.return_value = []
         result = cli_runner.invoke(mcap_app, ["rename-uri", str(test_file), "--uri", "new.mkv", "--yes"])
+
+        # No messages to write
+        mock_writer.return_value.__enter__.return_value.write_message.assert_not_called()
     assert result.exit_code == 0
