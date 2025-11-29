@@ -26,7 +26,7 @@ def test_rename_uri_success(tmp_path, cli_runner):
         # Verify MediaRef was created with new URI
         mock_media_ref.assert_called()
     assert result.exit_code == 0
-    assert "Success" in result.output or "Renamed" in result.output or "1" in result.output
+    assert "Success: Renamed 1 URIs" in result.output
 
 
 def test_rename_uri_failure(tmp_path, cli_runner):
