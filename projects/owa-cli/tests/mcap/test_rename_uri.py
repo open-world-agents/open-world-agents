@@ -1,6 +1,6 @@
 """Tests for rename_uri command."""
 
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 from owa.cli.mcap import app as mcap_app
 

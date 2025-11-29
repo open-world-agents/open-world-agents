@@ -30,9 +30,9 @@ def test_data_dir():
 
 @pytest.fixture
 def copy_test_file():
-    def _copy(source_dir: Path, filename: str, dest_dir: Path) -> Path:
+    def _copy(source_dir: Path, filename: str, dest_dir: Path, dest_filename: str | None = None) -> Path:
         source = source_dir / filename
-        dest = dest_dir / filename
+        dest = dest_dir / (dest_filename or filename)
         if source.exists():
             shutil.copy2(source, dest)
             return dest
