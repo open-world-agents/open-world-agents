@@ -85,3 +85,41 @@ def test_docs_specific_plugin(mock_cls, cli_runner, mock_validator):
     result = cli_runner.invoke(env_app, ["docs", "good_plugin"])
     assert result.exit_code == 0
     mock_validator.validate_plugin.assert_called_once_with("good_plugin")
+
+
+@patch("owa.cli.env.docs.DocumentationValidator")
+def test_docs_by_type_flag(mock_cls, cli_runner, mock_validator):
+    """Test docs command with by-type flag."""
+    mock_cls.return_value = mock_validator
+    result = cli_runner.invoke(env_app, ["docs", "--by-type"])
+    assert result.exit_code == 1
+    assert "Documentation Statistics by Type" in result.stdout
+
+
+@patch("owa.cli.env.docs.DocumentationValidator")
+def test_docs_strict_mode(mock_cls, cli_runner, mock_validator):
+    """Test docs command with strict mode."""
+    mock_cls.return_value = mock_validator
+    result = cli_runner.invoke(env_app, ["docs", "--strict"])
+    assert result.exit_code == 1
+    mock_validator.validate_all_plugins.assert_called_once()
+
+
+@patch("owa.cli.env.docs.DocumentationValidator")
+def test_docs_exit_codes(mock_cls, cli_runner):
+    """Test proper exit codes for good and bad plugins."""
+    # Test success case - all good plugins
+    good_result = PluginValidationResult(
+        plugin_name="good_plugin",
+        documented=1,
+        total=1,
+        good_quality=1,
+        skipped=0,
+        components=[ComponentValidationResult("good_plugin/c1", "good", [])],
+    )
+    mock_validator = Mock()
+    mock_validator.validate_all_plugins.return_value = {"good_plugin": good_result}
+    mock_cls.return_value = mock_validator
+
+    result = cli_runner.invoke(env_app, ["docs"])
+    assert result.exit_code == 0

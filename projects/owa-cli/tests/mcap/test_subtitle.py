@@ -33,6 +33,15 @@ def test_key_state_manager():
     assert mgr.completed[0][2] == "A"
 
 
+def test_key_state_manager_finalize_pending():
+    """Test that pending key states are finalized on finalize()."""
+    mgr = KeyStateManager()
+    mgr.handle_event("press", VK.KEY_A, 1_000_000_000)
+    # No release event - key is still pending
+    mgr.finalize()
+    assert len(mgr.completed) == 1
+
+
 def test_get_key_label():
     assert get_key_label(VK.ESCAPE) == "ESC"
     assert get_key_label(VK.KEY_A) == "A"
@@ -49,6 +58,15 @@ def test_pair_mouse_clicks():
     result = pair_mouse_clicks(events)
     assert len(result) == 1
     assert result[0][1] - result[0][0] == 500_000_000  # Min duration
+
+
+def test_pair_mouse_clicks_min_duration_enforced():
+    """Test that minimum duration is enforced for short clicks."""
+    # Click with very short press-release time
+    events = [(1_000_000_000, "left", True), (1_100_000_000, "left", False)]
+    result = pair_mouse_clicks(events)
+    press_ts, end_ts, _ = result[0]
+    assert end_ts - press_ts == 500_000_000  # MIN_DURATION_NS
 
 
 def test_generate_srt():

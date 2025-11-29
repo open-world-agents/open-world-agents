@@ -106,3 +106,16 @@ def test_validate_nonexistent_entry_point(cli_runner):
     result = cli_runner.invoke(env_app, ["validate", "nonexistent.module:plugin_spec"])
     assert result.exit_code == 1
     assert "Cannot import module" in result.stdout
+
+
+def test_validate_verbose_mode(cli_runner, sample_yaml):
+    """Test validation with verbose mode."""
+    result = cli_runner.invoke(env_app, ["validate", sample_yaml, "--verbose", "--no-check-imports"])
+    assert result.exit_code == 0
+    assert "Detected input type: yaml" in result.stdout
+
+
+def test_plugin_spec_from_entry_point_nonexistent_module():
+    """Test PluginSpec.from_entry_point with non-existent module."""
+    with pytest.raises(ImportError, match="Cannot import module"):
+        PluginSpec.from_entry_point("nonexistent.module:plugin_spec")
