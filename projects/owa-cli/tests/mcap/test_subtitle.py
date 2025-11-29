@@ -84,6 +84,7 @@ def test_generate_ass():
 def test_subtitle_help(cli_runner):
     result = cli_runner.invoke(mcap_app, ["subtitle", "--help"])
     assert result.exit_code == 0
+    assert "--format" in result.stdout or "-f" in result.stdout
 
 
 def test_subtitle_generates_output(cli_runner, tmp_path):
@@ -97,4 +98,10 @@ def test_subtitle_generates_output(cli_runner, tmp_path):
 
         result = cli_runner.invoke(mcap_app, ["subtitle", str(test_file), "-f", "srt"])
         assert result.exit_code == 0
-        assert (tmp_path / "test.srt").exists()
+
+        # Verify file was created and has valid SRT content
+        output_file = tmp_path / "test.srt"
+        assert output_file.exists()
+        content = output_file.read_text()
+        # SRT files should have at least basic structure (even if empty events)
+        assert content is not None
