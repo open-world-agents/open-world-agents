@@ -1,4 +1,4 @@
-import { loadMcap, readMessages, groupByTopic } from "./mcap-loader.js";
+import { loadMcap } from "./mcap-loader.js";
 
 // DOM Elements
 const mcapInput = document.getElementById("mcap-input");
@@ -16,8 +16,8 @@ const timeInfo = document.querySelector("#time-info span");
 // State
 let mcapReader = null;
 let basePtsTime = null;
-let currentEvents = { keyboard: new Set(), mouse: { x: 0, y: 0, buttons: 0 } };
-let allMessages = [];
+let cachedState = { keyboard: new Set(), mouse: { x: 0, y: 0, buttons: 0 } };
+let lastLoadedTime = 0n;
 
 // Enable load button when both files selected
 function updateLoadButton() {
@@ -28,26 +28,19 @@ mkvInput.addEventListener("change", updateLoadButton);
 
 // Load files
 loadBtn.addEventListener("click", async () => {
-  status.textContent = "Loading...";
+  status.textContent = "Loading MCAP index...";
 
   try {
-    // Load MCAP
+    // Load MCAP (index only, no messages yet)
     const mcapFile = mcapInput.files[0];
-    const { reader, startTime, endTime, channels } = await loadMcap(mcapFile);
+    const { reader, channels } = await loadMcap(mcapFile);
     mcapReader = reader;
 
-    status.textContent = `MCAP loaded: ${channels.length} channels`;
-
-    // Read all messages (for POC - in production use windowed loading)
-    allMessages = await readMessages(reader, startTime, endTime);
-    const byTopic = groupByTopic(allMessages);
-
     // Find basePtsTime from first screen event
-    const screenEvents = byTopic["screen/frame"] || [];
-    if (screenEvents.length > 0) {
-      const first = screenEvents[0];
-      const ptsNs = BigInt(first.data?.media_ref?.pts_ns || 0);
-      basePtsTime = first.timestamp - ptsNs;
+    for await (const msg of reader.readMessages({ topics: ["screen"] })) {
+      const data = JSON.parse(new TextDecoder().decode(msg.data));
+      basePtsTime = msg.logTime - BigInt(data?.media_ref?.pts_ns || 0);
+      break;
     }
 
     // Load video
@@ -65,7 +58,7 @@ loadBtn.addEventListener("click", async () => {
       startRenderLoop();
     });
 
-    status.textContent = `Loaded ${allMessages.length} events`;
+    status.textContent = `Ready: ${channels.length} channels`;
   } catch (err) {
     status.textContent = `Error: ${err.message}`;
     console.error(err);
@@ -78,43 +71,42 @@ function videoTimeToMcap(videoTimeSec) {
   return basePtsTime + BigInt(Math.floor(videoTimeSec * 1e9));
 }
 
-// Get events active at timestamp
-function getActiveEvents(mcapTime) {
-  const keyboard = new Set();
-  const mouse = { x: 0, y: 0, buttons: 0 };
+// Load state up to timestamp (incremental)
+async function loadStateUpTo(mcapTime) {
+  if (!mcapReader || mcapTime <= lastLoadedTime) return;
 
-  for (const msg of allMessages) {
-    if (msg.timestamp > mcapTime) break;
+  const topics = ["keyboard/state", "mouse/state"];
+  for await (const msg of mcapReader.readMessages({
+    startTime: lastLoadedTime,
+    endTime: mcapTime,
+    topics,
+  })) {
+    const channel = mcapReader.channelsById.get(msg.channelId);
+    const data = JSON.parse(new TextDecoder().decode(msg.data));
 
-    if (msg.topic === "keyboard/state" && msg.data) {
-      // Keyboard state contains pressed keys
-      if (msg.data.pressed_keys) {
-        keyboard.clear();
-        for (const vk of msg.data.pressed_keys) {
-          keyboard.add(vk);
-        }
-      }
-    } else if (msg.topic === "mouse/state" && msg.data) {
-      mouse.x = msg.data.x ?? 0;
-      mouse.y = msg.data.y ?? 0;
-      mouse.buttons = msg.data.button_flags ?? 0;
+    if (channel.topic === "keyboard/state") {
+      // data.buttons contains VK codes of pressed keys
+      cachedState.keyboard = new Set(data.buttons || []);
+    } else if (channel.topic === "mouse/state") {
+      cachedState.mouse.x = data.x ?? 0;
+      cachedState.mouse.y = data.y ?? 0;
+      // data.buttons is an array of pressed button indices
+      cachedState.mouse.buttons = (data.buttons || []).length > 0 ? 1 : 0;
     }
   }
-
-  return { keyboard, mouse };
+  lastLoadedTime = mcapTime;
 }
 
 // Render loop
 function startRenderLoop() {
   const ctx = overlay.getContext("2d");
 
-  function render() {
+  async function render() {
     const videoTime = video.currentTime;
     const mcapTime = videoTimeToMcap(videoTime);
 
-    // Get active events
-    const events = getActiveEvents(mcapTime);
-    currentEvents = events;
+    // Load state incrementally
+    await loadStateUpTo(mcapTime);
 
     // Clear canvas
     ctx.clearRect(0, 0, overlay.width, overlay.height);
@@ -122,15 +114,15 @@ function startRenderLoop() {
     // Draw mouse cursor
     const scaleX = overlay.width / (video.videoWidth || 1920);
     const scaleY = overlay.height / (video.videoHeight || 1080);
-    const mx = events.mouse.x * scaleX;
-    const my = events.mouse.y * scaleY;
+    const mx = cachedState.mouse.x * scaleX;
+    const my = cachedState.mouse.y * scaleY;
 
     ctx.beginPath();
     ctx.arc(mx, my, 10, 0, Math.PI * 2);
-    if (events.mouse.buttons & 1) {
+    if (cachedState.mouse.buttons & 1) {
       ctx.fillStyle = "rgba(255, 0, 0, 0.7)";
       ctx.fill();
-    } else if (events.mouse.buttons & 2) {
+    } else if (cachedState.mouse.buttons & 2) {
       ctx.fillStyle = "rgba(0, 0, 255, 0.7)";
       ctx.fill();
     } else {
@@ -140,9 +132,9 @@ function startRenderLoop() {
     }
 
     // Update info panel
-    const keys = Array.from(events.keyboard).map((vk) => vkToName(vk)).join(", ");
+    const keys = Array.from(cachedState.keyboard).map((vk) => vkToName(vk)).join(", ");
     keyboardState.textContent = keys || "(none)";
-    mouseState.textContent = `(${events.mouse.x}, ${events.mouse.y}) btn=${events.mouse.buttons}`;
+    mouseState.textContent = `(${cachedState.mouse.x}, ${cachedState.mouse.y}) btn=${cachedState.mouse.buttons}`;
     timeInfo.textContent = `${videoTime.toFixed(2)}s`;
 
     requestAnimationFrame(render);
