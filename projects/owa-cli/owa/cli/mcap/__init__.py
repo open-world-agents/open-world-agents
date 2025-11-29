@@ -2,12 +2,12 @@ import importlib
 
 import typer
 
-from . import cat, convert, info, migrate, rename_uri, sanitize, convert_overlay
+from . import cat, convert_overlay, info, migrate, rename_uri, sanitize, subtitle
 
 app = typer.Typer(help="MCAP file management commands.")
 
 app.command()(cat.cat)
-app.command()(convert.convert)
+app.command()(subtitle.subtitle)
 app.command()(convert_overlay.convert_overlay)
 app.add_typer(migrate.app, name="migrate")
 app.command()(info.info)
