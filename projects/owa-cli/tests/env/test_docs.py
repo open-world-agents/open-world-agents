@@ -104,7 +104,7 @@ def test_docs_strict_mode(mock_cls, cli_runner, mock_validator):
     assert result.exit_code == 1
     mock_validator.validate_all_plugins.assert_called_once()
     # Verify output contains plugin information
-    assert "good_plugin" in result.stdout or "poor_plugin" in result.stdout
+    assert "Overall Coverage: 75.0% (3/4)" in result.stdout
 
 
 @patch("owa.cli.env.docs.DocumentationValidator")
