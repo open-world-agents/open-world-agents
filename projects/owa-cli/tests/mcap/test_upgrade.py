@@ -1,4 +1,6 @@
-"""Tests for mcap CLI automatic upgrade functionality."""
+"""
+Tests for mcap CLI automatic upgrade functionality.
+"""
 
 from unittest.mock import MagicMock, patch
 

@@ -75,4 +75,3 @@ def test_get_mcap_info(test_data_dir, suppress_mcap_warnings):
     assert info["channels"] > 0
     assert info["has_mkv"] is True
     assert info["mkv_size_bytes"] > 0
-

@@ -63,13 +63,8 @@ def test_migrate_with_target_version(cli_runner, test_data_dir, tmp_path, copy_t
 
 def test_migrate_multiple_files(cli_runner, test_data_dir, tmp_path, copy_test_file, suppress_mcap_warnings):
     """Test migration with multiple files."""
-    # Create subdirectories to avoid filename collision
-    dir1 = tmp_path / "dir1"
-    dir2 = tmp_path / "dir2"
-    dir1.mkdir()
-    dir2.mkdir()
-    file1 = copy_test_file(test_data_dir, "0.3.2.mcap", dir1)
-    file2 = copy_test_file(test_data_dir, "0.4.2.mcap", dir2)
+    file1 = copy_test_file(test_data_dir, "0.3.2.mcap", tmp_path, "file1.mcap")
+    file2 = copy_test_file(test_data_dir, "0.4.2.mcap", tmp_path, "file2.mcap")
     result = cli_runner.invoke(app, ["mcap", "migrate", "run", str(file1), str(file2), "--dry-run"])
     assert result.exit_code == 0
     assert "Files to process: 2" in result.stdout
