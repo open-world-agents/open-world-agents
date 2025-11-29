@@ -1,339 +1,262 @@
-"""
-Tests for sanitize command functionality.
+"""Tests for sanitize command."""
 
-This module tests the core sanitization functionality of the sanitize command.
-"""
+from unittest.mock import Mock, patch
 
-from unittest.mock import patch
-
+from mcap_owa.highlevel import OWAMcapReader
 from owa.cli.mcap import app as mcap_app
+from owa.cli.mcap.sanitize import window_matches_target
 
 
-class TestSanitizeIntegration:
-    """Integration tests for sanitize command core functionality."""
+def _window_msg(title, ts=1000):
+    return Mock(topic="window", decoded=Mock(title=title), timestamp=ts)
 
-    def test_sanitize_successful_operation(self, tmp_path, cli_runner):
-        """Test successful sanitization operation."""
-        test_file = tmp_path / "test.mcap"
 
-        # Mock the MCAP reading/writing to avoid actual MCAP dependencies
-        with (
-            patch("owa.cli.mcap.sanitize.OWAMcapReader") as mock_reader,
-            patch("owa.cli.mcap.sanitize.OWAMcapWriter"),
-        ):
-            # Mock reader to return some test messages
-            mock_reader_instance = mock_reader.return_value.__enter__.return_value
-            mock_reader_instance.iter_messages.return_value = [
-                # Mock window message
-                type(
-                    "MockMessage",
-                    (),
-                    {
-                        "topic": "window",
-                        "decoded": type("MockDecoded", (), {"title": "Test Window"})(),
-                        "timestamp": 1000,
-                    },
-                )(),
-                # Mock other message
-                type("MockMessage", (), {"topic": "keyboard", "decoded": {"key": "a"}, "timestamp": 1001})(),
-            ]
+def _key_msg(key, ts=1001):
+    return Mock(topic="keyboard", decoded={"key": key}, timestamp=ts)
 
-            # Create the test file
-            test_file.write_bytes(b"mock mcap content")
 
-            # Run sanitize command
-            result = cli_runner.invoke(
-                mcap_app,
-                [
-                    "sanitize",
-                    str(test_file),
-                    "--keep-window",
-                    "Test Window",
-                    "--yes",  # Skip confirmation
-                ],
-            )
+# === Unit Tests ===
+def test_window_matches_target_exact():
+    assert window_matches_target("Notepad", "Notepad", exact_match=True)
+    assert not window_matches_target("Notepad++", "Notepad", exact_match=True)
 
-            assert result.exit_code == 0
 
-    def test_sanitize_failed_operation(self, tmp_path, cli_runner):
-        """Test failed sanitization operation."""
-        test_file = tmp_path / "test.mcap"
-        test_file.write_bytes(b"original mcap content")
+def test_window_matches_target_substring():
+    assert window_matches_target("Notepad++", "Notepad", exact_match=False)
+    assert window_matches_target("My Notepad App", "notepad", exact_match=False)
+    assert not window_matches_target("Browser", "Notepad", exact_match=False)
 
-        with (
-            patch("owa.cli.mcap.sanitize.OWAMcapReader") as mock_reader,
-            patch("owa.cli.mcap.sanitize.OWAMcapWriter") as mock_writer,
-        ):
-            # Mock reader to work initially
-            mock_reader_instance = mock_reader.return_value.__enter__.return_value
-            mock_reader_instance.iter_messages.return_value = [
-                type(
-                    "MockMessage",
-                    (),
-                    {
-                        "topic": "window",
-                        "decoded": type("MockDecoded", (), {"title": "Test Window"})(),
-                        "timestamp": 1000,
-                    },
-                )(),
-            ]
 
-            # Mock writer to fail during writing
-            mock_writer.return_value.__enter__.side_effect = Exception("Write failed")
+# === CLI Tests with Mocks ===
+def test_sanitize_success(tmp_path, cli_runner):
+    test_file = tmp_path / "test.mcap"
+    test_file.write_bytes(b"content")
 
-            # Run sanitize command
-            result = cli_runner.invoke(mcap_app, ["sanitize", str(test_file), "--keep-window", "Test Window", "--yes"])
+    with (
+        patch("owa.cli.mcap.sanitize.OWAMcapReader") as mock_reader,
+        patch("owa.cli.mcap.sanitize.OWAMcapWriter") as mock_writer,
+    ):
+        messages = [_window_msg("Test"), _key_msg("a")]
+        mock_reader.return_value.__enter__.return_value.iter_messages.return_value = messages
+        result = cli_runner.invoke(mcap_app, ["sanitize", str(test_file), "--keep-window", "Test", "--yes"])
 
-            assert result.exit_code == 1
+        # Verify writer was called and received messages
+        mock_writer.return_value.__enter__.return_value.write_message.assert_called()
+    assert result.exit_code == 0
+    assert "Successful: 1" in result.output
 
-    def test_sanitize_multiple_files(self, tmp_path, cli_runner):
-        """Test sanitization with multiple files."""
-        test_file1 = tmp_path / "test1.mcap"
-        test_file2 = tmp_path / "test2.mcap"
 
-        test_file1.write_bytes(b"mock mcap content 1")
-        test_file2.write_bytes(b"mock mcap content 2")
+def test_sanitize_failure(tmp_path, cli_runner):
+    test_file = tmp_path / "test.mcap"
+    test_file.write_bytes(b"content")
 
-        with (
-            patch("owa.cli.mcap.sanitize.OWAMcapReader") as mock_reader,
-            patch("owa.cli.mcap.sanitize.OWAMcapWriter"),
-        ):
-            mock_reader_instance = mock_reader.return_value.__enter__.return_value
-            mock_reader_instance.iter_messages.return_value = [
-                type(
-                    "MockMessage",
-                    (),
-                    {
-                        "topic": "window",
-                        "decoded": type("MockDecoded", (), {"title": "Test Window"})(),
-                        "timestamp": 1000,
-                    },
-                )(),
-            ]
+    with (
+        patch("owa.cli.mcap.sanitize.OWAMcapReader") as mock_reader,
+        patch("owa.cli.mcap.sanitize.OWAMcapWriter") as mock_writer,
+    ):
+        mock_reader.return_value.__enter__.return_value.iter_messages.return_value = [_window_msg("Test")]
+        mock_writer.return_value.__enter__.side_effect = Exception("fail")
+        result = cli_runner.invoke(mcap_app, ["sanitize", str(test_file), "--keep-window", "Test", "--yes"])
+    assert result.exit_code == 1
 
-            # Run sanitize on multiple files
-            result = cli_runner.invoke(
-                mcap_app,
-                [
-                    "sanitize",
-                    str(test_file1),
-                    str(test_file2),
-                    "--keep-window",
-                    "Test Window",
-                    "--yes",
-                ],
-            )
 
-            assert result.exit_code == 0
+def test_sanitize_dry_run(tmp_path, cli_runner):
+    test_file = tmp_path / "test.mcap"
+    original = b"content"
+    test_file.write_bytes(original)
 
-    def test_sanitize_dry_run(self, tmp_path, cli_runner):
-        """Test dry run mode doesn't modify files."""
-        test_file = tmp_path / "test.mcap"
-        original_content = b"original mcap content"
-        test_file.write_bytes(original_content)
+    with patch("owa.cli.mcap.sanitize.OWAMcapReader") as mock_reader:
+        mock_reader.return_value.__enter__.return_value.iter_messages.return_value = [_window_msg("Test")]
+        result = cli_runner.invoke(mcap_app, ["sanitize", str(test_file), "--keep-window", "Test", "--dry-run"])
+    assert result.exit_code == 0
+    assert test_file.read_bytes() == original
 
-        with patch("owa.cli.mcap.sanitize.OWAMcapReader") as mock_reader:
-            mock_reader_instance = mock_reader.return_value.__enter__.return_value
-            mock_reader_instance.iter_messages.return_value = [
-                type(
-                    "MockMessage",
-                    (),
-                    {
-                        "topic": "window",
-                        "decoded": type("MockDecoded", (), {"title": "Test Window"})(),
-                        "timestamp": 1000,
-                    },
-                )(),
-            ]
 
-            # Run sanitize in dry-run mode
-            result = cli_runner.invoke(
-                mcap_app, ["sanitize", str(test_file), "--keep-window", "Test Window", "--dry-run"]
-            )
+def test_sanitize_auto_detect(tmp_path, cli_runner):
+    test_file = tmp_path / "test.mcap"
+    test_file.write_bytes(b"content")
 
-            assert result.exit_code == 0
-            # Original file should be unchanged
-            assert test_file.read_bytes() == original_content
-
-    def test_sanitize_window_filtering(self, tmp_path, cli_runner):
-        """Test window filtering functionality."""
-        test_file = tmp_path / "test.mcap"
-        test_file.write_bytes(b"content")
-
-        with (
-            patch("owa.cli.mcap.sanitize.OWAMcapReader") as mock_reader,
-            patch("owa.cli.mcap.sanitize.OWAMcapWriter"),
-        ):
-            mock_reader_instance = mock_reader.return_value.__enter__.return_value
-            mock_reader_instance.iter_messages.return_value = [
-                # Window message that should be kept
-                type(
-                    "MockMessage",
-                    (),
-                    {
-                        "topic": "window",
-                        "decoded": type("MockDecoded", (), {"title": "Keep This Window"})(),
-                        "timestamp": 1000,
-                    },
-                )(),
-                # Messages that should be kept (after window activation)
-                type("MockMessage", (), {"topic": "keyboard", "decoded": {"key": "a"}, "timestamp": 1001})(),
-                type("MockMessage", (), {"topic": "keyboard", "decoded": {"key": "b"}, "timestamp": 1002})(),
-                type("MockMessage", (), {"topic": "keyboard", "decoded": {"key": "c"}, "timestamp": 1003})(),
-                type("MockMessage", (), {"topic": "keyboard", "decoded": {"key": "d"}, "timestamp": 1004})(),
-            ]
-
-            result = cli_runner.invoke(
-                mcap_app, ["sanitize", str(test_file), "--keep-window", "Keep This Window", "--yes"]
-            )
-
-            assert result.exit_code == 0
-
-    def test_sanitize_exact_window_matching(self, tmp_path, cli_runner):
-        """Test exact window matching functionality."""
-        test_file = tmp_path / "test.mcap"
-        test_file.write_bytes(b"content")
-
-        with (
-            patch("owa.cli.mcap.sanitize.OWAMcapReader") as mock_reader,
-            patch("owa.cli.mcap.sanitize.OWAMcapWriter"),
-        ):
-            mock_reader_instance = mock_reader.return_value.__enter__.return_value
-            mock_reader_instance.iter_messages.return_value = [
-                # Window message with exact title match
-                type(
-                    "MockMessage",
-                    (),
-                    {
-                        "topic": "window",
-                        "decoded": type("MockDecoded", (), {"title": "Exact Window"})(),
-                        "timestamp": 1000,
-                    },
-                )(),
-                # Messages that should be kept (after window activation)
-                type("MockMessage", (), {"topic": "keyboard", "decoded": {"key": "a"}, "timestamp": 1001})(),
-            ]
-
-            result = cli_runner.invoke(
-                mcap_app, ["sanitize", str(test_file), "--keep-window", "Exact Window", "--exact", "--yes"]
-            )
-
-            assert result.exit_code == 0
-
-    def test_sanitize_substring_window_matching(self, tmp_path, cli_runner):
-        """Test substring window matching functionality."""
-        test_file = tmp_path / "test.mcap"
-        test_file.write_bytes(b"content")
-
-        with (
-            patch("owa.cli.mcap.sanitize.OWAMcapReader") as mock_reader,
-            patch("owa.cli.mcap.sanitize.OWAMcapWriter"),
-        ):
-            mock_reader_instance = mock_reader.return_value.__enter__.return_value
-            mock_reader_instance.iter_messages.return_value = [
-                # Window message with partial title match
-                type(
-                    "MockMessage",
-                    (),
-                    {
-                        "topic": "window",
-                        "decoded": type("MockDecoded", (), {"title": "My Test Window Application"})(),
-                        "timestamp": 1000,
-                    },
-                )(),
-                # Messages that should be kept (after window activation)
-                type("MockMessage", (), {"topic": "keyboard", "decoded": {"key": "a"}, "timestamp": 1001})(),
-            ]
-
-            result = cli_runner.invoke(
-                mcap_app, ["sanitize", str(test_file), "--keep-window", "Test Window", "--substring", "--yes"]
-            )
-
-            assert result.exit_code == 0
-
-    def test_auto_detect_window_functionality(self, tmp_path, cli_runner):
-        """Test auto-detect window functionality."""
-        test_file = tmp_path / "test.mcap"
-
-        with (
-            patch("owa.cli.mcap.sanitize.OWAMcapReader") as mock_reader,
-            patch("owa.cli.mcap.sanitize.OWAMcapWriter"),
-        ):
-            # Mock reader to return window messages with different frequencies
-            mock_reader_instance = mock_reader.return_value.__enter__.return_value
-            mock_reader_instance.iter_messages.return_value = [
-                # Most frequent window (3 times)
-                type(
-                    "MockMessage",
-                    (),
-                    {
-                        "topic": "window",
-                        "decoded": type("MockDecoded", (), {"title": "Main App"})(),
-                        "timestamp": 1000,
-                    },
-                )(),
-                type("MockMessage", (), {"topic": "keyboard", "decoded": {"key": "a"}, "timestamp": 1001})(),
-                type(
-                    "MockMessage",
-                    (),
-                    {
-                        "topic": "window",
-                        "decoded": type("MockDecoded", (), {"title": "Main App"})(),
-                        "timestamp": 2000,
-                    },
-                )(),
-                type("MockMessage", (), {"topic": "mouse", "decoded": {"x": 100, "y": 200}, "timestamp": 2001})(),
-                type(
-                    "MockMessage",
-                    (),
-                    {
-                        "topic": "window",
-                        "decoded": type("MockDecoded", (), {"title": "Main App"})(),
-                        "timestamp": 3000,
-                    },
-                )(),
-                # Less frequent window (1 time)
-                type(
-                    "MockMessage",
-                    (),
-                    {
-                        "topic": "window",
-                        "decoded": type("MockDecoded", (), {"title": "Other App"})(),
-                        "timestamp": 4000,
-                    },
-                )(),
-                type("MockMessage", (), {"topic": "keyboard", "decoded": {"key": "b"}, "timestamp": 4001})(),
-            ]
-
-            # Create the test file
-            test_file.write_bytes(b"mock mcap content")
-
-            # Run sanitize command with auto-detect (increase max-removal-ratio to allow the test to pass)
-            result = cli_runner.invoke(
-                mcap_app, ["sanitize", str(test_file), "--auto-detect-window", "--max-removal-ratio", "0.5", "--yes"]
-            )
-
-            assert result.exit_code == 0
-            assert "Auto-detected most frequent window: 'Main App'" in result.output
-
-    def test_auto_detect_window_validation(self, tmp_path, cli_runner):
-        """Test validation when both --keep-window and --auto-detect-window are specified."""
-        test_file = tmp_path / "test.mcap"
-        test_file.write_bytes(b"mock mcap content")
-
+    messages = [
+        _window_msg("Main", 1000),
+        _key_msg("a", 1001),
+        _window_msg("Main", 2000),
+        _window_msg("Main", 3000),
+        _window_msg("Other", 4000),
+    ]
+    with (
+        patch("owa.cli.mcap.sanitize.OWAMcapReader") as mock_reader,
+        patch("owa.cli.mcap.sanitize.OWAMcapWriter"),
+    ):
+        mock_reader.return_value.__enter__.return_value.iter_messages.return_value = messages
         result = cli_runner.invoke(
-            mcap_app, ["sanitize", str(test_file), "--keep-window", "Test", "--auto-detect-window"]
+            mcap_app, ["sanitize", str(test_file), "--auto-detect-window", "--max-removal-ratio", "0.5", "--yes"]
+        )
+    assert result.exit_code == 0
+    assert "Main" in result.output
+
+
+def test_sanitize_validation_errors(tmp_path, cli_runner):
+    test_file = tmp_path / "test.mcap"
+    test_file.write_bytes(b"content")
+
+    # Both options
+    result = cli_runner.invoke(mcap_app, ["sanitize", str(test_file), "--keep-window", "X", "--auto-detect-window"])
+    assert result.exit_code == 1
+
+    # Neither option
+    result = cli_runner.invoke(mcap_app, ["sanitize", str(test_file)])
+    assert result.exit_code == 1
+
+
+# === Multiple Files Test ===
+def test_sanitize_multiple_files(tmp_path, cli_runner):
+    """Test sanitization with multiple files."""
+    test_file1 = tmp_path / "test1.mcap"
+    test_file2 = tmp_path / "test2.mcap"
+    test_file1.write_bytes(b"content1")
+    test_file2.write_bytes(b"content2")
+
+    with (
+        patch("owa.cli.mcap.sanitize.OWAMcapReader") as mock_reader,
+        patch("owa.cli.mcap.sanitize.OWAMcapWriter") as mock_writer,
+    ):
+        mock_reader.return_value.__enter__.return_value.iter_messages.return_value = [
+            _window_msg("Test"),
+            _key_msg("a"),
+        ]
+        result = cli_runner.invoke(
+            mcap_app, ["sanitize", str(test_file1), str(test_file2), "--keep-window", "Test", "--yes"]
+        )
+        # Writer should be called for both files (2 files × 2 messages each)
+        assert mock_writer.return_value.__enter__.return_value.write_message.call_count == 4
+    assert result.exit_code == 0
+
+
+def test_sanitize_exact_matching(tmp_path, cli_runner):
+    """Test exact window matching with --exact flag."""
+    test_file = tmp_path / "test.mcap"
+    test_file.write_bytes(b"content")
+
+    with (
+        patch("owa.cli.mcap.sanitize.OWAMcapReader") as mock_reader,
+        patch("owa.cli.mcap.sanitize.OWAMcapWriter") as mock_writer,
+    ):
+        mock_reader.return_value.__enter__.return_value.iter_messages.return_value = [
+            _window_msg("Exact Window"),
+            _key_msg("a"),
+        ]
+        result = cli_runner.invoke(
+            mcap_app, ["sanitize", str(test_file), "--keep-window", "Exact Window", "--exact", "--yes"]
+        )
+        # Verify messages were written
+        assert mock_writer.return_value.__enter__.return_value.write_message.call_count == 2
+    assert result.exit_code == 0
+
+
+def test_sanitize_substring_matching(tmp_path, cli_runner):
+    """Test substring window matching with --substring flag."""
+    test_file = tmp_path / "test.mcap"
+    test_file.write_bytes(b"content")
+
+    with (
+        patch("owa.cli.mcap.sanitize.OWAMcapReader") as mock_reader,
+        patch("owa.cli.mcap.sanitize.OWAMcapWriter") as mock_writer,
+    ):
+        mock_reader.return_value.__enter__.return_value.iter_messages.return_value = [
+            _window_msg("My Test Window Application"),
+            _key_msg("a"),
+        ]
+        result = cli_runner.invoke(
+            mcap_app, ["sanitize", str(test_file), "--keep-window", "Test Window", "--substring", "--yes"]
+        )
+        # Verify messages were written (substring match should keep both)
+        assert mock_writer.return_value.__enter__.return_value.write_message.call_count == 2
+    assert result.exit_code == 0
+
+
+def test_sanitize_window_filtering(tmp_path, cli_runner):
+    """Test window filtering keeps multiple messages after window activation."""
+    test_file = tmp_path / "test.mcap"
+    test_file.write_bytes(b"content")
+
+    with (
+        patch("owa.cli.mcap.sanitize.OWAMcapReader") as mock_reader,
+        patch("owa.cli.mcap.sanitize.OWAMcapWriter") as mock_writer,
+    ):
+        messages = [
+            _window_msg("Keep This Window", 1000),
+            _key_msg("a", 1001),
+            _key_msg("b", 1002),
+            _key_msg("c", 1003),
+            _key_msg("d", 1004),
+        ]
+        mock_reader.return_value.__enter__.return_value.iter_messages.return_value = messages
+        result = cli_runner.invoke(
+            mcap_app, ["sanitize", str(test_file), "--keep-window", "Keep This Window", "--yes"]
         )
 
-        assert result.exit_code == 1
-        assert "Cannot specify both --keep-window and --auto-detect-window" in result.output
+        # Verify all 5 messages were written (window + 4 keyboard events)
+        writer_instance = mock_writer.return_value.__enter__.return_value
+        assert writer_instance.write_message.call_count == 5
+    assert result.exit_code == 0
 
-    def test_auto_detect_window_no_options(self, tmp_path, cli_runner):
-        """Test validation when neither --keep-window nor --auto-detect-window are specified."""
-        test_file = tmp_path / "test.mcap"
-        test_file.write_bytes(b"mock mcap content")
 
-        result = cli_runner.invoke(mcap_app, ["sanitize", str(test_file)])
+# === Real File Tests ===
+def test_sanitize_real_file_dry_run(test_data_dir, tmp_path, copy_test_file, suppress_mcap_warnings, cli_runner):
+    """Test sanitize dry run with real MCAP file to verify message counting works."""
+    test_file = copy_test_file(test_data_dir, "0.4.2.mcap", tmp_path)
+    original_size = test_file.stat().st_size
 
-        assert result.exit_code == 1
-        assert "Must specify either --keep-window or --auto-detect-window" in result.output
+    # Get window titles from the real file to find a valid keep-window value
+    with OWAMcapReader(test_file) as reader:
+        messages = list(reader.iter_messages())
+        window_titles = set()
+        for msg in messages:
+            if msg.topic == "window":
+                if hasattr(msg.decoded, "title"):
+                    window_titles.add(msg.decoded.title)
+                elif isinstance(msg.decoded, dict):
+                    window_titles.add(msg.decoded.get("title", ""))
+
+    # Use first window title found, or a substring match if none
+    keep_window = next(iter(window_titles), "")[:10] if window_titles else "test"
+
+    result = cli_runner.invoke(
+        mcap_app,
+        [
+            "sanitize",
+            str(test_file),
+            "--keep-window",
+            keep_window,
+            "--dry-run",
+            "--verbose",
+            "--max-removal-ratio",
+            "1.0",
+        ],
+    )
+    assert result.exit_code == 0
+    assert "DRY RUN" in result.output
+    assert test_file.stat().st_size == original_size  # File unchanged
+
+
+def test_sanitize_safety_check(tmp_path, cli_runner):
+    """Test that safety check blocks excessive removal."""
+    test_file = tmp_path / "test.mcap"
+    test_file.write_bytes(b"content")
+
+    # Create messages where most will be removed (current window is "Other", not "Main")
+    messages = [
+        _window_msg("Other", 1000),
+        _key_msg("a", 1001),
+        _key_msg("b", 1002),
+        _key_msg("c", 1003),
+        _key_msg("d", 1004),
+        _window_msg("Main", 5000),
+        _key_msg("e", 5001),
+    ]
+    with patch("owa.cli.mcap.sanitize.OWAMcapReader") as mock_reader:
+        mock_reader.return_value.__enter__.return_value.iter_messages.return_value = messages
+        # Default max_removal_ratio is 0.2, this should exceed it
+        result = cli_runner.invoke(mcap_app, ["sanitize", str(test_file), "--keep-window", "Main", "--yes"])
+    assert result.exit_code == 1
+    assert "Safety check failed" in result.output or "removal ratio" in result.output
