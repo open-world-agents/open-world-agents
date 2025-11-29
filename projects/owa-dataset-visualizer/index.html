@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OWA Dataset Visualizer</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/src/styles.css">
+</head>
+
+<body>
+  <div id="app">
+    <!-- File Selection -->
+    <div id="file-select">
+      <h2>Load Dataset</h2>
+      <div class="file-inputs">
+        <label>MCAP: <input type="file" id="mcap-input" accept=".mcap"></label>
+        <label>MKV: <input type="file" id="mkv-input" accept=".mkv,.mp4,.webm"></label>
+      </div>
+      <button id="load-btn" disabled>Load</button>
+      <p id="status"></p>
+    </div>
+
+    <!-- Viewer -->
+    <div id="viewer" class="hidden">
+      <div id="video-container">
+        <video id="video" controls></video>
+        <canvas id="overlay"></canvas>
+      </div>
+      <div id="info-panel">
+        <div id="keyboard-state">Keys: <span></span></div>
+        <div id="mouse-state">Mouse: <span></span></div>
+        <div id="time-info">Time: <span></span></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>
