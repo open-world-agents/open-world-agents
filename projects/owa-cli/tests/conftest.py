@@ -45,5 +45,4 @@ def copy_test_file():
 def suppress_mcap_warnings():
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", "Reader version.*", UserWarning)
-        warnings.filterwarnings("ignore", "unclosed file.*", ResourceWarning)
         yield
