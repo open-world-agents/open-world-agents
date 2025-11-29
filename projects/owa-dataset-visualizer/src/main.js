@@ -1,4 +1,4 @@
-import { loadMcap } from "./mcap-loader.js";
+import { loadMcap, loadMcapFromUrl } from "./mcap-loader.js";
 
 // DOM Elements
 const mcapInput = document.getElementById("mcap-input");
@@ -25,6 +25,34 @@ function updateLoadButton() {
 }
 mcapInput.addEventListener("change", updateLoadButton);
 mkvInput.addEventListener("change", updateLoadButton);
+
+// Auto-load from URL params (for testing): ?mcap=/test.mcap&mkv=/test.mkv
+const params = new URLSearchParams(location.search);
+if (params.has("mcap") && params.has("mkv")) {
+  (async () => {
+    status.textContent = "Loading...";
+    try {
+      const { reader, channels } = await loadMcapFromUrl(params.get("mcap"));
+      mcapReader = reader;
+      for await (const msg of reader.readMessages({ topics: ["screen"] })) {
+        const data = JSON.parse(new TextDecoder().decode(msg.data));
+        basePtsTime = msg.logTime - BigInt(data?.media_ref?.pts_ns || 0);
+        break;
+      }
+      video.src = params.get("mkv");
+      fileSelect.classList.add("hidden");
+      viewer.classList.remove("hidden");
+      video.onloadedmetadata = () => {
+        overlay.width = video.videoWidth;
+        overlay.height = video.videoHeight;
+        startRenderLoop();
+      };
+      status.textContent = `Ready: ${channels.length} channels`;
+    } catch (e) {
+      status.textContent = `Error: ${e.message}`;
+    }
+  })();
+}
 
 // Load files
 loadBtn.addEventListener("click", async () => {
