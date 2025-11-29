@@ -211,9 +211,11 @@ def subtitle(
                     for flag, btn in BUTTON_PRESS_FLAGS.items():
                         if flags & flag:
                             mouse_events.append((msg.timestamp, btn, True))
+                            break
                     for flag, btn in BUTTON_RELEASE_FLAGS.items():
                         if flags & flag:
                             mouse_events.append((msg.timestamp, btn, False))
+                            break
                 if hasattr(msg.decoded, "last_x") and hasattr(msg.decoded, "last_y"):
                     abs_x = max(0, min(width - 1, abs_x + msg.decoded.last_x))
                     abs_y = max(0, min(height - 1, abs_y + msg.decoded.last_y))
