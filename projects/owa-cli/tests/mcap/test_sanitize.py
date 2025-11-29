@@ -43,7 +43,7 @@ def test_sanitize_success(tmp_path, cli_runner):
         # Verify writer was called and received messages
         mock_writer.return_value.__enter__.return_value.write_message.assert_called()
     assert result.exit_code == 0
-    assert "Sanitization complete" in result.output
+    assert "Successful: 1" in result.output
 
 
 def test_sanitize_failure(tmp_path, cli_runner):
