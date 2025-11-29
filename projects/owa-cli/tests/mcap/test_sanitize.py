@@ -7,6 +7,32 @@ This module tests the core sanitization functionality of the sanitize command.
 from unittest.mock import patch
 
 from owa.cli.mcap import app as mcap_app
+from owa.cli.mcap.sanitize import window_matches_target
+
+
+# === Unit Tests for window_matches_target ===
+class TestWindowMatchesTarget:
+    """Unit tests for window_matches_target function."""
+
+    def test_exact_match_true(self):
+        """Test exact matching mode with exact match."""
+        assert window_matches_target("Notepad", "Notepad", exact_match=True)
+
+    def test_exact_match_false_on_different(self):
+        """Test exact matching mode rejects partial match."""
+        assert not window_matches_target("Notepad++", "Notepad", exact_match=True)
+
+    def test_substring_match_prefix(self):
+        """Test substring matching with prefix."""
+        assert window_matches_target("Notepad++", "Notepad", exact_match=False)
+
+    def test_substring_match_case_insensitive(self):
+        """Test substring matching is case-insensitive."""
+        assert window_matches_target("My Notepad App", "notepad", exact_match=False)
+
+    def test_substring_no_match(self):
+        """Test substring matching rejects non-matching."""
+        assert not window_matches_target("Browser", "Notepad", exact_match=False)
 
 
 class TestSanitizeIntegration:
