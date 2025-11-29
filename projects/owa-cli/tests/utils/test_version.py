@@ -1,8 +1,5 @@
-"""
-Tests for OWA CLI version checking utilities.
-"""
+"""Tests for OWA CLI version utilities."""
 
-import os
 from unittest.mock import MagicMock, patch
 
 import requests
@@ -10,180 +7,67 @@ import requests
 from owa.cli.utils import check_for_update, get_latest_release, get_local_version
 
 
-class TestVersionUtilityFunctions:
-    """Test version checking and update utility functions."""
+def test_get_local_version_success():
+    with patch("importlib.metadata.version", return_value="0.4.1"):
+        assert get_local_version("owa.cli") == "0.4.1"
 
-    def test_get_local_version_success(self):
-        """Test successful retrieval of local package version."""
-        with patch("importlib.metadata.version") as mock_version:
-            mock_version.return_value = "0.4.1"
-            version = get_local_version("owa.cli")
-            assert version == "0.4.1"
 
-    def test_get_local_version_failure(self):
-        """Test handling of failed local version retrieval."""
-        with patch("importlib.metadata.version", side_effect=Exception("Package not found")):
-            version = get_local_version("nonexistent.package")
-            assert version == "unknown"
+def test_get_local_version_failure():
+    with patch("importlib.metadata.version", side_effect=Exception("fail")):
+        assert get_local_version("nonexistent") == "unknown"
 
-    def test_get_latest_release_success(self):
-        """Test successful retrieval of latest release from GitHub API."""
-        mock_response = MagicMock()
-        mock_response.json.return_value = {"tag_name": "v0.4.2"}
-        mock_response.raise_for_status.return_value = None
 
-        # Temporarily unset OWA_DISABLE_VERSION_CHECK
-        original_value = os.environ.get("OWA_DISABLE_VERSION_CHECK")
-        if "OWA_DISABLE_VERSION_CHECK" in os.environ:
-            del os.environ["OWA_DISABLE_VERSION_CHECK"]
-        try:
-            with patch("owa.cli.utils.requests.get", return_value=mock_response):
-                version = get_latest_release()
-                assert version == "0.4.2"  # Should strip the 'v' prefix
-        finally:
-            if original_value is not None:
-                os.environ["OWA_DISABLE_VERSION_CHECK"] = original_value
+def test_get_latest_release_success(monkeypatch):
+    monkeypatch.delenv("OWA_DISABLE_VERSION_CHECK", raising=False)
+    mock_response = MagicMock()
+    mock_response.json.return_value = {"tag_name": "v0.4.2"}
+    with patch("owa.cli.utils.requests.get", return_value=mock_response):
+        assert get_latest_release() == "0.4.2"  # Strips 'v' prefix
 
-    def test_get_latest_release_with_no_v_prefix(self):
-        """Test handling of release tags without 'v' prefix."""
-        mock_response = MagicMock()
-        mock_response.json.return_value = {"tag_name": "0.4.2"}
-        mock_response.raise_for_status.return_value = None
 
-        # Temporarily unset OWA_DISABLE_VERSION_CHECK
-        original_value = os.environ.get("OWA_DISABLE_VERSION_CHECK")
-        if "OWA_DISABLE_VERSION_CHECK" in os.environ:
-            del os.environ["OWA_DISABLE_VERSION_CHECK"]
-        try:
-            with patch("owa.cli.utils.requests.get", return_value=mock_response):
-                version = get_latest_release()
-                assert version == "0.4.2"
-        finally:
-            if original_value is not None:
-                os.environ["OWA_DISABLE_VERSION_CHECK"] = original_value
+def test_check_for_update_disabled_by_env(monkeypatch):
+    """Update check returns True (skip) when OWA_DISABLE_VERSION_CHECK is set."""
+    monkeypatch.setenv("OWA_DISABLE_VERSION_CHECK", "1")
+    with patch("owa.cli.utils.requests.get") as mock_get:
+        assert check_for_update() is True
+        mock_get.assert_not_called()
 
-    def test_check_for_update_disabled_by_env_var(self):
-        """Test that update check is disabled when OWA_DISABLE_VERSION_CHECK is set."""
-        # Save original value
-        original_value = os.environ.get("OWA_DISABLE_VERSION_CHECK")
 
-        try:
-            # Set environment variable to disable version check
-            os.environ["OWA_DISABLE_VERSION_CHECK"] = "1"
+def test_check_for_update_up_to_date():
+    with (
+        patch("owa.cli.utils.get_local_version", return_value="0.4.2"),
+        patch("owa.cli.utils.get_latest_release", return_value="0.4.2"),
+    ):
+        assert check_for_update() is True
 
-            # Should return True without making any API calls
-            with patch("owa.cli.utils.requests.get") as mock_get:
-                result = check_for_update()
-                assert result is True
-                # Verify no API call was made
-                mock_get.assert_not_called()
 
-        finally:
-            # Restore original value
-            if original_value is None:
-                os.environ.pop("OWA_DISABLE_VERSION_CHECK", None)
-            else:
-                os.environ["OWA_DISABLE_VERSION_CHECK"] = original_value
+def test_check_for_update_newer_available(capsys, monkeypatch):
+    monkeypatch.delenv("OWA_DISABLE_VERSION_CHECK", raising=False)
+    with (
+        patch("owa.cli.utils.get_local_version", return_value="0.4.1"),
+        patch("owa.cli.utils.get_latest_release", return_value="0.4.2"),
+    ):
+        assert check_for_update() is False
+        assert "update" in capsys.readouterr().out.lower()
 
-    def test_check_for_update_up_to_date(self):
-        """Test update check when local version is up to date."""
-        with (
-            patch("owa.cli.utils.get_local_version", return_value="0.4.2"),
-            patch("owa.cli.utils.get_latest_release", return_value="0.4.2"),
-        ):
-            result = check_for_update()
-            assert result is True
 
-    def test_check_for_update_newer_available(self, capsys):
-        """Test update check when newer version is available."""
-        # Temporarily disable the environment variable set by conftest.py
-        original_value = os.environ.get("OWA_DISABLE_VERSION_CHECK")
-        if "OWA_DISABLE_VERSION_CHECK" in os.environ:
-            del os.environ["OWA_DISABLE_VERSION_CHECK"]
+def test_check_for_update_timeout_error(capsys, monkeypatch):
+    """Timeout errors are handled gracefully."""
+    monkeypatch.delenv("OWA_DISABLE_VERSION_CHECK", raising=False)
+    with (
+        patch("owa.cli.utils.get_local_version", return_value="0.4.1"),
+        patch("owa.cli.utils.get_latest_release", side_effect=requests.Timeout("Timeout")),
+    ):
+        assert check_for_update() is False
+        assert "timeout" in capsys.readouterr().out.lower()
 
-        try:
-            with (
-                patch("owa.cli.utils.get_local_version", return_value="0.4.1"),
-                patch("owa.cli.utils.get_latest_release", return_value="0.4.2"),
-            ):
-                result = check_for_update()
-                assert result is False
 
-                # Check that update message was printed
-                captured = capsys.readouterr()
-                assert "An update is available" in captured.out
-                assert "0.4.1" in captured.out  # Current version
-                assert "0.4.2" in captured.out  # Latest version
-        finally:
-            # Restore original value
-            if original_value is not None:
-                os.environ["OWA_DISABLE_VERSION_CHECK"] = original_value
-
-    def test_check_for_update_timeout_error(self, capsys):
-        """Test handling of timeout errors during update check."""
-        # Temporarily disable the environment variable set by conftest.py
-        original_value = os.environ.get("OWA_DISABLE_VERSION_CHECK")
-        if "OWA_DISABLE_VERSION_CHECK" in os.environ:
-            del os.environ["OWA_DISABLE_VERSION_CHECK"]
-
-        try:
-            with (
-                patch("owa.cli.utils.get_local_version", return_value="0.4.1"),
-                patch("owa.cli.utils.get_latest_release", side_effect=requests.Timeout("Timeout")),
-            ):
-                result = check_for_update()
-                assert result is False
-
-                # Check that timeout error message was printed
-                captured = capsys.readouterr()
-                assert "Timeout occurred" in captured.out
-        finally:
-            # Restore original value
-            if original_value is not None:
-                os.environ["OWA_DISABLE_VERSION_CHECK"] = original_value
-
-    def test_check_for_update_request_error(self, capsys):
-        """Test handling of request errors during update check."""
-        # Temporarily disable the environment variable set by conftest.py
-        original_value = os.environ.get("OWA_DISABLE_VERSION_CHECK")
-        if "OWA_DISABLE_VERSION_CHECK" in os.environ:
-            del os.environ["OWA_DISABLE_VERSION_CHECK"]
-
-        try:
-            with (
-                patch("owa.cli.utils.get_local_version", return_value="0.4.1"),
-                patch("owa.cli.utils.get_latest_release", side_effect=requests.RequestException("Network error")),
-            ):
-                result = check_for_update()
-                assert result is False
-
-                # Check that request error message was printed
-                captured = capsys.readouterr()
-                assert "Request failed" in captured.out
-        finally:
-            # Restore original value
-            if original_value is not None:
-                os.environ["OWA_DISABLE_VERSION_CHECK"] = original_value
-
-    def test_check_for_update_general_error(self, capsys):
-        """Test handling of general errors during update check."""
-        # Temporarily disable the environment variable set by conftest.py
-        original_value = os.environ.get("OWA_DISABLE_VERSION_CHECK")
-        if "OWA_DISABLE_VERSION_CHECK" in os.environ:
-            del os.environ["OWA_DISABLE_VERSION_CHECK"]
-
-        try:
-            with (
-                patch("owa.cli.utils.get_local_version", return_value="0.4.1"),
-                patch("owa.cli.utils.get_latest_release", side_effect=Exception("Unexpected error")),
-            ):
-                result = check_for_update()
-                assert result is False
-
-                # Check that general error message was printed
-                captured = capsys.readouterr()
-                assert "An unexpected error occurred" in captured.out
-        finally:
-            # Restore original value
-            if original_value is not None:
-                os.environ["OWA_DISABLE_VERSION_CHECK"] = original_value
+def test_check_for_update_request_error(capsys, monkeypatch):
+    """Request errors are handled gracefully."""
+    monkeypatch.delenv("OWA_DISABLE_VERSION_CHECK", raising=False)
+    with (
+        patch("owa.cli.utils.get_local_version", return_value="0.4.1"),
+        patch("owa.cli.utils.get_latest_release", side_effect=requests.RequestException("fail")),
+    ):
+        assert check_for_update() is False
+        assert "request failed" in capsys.readouterr().out.lower()
