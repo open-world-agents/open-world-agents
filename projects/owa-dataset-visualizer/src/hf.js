@@ -76,11 +76,12 @@ export function renderFileTree(tree, container, onSelect) {
     for (const f of node.files.sort((a, b) => a.name.localeCompare(b.name))) {
       const li = document.createElement("li");
       li.textContent = f.name;
-      li.onclick = () => {
-        activeLi?.classList.remove("active");
-        li.classList.add("active");
+      li.onclick = async () => {
+        activeLi?.classList.remove("active", "loading");
+        li.classList.add("active", "loading");
         activeLi = li;
-        onSelect(f);
+        await onSelect(f);
+        li.classList.remove("loading");
       };
       parent.appendChild(li);
       if (!firstLi) firstLi = li;

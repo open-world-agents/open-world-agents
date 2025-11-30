@@ -516,3 +516,9 @@ body {
 #file-section li.active {
   background: #4a9eff;
 }
+
+#file-section li.loading::after {
+  content: "  ⏳ Loading...";
+  color: #fbbf24;
+  font-weight: 600;
+}
