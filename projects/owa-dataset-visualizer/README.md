@@ -1,82 +1,51 @@
 # OWA Dataset Visualizer
 
-Browser-based visualizer for OWA dataset recordings. Plays MKV video with synchronized keyboard/mouse overlay from MCAP data.
+Browser-based visualizer for OWA recordings. Syncs MCAP input data with MKV video.
 
-## Quick Start
+## Features
+
+- **Local-only**: All processing in browser. No server uploads.
+- **Large file support**: Uses MCAP index for seeking. Never loads entire file.
+- **Input overlay**: Keyboard (all keys), mouse (L/R/M buttons, scroll wheel), cursor minimap
+- **Mouse mode**: Toggle Relative (FPS) / Absolute (2D/RTS). Recenter interval for relative.
+- **Seek handling**: Video pauses while loading state, resumes automatically.
+- **Info panels**: Active window info, MCAP topic stats
+
+## Usage
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open http://localhost:5173 and select MCAP + MKV files.
+Open http://localhost:5173, select MCAP + MKV files.
 
-## Development Testing
+**URL auto-load:** `?mcap=/test.mcap&mkv=/test.mkv`
 
-### Setup Test Data
-
-Create symlinks to test files:
-
-```bash
-# Use default test data path
-npm run setup-test
-
-# Or specify custom paths
-./scripts/setup-test-data.sh /path/to/recording.mcap /path/to/recording.mkv
-```
-
-### Auto-load via URL
-
-After setup, open with URL parameters:
+## Structure
 
 ```
-http://localhost:5173/?mcap=/test.mcap&mkv=/test.mkv
+src/
+├── main.js      # Entry, video events, render loop
+├── state.js     # StateManager, message handlers
+├── mcap.js      # MCAP loading, TimeSync
+├── overlay.js   # Keyboard/mouse canvas drawing
+├── ui.js        # Side panel, loading indicator
+├── constants.js # VK codes, colors, flags
+└── styles.css
 ```
 
-This is useful for:
-- Automated testing (e.g., Playwright)
-- Quick iteration during development
-- Debugging without manual file selection
+## How Seeking Works
 
-### Playwright Testing
+1. Find nearest `keyboard/state` snapshot before target time
+2. Replay `keyboard` events from snapshot to target
+3. Find nearest `mouse/state` snapshot before target time
+4. Replay mouse events from snapshot to target
+5. Find latest `window` info
 
-With Playwright MCP enabled, you can automate browser testing:
+This enables O(snapshot interval) seek instead of O(file size).
 
-1. Run `npm run setup-test` to create test data symlinks
-2. Start dev server: `npm run dev`
-3. Use Playwright to navigate to the URL with parameters
-4. Inspect page state, take screenshots, etc.
+## Development
 
-## Architecture
-
-```
-┌─────────────────────────────────────────────┐
-│  Browser                                    │
-│  ┌────────────────────────────────────────┐ │
-│  │ <video> plays MKV directly             │ │
-│  │ <canvas> overlay (pointer-events:none) │ │
-│  └────────────────────────────────────────┘ │
-│  ┌────────────────────────────────────────┐ │
-│  │ @mcap/core parses MCAP (index only)    │ │
-│  │ fzstd handles zstd decompression       │ │
-│  │ requestAnimationFrame syncs overlay    │ │
-│  └────────────────────────────────────────┘ │
-└─────────────────────────────────────────────┘
-```
-
-## Files
-
-| File | Description |
-|------|-------------|
-| `src/main.js` | Entry point, file loading, render loop |
-| `src/mcap-loader.js` | MCAP parsing with BlobReadable + zstd |
-| `src/styles.css` | Dark theme styling |
-| `scripts/setup-test-data.sh` | Creates test data symlinks |
-
-## MCAP Data Structure
-
-Expected topics:
-- `screen` - Contains `media_ref.pts_ns` for time sync
-- `keyboard/state` - `{ buttons: [vkCodes...] }`
-- `mouse/state` - `{ x, y, buttons: [] }`
+**Message definitions**: Always reference `owa-msgs` for field names and types. Never guess message structure—check the schema source of truth.
 
