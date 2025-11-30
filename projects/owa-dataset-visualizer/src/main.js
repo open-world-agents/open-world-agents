@@ -1,70 +1,28 @@
 /**
  * OWA Dataset Visualizer - Main Entry Point
- * Synchronizes MCAP input data with MKV video playback
- * @module main
  */
+import { loadMcap, loadMcapFromUrl, TimeSync } from "./mcap.js";
+import { StateManager } from "./state.js";
+import { drawKeyboard, drawMouse, drawMinimap } from "./overlay.js";
+import { updateWindowInfo, displayMcapInfo, LoadingIndicator, updateStatus } from "./ui.js";
+import { SCREEN_WIDTH, SCREEN_HEIGHT, OVERLAY_HEIGHT, KEYBOARD_COLUMNS, KEY_SIZE, KEY_MARGIN, TOPICS } from "./constants.js";
 
-import { loadMcap, loadMcapFromUrl } from "./mcap/loader.js";
-import { TimeSync } from "./mcap/time-utils.js";
-import { StateManager } from "./state/index.js";
-import { drawKeyboard, drawMouse, drawMinimap } from "./overlay/renderer.js";
-import { updateWindowInfo, displayMcapInfo } from "./ui/side-panel.js";
-import { LoadingIndicator, updateStatus } from "./ui/loading.js";
-import {
-  SCREEN_WIDTH,
-  SCREEN_HEIGHT,
-  OVERLAY_HEIGHT,
-  KEYBOARD_COLUMNS,
-  KEY_SIZE,
-  KEY_MARGIN,
-  TOPICS,
-} from "./constants.js";
-
-// ============================================================================
 // DOM Elements
-// ============================================================================
-
-/** @type {HTMLVideoElement} */
 const video = document.getElementById("video");
-/** @type {HTMLCanvasElement} */
 const overlay = document.getElementById("overlay");
-/** @type {HTMLElement|null} */
 const timeInfo = document.querySelector("#time-info span");
-/** @type {HTMLInputElement|null} */
 const recenterInput = document.getElementById("recenter-interval");
-/** @type {HTMLElement|null} */
 const windowInfoEl = document.getElementById("window-info");
-/** @type {HTMLElement|null} */
 const mcapInfoEl = document.getElementById("mcap-info");
 
-// ============================================================================
 // Application State
-// ============================================================================
-
-/** @type {McapIndexedReader|null} */
 let mcapReader = null;
-
-/** Time synchronization manager */
 const timeSync = new TimeSync();
-
-/** Input state manager */
 const stateManager = new StateManager();
-
-/** Loading indicator */
 const loading = new LoadingIndicator();
-
-/** Whether user wants video to play (tracks intent during loading) */
 let userWantsToPlay = false;
 
-// ============================================================================
-// State Loading
-// ============================================================================
-
-/**
- * Load state at a specific MCAP timestamp
- * Finds the nearest state snapshots and replays events to reach exact time
- * @param {bigint} targetTime - Target MCAP timestamp
- */
+// Load state at a specific MCAP timestamp
 async function loadStateAt(targetTime) {
   if (!mcapReader) return;
 
@@ -139,15 +97,7 @@ async function loadStateAt(targetTime) {
   if (userWantsToPlay) video.play();
 }
 
-// ============================================================================
-// Incremental State Updates
-// ============================================================================
-
-/**
- * Update state incrementally from lastProcessedTime to targetTime
- * Used during normal playback (not seeking)
- * @param {bigint} targetTime - Target MCAP timestamp
- */
+// Incremental state update during playback
 async function updateStateUpTo(targetTime) {
   if (!mcapReader || stateManager.isLoading || targetTime <= stateManager.lastProcessedTime) {
     return;
@@ -170,91 +120,50 @@ async function updateStateUpTo(targetTime) {
   }
 }
 
-// ============================================================================
-// Render Loop
-// ============================================================================
-
-/**
- * Start the render loop for overlay updates
- */
+// Render loop
 function startRenderLoop() {
   const ctx = overlay.getContext("2d");
   const keyboardWidth = KEYBOARD_COLUMNS * (KEY_SIZE + KEY_MARGIN);
   const mouseX = 10 + keyboardWidth + 20;
 
-  async function render() {
+  function render() {
     const mcapTime = timeSync.videoTimeToMcap(video.currentTime);
-
-    // Update state (fire-and-forget for smooth rendering)
-    updateStateUpTo(mcapTime).catch((err) => {
-      console.error("Error during state update:", err);
-    });
-
-    // Decay wheel indicator
+    updateStateUpTo(mcapTime).catch(err => console.error("State update error:", err));
     stateManager.decayWheel();
 
-    // Draw overlay
     ctx.clearRect(0, 0, overlay.width, overlay.height);
-
     const state = stateManager.state;
     drawKeyboard(ctx, 10, 10, state.keyboard);
     drawMouse(ctx, mouseX, 10, state.mouse.buttons, state.mouse.wheel);
-    drawMinimap(
-      ctx, mouseX + 70, 10, 160, 100,
-      state.mouse.x, state.mouse.y,
-      SCREEN_WIDTH, SCREEN_HEIGHT,
-      state.mouse.buttons
-    );
-
-    // Update side panel
+    drawMinimap(ctx, mouseX + 70, 10, 160, 100, state.mouse.x, state.mouse.y, SCREEN_WIDTH, SCREEN_HEIGHT, state.mouse.buttons);
     updateWindowInfo(windowInfoEl, state.window);
-
-    // Update time display
-    if (timeInfo) {
-      timeInfo.textContent = `${video.currentTime.toFixed(2)}s`;
-    }
+    if (timeInfo) timeInfo.textContent = `${video.currentTime.toFixed(2)}s`;
 
     requestAnimationFrame(render);
   }
-
   render();
 }
 
-// ============================================================================
 // Setup
-// ============================================================================
-
-/**
- * Initialize the visualizer with an MCAP reader
- * @param {McapIndexedReader} reader - MCAP reader instance
- */
 async function setup(reader) {
   mcapReader = reader;
-
-  // Display MCAP info
   await displayMcapInfo(mcapInfoEl, reader);
 
   // Find basePtsTime from first screen event
   for await (const msg of reader.readMessages({ topics: [TOPICS.SCREEN] })) {
-    const data = JSON.parse(new TextDecoder().decode(msg.data));
-    timeSync.initFromScreenMessage(msg.logTime, data);
+    timeSync.initFromScreenMessage(msg.logTime, JSON.parse(new TextDecoder().decode(msg.data)));
     break;
   }
 
   stateManager.lastProcessedTime = timeSync.getBasePtsTime();
   stateManager.lastRecenterTime = stateManager.lastProcessedTime;
 
-  // Video event handlers
   let pendingSeek = null;
-
   video.addEventListener("seeked", async () => {
     const targetTime = timeSync.videoTimeToMcap(video.currentTime);
     pendingSeek = targetTime;
-
     if (stateManager.isLoading) return;
-
     await loadStateAt(targetTime);
-
     while (pendingSeek !== null && pendingSeek !== stateManager.lastProcessedTime) {
       const nextTarget = pendingSeek;
       pendingSeek = null;
@@ -265,26 +174,17 @@ async function setup(reader) {
 
   video.addEventListener("play", () => {
     userWantsToPlay = true;
-    if (stateManager.isLoading) {
-      video.pause();
-    }
+    if (stateManager.isLoading) video.pause();
   });
 
   video.addEventListener("pause", () => {
-    if (!stateManager.isLoading) {
-      userWantsToPlay = false;
-    }
+    if (!stateManager.isLoading) userWantsToPlay = false;
   });
 }
 
-/**
- * Common initialization after loading files
- * @param {number} channelCount - Number of MCAP channels
- */
 function initViewer(channelCount) {
   document.getElementById("file-select").classList.add("hidden");
   document.getElementById("viewer").classList.remove("hidden");
-
   video.onloadedmetadata = () => {
     const w = video.offsetWidth || 800;
     overlay.width = w;
@@ -292,44 +192,31 @@ function initViewer(channelCount) {
     overlay.style.width = w + "px";
     startRenderLoop();
   };
-
   updateStatus(`Ready: ${channelCount} channels`);
 }
 
-// ============================================================================
 // Event Handlers
-// ============================================================================
-
-// Recenter interval
-recenterInput?.addEventListener("change", (e) => {
+recenterInput?.addEventListener("change", e => {
   stateManager.recenterIntervalMs = Math.max(0, parseInt(e.target.value, 10) || 0);
 });
 
-// Mouse mode toggle
-document.querySelectorAll('input[name="mouse-mode"]').forEach((radio) => {
-  radio.addEventListener("change", (e) => {
+document.querySelectorAll('input[name="mouse-mode"]').forEach(radio => {
+  radio.addEventListener("change", e => {
     stateManager.mouseMode = e.target.value;
     recenterInput.disabled = stateManager.mouseMode !== "raw";
     loadStateAt(timeSync.videoTimeToMcap(video.currentTime));
   });
 });
 
-// File input validation
 function updateLoadButton() {
-  const mcapInput = document.getElementById("mcap-input");
-  const mkvInput = document.getElementById("mkv-input");
-  const loadBtn = document.getElementById("load-btn");
-  loadBtn.disabled = !(mcapInput.files?.length && mkvInput.files?.length);
+  const mcap = document.getElementById("mcap-input");
+  const mkv = document.getElementById("mkv-input");
+  document.getElementById("load-btn").disabled = !(mcap.files?.length && mkv.files?.length);
 }
-
 document.getElementById("mcap-input")?.addEventListener("change", updateLoadButton);
 document.getElementById("mkv-input")?.addEventListener("change", updateLoadButton);
 
-// ============================================================================
 // Initialization
-// ============================================================================
-
-// Auto-load from URL params
 const params = new URLSearchParams(location.search);
 if (params.has("mcap") && params.has("mkv")) {
   (async () => {
@@ -346,13 +233,11 @@ if (params.has("mcap") && params.has("mkv")) {
   })();
 }
 
-// Manual file load
 document.getElementById("load-btn")?.addEventListener("click", async () => {
   updateStatus("Loading...");
   try {
     const mcapFile = document.getElementById("mcap-input").files[0];
     const mkvFile = document.getElementById("mkv-input").files[0];
-
     const { reader, channels } = await loadMcap(mcapFile);
     await setup(reader);
     video.src = URL.createObjectURL(mkvFile);
