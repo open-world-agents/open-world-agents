@@ -6,19 +6,55 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>OWA Dataset Visualizer</title>
   <link rel="icon" href="data:,">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/src/styles.css">
 </head>
 
 <body>
   <div id="app">
-    <!-- File Selection -->
-    <div id="file-select">
-      <h2>Load Dataset</h2>
-      <div class="file-inputs">
-        <label>MCAP: <input type="file" id="mcap-input" accept=".mcap"></label>
-        <label>MKV: <input type="file" id="mkv-input" accept=".mkv,.mp4,.webm"></label>
+    <!-- Landing Page -->
+    <div id="landing" class="hidden">
+      <div class="landing-bg"></div>
+      <div class="landing-overlay"></div>
+      <div class="landing-content">
+        <h1>OWA Dataset Visualizer</h1>
+        <a href="https://github.com/open-world-agents/open-world-agents" target="_blank" rel="noopener noreferrer"
+          class="landing-link">create & train your own multimodal desktop agent</a>
+
+        <div class="dataset-list">
+          <h3>Example Datasets:</h3>
+          <ul id="featured-datasets"></ul>
+        </div>
+
+        <div class="search-box">
+          <input type="text" id="dataset-input" placeholder="enter dataset id (ex: open-world-agents/example_dataset)">
+          <button id="go-btn">Go</button>
+        </div>
+
+        <details class="more-datasets">
+          <summary>More example datasets</summary>
+          <ul id="more-datasets"></ul>
+        </details>
+
+        <div class="local-section">
+          <div class="drop-zone" id="drop-zone">
+            <div class="drop-zone-icon">📁</div>
+            <div class="drop-zone-text">Drop MCAP + MKV files here</div>
+            <div class="drop-zone-or">or</div>
+            <div class="drop-zone-files">
+              <label class="file-btn"><input type="file" id="mcap-input-landing" accept=".mcap"> Select MCAP</label>
+              <label class="file-btn"><input type="file" id="mkv-input-landing" accept=".mkv,.mp4,.webm"> Select
+                MKV</label>
+            </div>
+            <div class="drop-zone-status" id="file-status"></div>
+          </div>
+        </div>
       </div>
-      <button id="load-btn" disabled>Load</button>
+    </div>
+
+    <!-- File Selection (direct URL mode) -->
+    <div id="file-select" class="hidden">
+      <h2>Loading...</h2>
       <p id="status"></p>
     </div>
 
@@ -49,6 +85,12 @@
 
         <!-- Right: Side Panel -->
         <div id="side-panel">
+          <!-- File Selector (for HuggingFace datasets) -->
+          <details id="file-section" class="hidden" open>
+            <summary>Files</summary>
+            <ul id="hf-file-list"></ul>
+          </details>
+
           <!-- Window Info -->
           <details id="window-section" open>
             <summary>Window Info</summary>

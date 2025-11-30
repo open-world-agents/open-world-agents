@@ -1,31 +1,19 @@
 # Stage 1: Build
 FROM node:20-alpine AS builder
 
-WORKDIR /app
+RUN apk add --no-cache git
 
-# Copy package files
-COPY package.json package-lock.json ./
+ARG CACHE_BUST=1
+RUN git clone --depth 1 https://github.com/open-world-agents/open-world-agents /owa
 
-# Install dependencies
-RUN npm ci
-
-# Copy source files
-COPY index.html ./
-COPY src ./src
-
-# Build for production
-RUN npm run build
+WORKDIR /owa/projects/owa-dataset-visualizer
+RUN npm ci && npm run build
 
 # Stage 2: Serve with nginx
 FROM nginx:alpine
 
-# Copy built files to nginx
-COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Copy nginx config for SPA routing
+COPY --from=builder /owa/projects/owa-dataset-visualizer/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
-
 CMD ["nginx", "-g", "daemon off;"]
-

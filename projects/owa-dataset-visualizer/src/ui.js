@@ -6,8 +6,12 @@ export class LoadingIndicator {
   constructor(elementId = "loading-indicator") {
     this.element = document.getElementById(elementId);
   }
-  show() { this.element?.classList.remove("hidden"); }
-  hide() { this.element?.classList.add("hidden"); }
+  show() {
+    this.element?.classList.remove("hidden");
+  }
+  hide() {
+    this.element?.classList.add("hidden");
+  }
 }
 
 export function updateStatus(message, elementId = "status") {
@@ -61,4 +65,3 @@ export async function displayMcapInfo(container, reader) {
 
   container.innerHTML = html;
 }
-
