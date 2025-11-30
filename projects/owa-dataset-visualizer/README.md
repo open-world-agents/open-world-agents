@@ -4,7 +4,8 @@ Browser-based visualizer for OWA recordings. Syncs MCAP input data with MKV vide
 
 ## Features
 
-- **Local-only**: All processing in browser. No server uploads.
+- **HuggingFace Hub integration**: Browse and load datasets directly from HuggingFace
+- **Local file support**: Drag & drop or select MCAP + MKV files. No server uploads.
 - **Large file support**: Uses MCAP index for seeking. Never loads entire file.
 - **Input overlay**: Keyboard (all keys), mouse (L/R/M buttons, scroll wheel), cursor minimap
 - **Mouse mode**: Toggle Relative (FPS) / Absolute (2D/RTS). Recenter interval for relative.
@@ -18,19 +19,26 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173, select MCAP + MKV files.
+Open http://localhost:5173.
 
-**URL auto-load:** `?mcap=/test.mcap&mkv=/test.mkv`
+**URL modes:**
+
+- Landing page: Browse featured datasets or load local files
+- `?repo_id=org/dataset`: Load HuggingFace dataset
+- `?mcap=/test.mcap&mkv=/test.mkv`: Direct URL mode
 
 ## Structure
 
 ```
 src/
-├── main.js      # Entry, video events, render loop
+├── main.js      # Routing, landing page
+├── viewer.js    # Viewer logic, render loop
+├── hf.js        # HuggingFace API, file tree
 ├── state.js     # StateManager, message handlers
 ├── mcap.js      # MCAP loading, TimeSync
 ├── overlay.js   # Keyboard/mouse canvas drawing
 ├── ui.js        # Side panel, loading indicator
+├── config.js    # Featured datasets
 ├── constants.js # VK codes, colors, flags
 └── styles.css
 ```
@@ -48,4 +56,3 @@ This enables O(snapshot interval) seek instead of O(file size).
 ## Development
 
 **Message definitions**: Always reference `owa-msgs` for field names and types. Never guess message structure—check the schema source of truth.
-
