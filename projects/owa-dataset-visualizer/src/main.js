@@ -1,4 +1,3 @@
-import { Mutex } from "async-mutex";
 import { loadMcap, loadMcapFromUrl } from "./mcap-loader.js";
 import { drawKeyboard, drawMouse, drawMinimap } from "./overlay-renderer.js";
 
@@ -25,15 +24,12 @@ let mouseMode = "raw";
 let recenterIntervalMs = 0;
 let lastRecenterTime = 0n;
 let lastProcessedTime = 0n;
-let isLoading = false; // UI state flag (not for synchronization - use mutex)
+let isLoading = false;
 let userWantsToPlay = false;
 let currentState = {
   keyboard: new Set(),
   mouse: { x: SCREEN_WIDTH / 2, y: SCREEN_HEIGHT / 2, buttons: new Set() },
 };
-
-// Mutex for state updates (prevents race between loadStateAt and updateStateUpTo)
-const stateMutex = new Mutex();
 
 // Convert video time to MCAP timestamp
 function videoTimeToMcap(videoTimeSec) {
@@ -56,12 +52,13 @@ function hideLoading() {
 async function loadStateAt(targetTime) {
   if (!mcapReader) return;
 
-  // Set loading state BEFORE acquiring mutex (so other code can check isLoading)
+  const t0 = performance.now();
+  console.log(`[loadStateAt] Start, targetTime=${targetTime}`);
+
   isLoading = true;
   video.pause();
   showLoading();
 
-  const release = await stateMutex.acquire();
   try {
     // Reset state
     currentState = {
@@ -84,8 +81,11 @@ async function loadStateAt(targetTime) {
       keyboardStateTime = msg.logTime;
       break; // Only need the last one
     }
+    const t1 = performance.now();
+    console.log(`[loadStateAt] Step 1 (keyboard/state) done (+${(t1 - t0).toFixed(1)}ms)`);
 
     // Step 2: Process all keyboard events from keyboardStateTime to targetTime
+    let keyboardEventCount = 0;
     if (keyboardStateTime > 0n) {
       for await (const msg of mcapReader.readMessages({
         startTime: keyboardStateTime + 1n, // Exclude the state message itself
@@ -99,8 +99,11 @@ async function loadStateAt(targetTime) {
         } else {
           currentState.keyboard.delete(data.vk);
         }
+        keyboardEventCount++;
       }
     }
+    const t2 = performance.now();
+    console.log(`[loadStateAt] Step 2 (keyboard events: ${keyboardEventCount}) done (+${(t2 - t0).toFixed(1)}ms)`);
 
     // Step 3: Find last mouse/state before targetTime
     let mouseStateTime = 0n;
@@ -117,9 +120,12 @@ async function loadStateAt(targetTime) {
       mouseStateTime = msg.logTime;
       break; // Only need the last one
     }
+    const t3 = performance.now();
+    console.log(`[loadStateAt] Step 3 (mouse/state) done (+${(t3 - t0).toFixed(1)}ms)`);
 
     // Step 4: Process mouse events from mouseStateTime to targetTime
     const mouseTopic = mouseMode === "raw" ? "mouse/raw" : "mouse";
+    let mouseEventCount = 0;
     if (mouseStateTime > 0n) {
       for await (const msg of mcapReader.readMessages({
         startTime: mouseStateTime + 1n,
@@ -128,6 +134,7 @@ async function loadStateAt(targetTime) {
       })) {
         const data = JSON.parse(new TextDecoder().decode(msg.data));
         processMessage(mouseTopic, data, msg.logTime);
+        mouseEventCount++;
       }
     } else if (mouseMode === "absolute") {
       // Fallback: find last mouse position if no mouse/state found
@@ -142,15 +149,19 @@ async function loadStateAt(targetTime) {
         break;
       }
     }
+    const t4 = performance.now();
+    console.log(`[loadStateAt] Step 4 (${mouseTopic} events: ${mouseEventCount}) done (+${(t4 - t0).toFixed(1)}ms)`);
 
     lastProcessedTime = targetTime;
   } finally {
     isLoading = false;
     hideLoading();
-    release();
   }
 
-  // Resume if user wants to play (outside try-finally to avoid holding lock during play)
+  const t5 = performance.now();
+  console.log(`[loadStateAt] Complete, total=${(t5 - t0).toFixed(1)}ms`);
+
+  // Resume if user wants to play
   if (userWantsToPlay) {
     video.play();
   }
@@ -197,26 +208,24 @@ async function updateStateUpTo(targetTime) {
   // Skip if loading or no new messages needed
   if (!mcapReader || isLoading || targetTime <= lastProcessedTime) return;
 
-  const release = await stateMutex.acquire();
-  try {
-    // Re-check after acquiring lock (loadStateAt may have updated lastProcessedTime)
-    if (targetTime <= lastProcessedTime) return;
+  const mouseTopic = mouseMode === "raw" ? "mouse/raw" : "mouse";
 
-    const mouseTopic = mouseMode === "raw" ? "mouse/raw" : "mouse";
+  for await (const msg of mcapReader.readMessages({
+    startTime: lastProcessedTime,
+    endTime: targetTime,
+    topics: ["keyboard/state", mouseTopic],
+  })) {
+    // Check if loading started during iteration
+    if (isLoading) return;
 
-    for await (const msg of mcapReader.readMessages({
-      startTime: lastProcessedTime,
-      endTime: targetTime,
-      topics: ["keyboard/state", mouseTopic],
-    })) {
-      const channel = mcapReader.channelsById.get(msg.channelId);
-      const data = JSON.parse(new TextDecoder().decode(msg.data));
-      processMessage(channel.topic, data, msg.logTime);
-    }
+    const channel = mcapReader.channelsById.get(msg.channelId);
+    const data = JSON.parse(new TextDecoder().decode(msg.data));
+    processMessage(channel.topic, data, msg.logTime);
+  }
 
+  // Only update if not loading
+  if (!isLoading) {
     lastProcessedTime = targetTime;
-  } finally {
-    release();
   }
 }
 
