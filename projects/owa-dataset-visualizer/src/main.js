@@ -7,6 +7,19 @@ import { drawKeyboard, drawMouse, drawMinimap } from "./overlay.js";
 import { updateWindowInfo, displayMcapInfo, LoadingIndicator, updateStatus } from "./ui.js";
 import { SCREEN_WIDTH, SCREEN_HEIGHT, OVERLAY_HEIGHT, KEYBOARD_COLUMNS, KEY_SIZE, KEY_MARGIN, TOPICS } from "./constants.js";
 
+// Config
+const FEATURED_DATASETS = [
+  "open-world-agents/D2E-480p",
+  "open-world-agents/example_dataset",
+  "open-world-agents/example-djmax",
+  "open-world-agents/example-aimlab",
+  "open-world-agents/example-pubg-battleground",
+];
+
+const MORE_DATASETS = [
+  "open-world-agents/example_dataset2",
+];
+
 // DOM Elements
 const video = document.getElementById("video");
 const overlay = document.getElementById("overlay");
@@ -183,7 +196,8 @@ async function setup(reader) {
 }
 
 function initViewer(channelCount) {
-  document.getElementById("file-select").classList.add("hidden");
+  document.getElementById("landing")?.classList.add("hidden");
+  document.getElementById("file-select")?.classList.add("hidden");
   document.getElementById("viewer").classList.remove("hidden");
   video.onloadedmetadata = () => {
     const w = video.offsetWidth || 800;
@@ -208,17 +222,247 @@ document.querySelectorAll('input[name="mouse-mode"]').forEach(radio => {
   });
 });
 
-function updateLoadButton() {
-  const mcap = document.getElementById("mcap-input");
-  const mkv = document.getElementById("mkv-input");
-  document.getElementById("load-btn").disabled = !(mcap.files?.length && mkv.files?.length);
+function updateLoadButton(mcapInputId, mkvInputId, btnId) {
+  const mcap = document.getElementById(mcapInputId);
+  const mkv = document.getElementById(mkvInputId);
+  const btn = document.getElementById(btnId);
+  if (btn) btn.disabled = !(mcap?.files?.length && mkv?.files?.length);
 }
-document.getElementById("mcap-input")?.addEventListener("change", updateLoadButton);
-document.getElementById("mkv-input")?.addEventListener("change", updateLoadButton);
+
+async function loadLocalFiles(mcapInputId, mkvInputId) {
+  updateStatus("Loading...");
+  try {
+    const mcapFile = document.getElementById(mcapInputId).files[0];
+    const mkvFile = document.getElementById(mkvInputId).files[0];
+    const { reader, channels } = await loadMcap(mcapFile);
+    await setup(reader);
+    video.src = URL.createObjectURL(mkvFile);
+    initViewer(channels.length);
+  } catch (e) {
+    updateStatus(`Error: ${e.message}`);
+    console.error(e);
+  }
+}
+
+// HuggingFace dataset fetching
+async function fetchHfTree(repoId, path = "") {
+  const apiUrl = `https://huggingface.co/api/datasets/${repoId}/tree/main${path ? "/" + path : ""}`;
+  const res = await fetch(apiUrl);
+  if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
+  return res.json();
+}
+
+async function fetchHfFileList(repoId) {
+  const baseUrl = `https://huggingface.co/datasets/${repoId}/resolve/main`;
+  const tree = { folders: {}, files: [] };
+
+  async function scanDir(path, node) {
+    const items = await fetchHfTree(repoId, path);
+    const dirs = items.filter(i => i.type === "directory");
+    const mcaps = items.filter(i => i.path.endsWith(".mcap"));
+
+    for (const mcap of mcaps) {
+      const basename = mcap.path.replace(/\.mcap$/, "");
+      node.files.push({
+        name: basename.split("/").pop(),
+        path: basename,
+        url_mcap: `${baseUrl}/${basename}.mcap`,
+        url_mkv: `${baseUrl}/${basename}.mkv`,
+      });
+    }
+
+    for (const dir of dirs) {
+      const folderName = dir.path.split("/").pop();
+      node.folders[folderName] = { folders: {}, files: [] };
+      await scanDir(dir.path, node.folders[folderName]);
+    }
+  }
+
+  await scanDir("", tree);
+  return tree;
+}
+
+async function loadHfFilePair(filePair) {
+  updateStatus("Loading from HuggingFace...");
+  try {
+    const { reader, channels } = await loadMcapFromUrl(filePair.url_mcap);
+    await setup(reader);
+    video.src = filePair.url_mkv;
+    initViewer(channels.length);
+  } catch (e) {
+    updateStatus(`Error: ${e.message}`);
+    console.error(e);
+  }
+}
+
+let firstFile = null;
+function showFileTree(tree) {
+  const section = document.getElementById("file-section");
+  const container = document.getElementById("hf-file-list");
+  if (!section || !container) return;
+
+  section.classList.remove("hidden");
+  container.innerHTML = "";
+  firstFile = null;
+
+  function renderNode(node, parent) {
+    // Render folders first
+    for (const [name, subNode] of Object.entries(node.folders).sort((a, b) => a[0].localeCompare(b[0]))) {
+      const details = document.createElement("details");
+      const summary = document.createElement("summary");
+      summary.textContent = name;
+      details.appendChild(summary);
+      const ul = document.createElement("ul");
+      renderNode(subNode, ul);
+      details.appendChild(ul);
+      parent.appendChild(details);
+    }
+
+    // Render files
+    for (const f of node.files.sort((a, b) => a.name.localeCompare(b.name))) {
+      const li = document.createElement("li");
+      li.textContent = f.name;
+      li.addEventListener("click", () => {
+        container.querySelectorAll("li").forEach(el => el.classList.remove("active"));
+        li.classList.add("active");
+        loadHfFilePair(f);
+      });
+      parent.appendChild(li);
+      if (!firstFile) firstFile = { li, f };
+    }
+  }
+
+  renderNode(tree, container);
+  if (firstFile) firstFile.li.click();
+}
+
+function initLanding() {
+  const featured = document.getElementById("featured-datasets");
+  const more = document.getElementById("more-datasets");
+
+  FEATURED_DATASETS.forEach(ds => {
+    const li = document.createElement("li");
+    const a = document.createElement("a");
+    a.href = `?repo_id=${ds}`;
+    a.textContent = ds;
+    li.appendChild(a);
+    featured.appendChild(li);
+  });
+
+  MORE_DATASETS.forEach(ds => {
+    const li = document.createElement("li");
+    const a = document.createElement("a");
+    a.href = `?repo_id=${ds}`;
+    a.textContent = ds;
+    li.appendChild(a);
+    more.appendChild(li);
+  });
+
+  // Search box
+  const input = document.getElementById("dataset-input");
+  const goBtn = document.getElementById("go-btn");
+  const navigateToDataset = () => {
+    const val = input.value.trim();
+    if (val) location.href = `?repo_id=${val}`;
+  };
+  goBtn?.addEventListener("click", navigateToDataset);
+  input?.addEventListener("keyup", e => { if (e.key === "Enter") navigateToDataset(); });
+
+  // Landing file selection
+  const dropZone = document.getElementById("drop-zone");
+  const mcapInput = document.getElementById("mcap-input-landing");
+  const mkvInput = document.getElementById("mkv-input-landing");
+  const fileStatus = document.getElementById("file-status");
+  let selectedMcap = null, selectedMkv = null;
+
+  function updateFileStatus() {
+    const parts = [];
+    if (selectedMcap) parts.push(`✓ ${selectedMcap.name}`);
+    if (selectedMkv) parts.push(`✓ ${selectedMkv.name}`);
+    fileStatus.textContent = parts.join("  ");
+
+    mcapInput?.parentElement.classList.toggle("selected", !!selectedMcap);
+    mkvInput?.parentElement.classList.toggle("selected", !!selectedMkv);
+
+    if (selectedMcap && selectedMkv) {
+      loadFilesDirectly(selectedMcap, selectedMkv);
+    }
+  }
+
+  async function loadFilesDirectly(mcapFile, mkvFile) {
+    updateStatus("Loading...");
+    try {
+      const { reader, channels } = await loadMcap(mcapFile);
+      await setup(reader);
+      video.src = URL.createObjectURL(mkvFile);
+      initViewer(channels.length);
+    } catch (e) {
+      updateStatus(`Error: ${e.message}`);
+      fileStatus.textContent = `Error: ${e.message}`;
+    }
+  }
+
+  mcapInput?.addEventListener("change", e => {
+    selectedMcap = e.target.files[0] || null;
+    updateFileStatus();
+  });
+  mkvInput?.addEventListener("change", e => {
+    selectedMkv = e.target.files[0] || null;
+    updateFileStatus();
+  });
+
+  // Drag and drop
+  dropZone?.addEventListener("dragover", e => {
+    e.preventDefault();
+    dropZone.classList.add("dragover");
+  });
+  dropZone?.addEventListener("dragleave", () => {
+    dropZone.classList.remove("dragover");
+  });
+  dropZone?.addEventListener("drop", e => {
+    e.preventDefault();
+    dropZone.classList.remove("dragover");
+    for (const file of e.dataTransfer.files) {
+      if (file.name.endsWith(".mcap")) selectedMcap = file;
+      else if (/\.(mkv|mp4|webm)$/i.test(file.name)) selectedMkv = file;
+    }
+    updateFileStatus();
+  });
+}
 
 // Initialization
 const params = new URLSearchParams(location.search);
-if (params.has("mcap") && params.has("mkv")) {
+const repoId = params.get("repo_id");
+
+function hasFiles(tree) {
+  if (tree.files.length > 0) return true;
+  return Object.values(tree.folders).some(hasFiles);
+}
+
+if (repoId) {
+  // Viewer mode with HuggingFace dataset
+  document.getElementById("landing")?.classList.add("hidden");
+  document.getElementById("file-select")?.classList.add("hidden");
+  document.getElementById("viewer").classList.remove("hidden");
+  updateStatus("Fetching file list...");
+
+  fetchHfFileList(repoId)
+    .then(tree => {
+      if (!hasFiles(tree)) {
+        updateStatus("No MCAP files found in dataset");
+        return;
+      }
+      showFileTree(tree);
+    })
+    .catch(e => {
+      updateStatus(`Error: ${e.message}`);
+      console.error(e);
+    });
+
+} else if (params.has("mcap") && params.has("mkv")) {
+  // Direct URL mode
+  document.getElementById("landing")?.classList.add("hidden");
+  document.getElementById("file-select").classList.remove("hidden");
   (async () => {
     updateStatus("Loading...");
     try {
@@ -231,19 +475,17 @@ if (params.has("mcap") && params.has("mkv")) {
       console.error(e);
     }
   })();
+
+} else {
+  // Landing page mode
+  document.getElementById("landing").classList.remove("hidden");
+  initLanding();
 }
 
-document.getElementById("load-btn")?.addEventListener("click", async () => {
-  updateStatus("Loading...");
-  try {
-    const mcapFile = document.getElementById("mcap-input").files[0];
-    const mkvFile = document.getElementById("mkv-input").files[0];
-    const { reader, channels } = await loadMcap(mcapFile);
-    await setup(reader);
-    video.src = URL.createObjectURL(mkvFile);
-    initViewer(channels.length);
-  } catch (e) {
-    updateStatus(`Error: ${e.message}`);
-    console.error(e);
-  }
-});
+// File select page handlers
+document.getElementById("mcap-input")?.addEventListener("change", () =>
+  updateLoadButton("mcap-input", "mkv-input", "load-btn"));
+document.getElementById("mkv-input")?.addEventListener("change", () =>
+  updateLoadButton("mcap-input", "mkv-input", "load-btn"));
+document.getElementById("load-btn")?.addEventListener("click", () =>
+  loadLocalFiles("mcap-input", "mkv-input"));
