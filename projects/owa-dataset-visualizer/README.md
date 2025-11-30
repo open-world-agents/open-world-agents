@@ -41,18 +41,6 @@ src/
 └── styles.css
 ```
 
-## MCAP Topics
-
-| Topic | Data |
-|-------|------|
-| `screen` | `media_ref.pts_ns` for time sync |
-| `keyboard` | `{event_type, vk}` |
-| `keyboard/state` | `{buttons: [vk...]}` (snapshot) |
-| `mouse` | `{event_type, x, y, button, pressed, dy}` |
-| `mouse/raw` | `{last_x, last_y, button_flags, button_data}` |
-| `mouse/state` | `{x, y, buttons: [...]}` (snapshot) |
-| `window` | `{title, rect, hWnd}` |
-
 ## How Seeking Works
 
 1. Find nearest `keyboard/state` snapshot before target time
@@ -62,4 +50,8 @@ src/
 5. Find latest `window` info
 
 This enables O(snapshot interval) seek instead of O(file size).
+
+## Development
+
+**Message definitions**: Always reference `owa-msgs` for field names and types. Never guess message structure—check the schema source of truth.
 
