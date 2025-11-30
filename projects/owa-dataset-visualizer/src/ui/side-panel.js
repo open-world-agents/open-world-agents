@@ -4,6 +4,19 @@
  */
 
 /**
+ * Create a paragraph element with class and text
+ * @param {string} className - CSS class name
+ * @param {string} text - Text content
+ * @returns {HTMLParagraphElement}
+ */
+function createParagraph(className, text) {
+  const p = document.createElement("p");
+  p.className = className;
+  p.textContent = text;
+  return p;
+}
+
+/**
  * Update window info display with current window state
  * @param {HTMLElement} container - Container element for window info
  * @param {Object|null} windowData - Window state data
@@ -11,8 +24,10 @@
 export function updateWindowInfo(container, windowData) {
   if (!container) return;
 
+  container.innerHTML = "";
+
   if (!windowData) {
-    container.innerHTML = '<p class="placeholder">No window data</p>';
+    container.append(createParagraph("placeholder", "No window data"));
     return;
   }
 
@@ -20,11 +35,11 @@ export function updateWindowInfo(container, windowData) {
   const width = rect[2] - rect[0];
   const height = rect[3] - rect[1];
 
-  container.innerHTML = `
-    <p class="title">${windowData.title || "Unknown"}</p>
-    <p class="coords">Position: ${rect[0]}, ${rect[1]}</p>
-    <p class="coords">Size: ${width} × ${height}</p>
-  `;
+  container.append(
+    createParagraph("title", windowData.title || "Unknown"),
+    createParagraph("coords", `Position: ${rect[0]}, ${rect[1]}`),
+    createParagraph("coords", `Size: ${width} × ${height}`)
+  );
 }
 
 /**
@@ -55,33 +70,49 @@ export async function displayMcapInfo(container, reader) {
   // Get time range from statistics
   const startTime = stats?.messageStartTime || 0n;
   const endTime = stats?.messageEndTime || 0n;
-
-  // Format duration
   const durationNs = endTime - startTime;
   const durationSec = Number(durationNs) / 1e9;
 
-  // Build HTML
-  let html = '<div class="section">';
-  html += '<div class="section-title">Topics</div>';
+  // Build DOM
+  container.innerHTML = "";
+
+  const topicsSection = document.createElement("div");
+  topicsSection.className = "section";
+
+  const topicsTitle = document.createElement("div");
+  topicsTitle.className = "section-title";
+  topicsTitle.textContent = "Topics";
+  topicsSection.append(topicsTitle);
 
   for (const [topic, info] of topicStats) {
-    const countStr = info.count > 0n ? Number(info.count).toLocaleString() : "—";
-    html += `<div class="topic-row">
-      <span class="topic-name">${topic}</span>
-      <span class="topic-count">${countStr}</span>
-    </div>`;
-  }
+    const row = document.createElement("div");
+    row.className = "topic-row";
 
-  html += "</div>";
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "topic-name";
+    nameSpan.textContent = topic;
+
+    const countSpan = document.createElement("span");
+    countSpan.className = "topic-count";
+    countSpan.textContent = info.count > 0n ? Number(info.count).toLocaleString() : "—";
+
+    row.append(nameSpan, countSpan);
+    topicsSection.append(row);
+  }
+  container.append(topicsSection);
 
   if (durationSec > 0) {
-    html += `<div class="time-range">Duration: ${durationSec.toFixed(1)}s</div>`;
+    const durationEl = document.createElement("div");
+    durationEl.className = "time-range";
+    durationEl.textContent = `Duration: ${durationSec.toFixed(1)}s`;
+    container.append(durationEl);
   }
 
   if (stats) {
-    html += `<div class="time-range">Messages: ${Number(stats.messageCount).toLocaleString()}</div>`;
+    const messagesEl = document.createElement("div");
+    messagesEl.className = "time-range";
+    messagesEl.textContent = `Messages: ${Number(stats.messageCount).toLocaleString()}`;
+    container.append(messagesEl);
   }
-
-  container.innerHTML = html;
 }
 
