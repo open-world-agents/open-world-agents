@@ -2657,7 +2657,7 @@
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="c1"># Common workflows</span>
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>owl<span class="w"> </span>mcap<span class="w"> </span>info<span class="w"> </span>session.mcap<span class="w">              </span><span class="c1"># Inspect MCAP files</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>owl<span class="w"> </span>env<span class="w"> </span>list<span class="w">                            </span><span class="c1"># List environment plugins  </span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>owl<span class="w"> </span>env<span class="w"> </span>list<span class="w">                            </span><span class="c1"># List environment plugins</span>
 <a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>owl<span class="w"> </span>messages<span class="w"> </span>show<span class="w"> </span>desktop/MouseEvent<span class="w">    </span><span class="c1"># View message schemas</span>
 <a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>owl<span class="w"> </span>video<span class="w"> </span>probe<span class="w"> </span>recording.mkv<span class="w">           </span><span class="c1"># Analyze video files</span>
 </code></pre></div>
@@ -2665,10 +2665,10 @@
 <p>The <code>owl</code> CLI is organized into specialized command groups:</p>
 <h3 id="mcap-commands-owl-mcap">📁 <a href="mcap/">MCAP Commands</a> (<code>owl mcap</code>)<a class="headerlink" href="#mcap-commands-owl-mcap" title="Permanent link">&para;</a></h3>
 <p>Tools for working with MCAP files - the core data format for multimodal desktop recordings.</p>
-<p><strong>Key commands</strong>: <code>info</code>, <code>cat</code>, <code>convert</code>, <code>migrate</code>, <code>sanitize</code></p>
+<p><strong>Key commands</strong>: <code>info</code>, <code>cat</code>, <code>subtitle</code>, <code>migrate</code>, <code>sanitize</code></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>owl<span class="w"> </span>mcap<span class="w"> </span>info<span class="w"> </span>session.mcap<span class="w">              </span><span class="c1"># File information</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>owl<span class="w"> </span>mcap<span class="w"> </span>cat<span class="w"> </span>session.mcap<span class="w"> </span>--n<span class="w"> </span><span class="m">10</span><span class="w">        </span><span class="c1"># View messages  </span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>owl<span class="w"> </span>mcap<span class="w"> </span>convert<span class="w"> </span>session.mcap<span class="w">           </span><span class="c1"># Convert to subtitles</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>owl<span class="w"> </span>mcap<span class="w"> </span>cat<span class="w"> </span>session.mcap<span class="w"> </span>--n<span class="w"> </span><span class="m">10</span><span class="w">        </span><span class="c1"># View messages</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>owl<span class="w"> </span>mcap<span class="w"> </span>subtitle<span class="w"> </span>session.mcap<span class="w">          </span><span class="c1"># Generate subtitle file (.srt)</span>
 </code></pre></div>
 <h3 id="environment-commands-owl-env">🔌 <a href="env/">Environment Commands</a> (<code>owl env</code>)<a class="headerlink" href="#environment-commands-owl-env" title="Permanent link">&para;</a></h3>
 <p>Manage environment plugins that capture desktop data and provide system integration.</p>
@@ -3720,7 +3720,7 @@ messages would be removed, preventing accidental over-sanitization. Use
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="July 7, 2025 04:21:52 UTC">July 7, 2025 04:21:52</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="November 30, 2025 17:36:27 UTC">November 30, 2025 17:36:27</span>
   </span>
 
     
