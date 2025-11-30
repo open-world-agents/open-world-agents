@@ -222,25 +222,17 @@ document.querySelectorAll('input[name="mouse-mode"]').forEach(radio => {
   });
 });
 
-function updateLoadButton(mcapInputId, mkvInputId, btnId) {
-  const mcap = document.getElementById(mcapInputId);
-  const mkv = document.getElementById(mkvInputId);
-  const btn = document.getElementById(btnId);
-  if (btn) btn.disabled = !(mcap?.files?.length && mkv?.files?.length);
-}
-
-async function loadLocalFiles(mcapInputId, mkvInputId) {
+async function loadFiles(mcapFile, mkvFile, statusEl) {
   updateStatus("Loading...");
   try {
-    const mcapFile = document.getElementById(mcapInputId).files[0];
-    const mkvFile = document.getElementById(mkvInputId).files[0];
     const { reader, channels } = await loadMcap(mcapFile);
     await setup(reader);
     video.src = URL.createObjectURL(mkvFile);
     initViewer(channels.length);
   } catch (e) {
-    updateStatus(`Error: ${e.message}`);
-    console.error(e);
+    const msg = `Error: ${e.message}`;
+    updateStatus(msg);
+    if (statusEl) statusEl.textContent = msg;
   }
 }
 
@@ -295,7 +287,6 @@ async function loadHfFilePair(filePair) {
   }
 }
 
-let firstFile = null;
 function showFileTree(tree) {
   const section = document.getElementById("file-section");
   const container = document.getElementById("hf-file-list");
@@ -303,37 +294,33 @@ function showFileTree(tree) {
 
   section.classList.remove("hidden");
   container.innerHTML = "";
-  firstFile = null;
+  let firstLi = null;
 
   function renderNode(node, parent) {
-    // Render folders first
     for (const [name, subNode] of Object.entries(node.folders).sort((a, b) => a[0].localeCompare(b[0]))) {
       const details = document.createElement("details");
-      const summary = document.createElement("summary");
-      summary.textContent = name;
-      details.appendChild(summary);
+      details.innerHTML = `<summary>${name}</summary>`;
       const ul = document.createElement("ul");
       renderNode(subNode, ul);
       details.appendChild(ul);
       parent.appendChild(details);
     }
 
-    // Render files
     for (const f of node.files.sort((a, b) => a.name.localeCompare(b.name))) {
       const li = document.createElement("li");
       li.textContent = f.name;
-      li.addEventListener("click", () => {
+      li.onclick = () => {
         container.querySelectorAll("li").forEach(el => el.classList.remove("active"));
         li.classList.add("active");
         loadHfFilePair(f);
-      });
+      };
       parent.appendChild(li);
-      if (!firstFile) firstFile = { li, f };
+      if (!firstLi) firstLi = li;
     }
   }
 
   renderNode(tree, container);
-  if (firstFile) firstFile.li.click();
+  firstLi?.click();
 }
 
 function initLanding() {
@@ -385,20 +372,7 @@ function initLanding() {
     mkvInput?.parentElement.classList.toggle("selected", !!selectedMkv);
 
     if (selectedMcap && selectedMkv) {
-      loadFilesDirectly(selectedMcap, selectedMkv);
-    }
-  }
-
-  async function loadFilesDirectly(mcapFile, mkvFile) {
-    updateStatus("Loading...");
-    try {
-      const { reader, channels } = await loadMcap(mcapFile);
-      await setup(reader);
-      video.src = URL.createObjectURL(mkvFile);
-      initViewer(channels.length);
-    } catch (e) {
-      updateStatus(`Error: ${e.message}`);
-      fileStatus.textContent = `Error: ${e.message}`;
+      loadFiles(selectedMcap, selectedMkv, fileStatus);
     }
   }
 
@@ -481,11 +455,3 @@ if (repoId) {
   document.getElementById("landing").classList.remove("hidden");
   initLanding();
 }
-
-// File select page handlers
-document.getElementById("mcap-input")?.addEventListener("change", () =>
-  updateLoadButton("mcap-input", "mkv-input", "load-btn"));
-document.getElementById("mkv-input")?.addEventListener("change", () =>
-  updateLoadButton("mcap-input", "mkv-input", "load-btn"));
-document.getElementById("load-btn")?.addEventListener("click", () =>
-  loadLocalFiles("mcap-input", "mkv-input"));

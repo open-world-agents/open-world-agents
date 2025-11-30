@@ -7,7 +7,6 @@
   <title>OWA Dataset Visualizer</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="/src/styles.css">
-  <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
 <body>
@@ -52,18 +51,9 @@
       </div>
     </div>
 
-    <!-- File Selection (viewer mode) -->
+    <!-- File Selection (direct URL mode) -->
     <div id="file-select" class="hidden">
-      <h2>Load Dataset</h2>
-      <div id="remote-files" class="remote-files hidden">
-        <h3>Available Files</h3>
-        <ul id="file-list"></ul>
-      </div>
-      <div class="file-inputs">
-        <label>MCAP: <input type="file" id="mcap-input" accept=".mcap"></label>
-        <label>MKV: <input type="file" id="mkv-input" accept=".mkv,.mp4,.webm"></label>
-      </div>
-      <button id="load-btn" disabled>Load</button>
+      <h2>Loading...</h2>
       <p id="status"></p>
     </div>
 
