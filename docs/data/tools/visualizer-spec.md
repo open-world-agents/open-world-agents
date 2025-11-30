@@ -1,21 +1,20 @@
-# OWAMcap Dataset Visualizer - Technical Specification
+# OWA Dataset Visualizer - Technical Specification
 
-> **Status**: Draft v2
+> **Status**: Implemented
 > **Version**: 2.0
-> **Last Updated**: 2025-11-28
+> **Last Updated**: 2025-11-30
 
 ## 1. Executive Summary
 
-This document specifies a **minimal, clean architecture** for the OWAMcap Dataset Visualizer - a web-based tool for inspecting MCAP+MKV recording pairs.
+This document describes the architecture of the OWA Dataset Visualizer (`projects/owa-dataset-visualizer`) - a browser-based tool for inspecting MCAP+MKV recording pairs.
 
-### 1.1 Problem Statement
+### 1.1 Design Goals
 
-The current `convert_overlay.py` approach requires complete video re-encoding:
-- **Slow**: Full decode → render → encode cycle for every frame
-- **Lossy**: Re-encoding degrades video quality
-- **Storage-heavy**: Creates duplicate video files
+- **No re-encoding**: Play original video files directly
+- **Client-side processing**: All MCAP decoding happens in browser
+- **Multiple data sources**: Local files, HuggingFace Hub, custom file servers
 
-### 1.2 Solution: Clean Separation of Concerns
+### 1.2 Architecture Principle
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -95,6 +94,7 @@ app.mount("/files", StaticFiles(directory="/data"), name="files")
 ```
 
 **Requirements:**
+
 - Serve static files with proper MIME types
 - Support HTTP Range requests (for video seeking & MCAP windowed loading)
 - CORS headers for cross-origin access
@@ -104,6 +104,7 @@ app.mount("/files", StaticFiles(directory="/data"), name="files")
 ### 3.2 Smart Frontend
 
 The frontend handles:
+
 1. **File fetching** - Request MCAP/MKV files via fetch API
 2. **MCAP decoding** - Parse binary MCAP format using `@mcap/browser`
 3. **Message decoding** - Decode JSON schema messages
@@ -112,19 +113,20 @@ The frontend handles:
 
 ### 3.3 Why This Architecture?
 
-| Aspect | Old (Backend-heavy) | New (Frontend-heavy) |
-|--------|---------------------|----------------------|
-| Backend complexity | High (MCAP parsing, caching) | Minimal (file server) |
-| Scalability | Limited by server | Unlimited (client-side) |
-| Offline support | ❌ Requires server | ✅ Works with local files |
-| CDN compatible | ❌ Needs compute | ✅ Pure static files |
-| Development | Backend + Frontend | Frontend only |
+| Aspect             | Old (Backend-heavy)          | New (Frontend-heavy)      |
+| ------------------ | ---------------------------- | ------------------------- |
+| Backend complexity | High (MCAP parsing, caching) | Minimal (file server)     |
+| Scalability        | Limited by server            | Unlimited (client-side)   |
+| Offline support    | ❌ Requires server           | ✅ Works with local files |
+| CDN compatible     | ❌ Needs compute             | ✅ Pure static files      |
+| Development        | Backend + Frontend           | Frontend only             |
 
 ---
 
 ## 4. Deployment Modes
 
 ### 4.1 Mode A: Any Static File Server
+
 ```bash
 # Python
 python -m http.server 8000 --directory /path/to/data
@@ -136,6 +138,7 @@ npx serve /path/to/data
 ```
 
 ### 4.2 Mode B: HuggingFace Hub Direct
+
 ```javascript
 // Frontend fetches directly from HF CDN
 const mcapUrl = `https://huggingface.co/datasets/${repoId}/resolve/main/${filename}`;
@@ -143,6 +146,7 @@ const response = await fetch(mcapUrl);
 ```
 
 ### 4.3 Mode C: Local Files (file://)
+
 ```html
 <!-- Open index.html directly, reference local files -->
 <input type="file" accept=".mcap,.mkv" />
@@ -177,6 +181,7 @@ for await (const message of reader.readMessages({
 ```
 
 **NPM Packages:**
+
 - `@mcap/core` - Low-level readers/writers
 - `@mcap/browser` - Browser-specific utilities (fetch, streams)
 
@@ -322,33 +327,33 @@ async function loadFromHuggingFace(repoId, filename) {
 
 ### 7.1 Core Features (P0)
 
-| ID | Requirement | Implementation |
-|----|-------------|----------------|
-| P0-1 | Play video without re-encoding | HTML5 `<video>` element |
-| P0-2 | Decode MCAP in browser | `@mcap/browser` library |
-| P0-3 | Keyboard state visualization | Canvas overlay |
-| P0-4 | Mouse position/click visualization | Canvas overlay |
-| P0-5 | Time synchronization | `requestAnimationFrame` loop |
+| ID   | Requirement                        | Implementation               |
+| ---- | ---------------------------------- | ---------------------------- |
+| P0-1 | Play video without re-encoding     | HTML5 `<video>` element      |
+| P0-2 | Decode MCAP in browser             | `@mcap/browser` library      |
+| P0-3 | Keyboard state visualization       | Canvas overlay               |
+| P0-4 | Mouse position/click visualization | Canvas overlay               |
+| P0-5 | Time synchronization               | `requestAnimationFrame` loop |
 
 ### 7.2 Enhanced Features (P1)
 
-| ID | Requirement | Implementation |
-|----|-------------|----------------|
-| P1-1 | Visual keyboard layout | SVG/Canvas keyboard graphic |
-| P1-2 | Mouse trail visualization | Canvas path drawing |
-| P1-3 | Event timeline with markers | Custom timeline component |
-| P1-4 | Playback speed control | `video.playbackRate` |
-| P1-5 | Frame-by-frame navigation | `video.currentTime` stepping |
+| ID   | Requirement                 | Implementation               |
+| ---- | --------------------------- | ---------------------------- |
+| P1-1 | Visual keyboard layout      | SVG/Canvas keyboard graphic  |
+| P1-2 | Mouse trail visualization   | Canvas path drawing          |
+| P1-3 | Event timeline with markers | Custom timeline component    |
+| P1-4 | Playback speed control      | `video.playbackRate`         |
+| P1-5 | Frame-by-frame navigation   | `video.currentTime` stepping |
 
 ### 7.3 Advanced Features (P2)
 
-| ID | Requirement | Implementation |
-|----|-------------|----------------|
-| P2-1 | Event list panel | Virtual scroll list |
-| P2-2 | Search/filter events | Client-side filtering |
-| P2-3 | Export events to JSON | Blob download |
-| P2-4 | Keyboard shortcuts | Event listeners |
-| P2-5 | Multiple file comparison | Split view |
+| ID   | Requirement              | Implementation        |
+| ---- | ------------------------ | --------------------- |
+| P2-1 | Event list panel         | Virtual scroll list   |
+| P2-2 | Search/filter events     | Client-side filtering |
+| P2-3 | Export events to JSON    | Blob download         |
+| P2-4 | Keyboard shortcuts       | Event listeners       |
+| P2-5 | Multiple file comparison | Split view            |
 
 ---
 
@@ -356,7 +361,7 @@ async function loadFromHuggingFace(repoId, filename) {
 
 ### 8.1 Visual Layout
 
-Render a graphical keyboard matching `convert_overlay.py`:
+Graphical keyboard layout:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -376,10 +381,10 @@ Render a graphical keyboard matching `convert_overlay.py`:
 
 ### 8.2 Key States
 
-| State | Color | Description |
-|-------|-------|-------------|
-| Idle | `#6B6B6B` | Key not pressed |
-| Pressed | `#50B0AB` | Key currently held down |
+| State         | Color     | Description                  |
+| ------------- | --------- | ---------------------------- |
+| Idle          | `#6B6B6B` | Key not pressed              |
+| Pressed       | `#50B0AB` | Key currently held down      |
 | Just Released | `#3D8480` | Released within 200ms (fade) |
 
 ---
@@ -456,54 +461,55 @@ Right:      ●  (blue fill, 12px) + expanding ring
 ## 11. Implementation Roadmap
 
 ### Phase 1: Frontend MCAP Decoding (P0)
+
 - [ ] Integrate `@mcap/browser` for client-side MCAP parsing
 - [ ] Implement windowed message loading
 - [ ] Remove backend MCAP parsing endpoints
 - [ ] Test with local files and HF CDN
 
 ### Phase 2: Visualization Improvements (P1)
+
 - [ ] Visual keyboard layout (Canvas-based)
 - [ ] Fix raw mouse position tracking
 - [ ] Mouse trail visualization
 - [ ] Click effect animations
 
 ### Phase 3: Enhanced UX (P2)
+
 - [ ] Event markers on timeline
 - [ ] Scrollable event list with search
 - [ ] Keyboard shortcuts (Space, arrows)
 - [ ] Playback speed control
 
 ### Phase 4: Deployment Flexibility (P3)
+
 - [ ] Static HTML export mode
 - [ ] Direct HF CDN loading (no backend)
 - [ ] PWA support for offline use
 
 ---
 
-## 12. File Structure (Proposed)
+## 12. File Structure
 
 ```
-projects/owa-mcap-viewer/
-├── frontend/                    # NEW: Pure frontend application
-│   ├── index.html              # Single page application
-│   ├── css/
-│   │   └── styles.css
-│   └── js/
-│       ├── main.js             # Entry point
-│       ├── mcap-loader.js      # @mcap/browser integration
-│       ├── video-player.js     # Video controls
-│       ├── overlay-renderer.js # Canvas drawing
-│       ├── keyboard-viz.js     # Keyboard visualization
-│       ├── mouse-viz.js        # Mouse visualization
-│       └── timeline.js         # Timeline component
-│
-├── server/                      # SIMPLIFIED: Just file serving
-│   ├── app.py                  # Minimal FastAPI (static files only)
-│   └── config.py               # Configuration
-│
-├── package.json                 # NPM dependencies (@mcap/browser)
-├── Dockerfile
-└── README.md
+projects/owa-dataset-visualizer/
+├── index.html              # Single page application
+├── src/
+│   ├── main.js             # Entry point, routing
+│   ├── viewer.js           # Viewer logic, render loop
+│   ├── hf.js               # HuggingFace API, file tree
+│   ├── state.js            # StateManager, message handlers
+│   ├── mcap.js             # MCAP loading, TimeSync
+│   ├── overlay.js          # Keyboard/mouse canvas drawing
+│   ├── ui.js               # Side panel, loading indicator
+│   ├── config.js           # Featured datasets
+│   ├── constants.js        # VK codes, colors, flags
+│   └── styles.css
+├── scripts/
+│   └── serve_local.py      # Local file server with Range support
+├── package.json            # NPM dependencies (@mcap/core)
+├── Dockerfile              # HuggingFace Spaces deployment
+└── nginx.conf              # Production static file serving
 ```
 
 ---
@@ -529,8 +535,6 @@ projects/owa-mcap-viewer/
 ## 14. References
 
 - [MCAP Format Specification](https://mcap.dev/)
-- [@mcap/browser NPM Package](https://www.npmjs.com/package/@mcap/browser)
+- [@mcap/core NPM Package](https://www.npmjs.com/package/@mcap/core)
 - [OWAMcap Format Guide](../technical-reference/format-guide.md)
-- [Current Viewer Documentation](./viewer.md)
-- [convert_overlay.py](../../../../projects/owa-cli/owa/cli/mcap/convert_overlay.py) - Reference implementation
-
+- [Viewer Documentation](./viewer.md)
