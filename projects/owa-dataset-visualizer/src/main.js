@@ -1,141 +1,35 @@
 import { loadMcap, loadMcapFromUrl } from "./mcap-loader.js";
 import { drawKeyboard, drawMouse, drawMinimap } from "./overlay-renderer.js";
 
+// Constants
+const SCREEN_WIDTH = 1920;
+const SCREEN_HEIGHT = 1080;
+const OVERLAY_HEIGHT = 220;
+const MOUSE_VK_MAP = { 1: "left", 2: "right", 4: "middle", 5: "x1", 6: "x2" };
+
+// Mouse button flags
+const BUTTON_PRESS_FLAGS = { 0x0001: "left", 0x0004: "right", 0x0010: "middle" };
+const BUTTON_RELEASE_FLAGS = { 0x0002: "left", 0x0008: "right", 0x0020: "middle" };
+
 // DOM Elements
-const mcapInput = document.getElementById("mcap-input");
-const mkvInput = document.getElementById("mkv-input");
-const loadBtn = document.getElementById("load-btn");
-const status = document.getElementById("status");
-const fileSelect = document.getElementById("file-select");
-const viewer = document.getElementById("viewer");
 const video = document.getElementById("video");
 const overlay = document.getElementById("overlay");
 const timeInfo = document.querySelector("#time-info span");
+const recenterInput = document.getElementById("recenter-interval");
 
 // State
 let mcapReader = null;
 let basePtsTime = null;
-let cachedState = {
-  keyboard: new Set(),
-  mouse: { x: 960, y: 540, buttons: new Set() }, // Start at screen center
-};
-let lastLoadedTime = 0n;
-let mouseMode = "raw"; // "raw" (relative/3D) or "absolute" (2D)
-let recenterIntervalMs = 0; // 0 = off, else recenter every N ms
+let mouseMode = "raw";
+let recenterIntervalMs = 0;
 let lastRecenterTime = 0n;
-
-// Mouse button VK to name
-const MOUSE_VK_MAP = { 1: "left", 2: "right", 4: "middle", 5: "x1", 6: "x2" };
-
-// Screen dimensions for mouse position clamping
-const SCREEN_WIDTH = 1920;
-const SCREEN_HEIGHT = 1080;
-
-// Overlay dimensions
-const OVERLAY_HEIGHT = 220;
-
-// Recenter interval input
-const recenterInput = document.getElementById("recenter-interval");
-recenterInput?.addEventListener("change", (e) => {
-  recenterIntervalMs = Math.max(0, parseInt(e.target.value, 10) || 0);
-});
-
-// Update recenter input state based on mouse mode
-function updateRecenterInputState() {
-  if (recenterInput) {
-    recenterInput.disabled = mouseMode !== "raw";
-  }
-}
-
-// Mouse mode selection
-document.querySelectorAll('input[name="mouse-mode"]').forEach((radio) => {
-  radio.addEventListener("change", (e) => {
-    mouseMode = e.target.value;
-    updateRecenterInputState();
-    resetState();
-  });
-});
-
-// Enable load button when both files selected
-function updateLoadButton() {
-  loadBtn.disabled = !(mcapInput.files?.length && mkvInput.files?.length);
-}
-mcapInput.addEventListener("change", updateLoadButton);
-mkvInput.addEventListener("change", updateLoadButton);
-
-// Auto-load from URL params (for testing): ?mcap=/test.mcap&mkv=/test.mkv
-const params = new URLSearchParams(location.search);
-if (params.has("mcap") && params.has("mkv")) {
-  (async () => {
-    status.textContent = "Loading...";
-    try {
-      const { reader, channels } = await loadMcapFromUrl(params.get("mcap"));
-      mcapReader = reader;
-      for await (const msg of reader.readMessages({ topics: ["screen"] })) {
-        const data = JSON.parse(new TextDecoder().decode(msg.data));
-        basePtsTime = msg.logTime - BigInt(data?.media_ref?.pts_ns || 0);
-        break;
-      }
-      video.src = params.get("mkv");
-      fileSelect.classList.add("hidden");
-      viewer.classList.remove("hidden");
-      video.onloadedmetadata = () => {
-        // Match canvas to video's displayed width
-        const displayWidth = video.offsetWidth || video.clientWidth || 800;
-        overlay.width = displayWidth;
-        overlay.height = OVERLAY_HEIGHT;
-        overlay.style.width = displayWidth + "px";
-        startRenderLoop();
-      };
-      video.onseeking = resetState;
-      status.textContent = `Ready: ${channels.length} channels`;
-    } catch (e) {
-      status.textContent = `Error: ${e.message}`;
-    }
-  })();
-}
-
-// Load files
-loadBtn.addEventListener("click", async () => {
-  status.textContent = "Loading MCAP index...";
-
-  try {
-    // Load MCAP (index only, no messages yet)
-    const mcapFile = mcapInput.files[0];
-    const { reader, channels } = await loadMcap(mcapFile);
-    mcapReader = reader;
-
-    // Find basePtsTime from first screen event
-    for await (const msg of reader.readMessages({ topics: ["screen"] })) {
-      const data = JSON.parse(new TextDecoder().decode(msg.data));
-      basePtsTime = msg.logTime - BigInt(data?.media_ref?.pts_ns || 0);
-      break;
-    }
-
-    // Load video
-    const mkvFile = mkvInput.files[0];
-    video.src = URL.createObjectURL(mkvFile);
-
-    // Show viewer
-    fileSelect.classList.add("hidden");
-    viewer.classList.remove("hidden");
-
-    // Setup canvas
-    video.addEventListener("loadedmetadata", () => {
-      const displayWidth = video.offsetWidth || video.clientWidth || 800;
-      overlay.width = displayWidth;
-      overlay.height = OVERLAY_HEIGHT;
-      overlay.style.width = displayWidth + "px";
-      startRenderLoop();
-    });
-    video.addEventListener("seeking", resetState);
-
-    status.textContent = `Ready: ${channels.length} channels`;
-  } catch (err) {
-    status.textContent = `Error: ${err.message}`;
-    console.error(err);
-  }
-});
+let lastProcessedTime = 0n;
+let isLoading = false;
+let userWantsToPlay = false;
+let currentState = {
+  keyboard: new Set(),
+  mouse: { x: SCREEN_WIDTH / 2, y: SCREEN_HEIGHT / 2, buttons: new Set() },
+};
 
 // Convert video time to MCAP timestamp
 function videoTimeToMcap(videoTimeSec) {
@@ -143,86 +37,173 @@ function videoTimeToMcap(videoTimeSec) {
   return basePtsTime + BigInt(Math.floor(videoTimeSec * 1e9));
 }
 
-// Reset state when seeking
-function resetState() {
-  lastLoadedTime = 0n;
-  lastRecenterTime = 0n;
-  cachedState.keyboard.clear();
-  cachedState.mouse = { x: SCREEN_WIDTH / 2, y: SCREEN_HEIGHT / 2, buttons: new Set() };
+// Loading indicator
+const loadingIndicator = document.getElementById("loading-indicator");
+
+function showLoading() {
+  loadingIndicator?.classList.remove("hidden");
 }
 
-// Mouse button flags from RawMouseEvent
-const BUTTON_PRESS_FLAGS = {
-  0x0001: "left",   // RI_MOUSE_LEFT_BUTTON_DOWN
-  0x0004: "right",  // RI_MOUSE_RIGHT_BUTTON_DOWN
-  0x0010: "middle", // RI_MOUSE_MIDDLE_BUTTON_DOWN
-};
-const BUTTON_RELEASE_FLAGS = {
-  0x0002: "left",   // RI_MOUSE_LEFT_BUTTON_UP
-  0x0008: "right",  // RI_MOUSE_RIGHT_BUTTON_UP
-  0x0020: "middle", // RI_MOUSE_MIDDLE_BUTTON_UP
-};
+function hideLoading() {
+  loadingIndicator?.classList.add("hidden");
+}
 
-// Load state up to timestamp (incremental)
-async function loadStateUpTo(mcapTime) {
-  if (!mcapReader || mcapTime <= lastLoadedTime) return;
+// Load state at a specific time (finds last keyboard/state and mouse before targetTime)
+async function loadStateAt(targetTime) {
+  if (!mcapReader) return;
 
-  const mouseTopic = mouseMode === "raw" ? "mouse/raw" : "mouse";
-  const topics = ["keyboard/state", mouseTopic];
+  isLoading = true;
+  video.pause();
+  showLoading();
 
+  // Reset state
+  currentState = {
+    keyboard: new Set(),
+    mouse: { x: SCREEN_WIDTH / 2, y: SCREEN_HEIGHT / 2, buttons: new Set() },
+  };
+  lastRecenterTime = targetTime;
+
+  // Step 1: Find last keyboard/state before targetTime (reverse iteration)
+  let keyboardStateTime = 0n;
   for await (const msg of mcapReader.readMessages({
-    startTime: lastLoadedTime,
-    endTime: mcapTime,
-    topics,
+    endTime: targetTime,
+    topics: ["keyboard/state"],
+    reverse: true,
   })) {
-    const channel = mcapReader.channelsById.get(msg.channelId);
     const data = JSON.parse(new TextDecoder().decode(msg.data));
+    // Extract keyboard keys (excluding mouse VKs)
+    const keyVks = (data.buttons || []).filter((vk) => !MOUSE_VK_MAP[vk]);
+    currentState.keyboard = new Set(keyVks);
+    keyboardStateTime = msg.logTime;
+    break; // Only need the last one
+  }
 
-    if (channel.topic === "keyboard/state") {
-      // Filter out mouse VK codes (1, 2, 4, 5, 6)
-      const keyVks = (data.buttons || []).filter((vk) => !MOUSE_VK_MAP[vk]);
-      cachedState.keyboard = new Set(keyVks);
-    } else if (channel.topic === "mouse/raw") {
-      // Check if we need to recenter
-      if (recenterIntervalMs > 0) {
-        const intervalNs = BigInt(recenterIntervalMs) * 1000000n;
-        if (msg.logTime - lastRecenterTime >= intervalNs) {
-          cachedState.mouse.x = SCREEN_WIDTH / 2;
-          cachedState.mouse.y = SCREEN_HEIGHT / 2;
-          lastRecenterTime = msg.logTime;
-        }
-      }
-
-      // Relative mode: accumulate mouse movement
-      const dx = data.last_x ?? 0;
-      const dy = data.last_y ?? 0;
-      cachedState.mouse.x = Math.max(0, Math.min(SCREEN_WIDTH - 1, cachedState.mouse.x + dx));
-      cachedState.mouse.y = Math.max(0, Math.min(SCREEN_HEIGHT - 1, cachedState.mouse.y + dy));
-
-      // Process button flags
-      const flags = data.button_flags ?? 0;
-      for (const [flag, btn] of Object.entries(BUTTON_PRESS_FLAGS)) {
-        if (flags & Number(flag)) cachedState.mouse.buttons.add(btn);
-      }
-      for (const [flag, btn] of Object.entries(BUTTON_RELEASE_FLAGS)) {
-        if (flags & Number(flag)) cachedState.mouse.buttons.delete(btn);
-      }
-    } else if (channel.topic === "mouse") {
-      // Absolute mode: use direct coordinates
-      cachedState.mouse.x = data.x ?? cachedState.mouse.x;
-      cachedState.mouse.y = data.y ?? cachedState.mouse.y;
-
-      // Handle click events
-      if (data.event_type === "click" && data.button) {
-        if (data.pressed) {
-          cachedState.mouse.buttons.add(data.button);
-        } else {
-          cachedState.mouse.buttons.delete(data.button);
-        }
+  // Step 2: Process all keyboard events from keyboardStateTime to targetTime
+  if (keyboardStateTime > 0n) {
+    for await (const msg of mcapReader.readMessages({
+      startTime: keyboardStateTime + 1n, // Exclude the state message itself
+      endTime: targetTime,
+      topics: ["keyboard"],
+    })) {
+      const data = JSON.parse(new TextDecoder().decode(msg.data));
+      if (MOUSE_VK_MAP[data.vk]) continue; // Skip mouse buttons
+      if (data.pressed) {
+        currentState.keyboard.add(data.vk);
+      } else {
+        currentState.keyboard.delete(data.vk);
       }
     }
   }
-  lastLoadedTime = mcapTime;
+
+  // Step 3: Find last mouse/state before targetTime
+  let mouseStateTime = 0n;
+  for await (const msg of mcapReader.readMessages({
+    endTime: targetTime,
+    topics: ["mouse/state"],
+    reverse: true,
+  })) {
+    const data = JSON.parse(new TextDecoder().decode(msg.data));
+    // mouse/state has x, y (absolute position) and buttons (Set of strings like "left", "right")
+    currentState.mouse.x = data.x ?? SCREEN_WIDTH / 2;
+    currentState.mouse.y = data.y ?? SCREEN_HEIGHT / 2;
+    currentState.mouse.buttons = new Set(data.buttons || []);
+    mouseStateTime = msg.logTime;
+    break; // Only need the last one
+  }
+
+  // Step 4: Process mouse events from mouseStateTime to targetTime
+  const mouseTopic = mouseMode === "raw" ? "mouse/raw" : "mouse";
+  if (mouseStateTime > 0n) {
+    for await (const msg of mcapReader.readMessages({
+      startTime: mouseStateTime + 1n,
+      endTime: targetTime,
+      topics: [mouseTopic],
+    })) {
+      const data = JSON.parse(new TextDecoder().decode(msg.data));
+      processMessage(mouseTopic, data, msg.logTime);
+    }
+  } else if (mouseMode === "absolute") {
+    // Fallback: find last mouse position if no mouse/state found
+    for await (const msg of mcapReader.readMessages({
+      endTime: targetTime,
+      topics: ["mouse"],
+      reverse: true,
+    })) {
+      const data = JSON.parse(new TextDecoder().decode(msg.data));
+      currentState.mouse.x = data.x ?? SCREEN_WIDTH / 2;
+      currentState.mouse.y = data.y ?? SCREEN_HEIGHT / 2;
+      break;
+    }
+  }
+
+  lastProcessedTime = targetTime;
+  isLoading = false;
+  hideLoading();
+
+  // Resume if user wants to play
+  if (userWantsToPlay) {
+    video.play();
+  }
+}
+
+// Process a single message and update state
+function processMessage(topic, data, time) {
+  if (topic === "keyboard/state") {
+    const keyVks = (data.buttons || []).filter((vk) => !MOUSE_VK_MAP[vk]);
+    currentState.keyboard = new Set(keyVks);
+  } else if (topic === "mouse/raw") {
+    // Recenter check
+    if (recenterIntervalMs > 0) {
+      const intervalNs = BigInt(recenterIntervalMs) * 1000000n;
+      if (time - lastRecenterTime >= intervalNs) {
+        currentState.mouse.x = SCREEN_WIDTH / 2;
+        currentState.mouse.y = SCREEN_HEIGHT / 2;
+        lastRecenterTime = time;
+      }
+    }
+    // Accumulate relative movement
+    currentState.mouse.x = Math.max(0, Math.min(SCREEN_WIDTH - 1, currentState.mouse.x + (data.last_x ?? 0)));
+    currentState.mouse.y = Math.max(0, Math.min(SCREEN_HEIGHT - 1, currentState.mouse.y + (data.last_y ?? 0)));
+    // Button flags
+    const flags = data.button_flags ?? 0;
+    for (const [flag, btn] of Object.entries(BUTTON_PRESS_FLAGS)) {
+      if (flags & Number(flag)) currentState.mouse.buttons.add(btn);
+    }
+    for (const [flag, btn] of Object.entries(BUTTON_RELEASE_FLAGS)) {
+      if (flags & Number(flag)) currentState.mouse.buttons.delete(btn);
+    }
+  } else if (topic === "mouse") {
+    currentState.mouse.x = data.x ?? currentState.mouse.x;
+    currentState.mouse.y = data.y ?? currentState.mouse.y;
+    if (data.event_type === "click" && data.button) {
+      if (data.pressed) currentState.mouse.buttons.add(data.button);
+      else currentState.mouse.buttons.delete(data.button);
+    }
+  }
+}
+
+// Load and process messages from lastProcessedTime to targetTime
+async function updateStateUpTo(targetTime) {
+  // Skip if loading (loadStateAt is handling state) or no new messages needed
+  if (!mcapReader || isLoading || targetTime <= lastProcessedTime) return;
+
+  const mouseTopic = mouseMode === "raw" ? "mouse/raw" : "mouse";
+
+  for await (const msg of mcapReader.readMessages({
+    startTime: lastProcessedTime,
+    endTime: targetTime,
+    topics: ["keyboard/state", mouseTopic],
+  })) {
+    // Double-check isLoading in case loadStateAt started during iteration
+    if (isLoading) return;
+    const channel = mcapReader.channelsById.get(msg.channelId);
+    const data = JSON.parse(new TextDecoder().decode(msg.data));
+    processMessage(channel.topic, data, msg.logTime);
+  }
+
+  if (!isLoading) {
+    lastProcessedTime = targetTime;
+  }
 }
 
 // Render loop
@@ -230,41 +211,148 @@ function startRenderLoop() {
   const ctx = overlay.getContext("2d");
 
   async function render() {
-    const videoTime = video.currentTime;
-    const mcapTime = videoTimeToMcap(videoTime);
+    const mcapTime = videoTimeToMcap(video.currentTime);
 
-    // Load state incrementally
-    await loadStateUpTo(mcapTime);
+    // Update state up to current time
+    await updateStateUpTo(mcapTime);
 
-    // Clear canvas
+    // Draw
     ctx.clearRect(0, 0, overlay.width, overlay.height);
+    drawKeyboard(ctx, 10, 10, currentState.keyboard);
+    const mouseX = 10 + 14 * 35 + 20;
+    drawMouse(ctx, mouseX, 10, currentState.mouse.buttons);
+    drawMinimap(ctx, mouseX + 70, 10, 160, 100, currentState.mouse.x, currentState.mouse.y, SCREEN_WIDTH, SCREEN_HEIGHT, currentState.mouse.buttons);
 
-    // Draw keyboard (left side)
-    const kbX = 10;
-    const kbY = 10;
-    drawKeyboard(ctx, kbX, kbY, cachedState.keyboard);
-
-    // Draw mouse figure (right of keyboard)
-    const mouseX = kbX + 14 * 35 + 20; // 14 cols * (32+3) + gap
-    drawMouse(ctx, mouseX, kbY, cachedState.mouse.buttons);
-
-    // Draw minimap (right of mouse)
-    const minimapX = mouseX + 70;
-    drawMinimap(
-      ctx, minimapX, kbY, 160, 100,
-      cachedState.mouse.x, cachedState.mouse.y,
-      1920, 1080, // Assume 1080p screen
-      cachedState.mouse.buttons
-    );
-
-    // Update time info
-    if (timeInfo) {
-      timeInfo.textContent = `${videoTime.toFixed(2)}s`;
-    }
+    if (timeInfo) timeInfo.textContent = `${video.currentTime.toFixed(2)}s`;
 
     requestAnimationFrame(render);
   }
 
   render();
 }
+
+// Setup function for initializing with mcapReader
+async function setup(reader) {
+  mcapReader = reader;
+
+  // Find basePtsTime from first screen event
+  for await (const msg of reader.readMessages({ topics: ["screen"] })) {
+    const data = JSON.parse(new TextDecoder().decode(msg.data));
+    basePtsTime = msg.logTime - BigInt(data?.media_ref?.pts_ns || 0);
+    break;
+  }
+
+  lastProcessedTime = basePtsTime || 0n;
+  lastRecenterTime = lastProcessedTime;
+
+  // Video event handlers
+  let pendingSeek = null;
+
+  video.addEventListener("seeked", async () => {
+    const targetTime = videoTimeToMcap(video.currentTime);
+
+    // Cancel any pending seek and start a new one
+    pendingSeek = targetTime;
+
+    // If already loading, let it finish - it will check pendingSeek
+    if (isLoading) return;
+
+    // Load state at the new seek position
+    await loadStateAt(targetTime);
+
+    // If another seek happened while we were loading, handle it
+    while (pendingSeek !== null && pendingSeek !== lastProcessedTime) {
+      const nextTarget = pendingSeek;
+      pendingSeek = null;
+      await loadStateAt(nextTarget);
+    }
+    pendingSeek = null;
+  });
+
+  video.addEventListener("play", () => {
+    userWantsToPlay = true;
+    // If still loading, pause immediately (loadStateAt will resume when done)
+    if (isLoading) {
+      video.pause();
+    }
+  });
+
+  video.addEventListener("pause", () => {
+    // Only clear userWantsToPlay if user actually paused (not our loading pause)
+    if (!isLoading) {
+      userWantsToPlay = false;
+    }
+  });
+}
+
+// Event handlers
+recenterInput?.addEventListener("change", (e) => {
+  recenterIntervalMs = Math.max(0, parseInt(e.target.value, 10) || 0);
+});
+
+document.querySelectorAll('input[name="mouse-mode"]').forEach((radio) => {
+  radio.addEventListener("change", (e) => {
+    mouseMode = e.target.value;
+    recenterInput.disabled = mouseMode !== "raw";
+    loadStateAt(videoTimeToMcap(video.currentTime)); // Reload with new mode
+  });
+});
+
+function updateLoadButton() {
+  const mcapInput = document.getElementById("mcap-input");
+  const mkvInput = document.getElementById("mkv-input");
+  const loadBtn = document.getElementById("load-btn");
+  loadBtn.disabled = !(mcapInput.files?.length && mkvInput.files?.length);
+}
+document.getElementById("mcap-input")?.addEventListener("change", updateLoadButton);
+document.getElementById("mkv-input")?.addEventListener("change", updateLoadButton);
+
+// Common initialization after loading
+function initViewer(channelCount) {
+  document.getElementById("file-select").classList.add("hidden");
+  document.getElementById("viewer").classList.remove("hidden");
+
+  video.onloadedmetadata = () => {
+    const w = video.offsetWidth || 800;
+    overlay.width = w;
+    overlay.height = OVERLAY_HEIGHT;
+    overlay.style.width = w + "px";
+    startRenderLoop();
+  };
+
+  document.getElementById("status").textContent = `Ready: ${channelCount} channels`;
+}
+
+// Auto-load from URL params
+const params = new URLSearchParams(location.search);
+if (params.has("mcap") && params.has("mkv")) {
+  (async () => {
+    document.getElementById("status").textContent = "Loading...";
+    try {
+      const { reader, channels } = await loadMcapFromUrl(params.get("mcap"));
+      await setup(reader);
+      video.src = params.get("mkv");
+      initViewer(channels.length);
+    } catch (e) {
+      document.getElementById("status").textContent = `Error: ${e.message}`;
+    }
+  })();
+}
+
+// Manual file load
+document.getElementById("load-btn")?.addEventListener("click", async () => {
+  document.getElementById("status").textContent = "Loading...";
+  try {
+    const mcapFile = document.getElementById("mcap-input").files[0];
+    const mkvFile = document.getElementById("mkv-input").files[0];
+
+    const { reader, channels } = await loadMcap(mcapFile);
+    await setup(reader);
+    video.src = URL.createObjectURL(mkvFile);
+    initViewer(channels.length);
+  } catch (e) {
+    document.getElementById("status").textContent = `Error: ${e.message}`;
+    console.error(e);
+  }
+});
 
