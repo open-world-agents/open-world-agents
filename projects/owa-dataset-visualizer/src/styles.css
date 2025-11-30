@@ -88,3 +88,20 @@ button:disabled {
 #info-panel>div span {
   color: #4a9eff;
 }
+
+#mouse-mode {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#mouse-mode label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+#mouse-mode input[type="radio"] {
+  cursor: pointer;
+}

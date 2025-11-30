@@ -17,15 +17,24 @@ let mcapReader = null;
 let basePtsTime = null;
 let cachedState = {
   keyboard: new Set(),
-  mouse: { x: 0, y: 0, buttons: new Set() },
+  mouse: { x: 960, y: 540, buttons: new Set() }, // Start at screen center
 };
 let lastLoadedTime = 0n;
+let mouseMode = "raw"; // "raw" (relative/3D) or "absolute" (2D)
 
 // Mouse button VK to name
 const MOUSE_VK_MAP = { 1: "left", 2: "right", 4: "middle", 5: "x1", 6: "x2" };
 
 // Overlay dimensions
 const OVERLAY_HEIGHT = 220;
+
+// Mouse mode selection
+document.querySelectorAll('input[name="mouse-mode"]').forEach((radio) => {
+  radio.addEventListener("change", (e) => {
+    mouseMode = e.target.value;
+    resetState();
+  });
+});
 
 // Enable load button when both files selected
 function updateLoadButton() {
@@ -121,11 +130,29 @@ function resetState() {
   cachedState.mouse = { x: 0, y: 0, buttons: new Set() };
 }
 
+// Mouse button flags from RawMouseEvent
+const BUTTON_PRESS_FLAGS = {
+  0x0001: "left",   // RI_MOUSE_LEFT_BUTTON_DOWN
+  0x0004: "right",  // RI_MOUSE_RIGHT_BUTTON_DOWN
+  0x0010: "middle", // RI_MOUSE_MIDDLE_BUTTON_DOWN
+};
+const BUTTON_RELEASE_FLAGS = {
+  0x0002: "left",   // RI_MOUSE_LEFT_BUTTON_UP
+  0x0008: "right",  // RI_MOUSE_RIGHT_BUTTON_UP
+  0x0020: "middle", // RI_MOUSE_MIDDLE_BUTTON_UP
+};
+
+// Screen dimensions for mouse position clamping
+const SCREEN_WIDTH = 1920;
+const SCREEN_HEIGHT = 1080;
+
 // Load state up to timestamp (incremental)
 async function loadStateUpTo(mcapTime) {
   if (!mcapReader || mcapTime <= lastLoadedTime) return;
 
-  const topics = ["keyboard/state", "mouse/state"];
+  const mouseTopic = mouseMode === "raw" ? "mouse/raw" : "mouse";
+  const topics = ["keyboard/state", mouseTopic];
+
   for await (const msg of mcapReader.readMessages({
     startTime: lastLoadedTime,
     endTime: mcapTime,
@@ -138,11 +165,34 @@ async function loadStateUpTo(mcapTime) {
       // Filter out mouse VK codes (1, 2, 4, 5, 6)
       const keyVks = (data.buttons || []).filter((vk) => !MOUSE_VK_MAP[vk]);
       cachedState.keyboard = new Set(keyVks);
-    } else if (channel.topic === "mouse/state") {
-      cachedState.mouse.x = data.x ?? 0;
-      cachedState.mouse.y = data.y ?? 0;
-      // buttons are already strings: "left", "right", "middle"
-      cachedState.mouse.buttons = new Set(data.buttons || []);
+    } else if (channel.topic === "mouse/raw") {
+      // Relative mode: accumulate mouse movement
+      const dx = data.last_x ?? 0;
+      const dy = data.last_y ?? 0;
+      cachedState.mouse.x = Math.max(0, Math.min(SCREEN_WIDTH - 1, cachedState.mouse.x + dx));
+      cachedState.mouse.y = Math.max(0, Math.min(SCREEN_HEIGHT - 1, cachedState.mouse.y + dy));
+
+      // Process button flags
+      const flags = data.button_flags ?? 0;
+      for (const [flag, btn] of Object.entries(BUTTON_PRESS_FLAGS)) {
+        if (flags & Number(flag)) cachedState.mouse.buttons.add(btn);
+      }
+      for (const [flag, btn] of Object.entries(BUTTON_RELEASE_FLAGS)) {
+        if (flags & Number(flag)) cachedState.mouse.buttons.delete(btn);
+      }
+    } else if (channel.topic === "mouse") {
+      // Absolute mode: use direct coordinates
+      cachedState.mouse.x = data.x ?? cachedState.mouse.x;
+      cachedState.mouse.y = data.y ?? cachedState.mouse.y;
+
+      // Handle click events
+      if (data.event_type === "click" && data.button) {
+        if (data.pressed) {
+          cachedState.mouse.buttons.add(data.button);
+        } else {
+          cachedState.mouse.buttons.delete(data.button);
+        }
+      }
     }
   }
   lastLoadedTime = mcapTime;
