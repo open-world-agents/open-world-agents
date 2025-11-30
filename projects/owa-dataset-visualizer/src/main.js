@@ -83,7 +83,7 @@ async function loadStateAt(targetTime) {
     for await (const msg of mcapReader.readMessages({
       endTime: targetTime, topics: [TOPICS.WINDOW], reverse: true,
     })) {
-      stateManager.state.window = JSON.parse(new TextDecoder().decode(msg.data));
+      stateManager.applyWindowState(JSON.parse(new TextDecoder().decode(msg.data)));
       break;
     }
 

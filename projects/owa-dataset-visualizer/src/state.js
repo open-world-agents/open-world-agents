@@ -123,5 +123,9 @@ export class StateManager {
     this.state.mouse.y = data.y ?? SCREEN_HEIGHT / 2;
     this.state.mouse.buttons = new Set(data.buttons || []);
   }
+
+  applyWindowState(data) {
+    this.state.window = data;
+  }
 }
 
