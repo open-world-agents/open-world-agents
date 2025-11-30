@@ -12,23 +12,41 @@ export async function fetchFileList(repoId) {
   async function scanDir(path, node) {
     const items = await fetchTree(repoId, path);
     const dirs = items.filter((i) => i.type === "directory");
-    const mcaps = items.filter((i) => i.path.endsWith(".mcap"));
+    const files = items.filter((i) => i.type !== "directory");
 
-    for (const mcap of mcaps) {
-      const basename = mcap.path.replace(/\.mcap$/, "");
-      node.files.push({
-        name: basename.split("/").pop(),
-        path: basename,
-        mcap: `${baseUrl}/${basename}.mcap`,
-        mkv: `${baseUrl}/${basename}.mkv`,
-      });
+    // Group files by basename and pair mcap with video
+    const pairs = new Map();
+    for (const file of files) {
+      const isMcap = file.path.endsWith(".mcap");
+      const isVideo = /\.(mkv|mp4|webm)$/i.test(file.path);
+      if (!isMcap && !isVideo) continue;
+
+      const basename = file.path.replace(/\.(mcap|mkv|mp4|webm)$/i, "");
+      const pair = pairs.get(basename) || {};
+      if (isMcap) pair.mcap = file.path;
+      if (isVideo) pair.video = file.path;
+      pairs.set(basename, pair);
     }
 
-    for (const dir of dirs) {
-      const folderName = dir.path.split("/").pop();
-      node.folders[folderName] = { folders: {}, files: [] };
-      await scanDir(dir.path, node.folders[folderName]);
+    for (const [basename, pair] of pairs) {
+      if (pair.mcap && pair.video) {
+        node.files.push({
+          name: basename.split("/").pop(),
+          path: basename,
+          mcap: `${baseUrl}/${pair.mcap}`,
+          mkv: `${baseUrl}/${pair.video}`,
+        });
+      }
     }
+
+    // Scan subdirectories in parallel
+    await Promise.all(
+      dirs.map(async (dir) => {
+        const folderName = dir.path.split("/").pop();
+        node.folders[folderName] = { folders: {}, files: [] };
+        await scanDir(dir.path, node.folders[folderName]);
+      }),
+    );
   }
 
   await scanDir("", tree);
@@ -43,6 +61,7 @@ export function hasFiles(tree) {
 export function renderFileTree(tree, container, onSelect) {
   container.innerHTML = "";
   let firstLi = null;
+  let activeLi = null;
 
   function renderNode(node, parent) {
     for (const [name, subNode] of Object.entries(node.folders).sort((a, b) => a[0].localeCompare(b[0]))) {
@@ -58,8 +77,9 @@ export function renderFileTree(tree, container, onSelect) {
       const li = document.createElement("li");
       li.textContent = f.name;
       li.onclick = () => {
-        container.querySelectorAll("li").forEach((el) => el.classList.remove("active"));
+        activeLi?.classList.remove("active");
         li.classList.add("active");
+        activeLi = li;
         onSelect(f);
       };
       parent.appendChild(li);
