@@ -24,24 +24,49 @@
 
     <!-- Viewer -->
     <div id="viewer" class="hidden">
-      <div id="video-container">
-        <video id="video" controls></video>
-        <div id="loading-indicator" class="hidden">Loading...</div>
-      </div>
-      <canvas id="overlay"></canvas>
-      <div id="info-panel">
-        <div id="time-info">Time: <span></span></div>
-        <div id="mouse-mode">
-          Mouse:
-          <label><input type="radio" name="mouse-mode" value="raw" checked> Relative (3D)</label>
-          <label><input type="radio" name="mouse-mode" value="absolute"> Absolute (2D)</label>
-          <label id="recenter-label">
-            Recenter:
-            <input type="number" id="recenter-interval" min="0" value="0" step="100" placeholder="ms">
-            ms (0=off)
-          </label>
+      <div id="viewer-layout">
+        <!-- Left: Video + Overlay -->
+        <div id="viewer-main">
+          <div id="video-container">
+            <video id="video" controls></video>
+            <div id="loading-indicator" class="hidden">Loading...</div>
+          </div>
+          <canvas id="overlay"></canvas>
+          <div id="info-panel">
+            <div id="time-info">Time: <span></span></div>
+            <div id="mouse-mode">
+              Mouse:
+              <label><input type="radio" name="mouse-mode" value="raw" checked> Relative (3D)</label>
+              <label><input type="radio" name="mouse-mode" value="absolute"> Absolute (2D)</label>
+              <label id="recenter-label">
+                Recenter:
+                <input type="number" id="recenter-interval" min="0" value="0" step="100" placeholder="ms">
+                ms (0=off)
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Side Panel -->
+        <div id="side-panel">
+          <!-- Window Info -->
+          <details id="window-section" open>
+            <summary>Window Info</summary>
+            <div id="window-info">
+              <p class="placeholder">No window data</p>
+            </div>
+          </details>
+
+          <!-- MCAP Info -->
+          <details id="mcap-section">
+            <summary>MCAP Info</summary>
+            <div id="mcap-info">
+              <p class="placeholder">Loading...</p>
+            </div>
+          </details>
         </div>
       </div>
+
       <div id="usage-hint">
         <p><strong>Data:</strong> Mouse coordinates based on 1920×1080. Keyboard uses Windows VK codes.</p>
         <p><strong>Relative (3D):</strong> For FPS/3D games. Accumulates raw mouse deltas. Use Recenter to reset

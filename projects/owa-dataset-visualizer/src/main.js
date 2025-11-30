@@ -16,6 +16,8 @@ const video = document.getElementById("video");
 const overlay = document.getElementById("overlay");
 const timeInfo = document.querySelector("#time-info span");
 const recenterInput = document.getElementById("recenter-interval");
+const windowInfoEl = document.getElementById("window-info");
+const mcapInfoEl = document.getElementById("mcap-info");
 
 // State
 let mcapReader = null;
@@ -29,6 +31,7 @@ let userWantsToPlay = false;
 let currentState = {
   keyboard: new Set(),
   mouse: { x: SCREEN_WIDTH / 2, y: SCREEN_HEIGHT / 2, buttons: new Set() },
+  window: null,
 };
 
 // Convert video time to MCAP timestamp
@@ -64,6 +67,7 @@ async function loadStateAt(targetTime) {
     currentState = {
       keyboard: new Set(),
       mouse: { x: SCREEN_WIDTH / 2, y: SCREEN_HEIGHT / 2, buttons: new Set() },
+      window: null,
     };
     lastRecenterTime = targetTime;
 
@@ -152,14 +156,27 @@ async function loadStateAt(targetTime) {
     const t4 = performance.now();
     console.log(`[loadStateAt] Step 4 (${mouseTopic} events: ${mouseEventCount}) done (+${(t4 - t0).toFixed(1)}ms)`);
 
+    // Step 5: Find last window info before targetTime
+    for await (const msg of mcapReader.readMessages({
+      endTime: targetTime,
+      topics: ["window"],
+      reverse: true,
+    })) {
+      const data = JSON.parse(new TextDecoder().decode(msg.data));
+      currentState.window = data;
+      break;
+    }
+    const t5 = performance.now();
+    console.log(`[loadStateAt] Step 5 (window) done (+${(t5 - t0).toFixed(1)}ms)`);
+
     lastProcessedTime = targetTime;
   } finally {
     isLoading = false;
     hideLoading();
   }
 
-  const t5 = performance.now();
-  console.log(`[loadStateAt] Complete, total=${(t5 - t0).toFixed(1)}ms`);
+  const t6 = performance.now();
+  console.log(`[loadStateAt] Complete, total=${(t6 - t0).toFixed(1)}ms`);
 
   // Resume if user wants to play
   if (userWantsToPlay) {
@@ -200,6 +217,8 @@ function processMessage(topic, data, time) {
       if (data.pressed) currentState.mouse.buttons.add(data.button);
       else currentState.mouse.buttons.delete(data.button);
     }
+  } else if (topic === "window") {
+    currentState.window = data;
   }
 }
 
@@ -213,7 +232,7 @@ async function updateStateUpTo(targetTime) {
   for await (const msg of mcapReader.readMessages({
     startTime: lastProcessedTime,
     endTime: targetTime,
-    topics: ["keyboard/state", mouseTopic],
+    topics: ["keyboard/state", mouseTopic, "window"],
   })) {
     // Check if loading started during iteration
     if (isLoading) return;
@@ -229,6 +248,81 @@ async function updateStateUpTo(targetTime) {
   }
 }
 
+// Update window info display
+function updateWindowInfo() {
+  if (!windowInfoEl) return;
+
+  const win = currentState.window;
+  if (!win) {
+    windowInfoEl.innerHTML = '<p class="placeholder">No window data</p>';
+    return;
+  }
+
+  const rect = win.rect || [0, 0, 0, 0];
+  const width = rect[2] - rect[0];
+  const height = rect[3] - rect[1];
+
+  windowInfoEl.innerHTML = `
+    <p class="title">${win.title || "Unknown"}</p>
+    <p class="coords">Position: ${rect[0]}, ${rect[1]}</p>
+    <p class="coords">Size: ${width} × ${height}</p>
+  `;
+}
+
+// Display MCAP info
+async function displayMcapInfo(reader) {
+  if (!mcapInfoEl) return;
+
+  // Collect topic stats
+  const topicStats = new Map();
+  for (const channel of reader.channelsById.values()) {
+    topicStats.set(channel.topic, { count: 0n, channelId: channel.id });
+  }
+
+  // Get message counts from statistics (single object, not array)
+  const stats = reader.statistics;
+  if (stats && stats.channelMessageCounts) {
+    for (const [channelId, count] of stats.channelMessageCounts) {
+      const channel = reader.channelsById.get(channelId);
+      if (channel && topicStats.has(channel.topic)) {
+        topicStats.get(channel.topic).count = count;
+      }
+    }
+  }
+
+  // Get time range from statistics
+  const startTime = stats?.messageStartTime || 0n;
+  const endTime = stats?.messageEndTime || 0n;
+
+  // Format duration
+  const durationNs = endTime - startTime;
+  const durationSec = Number(durationNs) / 1e9;
+
+  // Build HTML
+  let html = '<div class="section">';
+  html += '<div class="section-title">Topics</div>';
+
+  for (const [topic, info] of topicStats) {
+    const countStr = info.count > 0n ? Number(info.count).toLocaleString() : "—";
+    html += `<div class="topic-row">
+      <span class="topic-name">${topic}</span>
+      <span class="topic-count">${countStr}</span>
+    </div>`;
+  }
+
+  html += "</div>";
+
+  if (durationSec > 0) {
+    html += `<div class="time-range">Duration: ${durationSec.toFixed(1)}s</div>`;
+  }
+
+  if (stats) {
+    html += `<div class="time-range">Messages: ${Number(stats.messageCount).toLocaleString()}</div>`;
+  }
+
+  mcapInfoEl.innerHTML = html;
+}
+
 // Render loop
 function startRenderLoop() {
   const ctx = overlay.getContext("2d");
@@ -239,12 +333,15 @@ function startRenderLoop() {
     // Update state up to current time
     await updateStateUpTo(mcapTime);
 
-    // Draw
+    // Draw overlay
     ctx.clearRect(0, 0, overlay.width, overlay.height);
     drawKeyboard(ctx, 10, 10, currentState.keyboard);
     const mouseX = 10 + 14 * 35 + 20;
     drawMouse(ctx, mouseX, 10, currentState.mouse.buttons);
     drawMinimap(ctx, mouseX + 70, 10, 160, 100, currentState.mouse.x, currentState.mouse.y, SCREEN_WIDTH, SCREEN_HEIGHT, currentState.mouse.buttons);
+
+    // Update side panel
+    updateWindowInfo();
 
     if (timeInfo) timeInfo.textContent = `${video.currentTime.toFixed(2)}s`;
 
@@ -257,6 +354,9 @@ function startRenderLoop() {
 // Setup function for initializing with mcapReader
 async function setup(reader) {
   mcapReader = reader;
+
+  // Display MCAP info
+  await displayMcapInfo(reader);
 
   // Find basePtsTime from first screen event
   for await (const msg of reader.readMessages({ topics: ["screen"] })) {
