@@ -3,12 +3,12 @@
 
 import argparse
 import json
-from http.server import HTTPServer, SimpleHTTPRequestHandler
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 
 def make_handler(directory: Path):
-    """Create a handler class that serves from the specified directory."""
+    """Create a handler class that serves from the specified directory with Range support."""
 
     class Handler(SimpleHTTPRequestHandler):
         def __init__(self, *args, **kwargs):
@@ -21,8 +21,50 @@ def make_handler(directory: Path):
         def do_GET(self):
             if self.path == "/files.json":
                 self.serve_file_list()
+            elif "Range" in self.headers:
+                self.serve_range_request()
             else:
                 super().do_GET()
+
+        def serve_range_request(self):
+            """Handle Range requests for video streaming."""
+            path = self.translate_path(self.path)
+            try:
+                f = open(path, "rb")
+            except OSError:
+                self.send_error(404, "File not found")
+                return
+
+            file_size = Path(path).stat().st_size
+            range_header = self.headers["Range"]
+
+            # Parse Range header (e.g., "bytes=0-1023")
+            start, end = 0, file_size - 1
+            if range_header.startswith("bytes="):
+                ranges = range_header[6:].split("-")
+                start = int(ranges[0]) if ranges[0] else 0
+                end = int(ranges[1]) if ranges[1] else file_size - 1
+
+            end = min(end, file_size - 1)
+            length = end - start + 1
+
+            self.send_response(206)
+            self.send_header("Content-Type", self.guess_type(path))
+            self.send_header("Content-Range", f"bytes {start}-{end}/{file_size}")
+            self.send_header("Content-Length", str(length))
+            self.send_header("Accept-Ranges", "bytes")
+            self.end_headers()
+
+            f.seek(start)
+            remaining = length
+            buf_size = 64 * 1024
+            while remaining > 0:
+                chunk = f.read(min(buf_size, remaining))
+                if not chunk:
+                    break
+                self.wfile.write(chunk)
+                remaining -= len(chunk)
+            f.close()
 
         def serve_file_list(self):
             """Scan directory for mcap/video pairs and return as JSON."""
@@ -73,7 +115,7 @@ Examples:
         parser.error(f"Not a directory: {directory}")
 
     handler = make_handler(directory)
-    server = HTTPServer((args.host, args.port), handler)
+    server = ThreadingHTTPServer((args.host, args.port), handler)
 
     print(f"Serving {directory} at http://localhost:{args.port}")
     print(f"Open visualizer: http://localhost:5173/?base_url=http://localhost:{args.port}")
