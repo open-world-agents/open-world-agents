@@ -284,7 +284,7 @@ body {
   min-height: 100vh;
   padding: 40px 20px;
   text-align: center;
-  font-family: ui-monospace, monospace;
+  font-family: "Inter", system-ui, sans-serif;
   color: #fff;
 }
 
