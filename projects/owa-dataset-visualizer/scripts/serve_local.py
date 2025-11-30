@@ -30,41 +30,47 @@ def make_handler(directory: Path):
             """Handle Range requests for video streaming."""
             path = self.translate_path(self.path)
             try:
-                f = open(path, "rb")
-            except OSError:
+                with open(path, "rb") as f:
+                    file_size = Path(path).stat().st_size
+                    range_header = self.headers["Range"]
+
+                    # Parse Range header (e.g., "bytes=0-1023" or "bytes=-500")
+                    start, end = 0, file_size - 1
+                    if range_header.startswith("bytes="):
+                        ranges = range_header[6:].split("-")
+                        if not ranges[0] and ranges[1]:  # Suffix range like "bytes=-500"
+                            suffix_len = int(ranges[1])
+                            start = max(0, file_size - suffix_len)
+                            end = file_size - 1
+                        else:
+                            start = int(ranges[0]) if ranges[0] else 0
+                            end = int(ranges[1]) if ranges[1] else file_size - 1
+
+                    end = min(end, file_size - 1)
+                    length = end - start + 1
+
+                    if start >= file_size or length <= 0:
+                        self.send_error(416, "Range Not Satisfiable")
+                        return
+
+                    self.send_response(206)
+                    self.send_header("Content-Type", self.guess_type(path))
+                    self.send_header("Content-Range", f"bytes {start}-{end}/{file_size}")
+                    self.send_header("Content-Length", str(length))
+                    self.send_header("Accept-Ranges", "bytes")
+                    self.end_headers()
+
+                    f.seek(start)
+                    remaining = length
+                    buf_size = 64 * 1024
+                    while remaining > 0:
+                        chunk = f.read(min(buf_size, remaining))
+                        if not chunk:
+                            break
+                        self.wfile.write(chunk)
+                        remaining -= len(chunk)
+            except (OSError, FileNotFoundError):
                 self.send_error(404, "File not found")
-                return
-
-            file_size = Path(path).stat().st_size
-            range_header = self.headers["Range"]
-
-            # Parse Range header (e.g., "bytes=0-1023")
-            start, end = 0, file_size - 1
-            if range_header.startswith("bytes="):
-                ranges = range_header[6:].split("-")
-                start = int(ranges[0]) if ranges[0] else 0
-                end = int(ranges[1]) if ranges[1] else file_size - 1
-
-            end = min(end, file_size - 1)
-            length = end - start + 1
-
-            self.send_response(206)
-            self.send_header("Content-Type", self.guess_type(path))
-            self.send_header("Content-Range", f"bytes {start}-{end}/{file_size}")
-            self.send_header("Content-Length", str(length))
-            self.send_header("Accept-Ranges", "bytes")
-            self.end_headers()
-
-            f.seek(start)
-            remaining = length
-            buf_size = 64 * 1024
-            while remaining > 0:
-                chunk = f.read(min(buf_size, remaining))
-                if not chunk:
-                    break
-                self.wfile.write(chunk)
-                remaining -= len(chunk)
-            f.close()
 
         def serve_file_list(self):
             """Scan directory for mcap/video pairs and return as JSON."""
