@@ -1,3 +1,4 @@
+import { Mutex } from "async-mutex";
 import { loadMcap, loadMcapFromUrl } from "./mcap-loader.js";
 import { drawKeyboard, drawMouse, drawMinimap } from "./overlay-renderer.js";
 
@@ -24,12 +25,15 @@ let mouseMode = "raw";
 let recenterIntervalMs = 0;
 let lastRecenterTime = 0n;
 let lastProcessedTime = 0n;
-let isLoading = false;
+let isLoading = false; // UI state flag (not for synchronization - use mutex)
 let userWantsToPlay = false;
 let currentState = {
   keyboard: new Set(),
   mouse: { x: SCREEN_WIDTH / 2, y: SCREEN_HEIGHT / 2, buttons: new Set() },
 };
+
+// Mutex for state updates (prevents race between loadStateAt and updateStateUpTo)
+const stateMutex = new Mutex();
 
 // Convert video time to MCAP timestamp
 function videoTimeToMcap(videoTimeSec) {
@@ -52,95 +56,100 @@ function hideLoading() {
 async function loadStateAt(targetTime) {
   if (!mcapReader) return;
 
-  isLoading = true;
-  video.pause();
-  showLoading();
+  const release = await stateMutex.acquire();
+  try {
+    isLoading = true;
+    video.pause();
+    showLoading();
 
-  // Reset state
-  currentState = {
-    keyboard: new Set(),
-    mouse: { x: SCREEN_WIDTH / 2, y: SCREEN_HEIGHT / 2, buttons: new Set() },
-  };
-  lastRecenterTime = targetTime;
+    // Reset state
+    currentState = {
+      keyboard: new Set(),
+      mouse: { x: SCREEN_WIDTH / 2, y: SCREEN_HEIGHT / 2, buttons: new Set() },
+    };
+    lastRecenterTime = targetTime;
 
-  // Step 1: Find last keyboard/state before targetTime (reverse iteration)
-  let keyboardStateTime = 0n;
-  for await (const msg of mcapReader.readMessages({
-    endTime: targetTime,
-    topics: ["keyboard/state"],
-    reverse: true,
-  })) {
-    const data = JSON.parse(new TextDecoder().decode(msg.data));
-    // Extract keyboard keys (excluding mouse VKs)
-    const keyVks = (data.buttons || []).filter((vk) => !MOUSE_VK_MAP[vk]);
-    currentState.keyboard = new Set(keyVks);
-    keyboardStateTime = msg.logTime;
-    break; // Only need the last one
-  }
-
-  // Step 2: Process all keyboard events from keyboardStateTime to targetTime
-  if (keyboardStateTime > 0n) {
-    for await (const msg of mcapReader.readMessages({
-      startTime: keyboardStateTime + 1n, // Exclude the state message itself
-      endTime: targetTime,
-      topics: ["keyboard"],
-    })) {
-      const data = JSON.parse(new TextDecoder().decode(msg.data));
-      if (MOUSE_VK_MAP[data.vk]) continue; // Skip mouse buttons
-      if (data.pressed) {
-        currentState.keyboard.add(data.vk);
-      } else {
-        currentState.keyboard.delete(data.vk);
-      }
-    }
-  }
-
-  // Step 3: Find last mouse/state before targetTime
-  let mouseStateTime = 0n;
-  for await (const msg of mcapReader.readMessages({
-    endTime: targetTime,
-    topics: ["mouse/state"],
-    reverse: true,
-  })) {
-    const data = JSON.parse(new TextDecoder().decode(msg.data));
-    // mouse/state has x, y (absolute position) and buttons (Set of strings like "left", "right")
-    currentState.mouse.x = data.x ?? SCREEN_WIDTH / 2;
-    currentState.mouse.y = data.y ?? SCREEN_HEIGHT / 2;
-    currentState.mouse.buttons = new Set(data.buttons || []);
-    mouseStateTime = msg.logTime;
-    break; // Only need the last one
-  }
-
-  // Step 4: Process mouse events from mouseStateTime to targetTime
-  const mouseTopic = mouseMode === "raw" ? "mouse/raw" : "mouse";
-  if (mouseStateTime > 0n) {
-    for await (const msg of mcapReader.readMessages({
-      startTime: mouseStateTime + 1n,
-      endTime: targetTime,
-      topics: [mouseTopic],
-    })) {
-      const data = JSON.parse(new TextDecoder().decode(msg.data));
-      processMessage(mouseTopic, data, msg.logTime);
-    }
-  } else if (mouseMode === "absolute") {
-    // Fallback: find last mouse position if no mouse/state found
+    // Step 1: Find last keyboard/state before targetTime (reverse iteration)
+    let keyboardStateTime = 0n;
     for await (const msg of mcapReader.readMessages({
       endTime: targetTime,
-      topics: ["mouse"],
+      topics: ["keyboard/state"],
       reverse: true,
     })) {
       const data = JSON.parse(new TextDecoder().decode(msg.data));
+      // Extract keyboard keys (excluding mouse VKs)
+      const keyVks = (data.buttons || []).filter((vk) => !MOUSE_VK_MAP[vk]);
+      currentState.keyboard = new Set(keyVks);
+      keyboardStateTime = msg.logTime;
+      break; // Only need the last one
+    }
+
+    // Step 2: Process all keyboard events from keyboardStateTime to targetTime
+    if (keyboardStateTime > 0n) {
+      for await (const msg of mcapReader.readMessages({
+        startTime: keyboardStateTime + 1n, // Exclude the state message itself
+        endTime: targetTime,
+        topics: ["keyboard"],
+      })) {
+        const data = JSON.parse(new TextDecoder().decode(msg.data));
+        if (MOUSE_VK_MAP[data.vk]) continue; // Skip mouse buttons
+        if (data.pressed) {
+          currentState.keyboard.add(data.vk);
+        } else {
+          currentState.keyboard.delete(data.vk);
+        }
+      }
+    }
+
+    // Step 3: Find last mouse/state before targetTime
+    let mouseStateTime = 0n;
+    for await (const msg of mcapReader.readMessages({
+      endTime: targetTime,
+      topics: ["mouse/state"],
+      reverse: true,
+    })) {
+      const data = JSON.parse(new TextDecoder().decode(msg.data));
+      // mouse/state has x, y (absolute position) and buttons (Set of strings like "left", "right")
       currentState.mouse.x = data.x ?? SCREEN_WIDTH / 2;
       currentState.mouse.y = data.y ?? SCREEN_HEIGHT / 2;
-      break;
+      currentState.mouse.buttons = new Set(data.buttons || []);
+      mouseStateTime = msg.logTime;
+      break; // Only need the last one
     }
+
+    // Step 4: Process mouse events from mouseStateTime to targetTime
+    const mouseTopic = mouseMode === "raw" ? "mouse/raw" : "mouse";
+    if (mouseStateTime > 0n) {
+      for await (const msg of mcapReader.readMessages({
+        startTime: mouseStateTime + 1n,
+        endTime: targetTime,
+        topics: [mouseTopic],
+      })) {
+        const data = JSON.parse(new TextDecoder().decode(msg.data));
+        processMessage(mouseTopic, data, msg.logTime);
+      }
+    } else if (mouseMode === "absolute") {
+      // Fallback: find last mouse position if no mouse/state found
+      for await (const msg of mcapReader.readMessages({
+        endTime: targetTime,
+        topics: ["mouse"],
+        reverse: true,
+      })) {
+        const data = JSON.parse(new TextDecoder().decode(msg.data));
+        currentState.mouse.x = data.x ?? SCREEN_WIDTH / 2;
+        currentState.mouse.y = data.y ?? SCREEN_HEIGHT / 2;
+        break;
+      }
+    }
+
+    lastProcessedTime = targetTime;
+  } finally {
+    isLoading = false;
+    hideLoading();
+    release();
   }
 
-  lastProcessedTime = targetTime;
-  isLoading = false;
-  hideLoading();
-
-  // Resume if user wants to play
+  // Resume if user wants to play (outside try-finally to avoid holding lock during play)
   if (userWantsToPlay) {
     video.play();
   }
@@ -184,25 +193,28 @@ function processMessage(topic, data, time) {
 
 // Load and process messages from lastProcessedTime to targetTime
 async function updateStateUpTo(targetTime) {
-  // Skip if loading (loadStateAt is handling state) or no new messages needed
-  if (!mcapReader || isLoading || targetTime <= lastProcessedTime) return;
+  if (!mcapReader || targetTime <= lastProcessedTime) return;
 
-  const mouseTopic = mouseMode === "raw" ? "mouse/raw" : "mouse";
+  const release = await stateMutex.acquire();
+  try {
+    // Re-check after acquiring lock (loadStateAt may have updated lastProcessedTime)
+    if (targetTime <= lastProcessedTime) return;
 
-  for await (const msg of mcapReader.readMessages({
-    startTime: lastProcessedTime,
-    endTime: targetTime,
-    topics: ["keyboard/state", mouseTopic],
-  })) {
-    // Double-check isLoading in case loadStateAt started during iteration
-    if (isLoading) return;
-    const channel = mcapReader.channelsById.get(msg.channelId);
-    const data = JSON.parse(new TextDecoder().decode(msg.data));
-    processMessage(channel.topic, data, msg.logTime);
-  }
+    const mouseTopic = mouseMode === "raw" ? "mouse/raw" : "mouse";
 
-  if (!isLoading) {
+    for await (const msg of mcapReader.readMessages({
+      startTime: lastProcessedTime,
+      endTime: targetTime,
+      topics: ["keyboard/state", mouseTopic],
+    })) {
+      const channel = mcapReader.channelsById.get(msg.channelId);
+      const data = JSON.parse(new TextDecoder().decode(msg.data));
+      processMessage(channel.topic, data, msg.logTime);
+    }
+
     lastProcessedTime = targetTime;
+  } finally {
+    release();
   }
 }
 
