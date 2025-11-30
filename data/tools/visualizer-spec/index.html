@@ -21,7 +21,7 @@
     
     
       
-        <title>OWAMcap Dataset Visualizer - Technical Specification - Open World Agents</title>
+        <title>OWA Dataset Visualizer - Technical Specification - Open World Agents</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#owamcap-dataset-visualizer-technical-specification" class="md-skip">
+        <a href="#owa-dataset-visualizer-technical-specification" class="md-skip">
           Skip to content
         </a>
       
@@ -111,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              OWAMcap Dataset Visualizer - Technical Specification
+              OWA Dataset Visualizer - Technical Specification
             
           </span>
         </div>
@@ -1795,10 +1795,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#11-problem-statement" class="md-nav__link">
+  <a href="#11-design-goals" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1.1 Problem Statement
+        1.1 Design Goals
       
     </span>
   </a>
@@ -1806,10 +1806,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#12-solution-clean-separation-of-concerns" class="md-nav__link">
+  <a href="#12-architecture-principle" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1.2 Solution: Clean Separation of Concerns
+        1.2 Architecture Principle
       
     </span>
   </a>
@@ -2255,10 +2255,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#12-file-structure-proposed" class="md-nav__link">
+  <a href="#12-file-structure" class="md-nav__link">
     <span class="md-ellipsis">
       
-        12. File Structure (Proposed)
+        12. File Structure
       
     </span>
   </a>
@@ -2335,20 +2335,21 @@
   
 
 
-<h1 id="owamcap-dataset-visualizer-technical-specification">OWAMcap Dataset Visualizer - Technical Specification<a class="headerlink" href="#owamcap-dataset-visualizer-technical-specification" title="Permanent link">&para;</a></h1>
+<h1 id="owa-dataset-visualizer-technical-specification">OWA Dataset Visualizer - Technical Specification<a class="headerlink" href="#owa-dataset-visualizer-technical-specification" title="Permanent link">&para;</a></h1>
 <blockquote>
-<p><strong>Status</strong>: Draft v2
+<p><strong>Status</strong>: Implemented
 <strong>Version</strong>: 2.0
-<strong>Last Updated</strong>: 2025-11-28</p>
+<strong>Last Updated</strong>: 2025-11-30</p>
 </blockquote>
 <h2 id="1-executive-summary">1. Executive Summary<a class="headerlink" href="#1-executive-summary" title="Permanent link">&para;</a></h2>
-<p>This document specifies a <strong>minimal, clean architecture</strong> for the OWAMcap Dataset Visualizer - a web-based tool for inspecting MCAP+MKV recording pairs.</p>
-<h3 id="11-problem-statement">1.1 Problem Statement<a class="headerlink" href="#11-problem-statement" title="Permanent link">&para;</a></h3>
-<p>The current <code>convert_overlay.py</code> approach requires complete video re-encoding:
-- <strong>Slow</strong>: Full decode → render → encode cycle for every frame
-- <strong>Lossy</strong>: Re-encoding degrades video quality
-- <strong>Storage-heavy</strong>: Creates duplicate video files</p>
-<h3 id="12-solution-clean-separation-of-concerns">1.2 Solution: Clean Separation of Concerns<a class="headerlink" href="#12-solution-clean-separation-of-concerns" title="Permanent link">&para;</a></h3>
+<p>This document describes the architecture of the OWA Dataset Visualizer (<code>projects/owa-dataset-visualizer</code>) - a browser-based tool for inspecting MCAP+MKV recording pairs.</p>
+<h3 id="11-design-goals">1.1 Design Goals<a class="headerlink" href="#11-design-goals" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>No re-encoding</strong>: Play original video files directly</li>
+<li><strong>Client-side processing</strong>: All MCAP decoding happens in browser</li>
+<li><strong>Multiple data sources</strong>: Local files, HuggingFace Hub, custom file servers</li>
+</ul>
+<h3 id="12-architecture-principle">1.2 Architecture Principle<a class="headerlink" href="#12-architecture-principle" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>┌─────────────────────────────────────────────────────────────────┐
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>│                      ARCHITECTURE PRINCIPLE                      │
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>├─────────────────────────────────────────────────────────────────┤
@@ -2413,18 +2414,22 @@
 <a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">()</span>
 <a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">app</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s2">&quot;/files&quot;</span><span class="p">,</span> <span class="n">StaticFiles</span><span class="p">(</span><span class="n">directory</span><span class="o">=</span><span class="s2">&quot;/data&quot;</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;files&quot;</span><span class="p">)</span>
 </code></pre></div>
-<p><strong>Requirements:</strong>
-- Serve static files with proper MIME types
-- Support HTTP Range requests (for video seeking &amp; MCAP windowed loading)
-- CORS headers for cross-origin access</p>
+<p><strong>Requirements:</strong></p>
+<ul>
+<li>Serve static files with proper MIME types</li>
+<li>Support HTTP Range requests (for video seeking &amp; MCAP windowed loading)</li>
+<li>CORS headers for cross-origin access</li>
+</ul>
 <p><strong>That's all.</strong> No MCAP parsing, no message decoding, no business logic.</p>
 <h3 id="32-smart-frontend">3.2 Smart Frontend<a class="headerlink" href="#32-smart-frontend" title="Permanent link">&para;</a></h3>
-<p>The frontend handles:
-1. <strong>File fetching</strong> - Request MCAP/MKV files via fetch API
-2. <strong>MCAP decoding</strong> - Parse binary MCAP format using <code>@mcap/browser</code>
-3. <strong>Message decoding</strong> - Decode JSON schema messages
-4. <strong>Time synchronization</strong> - Map video time to MCAP timestamps
-5. <strong>Visualization</strong> - Render keyboard/mouse overlays on canvas</p>
+<p>The frontend handles:</p>
+<ol>
+<li><strong>File fetching</strong> - Request MCAP/MKV files via fetch API</li>
+<li><strong>MCAP decoding</strong> - Parse binary MCAP format using <code>@mcap/browser</code></li>
+<li><strong>Message decoding</strong> - Decode JSON schema messages</li>
+<li><strong>Time synchronization</strong> - Map video time to MCAP timestamps</li>
+<li><strong>Visualization</strong> - Render keyboard/mouse overlays on canvas</li>
+</ol>
 <h3 id="33-why-this-architecture">3.3 Why This Architecture?<a class="headerlink" href="#33-why-this-architecture" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
@@ -2504,9 +2509,11 @@
 <a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="w">  </span><span class="c1">// Process keyboard/mouse events</span>
 <a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="p">}</span>
 </code></pre></div>
-<p><strong>NPM Packages:</strong>
-- <code>@mcap/core</code> - Low-level readers/writers
-- <code>@mcap/browser</code> - Browser-specific utilities (fetch, streams)</p>
+<p><strong>NPM Packages:</strong></p>
+<ul>
+<li><code>@mcap/core</code> - Low-level readers/writers</li>
+<li><code>@mcap/browser</code> - Browser-specific utilities (fetch, streams)</li>
+</ul>
 <h3 id="52-windowed-data-loading">5.2 Windowed Data Loading<a class="headerlink" href="#52-windowed-data-loading" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kd">class</span><span class="w"> </span><span class="nx">McapDataLoader</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="kr">constructor</span><span class="p">(</span><span class="nx">mcapUrl</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
@@ -2736,7 +2743,7 @@
 <hr />
 <h2 id="8-keyboard-visualization-design">8. Keyboard Visualization Design<a class="headerlink" href="#8-keyboard-visualization-design" title="Permanent link">&para;</a></h2>
 <h3 id="81-visual-layout">8.1 Visual Layout<a class="headerlink" href="#81-visual-layout" title="Permanent link">&para;</a></h3>
-<p>Render a graphical keyboard matching <code>convert_overlay.py</code>:</p>
+<p>Graphical keyboard layout:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>┌─────────────────────────────────────────────────────────────────┐
 <a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>│ ESC │ F1 │ F2 │ F3 │ F4 │ F5 │ F6 │ F7 │ F8 │ F9 │F10│F11│F12│
 <a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>├─────────────────────────────────────────────────────────────────┤
@@ -2868,28 +2875,25 @@
 <li>[ ] PWA support for offline use</li>
 </ul>
 <hr />
-<h2 id="12-file-structure-proposed">12. File Structure (Proposed)<a class="headerlink" href="#12-file-structure-proposed" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>projects/owa-mcap-viewer/
-<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>├── frontend/                    # NEW: Pure frontend application
-<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>│   ├── index.html              # Single page application
-<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>│   ├── css/
-<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>│   │   └── styles.css
-<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>│   └── js/
-<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>│       ├── main.js             # Entry point
-<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>│       ├── mcap-loader.js      # @mcap/browser integration
-<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>│       ├── video-player.js     # Video controls
-<a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a>│       ├── overlay-renderer.js # Canvas drawing
-<a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a>│       ├── keyboard-viz.js     # Keyboard visualization
-<a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a>│       ├── mouse-viz.js        # Mouse visualization
-<a id="__codelineno-16-13" name="__codelineno-16-13" href="#__codelineno-16-13"></a>│       └── timeline.js         # Timeline component
-<a id="__codelineno-16-14" name="__codelineno-16-14" href="#__codelineno-16-14"></a>│
-<a id="__codelineno-16-15" name="__codelineno-16-15" href="#__codelineno-16-15"></a>├── server/                      # SIMPLIFIED: Just file serving
-<a id="__codelineno-16-16" name="__codelineno-16-16" href="#__codelineno-16-16"></a>│   ├── app.py                  # Minimal FastAPI (static files only)
-<a id="__codelineno-16-17" name="__codelineno-16-17" href="#__codelineno-16-17"></a>│   └── config.py               # Configuration
-<a id="__codelineno-16-18" name="__codelineno-16-18" href="#__codelineno-16-18"></a>│
-<a id="__codelineno-16-19" name="__codelineno-16-19" href="#__codelineno-16-19"></a>├── package.json                 # NPM dependencies (@mcap/browser)
-<a id="__codelineno-16-20" name="__codelineno-16-20" href="#__codelineno-16-20"></a>├── Dockerfile
-<a id="__codelineno-16-21" name="__codelineno-16-21" href="#__codelineno-16-21"></a>└── README.md
+<h2 id="12-file-structure">12. File Structure<a class="headerlink" href="#12-file-structure" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>projects/owa-dataset-visualizer/
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>├── index.html              # Single page application
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>├── src/
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>│   ├── main.js             # Entry point, routing
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>│   ├── viewer.js           # Viewer logic, render loop
+<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>│   ├── hf.js               # HuggingFace API, file tree
+<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>│   ├── state.js            # StateManager, message handlers
+<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>│   ├── mcap.js             # MCAP loading, TimeSync
+<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>│   ├── overlay.js          # Keyboard/mouse canvas drawing
+<a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a>│   ├── ui.js               # Side panel, loading indicator
+<a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a>│   ├── config.js           # Featured datasets
+<a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a>│   ├── constants.js        # VK codes, colors, flags
+<a id="__codelineno-16-13" name="__codelineno-16-13" href="#__codelineno-16-13"></a>│   └── styles.css
+<a id="__codelineno-16-14" name="__codelineno-16-14" href="#__codelineno-16-14"></a>├── scripts/
+<a id="__codelineno-16-15" name="__codelineno-16-15" href="#__codelineno-16-15"></a>│   └── serve_local.py      # Local file server with Range support
+<a id="__codelineno-16-16" name="__codelineno-16-16" href="#__codelineno-16-16"></a>├── package.json            # NPM dependencies (@mcap/core)
+<a id="__codelineno-16-17" name="__codelineno-16-17" href="#__codelineno-16-17"></a>├── Dockerfile              # HuggingFace Spaces deployment
+<a id="__codelineno-16-18" name="__codelineno-16-18" href="#__codelineno-16-18"></a>└── nginx.conf              # Production static file serving
 </code></pre></div>
 <hr />
 <h2 id="13-migration-path">13. Migration Path<a class="headerlink" href="#13-migration-path" title="Permanent link">&para;</a></h2>
@@ -2911,10 +2915,9 @@
 <h2 id="14-references">14. References<a class="headerlink" href="#14-references" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="https://mcap.dev/">MCAP Format Specification</a></li>
-<li><a href="https://www.npmjs.com/package/@mcap/browser">@mcap/browser NPM Package</a></li>
+<li><a href="https://www.npmjs.com/package/@mcap/core">@mcap/core NPM Package</a></li>
 <li><a href="../../technical-reference/format-guide/">OWAMcap Format Guide</a></li>
-<li><a href="../viewer/">Current Viewer Documentation</a></li>
-<li><a href="../../../../projects/owa-cli/owa/cli/mcap/convert_overlay.py">convert_overlay.py</a> - Reference implementation</li>
+<li><a href="../viewer/">Viewer Documentation</a></li>
 </ul>
 
 
@@ -2936,7 +2939,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="November 29, 2025 16:06:27 UTC">November 29, 2025 16:06:27</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="November 30, 2025 17:09:24 UTC">November 30, 2025 17:09:24</span>
   </span>
 
     

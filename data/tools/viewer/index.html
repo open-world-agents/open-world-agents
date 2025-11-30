@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#owamcap-data-viewer" class="md-skip">
+        <a href="#owa-dataset-visualizer" class="md-skip">
           Skip to content
         </a>
       
@@ -1259,22 +1259,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#self-hosted-setup" class="md-nav__link">
+  <a href="#local-development" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🏠 Self-Hosted Setup
+        🏠 Local Development
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="🏠 Self-Hosted Setup">
+    <nav class="md-nav" aria-label="🏠 Local Development">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#benefits-of-self-hosting" class="md-nav__link">
+  <a href="#prerequisites" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Benefits of Self-Hosting
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Run
       
     </span>
   </a>
@@ -1283,6 +1294,45 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#local-file-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📂 Local File Server
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="📂 Local File Server">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#features_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#url-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        URL Modes
+      
+    </span>
+  </a>
   
 </li>
       
@@ -1944,22 +1994,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#self-hosted-setup" class="md-nav__link">
+  <a href="#local-development" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🏠 Self-Hosted Setup
+        🏠 Local Development
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="🏠 Self-Hosted Setup">
+    <nav class="md-nav" aria-label="🏠 Local Development">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#benefits-of-self-hosting" class="md-nav__link">
+  <a href="#prerequisites" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Benefits of Self-Hosting
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Run
       
     </span>
   </a>
@@ -1968,6 +2029,45 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#local-file-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📂 Local File Server
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="📂 Local File Server">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#features_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#url-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        URL Modes
+      
+    </span>
+  </a>
   
 </li>
       
@@ -1991,8 +2091,8 @@
   
 
 
-<h1 id="owamcap-data-viewer">OWAMcap Data Viewer<a class="headerlink" href="#owamcap-data-viewer" title="Permanent link">&para;</a></h1>
-<p>Interactive web-based visualization tool for exploring OWAMcap datasets with synchronized playback of screen recordings and interaction events.</p>
+<h1 id="owa-dataset-visualizer">OWA Dataset Visualizer<a class="headerlink" href="#owa-dataset-visualizer" title="Permanent link">&para;</a></h1>
+<p>Browser-based visualization tool for exploring OWAMcap datasets with synchronized playback of screen recordings and interaction events.</p>
 <div align="center">
   <img src="../../examples/viewer.png" alt="OWA Dataset Visualizer"/>
 </div>
@@ -2001,39 +2101,71 @@
 <p><strong>Quick Start</strong>: <a href="https://huggingface.co/spaces/open-world-agents/visualize_dataset">https://huggingface.co/spaces/open-world-agents/visualize_dataset</a></p>
 <h3 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Upload Files</strong>: Drag &amp; drop your <code>.mcap</code> files (up to 100MB)</li>
-<li><strong>HuggingFace Integration</strong>: Enter any <code>repo_id</code> to view public datasets</li>
-<li><strong>Synchronized Playback</strong>: Video + events timeline</li>
-<li><strong>Interactive Controls</strong>: Pause, seek, frame-by-frame navigation</li>
+<li><strong>Drag &amp; Drop</strong>: Load local <code>.mcap</code> + <code>.mkv</code> files directly in browser</li>
+<li><strong>HuggingFace Integration</strong>: Browse and load datasets via <code>?repo_id=org/dataset</code></li>
+<li><strong>Synchronized Playback</strong>: Video synced with keyboard/mouse overlays</li>
+<li><strong>Large File Support</strong>: Uses MCAP index for seeking, never loads entire file</li>
+<li><strong>Input Overlay</strong>: Keyboard (all keys), mouse (L/R/M buttons, scroll), cursor minimap</li>
 </ul>
 <h3 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h3>
 <ol>
 <li>Visit the viewer URL</li>
-<li>Either upload your files or enter a HuggingFace dataset ID</li>
-<li>Explore your data with synchronized video and event timeline</li>
+<li>Either drag &amp; drop local files, or enter a HuggingFace dataset ID</li>
+<li>Explore your data with synchronized video and input overlays</li>
 </ol>
-<h2 id="self-hosted-setup">🏠 Self-Hosted Setup<a class="headerlink" href="#self-hosted-setup" title="Permanent link">&para;</a></h2>
-<p>For larger files or private datasets, run the viewer locally:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Navigate to viewer directory</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nb">cd</span><span class="w"> </span>projects/owa-mcap-viewer
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Set data path</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="nb">export</span><span class="w"> </span><span class="nv">EXPORT_PATH</span><span class="o">=</span>/path/to/your/mcap-files
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c1"># Install dependencies</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>vuv<span class="w"> </span>install
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="c1"># Start server</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>uvicorn<span class="w"> </span>owa_viewer:app<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>--port<span class="w"> </span><span class="m">7860</span><span class="w"> </span>--reload
+<h2 id="local-development">🏠 Local Development<a class="headerlink" href="#local-development" title="Permanent link">&para;</a></h2>
+<h3 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h3>
+<p>Install Node.js via <a href="https://github.com/nvm-sh/nvm">nvm</a> (recommended):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>curl<span class="w"> </span>-o-<span class="w"> </span>https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh<span class="w"> </span><span class="p">|</span><span class="w"> </span>bash
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>nvm<span class="w"> </span>install<span class="w"> </span>--lts
 </code></pre></div>
-<p>Access at <code>http://localhost:7860</code></p>
-<h3 id="benefits-of-self-hosting">Benefits of Self-Hosting<a class="headerlink" href="#benefits-of-self-hosting" title="Permanent link">&para;</a></h3>
+<h3 id="run">Run<a class="headerlink" href="#run" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">cd</span><span class="w"> </span>projects/owa-dataset-visualizer
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>npm<span class="w"> </span>install
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>npm<span class="w"> </span>run<span class="w"> </span>dev
+</code></pre></div>
+<p>Open http://localhost:5173</p>
+<h2 id="local-file-server">📂 Local File Server<a class="headerlink" href="#local-file-server" title="Permanent link">&para;</a></h2>
+<p>For browsing multiple recordings from a local directory:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Serve a directory containing mcap/mkv pairs</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>python<span class="w"> </span>scripts/serve_local.py<span class="w"> </span>/path/to/recordings<span class="w"> </span>-p<span class="w"> </span><span class="m">8080</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># Open visualizer with local server</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="c1"># http://localhost:5173/?base_url=http://localhost:8080</span>
+</code></pre></div>
+<h3 id="features_1">Features<a class="headerlink" href="#features_1" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>No file size limits</strong></li>
-<li><strong>Private data stays local</strong></li>
-<li><strong>Faster loading for large datasets</strong></li>
-<li><strong>Customizable interface</strong></li>
+<li>Auto-scans for mcap/video pairs</li>
+<li>HTTP Range support for streaming large videos</li>
+<li>Multi-threaded for concurrent requests</li>
 </ul>
+<h2 id="url-modes">URL Modes<a class="headerlink" href="#url-modes" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>URL</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/</code></td>
+<td>Landing page with featured datasets</td>
+</tr>
+<tr>
+<td><code>?repo_id=org/dataset</code></td>
+<td>Load HuggingFace dataset</td>
+</tr>
+<tr>
+<td><code>?base_url=http://localhost:8080</code></td>
+<td>Load from local file server</td>
+</tr>
+<tr>
+<td><code>?mcap=url&amp;mkv=url</code></td>
+<td>Direct file URLs</td>
+</tr>
+</tbody>
+</table>
 
 
 
@@ -2054,7 +2186,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="October 15, 2025 09:30:49 UTC">October 15, 2025 09:30:49</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="November 30, 2025 17:16:17 UTC">November 30, 2025 17:16:17</span>
   </span>
 
     
