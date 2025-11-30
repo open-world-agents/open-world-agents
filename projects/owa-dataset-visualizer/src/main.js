@@ -1,4 +1,5 @@
 import { loadMcap, loadMcapFromUrl } from "./mcap-loader.js";
+import { drawKeyboard, drawMouse, drawMinimap } from "./overlay-renderer.js";
 
 // DOM Elements
 const mcapInput = document.getElementById("mcap-input");
@@ -9,15 +10,22 @@ const fileSelect = document.getElementById("file-select");
 const viewer = document.getElementById("viewer");
 const video = document.getElementById("video");
 const overlay = document.getElementById("overlay");
-const keyboardState = document.querySelector("#keyboard-state span");
-const mouseState = document.querySelector("#mouse-state span");
 const timeInfo = document.querySelector("#time-info span");
 
 // State
 let mcapReader = null;
 let basePtsTime = null;
-let cachedState = { keyboard: new Set(), mouse: { x: 0, y: 0, buttons: 0 } };
+let cachedState = {
+  keyboard: new Set(),
+  mouse: { x: 0, y: 0, buttons: new Set() },
+};
 let lastLoadedTime = 0n;
+
+// Mouse button VK to name
+const MOUSE_VK_MAP = { 1: "left", 2: "right", 4: "middle", 5: "x1", 6: "x2" };
+
+// Overlay dimensions
+const OVERLAY_HEIGHT = 220;
 
 // Enable load button when both files selected
 function updateLoadButton() {
@@ -43,10 +51,14 @@ if (params.has("mcap") && params.has("mkv")) {
       fileSelect.classList.add("hidden");
       viewer.classList.remove("hidden");
       video.onloadedmetadata = () => {
-        overlay.width = video.videoWidth;
-        overlay.height = video.videoHeight;
+        // Match canvas to video's displayed width
+        const displayWidth = video.offsetWidth || video.clientWidth || 800;
+        overlay.width = displayWidth;
+        overlay.height = OVERLAY_HEIGHT;
+        overlay.style.width = displayWidth + "px";
         startRenderLoop();
       };
+      video.onseeking = resetState;
       status.textContent = `Ready: ${channels.length} channels`;
     } catch (e) {
       status.textContent = `Error: ${e.message}`;
@@ -81,10 +93,13 @@ loadBtn.addEventListener("click", async () => {
 
     // Setup canvas
     video.addEventListener("loadedmetadata", () => {
-      overlay.width = video.videoWidth;
-      overlay.height = video.videoHeight;
+      const displayWidth = video.offsetWidth || video.clientWidth || 800;
+      overlay.width = displayWidth;
+      overlay.height = OVERLAY_HEIGHT;
+      overlay.style.width = displayWidth + "px";
       startRenderLoop();
     });
+    video.addEventListener("seeking", resetState);
 
     status.textContent = `Ready: ${channels.length} channels`;
   } catch (err) {
@@ -97,6 +112,13 @@ loadBtn.addEventListener("click", async () => {
 function videoTimeToMcap(videoTimeSec) {
   if (basePtsTime === null) return 0n;
   return basePtsTime + BigInt(Math.floor(videoTimeSec * 1e9));
+}
+
+// Reset state when seeking
+function resetState() {
+  lastLoadedTime = 0n;
+  cachedState.keyboard.clear();
+  cachedState.mouse = { x: 0, y: 0, buttons: new Set() };
 }
 
 // Load state up to timestamp (incremental)
@@ -113,13 +135,14 @@ async function loadStateUpTo(mcapTime) {
     const data = JSON.parse(new TextDecoder().decode(msg.data));
 
     if (channel.topic === "keyboard/state") {
-      // data.buttons contains VK codes of pressed keys
-      cachedState.keyboard = new Set(data.buttons || []);
+      // Filter out mouse VK codes (1, 2, 4, 5, 6)
+      const keyVks = (data.buttons || []).filter((vk) => !MOUSE_VK_MAP[vk]);
+      cachedState.keyboard = new Set(keyVks);
     } else if (channel.topic === "mouse/state") {
       cachedState.mouse.x = data.x ?? 0;
       cachedState.mouse.y = data.y ?? 0;
-      // data.buttons is an array of pressed button indices
-      cachedState.mouse.buttons = (data.buttons || []).length > 0 ? 1 : 0;
+      // buttons are already strings: "left", "right", "middle"
+      cachedState.mouse.buttons = new Set(data.buttons || []);
     }
   }
   lastLoadedTime = mcapTime;
@@ -139,48 +162,32 @@ function startRenderLoop() {
     // Clear canvas
     ctx.clearRect(0, 0, overlay.width, overlay.height);
 
-    // Draw mouse cursor
-    const scaleX = overlay.width / (video.videoWidth || 1920);
-    const scaleY = overlay.height / (video.videoHeight || 1080);
-    const mx = cachedState.mouse.x * scaleX;
-    const my = cachedState.mouse.y * scaleY;
+    // Draw keyboard (left side)
+    const kbX = 10;
+    const kbY = 10;
+    drawKeyboard(ctx, kbX, kbY, cachedState.keyboard);
 
-    ctx.beginPath();
-    ctx.arc(mx, my, 10, 0, Math.PI * 2);
-    if (cachedState.mouse.buttons & 1) {
-      ctx.fillStyle = "rgba(255, 0, 0, 0.7)";
-      ctx.fill();
-    } else if (cachedState.mouse.buttons & 2) {
-      ctx.fillStyle = "rgba(0, 0, 255, 0.7)";
-      ctx.fill();
-    } else {
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
-      ctx.lineWidth = 2;
-      ctx.stroke();
+    // Draw mouse figure (right of keyboard)
+    const mouseX = kbX + 14 * 35 + 20; // 14 cols * (32+3) + gap
+    drawMouse(ctx, mouseX, kbY, cachedState.mouse.buttons);
+
+    // Draw minimap (right of mouse)
+    const minimapX = mouseX + 70;
+    drawMinimap(
+      ctx, minimapX, kbY, 160, 100,
+      cachedState.mouse.x, cachedState.mouse.y,
+      1920, 1080, // Assume 1080p screen
+      cachedState.mouse.buttons
+    );
+
+    // Update time info
+    if (timeInfo) {
+      timeInfo.textContent = `${videoTime.toFixed(2)}s`;
     }
-
-    // Update info panel
-    const keys = Array.from(cachedState.keyboard).map((vk) => vkToName(vk)).join(", ");
-    keyboardState.textContent = keys || "(none)";
-    mouseState.textContent = `(${cachedState.mouse.x}, ${cachedState.mouse.y}) btn=${cachedState.mouse.buttons}`;
-    timeInfo.textContent = `${videoTime.toFixed(2)}s`;
 
     requestAnimationFrame(render);
   }
 
   render();
-}
-
-// VK code to name (minimal set)
-function vkToName(vk) {
-  const names = {
-    8: "Back", 9: "Tab", 13: "Enter", 16: "Shift", 17: "Ctrl", 18: "Alt",
-    20: "Caps", 27: "Esc", 32: "Space", 37: "←", 38: "↑", 39: "→", 40: "↓",
-    65: "A", 66: "B", 67: "C", 68: "D", 69: "E", 70: "F", 71: "G", 72: "H",
-    73: "I", 74: "J", 75: "K", 76: "L", 77: "M", 78: "N", 79: "O", 80: "P",
-    81: "Q", 82: "R", 83: "S", 84: "T", 85: "U", 86: "V", 87: "W", 88: "X",
-    89: "Y", 90: "Z",
-  };
-  return names[vk] || `VK${vk}`;
 }
 
