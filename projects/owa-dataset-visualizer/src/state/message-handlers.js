@@ -78,8 +78,10 @@ export function handleMouseRaw(state, data, time, options = {}) {
   // Wheel events (button_data contains delta as signed 16-bit)
   if (flags & RI_MOUSE_WHEEL) {
     const delta = (data.button_data << 16) >> 16; // Sign extend
-    state.mouse.wheel = delta > 0 ? 1 : -1;
-    onWheel?.();
+    if (delta !== 0) {
+      state.mouse.wheel = Math.sign(delta);
+      onWheel?.();
+    }
   }
 }
 

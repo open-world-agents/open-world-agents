@@ -17,7 +17,6 @@ import {
   KEYBOARD_COLUMNS,
   KEY_SIZE,
   KEY_MARGIN,
-  MOUSE_VK_MAP,
   TOPICS,
 } from "./constants.js";
 
@@ -96,9 +95,7 @@ async function loadStateAt(targetTime) {
         startTime: keyboardStateTime + 1n, endTime: targetTime, topics: [TOPICS.KEYBOARD],
       })) {
         const data = JSON.parse(new TextDecoder().decode(msg.data));
-        if (!MOUSE_VK_MAP[data.vk]) {
-          stateManager.processMessage(TOPICS.KEYBOARD, data, msg.logTime);
-        }
+        stateManager.processMessage(TOPICS.KEYBOARD, data, msg.logTime);
       }
     }
 
@@ -121,15 +118,6 @@ async function loadStateAt(targetTime) {
       })) {
         const data = JSON.parse(new TextDecoder().decode(msg.data));
         stateManager.processMessage(mouseTopic, data, msg.logTime);
-      }
-    } else if (stateManager.mouseMode === "absolute") {
-      for await (const msg of mcapReader.readMessages({
-        endTime: targetTime, topics: [TOPICS.MOUSE], reverse: true,
-      })) {
-        const data = JSON.parse(new TextDecoder().decode(msg.data));
-        stateManager.state.mouse.x = data.x ?? SCREEN_WIDTH / 2;
-        stateManager.state.mouse.y = data.y ?? SCREEN_HEIGHT / 2;
-        break;
       }
     }
 
@@ -198,7 +186,9 @@ function startRenderLoop() {
     const mcapTime = timeSync.videoTimeToMcap(video.currentTime);
 
     // Update state (fire-and-forget for smooth rendering)
-    updateStateUpTo(mcapTime);
+    updateStateUpTo(mcapTime).catch((err) => {
+      console.error("Error during state update:", err);
+    });
 
     // Decay wheel indicator
     stateManager.decayWheel();
