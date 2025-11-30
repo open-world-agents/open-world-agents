@@ -21,9 +21,15 @@ let cachedState = {
 };
 let lastLoadedTime = 0n;
 let mouseMode = "raw"; // "raw" (relative/3D) or "absolute" (2D)
+let recenterIntervalMs = 0; // 0 = off, else recenter every N ms
+let lastRecenterTime = 0n;
 
 // Mouse button VK to name
 const MOUSE_VK_MAP = { 1: "left", 2: "right", 4: "middle", 5: "x1", 6: "x2" };
+
+// Screen dimensions for mouse position clamping
+const SCREEN_WIDTH = 1920;
+const SCREEN_HEIGHT = 1080;
 
 // Overlay dimensions
 const OVERLAY_HEIGHT = 220;
@@ -34,6 +40,12 @@ document.querySelectorAll('input[name="mouse-mode"]').forEach((radio) => {
     mouseMode = e.target.value;
     resetState();
   });
+});
+
+// Recenter interval input
+const recenterInput = document.getElementById("recenter-interval");
+recenterInput?.addEventListener("change", (e) => {
+  recenterIntervalMs = Math.max(0, parseInt(e.target.value, 10) || 0);
 });
 
 // Enable load button when both files selected
@@ -126,8 +138,9 @@ function videoTimeToMcap(videoTimeSec) {
 // Reset state when seeking
 function resetState() {
   lastLoadedTime = 0n;
+  lastRecenterTime = 0n;
   cachedState.keyboard.clear();
-  cachedState.mouse = { x: 0, y: 0, buttons: new Set() };
+  cachedState.mouse = { x: SCREEN_WIDTH / 2, y: SCREEN_HEIGHT / 2, buttons: new Set() };
 }
 
 // Mouse button flags from RawMouseEvent
@@ -141,10 +154,6 @@ const BUTTON_RELEASE_FLAGS = {
   0x0008: "right",  // RI_MOUSE_RIGHT_BUTTON_UP
   0x0020: "middle", // RI_MOUSE_MIDDLE_BUTTON_UP
 };
-
-// Screen dimensions for mouse position clamping
-const SCREEN_WIDTH = 1920;
-const SCREEN_HEIGHT = 1080;
 
 // Load state up to timestamp (incremental)
 async function loadStateUpTo(mcapTime) {
@@ -166,6 +175,16 @@ async function loadStateUpTo(mcapTime) {
       const keyVks = (data.buttons || []).filter((vk) => !MOUSE_VK_MAP[vk]);
       cachedState.keyboard = new Set(keyVks);
     } else if (channel.topic === "mouse/raw") {
+      // Check if we need to recenter
+      if (recenterIntervalMs > 0) {
+        const intervalNs = BigInt(recenterIntervalMs) * 1000000n;
+        if (msg.logTime - lastRecenterTime >= intervalNs) {
+          cachedState.mouse.x = SCREEN_WIDTH / 2;
+          cachedState.mouse.y = SCREEN_HEIGHT / 2;
+          lastRecenterTime = msg.logTime;
+        }
+      }
+
       // Relative mode: accumulate mouse movement
       const dx = data.last_x ?? 0;
       const dy = data.last_y ?? 0;

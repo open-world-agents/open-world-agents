@@ -105,3 +105,13 @@ button:disabled {
 #mouse-mode input[type="radio"] {
   cursor: pointer;
 }
+
+#recenter-interval {
+  width: 60px;
+  padding: 2px 4px;
+  border: 1px solid #555;
+  border-radius: 4px;
+  background: #333;
+  color: #fff;
+  text-align: right;
+}
