@@ -124,3 +124,22 @@ button:disabled {
 #recenter-label:has(#recenter-interval:disabled) {
   opacity: 0.5;
 }
+
+#usage-hint {
+  font-size: 11px;
+  color: #777;
+  line-height: 1.5;
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: #1a1a1a;
+  border-radius: 6px;
+  border: 1px solid #333;
+}
+
+#usage-hint p {
+  margin: 3px 0;
+}
+
+#usage-hint strong {
+  color: #999;
+}
