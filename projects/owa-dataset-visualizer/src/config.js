@@ -6,7 +6,4 @@ export const FEATURED_DATASETS = [
   "open-world-agents/example-pubg-battleground",
 ];
 
-export const MORE_DATASETS = [
-  "open-world-agents/example_dataset2",
-];
-
+export const MORE_DATASETS = ["open-world-agents/example_dataset2"];

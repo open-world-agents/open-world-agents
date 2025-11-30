@@ -2,8 +2,14 @@
  * State management and message handling
  */
 import {
-  SCREEN_WIDTH, SCREEN_HEIGHT, MOUSE_VK_MAP, WHEEL_DECAY_MS,
-  BUTTON_PRESS_FLAGS, BUTTON_RELEASE_FLAGS, RI_MOUSE_WHEEL, TOPICS,
+  SCREEN_WIDTH,
+  SCREEN_HEIGHT,
+  MOUSE_VK_MAP,
+  WHEEL_DECAY_MS,
+  BUTTON_PRESS_FLAGS,
+  BUTTON_RELEASE_FLAGS,
+  RI_MOUSE_WHEEL,
+  TOPICS,
 } from "./constants.js";
 
 function createInitialState() {
@@ -16,7 +22,7 @@ function createInitialState() {
 
 // Message handlers
 function handleKeyboardState(state, data) {
-  state.keyboard = new Set((data.buttons || []).filter(vk => !MOUSE_VK_MAP[vk]));
+  state.keyboard = new Set((data.buttons || []).filter((vk) => !MOUSE_VK_MAP[vk]));
 }
 
 function handleKeyboard(state, data) {
@@ -43,7 +49,10 @@ function handleMouseRaw(state, data, time, opts = {}) {
 
   if (flags & RI_MOUSE_WHEEL) {
     const delta = (data.button_data << 16) >> 16;
-    if (delta !== 0) { state.mouse.wheel = Math.sign(delta); onWheel?.(); }
+    if (delta !== 0) {
+      state.mouse.wheel = Math.sign(delta);
+      onWheel?.();
+    }
   }
 }
 
@@ -62,17 +71,20 @@ function handleMouse(state, data, onWheel) {
     else state.mouse.buttons.delete(data.button);
   } else if (data.event_type === "scroll") {
     const dy = data.dy ?? 0;
-    if (dy !== 0) { state.mouse.wheel = dy > 0 ? 1 : -1; onWheel?.(); }
+    if (dy !== 0) {
+      state.mouse.wheel = dy > 0 ? 1 : -1;
+      onWheel?.();
+    }
   }
 }
 
 export class StateManager {
   constructor() {
     this.state = createInitialState();
-    this.mouseMode = "raw";          // "raw" | "absolute"
+    this.mouseMode = "raw"; // "raw" | "absolute"
     this.recenterIntervalMs = 0;
-    this.lastRecenterTime = 0n;      // bigint
-    this.lastProcessedTime = 0n;     // bigint
+    this.lastRecenterTime = 0n; // bigint
+    this.lastProcessedTime = 0n; // bigint
     this.lastWheelTime = 0;
     this.isLoading = false;
   }
@@ -85,20 +97,37 @@ export class StateManager {
 
   /** @param {string} topic @param {Object} data @param {bigint} time */
   processMessage(topic, data, time) {
-    const onWheel = () => { this.lastWheelTime = performance.now(); };
-    const onRecenter = (t) => { this.lastRecenterTime = t; };
+    const onWheel = () => {
+      this.lastWheelTime = performance.now();
+    };
+    const onRecenter = (t) => {
+      this.lastRecenterTime = t;
+    };
 
     switch (topic) {
-      case TOPICS.KEYBOARD_STATE: handleKeyboardState(this.state, data); break;
-      case TOPICS.KEYBOARD: handleKeyboard(this.state, data); break;
-      case TOPICS.MOUSE_RAW: handleMouseRaw(this.state, data, time, {
-        recenterIntervalMs: this.recenterIntervalMs,
-        lastRecenterTime: this.lastRecenterTime,
-        onRecenter, onWheel,
-      }); break;
-      case TOPICS.MOUSE_STATE: handleMouseState(this.state, data); break;
-      case TOPICS.MOUSE: handleMouse(this.state, data, onWheel); break;
-      case TOPICS.WINDOW: this.state.window = data; break;
+      case TOPICS.KEYBOARD_STATE:
+        handleKeyboardState(this.state, data);
+        break;
+      case TOPICS.KEYBOARD:
+        handleKeyboard(this.state, data);
+        break;
+      case TOPICS.MOUSE_RAW:
+        handleMouseRaw(this.state, data, time, {
+          recenterIntervalMs: this.recenterIntervalMs,
+          lastRecenterTime: this.lastRecenterTime,
+          onRecenter,
+          onWheel,
+        });
+        break;
+      case TOPICS.MOUSE_STATE:
+        handleMouseState(this.state, data);
+        break;
+      case TOPICS.MOUSE:
+        handleMouse(this.state, data, onWheel);
+        break;
+      case TOPICS.WINDOW:
+        this.state.window = data;
+        break;
     }
   }
 
@@ -108,14 +137,16 @@ export class StateManager {
     }
   }
 
-  getMouseTopic() { return this.mouseMode === "raw" ? TOPICS.MOUSE_RAW : TOPICS.MOUSE; }
+  getMouseTopic() {
+    return this.mouseMode === "raw" ? TOPICS.MOUSE_RAW : TOPICS.MOUSE;
+  }
 
   getUpdateTopics() {
     return [TOPICS.KEYBOARD_STATE, TOPICS.KEYBOARD, TOPICS.MOUSE_STATE, this.getMouseTopic(), TOPICS.WINDOW];
   }
 
   applyKeyboardState(data) {
-    this.state.keyboard = new Set((data.buttons || []).filter(vk => !MOUSE_VK_MAP[vk]));
+    this.state.keyboard = new Set((data.buttons || []).filter((vk) => !MOUSE_VK_MAP[vk]));
   }
 
   applyMouseState(data) {
@@ -128,4 +159,3 @@ export class StateManager {
     this.state.window = data;
   }
 }
-

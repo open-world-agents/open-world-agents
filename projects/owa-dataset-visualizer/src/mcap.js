@@ -6,8 +6,12 @@ import { decompress } from "fzstd";
 
 // Blob-based readable for McapIndexedReader
 class BlobReadable {
-  constructor(blob) { this.blob = blob; }
-  async size() { return BigInt(this.blob.size); }
+  constructor(blob) {
+    this.blob = blob;
+  }
+  async size() {
+    return BigInt(this.blob.size);
+  }
   async read(offset, length) {
     const slice = this.blob.slice(Number(offset), Number(offset) + Number(length));
     return new Uint8Array(await slice.arrayBuffer());
@@ -34,7 +38,9 @@ export async function loadMcapFromUrl(url) {
 
 // Time synchronization between video and MCAP
 export class TimeSync {
-  constructor() { this.basePtsTime = null; }
+  constructor() {
+    this.basePtsTime = null;
+  }
 
   /** @param {bigint} logTime */
   initFromScreenMessage(logTime, data) {
@@ -48,6 +54,7 @@ export class TimeSync {
   }
 
   /** @returns {bigint} */
-  getBasePtsTime() { return this.basePtsTime ?? 0n; }
+  getBasePtsTime() {
+    return this.basePtsTime ?? 0n;
+  }
 }
-

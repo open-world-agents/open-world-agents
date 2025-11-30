@@ -23,16 +23,22 @@ function initLanding() {
   // Search box
   const input = document.getElementById("dataset-input");
   const goBtn = document.getElementById("go-btn");
-  const go = () => { const v = input.value.trim(); if (v) location.href = `?repo_id=${v}`; };
+  const go = () => {
+    const v = input.value.trim();
+    if (v) location.href = `?repo_id=${v}`;
+  };
   goBtn?.addEventListener("click", go);
-  input?.addEventListener("keyup", e => { if (e.key === "Enter") go(); });
+  input?.addEventListener("keyup", (e) => {
+    if (e.key === "Enter") go();
+  });
 
   // File drop zone
   const dropZone = document.getElementById("drop-zone");
   const mcapInput = document.getElementById("mcap-input-landing");
   const mkvInput = document.getElementById("mkv-input-landing");
   const fileStatus = document.getElementById("file-status");
-  let mcap = null, mkv = null;
+  let mcap = null,
+    mkv = null;
 
   function update() {
     const parts = [];
@@ -44,12 +50,21 @@ function initLanding() {
     if (mcap && mkv) loadFromFiles(mcap, mkv, fileStatus);
   }
 
-  mcapInput?.addEventListener("change", e => { mcap = e.target.files[0] || null; update(); });
-  mkvInput?.addEventListener("change", e => { mkv = e.target.files[0] || null; update(); });
+  mcapInput?.addEventListener("change", (e) => {
+    mcap = e.target.files[0] || null;
+    update();
+  });
+  mkvInput?.addEventListener("change", (e) => {
+    mkv = e.target.files[0] || null;
+    update();
+  });
 
-  dropZone?.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("dragover"); });
+  dropZone?.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    dropZone.classList.add("dragover");
+  });
   dropZone?.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
-  dropZone?.addEventListener("drop", e => {
+  dropZone?.addEventListener("drop", (e) => {
     e.preventDefault();
     dropZone.classList.remove("dragover");
     for (const f of e.dataTransfer.files) {
@@ -78,7 +93,7 @@ async function initHfViewer(repoId) {
     const container = document.getElementById("hf-file-list");
     section?.classList.remove("hidden");
 
-    const firstLi = renderFileTree(tree, container, f => loadFromUrls(f.mcap, f.mkv));
+    const firstLi = renderFileTree(tree, container, (f) => loadFromUrls(f.mcap, f.mkv));
     firstLi?.click();
   } catch (e) {
     updateStatus(`Error: ${e.message}`);

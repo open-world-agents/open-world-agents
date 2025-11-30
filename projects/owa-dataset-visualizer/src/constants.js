@@ -51,8 +51,8 @@ export const MOUSE_VK_MAP = {
  * @type {Object<number, string>}
  */
 export const BUTTON_PRESS_FLAGS = {
-  0x0001: "left",   // RI_MOUSE_LEFT_BUTTON_DOWN
-  0x0004: "right",  // RI_MOUSE_RIGHT_BUTTON_DOWN
+  0x0001: "left", // RI_MOUSE_LEFT_BUTTON_DOWN
+  0x0004: "right", // RI_MOUSE_RIGHT_BUTTON_DOWN
   0x0010: "middle", // RI_MOUSE_MIDDLE_BUTTON_DOWN
 };
 
@@ -61,8 +61,8 @@ export const BUTTON_PRESS_FLAGS = {
  * @type {Object<number, string>}
  */
 export const BUTTON_RELEASE_FLAGS = {
-  0x0002: "left",   // RI_MOUSE_LEFT_BUTTON_UP
-  0x0008: "right",  // RI_MOUSE_RIGHT_BUTTON_UP
+  0x0002: "left", // RI_MOUSE_LEFT_BUTTON_UP
+  0x0008: "right", // RI_MOUSE_RIGHT_BUTTON_UP
   0x0020: "middle", // RI_MOUSE_MIDDLE_BUTTON_UP
 };
 
@@ -131,4 +131,3 @@ export const TOPICS = {
   WINDOW: "window",
   SCREEN: "screen",
 };
-

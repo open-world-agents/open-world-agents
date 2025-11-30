@@ -59,7 +59,7 @@ body {
   font-family: monospace;
 }
 
-#info-panel>div span {
+#info-panel > div span {
   color: #4a9eff;
 }
 
@@ -468,7 +468,7 @@ body {
 }
 
 /* HuggingFace file tree in side panel */
-#file-section>ul {
+#file-section > ul {
   max-height: 300px;
   overflow-y: auto;
   padding: 0;

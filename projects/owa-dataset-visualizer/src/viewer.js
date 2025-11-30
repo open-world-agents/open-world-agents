@@ -2,7 +2,15 @@ import { loadMcap, loadMcapFromUrl, TimeSync } from "./mcap.js";
 import { StateManager } from "./state.js";
 import { drawKeyboard, drawMouse, drawMinimap } from "./overlay.js";
 import { updateWindowInfo, displayMcapInfo, LoadingIndicator, updateStatus } from "./ui.js";
-import { SCREEN_WIDTH, SCREEN_HEIGHT, OVERLAY_HEIGHT, KEYBOARD_COLUMNS, KEY_SIZE, KEY_MARGIN, TOPICS } from "./constants.js";
+import {
+  SCREEN_WIDTH,
+  SCREEN_HEIGHT,
+  OVERLAY_HEIGHT,
+  KEYBOARD_COLUMNS,
+  KEY_SIZE,
+  KEY_MARGIN,
+  TOPICS,
+} from "./constants.js";
 
 const video = document.getElementById("video");
 const overlay = document.getElementById("overlay");
@@ -27,20 +35,32 @@ async function loadStateAt(targetTime) {
     stateManager.reset(targetTime);
 
     let keyboardStateTime = 0n;
-    for await (const msg of mcapReader.readMessages({ endTime: targetTime, topics: [TOPICS.KEYBOARD_STATE], reverse: true })) {
+    for await (const msg of mcapReader.readMessages({
+      endTime: targetTime,
+      topics: [TOPICS.KEYBOARD_STATE],
+      reverse: true,
+    })) {
       stateManager.applyKeyboardState(JSON.parse(new TextDecoder().decode(msg.data)));
       keyboardStateTime = msg.logTime;
       break;
     }
 
     if (keyboardStateTime > 0n) {
-      for await (const msg of mcapReader.readMessages({ startTime: keyboardStateTime + 1n, endTime: targetTime, topics: [TOPICS.KEYBOARD] })) {
+      for await (const msg of mcapReader.readMessages({
+        startTime: keyboardStateTime + 1n,
+        endTime: targetTime,
+        topics: [TOPICS.KEYBOARD],
+      })) {
         stateManager.processMessage(TOPICS.KEYBOARD, JSON.parse(new TextDecoder().decode(msg.data)), msg.logTime);
       }
     }
 
     let mouseStateTime = 0n;
-    for await (const msg of mcapReader.readMessages({ endTime: targetTime, topics: [TOPICS.MOUSE_STATE], reverse: true })) {
+    for await (const msg of mcapReader.readMessages({
+      endTime: targetTime,
+      topics: [TOPICS.MOUSE_STATE],
+      reverse: true,
+    })) {
       stateManager.applyMouseState(JSON.parse(new TextDecoder().decode(msg.data)));
       mouseStateTime = msg.logTime;
       break;
@@ -48,7 +68,11 @@ async function loadStateAt(targetTime) {
 
     const mouseTopic = stateManager.getMouseTopic();
     if (mouseStateTime > 0n) {
-      for await (const msg of mcapReader.readMessages({ startTime: mouseStateTime + 1n, endTime: targetTime, topics: [mouseTopic] })) {
+      for await (const msg of mcapReader.readMessages({
+        startTime: mouseStateTime + 1n,
+        endTime: targetTime,
+        topics: [mouseTopic],
+      })) {
         stateManager.processMessage(mouseTopic, JSON.parse(new TextDecoder().decode(msg.data)), msg.logTime);
       }
     }
@@ -130,8 +154,13 @@ async function setup(reader) {
     pendingSeek = null;
   });
 
-  video.addEventListener("play", () => { userWantsToPlay = true; if (stateManager.isLoading) video.pause(); });
-  video.addEventListener("pause", () => { if (!stateManager.isLoading) userWantsToPlay = false; });
+  video.addEventListener("play", () => {
+    userWantsToPlay = true;
+    if (stateManager.isLoading) video.pause();
+  });
+  video.addEventListener("pause", () => {
+    if (!stateManager.isLoading) userWantsToPlay = false;
+  });
 }
 
 function initViewer(channelCount) {
@@ -149,12 +178,12 @@ function initViewer(channelCount) {
 }
 
 // Event handlers
-recenterInput?.addEventListener("change", e => {
+recenterInput?.addEventListener("change", (e) => {
   stateManager.recenterIntervalMs = Math.max(0, parseInt(e.target.value, 10) || 0);
 });
 
-document.querySelectorAll('input[name="mouse-mode"]').forEach(radio => {
-  radio.addEventListener("change", e => {
+document.querySelectorAll('input[name="mouse-mode"]').forEach((radio) => {
+  radio.addEventListener("change", (e) => {
     stateManager.mouseMode = e.target.value;
     recenterInput.disabled = stateManager.mouseMode !== "raw";
     loadStateAt(timeSync.videoTimeToMcap(video.currentTime));
@@ -188,4 +217,3 @@ export async function loadFromUrls(mcapUrl, mkvUrl) {
     console.error(e);
   }
 }
-

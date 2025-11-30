@@ -11,8 +11,8 @@ export async function fetchFileList(repoId) {
 
   async function scanDir(path, node) {
     const items = await fetchTree(repoId, path);
-    const dirs = items.filter(i => i.type === "directory");
-    const mcaps = items.filter(i => i.path.endsWith(".mcap"));
+    const dirs = items.filter((i) => i.type === "directory");
+    const mcaps = items.filter((i) => i.path.endsWith(".mcap"));
 
     for (const mcap of mcaps) {
       const basename = mcap.path.replace(/\.mcap$/, "");
@@ -58,7 +58,7 @@ export function renderFileTree(tree, container, onSelect) {
       const li = document.createElement("li");
       li.textContent = f.name;
       li.onclick = () => {
-        container.querySelectorAll("li").forEach(el => el.classList.remove("active"));
+        container.querySelectorAll("li").forEach((el) => el.classList.remove("active"));
         li.classList.add("active");
         onSelect(f);
       };
@@ -70,4 +70,3 @@ export function renderFileTree(tree, container, onSelect) {
   renderNode(tree, container);
   return firstLi;
 }
-
