@@ -1,6 +1,6 @@
-# OWAMcap Data Viewer
+# OWA Dataset Visualizer
 
-Interactive web-based visualization tool for exploring OWAMcap datasets with synchronized playback of screen recordings and interaction events.
+Browser-based visualization tool for exploring OWAMcap datasets with synchronized playback of screen recordings and interaction events.
 
 <div align="center">
   <img src="../../examples/viewer.png" alt="OWA Dataset Visualizer"/>
@@ -11,38 +11,63 @@ Interactive web-based visualization tool for exploring OWAMcap datasets with syn
 **Quick Start**: [https://huggingface.co/spaces/open-world-agents/visualize_dataset](https://huggingface.co/spaces/open-world-agents/visualize_dataset)
 
 ### Features
-- **Upload Files**: Drag & drop your `.mcap` files (up to 100MB)
-- **HuggingFace Integration**: Enter any `repo_id` to view public datasets
-- **Synchronized Playback**: Video + events timeline
-- **Interactive Controls**: Pause, seek, frame-by-frame navigation
+
+- **Drag & Drop**: Load local `.mcap` + `.mkv` files directly in browser
+- **HuggingFace Integration**: Browse and load datasets via `?repo_id=org/dataset`
+- **Synchronized Playback**: Video synced with keyboard/mouse overlays
+- **Large File Support**: Uses MCAP index for seeking, never loads entire file
+- **Input Overlay**: Keyboard (all keys), mouse (L/R/M buttons, scroll), cursor minimap
 
 ### Usage
+
 1. Visit the viewer URL
-2. Either upload your files or enter a HuggingFace dataset ID
-3. Explore your data with synchronized video and event timeline
+2. Either drag & drop local files, or enter a HuggingFace dataset ID
+3. Explore your data with synchronized video and input overlays
 
-## 🏠 Self-Hosted Setup
+## 🏠 Local Development
 
-For larger files or private datasets, run the viewer locally:
+### Prerequisites
+
+Install Node.js via [nvm](https://github.com/nvm-sh/nvm) (recommended):
 
 ```bash
-# Navigate to viewer directory
-cd projects/owa-mcap-viewer
-
-# Set data path
-export EXPORT_PATH=/path/to/your/mcap-files
-
-# Install dependencies
-vuv install
-
-# Start server
-uvicorn owa_viewer:app --host 0.0.0.0 --port 7860 --reload
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+nvm install --lts
 ```
 
-Access at `http://localhost:7860`
+### Run
 
-### Benefits of Self-Hosting
-- **No file size limits**
-- **Private data stays local**
-- **Faster loading for large datasets**
-- **Customizable interface**
+```bash
+cd projects/owa-dataset-visualizer
+npm install
+npm run dev
+```
+
+Open http://localhost:5173
+
+## 📂 Local File Server
+
+For browsing multiple recordings from a local directory:
+
+```bash
+# Serve a directory containing mcap/mkv pairs
+python scripts/serve_local.py /path/to/recordings -p 8080
+
+# Open visualizer with local server
+# http://localhost:5173/?base_url=http://localhost:8080
+```
+
+### Features
+
+- Auto-scans for mcap/video pairs
+- HTTP Range support for streaming large videos
+- Multi-threaded for concurrent requests
+
+## URL Modes
+
+| URL                               | Description                         |
+| --------------------------------- | ----------------------------------- |
+| `/`                               | Landing page with featured datasets |
+| `?repo_id=org/dataset`            | Load HuggingFace dataset            |
+| `?base_url=http://localhost:8080` | Load from local file server         |
+| `?mcap=url&mkv=url`               | Direct file URLs                    |

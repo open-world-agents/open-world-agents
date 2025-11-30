@@ -1,5 +1,5 @@
 import { FEATURED_DATASETS, MORE_DATASETS } from "./config.js";
-import { fetchFileList, hasFiles, renderFileTree } from "./hf.js";
+import { fetchFileList, fetchLocalFileList, hasFiles, renderFileTree } from "./hf.js";
 import { loadFromFiles, loadFromUrls } from "./viewer.js";
 import { updateStatus } from "./ui.js";
 
@@ -107,12 +107,45 @@ async function initUrlViewer(mcapUrl, mkvUrl) {
   await loadFromUrls(mcapUrl, mkvUrl);
 }
 
+// Local server viewer (base_url parameter)
+async function initLocalViewer(baseUrl) {
+  document.getElementById("landing")?.classList.add("hidden");
+  document.getElementById("file-select")?.classList.add("hidden");
+  document.getElementById("viewer").classList.remove("hidden");
+  updateStatus("Fetching file list...");
+
+  try {
+    const files = await fetchLocalFileList(baseUrl);
+    if (files.length === 0) {
+      updateStatus("No MCAP files found");
+      return;
+    }
+
+    const section = document.getElementById("file-section");
+    const container = document.getElementById("hf-file-list");
+    section?.classList.remove("hidden");
+
+    // Convert flat list to tree format
+    const tree = {
+      folders: {},
+      files: files.map((f) => ({ ...f, mcap: `${baseUrl}/${f.mcap}`, mkv: `${baseUrl}/${f.mkv}` })),
+    };
+    const firstLi = renderFileTree(tree, container, (f) => loadFromUrls(f.mcap, f.mkv));
+    firstLi?.click();
+  } catch (e) {
+    updateStatus(`Error: ${e.message}`);
+  }
+}
+
 // Router
 const params = new URLSearchParams(location.search);
 const repoId = params.get("repo_id");
+const baseUrl = params.get("base_url");
 
 if (repoId) {
   initHfViewer(repoId);
+} else if (baseUrl) {
+  initLocalViewer(baseUrl);
 } else if (params.has("mcap") && params.has("mkv")) {
   initUrlViewer(params.get("mcap"), params.get("mkv"));
 } else {

@@ -12,6 +12,15 @@ Browser-based visualizer for OWA recordings. Syncs MCAP input data with MKV vide
 - **Seek handling**: Video pauses while loading state, resumes automatically.
 - **Info panels**: Active window info, MCAP topic stats
 
+## Prerequisites
+
+Install Node.js via [nvm](https://github.com/nvm-sh/nvm) (recommended):
+
+```bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+nvm install --lts
+```
+
 ## Usage
 
 ```bash
@@ -25,7 +34,24 @@ Open http://localhost:5173.
 
 - Landing page: Browse featured datasets or load local files
 - `?repo_id=org/dataset`: Load HuggingFace dataset
+- `?base_url=http://localhost:8080`: Local file server mode
 - `?mcap=/test.mcap&mkv=/test.mkv`: Direct URL mode
+
+### Local File Server
+
+Serve a local directory for browsing multiple recordings:
+
+```bash
+python scripts/serve_local.py /path/to/recordings -p 8080
+```
+
+Then open `http://localhost:5173/?base_url=http://localhost:8080`
+
+Features:
+
+- Auto-scans for mcap/video pairs
+- HTTP Range support for streaming large videos
+- Multi-threaded for concurrent requests
 
 ## Structure
 
