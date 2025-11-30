@@ -92,8 +92,13 @@ function drawArrow(ctx, cx, cy, direction) {
 
 /**
  * Draw mouse figure
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {number} x - X position
+ * @param {number} y - Y position
+ * @param {Set} activeButtons - Set of active button names
+ * @param {number} wheelDirection - 0=none, 1=up, -1=down
  */
-export function drawMouse(ctx, x, y, activeButtons) {
+export function drawMouse(ctx, x, y, activeButtons, wheelDirection = 0) {
   const w = 60, h = 80;
   const cx = x + w / 2, cy = y + h / 2;
   const rx = w / 2, ry = h / 2;
@@ -125,23 +130,34 @@ export function drawMouse(ctx, x, y, activeButtons) {
   ctx.fill();
   ctx.stroke();
 
-  // Middle button (scroll wheel)
+  // Middle button (scroll wheel) - divided into upper and lower halves
   const mw = 10, mh = 24;
   const mx = cx - mw / 2, my = y + 8;
-  ctx.fillStyle = activeButtons.has("middle") ? COLORS.mouseMiddle : COLORS.mouseInactive;
-  ctx.fillRect(mx, my, mw, mh);
-  ctx.strokeRect(mx, my, mw, mh);
+  const halfH = mh / 2;
+  const wheelColor = "#2ecc71"; // Green for wheel scroll
 
-  // Scroll lines
+  // Upper half
+  ctx.fillStyle =
+    wheelDirection > 0 ? wheelColor :
+      activeButtons.has("middle") ? COLORS.mouseMiddle : COLORS.mouseInactive;
+  ctx.fillRect(mx, my, mw, halfH);
+
+  // Lower half
+  ctx.fillStyle =
+    wheelDirection < 0 ? wheelColor :
+      activeButtons.has("middle") ? COLORS.mouseMiddle : COLORS.mouseInactive;
+  ctx.fillRect(mx, my + halfH, mw, halfH);
+
+  // Border around entire wheel
   ctx.strokeStyle = COLORS.mouseBorder;
   ctx.lineWidth = 1;
-  for (let i = 1; i <= 2; i++) {
-    const ly = my + (i * mh) / 3;
-    ctx.beginPath();
-    ctx.moveTo(mx + 2, ly);
-    ctx.lineTo(mx + mw - 2, ly);
-    ctx.stroke();
-  }
+  ctx.strokeRect(mx, my, mw, mh);
+
+  // Divider line between halves
+  ctx.beginPath();
+  ctx.moveTo(mx, my + halfH);
+  ctx.lineTo(mx + mw, my + halfH);
+  ctx.stroke();
 }
 
 /**
@@ -168,7 +184,7 @@ export function drawMinimap(ctx, x, y, w, h, mouseX, mouseY, screenW, screenH, a
   // Click indicator
   if (activeButtons.size > 0) {
     const color = activeButtons.has("left") ? COLORS.mouseLeft :
-                  activeButtons.has("right") ? COLORS.mouseRight : COLORS.mouseMiddle;
+      activeButtons.has("right") ? COLORS.mouseRight : COLORS.mouseMiddle;
     ctx.beginPath();
     ctx.arc(px, py, 8, 0, Math.PI * 2);
     ctx.strokeStyle = color;

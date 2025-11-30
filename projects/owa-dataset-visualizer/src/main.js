@@ -30,7 +30,7 @@ let isLoading = false;
 let userWantsToPlay = false;
 let currentState = {
   keyboard: new Set(),
-  mouse: { x: SCREEN_WIDTH / 2, y: SCREEN_HEIGHT / 2, buttons: new Set() },
+  mouse: { x: SCREEN_WIDTH / 2, y: SCREEN_HEIGHT / 2, buttons: new Set(), wheel: 0 },
   window: null,
 };
 
@@ -98,9 +98,9 @@ async function loadStateAt(targetTime) {
       })) {
         const data = JSON.parse(new TextDecoder().decode(msg.data));
         if (MOUSE_VK_MAP[data.vk]) continue; // Skip mouse buttons
-        if (data.pressed) {
+        if (data.event_type === "press") {
           currentState.keyboard.add(data.vk);
-        } else {
+        } else if (data.event_type === "release") {
           currentState.keyboard.delete(data.vk);
         }
         keyboardEventCount++;
@@ -184,11 +184,25 @@ async function loadStateAt(targetTime) {
   }
 }
 
+// Mouse wheel constants
+const RI_MOUSE_WHEEL = 0x0400;
+const RI_MOUSE_HWHEEL = 0x0800;
+const WHEEL_DECAY_MS = 150; // How long to show wheel indicator
+let lastWheelTime = 0;
+
 // Process a single message and update state
 function processMessage(topic, data, time) {
   if (topic === "keyboard/state") {
     const keyVks = (data.buttons || []).filter((vk) => !MOUSE_VK_MAP[vk]);
     currentState.keyboard = new Set(keyVks);
+  } else if (topic === "keyboard") {
+    // Individual key event
+    if (MOUSE_VK_MAP[data.vk]) return; // Skip mouse buttons
+    if (data.event_type === "press") {
+      currentState.keyboard.add(data.vk);
+    } else if (data.event_type === "release") {
+      currentState.keyboard.delete(data.vk);
+    }
   } else if (topic === "mouse/raw") {
     // Recenter check
     if (recenterIntervalMs > 0) {
@@ -210,12 +224,39 @@ function processMessage(topic, data, time) {
     for (const [flag, btn] of Object.entries(BUTTON_RELEASE_FLAGS)) {
       if (flags & Number(flag)) currentState.mouse.buttons.delete(btn);
     }
-  } else if (topic === "mouse") {
+    // Wheel events (button_data contains delta as signed 16-bit)
+    if (flags & RI_MOUSE_WHEEL) {
+      // button_data is signed 16-bit: positive = up, negative = down
+      const delta = data.button_data << 16 >> 16; // Sign extend
+      currentState.mouse.wheel = delta > 0 ? 1 : -1; // 1 = up, -1 = down
+      lastWheelTime = performance.now();
+    }
+  } else if (topic === "mouse/state") {
+    // Full mouse state snapshot
     currentState.mouse.x = data.x ?? currentState.mouse.x;
     currentState.mouse.y = data.y ?? currentState.mouse.y;
-    if (data.event_type === "click" && data.button) {
-      if (data.pressed) currentState.mouse.buttons.add(data.button);
-      else currentState.mouse.buttons.delete(data.button);
+    currentState.mouse.buttons = new Set(data.buttons || []);
+  } else if (topic === "mouse") {
+    // Individual mouse event
+    if (data.event_type === "move") {
+      currentState.mouse.x = data.x ?? currentState.mouse.x;
+      currentState.mouse.y = data.y ?? currentState.mouse.y;
+    } else if (data.event_type === "click") {
+      currentState.mouse.x = data.x ?? currentState.mouse.x;
+      currentState.mouse.y = data.y ?? currentState.mouse.y;
+      if (data.button) {
+        if (data.pressed) currentState.mouse.buttons.add(data.button);
+        else currentState.mouse.buttons.delete(data.button);
+      }
+    } else if (data.event_type === "scroll") {
+      currentState.mouse.x = data.x ?? currentState.mouse.x;
+      currentState.mouse.y = data.y ?? currentState.mouse.y;
+      // Scroll event: dy > 0 = up, dy < 0 = down
+      const dy = data.dy ?? 0;
+      if (dy !== 0) {
+        currentState.mouse.wheel = dy > 0 ? 1 : -1;
+        lastWheelTime = performance.now();
+      }
     }
   } else if (topic === "window") {
     currentState.window = data;
@@ -232,7 +273,7 @@ async function updateStateUpTo(targetTime) {
   for await (const msg of mcapReader.readMessages({
     startTime: lastProcessedTime,
     endTime: targetTime,
-    topics: ["keyboard/state", mouseTopic, "window"],
+    topics: ["keyboard/state", "keyboard", "mouse/state", mouseTopic, "window"],
   })) {
     // Check if loading started during iteration
     if (isLoading) return;
@@ -333,11 +374,16 @@ function startRenderLoop() {
     // Update state up to current time
     await updateStateUpTo(mcapTime);
 
+    // Decay wheel indicator after WHEEL_DECAY_MS
+    if (currentState.mouse.wheel !== 0 && performance.now() - lastWheelTime > WHEEL_DECAY_MS) {
+      currentState.mouse.wheel = 0;
+    }
+
     // Draw overlay
     ctx.clearRect(0, 0, overlay.width, overlay.height);
     drawKeyboard(ctx, 10, 10, currentState.keyboard);
     const mouseX = 10 + 14 * 35 + 20;
-    drawMouse(ctx, mouseX, 10, currentState.mouse.buttons);
+    drawMouse(ctx, mouseX, 10, currentState.mouse.buttons, currentState.mouse.wheel);
     drawMinimap(ctx, mouseX + 70, 10, 160, 100, currentState.mouse.x, currentState.mouse.y, SCREEN_WIDTH, SCREEN_HEIGHT, currentState.mouse.buttons);
 
     // Update side panel
