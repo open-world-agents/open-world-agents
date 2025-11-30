@@ -21,7 +21,7 @@ owl mcap --help
 
 # Common workflows
 owl mcap info session.mcap              # Inspect MCAP files
-owl env list                            # List environment plugins  
+owl env list                            # List environment plugins
 owl messages show desktop/MouseEvent    # View message schemas
 owl video probe recording.mkv           # Analyze video files
 ```
@@ -31,17 +31,19 @@ owl video probe recording.mkv           # Analyze video files
 The `owl` CLI is organized into specialized command groups:
 
 ### 📁 [MCAP Commands](mcap.md) (`owl mcap`)
+
 Tools for working with MCAP files - the core data format for multimodal desktop recordings.
 
-**Key commands**: `info`, `cat`, `convert`, `migrate`, `sanitize`
+**Key commands**: `info`, `cat`, `subtitle`, `migrate`, `sanitize`
 
 ```bash
 owl mcap info session.mcap              # File information
-owl mcap cat session.mcap --n 10        # View messages  
-owl mcap convert session.mcap           # Convert to subtitles
+owl mcap cat session.mcap --n 10        # View messages
+owl mcap subtitle session.mcap          # Generate subtitle file (.srt)
 ```
 
 ### 🔌 [Environment Commands](env.md) (`owl env`)
+
 Manage environment plugins that capture desktop data and provide system integration.
 
 **Key commands**: `list`, `search`, `validate`, `stats`, `docs`
@@ -54,6 +56,7 @@ owl env stats --namespaces              # Show namespaces
 ```
 
 ### 📋 [Message Commands](messages.md) (`owl messages`)
+
 Inspect and validate message type schemas used in MCAP files.
 
 **Key commands**: `list`, `show`, `validate`
@@ -65,6 +68,7 @@ owl messages validate                   # Validate definitions
 ```
 
 ### 🎥 [Video Commands](video.md) (`owl video`)
+
 Process and analyze video files from OWA recordings.
 
 **Key commands**: `probe`, `vfr-to-cfr`

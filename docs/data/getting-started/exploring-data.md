@@ -54,11 +54,12 @@ owl mcap cat example.mcap --n 10
 # Filter by topic
 owl mcap cat example.mcap --topics screen --topics mouse
 
-# Convert to subtitle format
-owl mcap convert example.mcap  # Creates example.srt
+# Generate subtitle file
+owl mcap subtitle example.mcap  # Creates example.srt
 ```
 
 **Example Output**:
+
 ```
 library:   mcap-owa-support 0.5.1
 messages:  864 (10.36s duration)
@@ -70,8 +71,9 @@ channels:  screen(590), mouse(209), keyboard(32), window(11)
 **Best for**: Visual timeline analysis, understanding user behavior
 
 1. **Generate subtitle file**:
+
    ```bash
-   owl mcap convert example.mcap  # Creates example.srt
+   owl mcap subtitle example.mcap  # Creates example.srt
    ```
 
 2. **Open in video player**: Use [VLC](https://www.videolan.org/vlc/) or any player that supports subtitles
@@ -95,6 +97,7 @@ For programmatic access, see the [OWAMcap Format Guide](../technical-reference/f
 ## 🔧 Analysis Workflows
 
 ### 📊 Quick Dataset Overview
+
 ```bash
 # Get basic stats
 owl mcap info *.mcap
@@ -107,15 +110,17 @@ done
 ```
 
 ### ⏱️ Event Timeline Analysis
+
 ```bash
 # Extract events to subtitle format for timeline view
-owl mcap convert session.mcap
+owl mcap subtitle session.mcap
 
 # View in VLC with subtitles to see event timing
 vlc session.mkv --sub-file session.srt
 ```
 
 ### 🎯 Topic-Specific Analysis
+
 ```bash
 # Focus on user interactions
 owl mcap cat session.mcap --topics mouse --topics keyboard
