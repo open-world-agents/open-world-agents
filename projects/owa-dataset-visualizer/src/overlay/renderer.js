@@ -1,22 +1,17 @@
-import { KEYBOARD_LAYOUT, VK_ALIASES } from "./keyboard-layout.js";
+/**
+ * Overlay rendering functions for keyboard and mouse visualization
+ * @module overlay/renderer
+ */
 
-const KEY_SIZE = 32;
-const KEY_MARGIN = 3;
-const COLORS = {
-  bg: "#333",
-  pressed: "#50b0ab",
-  border: "#555",
-  text: "#fff",
-  mouseBody: "#282828",
-  mouseBorder: "#888",
-  mouseInactive: "#444",
-  mouseLeft: "#e74c3c",
-  mouseRight: "#3498db",
-  mouseMiddle: "#f1c40f",
-};
+import { KEYBOARD_LAYOUT, VK_ALIASES } from "./keyboard-layout.js";
+import { KEY_SIZE, KEY_MARGIN, COLORS } from "../constants.js";
 
 /**
  * Draw keyboard overlay on canvas
+ * @param {CanvasRenderingContext2D} ctx - Canvas context
+ * @param {number} x - X position
+ * @param {number} y - Y position
+ * @param {Set<number>} pressedKeys - Set of pressed VK codes
  */
 export function drawKeyboard(ctx, x, y, pressedKeys) {
   // Expand pressedKeys with aliases (SHIFT -> LSHIFT/RSHIFT)
@@ -36,16 +31,16 @@ export function drawKeyboard(ctx, x, y, pressedKeys) {
     const isPressed = expanded.has(vk);
 
     // Key background
-    ctx.fillStyle = isPressed ? COLORS.pressed : COLORS.bg;
+    ctx.fillStyle = isPressed ? COLORS.keyPressed : COLORS.keyBackground;
     ctx.fillRect(kx, ky, kw, kh);
 
     // Key border
-    ctx.strokeStyle = COLORS.border;
+    ctx.strokeStyle = COLORS.keyBorder;
     ctx.lineWidth = 1;
     ctx.strokeRect(kx, ky, kw, kh);
 
     // Label
-    ctx.fillStyle = COLORS.text;
+    ctx.fillStyle = COLORS.keyText;
     if (isArrow) {
       drawArrow(ctx, kx + kw / 2, ky + kh / 2, label);
     } else {
@@ -134,17 +129,16 @@ export function drawMouse(ctx, x, y, activeButtons, wheelDirection = 0) {
   const mw = 10, mh = 24;
   const mx = cx - mw / 2, my = y + 8;
   const halfH = mh / 2;
-  const wheelColor = "#2ecc71"; // Green for wheel scroll
 
   // Upper half
   ctx.fillStyle =
-    wheelDirection > 0 ? wheelColor :
+    wheelDirection > 0 ? COLORS.mouseWheel :
       activeButtons.has("middle") ? COLORS.mouseMiddle : COLORS.mouseInactive;
   ctx.fillRect(mx, my, mw, halfH);
 
   // Lower half
   ctx.fillStyle =
-    wheelDirection < 0 ? wheelColor :
+    wheelDirection < 0 ? COLORS.mouseWheel :
       activeButtons.has("middle") ? COLORS.mouseMiddle : COLORS.mouseInactive;
   ctx.fillRect(mx, my + halfH, mw, halfH);
 
@@ -162,10 +156,20 @@ export function drawMouse(ctx, x, y, activeButtons, wheelDirection = 0) {
 
 /**
  * Draw mouse position minimap
+ * @param {CanvasRenderingContext2D} ctx - Canvas context
+ * @param {number} x - X position
+ * @param {number} y - Y position
+ * @param {number} w - Width
+ * @param {number} h - Height
+ * @param {number} mouseX - Mouse X coordinate
+ * @param {number} mouseY - Mouse Y coordinate
+ * @param {number} screenW - Screen width
+ * @param {number} screenH - Screen height
+ * @param {Set<string>} activeButtons - Set of active button names
  */
 export function drawMinimap(ctx, x, y, w, h, mouseX, mouseY, screenW, screenH, activeButtons) {
   // Border
-  ctx.strokeStyle = "#fff";
+  ctx.strokeStyle = COLORS.minimapBorder;
   ctx.lineWidth = 1;
   ctx.strokeRect(x, y, w, h);
 
@@ -177,7 +181,7 @@ export function drawMinimap(ctx, x, y, w, h, mouseX, mouseY, screenW, screenH, a
   // Cursor dot
   ctx.beginPath();
   ctx.arc(px, py, 4, 0, Math.PI * 2);
-  ctx.strokeStyle = "#0f0";
+  ctx.strokeStyle = COLORS.minimapCursor;
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
