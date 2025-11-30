@@ -34,18 +34,26 @@ const SCREEN_HEIGHT = 1080;
 // Overlay dimensions
 const OVERLAY_HEIGHT = 220;
 
-// Mouse mode selection
-document.querySelectorAll('input[name="mouse-mode"]').forEach((radio) => {
-  radio.addEventListener("change", (e) => {
-    mouseMode = e.target.value;
-    resetState();
-  });
-});
-
 // Recenter interval input
 const recenterInput = document.getElementById("recenter-interval");
 recenterInput?.addEventListener("change", (e) => {
   recenterIntervalMs = Math.max(0, parseInt(e.target.value, 10) || 0);
+});
+
+// Update recenter input state based on mouse mode
+function updateRecenterInputState() {
+  if (recenterInput) {
+    recenterInput.disabled = mouseMode !== "raw";
+  }
+}
+
+// Mouse mode selection
+document.querySelectorAll('input[name="mouse-mode"]').forEach((radio) => {
+  radio.addEventListener("change", (e) => {
+    mouseMode = e.target.value;
+    updateRecenterInputState();
+    resetState();
+  });
 });
 
 // Enable load button when both files selected

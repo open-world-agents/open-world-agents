@@ -115,3 +115,12 @@ button:disabled {
   color: #fff;
   text-align: right;
 }
+
+#recenter-interval:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+#recenter-label:has(#recenter-interval:disabled) {
+  opacity: 0.5;
+}
