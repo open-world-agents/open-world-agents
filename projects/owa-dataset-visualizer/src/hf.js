@@ -58,6 +58,12 @@ export function hasFiles(tree) {
   return Object.values(tree.folders).some(hasFiles);
 }
 
+export async function fetchLocalFileList(baseUrl) {
+  const res = await fetch(`${baseUrl}/files.json`);
+  if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
+  return res.json();
+}
+
 export function renderFileTree(tree, container, onSelect) {
   container.innerHTML = "";
   let firstLi = null;
