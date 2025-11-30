@@ -4,18 +4,12 @@ Browser-based visualizer for OWA recordings. Syncs MCAP input data with MKV vide
 
 ## Features
 
-- **100% local processing**: No server uploads. MCAP parsed in-browser via `@mcap/core`
-- **Hour+ recordings**: Indexed seeking, never reads entire file
-- **Full input visualization**:
-  - Keyboard: All keys with Windows VK codes
-  - Mouse: Left/right/middle buttons + scroll wheel (up/down)
-  - Position: Minimap showing cursor location
-- **2D/3D game support**:
-  - Relative mode: Accumulates raw deltas (FPS games)
-  - Absolute mode: Uses cursor coordinates (RTS/2D games)
-  - Recenter interval for relative mode
-- **Safe seeking**: Video pauses during MCAP state loading
-- **Side panel**: Window info (title, position, size) + MCAP stats (topics, message counts)
+- **Local-only**: All processing in browser. No server uploads.
+- **Large file support**: Uses MCAP index for seeking. Never loads entire file.
+- **Input overlay**: Keyboard (all keys), mouse (L/R/M buttons, scroll wheel), cursor minimap
+- **Mouse mode**: Toggle Relative (FPS) / Absolute (2D/RTS). Recenter interval for relative.
+- **Seek handling**: Video pauses while loading state, resumes automatically.
+- **Info panels**: Active window info, MCAP topic stats
 
 ## Usage
 
