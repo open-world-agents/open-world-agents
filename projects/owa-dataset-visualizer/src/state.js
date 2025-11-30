@@ -56,7 +56,7 @@ function handleMouseState(state, data) {
 function handleMouse(state, data, onWheel) {
   state.mouse.x = data.x ?? state.mouse.x;
   state.mouse.y = data.y ?? state.mouse.y;
-  
+
   if (data.event_type === "click" && data.button) {
     if (data.pressed) state.mouse.buttons.add(data.button);
     else state.mouse.buttons.delete(data.button);
@@ -69,19 +69,21 @@ function handleMouse(state, data, onWheel) {
 export class StateManager {
   constructor() {
     this.state = createInitialState();
-    this.mouseMode = "raw";
+    this.mouseMode = "raw";          // "raw" | "absolute"
     this.recenterIntervalMs = 0;
-    this.lastRecenterTime = 0n;
-    this.lastProcessedTime = 0n;
+    this.lastRecenterTime = 0n;      // bigint
+    this.lastProcessedTime = 0n;     // bigint
     this.lastWheelTime = 0;
     this.isLoading = false;
   }
 
+  /** @param {bigint} recenterTime */
   reset(recenterTime = 0n) {
     this.state = createInitialState();
     this.lastRecenterTime = recenterTime;
   }
 
+  /** @param {string} topic @param {Object} data @param {bigint} time */
   processMessage(topic, data, time) {
     const onWheel = () => { this.lastWheelTime = performance.now(); };
     const onRecenter = (t) => { this.lastRecenterTime = t; };

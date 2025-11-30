@@ -36,16 +36,18 @@ export async function loadMcapFromUrl(url) {
 export class TimeSync {
   constructor() { this.basePtsTime = null; }
 
+  /** @param {bigint} logTime */
   initFromScreenMessage(logTime, data) {
-    const ptsNs = data?.media_ref?.pts_ns || 0;
-    this.basePtsTime = logTime - BigInt(ptsNs);
+    this.basePtsTime = logTime - BigInt(data?.media_ref?.pts_ns || 0);
   }
 
+  /** @param {number} videoTimeSec @returns {bigint} */
   videoTimeToMcap(videoTimeSec) {
     if (this.basePtsTime === null) return 0n;
     return this.basePtsTime + BigInt(Math.floor(videoTimeSec * 1e9));
   }
 
+  /** @returns {bigint} */
   getBasePtsTime() { return this.basePtsTime ?? 0n; }
 }
 
