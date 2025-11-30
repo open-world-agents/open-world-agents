@@ -1,0 +1,290 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, sans-serif;
+  background: #1a1a1a;
+  color: #fff;
+  min-height: 100vh;
+}
+
+#app {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* File Selection */
+#file-select {
+  text-align: center;
+  padding: 40px;
+}
+
+.file-inputs {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  margin: 20px 0;
+}
+
+.file-inputs label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+button {
+  padding: 10px 30px;
+  font-size: 16px;
+  cursor: pointer;
+  background: #4a9eff;
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+}
+
+button:disabled {
+  background: #555;
+  cursor: not-allowed;
+}
+
+#status {
+  margin-top: 10px;
+  color: #888;
+}
+
+/* Viewer */
+#video-container {
+  position: relative;
+  background: #000;
+}
+
+#video {
+  width: 100%;
+  max-width: 960px;
+  max-height: 540px;
+  display: block;
+}
+
+#overlay {
+  display: block;
+  background: #1a1a1a;
+  /* Don't scale: use actual canvas size */
+}
+
+#info-panel {
+  display: flex;
+  gap: 30px;
+  padding: 15px;
+  background: #2a2a2a;
+  font-family: monospace;
+}
+
+#info-panel>div span {
+  color: #4a9eff;
+}
+
+#mouse-mode {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#mouse-mode label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+#mouse-mode input[type="radio"] {
+  cursor: pointer;
+}
+
+#recenter-interval {
+  width: 60px;
+  padding: 2px 4px;
+  border: 1px solid #555;
+  border-radius: 4px;
+  background: #333;
+  color: #fff;
+  text-align: right;
+}
+
+#recenter-interval:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+#recenter-label:has(#recenter-interval:disabled) {
+  opacity: 0.5;
+}
+
+#usage-hint {
+  font-size: 11px;
+  color: #777;
+  line-height: 1.5;
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: #1a1a1a;
+  border-radius: 6px;
+  border: 1px solid #333;
+}
+
+#usage-hint p {
+  margin: 3px 0;
+}
+
+#usage-hint strong {
+  color: #999;
+}
+
+/* Loading indicator */
+#loading-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  z-index: 100;
+  pointer-events: none;
+}
+
+/* Viewer Layout */
+#viewer-layout {
+  display: flex;
+  gap: 20px;
+}
+
+#viewer-main {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Side Panel */
+#side-panel {
+  width: 280px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#side-panel details {
+  background: #2a2a2a;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+#side-panel summary {
+  padding: 10px 14px;
+  background: #333;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 13px;
+  user-select: none;
+}
+
+#side-panel summary:hover {
+  background: #3a3a3a;
+}
+
+#side-panel details[open] summary {
+  border-bottom: 1px solid #444;
+}
+
+/* Window Info */
+#window-info {
+  padding: 12px 14px;
+  font-family: monospace;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+#window-info .title {
+  color: #4a9eff;
+  word-break: break-all;
+}
+
+#window-info .coords {
+  color: #888;
+}
+
+#window-info .placeholder {
+  color: #666;
+  font-style: italic;
+}
+
+/* MCAP Info */
+#mcap-info {
+  padding: 12px 14px;
+  font-family: monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+#mcap-info .placeholder {
+  color: #666;
+  font-style: italic;
+}
+
+#mcap-info .section {
+  margin-bottom: 12px;
+}
+
+#mcap-info .section-title {
+  color: #4a9eff;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+#mcap-info .topic-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 0;
+  border-bottom: 1px solid #333;
+}
+
+#mcap-info .topic-name {
+  color: #aaa;
+}
+
+#mcap-info .topic-count {
+  color: #666;
+}
+
+#mcap-info .time-range {
+  color: #888;
+  margin-top: 8px;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  #viewer-layout {
+    flex-direction: column;
+  }
+
+  #side-panel {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  #side-panel details {
+    flex: 1;
+    min-width: 200px;
+  }
+}

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OWA Dataset Visualizer</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/src/styles.css">
+</head>
+
+<body>
+  <div id="app">
+    <!-- File Selection -->
+    <div id="file-select">
+      <h2>Load Dataset</h2>
+      <div class="file-inputs">
+        <label>MCAP: <input type="file" id="mcap-input" accept=".mcap"></label>
+        <label>MKV: <input type="file" id="mkv-input" accept=".mkv,.mp4,.webm"></label>
+      </div>
+      <button id="load-btn" disabled>Load</button>
+      <p id="status"></p>
+    </div>
+
+    <!-- Viewer -->
+    <div id="viewer" class="hidden">
+      <div id="viewer-layout">
+        <!-- Left: Video + Overlay -->
+        <div id="viewer-main">
+          <div id="video-container">
+            <video id="video" controls></video>
+            <div id="loading-indicator" class="hidden">Loading...</div>
+          </div>
+          <canvas id="overlay"></canvas>
+          <div id="info-panel">
+            <div id="time-info">Time: <span></span></div>
+            <div id="mouse-mode">
+              Mouse:
+              <label><input type="radio" name="mouse-mode" value="raw" checked> Relative (3D)</label>
+              <label><input type="radio" name="mouse-mode" value="absolute"> Absolute (2D)</label>
+              <label id="recenter-label">
+                Recenter:
+                <input type="number" id="recenter-interval" min="0" value="0" step="100" placeholder="ms">
+                ms (0=off)
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Side Panel -->
+        <div id="side-panel">
+          <!-- Window Info -->
+          <details id="window-section" open>
+            <summary>Window Info</summary>
+            <div id="window-info">
+              <p class="placeholder">No window data</p>
+            </div>
+          </details>
+
+          <!-- MCAP Info -->
+          <details id="mcap-section">
+            <summary>MCAP Info</summary>
+            <div id="mcap-info">
+              <p class="placeholder">Loading...</p>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <div id="usage-hint">
+        <p><strong>Data:</strong> Mouse coordinates based on 1920×1080. Keyboard uses Windows VK codes.</p>
+        <p><strong>Relative (3D):</strong> For FPS/3D games. Accumulates raw mouse deltas. Use Recenter to reset
+          position periodically.</p>
+        <p><strong>Absolute (2D):</strong> For RTS/2D games. Uses absolute cursor coordinates from mouse topic.</p>
+        <p><strong>Display:</strong> Recommended ≥720px browser width for overlay.</p>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>
