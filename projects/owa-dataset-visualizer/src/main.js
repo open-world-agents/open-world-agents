@@ -56,12 +56,13 @@ function hideLoading() {
 async function loadStateAt(targetTime) {
   if (!mcapReader) return;
 
+  // Set loading state BEFORE acquiring mutex (so other code can check isLoading)
+  isLoading = true;
+  video.pause();
+  showLoading();
+
   const release = await stateMutex.acquire();
   try {
-    isLoading = true;
-    video.pause();
-    showLoading();
-
     // Reset state
     currentState = {
       keyboard: new Set(),
@@ -109,7 +110,7 @@ async function loadStateAt(targetTime) {
       reverse: true,
     })) {
       const data = JSON.parse(new TextDecoder().decode(msg.data));
-      // mouse/state has x, y (absolute position) and buttons (Set of strings like "left", "right")
+      // mouse/state has x, y (absolute position) and buttons (Set of strings)
       currentState.mouse.x = data.x ?? SCREEN_WIDTH / 2;
       currentState.mouse.y = data.y ?? SCREEN_HEIGHT / 2;
       currentState.mouse.buttons = new Set(data.buttons || []);
@@ -193,7 +194,8 @@ function processMessage(topic, data, time) {
 
 // Load and process messages from lastProcessedTime to targetTime
 async function updateStateUpTo(targetTime) {
-  if (!mcapReader || targetTime <= lastProcessedTime) return;
+  // Skip if loading or no new messages needed
+  if (!mcapReader || isLoading || targetTime <= lastProcessedTime) return;
 
   const release = await stateMutex.acquire();
   try {
