@@ -13,7 +13,7 @@ RUN npm ci && npm run build
 FROM nginx:alpine
 
 COPY --from=builder /owa/projects/owa-dataset-visualizer/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=builder /owa/projects/owa-dataset-visualizer/nginx.conf /etc/nginx/conf.d/default.conf
 
 # HuggingFace Spaces uses port 7860
 EXPOSE 7860
