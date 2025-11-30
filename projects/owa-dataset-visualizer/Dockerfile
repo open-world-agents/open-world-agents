@@ -15,5 +15,6 @@ FROM nginx:alpine
 COPY --from=builder /owa/projects/owa-dataset-visualizer/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-EXPOSE 80
+# HuggingFace Spaces uses port 7860
+EXPOSE 7860
 CMD ["nginx", "-g", "daemon off;"]
