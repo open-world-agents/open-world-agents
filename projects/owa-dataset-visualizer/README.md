@@ -12,6 +12,15 @@ Browser-based visualizer for OWA recordings. Syncs MCAP input data with MKV vide
 - **Seek handling**: Video pauses while loading state, resumes automatically.
 - **Info panels**: Active window info, MCAP topic stats
 
+## Prerequisites
+
+Install Node.js via [nvm](https://github.com/nvm-sh/nvm) (recommended):
+
+```bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+nvm install --lts
+```
+
 ## Usage
 
 ```bash
