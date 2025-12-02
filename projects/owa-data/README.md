@@ -39,11 +39,12 @@ _Our Pipeline = OWAMcap → RLDS-Event → FSL Dataset_
 
 Our pipeline converts **300+ hours** of data from OWAMcap to FSL in **under 1 hour** by never reading or decoding media files during conversion.
 
-| Stage | Script                                   | Output         | Format                                 |
-| ----- | ---------------------------------------- | -------------- | -------------------------------------- |
-| 1     | `01_raw_events_to_event_dataset.py`      | Event Dataset  | RLDS-Event (timestamp + event per row) |
-| 2A    | `02A_event_to_fsl.py`                    | FSL Dataset    | FSLDataset (tokens + images per row)   |
-| 2B    | `02B_event_dataset_to_binned_dataset.py` | Binned Dataset | RLDS-style (step per row)              |
+| Stage | Script                              | Output        | Format                                 |
+| ----- | ----------------------------------- | ------------- | -------------------------------------- |
+| 1     | `01_raw_events_to_event_dataset.py` | Event Dataset | RLDS-Event (timestamp + event per row) |
+| 2     | `02_event_to_fsl.py`                | FSL Dataset   | FSL (tokens + images per row)          |
+
+> For converting to traditional step-based formats (e.g., RLDS, LeRobot compatible), see [`event_to_binned.py`](scripts/event_to_binned.py).
 
 ## Quick Start
 
@@ -54,8 +55,8 @@ python scripts/01_raw_events_to_event_dataset.py \
   --input_dir /path/to/mcap/files \
   --output_dir /path/to/event-dataset
 
-# Step 2: Event Dataset → FSL Dataset (recommended)
-python scripts/02A_event_to_fsl.py \
+# Step 2: Event Dataset → FSL Dataset
+python scripts/02_event_to_fsl.py \
   --config configs/internvl3_example.yaml \
   --input_dir /path/to/event-dataset \
   --output_dir /path/to/fsl-dataset
@@ -96,12 +97,12 @@ python scripts/01_raw_events_to_event_dataset.py \
 
 **Features:** Rate limiting per topic, topic filtering, train/test splitting
 
-## Stage 2A: Event Dataset → FSL Dataset (Recommended)
+## Stage 2: Event Dataset → FSL Dataset
 
-Converts Event Dataset into Fixed Sequence Length format with pre-computed tokenization. This is the **recommended path** for transformer-based VLA training.
+Converts Event Dataset into Fixed Sequence Length format with pre-computed tokenization.
 
 ```bash
-python scripts/02A_event_to_fsl.py \
+python scripts/02_event_to_fsl.py \
   --config configs/internvl3_example.yaml \
   --input_dir /path/to/event-dataset \
   --output_dir /path/to/fsl-dataset
@@ -110,24 +111,18 @@ python scripts/02A_event_to_fsl.py \
 **Schema:**
 | Column | Type | Description |
 |--------|------|-------------|
-| `input_ids` | sequence | Pre-tokenized sequence |
-| `attention_mask` | sequence | Attention mask |
+| `input_ids` | sequence[int] | Pre-tokenized token IDs |
+| `attention_mask` | sequence[int] | Attention mask (1 = valid, 0 = padding) |
 | `texts` | string | Raw text (for debugging) |
-| `images` | sequence | Image references |
-| `episode_path` | string | Source episode |
+| `images` | sequence[string] | Serialized ScreenCaptured messages (JSON) |
+| `episode_path` | string | Source episode path |
 
-**Why FSL?**
+## Appendix: Converting to Traditional Formats
 
-- Tokenization-aware sequence packing eliminates padding waste ([nanoVLM](https://github.com/huggingface/nanoVLM/pull/115))
-- Pre-computed tokenization eliminates runtime overhead
-- Automatic handling of episode boundaries
-
-## Stage 2B: Event Dataset → Binned Dataset (Traditional)
-
-Converts Event Dataset into time-binned state-action format, compatible with existing robotics frameworks.
+For compatibility with existing robotics frameworks (RLDS, LeRobot), you can convert Event Dataset to time-binned step format:
 
 ```bash
-python scripts/02B_event_dataset_to_binned_dataset.py \
+python scripts/event_to_binned.py \
   --input-dir /path/to/event-dataset \
   --output-dir /path/to/binned-dataset \
   --fps 10 \
@@ -143,27 +138,22 @@ python scripts/02B_event_dataset_to_binned_dataset.py \
 | `state` | sequence[binary] | Screen events in this bin |
 | `actions` | sequence[binary] | Action events in this bin |
 
-**When to use:** If your training code expects state-action pairs similar to [OpenX](https://robotics-transformer-x.github.io/), [LeRobot](https://github.com/huggingface/lerobot), or [RLDS](https://github.com/google-research/rlds).
+**When to use:** If your training code expects state-action pairs similar to [RLDS](https://github.com/google-research/rlds) or [LeRobot](https://github.com/huggingface/lerobot).
 
 ## Dataset Transforms
 
-Raw datasets store binary MCAP messages. Transforms convert them to training-ready format (images + text) on-the-fly using HuggingFace's `set_transform()`.
+FSL datasets store pre-tokenized sequences with image references. Transforms load images on-the-fly using HuggingFace's `set_transform()`.
 
 ```python
 from owa.data.datasets import load_from_disk
 
-dataset = load_from_disk("/path/to/dataset")
-
-# Apply transform based on dataset stage
-dataset["train"].auto_set_transform(
-    stage="fsl",           # or "event", "binned"
-    load_images=True,
-    encoder_type="hierarchical"  # for event/binned only
-)
+dataset = load_from_disk("/path/to/fsl-dataset")
+dataset["train"].auto_set_transform(stage="fsl", load_images=True)
 
 for sample in dataset["train"]:
-    images = sample["images"]           # List[PIL.Image]
-    actions = sample["encoded_events"]  # List[str] (event/binned) or input_ids (fsl)
+    input_ids = sample["input_ids"]        # torch.Tensor[int]
+    attention_mask = sample["attention_mask"]  # torch.Tensor[int]
+    images = sample["images"]              # List[PIL.Image]
 ```
 
 ## Training Examples
@@ -176,4 +166,5 @@ for sample in dataset["train"]:
 - [nanoVLM Sequence Packing](https://github.com/huggingface/nanoVLM/pull/115) — Sequence packing reference
 - [olmo-core FSLDataset](https://github.com/allenai/OLMo-core/blob/main/src/olmo_core/data/fsl_dataset.py) — FSL implementation reference
 - [HuggingFace Datasets](https://huggingface.co/docs/datasets/) — Dataset handling foundation
-- [OpenX](https://robotics-transformer-x.github.io/), [LeRobot](https://github.com/huggingface/lerobot), [RLDS](https://github.com/google-research/rlds) — Robotics dataset formats
+- [RLDS](https://github.com/google-research/rlds), [LeRobot](https://github.com/huggingface/lerobot) — Robotics dataset formats
+- [rosbag](http://wiki.ros.org/rosbag), [mcap](https://mcap.dev/) — Recording formats
