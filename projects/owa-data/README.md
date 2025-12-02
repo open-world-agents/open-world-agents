@@ -46,35 +46,6 @@ Our pipeline converts **300+ hours** of data from OWAMcap to FSL in **under 1 ho
 
 > For converting to traditional step-based formats (e.g., RLDS, LeRobot compatible), see [`event_to_binned.py`](scripts/event_to_binned.py).
 
-## Quick Start
-
-```bash
-# Step 1: MCAP → Event Dataset
-python scripts/01_raw_events_to_event_dataset.py \
-  --config configs/mcap_to_event_example.yaml \
-  --input_dir /path/to/mcap/files \
-  --output_dir /path/to/event-dataset
-
-# Step 2: Event Dataset → FSL Dataset
-python scripts/02_event_to_fsl.py \
-  --config configs/internvl3_example.yaml \
-  --input_dir /path/to/event-dataset \
-  --output_dir /path/to/fsl-dataset
-
-# Step 3: Load and train
-python -c "
-from owa.data.datasets import load_from_disk
-
-dataset = load_from_disk('/path/to/fsl-dataset')
-dataset['train'].auto_set_transform(stage='fsl', load_images=True)
-
-for sample in dataset['train']:
-    images = sample['images']        # List[PIL.Image]
-    input_ids = sample['input_ids']  # Tokenized sequence
-    # ... your training loop
-"
-```
-
 ## Stage 1: MCAP → Event Dataset
 
 Converts raw MCAP files into a flat event-oriented HuggingFace Dataset. Each row is a single event (screen frame, key press, mouse move, etc.) with nanosecond timestamps.
@@ -142,18 +113,22 @@ python scripts/event_to_binned.py \
 
 ## Dataset Transforms
 
-FSL datasets store pre-tokenized sequences with image references. Transforms load images on-the-fly using HuggingFace's `set_transform()`.
+Raw datasets contain binary MCAP messages. Transforms convert them to training-ready format on-the-fly using HuggingFace's `set_transform()`.
 
 ```python
 from owa.data.datasets import load_from_disk
 
+# Event Dataset
+dataset = load_from_disk("/path/to/event-dataset")
+dataset["train"].auto_set_transform(stage="event", encoder_type="hierarchical", load_images=True)
+
+# FSL Dataset
 dataset = load_from_disk("/path/to/fsl-dataset")
 dataset["train"].auto_set_transform(stage="fsl", load_images=True)
 
-for sample in dataset["train"]:
-    input_ids = sample["input_ids"]        # torch.Tensor[int]
-    attention_mask = sample["attention_mask"]  # torch.Tensor[int]
-    images = sample["images"]              # List[PIL.Image]
+# Binned Dataset
+dataset = load_from_disk("/path/to/binned-dataset")
+dataset["train"].auto_set_transform(stage="binned", instruction="Complete the computer task")
 ```
 
 ## Training Examples
