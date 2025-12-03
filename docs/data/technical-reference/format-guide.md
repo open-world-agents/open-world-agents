@@ -547,10 +547,10 @@ For detailed technical specifications, see:
 
 - **[OEP-0006: OWAMcap Profile Specification](https://github.com/open-world-agents/open-world-agents/blob/main/oeps/oep-0006.md)** - Authoritative format specification
 - **[MCAP Format](https://mcap.dev/)** - Base container format documentation
-- **Message Registry** - See `projects/owa-core/owa/core/messages.py` for implementation
+- **[Message Registry](https://github.com/open-world-agents/open-world-agents/blob/main/projects/owa-core/owa/core/messages.py)** - Message implementation
 
 ## Next Steps
 
-- **[Explore and Edit](../getting-started/exploring-data.md)**: Learn to work with OWAMcap files
+- **[Exploring Data](../getting-started/exploring-data.md)**: Learn to work with OWAMcap files
 - **[Data Pipeline](data-pipeline.md)**: Process OWAMcap for ML training
 - **[Viewer](../viewer.md)**: Visualize OWAMcap data interactively
