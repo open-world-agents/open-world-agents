@@ -34,7 +34,7 @@ export FSL_DATASET_DIR="./data/fsl-dataset"
 This step reads the raw MCAP files and creates a HuggingFace Dataset where each row is a single event (screen frame, key press, mouse move, etc.) with nanosecond timestamps.
 
 ```bash
-python scripts/01_raw_events_to_event_dataset.py \
+python scripts/01_raw_to_event.py \
   --config configs/mcap_to_event_example.yaml \
   --input_dir $MCAP_DIR \
   --output_dir $EVENT_DATASET_DIR \

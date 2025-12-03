@@ -26,7 +26,7 @@ OWAMcap integrates with the complete [OWA Data Pipeline](../technical-reference/
 $ ocap my-session.mcap
 
 # 2. Process to training format
-$ python scripts/01_raw_events_to_event_dataset.py --train-dir ./
+$ python scripts/01_raw_to_event.py --train-dir ./
 
 # 3. Train your model
 $ python train.py --dataset ./event-dataset
