@@ -119,7 +119,7 @@ owl mcap subtitle session.mcap
 vlc session.mkv --sub-file session.srt
 ```
 
-### 🎯 Topic-Specific Analysis
+### 📍 Topic-Specific Analysis
 
 ```bash
 # Focus on user interactions

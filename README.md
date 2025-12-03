@@ -29,19 +29,19 @@ $ python scripts/01_raw_events_to_event_dataset.py --train-dir ./
 # 3. Train your model
 $ python train.py --dataset ./event-dataset
 ```
-
-> 📖 **Detailed Guide**: [Complete Quick Start Tutorial](https://open-world-agents.github.io/open-world-agents/quick-start/) - Step-by-step walkthrough with examples and troubleshooting
 <!-- END-SYNC: quick-start-3-steps -->
+
+> 📖 **Detailed Guide**: [Complete Quick Start Tutorial](https://open-world-agents.github.io/open-world-agents/quick-start/)
 
 ## Overview
 
 Open World Agents is a comprehensive framework for building AI agents that interact with desktop applications through vision, keyboard, and mouse control. Complete toolkit from data capture to model training and evaluation:
 
 <!-- SYNC-ID: core-components-list -->
-- **🌍 [Environment Framework](https://open-world-agents.github.io/open-world-agents/env/)**: "USB-C of desktop agents" - universal interface for native desktop automation with pre-built plugins for desktop control, high-performance screen capture (6x faster), and zero-configuration plugin system
-- **📊 [Data Infrastructure](https://open-world-agents.github.io/open-world-agents/data/)**: Complete desktop agent data pipeline from recording to training with `OWAMcap` format - a [universal standard](https://open-world-agents.github.io/open-world-agents/data/getting-started/why-owamcap/) powered by [mcap](https://mcap.dev/)
-- **🛠️ [CLI Tools](https://open-world-agents.github.io/open-world-agents/cli/)**: Command-line utilities (`owl`) for recording, analyzing, and managing agent data
-- **🤖 [Examples](https://open-world-agents.github.io/open-world-agents/examples/)**: Complete implementations and training pipelines for multimodal agents
+- 🌍 **[Environment Framework](https://open-world-agents.github.io/open-world-agents/env/)**: "USB-C of desktop agents" - universal interface for native desktop automation with pre-built plugins for desktop control, high-performance screen capture, and zero-configuration plugin system
+- 📊 **[Data Infrastructure](https://open-world-agents.github.io/open-world-agents/data/)**: Complete desktop agent data pipeline from recording to training with `OWAMcap` format - a [universal standard](https://open-world-agents.github.io/open-world-agents/data/getting-started/why-owamcap/) powered by [MCAP](https://mcap.dev/)
+- 🛠️ **[CLI Tools](https://open-world-agents.github.io/open-world-agents/cli/)**: Command-line utilities (`owl`) for recording, analyzing, and managing agent data
+- 🤖 **[Examples](https://open-world-agents.github.io/open-world-agents/examples/)**: Complete implementations and training pipelines for multimodal agents
 <!-- END-SYNC: core-components-list -->
 
 ## Why OWA?
@@ -229,15 +229,15 @@ with screen.session:
 ```
 
 <!-- SYNC-ID: gst-performance-benchmark -->
-Powered by the powerful Gstreamer and Windows API, our implementation is **6x** faster than comparatives.
+Powered by GStreamer and Windows API, our implementation is **6x faster** than alternatives:
 
-| **Library**        | **Avg. Time per Frame** | **Relative Speed**    |
-|--------------------|------------------------|-----------------------|
-| **owa.env.gst**   | **5.7 ms**              | ⚡ **1× (Fastest)**    |
-| `pyscreenshot`    | 33 ms                   | 🚶‍♂️ 5.8× slower       |
-| `PIL`             | 34 ms                   | 🚶‍♂️ 6.0× slower       |
-| `MSS`             | 37 ms                   | 🚶‍♂️ 6.5× slower       |
-| `PyQt5`           | 137 ms                  | 🐢 24× slower         |
+| **Library** | **Avg. Time per Frame** | **Relative Speed** |
+|-------------|------------------------|--------------------|
+| **owa.env.gst** | **5.7 ms** | ⚡ **1× (Fastest)** |
+| `pyscreenshot` | 33 ms | 🚶‍♂️ 5.8× slower |
+| `PIL` | 34 ms | 🚶‍♂️ 6.0× slower |
+| `MSS` | 37 ms | 🚶‍♂️ 6.5× slower |
+| `PyQt5` | 137 ms | 🐢 24× slower |
 
 📌 **Tested on:** Intel i5-11400, GTX 1650
 <!-- END-SYNC: gst-performance-benchmark -->
@@ -264,14 +264,10 @@ ocap my-session
 ### 🤗 Community Datasets: Democratizing Desktop Agent Data
 
 <!-- SYNC-ID: community-datasets -->
-**Browse Available Datasets**: [🤗 datasets?other=OWA](https://huggingface.co/datasets?other=OWA)
+**Browse Datasets**: [🤗 HuggingFace](https://huggingface.co/datasets?other=OWA)
 
-- **Growing Collection**: Hundreds of community-contributed datasets
-- **Standardized Format**: All use OWAMcap for seamless integration
+- **Standardized Format**: All datasets use OWAMcap for seamless integration
 - **Interactive Preview**: [Hugging Face Spaces Visualizer](https://huggingface.co/spaces/open-world-agents/visualize_dataset)
-- **Easy Sharing**: Upload recordings directly with one command
-
-> 🚀 **Impact**: OWA has democratized desktop agent data, growing from zero to hundreds of public datasets in the unified OWAMcap format.
 <!-- END-SYNC: community-datasets -->
 
 **Access Community Datasets**:
@@ -291,9 +287,8 @@ data = load_dataset("open-world-agents/example_dataset")
 **OWAMcap** combines the robustness of [MCAP](https://mcap.dev/) with specialized desktop interaction schemas. Perfect synchronization of screen captures, input events, and window context with nanosecond precision.
 
 <!-- SYNC-ID: owamcap-key-features -->
-**Key Features**:
-- 🔄 **Universal Standard**: Unlike fragmented formats, enables seamless dataset combination for large-scale foundation models *(OWAMcap)*
-- 🎯 **High-Performance Multimodal Storage**: Lightweight [MCAP](https://mcap.dev/) container with nanosecond precision for synchronized data streams *(MCAP)*
+- 🌐 **Universal Standard**: Unlike fragmented formats, enables seamless dataset combination for large-scale foundation models *(OWAMcap)*
+- ⚡ **High-Performance Multimodal Storage**: Lightweight [MCAP](https://mcap.dev/) container with nanosecond precision for synchronized data streams *(MCAP)*
 - 🔗 **Flexible MediaRef**: Smart references to both external and embedded media (file paths, URLs, data URIs, video frames) with lazy loading - keeps metadata files small while supporting rich media *(OWAMcap)* → [Learn more](https://open-world-agents.github.io/open-world-agents/data/technical-reference/format-guide/#media-handling)
 - 🤗 **Training Pipeline Ready**: Native HuggingFace integration, seamless dataset loading, and direct compatibility with ML frameworks *(Ecosystem)* → [Browse datasets](https://huggingface.co/datasets?other=OWA) | [Data pipeline](https://open-world-agents.github.io/open-world-agents/data/technical-reference/data-pipeline/)
 <!-- END-SYNC: owamcap-key-features -->
@@ -380,8 +375,8 @@ For development or contributing to the project, you can install packages in edit
 
 ### 📊 Data Infrastructure: Complete Pipeline
 <!-- SYNC-ID: owamcap-key-features -->
-- 🔄 **Universal Standard**: Unlike fragmented formats, enables seamless dataset combination for large-scale foundation models *(OWAMcap)*
-- 🎯 **High-Performance Multimodal Storage**: Lightweight [MCAP](https://mcap.dev/) container with nanosecond precision for synchronized data streams *(MCAP)*
+- 🌐 **Universal Standard**: Unlike fragmented formats, enables seamless dataset combination for large-scale foundation models *(OWAMcap)*
+- ⚡ **High-Performance Multimodal Storage**: Lightweight [MCAP](https://mcap.dev/) container with nanosecond precision for synchronized data streams *(MCAP)*
 - 🔗 **Flexible MediaRef**: Smart references to both external and embedded media (file paths, URLs, data URIs, video frames) with lazy loading - keeps metadata files small while supporting rich media *(OWAMcap)* → [Learn more](https://open-world-agents.github.io/open-world-agents/data/technical-reference/format-guide/#media-handling)
 - 🤗 **Training Pipeline Ready**: Native HuggingFace integration, seamless dataset loading, and direct compatibility with ML frameworks *(Ecosystem)* → [Browse datasets](https://huggingface.co/datasets?other=OWA) | [Data pipeline](https://open-world-agents.github.io/open-world-agents/data/technical-reference/data-pipeline/)
 <!-- END-SYNC: owamcap-key-features -->

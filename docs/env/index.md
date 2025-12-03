@@ -12,11 +12,11 @@
 
 !!! tip "Quick Start"
     ```bash
-    pip install owa
+    $ pip install owa
     ```
     ```python
     from owa.core import CALLABLES, LISTENERS
-    # Components automatically available - no configuration needed!
+    # Components available after plugin installation
     ```
 
 ## Core Concepts
@@ -53,17 +53,15 @@ OWA's Environment provides three types of components for real-time agent interac
         frame = capture.grab()
     ```
 
-## Why Choose OWA's Env?
+## Design
 
-Traditional frameworks like [gymnasium.Env](https://gymnasium.farama.org/api/env/) use synchronous `env.step()` calls that assume infinite processing time. **Real-world agents need real-time responses.**
+Unlike [gymnasium.Env](https://gymnasium.farama.org/api/env/) which uses synchronous `env.step()` calls, OWA's Env supports event-driven, asynchronous interactions.
 
 <!-- SYNC-ID: env-framework-features -->
-**OWA's Env delivers:**
-
-- **⚡ Real-time Performance**: Optimized for responsive agent interactions (GStreamer components achieve <30ms latency)
-- **🔌 Zero-Configuration**: Automatic plugin discovery via Python Entry Points
-- **🌐 Event-Driven**: Asynchronous processing that mirrors real-world dynamics
-- **🧩 Extensible**: Community-driven plugin ecosystem
+- ⚡ **Real-time Performance**: Optimized for responsive agent interactions (GStreamer components achieve <30ms latency)
+- 🔌 **Zero-Configuration**: Automatic plugin discovery via Python Entry Points
+- 🌐 **Event-Driven**: Asynchronous processing that mirrors real-world dynamics
+- 🧩 **Extensible**: Community-driven plugin ecosystem
 <!-- END-SYNC: env-framework-features -->
 
 ## Quick Navigation
@@ -80,4 +78,4 @@ Traditional frameworks like [gymnasium.Env](https://gymnasium.farama.org/api/env
 |--------|-------------|--------------|
 | **[Standard](plugins/std.md)** | Core utilities | Time functions, periodic tasks |
 | **[Desktop](plugins/desktop.md)** | Desktop automation | Mouse/keyboard control, window management |
-| **[GStreamer](plugins/gst.md)** | High-performance capture | 6x faster screen recording |
+| **[GStreamer](plugins/gst.md)** | Hardware-accelerated capture | Fast screen recording |
