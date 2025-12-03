@@ -16,7 +16,7 @@ Optimizing for both simultaneously is fundamentally impossible. Our solution: **
 **Our pipeline**: OWAMcap → RLDS-Event → FSL Dataset
 
 - **RLDS-Event**: Similar to RLDS, but each row is an event (with nanosecond timestamp) rather than a step. No information loss from binning/grouping.
-- **FSL Dataset** (Fixed Sequence Length): Similar to conversation-style datasets commonly used in VLM fine-tuning—each row contains a sequence and its associated images. The difference is that FSL is pre-tokenized and episode-aware packed, eliminating runtime overhead.
+- **FSL Dataset** (Fixed Sequence Length): Similar to [conversational format](https://huggingface.co/docs/trl/dataset_formats#formats) commonly used in VLM fine-tuning—each row contains a sequence and its associated images. The difference is that FSL is pre-tokenized and episode-aware packed, eliminating runtime overhead.
 
 ### Feature Comparison
 
