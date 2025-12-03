@@ -38,7 +38,7 @@ Mouse, keyboard, window control, and screen capture for desktop automation.
 | | `desktop/window` | Listener | Monitor window events |
 
 !!! tip "Performance Note"
-    For high-performance screen capture, use **[GStreamer Environment](gst.md)** instead (6x faster).
+    For high-performance, hardware-accelerated screen capture, use **[GStreamer Environment](gst.md)** instead.
 
 ## Usage Examples
 
