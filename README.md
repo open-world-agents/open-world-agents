@@ -47,8 +47,8 @@ $ pip install owa
 
 | Resource | Description |
 |----------|-------------|
+| 🏠 **[Full Documentation](https://open-world-agents.github.io/open-world-agents/)** | Complete docs with all guides and references |
 | 📖 **[Quick Start Guide](https://open-world-agents.github.io/open-world-agents/quick-start/)** | Complete tutorial: Record → Process → Train |
-| 🔍 **[Project Overview](https://open-world-agents.github.io/open-world-agents/overview/)** | Architecture, packages, and benchmarks |
 | 🌍 **[Environment Framework](https://open-world-agents.github.io/open-world-agents/env/)** | Real-time desktop automation |
 | 📊 **[Data Infrastructure](https://open-world-agents.github.io/open-world-agents/data/)** | OWAMcap format and data pipeline |
 | 🤗 **[Community Datasets](https://huggingface.co/datasets?other=OWA)** | Browse and share datasets |
