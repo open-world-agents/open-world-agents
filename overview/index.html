@@ -1,0 +1,2757 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Everything you need to build state-of-the-art foundation multimodal desktop agent, end-to-end.">
+      
+      
+      
+      
+        <link rel="prev" href="../quick-start/">
+      
+      
+        <link rel="next" href="../help_with_owa/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../images/owa-logo.jpg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
+    
+    
+      
+        <title>Project Overview - Open World Agents</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.618322db.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../termynal.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="purple">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#project-overview" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Open World Agents" class="md-header__button md-logo" aria-label="Open World Agents" data-md-component="logo">
+      
+  <img src="../images/owa-logo.jpg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Open World Agents
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Project Overview
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="purple"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6m0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4M7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="lime"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/open-world-agents/open-world-agents" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    open-world-agents
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Open World Agents" class="md-nav__button md-logo" aria-label="Open World Agents" data-md-component="logo">
+      
+  <img src="../images/owa-logo.jpg" alt="logo">
+
+    </a>
+    Open World Agents
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/open-world-agents/open-world-agents" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    open-world-agents
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Get Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Get Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Welcome to OWA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    🚀 Quick Start Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project Overview
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#why-owa" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why OWA?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-can-you-build" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What Can You Build?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#core-components" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Core Components
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#project-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Project Structure
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#core-packages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Core Packages
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#desktop-recording-with-ocap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Desktop Recording with ocap
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#environment-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment Usage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#high-performance-screen-capture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        High-Performance Screen Capture
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#owamcap-data-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OWAMcap Data Format
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#desktop-recording-dataset-sharing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Desktop Recording &amp; Dataset Sharing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#community-datasets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Community Datasets
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cli-tools-owl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI Tools (owl)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Features">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#environment-framework-usb-c-of-desktop-agents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🌍 Environment Framework: "USB-C of Desktop Agents"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-infrastructure-complete-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📊 Data Infrastructure: Complete Pipeline
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#community-ecosystem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🤗 Community &amp; Ecosystem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#community-plugin-ideas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Community Plugin Ideas
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#contributing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contributing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#license" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        License
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#citation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Citation
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../help_with_owa/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Help with OWA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Env in OWA
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Env in OWA
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../env/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Environment Framework
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../env/guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Environment Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../env/custom_plugins/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom EnvPlugin Development
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_4" id="__nav_2_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lists of EnvPlugins
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Lists of EnvPlugins
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../env/plugins/std/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Standard Environment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../env/plugins/desktop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Desktop Environment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../env/plugins/gst/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gstreamer Environment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data in OWA
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Data in OWA
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data/getting-started/why-owamcap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Why OWAMcap?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data/getting-started/recording-data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Recording Data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data/getting-started/exploring-data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exploring Data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technical Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Technical Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data/technical-reference/format-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OWAMcap Format Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data/technical-reference/custom-messages/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom Message Types
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data/technical-reference/data-pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    🚀 Data Pipeline (MCAP → VLA Training)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data/viewer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Viewer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data/conversions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Conversions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Tools
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    CLI Tools
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OWA CLI (owl) - Command Line Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command Groups
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Command Groups
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/mcap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCAP Commands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/env/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Environment Commands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/messages/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Message Commands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/video/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Video Commands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    🚀 Awesome Examples (WIP)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    🚀 Awesome Examples (WIP)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/multimodal_game_agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multimodal Game Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/gui_agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Omniparse + InternLM GUI Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/interactive_world_model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interactve World Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/usage_with_transformers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Usage with transformers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/usage_with_llm/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Usage with LLM Inference Engines(ollama, ...)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#why-owa" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why OWA?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-can-you-build" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What Can You Build?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#core-components" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Core Components
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#project-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Project Structure
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#core-packages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Core Packages
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#desktop-recording-with-ocap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Desktop Recording with ocap
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#environment-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment Usage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#high-performance-screen-capture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        High-Performance Screen Capture
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#owamcap-data-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OWAMcap Data Format
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#desktop-recording-dataset-sharing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Desktop Recording &amp; Dataset Sharing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#community-datasets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Community Datasets
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cli-tools-owl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI Tools (owl)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Features
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Features">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#environment-framework-usb-c-of-desktop-agents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🌍 Environment Framework: "USB-C of Desktop Agents"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-infrastructure-complete-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📊 Data Infrastructure: Complete Pipeline
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#community-ecosystem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🤗 Community &amp; Ecosystem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#community-plugin-ideas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Community Plugin Ideas
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#contributing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contributing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#license" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        License
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#citation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Citation
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="project-overview">Project Overview<a class="headerlink" href="#project-overview" title="Permanent link">&para;</a></h1>
+<p>Open World Agents is a comprehensive framework for building AI agents that interact with desktop applications through vision, keyboard, and mouse control—a complete toolkit from data capture to model training and evaluation.</p>
+<blockquote>
+<p><strong>📄 Research Paper</strong>: This project was developed for the <a href="https://worv-ai.github.io/d2e/">D2E project</a>. If you find this work useful, please cite our paper.</p>
+</blockquote>
+<h2 id="why-owa">Why OWA?<a class="headerlink" href="#why-owa" title="Permanent link">&para;</a></h2>
+<p><strong>Fragmented tools make desktop AI development painful.</strong> Most solutions force you to:</p>
+<ul>
+<li>Stitch together incompatible recording tools</li>
+<li>Build custom data pipelines from scratch</li>
+<li>Handle real-time performance issues yourself</li>
+<li>Start agent development with no examples</li>
+</ul>
+<p><strong>OWA solves this</strong> with a unified framework: record with <a href="https://github.com/open-world-agents/ocap"><code>ocap</code></a>, train with standardized datasets, deploy with real-time environment components, and learn from community examples.</p>
+<h2 id="what-can-you-build">What Can You Build?<a class="headerlink" href="#what-can-you-build" title="Permanent link">&para;</a></h2>
+<ul>
+<li>🤖 <strong>Desktop Automation</strong>: Navigate applications, automate workflows, interact with any software</li>
+<li>🎮 <strong>Game AI</strong>: Master complex games through visual understanding and real-time decision making</li>
+<li>📊 <strong>Training Datasets</strong>: Capture high-quality human-computer interaction data for foundation models</li>
+<li>🤗 <strong>Community Datasets</strong>: Access and contribute to growing <a href="https://huggingface.co/datasets?other=OWA">OWAMcap datasets</a> on HuggingFace</li>
+<li>📈 <strong>Benchmarks</strong>: Create and evaluate desktop agent performance across diverse tasks</li>
+</ul>
+<h2 id="core-components">Core Components<a class="headerlink" href="#core-components" title="Permanent link">&para;</a></h2>
+<!-- SYNC-ID: core-components-list -->
+<ul>
+<li>🌍 <strong><a href="../env/">Environment Framework</a></strong>: "USB-C of desktop agents" - universal interface for native desktop automation with pre-built plugins for desktop control, high-performance screen capture, and zero-configuration plugin system</li>
+<li>📊 <strong><a href="../data/">Data Infrastructure</a></strong>: Complete desktop agent data pipeline from recording to training with <code>OWAMcap</code> format - a <a href="../data/getting-started/why-owamcap/">universal standard</a> powered by <a href="https://mcap.dev/">MCAP</a></li>
+<li>🛠️ <strong><a href="../cli/">CLI Tools</a></strong>: Command-line utilities (<code>owl</code>) for recording, analyzing, and managing agent data</li>
+<li>🤖 <strong><a href="examples/index.md">Examples</a></strong>: Complete implementations and training pipelines for multimodal agents</li>
+</ul>
+<!-- END-SYNC: core-components-list -->
+
+<h2 id="project-structure">Project Structure<a class="headerlink" href="#project-structure" title="Permanent link">&para;</a></h2>
+<p>The repository is organized as a monorepo with multiple sub-repositories under the <code>projects/</code> directory. Each sub-repository is a self-contained Python package installable via <code>pip</code> or <a href="https://docs.astral.sh/uv/"><code>uv</code></a> and follows namespace packaging conventions.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>open-world-agents/
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>├── projects/
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│   ├── mcap-owa-support/     # OWAMcap format support
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>│   ├── owa-core/             # Core framework and registry system
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│   ├── owa-msgs/             # Core message definitions with automatic discovery
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│   ├── owa-cli/              # Command-line tools (ocap, owl)
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>│   ├── owa-env-desktop/      # Desktop environment plugin
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>│   ├── owa-env-example/      # Example environment implementations
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>│   ├── owa-env-gst/          # GStreamer-based screen capture
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>│   └── [your-plugin]/        # Contribute your own plugins!
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>├── docs/                     # Documentation
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>└── README.md
+</code></pre></div>
+<h2 id="core-packages">Core Packages<a class="headerlink" href="#core-packages" title="Permanent link">&para;</a></h2>
+<p><a href="https://pypi.org/project/owa/"><img alt="owa" src="https://img.shields.io/pypi/v/owa?label=owa" /></a> <a href="https://anaconda.org/conda-forge/owa"><img alt="owa" src="https://img.shields.io/conda/vn/conda-forge/owa?label=conda" /></a></p>
+<p>The easiest way to get started is to install the <a href="https://github.com/open-world-agents/open-world-agents/blob/main/pyproject.toml"><strong>owa</strong></a> meta-package, which includes all core components and environment plugins:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>owa
+</code></pre></div>
+<p>All OWA packages use namespace packaging and are installed in the <code>owa</code> namespace (e.g., <code>owa.core</code>, <code>owa.cli</code>, <code>owa.env.desktop</code>). For more detail, see <a href="https://packaging.python.org/en/latest/guides/packaging-namespace-packages/">Packaging namespace packages</a>. We recommend using <a href="https://docs.astral.sh/uv/"><code>uv</code></a> as the package manager.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>PyPI</th>
+<th>Conda</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-core"><code>owa.core</code></a></td>
+<td><a href="https://pypi.org/project/owa-core/"><img alt="owa-core" src="https://img.shields.io/pypi/v/owa-core?label=owa-core" /></a></td>
+<td><a href="https://anaconda.org/conda-forge/owa-core"><img alt="owa-core" src="https://img.shields.io/conda/vn/conda-forge/owa-core?label=conda" /></a></td>
+<td>Framework foundation with registry system</td>
+</tr>
+<tr>
+<td><a href="https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-msgs"><code>owa.msgs</code></a></td>
+<td><a href="https://pypi.org/project/owa-msgs/"><img alt="owa-msgs" src="https://img.shields.io/pypi/v/owa-msgs?label=owa-msgs" /></a></td>
+<td><a href="https://anaconda.org/conda-forge/owa-msgs"><img alt="owa-msgs" src="https://img.shields.io/conda/vn/conda-forge/owa-msgs?label=conda" /></a></td>
+<td>Core message definitions with automatic discovery</td>
+</tr>
+<tr>
+<td><a href="https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-cli"><code>owa.cli</code></a></td>
+<td><a href="https://pypi.org/project/owa-cli/"><img alt="owa-cli" src="https://img.shields.io/pypi/v/owa-cli?label=owa-cli" /></a></td>
+<td><a href="https://anaconda.org/conda-forge/owa-cli"><img alt="owa-cli" src="https://img.shields.io/conda/vn/conda-forge/owa-cli?label=conda" /></a></td>
+<td>Command-line tools (<code>owl</code>) for data analysis</td>
+</tr>
+<tr>
+<td><a href="https://github.com/open-world-agents/open-world-agents/tree/main/projects/mcap-owa-support"><code>mcap-owa-support</code></a></td>
+<td><a href="https://pypi.org/project/mcap-owa-support/"><img alt="mcap-owa-support" src="https://img.shields.io/pypi/v/mcap-owa-support?label=mcap-owa-support" /></a></td>
+<td><a href="https://anaconda.org/conda-forge/mcap-owa-support"><img alt="mcap-owa-support" src="https://img.shields.io/conda/vn/conda-forge/mcap-owa-support?label=conda" /></a></td>
+<td>OWAMcap format support and utilities</td>
+</tr>
+<tr>
+<td><a href="https://github.com/open-world-agents/ocap"><code>ocap</code></a> 🎥</td>
+<td><a href="https://pypi.org/project/ocap/"><img alt="ocap" src="https://img.shields.io/pypi/v/ocap?label=ocap" /></a></td>
+<td><a href="https://anaconda.org/conda-forge/ocap"><img alt="ocap" src="https://img.shields.io/conda/vn/conda-forge/ocap?label=conda" /></a></td>
+<td>Desktop recorder for multimodal data capture</td>
+</tr>
+<tr>
+<td><a href="https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-env-desktop"><code>owa.env.desktop</code></a></td>
+<td><a href="https://pypi.org/project/owa-env-desktop/"><img alt="owa-env-desktop" src="https://img.shields.io/pypi/v/owa-env-desktop?label=owa-env-desktop" /></a></td>
+<td><a href="https://anaconda.org/conda-forge/owa-env-desktop"><img alt="owa-env-desktop" src="https://img.shields.io/conda/vn/conda-forge/owa-env-desktop?label=conda" /></a></td>
+<td>Mouse, keyboard, window event handling</td>
+</tr>
+<tr>
+<td><a href="https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-env-gst"><code>owa.env.gst</code></a> 🎥</td>
+<td><a href="https://pypi.org/project/owa-env-gst/"><img alt="owa-env-gst" src="https://img.shields.io/pypi/v/owa-env-gst?label=owa-env-gst" /></a></td>
+<td><a href="https://anaconda.org/conda-forge/owa-env-gst"><img alt="owa-env-gst" src="https://img.shields.io/conda/vn/conda-forge/owa-env-gst?label=conda" /></a></td>
+<td><a href="#high-performance-screen-capture">High-performance, hardware-accelerated</a> screen capture</td>
+</tr>
+<tr>
+<td><a href="https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-env-example"><code>owa.env.example</code></a></td>
+<td>-</td>
+<td>-</td>
+<td>Reference implementations for learning</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>🎥 <strong>Video Processing Packages</strong>: Packages marked with 🎥 require GStreamer dependencies. Install <code>conda install open-world-agents::gstreamer-bundle</code> first for full functionality.</p>
+<p>📦 <strong>Lockstep Versioning</strong>: All first-party OWA packages follow lockstep versioning, meaning they share the same version number to ensure compatibility and simplify dependency management.</p>
+<p>💡 <strong>Extensible Design</strong>: Built for the community! Easily create custom plugins like <code>owa-env-minecraft</code> or <code>owa-env-web</code> to extend functionality.</p>
+</blockquote>
+<h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
+<p>See the <a href="../install/">Installation Guide</a> for detailed instructions.</p>
+<h2 id="desktop-recording-with-ocap">Desktop Recording with <code>ocap</code><a class="headerlink" href="#desktop-recording-with-ocap" title="Permanent link">&para;</a></h2>
+<p><a href="https://github.com/open-world-agents/ocap"><strong>ocap</strong></a> (Omnimodal CAPture) is a high-performance desktop recorder that captures screen video, audio, keyboard/mouse events, and window events in synchronized formats. Built with Windows APIs and GStreamer for hardware-accelerated recording with H265/HEVC encoding.</p>
+<ul>
+<li><strong>Complete recording</strong>: Video + audio + keyboard/mouse + window events</li>
+<li><strong>High performance</strong>: Hardware-accelerated, ~100MB/min for 1080p</li>
+<li><strong>Simple usage</strong>: <code>ocap my-recording</code> (stop with Ctrl+C)</li>
+<li><strong>Modern formats</strong>: <a href="../data/getting-started/why-owamcap/">OWAMcap</a> with flexible MediaRef system (supports MKV, images, URLs, embedded data)</li>
+</ul>
+<blockquote>
+<p>📖 <strong>Detailed Documentation</strong>: See <a href="../data/getting-started/recording-data/">Desktop Recording Guide</a> for complete setup, usage examples, and troubleshooting.</p>
+</blockquote>
+<h2 id="environment-usage">Environment Usage<a class="headerlink" href="#environment-usage" title="Permanent link">&para;</a></h2>
+<details>
+<summary><strong>Environment Usage: Three Types of Components</strong></summary>
+
+OWA's Environment provides three types of components for real-time agent interaction:
+
+### Callables
+
+Direct function calls for immediate actions:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">CALLABLES</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="c1"># Components automatically available - zero configuration!</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># Get current time, capture screen, click mouse</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">current_time</span> <span class="o">=</span> <span class="n">CALLABLES</span><span class="p">[</span><span class="s2">&quot;std/time_ns&quot;</span><span class="p">]()</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">screen</span> <span class="o">=</span> <span class="n">CALLABLES</span><span class="p">[</span><span class="s2">&quot;desktop/screen.capture&quot;</span><span class="p">]()</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">CALLABLES</span><span class="p">[</span><span class="s2">&quot;desktop/mouse.click&quot;</span><span class="p">](</span><span class="s2">&quot;left&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>  <span class="c1"># Double-click</span>
+</code></pre></div>
+
+### Listeners
+
+Event monitoring with user-defined callbacks:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">LISTENERS</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Monitor keyboard events</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">on_key</span><span class="p">(</span><span class="n">event</span><span class="p">):</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Key pressed: </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">vk</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">listener</span> <span class="o">=</span> <span class="n">LISTENERS</span><span class="p">[</span><span class="s2">&quot;desktop/keyboard&quot;</span><span class="p">]()</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">callback</span><span class="o">=</span><span class="n">on_key</span><span class="p">)</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="k">with</span> <span class="n">listener</span><span class="o">.</span><span class="n">session</span><span class="p">:</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>    <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;Press Enter to stop...&quot;</span><span class="p">)</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="c1"># Periodic tasks</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="k">def</span><span class="w"> </span><span class="nf">on_tick</span><span class="p">():</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Tick: </span><span class="si">{</span><span class="n">CALLABLES</span><span class="p">[</span><span class="s1">&#39;std/time_ns&#39;</span><span class="p">]()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="k">with</span> <span class="n">LISTENERS</span><span class="p">[</span><span class="s2">&quot;std/tick&quot;</span><span class="p">]()</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">callback</span><span class="o">=</span><span class="n">on_tick</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">session</span><span class="p">:</span>
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>  <span class="c1"># Prints every second for 3 seconds</span>
+</code></pre></div>
+
+### Runnables
+
+Background processes that can be started/stopped:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">RUNNABLES</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="c1"># Periodic screen capture</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">capture</span> <span class="o">=</span> <span class="n">RUNNABLES</span><span class="p">[</span><span class="s2">&quot;gst/screen_capture&quot;</span><span class="p">]()</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">fps</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="k">with</span> <span class="n">capture</span><span class="o">.</span><span class="n">session</span><span class="p">:</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="n">frame</span> <span class="o">=</span> <span class="n">capture</span><span class="o">.</span><span class="n">grab</span><span class="p">()</span>
+</code></pre></div>
+
+### Message Types
+
+Access structured message definitions:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">MESSAGES</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="c1"># Message types automatically available</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">KeyboardEvent</span> <span class="o">=</span> <span class="n">MESSAGES</span><span class="p">[</span><span class="s2">&quot;desktop/KeyboardEvent&quot;</span><span class="p">]</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">ScreenCaptured</span> <span class="o">=</span> <span class="n">MESSAGES</span><span class="p">[</span><span class="s2">&quot;desktop/ScreenCaptured&quot;</span><span class="p">]</span>
+</code></pre></div>
+
+</details>
+
+<h2 id="high-performance-screen-capture">High-Performance Screen Capture<a class="headerlink" href="#high-performance-screen-capture" title="Permanent link">&para;</a></h2>
+<!-- SYNC-ID: gst-performance-benchmark -->
+<p>Powered by GStreamer and Windows API, our implementation is <strong>6x faster</strong> than alternatives:</p>
+<table>
+<thead>
+<tr>
+<th><strong>Library</strong></th>
+<th><strong>Avg. Time per Frame</strong></th>
+<th><strong>Relative Speed</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>owa.env.gst</strong></td>
+<td><strong>5.7 ms</strong></td>
+<td>⚡ <strong>1× (Fastest)</strong></td>
+</tr>
+<tr>
+<td><code>pyscreenshot</code></td>
+<td>33 ms</td>
+<td>🚶‍♂️ 5.8× slower</td>
+</tr>
+<tr>
+<td><code>PIL</code></td>
+<td>34 ms</td>
+<td>🚶‍♂️ 6.0× slower</td>
+</tr>
+<tr>
+<td><code>MSS</code></td>
+<td>37 ms</td>
+<td>🚶‍♂️ 6.5× slower</td>
+</tr>
+<tr>
+<td><code>PyQt5</code></td>
+<td>137 ms</td>
+<td>🐢 24× slower</td>
+</tr>
+</tbody>
+</table>
+<p>📌 <strong>Tested on:</strong> Intel i5-11400, GTX 1650</p>
+<!-- END-SYNC: gst-performance-benchmark -->
+
+<p>Not only does <code>owa.env.gst</code> <strong>achieve higher FPS</strong>, but it also maintains <strong>lower CPU/GPU usage</strong>, making it the ideal choice for screen recording. Same applies for <code>ocap</code>, since it internally imports <code>owa.env.gst</code>.</p>
+<p>📊 <strong><a href="../env/plugins/gst/#performance">See detailed benchmarks and methodology →</a></strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">CALLABLES</span><span class="p">,</span> <span class="n">LISTENERS</span><span class="p">,</span> <span class="n">MESSAGES</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1"># Components and messages automatically available - no activation needed!</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">on_screen_update</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="n">metrics</span><span class="p">):</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;📸 New frame: </span><span class="si">{</span><span class="n">frame</span><span class="o">.</span><span class="n">frame_arr</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;⚡ Latency: </span><span class="si">{</span><span class="n">metrics</span><span class="o">.</span><span class="n">latency</span><span class="o">*</span><span class="mi">1000</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">ms&quot;</span><span class="p">)</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>    <span class="c1"># Access screen message type from registry</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>    <span class="n">ScreenCaptured</span> <span class="o">=</span> <span class="n">MESSAGES</span><span class="p">[</span><span class="s1">&#39;desktop/ScreenCaptured&#39;</span><span class="p">]</span>
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Frame message type: </span><span class="si">{</span><span class="n">ScreenCaptured</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="c1"># Start real-time screen capture</span>
+<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="n">screen</span> <span class="o">=</span> <span class="n">LISTENERS</span><span class="p">[</span><span class="s2">&quot;gst/screen&quot;</span><span class="p">]()</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span>
+<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>    <span class="n">callback</span><span class="o">=</span><span class="n">on_screen_update</span><span class="p">,</span> <span class="n">fps</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">show_cursor</span><span class="o">=</span><span class="kc">True</span>
+<a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="p">)</span>
+<a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>
+<a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a><span class="k">with</span> <span class="n">screen</span><span class="o">.</span><span class="n">session</span><span class="p">:</span>
+<a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;🎯 Agent is watching your screen...&quot;</span><span class="p">)</span>
+<a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a>    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="owamcap-data-format">OWAMcap Data Format<a class="headerlink" href="#owamcap-data-format" title="Permanent link">&para;</a></h2>
+<p><strong>OWAMcap</strong> combines the robustness of <a href="https://mcap.dev/">MCAP</a> with specialized desktop interaction schemas. Perfect synchronization of screen captures, input events, and window context with nanosecond precision.</p>
+<!-- SYNC-ID: owamcap-key-features -->
+<ul>
+<li>🌐 <strong>Universal Standard</strong>: Unlike fragmented formats, enables seamless dataset combination for large-scale foundation models <em>(OWAMcap)</em></li>
+<li>⚡ <strong>High-Performance Multimodal Storage</strong>: Lightweight <a href="https://mcap.dev/">MCAP</a> container with nanosecond precision for synchronized data streams <em>(MCAP)</em></li>
+<li>🔗 <strong>Flexible MediaRef</strong>: Smart references to both external and embedded media (file paths, URLs, data URIs, video frames) with lazy loading - keeps metadata files small while supporting rich media <em>(OWAMcap)</em> → <a href="../data/technical-reference/format-guide/#media-handling">Learn more</a></li>
+<li>🤗 <strong>Training Pipeline Ready</strong>: Native HuggingFace integration, seamless dataset loading, and direct compatibility with ML frameworks <em>(Ecosystem)</em> → <a href="https://huggingface.co/datasets?other=OWA">Browse datasets</a> | <a href="../data/technical-reference/data-pipeline/">Data pipeline</a></li>
+</ul>
+<!-- END-SYNC: owamcap-key-features -->
+
+<blockquote>
+<p>📖 <strong>Learn More</strong>: <a href="../data/getting-started/why-owamcap/">Why OWAMcap?</a> | <a href="../data/technical-reference/format-guide/">Complete Format Guide</a> | <a href="data/tools/comparison-with-lerobot.md">vs Other Formats</a></p>
+</blockquote>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>$<span class="w"> </span>owl<span class="w"> </span>mcap<span class="w"> </span>info<span class="w"> </span>example.mcap
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>library:<span class="w">   </span>mcap-owa-support<span class="w"> </span><span class="m">0</span>.5.1<span class="p">;</span><span class="w"> </span>mcap<span class="w"> </span><span class="m">1</span>.3.0
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>profile:<span class="w">   </span>owa
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>messages:<span class="w">  </span><span class="m">864</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>duration:<span class="w">  </span><span class="m">10</span>.3574349s
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>start:<span class="w">     </span><span class="m">2025</span>-06-27T18:49:52.129876+09:00<span class="w"> </span><span class="o">(</span><span class="m">1751017792</span>.129876000<span class="o">)</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>end:<span class="w">       </span><span class="m">2025</span>-06-27T18:50:02.4873109+09:00<span class="w"> </span><span class="o">(</span><span class="m">1751017802</span>.487310900<span class="o">)</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>compression:
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">        </span>zstd:<span class="w"> </span><span class="o">[</span><span class="m">1</span>/1<span class="w"> </span>chunks<span class="o">]</span><span class="w"> </span><span class="o">[</span><span class="m">116</span>.46<span class="w"> </span>KiB/16.61<span class="w"> </span>KiB<span class="w"> </span><span class="o">(</span><span class="m">85</span>.74%<span class="o">)]</span><span class="w"> </span><span class="o">[</span><span class="m">1</span>.60<span class="w"> </span>KiB/sec<span class="o">]</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>channels:
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="w">        </span><span class="o">(</span><span class="m">1</span><span class="o">)</span><span class="w"> </span>window<span class="w">           </span><span class="m">11</span><span class="w"> </span>msgs<span class="w"> </span><span class="o">(</span><span class="m">1</span>.06<span class="w"> </span>Hz<span class="o">)</span><span class="w">    </span>:<span class="w"> </span>desktop/WindowInfo<span class="w"> </span><span class="o">[</span>jsonschema<span class="o">]</span>
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="w">        </span><span class="o">(</span><span class="m">2</span><span class="o">)</span><span class="w"> </span>keyboard/state<span class="w">   </span><span class="m">11</span><span class="w"> </span>msgs<span class="w"> </span><span class="o">(</span><span class="m">1</span>.06<span class="w"> </span>Hz<span class="o">)</span><span class="w">    </span>:<span class="w"> </span>desktop/KeyboardState<span class="w"> </span><span class="o">[</span>jsonschema<span class="o">]</span>
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="w">        </span><span class="o">(</span><span class="m">3</span><span class="o">)</span><span class="w"> </span>mouse/state<span class="w">      </span><span class="m">11</span><span class="w"> </span>msgs<span class="w"> </span><span class="o">(</span><span class="m">1</span>.06<span class="w"> </span>Hz<span class="o">)</span><span class="w">    </span>:<span class="w"> </span>desktop/MouseState<span class="w"> </span><span class="o">[</span>jsonschema<span class="o">]</span>
+<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="w">        </span><span class="o">(</span><span class="m">4</span><span class="o">)</span><span class="w"> </span>screen<span class="w">          </span><span class="m">590</span><span class="w"> </span>msgs<span class="w"> </span><span class="o">(</span><span class="m">56</span>.96<span class="w"> </span>Hz<span class="o">)</span><span class="w">   </span>:<span class="w"> </span>desktop/ScreenCaptured<span class="w"> </span><span class="o">[</span>jsonschema<span class="o">]</span>
+<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="w">        </span><span class="o">(</span><span class="m">5</span><span class="o">)</span><span class="w"> </span>mouse<span class="w">           </span><span class="m">209</span><span class="w"> </span>msgs<span class="w"> </span><span class="o">(</span><span class="m">20</span>.18<span class="w"> </span>Hz<span class="o">)</span><span class="w">   </span>:<span class="w"> </span>desktop/MouseEvent<span class="w"> </span><span class="o">[</span>jsonschema<span class="o">]</span>
+<a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a><span class="w">        </span><span class="o">(</span><span class="m">6</span><span class="o">)</span><span class="w"> </span>keyboard<span class="w">         </span><span class="m">32</span><span class="w"> </span>msgs<span class="w"> </span><span class="o">(</span><span class="m">3</span>.09<span class="w"> </span>Hz<span class="o">)</span><span class="w">    </span>:<span class="w"> </span>desktop/KeyboardEvent<span class="w"> </span><span class="o">[</span>jsonschema<span class="o">]</span>
+<a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a>channels:<span class="w"> </span><span class="m">6</span>
+<a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a>attachments:<span class="w"> </span><span class="m">0</span>
+<a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a>metadata:<span class="w"> </span><span class="m">0</span>
+</code></pre></div>
+<h2 id="desktop-recording-dataset-sharing">Desktop Recording &amp; Dataset Sharing<a class="headerlink" href="#desktop-recording-dataset-sharing" title="Permanent link">&para;</a></h2>
+<p>Record your desktop usage data and share with the community:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Install GStreamer dependencies (for video recording) and ocap</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>$<span class="w"> </span>conda<span class="w"> </span>install<span class="w"> </span>open-world-agents::gstreamer-bundle<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>ocap
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c1"># Record desktop activity (includes video, audio, events)</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>$<span class="w"> </span>ocap<span class="w"> </span>my-session
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="c1"># Upload to HuggingFace, browse community datasets!</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="c1"># Visit: https://huggingface.co/datasets?other=OWA</span>
+</code></pre></div>
+<h2 id="community-datasets">Community Datasets<a class="headerlink" href="#community-datasets" title="Permanent link">&para;</a></h2>
+<!-- SYNC-ID: community-datasets -->
+<p><strong>Browse Datasets</strong>: <a href="https://huggingface.co/datasets?other=OWA">🤗 HuggingFace</a></p>
+<ul>
+<li><strong>Standardized Format</strong>: All datasets use OWAMcap for seamless integration</li>
+<li><strong>Interactive Preview</strong>: <a href="https://huggingface.co/spaces/open-world-agents/visualize_dataset">Hugging Face Spaces Visualizer</a></li>
+</ul>
+<!-- END-SYNC: community-datasets -->
+
+<p><strong>Access Community Datasets</strong>:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># Load datasets from HuggingFace</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="c1"># Browse available OWAMcap datasets</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="n">datasets</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="o">.</span><span class="n">list_available</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="s2">&quot;OWA&quot;</span><span class="p">)</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="c1"># Load a specific dataset. NOTE: Not implemented yet!</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="n">data</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">&quot;open-world-agents/D2E-480p&quot;</span><span class="p">)</span>
+</code></pre></div></p>
+<h2 id="cli-tools-owl">CLI Tools (<code>owl</code>)<a class="headerlink" href="#cli-tools-owl" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># Data analysis</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>$<span class="w"> </span>owl<span class="w"> </span>mcap<span class="w"> </span>info<span class="w"> </span>session.mcap<span class="w">              </span><span class="c1"># File overview &amp; statistics</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>$<span class="w"> </span>owl<span class="w"> </span>mcap<span class="w"> </span>cat<span class="w"> </span>session.mcap<span class="w"> </span>--n<span class="w"> </span><span class="m">10</span><span class="w">        </span><span class="c1"># View messages</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>$<span class="w"> </span>owl<span class="w"> </span>video<span class="w"> </span>probe<span class="w"> </span>session.mkv<span class="w">             </span><span class="c1"># Video analysis</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="c1"># Environment management</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>list<span class="w">                            </span><span class="c1"># List plugins</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>$<span class="w"> </span>owl<span class="w"> </span>env<span class="w"> </span>search<span class="w"> </span><span class="s2">&quot;mouse.*click&quot;</span><span class="w">           </span><span class="c1"># Search components</span>
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>$<span class="w"> </span>owl<span class="w"> </span>messages<span class="w"> </span>show<span class="w"> </span>desktop/KeyboardEvent<span class="w"> </span><span class="c1"># View schemas</span>
+</code></pre></div>
+<blockquote>
+<p><strong>💡 Complete CLI Reference</strong>: For detailed information about all CLI commands and options, see the <a href="../cli/">CLI Tools documentation</a>.</p>
+</blockquote>
+<h2 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h2>
+<h3 id="environment-framework-usb-c-of-desktop-agents">🌍 Environment Framework: "USB-C of Desktop Agents"<a class="headerlink" href="#environment-framework-usb-c-of-desktop-agents" title="Permanent link">&para;</a></h3>
+<!-- SYNC-ID: env-framework-features -->
+<ul>
+<li><strong>⚡ Real-time Performance</strong>: Optimized for responsive agent interactions (GStreamer components achieve &lt;30ms latency)</li>
+<li><strong>🔌 Zero-Configuration</strong>: Automatic plugin discovery via Python Entry Points</li>
+<li><strong>🌐 Event-Driven</strong>: Asynchronous processing that mirrors real-world dynamics</li>
+<li><strong>🧩 Extensible</strong>: Community-driven plugin ecosystem</li>
+</ul>
+<!-- END-SYNC: env-framework-features -->
+
+<p><a href="../env/"><strong>→ View Environment Framework Guide</strong></a></p>
+<h3 id="data-infrastructure-complete-pipeline">📊 Data Infrastructure: Complete Pipeline<a class="headerlink" href="#data-infrastructure-complete-pipeline" title="Permanent link">&para;</a></h3>
+<!-- SYNC-ID: owamcap-key-features -->
+<ul>
+<li>🌐 <strong>Universal Standard</strong>: Unlike fragmented formats, enables seamless dataset combination for large-scale foundation models <em>(OWAMcap)</em></li>
+<li>⚡ <strong>High-Performance Multimodal Storage</strong>: Lightweight <a href="https://mcap.dev/">MCAP</a> container with nanosecond precision for synchronized data streams <em>(MCAP)</em></li>
+<li>🔗 <strong>Flexible MediaRef</strong>: Smart references to both external and embedded media (file paths, URLs, data URIs, video frames) with lazy loading - keeps metadata files small while supporting rich media <em>(OWAMcap)</em> → <a href="../data/technical-reference/format-guide/#media-handling">Learn more</a></li>
+<li>🤗 <strong>Training Pipeline Ready</strong>: Native HuggingFace integration, seamless dataset loading, and direct compatibility with ML frameworks <em>(Ecosystem)</em> → <a href="https://huggingface.co/datasets?other=OWA">Browse datasets</a> | <a href="../data/technical-reference/data-pipeline/">Data pipeline</a></li>
+</ul>
+<!-- END-SYNC: owamcap-key-features -->
+
+<p><a href="../data/"><strong>→ View Data Infrastructure Guide</strong></a></p>
+<h3 id="community-ecosystem">🤗 Community &amp; Ecosystem<a class="headerlink" href="#community-ecosystem" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>🌱 Growing Ecosystem</strong>: Hundreds of community datasets in unified OWAMcap format</li>
+<li><strong>🤗 HuggingFace Integration</strong>: Native dataset loading, sharing, and interactive preview tools</li>
+<li><strong>🧩 Extensible Architecture</strong>: Modular design for custom environments, plugins, and message types</li>
+<li><strong>💡 Community-Driven</strong>: Plugin ecosystem spanning gaming, web automation, mobile control, and specialized domains</li>
+</ul>
+<p><a href="https://huggingface.co/datasets?other=OWA"><strong>→ View Community Datasets</strong></a></p>
+<h3 id="community-plugin-ideas">Community Plugin Ideas<a class="headerlink" href="#community-plugin-ideas" title="Permanent link">&para;</a></h3>
+<p><strong>Help us grow the ecosystem!</strong> 🌱</p>
+<table>
+<thead>
+<tr>
+<th>Example Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>owa.env.minecraft</code></td>
+<td>Minecraft automation &amp; bot framework</td>
+</tr>
+<tr>
+<td><code>owa.env.web</code></td>
+<td>Browser automation via WebDriver</td>
+</tr>
+<tr>
+<td><code>owa.env.mobile</code></td>
+<td>Android/iOS device control</td>
+</tr>
+<tr>
+<td><code>owa.env.cad</code></td>
+<td>CAD software automation</td>
+</tr>
+<tr>
+<td><code>owa.env.trading</code></td>
+<td>Financial trading platform integration</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>💡 <strong>Want to contribute?</strong> Check our <a href="../env/custom_plugins/">Plugin Development Guide</a> to create your own <code>owa.env.*</code> package!</p>
+<p>💭 <strong>These are just examples!</strong> The community decides what plugins to build. Propose your own ideas or create plugins for any domain you're passionate about.</p>
+</blockquote>
+<h2 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Full Documentation</strong>: https://open-world-agents.github.io/open-world-agents/</li>
+<li><strong>Environment Framework</strong>: <a href="../env/">Environment Guide</a> - Core concepts, usage guide, and plugin development</li>
+<li><strong>Data Infrastructure</strong>: <a href="../data/">Data Guide</a> - Recording, storage, and analysis with <a href="../data/getting-started/why-owamcap/">OWAMcap format</a></li>
+<li><strong>CLI Tools</strong>: <a href="../cli/">CLI Reference</a> - Command-line utilities and reference</li>
+</ul>
+<h2 id="contributing">Contributing<a class="headerlink" href="#contributing" title="Permanent link">&para;</a></h2>
+<p>We welcome contributions! Whether you're:
+- Building new environment plugins
+- Improving performance
+- Adding documentation
+- Reporting bugs</p>
+<p>Please see our <a href="../contributing/">Contributing Guide</a> for details.</p>
+<h2 id="license">License<a class="headerlink" href="#license" title="Permanent link">&para;</a></h2>
+<p>This project is released under the MIT License. See the <a href="https://github.com/open-world-agents/open-world-agents/blob/main/LICENSE">LICENSE</a> file for details.</p>
+<h2 id="citation">Citation<a class="headerlink" href="#citation" title="Permanent link">&para;</a></h2>
+<p>If you find this work useful, please cite our paper:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nc">@article</span><span class="p">{</span><span class="nl">choi2025d2e</span><span class="p">,</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span><span class="na">title</span><span class="p">=</span><span class="s">{D2E: Scaling Vision-Action Pretraining on Desktop Data for Transfer to Embodied AI}</span><span class="p">,</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">  </span><span class="na">author</span><span class="p">=</span><span class="s">{Choi, Suwhan and Jung, Jaeyoon and Seong, Haebin and Kim, Minchan and Kim, Minyeong and Cho, Yongjun and Kim, Yoonshik and Park, Yubeen and Yu, Youngjae and Lee, Yunsung}</span><span class="p">,</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">  </span><span class="na">journal</span><span class="p">=</span><span class="s">{arXiv preprint arXiv:2510.05684}</span><span class="p">,</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">  </span><span class="na">year</span><span class="p">=</span><span class="s">{2025}</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="p">}</span>
+</code></pre></div>
+
+
+
+
+
+
+
+  
+    
+  
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Last update">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="December 3, 2025 08:42:56 UTC">December 3, 2025 08:42:56</span>
+  </span>
+
+    
+    
+    
+    
+  </aside>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.top", "search.suggest", "search.highlight", "content.tabs.link", "content.code.annotation", "content.code.copy"], "search": "../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      
+        <script src="../termynal.js"></script>
+      
+    
+  </body>
+</html>
