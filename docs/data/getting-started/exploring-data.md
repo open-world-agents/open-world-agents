@@ -6,8 +6,8 @@ Practical guide to viewing and analyzing OWAMcap recordings using different tool
 
 Download our example dataset to follow along:
 
-- `example.mcap` [[Download]](https://github.com/open-world-agents/open-world-agents/blob/main/docs/data/example.mcap) - 22 KiB metadata file
-- `example.mkv` [[Download]](https://github.com/open-world-agents/open-world-agents/blob/main/docs/data/example.mkv) - Video recording
+- `example.mcap` [[Download]](https://github.com/open-world-agents/open-world-agents/blob/main/docs/data/examples/example.mcap) - 22 KiB metadata file
+- `example.mkv` [[Download]](https://github.com/open-world-agents/open-world-agents/blob/main/docs/data/examples/example.mkv) - Video recording
 
 ??? demo "Preview: example.mkv"
     <video controls>
@@ -33,8 +33,6 @@ Choose the approach that fits your use case:
 1. Visit the visualizer link
 2. Upload your `.mcap` file or enter a HuggingFace dataset ID
 3. Use timeline controls to explore synchronized data
-
-**Limitations**: 100MB file limit for public hosting → [Self-hosting guide](../tools/viewer.md)
 
 ### 💻 Command Line Analysis
 
@@ -81,7 +79,7 @@ channels:  screen(590), mouse(209), keyboard(32), window(11)
    - Load `example.srt` as subtitles
    - See events overlaid on video timeline
 
-**Download example**: `example.srt` [[Download]](https://github.com/open-world-agents/open-world-agents/blob/main/docs/data/example.srt)
+**Download example**: `example.srt` [[Download]](https://github.com/open-world-agents/open-world-agents/blob/main/docs/data/examples/example.srt)
 
 ### 🐍 Python API
 
@@ -142,4 +140,4 @@ For programmatic creation and editing of OWAMcap files, see the comprehensive gu
 
 - **[Data Pipeline](../technical-reference/data-pipeline.md)** - Transform recordings for ML training
 - **[Format Guide](../technical-reference/format-guide.md)** - Complete technical reference
-- **[Viewer Setup](../tools/viewer.md)** - Self-host for large datasets
+- **[Viewer Setup](../viewer.md)** - Self-host for large datasets

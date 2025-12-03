@@ -14,7 +14,7 @@ Existing datasets each define their own format:
 | [OmniACT](https://huggingface.co/datasets/Writer/omniact) | ECCV '24 | Desktop/Web | PNG screenshots + TXT (task + PyAutoGUI script) + bounding box JSON |
 
 
-This is similar to how the [Open-X Embodiment](https://robotics-transformer-x.github.io/) project had to manually convert 22 different robotics datasets. OWAMcap addresses this by providing a general desktop message definition based on [MCAP](https://mcap.dev/). To demonstrate this, we provide [conversion scripts](../examples/conversions.md) that transform VPT, CS:GO, and other existing datasets into OWAMcap, allowing them to be combined and used with a unified training pipeline.
+This is similar to how the [Open-X Embodiment](https://robotics-transformer-x.github.io/) project had to manually convert 22 different robotics datasets. OWAMcap addresses this by providing a general desktop message definition based on [MCAP](https://mcap.dev/). To demonstrate this, we provide [conversion scripts](../conversions.md) that transform VPT, CS:GO, and other existing datasets into OWAMcap, allowing them to be combined and used with a unified training pipeline.
 
 ## From Recording to Training
 

@@ -33,7 +33,8 @@ $ python train.py --dataset ./event-dataset
 - **[Data Pipeline](technical-reference/data-pipeline.md)** - Transform recordings to training-ready datasets
 
 ### 🛠️ Tools
-- **[Data Viewer](tools/viewer.md)** - Web-based visualization tool
+- **[Data Viewer](viewer.md)** - Web-based visualization tool
+- **[Data Conversions](conversions.md)** - Convert existing datasets (VPT, CS:GO) to OWAMcap
 
 ## 🤗 Community Datasets
 

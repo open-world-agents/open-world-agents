@@ -77,7 +77,8 @@ New to OWA data? Start here:
 
 ### 🛠️ Tools & Ecosystem
 
-- **[Data Viewer](data/tools/viewer.md)** - Web-based visualization tool
+- **[Data Viewer](data/viewer.md)** - Web-based visualization tool
+- **[Data Conversions](data/conversions.md)** - Convert existing datasets (VPT, CS:GO) to OWAMcap
 - **[CLI Tools (owl)](cli/index.md)** - Command-line interface for data analysis and management
 
 ### 🤗 Community Datasets
