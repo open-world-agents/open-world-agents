@@ -479,81 +479,7 @@ Need to store domain-specific data beyond standard desktop interactions? OWAMcap
 
 ### Data Pipeline Integration
 
-<!-- termynal -->
-
-```
-$ # 1. Record desktop interaction
-$ ocap my-session.mcap
-🎥 Recording desktop interaction...
-✓ Saved 1,247 events to my-session.mcap
-
-
-$ # 2. Process to training format
-$ python scripts/01_raw_events_to_event_dataset.py --train-dir ./
-🔄 Raw Events to Event Dataset
-📁 Loading from: ./
-📊 Found 1 train files
----> 100%
-✓ Created 1,247 train examples
-💾 Saving to ./event-dataset
-✓ Saved successfully
-
-
-$ # 3. Train your model
-$ python train.py --dataset ./event-dataset
-🚀 Loading dataset...
-🏋️ Training desktop agent...
-📈 Epoch 1/10: loss=0.234
-```
-
-**Pipeline Benefits:**
-
-
-<!-- SYNC-ID: data-pipeline-benefits -->
-- **🔄 Flexible**: Skip binning and use Event Dataset directly, or use traditional Binned Dataset approach
-- **💾 Storage Optimized**: Since event/binned dataset saves only reference to media, the entire pipeline is designed to be **space-efficient**.
-```sh
-/data/
-├── mcaps/           # Raw recordings (400MB)
-├── event-dataset/   # References only (20MB)
-└── binned-dataset/  # Aggregated refs (2MB)
-```
-- **🤗 Native HuggingFace**: Event/binned dataset is a true HuggingFace `datasets.Dataset` with `set_transform()`, not wrappers.
-```py
-# Since event/binned datasets are true HuggingFace datasets,
-# they can be loaded directly into training pipelines
-from owa.data.datasets import load_from_disk
-dataset = load_from_disk("/data/event-dataset")
-
-# Transform to VLA training format is applied on-the-fly during training
-dataset["train"].auto_set_transform(
-    stage="event",
-    encoder_type="hierarchical",
-    load_images=True
-)
-
-# Use in training
-for sample in dataset["train"].take(1):
-    print(f"Images: {len(sample['images'])} frames")
-    print(f"Actions: {sample['encoded_events'][:3]}...")
-    print(f"Instruction: {sample['instruction']}")
-```
-- **⚡ Compute-optimized, On-the-Fly Processing**: During preprocess stage, media is not loaded. During training, only the required media is loaded on-demand.
-```sh
-$ python scripts/01_raw_events_to_event_dataset.py
-🔄 Raw Events to Event Dataset
-📁 Loading from: /data/mcaps/game-session
-📊 Found 3 train, 1 test files
----> 100%
-✓ Created 24,907 train, 20,471 test examples
-💾 Saving to /data/event-dataset
-✓ Saved successfully
-🎉 Completed in 3.9s (0.1min)
-```
-<!-- END-SYNC: data-pipeline-benefits -->
-
-!!! tip "Complete Pipeline Documentation"
-    See **[🚀 Data Pipeline](data-pipeline.md)** for detailed documentation on each stage, configuration options, and integration with training frameworks.
+See [owa-data README](https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-data) for full pipeline documentation.
 
 ### Best Practices
 
@@ -606,12 +532,12 @@ $ python scripts/01_raw_events_to_event_dataset.py
     ├── event-dataset/                  # Stage 1: Event Dataset
     │   ├── train/
     │   └── test/
-    └── binned-dataset/                 # Stage 2: Binned Dataset
+    └── fsl-dataset/                    # Stage 2: FSL Dataset
         ├── train/
         └── test/
     ```
 
-    See [OWA Data Pipeline](data-pipeline.md) for complete pipeline details.
+    See [owa-data README](https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-data) for pipeline details.
 
 ## Reference
 
