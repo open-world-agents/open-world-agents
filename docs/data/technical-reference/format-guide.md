@@ -17,8 +17,7 @@
     - [Storage & Performance](#storage-performance) - Efficiency characteristics
 - [Advanced Topics](#advanced-topics)
     - [Extending OWAMcap](#extending-owamcap) - Custom message types and extensibility
-    - [Data Pipeline Integration](#data-pipeline-integration) - Real-world integrations
-    - [Best Practices](#best-practices) - Performance and organization guidelines
+    - [Data Pipeline Integration](#data-pipeline-integration) - owa-data reference
 - [Reference](#reference)
     - [Migration & Troubleshooting](#migration-troubleshooting) - Practical help and common issues
     - [Technical Reference](#technical-reference) - Specifications and standards
@@ -31,7 +30,7 @@
 
     **1. Install the packages:**
     ```bash
-    pip install mcap-owa-support owa-msgs
+    $ pip install mcap-owa-support owa-msgs
     ```
 
     **2. Explore an example file with the `owl` CLI:**
@@ -136,10 +135,10 @@ OWAMcap combines the robustness of the MCAP container format with OWA's speciali
 **Key Features:**
 
 <!-- SYNC-ID: owamcap-key-features -->
-- 🔄 **Universal Standard**: Unlike fragmented formats, enables seamless dataset combination for large-scale foundation models *(OWAMcap)*
-- 🎯 **High-Performance Multimodal Storage**: Lightweight [MCAP](https://mcap.dev/) container with nanosecond precision for synchronized data streams *(MCAP)*
+- 🌐 **Universal Standard**: Unlike fragmented formats, enables seamless dataset combination for large-scale foundation models *(OWAMcap)*
+- ⚡ **High-Performance Multimodal Storage**: Lightweight [MCAP](https://mcap.dev/) container with nanosecond precision for synchronized data streams *(MCAP)*
 - 🔗 **Flexible MediaRef**: Smart references to both external and embedded media (file paths, URLs, data URIs, video frames) with lazy loading - keeps metadata files small while supporting rich media *(OWAMcap)* → [Learn more](#media-handling)
-- 🤗 **Training Pipeline Ready**: Native HuggingFace integration, seamless dataset loading, and direct compatibility with ML frameworks *(Ecosystem)* → [Browse datasets](https://huggingface.co/datasets?other=OWA) | [Data pipeline](../data-pipeline/)
+- 🤗 **Training Pipeline Ready**: Native HuggingFace integration, seamless dataset loading, and direct compatibility with ML frameworks *(Ecosystem)* → [Browse datasets](https://huggingface.co/datasets?other=OWA) | [Data pipeline](data-pipeline.md)
 <!-- END-SYNC: owamcap-key-features -->
 
 **Core Message Types:**
@@ -479,139 +478,7 @@ Need to store domain-specific data beyond standard desktop interactions? OWAMcap
 
 ### Data Pipeline Integration
 
-<!-- termynal -->
-
-```
-$ # 1. Record desktop interaction
-$ ocap my-session.mcap
-🎥 Recording desktop interaction...
-✓ Saved 1,247 events to my-session.mcap
-
-
-$ # 2. Process to training format
-$ python scripts/01_raw_events_to_event_dataset.py --train-dir ./
-🔄 Raw Events to Event Dataset
-📁 Loading from: ./
-📊 Found 1 train files
----> 100%
-✓ Created 1,247 train examples
-💾 Saving to ./event-dataset
-✓ Saved successfully
-
-
-$ # 3. Train your model
-$ python train.py --dataset ./event-dataset
-🚀 Loading dataset...
-🏋️ Training desktop agent...
-📈 Epoch 1/10: loss=0.234
-```
-
-**Pipeline Benefits:**
-
-
-<!-- SYNC-ID: data-pipeline-benefits -->
-- **🔄 Flexible**: Skip binning and use Event Dataset directly, or use traditional Binned Dataset approach
-- **💾 Storage Optimized**: Since event/binned dataset saves only reference to media, the entire pipeline is designed to be **space-efficient**.
-```sh
-/data/
-├── mcaps/           # Raw recordings (400MB)
-├── event-dataset/   # References only (20MB)
-└── binned-dataset/  # Aggregated refs (2MB)
-```
-- **🤗 Native HuggingFace**: Event/binned dataset is a true HuggingFace `datasets.Dataset` with `set_transform()`, not wrappers.
-```py
-# Since event/binned datasets are true HuggingFace datasets,
-# they can be loaded directly into training pipelines
-from owa.data.datasets import load_from_disk
-dataset = load_from_disk("/data/event-dataset")
-
-# Transform to VLA training format is applied on-the-fly during training
-dataset["train"].auto_set_transform(
-    stage="event",
-    encoder_type="hierarchical",
-    load_images=True
-)
-
-# Use in training
-for sample in dataset["train"].take(1):
-    print(f"Images: {len(sample['images'])} frames")
-    print(f"Actions: {sample['encoded_events'][:3]}...")
-    print(f"Instruction: {sample['instruction']}")
-```
-- **⚡ Compute-optimized, On-the-Fly Processing**: During preprocess stage, media is not loaded. During training, only the required media is loaded on-demand.
-```sh
-$ python scripts/01_raw_events_to_event_dataset.py
-🔄 Raw Events to Event Dataset
-📁 Loading from: /data/mcaps/game-session
-📊 Found 3 train, 1 test files
----> 100%
-✓ Created 24,907 train, 20,471 test examples
-💾 Saving to /data/event-dataset
-✓ Saved successfully
-🎉 Completed in 3.9s (0.1min)
-```
-<!-- END-SYNC: data-pipeline-benefits -->
-
-!!! tip "Complete Pipeline Documentation"
-    See **[🚀 Data Pipeline](data-pipeline.md)** for detailed documentation on each stage, configuration options, and integration with training frameworks.
-
-### Best Practices
-
-=== "Storage Strategy"
-    **Decision Tree: Choose Your Storage Approach**
-
-    ```
-    Recording Length?
-    ├─ < 30 seconds
-    │  └─ Use embedded data URIs (self-contained)
-    └─ > 30 seconds
-       └─ File Size Priority?
-          ├─ Minimize MCAP size
-          │  └─ Use external video (.mkv)
-          └─ Maximize quality
-             └─ Use external images (.png)
-    ```
-
-    | Use Case | Strategy | Benefits | Trade-offs |
-    |----------|----------|----------|------------|
-    | **Long recordings** | External video | Minimal MCAP size, efficient | Requires external files |
-    | **Short sessions** | Embedded data | Self-contained | Larger MCAP files |
-    | **High-quality** | External images | Lossless compression | Many files to manage |
-    | **Remote datasets** | Video + URLs | Bandwidth efficient | Network dependency |
-
-=== "Performance"
-    ```python
-    # ✅ Good: Filter topics early
-    with OWAMcapReader("file.mcap") as reader:
-        for msg in reader.iter_messages(topics=["screen"]):
-            process_frame(msg.decoded)
-
-    # ✅ Good: Lazy loading
-    for msg in reader.iter_messages(topics=["screen"]):
-        if should_process_frame(msg.timestamp):
-            frame = msg.decoded.load_frame_array()  # Only when needed
-
-    # ❌ Avoid: Loading all frames
-    frames = [msg.decoded.load_frame_array() for msg in reader.iter_messages()]
-    ```
-
-=== "File Organization"
-    **Recommended structure:**
-    ```
-    /data/
-    ├── mcaps/                          # Raw MCAP recordings
-    │   ├── session_001.mcap
-    │   ├── session_001.mkv             # External video files
-    │   └── session_002.mcap
-    ├── event-dataset/                  # Stage 1: Event Dataset
-    │   ├── train/
-    │   └── test/
-    └── binned-dataset/                 # Stage 2: Binned Dataset
-        ├── train/
-        └── test/
-    ```
-
-    See [OWA Data Pipeline](data-pipeline.md) for complete pipeline details.
+See [owa-data README](https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-data) for full pipeline documentation.
 
 ## Reference
 
@@ -680,11 +547,10 @@ For detailed technical specifications, see:
 
 - **[OEP-0006: OWAMcap Profile Specification](https://github.com/open-world-agents/open-world-agents/blob/main/oeps/oep-0006.md)** - Authoritative format specification
 - **[MCAP Format](https://mcap.dev/)** - Base container format documentation
-- **Message Registry** - See `projects/owa-core/owa/core/messages.py` for implementation
+- **[Message Registry](https://github.com/open-world-agents/open-world-agents/blob/main/projects/owa-core/owa/core/messages.py)** - Message implementation
 
 ## Next Steps
 
-- **[Explore and Edit](../getting-started/exploring-data.md)**: Learn to work with OWAMcap files
+- **[Exploring Data](../getting-started/exploring-data.md)**: Learn to work with OWAMcap files
 - **[Data Pipeline](data-pipeline.md)**: Process OWAMcap for ML training
-- **[Viewer](../tools/viewer.md)**: Visualize OWAMcap data interactively
-- **[Comparison with LeRobot](../tools/comparison-with-lerobot.md)**: See how OWAMcap differs from other formats
+- **[Viewer](../viewer.md)**: Visualize OWAMcap data interactively

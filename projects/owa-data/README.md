@@ -14,7 +14,7 @@ Our pipeline converts **300+ hours** of data from OWAMcap to FSL in **under 1 ho
 
 | Stage | Script                              | Output        | Format                                 |
 | ----- | ----------------------------------- | ------------- | -------------------------------------- |
-| 1     | `01_raw_events_to_event_dataset.py` | Event Dataset | RLDS-Event (timestamp + event per row) |
+| 1     | `01_raw_to_event.py` | Event Dataset | RLDS-Event (timestamp + event per row) |
 | 2     | `02_event_to_fsl.py`                | FSL Dataset   | FSL (tokens + images per row)          |
 
 > For converting to traditional step-based formats (e.g., RLDS, LeRobot compatible), see [`event_to_binned.py`](scripts/event_to_binned.py).
@@ -58,7 +58,7 @@ _Our Pipeline = OWAMcap → RLDS-Event → FSL Dataset_
 Converts raw MCAP files into a flat event-oriented HuggingFace Dataset. Each row is a single event (screen frame, key press, mouse move, etc.) with nanosecond timestamps.
 
 ```bash
-python scripts/01_raw_events_to_event_dataset.py \
+python scripts/01_raw_to_event.py \
   --config configs/mcap_to_event_example.yaml \
   --input_dir /path/to/mcap/files \
   --output_dir /path/to/event-dataset
