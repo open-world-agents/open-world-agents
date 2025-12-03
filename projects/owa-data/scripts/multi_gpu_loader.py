@@ -135,7 +135,7 @@ def main():
             optimizer.step()
             optimizer.zero_grad()
 
-            pbar.update()  # expected: 1.5 s/it
+            pbar.update()
             pbar.set_postfix({"loss": f"{loss.item():.4f}"})
 
 

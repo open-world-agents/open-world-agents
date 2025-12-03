@@ -2,7 +2,25 @@
 
 Pipeline for converting recording-optimized [OWAMcap](https://open-world-agents.github.io/open-world-agents/data/getting-started/why-owamcap/) files into training-optimized HuggingFace Datasets.
 
-## Why?
+![Pipeline Overview](pipeline.svg)
+
+## Quick Start
+
+See [DEMO.md](DEMO.md) for a complete walkthrough with example data.
+
+## Pipeline Overview
+
+Our pipeline converts **300+ hours** of data from OWAMcap to FSL in **under 1 hour** by never reading or decoding media files during conversion.
+
+| Stage | Script                              | Output        | Format                                 |
+| ----- | ----------------------------------- | ------------- | -------------------------------------- |
+| 1     | `01_raw_events_to_event_dataset.py` | Event Dataset | RLDS-Event (timestamp + event per row) |
+| 2     | `02_event_to_fsl.py`                | FSL Dataset   | FSL (tokens + images per row)          |
+
+> For converting to traditional step-based formats (e.g., RLDS, LeRobot compatible), see [`event_to_binned.py`](scripts/event_to_binned.py).
+
+<details>
+<summary><strong>Why this approach?</strong></summary>
 
 Existing data formats are optimized for either **recording** or **training**, but not both:
 
@@ -10,8 +28,6 @@ Existing data formats are optimized for either **recording** or **training**, bu
 - **Training-oriented** (TFDS, RLDS, LeRobot): Great for training, but impractical for recording raw sensor streams
 
 Optimizing for both simultaneously is fundamentally impossible. Our solution: **define multiple formats along the recording→training spectrum and convert progressively**.
-
-![Pipeline Overview](pipeline.svg)
 
 **Our pipeline**: OWAMcap → RLDS-Event → FSL Dataset
 
@@ -35,20 +51,7 @@ _Our Pipeline = OWAMcap → RLDS-Event → FSL Dataset_
 - **Video encoding**: OWAMcap uses [MediaRef](https://github.com/open-world-agents/mediaref) to reference video-encoded frames without re-encoding.
 - **Multi-rate sensor / Discrete event support**: Other formats using "step" as a row require a global fixed rate for the entire table, forcing binning/grouping. This prevents multi-rate sensors and discrete events from being stored as-is.
 
-## Pipeline Overview
-
-Our pipeline converts **300+ hours** of data from OWAMcap to FSL in **under 1 hour** by never reading or decoding media files during conversion.
-
-| Stage | Script                              | Output        | Format                                 |
-| ----- | ----------------------------------- | ------------- | -------------------------------------- |
-| 1     | `01_raw_events_to_event_dataset.py` | Event Dataset | RLDS-Event (timestamp + event per row) |
-| 2     | `02_event_to_fsl.py`                | FSL Dataset   | FSL (tokens + images per row)          |
-
-> For converting to traditional step-based formats (e.g., RLDS, LeRobot compatible), see [`event_to_binned.py`](scripts/event_to_binned.py).
-
-## Quick Start
-
-See [DEMO.md](DEMO.md) for a complete walkthrough with example data.
+</details>
 
 ## Stage 1: MCAP → Event Dataset
 
