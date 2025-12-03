@@ -1,215 +1,149 @@
 # OWA Data Pipeline
 
-Streamlined data processing pipeline for Vision-Language-Action (VLA) model training with 3x training acceleration.
+Pipeline for converting recording-optimized [OWAMcap](https://open-world-agents.github.io/open-world-agents/data/getting-started/why-owamcap/) files into training-optimized HuggingFace Datasets.
 
-```
-Raw MCAP Data → Event Dataset → [Path A] FSL Dataset → VLA Training Ready
-     (1)            (2)           (02A)      (3)        (tokenization-aware packing)
-                               → [Path B] Binned Dataset → Traditional Training
-                                 (02B)      (3)           (state-action format)
-```
+## Why?
+
+Existing data formats are optimized for either **recording** or **training**, but not both:
+
+- **Recording-oriented** (rosbag, mcap): Great for capture, but not directly usable for ML training
+- **Training-oriented** (TFDS, RLDS, LeRobot): Great for training, but impractical for recording raw sensor streams
+
+Optimizing for both simultaneously is fundamentally impossible. Our solution: **define multiple formats along the recording→training spectrum and convert progressively**.
+
+![Pipeline Overview](pipeline.svg)
+
+**Our pipeline**: OWAMcap → RLDS-Event → FSL Dataset
+
+- **RLDS-Event**: Similar to RLDS, but each row is an event (with nanosecond timestamp) rather than a step. No information loss from binning/grouping.
+- **FSL Dataset** (Fixed Sequence Length): Similar to conversation-style datasets commonly used in VLM fine-tuning—each row contains a sequence and its associated images. The difference is that FSL is pre-tokenized and episode-aware packed, eliminating runtime overhead.
+
+### Feature Comparison
+
+| Feature                   | Our Pipeline | RLDS | LeRobotDataset |
+| ------------------------- | :----------: | :--: | :------------: |
+| Episode-aware packing     |      ✓       |  ✗   |       ✗        |
+| Video encoding            |      ✓       |  ✗   |       ✓        |
+| Multi-rate sensor support |      ✓       |  ✗   |       ✗        |
+| Discrete event support    |      ✓       |  ✗   |       ✗        |
+
+_Our Pipeline = OWAMcap → RLDS-Event → FSL Dataset_
+
+**Notes:**
+
+- **Episode-aware packing**: Sequence packing is a well-established technique ([NVIDIA NeMo](https://docs.nvidia.com/nemo-framework/user-guide/latest/sft_peft/packed_sequence.html), [HuggingFace TRL](https://huggingface.co/docs/trl/reducing_memory_usage#packing)) that eliminates padding waste—NeMo reports up to **10x FLOPs improvement** and **6x training time reduction**. Standard packing concatenates unrelated samples; we make it **episode-aware** by concatenating **temporally adjacent events within the same episode**. This preserves sequential context, enabling models to learn from history (e.g., previous frames, prior actions).
+- **Video encoding**: OWAMcap uses [MediaRef](https://github.com/open-world-agents/mediaref) to reference video-encoded frames without re-encoding.
+- **Multi-rate sensor / Discrete event support**: Other formats using "step" as a row require a global fixed rate for the entire table, forcing binning/grouping. This prevents multi-rate sensors and discrete events from being stored as-is.
+
+## Pipeline Overview
+
+Our pipeline converts **300+ hours** of data from OWAMcap to FSL in **under 1 hour** by never reading or decoding media files during conversion.
+
+| Stage | Script                              | Output        | Format                                 |
+| ----- | ----------------------------------- | ------------- | -------------------------------------- |
+| 1     | `01_raw_events_to_event_dataset.py` | Event Dataset | RLDS-Event (timestamp + event per row) |
+| 2     | `02_event_to_fsl.py`                | FSL Dataset   | FSL (tokens + images per row)          |
+
+> For converting to traditional step-based formats (e.g., RLDS, LeRobot compatible), see [`event_to_binned.py`](scripts/event_to_binned.py).
 
 ## Quick Start
-```bash
-# Set variables
-export MCAP_DIR="/mnt/raid12/datasets/owa/mcaps/vpt"
-export EVENT_DATASET_DIR="/mnt/harbor/projects/owa/data/vpt-event"
-export FSL_DATASET_DIR="/mnt/harbor/projects/owa/data/vpt-fsl-internvl3"
-export BINNED_DATASET_DIR="/mnt/harbor/projects/owa/data/vpt-bin"
 
-# 1. Process MCAP → Event Dataset
-python scripts/01_raw_events_to_event_dataset.py \
-  --config configs/mcap_to_event_example.yaml \
-  --input_dir $MCAP_DIR \
-  --output_dir $EVENT_DATASET_DIR \
-  --mcap_to_event_config.num_workers 4
+See [DEMO.md](DEMO.md) for a complete walkthrough with example data.
 
-# 2A. Path A: Event Dataset → FSL Dataset (for transformer training)
-python scripts/02A_event_to_fsl.py \
-  --config configs/internvl3_example.yaml \
-  --input_dir $EVENT_DATASET_DIR \
-  --output_dir $FSL_DATASET_DIR \
-  --event_to_fsl_config.num_proc 32 \
-  --event_to_fsl_config.fsl_workers 4
+## Stage 1: MCAP → Event Dataset
 
-# 2B. Path B: Event Dataset → Binned Dataset (for traditional training)
-python scripts/02B_event_dataset_to_binned_dataset.py \
-  --input-dir $EVENT_DATASET_DIR \
-  --output-dir $BINNED_DATASET_DIR \
-  --fps 10 \
-  --filter-empty-actions
-
-# 3. Use the processed datasets
-python -c "
-from owa.data.datasets import load_from_disk
-
-# Original: Use Event Dataset (with transforms)
-event_dataset = load_from_disk('$EVENT_DATASET_DIR')
-print(f'Event Dataset stage: {event_dataset.stage}')  # EVENT
-
-# Apply event transform for on-the-fly processing
-event_dataset.auto_set_transform(stage='event', encoder_type='hierarchical', load_images=True)
-for sample in event_dataset['train'].take(10):
-    print(f'{sample=}')
-"
-
-python -c "
-from owa.data.datasets import load_from_disk
-
-# Path A: Use FSL Dataset
-fsl_dataset = load_from_disk('$FSL_DATASET_DIR')
-print(f'FSL Dataset stage: {fsl_dataset.stage}')  # FSL
-
-# Apply FSL transform for on-the-fly processing
-fsl_dataset.auto_set_transform(stage='fsl', load_images=True)
-for sample in fsl_dataset['train'].take(3):
-    print(f'{sample=}')
-"
-
-python -c "
-from owa.data.datasets import load_from_disk
-
-# Path B: Use Binned Dataset
-binned_dataset = load_from_disk('$BINNED_DATASET_DIR')
-print(f'Binned Dataset stage: {binned_dataset.stage}')  # BINNED
-
-# Apply stage-specific transform
-binned_dataset.auto_set_transform(stage='binned', instruction='Complete the computer task')
-for sample in binned_dataset['train'].take(3):
-    print(f'{sample=}')
-"
-```
-
-## Data Processing
-
-### Workflow Overview
-
-After creating event datasets from raw MCAP files, you have two processing paths:
-
-- **Path A (02A)**: Event → FSL Dataset - Recommended for transformer-based VLA training
-  - Pre-computes tokenization for 3x training acceleration
-  - Handles sequence packing and padding automatically
-  - Optimized for modern transformer architectures
-
-- **Path B (02B)**: Event → Binned Dataset - For traditional robotics training
-  - Time-binned state-action format
-  - Compatible with existing robotics frameworks
-  - Similar to OpenX, LeRobot, RLDS formats
-
-### Stage 1: Raw MCAP → Event Dataset
+Converts raw MCAP files into a flat event-oriented HuggingFace Dataset. Each row is a single event (screen frame, key press, mouse move, etc.) with nanosecond timestamps.
 
 ```bash
 python scripts/01_raw_events_to_event_dataset.py \
   --config configs/mcap_to_event_example.yaml \
-  --input_dir $MCAP_DIR \
-  --output_dir $EVENT_DATASET_DIR
+  --input_dir /path/to/mcap/files \
+  --output_dir /path/to/event-dataset
 ```
 
-**Schema**: `episode_path` (string), `topic` (string), `timestamp_ns` (int64), `message_type` (string), `mcap_message` (binary)
+**Schema:**
+| Column | Type | Description |
+|--------|------|-------------|
+| `episode_path` | string | Source MCAP file path |
+| `topic` | string | Event topic (screen, keyboard, mouse, etc.) |
+| `timestamp_ns` | int64 | Timestamp in nanoseconds |
+| `message_type` | string | Message type identifier |
+| `mcap_message` | binary | Serialized message bytes |
 
-**Features**: Rate limiting per topic, topic filtering, train/test splitting, preserves raw event data
+**Features:** Rate limiting per topic, topic filtering, train/test splitting
 
-**Note**: Brand-new, event-oriented format where each row represents a single event
+## Stage 2: Event Dataset → FSL Dataset
 
-### Stage 2A: Event Dataset → FSL Dataset (Path A)
+Converts Event Dataset into Fixed Sequence Length format with pre-computed tokenization.
 
 ```bash
-python scripts/02A_event_to_fsl.py \
+python scripts/02_event_to_fsl.py \
   --config configs/internvl3_example.yaml \
-  --input_dir $EVENT_DATASET_DIR \
-  --output_dir $FSL_DATASET_DIR
+  --input_dir /path/to/event-dataset \
+  --output_dir /path/to/fsl-dataset
 ```
 
-**Schema**: `input_ids` (sequence), `attention_mask` (sequence), `texts` (string), `images` (sequence), `episode_path` (string)
+**Schema:**
+| Column | Type | Description |
+|--------|------|-------------|
+| `input_ids` | sequence[int] | Pre-tokenized token IDs |
+| `attention_mask` | sequence[int] | Attention mask (1 = valid, 0 = padding) |
+| `texts` | string | Raw text (for debugging) |
+| `images` | sequence[string] | Serialized ScreenCaptured messages (JSON) |
+| `episode_path` | string | Source episode path |
 
-**Features**: Pre-computed tokenization, fixed sequence length padding, episode boundary handling, efficient training
+## Appendix: Converting to Traditional Formats
 
-**Note**: Recommended for transformer-based VLA training with 3x acceleration through sequence packing
-
-### Stage 2B: Event Dataset → Binned Dataset (Path B)
+For compatibility with existing robotics frameworks (RLDS, LeRobot), you can convert Event Dataset to time-binned step format:
 
 ```bash
-python scripts/02B_event_dataset_to_binned_dataset.py \
-  --input-dir $EVENT_DATASET_DIR \
-  --output-dir $BINNED_DATASET_DIR \
+python scripts/event_to_binned.py \
+  --input-dir /path/to/event-dataset \
+  --output-dir /path/to/binned-dataset \
   --fps 10 \
   --filter-empty-actions
 ```
 
-**Schema**: `episode_path` (string), `bin_idx` (int32), `timestamp_ns` (int64), `state` (sequence), `actions` (sequence)
+**Schema:**
+| Column | Type | Description |
+|--------|------|-------------|
+| `episode_path` | string | Source MCAP file path |
+| `bin_idx` | int32 | Time bin index |
+| `timestamp_ns` | int64 | Bin start timestamp |
+| `state` | sequence[binary] | Screen events in this bin |
+| `actions` | sequence[binary] | Action events in this bin |
 
-**Features**: Fixed-rate binning, state-action separation, empty action filtering, preserves temporal structure
-
-**Note**: Legacy, state-action oriented format similar to conventional datasets like [OpenX](https://robotics-transformer-x.github.io/), [LeRobotDataset](https://github.com/huggingface/lerobot), [RLDS](https://github.com/google-research/rlds)
+**When to use:** If your training code expects state-action pairs similar to [RLDS](https://github.com/google-research/rlds) or [LeRobot](https://github.com/huggingface/lerobot).
 
 ## Dataset Transforms
 
-Raw datasets contain binary MCAP messages that need conversion to training-ready format (text + images). Transforms apply on-the-fly conversion using HuggingFace's `set_transform()`.
+Raw datasets contain binary MCAP messages. Transforms convert them to training-ready format on-the-fly using HuggingFace's `set_transform()`.
 
 ```python
 from owa.data.datasets import load_from_disk
 
-# Event Dataset Transform
-dataset = load_from_disk("/path/to/event/dataset")
+# Event Dataset
+dataset = load_from_disk("/path/to/event-dataset")
 dataset["train"].auto_set_transform(stage="event", encoder_type="hierarchical", load_images=True)
 
-# FSL Dataset Transform (recommended)
-dataset = load_from_disk("/path/to/fsl/dataset")
+# FSL Dataset
+dataset = load_from_disk("/path/to/fsl-dataset")
 dataset["train"].auto_set_transform(stage="fsl", load_images=True)
 
-# Binned Dataset Transform
-dataset = load_from_disk("/path/to/binned/dataset")
+# Binned Dataset
+dataset = load_from_disk("/path/to/binned-dataset")
 dataset["train"].auto_set_transform(stage="binned", instruction="Complete the computer task")
 ```
 
-## FSL (Fixed Sequence Length) Processing
+## Training Examples
 
-Core component for Fixed Sequence Length processing that prepares tokenized event data for training with sequence handling, padding, and image loading.
-
-**Quick Start**: Use `scripts/02A_event_to_fsl.py` to convert event datasets directly to FSL format with pre-computed tokenization.
-
-### Goals
-
-1. **Accelerate training**: Packing events into fixed-length sequences for efficient training (3x acceleration, reported in [nanoVLM](https://github.com/huggingface/nanoVLM/pull/115))
-2. **Context-aware learning**: Provide full context for each event in the sequence
-
-### Design Principles
-
-1. **Tokenization-aware packing**: Uses actual tokenizer to calculate sequence lengths
-2. **Lazy image loading**: Images loaded on-the-fly for memory efficiency
-3. **Automatic sequence splitting**: Long episodes split across multiple sequences
-4. **Enable random access**: Allow starting iteration from any position for sequence packing
-5. **Simple implementation**: Clean, readable code with minimal complexity
-
-### Complete Examples
-
-For complete FSL usage examples, see:
-
-- **Single GPU**: [`scripts/single_shuffle_loader.py`](scripts/single_shuffle_loader.py) - Basic FSL dataset usage with single GPU training
-- **Multi GPU**: [`scripts/multi_gpu_loader.py`](scripts/multi_gpu_loader.py) - Distributed FSL dataset usage with multi-GPU training
-
-These scripts demonstrate the full pipeline from event dataset → tokenization → FSL transforms → training-ready data.
-
-### Performance Metrics
-
-To enable logging, set `logger.enable("owa.data.datasets.transforms")` for loguru logger.
-
-```
-FSL[30] | Total: 3.2s/s, 3,274t/s, 44.8i/s, 49.5Mb/s | EMA: 3.0s/s, 3,073t/s, 42.0i/s, 46.5Mb/s
-```
-
-**Metrics explanation:**
-- **s/s**: Samples per second
-- **t/s**: Tokens per second
-- **i/s**: Images per second
-- **Mb/s**: Megabits per second
-- **EMA**: Exponential Moving Average
+- [`scripts/single_shuffle_loader.py`](scripts/single_shuffle_loader.py) — Single GPU training
+- [`scripts/multi_gpu_loader.py`](scripts/multi_gpu_loader.py) — Distributed multi-GPU training
 
 ## References
 
-1. **[olmo-core FSLDataset](https://github.com/allenai/OLMo-core/blob/main/src/olmo_core/data/fsl_dataset.py)** - Original FSL implementation for language model training
-2. **[nanoVLM Sequence Packing](https://github.com/huggingface/nanoVLM/pull/115)** - 3x training acceleration through sequence packing
-3. **[HuggingFace Datasets](https://huggingface.co/docs/datasets/)** - Foundation for dataset handling and transforms
-4. **[OpenX Embodied](https://robotics-transformer-x.github.io/)** - Large-scale robotics dataset format
-5. **[LeRobot Dataset](https://github.com/huggingface/lerobot)** - Robotics dataset processing pipeline
-
+- [nanoVLM Sequence Packing](https://github.com/huggingface/nanoVLM/pull/115) — Sequence packing reference
+- [olmo-core FSLDataset](https://github.com/allenai/OLMo-core/blob/main/src/olmo_core/data/fsl_dataset.py) — FSL implementation reference
+- [HuggingFace Datasets](https://huggingface.co/docs/datasets/) — Dataset handling foundation
+- [RLDS](https://github.com/google-research/rlds), [LeRobot](https://github.com/huggingface/lerobot) — Robotics dataset formats
+- [rosbag](http://wiki.ros.org/rosbag), [mcap](https://mcap.dev/) — Recording formats
