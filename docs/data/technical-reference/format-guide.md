@@ -687,4 +687,3 @@ For detailed technical specifications, see:
 - **[Explore and Edit](../getting-started/exploring-data.md)**: Learn to work with OWAMcap files
 - **[Data Pipeline](data-pipeline.md)**: Process OWAMcap for ML training
 - **[Viewer](../tools/viewer.md)**: Visualize OWAMcap data interactively
-- **[Comparison with LeRobot](../tools/comparison-with-lerobot.md)**: See how OWAMcap differs from other formats

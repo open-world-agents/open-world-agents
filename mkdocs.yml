@@ -117,9 +117,8 @@ nav:
       - OWAMcap Format Guide: data/technical-reference/format-guide.md
       - Custom Message Types: data/technical-reference/custom-messages.md
       - 🚀 Data Pipeline (MCAP → VLA Training): data/technical-reference/data-pipeline.md
-    - Tools & Comparison:
+    - Tools:
       - Data Viewer: data/tools/viewer.md
-      - Comparison with LeRobot: data/tools/comparison-with-lerobot.md
     - Examples:
       - Data Conversions: data/examples/conversions.md
   - CLI Tools:

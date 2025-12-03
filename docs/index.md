@@ -83,7 +83,6 @@ Deep dive into the format and pipeline:
 **🛠️ Tools & Ecosystem**
 
 - **[Data Viewer](data/tools/viewer.md)** - Web-based visualization tool
-- **[Comparison with LeRobot](data/tools/comparison-with-lerobot.md)** - Technical comparison with alternatives
 - **[CLI Tools (owl)](cli/index.md)** - Command-line interface for data analysis and management
 
 ### 🤗 Community Datasets

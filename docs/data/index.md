@@ -36,7 +36,6 @@ Deep dive into the format and pipeline:
 
 ### 🛠️ **Tools & Ecosystem**
 - **[Data Viewer](tools/viewer.md)** - Web-based visualization tool
-- **[Comparison with LeRobot](tools/comparison-with-lerobot.md)** - Technical comparison with alternatives
 
 ## 🤗 Community Datasets
 
