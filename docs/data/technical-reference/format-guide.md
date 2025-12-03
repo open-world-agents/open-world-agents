@@ -17,8 +17,7 @@
     - [Storage & Performance](#storage-performance) - Efficiency characteristics
 - [Advanced Topics](#advanced-topics)
     - [Extending OWAMcap](#extending-owamcap) - Custom message types and extensibility
-    - [Data Pipeline Integration](#data-pipeline-integration) - Real-world integrations
-    - [Best Practices](#best-practices) - Performance and organization guidelines
+    - [Data Pipeline Integration](#data-pipeline-integration) - owa-data reference
 - [Reference](#reference)
     - [Migration & Troubleshooting](#migration-troubleshooting) - Practical help and common issues
     - [Technical Reference](#technical-reference) - Specifications and standards
@@ -480,64 +479,6 @@ Need to store domain-specific data beyond standard desktop interactions? OWAMcap
 ### Data Pipeline Integration
 
 See [owa-data README](https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-data) for full pipeline documentation.
-
-### Best Practices
-
-=== "Storage Strategy"
-    **Decision Tree: Choose Your Storage Approach**
-
-    ```
-    Recording Length?
-    ├─ < 30 seconds
-    │  └─ Use embedded data URIs (self-contained)
-    └─ > 30 seconds
-       └─ File Size Priority?
-          ├─ Minimize MCAP size
-          │  └─ Use external video (.mkv)
-          └─ Maximize quality
-             └─ Use external images (.png)
-    ```
-
-    | Use Case | Strategy | Benefits | Trade-offs |
-    |----------|----------|----------|------------|
-    | **Long recordings** | External video | Minimal MCAP size, efficient | Requires external files |
-    | **Short sessions** | Embedded data | Self-contained | Larger MCAP files |
-    | **High-quality** | External images | Lossless compression | Many files to manage |
-    | **Remote datasets** | Video + URLs | Bandwidth efficient | Network dependency |
-
-=== "Performance"
-    ```python
-    # ✅ Good: Filter topics early
-    with OWAMcapReader("file.mcap") as reader:
-        for msg in reader.iter_messages(topics=["screen"]):
-            process_frame(msg.decoded)
-
-    # ✅ Good: Lazy loading
-    for msg in reader.iter_messages(topics=["screen"]):
-        if should_process_frame(msg.timestamp):
-            frame = msg.decoded.load_frame_array()  # Only when needed
-
-    # ❌ Avoid: Loading all frames
-    frames = [msg.decoded.load_frame_array() for msg in reader.iter_messages()]
-    ```
-
-=== "File Organization"
-    **Recommended structure:**
-    ```
-    /data/
-    ├── mcaps/                          # Raw MCAP recordings
-    │   ├── session_001.mcap
-    │   ├── session_001.mkv             # External video files
-    │   └── session_002.mcap
-    ├── event-dataset/                  # Stage 1: Event Dataset
-    │   ├── train/
-    │   └── test/
-    └── fsl-dataset/                    # Stage 2: FSL Dataset
-        ├── train/
-        └── test/
-    ```
-
-    See [owa-data README](https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-data) for pipeline details.
 
 ## Reference
 
