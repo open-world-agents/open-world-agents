@@ -1103,7 +1103,7 @@
   <a href="#topic-specific-analysis" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🎯 Topic-Specific Analysis
+        📍 Topic-Specific Analysis
       
     </span>
   </a>
@@ -1301,57 +1301,8 @@
   
   
   
-    
-    
-    
-    
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_4" >
-        
-          
-          <label class="md-nav__link" for="__nav_3_4" id="__nav_3_4_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Tools & Comparison
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_4">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Tools & Comparison
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
     <li class="md-nav__item">
-      <a href="../../tools/viewer/" class="md-nav__link">
+      <a href="../../viewer/" class="md-nav__link">
         
   
   
@@ -1379,92 +1330,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../tools/comparison-with-lerobot/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Comparison with LeRobot
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    
-    
-    
-    
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5" >
-        
-          
-          <label class="md-nav__link" for="__nav_3_5" id="__nav_3_5_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Examples
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_5">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Examples
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/conversions/" class="md-nav__link">
+      <a href="../../conversions/" class="md-nav__link">
         
   
   
@@ -1480,14 +1346,6 @@
   
 
       </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
     </li>
   
 
@@ -2091,7 +1949,7 @@
   <a href="#topic-specific-analysis" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🎯 Topic-Specific Analysis
+        📍 Topic-Specific Analysis
       
     </span>
   </a>
@@ -2150,8 +2008,8 @@
 <h2 id="sample-dataset">📁 Sample Dataset<a class="headerlink" href="#sample-dataset" title="Permanent link">&para;</a></h2>
 <p>Download our example dataset to follow along:</p>
 <ul>
-<li><code>example.mcap</code> <a href="https://github.com/open-world-agents/open-world-agents/blob/main/docs/data/example.mcap">[Download]</a> - 22 KiB metadata file</li>
-<li><code>example.mkv</code> <a href="https://github.com/open-world-agents/open-world-agents/blob/main/docs/data/example.mkv">[Download]</a> - Video recording</li>
+<li><code>example.mcap</code> <a href="https://github.com/open-world-agents/open-world-agents/blob/main/docs/data/examples/example.mcap">[Download]</a> - 22 KiB metadata file</li>
+<li><code>example.mkv</code> <a href="https://github.com/open-world-agents/open-world-agents/blob/main/docs/data/examples/example.mkv">[Download]</a> - Video recording</li>
 </ul>
 <details class="demo">
 <summary>Preview: example.mkv</summary>
@@ -2174,7 +2032,6 @@
 <li>Upload your <code>.mcap</code> file or enter a HuggingFace dataset ID</li>
 <li>Use timeline controls to explore synchronized data</li>
 </ol>
-<p><strong>Limitations</strong>: 100MB file limit for public hosting → <a href="../../tools/viewer/">Self-hosting guide</a></p>
 <h3 id="command-line-analysis">💻 Command Line Analysis<a class="headerlink" href="#command-line-analysis" title="Permanent link">&para;</a></h3>
 <p><strong>Best for</strong>: Quick inspection, scripting, CI/CD pipelines</p>
 <p>The <code>owl</code> CLI provides fast analysis without loading video data:</p>
@@ -2209,7 +2066,7 @@
 <li>Load <code>example.srt</code> as subtitles</li>
 <li>See events overlaid on video timeline</li>
 </ol>
-<p><strong>Download example</strong>: <code>example.srt</code> <a href="https://github.com/open-world-agents/open-world-agents/blob/main/docs/data/example.srt">[Download]</a></p>
+<p><strong>Download example</strong>: <code>example.srt</code> <a href="https://github.com/open-world-agents/open-world-agents/blob/main/docs/data/examples/example.srt">[Download]</a></p>
 <h3 id="python-api">🐍 Python API<a class="headerlink" href="#python-api" title="Permanent link">&para;</a></h3>
 <p><strong>Best for</strong>: Custom analysis, data processing, integration</p>
 <p>For programmatic access, see the <a href="../../technical-reference/format-guide/#working-with-owamcap">OWAMcap Format Guide</a> which covers:</p>
@@ -2237,7 +2094,7 @@
 <a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># View in VLC with subtitles to see event timing</span>
 <a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>vlc<span class="w"> </span>session.mkv<span class="w"> </span>--sub-file<span class="w"> </span>session.srt
 </code></pre></div>
-<h3 id="topic-specific-analysis">🎯 Topic-Specific Analysis<a class="headerlink" href="#topic-specific-analysis" title="Permanent link">&para;</a></h3>
+<h3 id="topic-specific-analysis">📍 Topic-Specific Analysis<a class="headerlink" href="#topic-specific-analysis" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Focus on user interactions</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>owl<span class="w"> </span>mcap<span class="w"> </span>cat<span class="w"> </span>session.mcap<span class="w"> </span>--topics<span class="w"> </span>mouse<span class="w"> </span>--topics<span class="w"> </span>keyboard
 <a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
@@ -2256,7 +2113,7 @@
 <ul>
 <li><strong><a href="../../technical-reference/data-pipeline/">Data Pipeline</a></strong> - Transform recordings for ML training</li>
 <li><strong><a href="../../technical-reference/format-guide/">Format Guide</a></strong> - Complete technical reference</li>
-<li><strong><a href="../../tools/viewer/">Viewer Setup</a></strong> - Self-host for large datasets</li>
+<li><strong><a href="../../viewer/">Viewer Setup</a></strong> - Self-host for large datasets</li>
 </ul>
 
 
@@ -2278,7 +2135,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="November 30, 2025 17:36:27 UTC">November 30, 2025 17:36:27</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="December 3, 2025 04:45:48 UTC">December 3, 2025 04:45:48</span>
   </span>
 
     

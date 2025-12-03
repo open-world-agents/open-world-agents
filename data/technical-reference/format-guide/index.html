@@ -1212,17 +1212,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#best-practices" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Best Practices
-      
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -1357,57 +1346,8 @@
   
   
   
-    
-    
-    
-    
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_4" >
-        
-          
-          <label class="md-nav__link" for="__nav_3_4" id="__nav_3_4_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Tools & Comparison
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_4">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Tools & Comparison
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
     <li class="md-nav__item">
-      <a href="../../tools/viewer/" class="md-nav__link">
+      <a href="../../viewer/" class="md-nav__link">
         
   
   
@@ -1435,92 +1375,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../tools/comparison-with-lerobot/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Comparison with LeRobot
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    
-    
-    
-    
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5" >
-        
-          
-          <label class="md-nav__link" for="__nav_3_5" id="__nav_3_5_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Examples
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_5">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Examples
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/conversions/" class="md-nav__link">
+      <a href="../../conversions/" class="md-nav__link">
         
   
   
@@ -1536,14 +1391,6 @@
   
 
       </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
     </li>
   
 
@@ -2171,17 +2018,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#best-practices" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Best Practices
-      
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -2281,8 +2117,7 @@
 </li>
 <li><a href="#advanced-topics">Advanced Topics</a><ul>
 <li><a href="#extending-owamcap">Extending OWAMcap</a> - Custom message types and extensibility</li>
-<li><a href="#data-pipeline-integration">Data Pipeline Integration</a> - Real-world integrations</li>
-<li><a href="#best-practices">Best Practices</a> - Performance and organization guidelines</li>
+<li><a href="#data-pipeline-integration">Data Pipeline Integration</a> - owa-data reference</li>
 </ul>
 </li>
 <li><a href="#reference">Reference</a><ul>
@@ -2296,7 +2131,7 @@
 <div class="admonition example">
 <p class="admonition-title">Try OWAMcap in 3 Steps</p>
 <p><strong>1. Install the packages:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>mcap-owa-support<span class="w"> </span>owa-msgs
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>mcap-owa-support<span class="w"> </span>owa-msgs
 </code></pre></div></p>
 <p><strong>2. Explore an example file with the <code>owl</code> CLI:</strong></p>
 <div class="admonition info">
@@ -2399,8 +2234,8 @@
 <p><strong>Key Features:</strong></p>
 <!-- SYNC-ID: owamcap-key-features -->
 <ul>
-<li>🔄 <strong>Universal Standard</strong>: Unlike fragmented formats, enables seamless dataset combination for large-scale foundation models <em>(OWAMcap)</em></li>
-<li>🎯 <strong>High-Performance Multimodal Storage</strong>: Lightweight <a href="https://mcap.dev/">MCAP</a> container with nanosecond precision for synchronized data streams <em>(MCAP)</em></li>
+<li>🌐 <strong>Universal Standard</strong>: Unlike fragmented formats, enables seamless dataset combination for large-scale foundation models <em>(OWAMcap)</em></li>
+<li>⚡ <strong>High-Performance Multimodal Storage</strong>: Lightweight <a href="https://mcap.dev/">MCAP</a> container with nanosecond precision for synchronized data streams <em>(MCAP)</em></li>
 <li>🔗 <strong>Flexible MediaRef</strong>: Smart references to both external and embedded media (file paths, URLs, data URIs, video frames) with lazy loading - keeps metadata files small while supporting rich media <em>(OWAMcap)</em> → <a href="#media-handling">Learn more</a></li>
 <li>🤗 <strong>Training Pipeline Ready</strong>: Native HuggingFace integration, seamless dataset loading, and direct compatibility with ML frameworks <em>(Ecosystem)</em> → <a href="https://huggingface.co/datasets?other=OWA">Browse datasets</a> | <a href="../data-pipeline/">Data pipeline</a></li>
 </ul>
@@ -2814,140 +2649,7 @@
 <p>Covers: message creation, package registration, best practices, and CLI integration.</p>
 </div>
 <h3 id="data-pipeline-integration">Data Pipeline Integration<a class="headerlink" href="#data-pipeline-integration" title="Permanent link">&para;</a></h3>
-<div class="termy" data-termynal data-ty-macos data-ty-title="bash"><span data-ty="input" data-ty-prompt="$"># 1. Record desktop interaction</span><span data-ty="input" data-ty-prompt="$">ocap my-session.mcap</span><span data-ty>🎥 Recording desktop interaction...<br>✓ Saved 1,247 events to my-session.mcap<br><br></span><span data-ty="input" data-ty-prompt="$"># 2. Process to training format</span><span data-ty="input" data-ty-prompt="$">python scripts/01_raw_events_to_event_dataset.py --train-dir ./</span><span data-ty>🔄 Raw Events to Event Dataset<br>📁 Loading from: ./<br>📊 Found 1 train files</span><span data-ty="progress"></span><span data-ty>✓ Created 1,247 train examples<br>💾 Saving to ./event-dataset<br>✓ Saved successfully<br><br></span><span data-ty="input" data-ty-prompt="$"># 3. Train your model</span><span data-ty="input" data-ty-prompt="$">python train.py --dataset ./event-dataset</span><span data-ty>🚀 Loading dataset...<br>🏋️ Training desktop agent...<br>📈 Epoch 1/10: loss=0.234<br></span></div>
-
-<p><strong>Pipeline Benefits:</strong></p>
-<!-- SYNC-ID: data-pipeline-benefits -->
-<ul>
-<li><strong>🔄 Flexible</strong>: Skip binning and use Event Dataset directly, or use traditional Binned Dataset approach</li>
-<li><strong>💾 Storage Optimized</strong>: Since event/binned dataset saves only reference to media, the entire pipeline is designed to be <strong>space-efficient</strong>.
-<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>/data/
-<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>├──<span class="w"> </span>mcaps/<span class="w">           </span><span class="c1"># Raw recordings (400MB)</span>
-<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>├──<span class="w"> </span>event-dataset/<span class="w">   </span><span class="c1"># References only (20MB)</span>
-<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>└──<span class="w"> </span>binned-dataset/<span class="w">  </span><span class="c1"># Aggregated refs (2MB)</span>
-</code></pre></div></li>
-<li><strong>🤗 Native HuggingFace</strong>: Event/binned dataset is a true HuggingFace <code>datasets.Dataset</code> with <code>set_transform()</code>, not wrappers.
-<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="c1"># Since event/binned datasets are true HuggingFace datasets,</span>
-<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="c1"># they can be loaded directly into training pipelines</span>
-<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">owa.data.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_from_disk</span>
-<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="n">dataset</span> <span class="o">=</span> <span class="n">load_from_disk</span><span class="p">(</span><span class="s2">&quot;/data/event-dataset&quot;</span><span class="p">)</span>
-<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>
-<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="c1"># Transform to VLA training format is applied on-the-fly during training</span>
-<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;train&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">auto_set_transform</span><span class="p">(</span>
-<a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a>    <span class="n">stage</span><span class="o">=</span><span class="s2">&quot;event&quot;</span><span class="p">,</span>
-<a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a>    <span class="n">encoder_type</span><span class="o">=</span><span class="s2">&quot;hierarchical&quot;</span><span class="p">,</span>
-<a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a>    <span class="n">load_images</span><span class="o">=</span><span class="kc">True</span>
-<a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a><span class="p">)</span>
-<a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a>
-<a id="__codelineno-19-13" name="__codelineno-19-13" href="#__codelineno-19-13"></a><span class="c1"># Use in training</span>
-<a id="__codelineno-19-14" name="__codelineno-19-14" href="#__codelineno-19-14"></a><span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;train&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="mi">1</span><span class="p">):</span>
-<a id="__codelineno-19-15" name="__codelineno-19-15" href="#__codelineno-19-15"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Images: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s1">&#39;images&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2"> frames&quot;</span><span class="p">)</span>
-<a id="__codelineno-19-16" name="__codelineno-19-16" href="#__codelineno-19-16"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Actions: </span><span class="si">{</span><span class="n">sample</span><span class="p">[</span><span class="s1">&#39;encoded_events&#39;</span><span class="p">][:</span><span class="mi">3</span><span class="p">]</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
-<a id="__codelineno-19-17" name="__codelineno-19-17" href="#__codelineno-19-17"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Instruction: </span><span class="si">{</span><span class="n">sample</span><span class="p">[</span><span class="s1">&#39;instruction&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</code></pre></div></li>
-<li><strong>⚡ Compute-optimized, On-the-Fly Processing</strong>: During preprocess stage, media is not loaded. During training, only the required media is loaded on-demand.
-<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>$<span class="w"> </span>python<span class="w"> </span>scripts/01_raw_events_to_event_dataset.py
-<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>🔄<span class="w"> </span>Raw<span class="w"> </span>Events<span class="w"> </span>to<span class="w"> </span>Event<span class="w"> </span>Dataset
-<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>📁<span class="w"> </span>Loading<span class="w"> </span>from:<span class="w"> </span>/data/mcaps/game-session
-<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>📊<span class="w"> </span>Found<span class="w"> </span><span class="m">3</span><span class="w"> </span>train,<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="nb">test</span><span class="w"> </span>files
-<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>---&gt;<span class="w"> </span><span class="m">100</span>%
-<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>✓<span class="w"> </span>Created<span class="w"> </span><span class="m">24</span>,907<span class="w"> </span>train,<span class="w"> </span><span class="m">20</span>,471<span class="w"> </span><span class="nb">test</span><span class="w"> </span>examples
-<a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a>💾<span class="w"> </span>Saving<span class="w"> </span>to<span class="w"> </span>/data/event-dataset
-<a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>✓<span class="w"> </span>Saved<span class="w"> </span>successfully
-<a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a>🎉<span class="w"> </span>Completed<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">3</span>.9s<span class="w"> </span><span class="o">(</span><span class="m">0</span>.1min<span class="o">)</span>
-</code></pre></div></li>
-</ul>
-<!-- END-SYNC: data-pipeline-benefits -->
-
-<div class="admonition tip">
-<p class="admonition-title">Complete Pipeline Documentation</p>
-<p>See <strong><a href="../data-pipeline/">🚀 Data Pipeline</a></strong> for detailed documentation on each stage, configuration options, and integration with training frameworks.</p>
-</div>
-<h3 id="best-practices">Best Practices<a class="headerlink" href="#best-practices" title="Permanent link">&para;</a></h3>
-<div class="tabbed-set tabbed-alternate" data-tabs="5:3"><input checked="checked" id="__tabbed_5_1" name="__tabbed_5" type="radio" /><input id="__tabbed_5_2" name="__tabbed_5" type="radio" /><input id="__tabbed_5_3" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="__tabbed_5_1">Storage Strategy</label><label for="__tabbed_5_2">Performance</label><label for="__tabbed_5_3">File Organization</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<p><strong>Decision Tree: Choose Your Storage Approach</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>Recording Length?
-<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>├─ &lt; 30 seconds
-<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>│  └─ Use embedded data URIs (self-contained)
-<a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a>└─ &gt; 30 seconds
-<a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a>   └─ File Size Priority?
-<a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a>      ├─ Minimize MCAP size
-<a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a>      │  └─ Use external video (.mkv)
-<a id="__codelineno-21-8" name="__codelineno-21-8" href="#__codelineno-21-8"></a>      └─ Maximize quality
-<a id="__codelineno-21-9" name="__codelineno-21-9" href="#__codelineno-21-9"></a>         └─ Use external images (.png)
-</code></pre></div>
-<table>
-<thead>
-<tr>
-<th>Use Case</th>
-<th>Strategy</th>
-<th>Benefits</th>
-<th>Trade-offs</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Long recordings</strong></td>
-<td>External video</td>
-<td>Minimal MCAP size, efficient</td>
-<td>Requires external files</td>
-</tr>
-<tr>
-<td><strong>Short sessions</strong></td>
-<td>Embedded data</td>
-<td>Self-contained</td>
-<td>Larger MCAP files</td>
-</tr>
-<tr>
-<td><strong>High-quality</strong></td>
-<td>External images</td>
-<td>Lossless compression</td>
-<td>Many files to manage</td>
-</tr>
-<tr>
-<td><strong>Remote datasets</strong></td>
-<td>Video + URLs</td>
-<td>Bandwidth efficient</td>
-<td>Network dependency</td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="c1"># ✅ Good: Filter topics early</span>
-<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="k">with</span> <span class="n">OWAMcapReader</span><span class="p">(</span><span class="s2">&quot;file.mcap&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">reader</span><span class="p">:</span>
-<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>    <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">reader</span><span class="o">.</span><span class="n">iter_messages</span><span class="p">(</span><span class="n">topics</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;screen&quot;</span><span class="p">]):</span>
-<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>        <span class="n">process_frame</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">decoded</span><span class="p">)</span>
-<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a>
-<a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a><span class="c1"># ✅ Good: Lazy loading</span>
-<a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a><span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">reader</span><span class="o">.</span><span class="n">iter_messages</span><span class="p">(</span><span class="n">topics</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;screen&quot;</span><span class="p">]):</span>
-<a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a>    <span class="k">if</span> <span class="n">should_process_frame</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">timestamp</span><span class="p">):</span>
-<a id="__codelineno-22-9" name="__codelineno-22-9" href="#__codelineno-22-9"></a>        <span class="n">frame</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">decoded</span><span class="o">.</span><span class="n">load_frame_array</span><span class="p">()</span>  <span class="c1"># Only when needed</span>
-<a id="__codelineno-22-10" name="__codelineno-22-10" href="#__codelineno-22-10"></a>
-<a id="__codelineno-22-11" name="__codelineno-22-11" href="#__codelineno-22-11"></a><span class="c1"># ❌ Avoid: Loading all frames</span>
-<a id="__codelineno-22-12" name="__codelineno-22-12" href="#__codelineno-22-12"></a><span class="n">frames</span> <span class="o">=</span> <span class="p">[</span><span class="n">msg</span><span class="o">.</span><span class="n">decoded</span><span class="o">.</span><span class="n">load_frame_array</span><span class="p">()</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">reader</span><span class="o">.</span><span class="n">iter_messages</span><span class="p">()]</span>
-</code></pre></div>
-</div>
-<div class="tabbed-block">
-<p><strong>Recommended structure:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>/data/
-<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>├── mcaps/                          # Raw MCAP recordings
-<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>│   ├── session_001.mcap
-<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a>│   ├── session_001.mkv             # External video files
-<a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a>│   └── session_002.mcap
-<a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a>├── event-dataset/                  # Stage 1: Event Dataset
-<a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a>│   ├── train/
-<a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a>│   └── test/
-<a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a>└── binned-dataset/                 # Stage 2: Binned Dataset
-<a id="__codelineno-23-10" name="__codelineno-23-10" href="#__codelineno-23-10"></a>    ├── train/
-<a id="__codelineno-23-11" name="__codelineno-23-11" href="#__codelineno-23-11"></a>    └── test/
-</code></pre></div></p>
-<p>See <a href="../data-pipeline/">OWA Data Pipeline</a> for complete pipeline details.</p>
-</div>
-</div>
-</div>
+<p>See <a href="https://github.com/open-world-agents/open-world-agents/tree/main/projects/owa-data">owa-data README</a> for full pipeline documentation.</p>
 <h2 id="reference">Reference<a class="headerlink" href="#reference" title="Permanent link">&para;</a></h2>
 <h3 id="migration-troubleshooting">Migration &amp; Troubleshooting<a class="headerlink" href="#migration-troubleshooting" title="Permanent link">&para;</a></h3>
 <p><strong>File Migration:</strong></p>
@@ -2962,20 +2664,20 @@
 </ul>
 </div>
 <p>Migration commands:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="c1"># Check if migration is needed</span>
-<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>owl<span class="w"> </span>mcap<span class="w"> </span>info<span class="w"> </span>old_file.mcap<span class="w">  </span><span class="c1"># Look for version warnings</span>
-<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>
-<a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a><span class="c1"># Preview what will change (safe, no modifications)</span>
-<a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a>owl<span class="w"> </span>mcap<span class="w"> </span>migrate<span class="w"> </span>run<span class="w"> </span>old_file.mcap<span class="w"> </span>--dry-run
-<a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a>
-<a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a><span class="c1"># Migrate single file (creates backup automatically)</span>
-<a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a>owl<span class="w"> </span>mcap<span class="w"> </span>migrate<span class="w"> </span>run<span class="w"> </span>old_file.mcap
-<a id="__codelineno-24-9" name="__codelineno-24-9" href="#__codelineno-24-9"></a>
-<a id="__codelineno-24-10" name="__codelineno-24-10" href="#__codelineno-24-10"></a><span class="c1"># Migrate multiple files in batch</span>
-<a id="__codelineno-24-11" name="__codelineno-24-11" href="#__codelineno-24-11"></a>owl<span class="w"> </span>mcap<span class="w"> </span>migrate<span class="w"> </span>run<span class="w"> </span>*.mcap
-<a id="__codelineno-24-12" name="__codelineno-24-12" href="#__codelineno-24-12"></a>
-<a id="__codelineno-24-13" name="__codelineno-24-13" href="#__codelineno-24-13"></a><span class="c1"># Migrate with custom output location</span>
-<a id="__codelineno-24-14" name="__codelineno-24-14" href="#__codelineno-24-14"></a>owl<span class="w"> </span>mcap<span class="w"> </span>migrate<span class="w"> </span>run<span class="w"> </span>old_file.mcap<span class="w"> </span>--output<span class="w"> </span>new_file.mcap
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="c1"># Check if migration is needed</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>owl<span class="w"> </span>mcap<span class="w"> </span>info<span class="w"> </span>old_file.mcap<span class="w">  </span><span class="c1"># Look for version warnings</span>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="c1"># Preview what will change (safe, no modifications)</span>
+<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>owl<span class="w"> </span>mcap<span class="w"> </span>migrate<span class="w"> </span>run<span class="w"> </span>old_file.mcap<span class="w"> </span>--dry-run
+<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>
+<a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a><span class="c1"># Migrate single file (creates backup automatically)</span>
+<a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a>owl<span class="w"> </span>mcap<span class="w"> </span>migrate<span class="w"> </span>run<span class="w"> </span>old_file.mcap
+<a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a>
+<a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a><span class="c1"># Migrate multiple files in batch</span>
+<a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a>owl<span class="w"> </span>mcap<span class="w"> </span>migrate<span class="w"> </span>run<span class="w"> </span>*.mcap
+<a id="__codelineno-18-12" name="__codelineno-18-12" href="#__codelineno-18-12"></a>
+<a id="__codelineno-18-13" name="__codelineno-18-13" href="#__codelineno-18-13"></a><span class="c1"># Migrate with custom output location</span>
+<a id="__codelineno-18-14" name="__codelineno-18-14" href="#__codelineno-18-14"></a>owl<span class="w"> </span>mcap<span class="w"> </span>migrate<span class="w"> </span>run<span class="w"> </span>old_file.mcap<span class="w"> </span>--output<span class="w"> </span>new_file.mcap
 </code></pre></div>
 <div class="admonition tip">
 <p class="admonition-title">Migration Safety</p>
@@ -2993,19 +2695,19 @@
 <div class="admonition warning">
 <p class="admonition-title">File Not Found Errors</p>
 <p>When video files are missing:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="c1"># Resolve relative paths</span>
-<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="n">screen_msg</span><span class="o">.</span><span class="n">resolve_relative_path</span><span class="p">(</span><span class="s2">&quot;/path/to/mcap/file.mcap&quot;</span><span class="p">)</span>
-<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="c1"># Check if external media exists</span>
-<a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a><span class="n">screen_msg</span><span class="o">.</span><span class="n">media_ref</span><span class="o">.</span><span class="n">validate_uri</span><span class="p">()</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="c1"># Resolve relative paths</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="n">screen_msg</span><span class="o">.</span><span class="n">resolve_relative_path</span><span class="p">(</span><span class="s2">&quot;/path/to/mcap/file.mcap&quot;</span><span class="p">)</span>
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="c1"># Check if external media exists</span>
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="n">screen_msg</span><span class="o">.</span><span class="n">media_ref</span><span class="o">.</span><span class="n">validate_uri</span><span class="p">()</span>
 </code></pre></div></p>
 </div>
 <div class="admonition warning">
 <p class="admonition-title">Memory Usage</p>
 <p>Large datasets can consume memory:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="c1"># Use lazy loading instead of loading all frames</span>
-<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">reader</span><span class="o">.</span><span class="n">iter_messages</span><span class="p">(</span><span class="n">topics</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;screen&quot;</span><span class="p">]):</span>
-<a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a>    <span class="k">if</span> <span class="n">should_process_frame</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">timestamp</span><span class="p">):</span>
-<a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a>        <span class="n">frame</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">decoded</span><span class="o">.</span><span class="n">load_frame_array</span><span class="p">()</span>  <span class="c1"># Only when needed</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="c1"># Use lazy loading instead of loading all frames</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">reader</span><span class="o">.</span><span class="n">iter_messages</span><span class="p">(</span><span class="n">topics</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;screen&quot;</span><span class="p">]):</span>
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>    <span class="k">if</span> <span class="n">should_process_frame</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">timestamp</span><span class="p">):</span>
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>        <span class="n">frame</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">decoded</span><span class="o">.</span><span class="n">load_frame_array</span><span class="p">()</span>  <span class="c1"># Only when needed</span>
 </code></pre></div></p>
 </div>
 <h3 id="technical-reference">Technical Reference<a class="headerlink" href="#technical-reference" title="Permanent link">&para;</a></h3>
@@ -3013,14 +2715,13 @@
 <ul>
 <li><strong><a href="https://github.com/open-world-agents/open-world-agents/blob/main/oeps/oep-0006.md">OEP-0006: OWAMcap Profile Specification</a></strong> - Authoritative format specification</li>
 <li><strong><a href="https://mcap.dev/">MCAP Format</a></strong> - Base container format documentation</li>
-<li><strong>Message Registry</strong> - See <code>projects/owa-core/owa/core/messages.py</code> for implementation</li>
+<li><strong><a href="https://github.com/open-world-agents/open-world-agents/blob/main/projects/owa-core/owa/core/messages.py">Message Registry</a></strong> - Message implementation</li>
 </ul>
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong><a href="../../getting-started/exploring-data/">Explore and Edit</a></strong>: Learn to work with OWAMcap files</li>
+<li><strong><a href="../../getting-started/exploring-data/">Exploring Data</a></strong>: Learn to work with OWAMcap files</li>
 <li><strong><a href="../data-pipeline/">Data Pipeline</a></strong>: Process OWAMcap for ML training</li>
-<li><strong><a href="../../tools/viewer/">Viewer</a></strong>: Visualize OWAMcap data interactively</li>
-<li><strong><a href="../../tools/comparison-with-lerobot/">Comparison with LeRobot</a></strong>: See how OWAMcap differs from other formats</li>
+<li><strong><a href="../../viewer/">Viewer</a></strong>: Visualize OWAMcap data interactively</li>
 </ul>
 
 
@@ -3042,7 +2743,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="November 28, 2025 05:12:39 UTC">November 28, 2025 05:12:39</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-datetime" title="December 3, 2025 05:06:21 UTC">December 3, 2025 05:06:21</span>
   </span>
 
     
