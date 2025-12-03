@@ -7,7 +7,7 @@ The `owl` command provides comprehensive tools for working with OWA data, enviro
 The CLI is included with the `owa-cli` package:
 
 ```bash
-pip install owa-cli
+$ pip install owa-cli
 ```
 
 After installation, the `owl` command becomes available in your terminal.

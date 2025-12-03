@@ -4,7 +4,7 @@ Mouse, keyboard, window control, and screen capture for desktop automation.
 
 !!! info "Installation"
     ```bash
-    pip install owa-env-desktop
+    $ pip install owa-env-desktop
     ```
 
 ## Components

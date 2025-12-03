@@ -66,10 +66,10 @@ Custom messages are registered through Python entry points in your package's `py
 
 ```bash
 # Install your custom message package
-pip install my-custom-messages
+$ pip install my-custom-messages
 
 # Or install in development mode
-pip install -e /path/to/my-custom-messages
+$ pip install -e /path/to/my-custom-messages
 
 # Now custom messages are available in the registry
 python -c "from owa.core import MESSAGES; print('sensors/TemperatureReading' in MESSAGES)"

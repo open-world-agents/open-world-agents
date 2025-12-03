@@ -30,7 +30,7 @@
 
     **1. Install the packages:**
     ```bash
-    pip install mcap-owa-support owa-msgs
+    $ pip install mcap-owa-support owa-msgs
     ```
 
     **2. Explore an example file with the `owl` CLI:**
