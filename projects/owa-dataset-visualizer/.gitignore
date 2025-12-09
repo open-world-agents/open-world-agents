@@ -1,0 +1,70 @@
+# ========================================
+# CUSTOM IGNORES FOR THIS PROJECT
+# ========================================
+
+# Test data symlinks (created by scripts/setup-test-data.sh)
+/public
+
+# ========================================
+# STANDARD NODE GITIGNORE TEMPLATE
+# Source: https://github.com/github/gitignore/blob/main/Node.gitignore
+# ========================================
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory
+coverage
+*.lcov
+.nyc_output
+
+# Dependency directories
+node_modules/
+jspm_packages/
+web_modules/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional caches
+.npm
+.eslintcache
+.stylelintcache
+
+# Output of 'npm pack'
+*.tgz
+
+# dotenv environment variable files
+.env
+.env.*
+!.env.example
+
+# Build outputs
+dist
+.cache
+.parcel-cache
+
+# Vite
+.vite/
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# yarn v3
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions

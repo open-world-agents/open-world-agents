@@ -20,7 +20,19 @@ from .utils import resolve_episode_path
 
 
 class FSLStatLogger:
-    """Performance statistics logger with exponential moving averages."""
+    """Performance statistics logger with exponential moving averages.
+
+    Enable logging with `logger.enable("owa.data.datasets.transforms")` to see throughput metrics.
+
+    Example output:
+        FSL[30] | Total: 3.2s/s, 3,274t/s, 44.8i/s, 49.5Mb/s | EMA: 3.0s/s, 3,073t/s, 42.0i/s, 46.5Mb/s
+
+    Metrics:
+        - s/s: Samples per second
+        - t/s: Tokens per second
+        - i/s: Images per second
+        - Mb/s: Megabits per second (image data)
+    """
 
     def __init__(self, log_every: int = 10, decay_alpha: float = 0.9):
         self.log_every = log_every

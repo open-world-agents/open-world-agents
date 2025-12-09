@@ -1,10 +1,10 @@
 # GStreamer Environment
 
-High-performance screen capture and multimedia processing (**6x faster** than alternatives).
+High-performance, hardware-accelerated screen capture and multimedia processing.
 
 !!! info "Installation"
     ```bash
-    pip install owa-env-gst
+    $ pip install owa-env-gst
     # Requires GStreamer dependencies - see installation guide
     ```
 

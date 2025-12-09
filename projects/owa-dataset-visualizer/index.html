@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OWA Dataset Visualizer</title>
+  <link rel="icon" href="data:,">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/styles.css">
+</head>
+
+<body>
+  <div id="app">
+    <!-- Landing Page -->
+    <div id="landing" class="hidden">
+      <div class="landing-bg"></div>
+      <div class="landing-overlay"></div>
+      <div class="landing-content">
+        <h1>OWA Dataset Visualizer</h1>
+        <a href="https://github.com/open-world-agents/open-world-agents" target="_blank" rel="noopener noreferrer"
+          class="landing-link">create & train your own multimodal desktop agent</a>
+
+        <div class="dataset-list">
+          <h3>Example Datasets:</h3>
+          <ul id="featured-datasets"></ul>
+        </div>
+
+        <div class="search-box">
+          <input type="text" id="dataset-input" placeholder="enter dataset id (ex: open-world-agents/example_dataset)">
+          <button id="go-btn">Go</button>
+        </div>
+
+        <details class="more-datasets">
+          <summary>More example datasets</summary>
+          <ul id="more-datasets"></ul>
+        </details>
+
+        <div class="local-section">
+          <div class="drop-zone" id="drop-zone">
+            <div class="drop-zone-icon">📁</div>
+            <div class="drop-zone-text">Drop MCAP + MKV files here</div>
+            <div class="drop-zone-or">or</div>
+            <div class="drop-zone-files">
+              <label class="file-btn"><input type="file" id="mcap-input-landing" accept=".mcap"> Select MCAP</label>
+              <label class="file-btn"><input type="file" id="mkv-input-landing" accept=".mkv,.mp4,.webm"> Select
+                MKV</label>
+            </div>
+            <div class="drop-zone-status" id="file-status"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- File Selection (direct URL mode) -->
+    <div id="file-select" class="hidden">
+      <h2>Loading...</h2>
+      <p id="status"></p>
+    </div>
+
+    <!-- Viewer -->
+    <div id="viewer" class="hidden">
+      <div id="viewer-layout">
+        <!-- Left: Video + Overlay -->
+        <div id="viewer-main">
+          <div id="video-container">
+            <video id="video" controls></video>
+            <div id="loading-indicator" class="hidden">Loading...</div>
+          </div>
+          <canvas id="overlay"></canvas>
+          <div id="info-panel">
+            <div id="time-info">Time: <span></span></div>
+            <div id="mouse-mode">
+              Mouse:
+              <label><input type="radio" name="mouse-mode" value="raw" checked> Relative (3D)</label>
+              <label><input type="radio" name="mouse-mode" value="absolute"> Absolute (2D)</label>
+              <label id="recenter-label">
+                Recenter:
+                <input type="number" id="recenter-interval" min="0" value="0" step="100" placeholder="ms">
+                ms (0=off)
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Side Panel -->
+        <div id="side-panel">
+          <!-- File Selector (for HuggingFace datasets) -->
+          <details id="file-section" class="hidden" open>
+            <summary>Files</summary>
+            <ul id="hf-file-list"></ul>
+          </details>
+
+          <!-- Window Info -->
+          <details id="window-section" open>
+            <summary>Window Info</summary>
+            <div id="window-info">
+              <p class="placeholder">No window data</p>
+            </div>
+          </details>
+
+          <!-- MCAP Info -->
+          <details id="mcap-section" open>
+            <summary>MCAP Info</summary>
+            <div id="mcap-info">
+              <p class="placeholder">Loading...</p>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <div id="usage-hint">
+        <p><strong>Data:</strong> Mouse coordinates based on 1920×1080. Keyboard uses Windows VK codes.</p>
+        <p><strong>Relative (3D):</strong> For FPS/3D games. Accumulates raw mouse deltas. Use Recenter to reset
+          position periodically.</p>
+        <p><strong>Absolute (2D):</strong> For RTS/2D games. Uses absolute cursor coordinates from mouse topic.</p>
+        <p><strong>Display:</strong> Recommended ≥720px browser width for overlay.</p>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>

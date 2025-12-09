@@ -76,7 +76,7 @@ def main():
     # Take random shuffle
     shuffled_index = np.random.permutation(len(train_dataset))
     original_index = np.arange(len(train_dataset))  # noqa: F841
-    for i in tqdm(shuffled_index):  # expected: 2.1 it/s
+    for i in tqdm(shuffled_index):
         sample = train_dataset[int(i)]
 
 
