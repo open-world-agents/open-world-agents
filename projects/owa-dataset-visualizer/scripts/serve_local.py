@@ -113,7 +113,7 @@ Examples:
     )
     parser.add_argument("directory", nargs="?", default=".", help="Directory containing MCAP/MKV files (default: .)")
     parser.add_argument("-p", "--port", type=int, default=8080, help="Port to serve on (default: 8080)")
-    parser.add_argument("--host", default="0.0.0.0", help="Host to bind to (default: 0.0.0.0)")
+    parser.add_argument("--host", default="127.0.0.1", help="Host to bind to (default: 127.0.0.1)")
     args = parser.parse_args()
 
     directory = Path(args.directory).resolve()
@@ -123,7 +123,7 @@ Examples:
     handler = make_handler(directory)
     server = ThreadingHTTPServer((args.host, args.port), handler)
 
-    print(f"Serving {directory} at http://localhost:{args.port}")
+    print(f"Serving {directory} at http://{args.host}:{args.port}")
     print(f"Open visualizer: http://localhost:5173/?base_url=http://localhost:{args.port}")
     print("Press Ctrl+C to stop")
 
