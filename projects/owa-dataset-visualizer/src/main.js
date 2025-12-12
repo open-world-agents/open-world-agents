@@ -75,17 +75,17 @@ function initLanding() {
   });
 }
 
-// HuggingFace dataset viewer
-async function initHfViewer(repoId) {
+// Tree viewer (HuggingFace or local server)
+async function initTreeViewer(fetchTree) {
   document.getElementById("landing")?.classList.add("hidden");
   document.getElementById("file-select")?.classList.add("hidden");
   document.getElementById("viewer").classList.remove("hidden");
   updateStatus("Fetching file list...");
 
   try {
-    const tree = await fetchFileList(repoId);
+    const tree = await fetchTree();
     if (!hasFiles(tree)) {
-      updateStatus("No MCAP files found in dataset");
+      updateStatus("No MCAP files found");
       return;
     }
 
@@ -107,45 +107,23 @@ async function initUrlViewer(mcapUrl, mkvUrl) {
   await loadFromUrls(mcapUrl, mkvUrl);
 }
 
-// Local server viewer (base_url parameter)
-async function initLocalViewer(baseUrl) {
-  document.getElementById("landing")?.classList.add("hidden");
-  document.getElementById("file-select")?.classList.add("hidden");
-  document.getElementById("viewer").classList.remove("hidden");
-  updateStatus("Fetching file list...");
-
-  try {
-    const files = await fetchLocalFileList(baseUrl);
-    if (files.length === 0) {
-      updateStatus("No MCAP files found");
-      return;
-    }
-
-    const section = document.getElementById("file-section");
-    const container = document.getElementById("hf-file-list");
-    section?.classList.remove("hidden");
-
-    // Convert flat list to tree format
-    const tree = {
-      folders: {},
-      files: files.map((f) => ({ ...f, mcap: `${baseUrl}/${f.mcap}`, mkv: `${baseUrl}/${f.mkv}` })),
-    };
-    const firstLi = renderFileTree(tree, container, (f) => loadFromUrls(f.mcap, f.mkv));
-    firstLi?.click();
-  } catch (e) {
-    updateStatus(`Error: ${e.message}`);
+// Normalize URL by adding http:// if no protocol specified
+function normalizeUrl(url) {
+  if (url && !/^[a-z]+:\/\//i.test(url) && !url.startsWith("//")) {
+    return `http://${url}`;
   }
+  return url;
 }
 
 // Router
 const params = new URLSearchParams(location.search);
 const repoId = params.get("repo_id");
-const baseUrl = params.get("base_url");
+const baseUrl = normalizeUrl(params.get("base_url"));
 
 if (repoId) {
-  initHfViewer(repoId);
+  initTreeViewer(() => fetchFileList(repoId));
 } else if (baseUrl) {
-  initLocalViewer(baseUrl);
+  initTreeViewer(() => fetchLocalFileList(baseUrl));
 } else if (params.has("mcap") && params.has("mkv")) {
   initUrlViewer(params.get("mcap"), params.get("mkv"));
 } else {

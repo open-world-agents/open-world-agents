@@ -61,7 +61,35 @@ export function hasFiles(tree) {
 export async function fetchLocalFileList(baseUrl) {
   const res = await fetch(`${baseUrl}/files.json`);
   if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
-  return res.json();
+  const files = await res.json();
+  return buildTreeFromFiles(files, baseUrl);
+}
+
+function buildTreeFromFiles(files, baseUrl) {
+  const tree = { folders: {}, files: [] };
+
+  for (const f of files) {
+    const parts = f.path.split("/").filter((p) => p);
+    let node = tree;
+
+    // Navigate/create folder structure
+    for (let i = 0; i < parts.length - 1; i++) {
+      const folder = parts[i];
+      if (!node.folders[folder]) {
+        node.folders[folder] = { folders: {}, files: [] };
+      }
+      node = node.folders[folder];
+    }
+
+    node.files.push({
+      name: f.name,
+      path: f.path,
+      mcap: `${baseUrl}/${f.mcap}`,
+      mkv: `${baseUrl}/${f.mkv}`,
+    });
+  }
+
+  return tree;
 }
 
 export function renderFileTree(tree, container, onSelect) {
