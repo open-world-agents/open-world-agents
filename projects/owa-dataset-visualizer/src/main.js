@@ -115,8 +115,8 @@ async function initLocalViewer(baseUrl) {
   updateStatus("Fetching file list...");
 
   try {
-    const files = await fetchLocalFileList(baseUrl);
-    if (files.length === 0) {
+    const tree = await fetchLocalFileList(baseUrl);
+    if (!hasFiles(tree)) {
       updateStatus("No MCAP files found");
       return;
     }
@@ -125,11 +125,6 @@ async function initLocalViewer(baseUrl) {
     const container = document.getElementById("hf-file-list");
     section?.classList.remove("hidden");
 
-    // Convert flat list to tree format
-    const tree = {
-      folders: {},
-      files: files.map((f) => ({ ...f, mcap: `${baseUrl}/${f.mcap}`, mkv: `${baseUrl}/${f.mkv}` })),
-    };
     const firstLi = renderFileTree(tree, container, (f) => loadFromUrls(f.mcap, f.mkv));
     firstLi?.click();
   } catch (e) {
