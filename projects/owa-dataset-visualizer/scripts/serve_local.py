@@ -124,7 +124,7 @@ Examples:
     server = ThreadingHTTPServer((args.host, args.port), handler)
 
     print(f"Serving {directory} at http://{args.host}:{args.port}")
-    print(f"Open visualizer: http://localhost:5173/?base_url=http://{args.host}:{args.port}")
+    print(f"Open visualizer: http://localhost:5173/?base_url=http://localhost:{args.port}")
     print("Press Ctrl+C to stop")
 
     try:
