@@ -107,10 +107,18 @@ async function initUrlViewer(mcapUrl, mkvUrl) {
   await loadFromUrls(mcapUrl, mkvUrl);
 }
 
+// Normalize URL by adding http:// if no protocol specified
+function normalizeUrl(url) {
+  if (url && !/^https?:\/\//i.test(url)) {
+    return `http://${url}`;
+  }
+  return url;
+}
+
 // Router
 const params = new URLSearchParams(location.search);
 const repoId = params.get("repo_id");
-const baseUrl = params.get("base_url");
+const baseUrl = normalizeUrl(params.get("base_url"));
 
 if (repoId) {
   initTreeViewer(() => fetchFileList(repoId));
