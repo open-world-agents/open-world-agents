@@ -109,7 +109,7 @@ async function initUrlViewer(mcapUrl, mkvUrl) {
 
 // Normalize URL by adding http:// if no protocol specified
 function normalizeUrl(url) {
-  if (url && !/^https?:\/\//i.test(url)) {
+  if (url && !/^[a-z]+:\/\//i.test(url) && !url.startsWith("//")) {
     return `http://${url}`;
   }
   return url;

@@ -69,7 +69,7 @@ function buildTreeFromFiles(files, baseUrl) {
   const tree = { folders: {}, files: [] };
 
   for (const f of files) {
-    const parts = f.path.split("/");
+    const parts = f.path.split("/").filter((p) => p);
     let node = tree;
 
     // Navigate/create folder structure
