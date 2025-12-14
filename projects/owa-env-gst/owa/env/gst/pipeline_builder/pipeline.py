@@ -80,7 +80,7 @@ def appsink_recorder_pipeline(
         audio_target = audio_window_name if audio_window_name is not None else window_name
         src |= ElementFactory.wasapi2src(window_name=audio_target) >> "audioconvert ! avenc_aac ! queue ! mux."
     if record_timestamp:
-        src |= "utctimestampsrc interval=1 ! subparse ! queue ! mux."
+        src |= "utctimestampsrc interval=1 ! queue ! mux."
 
     pipeline = src | ElementFactory.matroskamux(name="mux") >> ElementFactory.filesink(location=filesink_location)
     return str(pipeline)
@@ -144,7 +144,7 @@ def subprocess_recorder_pipeline(
         audio_target = audio_window_name if audio_window_name is not None else window_name
         src |= ElementFactory.wasapi2src(window_name=audio_target) >> "audioconvert ! avenc_aac ! queue ! mux."
     if record_timestamp:
-        src |= "utctimestampsrc interval=1 ! subparse ! queue ! mux."
+        src |= "utctimestampsrc interval=1 ! queue ! mux."
 
     pipeline = src | ElementFactory.matroskamux(name="mux") >> ElementFactory.filesink(location=filesink_location)
     return str(pipeline)
