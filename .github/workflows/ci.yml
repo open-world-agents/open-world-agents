@@ -137,7 +137,7 @@ jobs:
           CONTEXT: owa-env-example
 
       - name: Store coverage files
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: coverage-windows
           path: coverage
@@ -170,14 +170,14 @@ jobs:
       - run: coverage html --show-contexts --title "open-world-agents coverage for ${{ github.sha }}"
 
       - name: Store coverage data
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: coverage-data
           path: .coverage
           include-hidden-files: true
 
       - name: Store coverage HTML
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: coverage-html
           path: htmlcov
@@ -205,7 +205,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Store coverage comment
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         if: steps.coverage-comment.outputs.COMMENT_FILE_WRITTEN == 'true'
         with:
           name: python-coverage-comment-action
