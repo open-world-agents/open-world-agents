@@ -1,12 +1,12 @@
 """
-Element that generates UTC timestamps in SRT format.
+Element that generates UTC timestamps in text/x-raw,format=utf8 for subtitle tracks.
 Reference: https://github.com/GStreamer/gst-python/blob/master/examples/plugins/python/py_audiotestsrc.py
 
 Example pipeline:
 
 gst-launch-1.0 utctimestampsrc ! fakesink dump=1
 gst-launch-1.0 -e -v videotestsrc is-live=true ! x264enc ! h264parse ! queue ! mux. `
-    utctimestampsrc interval=1 ! subparse ! queue ! mux. `
+    utctimestampsrc interval=1 ! queue ! mux. `
     matroskamux name=mux ! filesink location=output_with_subtitles.mkv
 """
 
@@ -31,7 +31,7 @@ from loguru import logger
 if not Gst.is_initialized():
     Gst.init(None)
 
-OCAPS = Gst.Caps.from_string("application/x-subtitle")
+OCAPS = Gst.Caps.from_string("text/x-raw,format=utf8")
 
 DEFAULT_INTERVAL = 1  # in seconds
 
@@ -68,7 +68,6 @@ class UtcTimestampSrc(GstBase.BaseSrc):
         self.set_live(True)
         self.set_format(Gst.Format.TIME)
         self.past_time = None
-        self.subtitle_number = 1
 
     def do_get_property(self, prop):
         if prop.name == "interval":
@@ -84,7 +83,6 @@ class UtcTimestampSrc(GstBase.BaseSrc):
 
     def do_start(self):
         self.past_time = None
-        self.subtitle_number = 1
         return True
 
     # deprecated
@@ -121,7 +119,7 @@ class UtcTimestampSrc(GstBase.BaseSrc):
         self.past_time = self.past_time + self.interval * 1e9
 
         # Set buffer duration
-        buf.duration = self.interval * Gst.SECOND
+        buf.duration = int(self.interval * Gst.SECOND)
         # Get the current UTC time in nanoseconds
         current_time = time.time_ns()
         utc_time = datetime.datetime.fromtimestamp(current_time / 1e9).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
@@ -137,20 +135,9 @@ class UtcTimestampSrc(GstBase.BaseSrc):
             )
         )
 
-        # Format start and end times in SRT format
-        start_time_sec = pts_time / Gst.SECOND
-        end_time_sec = (pts_time + buf.duration) / Gst.SECOND
-
-        start_time = self._format_time(start_time_sec)
-        end_time = self._format_time(end_time_sec)
-
-        # Construct SRT subtitle entry
-        data = (f"{self.subtitle_number}\n{start_time} --> {end_time}\n{current_time}\n\n").encode("utf-8")
-        # data = (
-        #     f"{self.subtitle_number}\n{start_time} --> {end_time}\n".encode("utf-8")
-        #     + struct.pack(">Q", current_time)
-        #     + b"\n\n"
-        # )
+        # Output plain text for text/x-raw,format=utf8
+        # The content is just the UTC timestamp in nanoseconds
+        data = f"{current_time}".encode("utf-8")
 
         buf.set_size(len(data))
 
@@ -163,18 +150,7 @@ class UtcTimestampSrc(GstBase.BaseSrc):
             Gst.error("Mapping error: %s" % e)
             return Gst.FlowReturn.ERROR
 
-        # Increment the subtitle number
-        self.subtitle_number += 1
         return (Gst.FlowReturn.OK, buf)
-
-    def _format_time(self, total_seconds):
-        hours = int(total_seconds // 3600)
-        minutes = int((total_seconds % 3600) // 60)
-        seconds = int(total_seconds % 60)
-        milliseconds = int((total_seconds - int(total_seconds)) * 1000)
-
-        formatted_time = f"{hours:02}:{minutes:02}:{seconds:02},{milliseconds:03}"
-        return formatted_time
 
 
 __gstelementfactory__ = ("utctimestampsrc", Gst.Rank.NONE, UtcTimestampSrc)
