@@ -114,8 +114,11 @@ export function renderFileTree(tree, container, onSelect) {
         activeLi?.classList.remove("active", "loading");
         li.classList.add("active", "loading");
         activeLi = li;
-        await onSelect(f);
-        li.classList.remove("loading");
+        try {
+          await onSelect(f);
+        } finally {
+          li.classList.remove("loading");
+        }
       };
       parent.appendChild(li);
       if (!firstLi) firstLi = li;

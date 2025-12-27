@@ -13,7 +13,7 @@ Browser-based visualization tool for exploring OWAMcap datasets with synchronize
 ### Features
 
 - **Drag & Drop**: Load local `.mcap` + `.mkv` files directly in browser
-- **HuggingFace Integration**: Browse and load datasets via `?repo_id=org/dataset`
+- **Hugging Face Integration**: Browse and load datasets via `?repo_id=org/dataset`
 - **Synchronized Playback**: Video synced with keyboard/mouse overlays
 - **Large File Support**: Uses MCAP index for seeking, never loads entire file
 - **Input Overlay**: Keyboard (all keys), mouse (L/R/M buttons, scroll), cursor minimap
@@ -21,7 +21,7 @@ Browser-based visualization tool for exploring OWAMcap datasets with synchronize
 ### Usage
 
 1. Visit the viewer URL
-2. Either drag & drop local files, or enter a HuggingFace dataset ID
+2. Either drag & drop local files, or enter a Hugging Face dataset ID
 3. Explore your data with synchronized video and input overlays
 
 ## 🏠 Local Development
@@ -50,7 +50,7 @@ Open http://localhost:5173
 For browsing multiple recordings from a local directory:
 
 ```bash
-# Serve a directory containing mcap/mkv pairs
+# Serve a directory containing mcap/video pairs
 python scripts/serve_local.py /path/to/recordings -p 8080
 
 # Open visualizer with local server
