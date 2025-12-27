@@ -8,7 +8,7 @@ git clone --depth=1 https://github.com/open-world-agents/open-world-agents "$PRO
 cd "$PROJECT_DIR"
 
 # Set up conda/mamba environment
-mamba create -n owa python=3.11 -y
+mamba create -n owa python=3.11 ffmpeg open-world-agents::gstreamer-bundle -y
 conda config --set auto_activate_base false
 . activate owa
 
