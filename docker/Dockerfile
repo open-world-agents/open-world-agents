@@ -17,11 +17,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     git curl wget ca-certificates build-essential
 
 # Install miniforge
-COPY docker/setup_miniforge.sh /tmp/setup_miniforge.sh
-RUN --mount=type=cache,target=/root/.cache,sharing=locked \
-    chmod +x /tmp/setup_miniforge.sh && \
-    /tmp/setup_miniforge.sh ${MINIFORGE_VERSION} ${CONDA_INSTALL_PATH} && \
-    rm -f /tmp/setup_miniforge.sh
+RUN curl -fsSL https://raw.githubusercontent.com/MilkClouds/devcontainer-feature-installer/main/install-feature-cli.sh | bash
+RUN feature-install ghcr.io/MilkClouds/devcontainer-features/miniforge
 ENV PATH="${CONDA_INSTALL_PATH}/bin:${PATH}"
 
 # Install uv
