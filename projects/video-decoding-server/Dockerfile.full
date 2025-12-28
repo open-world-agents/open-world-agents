@@ -27,7 +27,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     ffmpeg
 
 RUN --mount=type=cache,target=/root/.cache/uv \
-    vuv pip install torch==2.7.1 torchvision==0.22.1 torchcodec==0.4.0 --index-url https://download.pytorch.org/whl/cu126
+    uv pip install torch==2.7.1 torchvision==0.22.1 torchcodec==0.4.0 --index-url https://download.pytorch.org/whl/cu126
 
 # Install dependencies
 RUN --mount=type=cache,target=/root/.cache/uv \
@@ -39,7 +39,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # ADD . /app
 # RUN --mount=type=cache,target=/root/.cache/uv \
 #     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-#     vuv pip install --system -r pyproject.toml
+#     uv pip install --system -r pyproject.toml
 
 
 # ======================= Copy the model repository =======================

@@ -41,7 +41,7 @@ jobs:
         run: vuv install --extra docs
 
       - name: Install EnvPlugins
-        run: vuv pip install -e projects/owa-env-example
+        run: uv pip install -e projects/owa-env-example
 
       - name: Generate documentation statistics
         run: owl env docs
@@ -128,7 +128,7 @@ jobs:
           CONTEXT: main-tests
 
       - name: Install owa-env-example
-        run: vuv pip install -e projects/owa-env-example
+        run: uv pip install -e projects/owa-env-example
 
       - name: Run pytest for owa-env-example with coverage
         run: coverage run -m pytest projects/owa-env-example/tests
