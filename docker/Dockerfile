@@ -17,7 +17,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     git curl wget ca-certificates build-essential jq
 
 # Install miniforge
-RUN curl -fsSL https://raw.githubusercontent.com/MilkClouds/devcontainer-feature-installer/main/install-feature-cli.sh | bash
+RUN curl -fsSL https://raw.githubusercontent.com/milkclouds/devcontainer-feature-installer/main/install-feature-cli.sh \
+    | FEATURE_CLI_BIN_DIR=/bin bash
 RUN feature-install ghcr.io/milkclouds/devcontainer-features/miniforge:latest
 ENV PATH="${CONDA_INSTALL_PATH}/bin:${PATH}"
 
