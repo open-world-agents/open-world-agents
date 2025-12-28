@@ -14,11 +14,11 @@ ENV USER=root UID=0 GID=0 HOME=/root
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && apt-get install -y --no-install-recommends \
-    git curl wget ca-certificates build-essential
+    git curl wget ca-certificates build-essential jq
 
 # Install miniforge
 RUN curl -fsSL https://raw.githubusercontent.com/MilkClouds/devcontainer-feature-installer/main/install-feature-cli.sh | bash
-RUN feature-install ghcr.io/MilkClouds/devcontainer-features/miniforge
+RUN feature-install ghcr.io/milkclouds/devcontainer-features/miniforge:latest
 ENV PATH="${CONDA_INSTALL_PATH}/bin:${PATH}"
 
 # Install uv
