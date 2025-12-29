@@ -31,6 +31,9 @@
 	],
 	// Features
 	"features": {
+		"ghcr.io/milkclouds/devcontainer-features/system-tools": {},
+		"ghcr.io/milkclouds/devcontainer-features/python-tools": {},
+		"ghcr.io/milkclouds/devcontainer-features/zsh-setup": {},
 		"ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
 		"ghcr.io/devcontainers/features/git:1": {},
 		"ghcr.io/devcontainers/features/github-cli:1": {}
@@ -38,8 +41,9 @@
 	// Lifecycle scripts
 	"updateContentCommand": "sudo chown -vR vscode:vscode /opt/conda | tqdm --desc 'Changing ownership of /opt/conda to vscode user...' --unit files > /dev/null",
 	"postCreateCommand": {
+		"conda-setup": "bash -lc 'conda init --all && conda config --set channel_priority strict --set always_yes true --set show_channel_urls true && conda config --set auto_activate_base false && echo \". activate owa\" >> ~/.zshrc'",
 		// Since postCreateCommand use `sh` as default shell, `. activate owa` does not work unless we use `bash -c`
-		"workspace-install": "bash -c '. activate owa && vuv pip install -e /workspace --group dev && (pip list | grep -E ^owa && echo \"OWA Development Environment Ready! 🚀\" || echo \"OWA package not found\")'",
+		"workspace-install": "bash -c '. activate owa && uv pip install -e /workspace --group dev && (pip list | grep -E ^owa && echo \"OWA Development Environment Ready! 🚀\" || echo \"OWA package not found\")'",
 		"conda-info": "conda info --envs"
 	},
 	"postStartCommand": "gpustat",
