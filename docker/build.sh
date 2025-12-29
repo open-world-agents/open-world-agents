@@ -38,7 +38,7 @@ build_image() {
 }
 
 # Build all images
-log_info "🚀 Building all Docker images..."
+log_info "🚀 Building Docker images..."
 
 # Base image
 build_image "base" "owa/base:latest" "docker build --build-arg BASE_IMAGE=ubuntu:24.04 -f docker/Dockerfile -t owa/base:latest ."
@@ -46,10 +46,4 @@ build_image "base" "owa/base:latest" "docker build --build-arg BASE_IMAGE=ubuntu
 # Runtime image
 build_image "runtime" "owa/runtime:latest" "docker build --build-arg BASE_IMAGE=owa/base:latest -f docker/Dockerfile.runtime -t owa/runtime:latest ."
 
-# Training image (from CUDA runtime)
-build_image "base-cuda" "owa/base:cuda" "docker build --build-arg BASE_IMAGE=nvidia/cuda:12.8.1-devel-ubuntu24.04 -f docker/Dockerfile -t owa/base:cuda ."
-build_image "runtime-cuda" "owa/runtime:cuda" "docker build --build-arg BASE_IMAGE=owa/base:cuda -f docker/Dockerfile.runtime -t owa/runtime:cuda ."
-build_image "training" "owa/train:latest" "docker build --build-arg BASE_IMAGE=owa/runtime:cuda -f docker/Dockerfile.train -t owa/train:latest ."
-docker image rm owa/base:cuda owa/runtime:cuda
-
-log_success "🎉 All images built successfully!"
+log_success "🎉 Images built successfully!"

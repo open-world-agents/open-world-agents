@@ -22,7 +22,7 @@ $ cd open-world-agents
 $ conda create -n owa python=3.11 open-world-agents::gstreamer-bundle -y && conda activate owa
 $ pip install uv virtual-uv
 $ vuv install --dev
-$ vuv pip install -e projects/owa-env-example  # For testing
+$ uv pip install -e projects/owa-env-example  # For testing
 ```
 
 ## Testing Requirements
@@ -80,7 +80,7 @@ OWA uses `virtual-uv` for dependency management. For complete setup instructions
 Quick commands:
 ```bash
 $ vuv install --dev              # Install all dev dependencies
-$ vuv pip install -e projects/X  # Install specific project
+$ uv pip install -e projects/X  # Install specific project
 ```
 
 ## Release Management
