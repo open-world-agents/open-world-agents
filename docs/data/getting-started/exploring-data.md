@@ -25,7 +25,7 @@ Choose the approach that fits your use case:
 **[OWA Dataset Visualizer](https://huggingface.co/spaces/open-world-agents/visualize_dataset)** provides synchronized playback of video and events.
 
 <div align="center">
-  <img src="https://github.com/open-world-agents/owa-dataset-visualizer/blob/main/.github/assets/viewer.png" alt="OWA Dataset Visualizer"/>
+  <img src="https://github.com/open-world-agents/owa-dataset-visualizer/blob/main/.github/assets/viewer.png?raw=true" alt="OWA Dataset Visualizer"/>
 </div>
 
 **Quick Start**:
