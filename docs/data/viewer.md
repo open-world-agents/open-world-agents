@@ -38,7 +38,8 @@ nvm install --lts
 ### Run
 
 ```bash
-cd projects/owa-dataset-visualizer
+git clone https://github.com/open-world-agents/owa-dataset-visualizer
+cd owa-dataset-visualizer
 npm install
 npm run dev
 ```
