@@ -347,6 +347,18 @@ def trim_recording(
     def get_target_range(mkv_start: int) -> tuple[int, int]:
         return mkv_start + int(start * NS), mkv_start + int((start + duration) * NS)
 
+    # Validate requested range against video duration
+    for uri, src_mkv in src_mkvs.items():
+        video_duration = get_duration(src_mkv)
+        requested_end = start + duration
+        if start < 0:
+            raise ValueError(f"Invalid start time: {start}s. Start time cannot be negative.")
+        if requested_end > video_duration:
+            raise ValueError(
+                f"Requested range [{start}s, {requested_end}s] exceeds video duration.\n"
+                f"       Video '{src_mkv.name}' covers: 0s to {video_duration:.1f}s"
+            )
+
     dst_mcap.parent.mkdir(parents=True, exist_ok=True)
     dst_mkvs: dict[str, Path] = {}
 
