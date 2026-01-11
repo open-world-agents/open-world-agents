@@ -124,7 +124,6 @@ def cut_mcap(src: Path, dst: Path, start_utc: int, end_utc: int, uri_map: dict[s
                         new_uri = uri_map.get(old_uri, old_uri)
                         new_pts = (screen.utc_ns or msg.timestamp) - start_utc
                         screen.media_ref = MediaRef(uri=new_uri, pts_ns=new_pts)
-                    screen.utc_ns = new_timestamp
                     writer.write_message(screen, topic=msg.topic, timestamp=new_timestamp)
                     stats["screen"] += 1
                 else:

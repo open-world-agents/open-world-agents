@@ -3,9 +3,9 @@
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-
 from owa.cli.mcap import app as mcap_app
 from owa.cli.mcap.trim import (
+    cut_mcap,
     default_mkv_namer,
     find_all_mkvs,
     get_duration,
@@ -89,12 +89,82 @@ class TestGetDuration:
         assert result == 123.456
 
 
+class TestCutMcap:
+    def test_filters_messages_by_time_range(self, tmp_path):
+        """Test that cut_mcap filters messages within the specified UTC range."""
+        src_mcap = tmp_path / "src.mcap"
+        dst_mcap = tmp_path / "dst.mcap"
+
+        # Create mock messages with different timestamps
+        msg1 = Mock(topic="keyboard", decoded={"key": "a"}, timestamp=1000)
+        msg2 = Mock(topic="keyboard", decoded={"key": "b"}, timestamp=2000)
+        msg3 = Mock(topic="keyboard", decoded={"key": "c"}, timestamp=3000)
+
+        written_messages = []
+
+        with (
+            patch("owa.cli.mcap.trim.OWAMcapReader") as mock_reader,
+            patch("owa.cli.mcap.trim.OWAMcapWriter") as mock_writer,
+        ):
+            mock_reader.return_value.__enter__.return_value.iter_messages.return_value = [msg1, msg2, msg3]
+            mock_writer.return_value.__enter__.return_value.write_message.side_effect = (
+                lambda msg, topic, timestamp: written_messages.append((msg, topic, timestamp))
+            )
+
+            cut_mcap(src_mcap, dst_mcap, start_utc=1000, end_utc=3000, uri_map={})
+
+        # All 3 messages should be written with adjusted timestamps
+        assert len(written_messages) == 3
+        assert written_messages[0][2] == 0  # 1000 - 1000
+        assert written_messages[1][2] == 1000  # 2000 - 1000
+        assert written_messages[2][2] == 2000  # 3000 - 1000
+
+    def test_rewrites_screen_message_uri(self, tmp_path):
+        """Test that cut_mcap rewrites media_ref URIs for screen messages."""
+        src_mcap = tmp_path / "src.mcap"
+        dst_mcap = tmp_path / "dst.mcap"
+
+        # Create a mock screen message with media_ref
+        screen_decoded = Mock()
+        screen_decoded.media_ref = Mock()
+        screen_decoded.media_ref.uri = "old_video.mkv"
+        screen_decoded.utc_ns = 5000
+
+        screen_msg = Mock(topic="screen", decoded=screen_decoded, timestamp=2000)
+
+        written_messages = []
+
+        with (
+            patch("owa.cli.mcap.trim.OWAMcapReader") as mock_reader,
+            patch("owa.cli.mcap.trim.OWAMcapWriter") as mock_writer,
+        ):
+            mock_reader.return_value.__enter__.return_value.iter_messages.return_value = [screen_msg]
+            mock_writer.return_value.__enter__.return_value.write_message.side_effect = (
+                lambda msg, topic, timestamp: written_messages.append((msg, topic, timestamp))
+            )
+
+            cut_mcap(src_mcap, dst_mcap, start_utc=1000, end_utc=3000, uri_map={"old_video.mkv": "new_video.mkv"})
+
+        assert len(written_messages) == 1
+        written_screen = written_messages[0][0]
+        # Check that media_ref was updated with new URI
+        assert written_screen.media_ref.uri == "new_video.mkv"
+
+
 # === CLI Tests ===
 def test_trim_file_not_found(tmp_path, cli_runner):
     """Test error when input file doesn't exist."""
     result = cli_runner.invoke(
         mcap_app,
-        ["trim", str(tmp_path / "nonexistent.mcap"), str(tmp_path / "output.mcap"), "--start", "10", "--duration", "30"],
+        [
+            "trim",
+            str(tmp_path / "nonexistent.mcap"),
+            str(tmp_path / "output.mcap"),
+            "--start",
+            "10",
+            "--duration",
+            "30",
+        ],
     )
     assert result.exit_code == 1
     assert "not found" in result.output
@@ -159,4 +229,3 @@ def test_trim_error_handling(tmp_path, cli_runner):
 
     assert result.exit_code == 1
     assert "Error:" in result.output
-
