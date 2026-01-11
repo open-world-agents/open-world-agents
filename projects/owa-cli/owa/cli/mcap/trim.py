@@ -15,14 +15,164 @@ import typer
 from mediaref import MediaRef
 
 from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
+from owa.core.utils.backup import BackupContext
 from owa.msgs.desktop.screen import ScreenCaptured
 
 from ..console import console
 
 NS = 1_000_000_000
 
+
+class MissingSubtitleError(ValueError):
+    """Raised when a video file is missing the required subtitle track."""
+
+    def __init__(self, mkv_path: Path):
+        self.mkv_path = mkv_path
+        super().__init__(
+            f"No subtitle track found in '{mkv_path}'.\n"
+            "       The trim command requires embedded UTC timestamps in subtitle track.\n\n"
+            "Hint: Use --auto-subtitle to automatically generate and embed subtitles."
+        )
+
+
 # Type alias for MKV naming function: (src_mkv, dst_mcap) -> dst_mkv
 MkvNamer = Callable[[Path, Path], Path]
+
+
+def generate_utc_srt(mcap_path: Path, mkv_uri: str) -> str:
+    """
+    Generate SRT subtitle containing UTC timestamps from MCAP screen messages.
+
+    Each subtitle entry contains the UTC nanosecond timestamp at that video PTS,
+    which enables accurate time synchronization during trim operations.
+
+    Args:
+        mcap_path: Path to the MCAP file
+        mkv_uri: The MKV URI referenced in screen messages
+
+    Returns:
+        SRT format string with UTC timestamps
+    """
+    entries: list[tuple[int, int]] = []  # (pts_ns, utc_ns)
+
+    with OWAMcapReader(mcap_path) as reader:
+        for msg in reader.iter_messages(topics=["screen"]):
+            screen: ScreenCaptured = msg.decoded
+            if screen.media_ref and screen.media_ref.uri == mkv_uri:
+                pts_ns = screen.media_ref.pts_ns
+                utc_ns = screen.utc_ns or msg.timestamp
+                if pts_ns is not None:
+                    entries.append((pts_ns, utc_ns))
+
+    if not entries:
+        raise ValueError(f"No screen messages found for MKV '{mkv_uri}' in {mcap_path}")
+
+    # Sort by PTS and deduplicate
+    entries = sorted(set(entries), key=lambda x: x[0])
+
+    def format_srt_time(ns: int) -> str:
+        """Format nanoseconds as SRT timestamp (HH:MM:SS,mmm)."""
+        total_ms = ns // 1_000_000
+        h = total_ms // 3600000
+        m = (total_ms % 3600000) // 60000
+        s = (total_ms % 60000) // 1000
+        ms = total_ms % 1000
+        return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
+
+    srt_lines = []
+    for i, (pts_ns, utc_ns) in enumerate(entries, 1):
+        start = format_srt_time(pts_ns)
+        # End time: next entry's PTS or 1 second after start
+        if i < len(entries):
+            end = format_srt_time(entries[i][0])
+        else:
+            end = format_srt_time(pts_ns + NS)
+        srt_lines.append(f"{i}\n{start} --> {end}\n{utc_ns}\n")
+
+    return "\n".join(srt_lines)
+
+
+def embed_subtitle(mkv_path: Path, srt_content: str) -> None:
+    """
+    Embed SRT subtitle into MKV file using ffmpeg.
+
+    Uses BackupContext for safe operation - original file is backed up
+    and restored if any error occurs.
+
+    Args:
+        mkv_path: Path to the MKV file
+        srt_content: SRT format subtitle content
+    """
+    with BackupContext(mkv_path, console=console) as _ctx:
+        # Create temporary SRT file
+        srt_path = mkv_path.with_suffix(".srt.tmp")
+        try:
+            srt_path.write_text(srt_content, encoding="utf-8")
+
+            # Create temporary output file
+            tmp_output = mkv_path.with_suffix(".mkv.tmp")
+
+            # Mux subtitle into MKV
+            result = subprocess.run(
+                [
+                    "ffmpeg",
+                    "-v",
+                    "error",
+                    "-y",
+                    "-i",
+                    str(mkv_path),
+                    "-i",
+                    str(srt_path),
+                    "-c",
+                    "copy",
+                    "-c:s",
+                    "srt",
+                    str(tmp_output),
+                ],
+                capture_output=True,
+                text=True,
+            )
+
+            if result.returncode != 0:
+                raise RuntimeError(f"ffmpeg failed to embed subtitle: {result.stderr}")
+
+            # Replace original with muxed file
+            tmp_output.replace(mkv_path)
+
+        finally:
+            # Clean up temporary files
+            srt_path.unlink(missing_ok=True)
+            tmp_output = mkv_path.with_suffix(".mkv.tmp")
+            if tmp_output.exists():
+                tmp_output.unlink()
+
+
+def ensure_subtitle(mcap_path: Path, mkv_path: Path, mkv_uri: str, auto_subtitle: bool) -> None:
+    """
+    Ensure the MKV has embedded subtitle. Generate and embed if needed.
+
+    Args:
+        mcap_path: Path to the MCAP file
+        mkv_path: Path to the MKV file
+        mkv_uri: The MKV URI referenced in screen messages
+        auto_subtitle: If True, auto-generate and embed subtitle when missing
+
+    Raises:
+        MissingSubtitleError: If subtitle is missing and auto_subtitle is False
+    """
+    if get_video_start_utc(mkv_path) is not None:
+        return  # Subtitle already exists
+
+    if not auto_subtitle:
+        raise MissingSubtitleError(mkv_path)
+
+    console.print(f"[yellow]Generating UTC subtitle for {mkv_path.name}...[/yellow]")
+    srt_content = generate_utc_srt(mcap_path, mkv_uri)
+
+    console.print(f"[yellow]Embedding subtitle into {mkv_path.name}...[/yellow]")
+    embed_subtitle(mkv_path, srt_content)
+
+    console.print(f"[green]Subtitle embedded successfully into {mkv_path.name}[/green]")
 
 
 def default_mkv_namer(src_mkvs: dict[str, Path], dst_mcap: Path) -> MkvNamer:
@@ -140,6 +290,7 @@ def trim_recording(
     duration: float,
     mkv_namer: MkvNamer | None = None,
     max_margin: float = 5.0,
+    auto_subtitle: bool = False,
 ) -> tuple[tuple[float, float], dict[str, Path], dict[str, Path]]:
     """
     Trim mcap recording and all referenced MKV files.
@@ -157,6 +308,8 @@ def trim_recording(
         max_margin: Maximum allowed extra content beyond [start, start+duration].
                     If the output contains frames further than this, raises an error.
                     This is important for privacy protection.
+        auto_subtitle: If True, automatically generate and embed subtitles for MKVs
+                       that are missing subtitle tracks.
 
     Returns:
         ((actual_before, actual_after), src_mkvs, dst_mkvs) where:
@@ -166,6 +319,7 @@ def trim_recording(
         - dst_mkvs: {uri: dst_path}
 
     Raises:
+        MissingSubtitleError: If subtitle is missing and auto_subtitle is False.
         RuntimeError: If the output would contain content beyond max_margin from the target range.
     """
     # Find all MKVs referenced in the mcap
@@ -176,12 +330,17 @@ def trim_recording(
     # Use default namer if not provided
     namer = mkv_namer or default_mkv_namer(src_mkvs, dst_mcap)
 
+    # Ensure all MKVs have subtitles (auto-generate if requested)
+    for uri, src_mkv in src_mkvs.items():
+        ensure_subtitle(src_mcap, src_mkv, uri, auto_subtitle)
+
     # Get each MKV's start UTC
     mkv_start_utcs: dict[str, int] = {}
     for uri, src_mkv in src_mkvs.items():
         mkv_start = get_video_start_utc(src_mkv)
         if mkv_start is None:
-            raise ValueError(f"Cannot read subtitle from {src_mkv}")
+            # This should not happen after ensure_subtitle, but handle it anyway
+            raise MissingSubtitleError(src_mkv)
         mkv_start_utcs[uri] = mkv_start
 
     # Calculate target UTC range for each MKV based on its own start time
@@ -257,6 +416,15 @@ def trim(
             "If extra content exceeds this limit, the operation fails to protect privacy."
         ),
     ] = 5.0,
+    auto_subtitle: Annotated[
+        bool,
+        typer.Option(
+            "--auto-subtitle",
+            help="Automatically generate and embed UTC timestamps as subtitles "
+            "into MKV files that are missing subtitle tracks. "
+            "This modifies the original MKV file (with backup protection).",
+        ),
+    ] = False,
 ) -> None:
     """Trim mcap recording and referenced MKV files to a specific time range."""
     if not input_mcap.exists():
@@ -268,9 +436,9 @@ def trim(
 
     try:
         (before, after), src_mkvs, dst_mkvs = trim_recording(
-            input_mcap, output_mcap, start, duration, max_margin=max_margin
+            input_mcap, output_mcap, start, duration, max_margin=max_margin, auto_subtitle=auto_subtitle
         )
-    except (ValueError, RuntimeError) as e:
+    except (MissingSubtitleError, ValueError, RuntimeError) as e:
         console.print(f"[red]Error: {e}[/red]")
         raise typer.Exit(1)
 

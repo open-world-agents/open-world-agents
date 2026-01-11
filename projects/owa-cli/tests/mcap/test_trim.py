@@ -3,11 +3,17 @@
 from pathlib import Path
 from unittest.mock import Mock, patch
 
+import pytest
+
 from owa.cli.mcap import app as mcap_app
 from owa.cli.mcap.trim import (
+    MissingSubtitleError,
     cut_mcap,
     default_mkv_namer,
+    embed_subtitle,
+    ensure_subtitle,
     find_all_mkvs,
+    generate_utc_srt,
     get_duration,
     get_video_start_utc,
 )
@@ -229,3 +235,179 @@ def test_trim_error_handling(tmp_path, cli_runner):
 
     assert result.exit_code == 1
     assert "Error:" in result.output
+
+
+# === MissingSubtitleError Tests ===
+class TestMissingSubtitleError:
+    def test_error_message_contains_path(self, tmp_path):
+        mkv_path = tmp_path / "video.mkv"
+        error = MissingSubtitleError(mkv_path)
+        assert str(mkv_path) in str(error)
+
+    def test_error_message_contains_hint(self, tmp_path):
+        mkv_path = tmp_path / "video.mkv"
+        error = MissingSubtitleError(mkv_path)
+        assert "--auto-subtitle" in str(error)
+
+
+# === generate_utc_srt Tests ===
+class TestGenerateUtcSrt:
+    def test_generates_valid_srt(self, tmp_path):
+        """Test that generate_utc_srt produces valid SRT format."""
+        mcap_path = tmp_path / "test.mcap"
+
+        # Create mock screen messages with pts_ns and utc_ns
+        msg1 = Mock()
+        msg1.decoded = Mock()
+        msg1.decoded.media_ref = Mock()
+        msg1.decoded.media_ref.uri = "video.mkv"
+        msg1.decoded.media_ref.pts_ns = 0
+        msg1.decoded.utc_ns = 1704067200_000_000_000
+        msg1.timestamp = 1704067200_000_000_000
+
+        msg2 = Mock()
+        msg2.decoded = Mock()
+        msg2.decoded.media_ref = Mock()
+        msg2.decoded.media_ref.uri = "video.mkv"
+        msg2.decoded.media_ref.pts_ns = 1_000_000_000  # 1 second
+        msg2.decoded.utc_ns = 1704067201_000_000_000
+        msg2.timestamp = 1704067201_000_000_000
+
+        with patch("owa.cli.mcap.trim.OWAMcapReader") as mock_reader:
+            mock_reader.return_value.__enter__.return_value.iter_messages.return_value = [msg1, msg2]
+            result = generate_utc_srt(mcap_path, "video.mkv")
+
+        # Verify SRT structure
+        assert "1\n" in result
+        assert "00:00:00,000 -->" in result
+        assert "1704067200000000000" in result
+
+    def test_raises_error_when_no_messages(self, tmp_path):
+        """Test that generate_utc_srt raises error when no matching messages found."""
+        mcap_path = tmp_path / "test.mcap"
+
+        with patch("owa.cli.mcap.trim.OWAMcapReader") as mock_reader:
+            mock_reader.return_value.__enter__.return_value.iter_messages.return_value = []
+            with pytest.raises(ValueError, match="No screen messages found"):
+                generate_utc_srt(mcap_path, "video.mkv")
+
+
+# === embed_subtitle Tests ===
+class TestEmbedSubtitle:
+    def test_embeds_subtitle_successfully(self, tmp_path):
+        """Test that embed_subtitle calls ffmpeg and replaces file."""
+        mkv_path = tmp_path / "video.mkv"
+        mkv_path.write_bytes(b"fake mkv content")
+        srt_content = "1\n00:00:00,000 --> 00:00:01,000\n1704067200000000000\n"
+
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = Mock(returncode=0, stderr="")
+
+            # Mock the tmp file creation and replacement
+            tmp_output = mkv_path.with_suffix(".mkv.tmp")
+            tmp_output.write_bytes(b"muxed content")
+
+            embed_subtitle(mkv_path, srt_content)
+
+        # Verify ffmpeg was called with correct arguments
+        mock_run.assert_called_once()
+        call_args = mock_run.call_args[0][0]
+        assert "ffmpeg" in call_args
+        assert "-c:s" in call_args
+        assert "srt" in call_args
+
+    def test_rollback_on_ffmpeg_failure(self, tmp_path):
+        """Test that embed_subtitle rolls back on ffmpeg failure."""
+        mkv_path = tmp_path / "video.mkv"
+        original_content = b"original mkv content"
+        mkv_path.write_bytes(original_content)
+        srt_content = "1\n00:00:00,000 --> 00:00:01,000\n1704067200000000000\n"
+
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = Mock(returncode=1, stderr="ffmpeg error")
+            with pytest.raises(RuntimeError, match="ffmpeg failed"):
+                embed_subtitle(mkv_path, srt_content)
+
+        # Verify original file is restored
+        assert mkv_path.read_bytes() == original_content
+
+
+# === ensure_subtitle Tests ===
+class TestEnsureSubtitle:
+    def test_skips_when_subtitle_exists(self, tmp_path):
+        """Test that ensure_subtitle does nothing when subtitle exists."""
+        mcap_path = tmp_path / "test.mcap"
+        mkv_path = tmp_path / "video.mkv"
+
+        with patch("owa.cli.mcap.trim.get_video_start_utc") as mock_get_utc:
+            mock_get_utc.return_value = 1704067200_000_000_000
+            # Should not raise
+            ensure_subtitle(mcap_path, mkv_path, "video.mkv", auto_subtitle=False)
+
+    def test_raises_error_when_no_subtitle_and_auto_false(self, tmp_path):
+        """Test that ensure_subtitle raises MissingSubtitleError."""
+        mcap_path = tmp_path / "test.mcap"
+        mkv_path = tmp_path / "video.mkv"
+
+        with patch("owa.cli.mcap.trim.get_video_start_utc") as mock_get_utc:
+            mock_get_utc.return_value = None
+            with pytest.raises(MissingSubtitleError):
+                ensure_subtitle(mcap_path, mkv_path, "video.mkv", auto_subtitle=False)
+
+    def test_generates_subtitle_when_auto_true(self, tmp_path):
+        """Test that ensure_subtitle generates subtitle when auto_subtitle=True."""
+        mcap_path = tmp_path / "test.mcap"
+        mkv_path = tmp_path / "video.mkv"
+
+        with (
+            patch("owa.cli.mcap.trim.get_video_start_utc") as mock_get_utc,
+            patch("owa.cli.mcap.trim.generate_utc_srt") as mock_gen_srt,
+            patch("owa.cli.mcap.trim.embed_subtitle") as mock_embed,
+        ):
+            mock_get_utc.return_value = None
+            mock_gen_srt.return_value = "1\n00:00:00,000 --> 00:00:01,000\ntest\n"
+
+            ensure_subtitle(mcap_path, mkv_path, "video.mkv", auto_subtitle=True)
+
+            mock_gen_srt.assert_called_once_with(mcap_path, "video.mkv")
+            mock_embed.assert_called_once()
+
+
+# === CLI --auto-subtitle Tests ===
+def test_trim_missing_subtitle_error(tmp_path, cli_runner):
+    """Test error message when subtitle is missing."""
+    input_mcap = tmp_path / "input.mcap"
+    input_mcap.touch()
+    output_mcap = tmp_path / "output.mcap"
+
+    with patch("owa.cli.mcap.trim.trim_recording") as mock_trim:
+        mock_trim.side_effect = MissingSubtitleError(tmp_path / "video.mkv")
+        result = cli_runner.invoke(
+            mcap_app, ["trim", str(input_mcap), str(output_mcap), "--start", "10", "--duration", "30"]
+        )
+
+    assert result.exit_code == 1
+    assert "No subtitle track found" in result.output
+    assert "--auto-subtitle" in result.output
+
+
+def test_trim_with_auto_subtitle(tmp_path, cli_runner):
+    """Test trim with --auto-subtitle option."""
+    input_mcap = tmp_path / "input.mcap"
+    input_mcap.touch()
+    output_mcap = tmp_path / "output.mcap"
+
+    with patch("owa.cli.mcap.trim.trim_recording") as mock_trim:
+        mock_trim.return_value = (
+            (0.5, 0.5),
+            {"video.mkv": tmp_path / "video.mkv"},
+            {"video.mkv": tmp_path / "output.mkv"},
+        )
+        result = cli_runner.invoke(
+            mcap_app,
+            ["trim", str(input_mcap), str(output_mcap), "--start", "10", "--duration", "30", "--auto-subtitle"],
+        )
+        mock_trim.assert_called_once()
+        assert mock_trim.call_args[1]["auto_subtitle"] is True
+
+    assert result.exit_code == 0
