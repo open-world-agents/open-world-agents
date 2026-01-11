@@ -176,25 +176,31 @@ def trim_recording(
     # Use default namer if not provided
     namer = mkv_namer or default_mkv_namer(src_mkvs, dst_mcap)
 
-    # Get target UTC range from first MKV's subtitle
-    first_mkv = next(iter(src_mkvs.values()))
-    orig_start_utc = get_video_start_utc(first_mkv)
-    if orig_start_utc is None:
-        raise ValueError(f"Cannot read subtitle from {first_mkv}")
-    target_start = orig_start_utc + int(start * NS)
-    target_end = orig_start_utc + int((start + duration) * NS)
+    # Get each MKV's start UTC
+    mkv_start_utcs: dict[str, int] = {}
+    for uri, src_mkv in src_mkvs.items():
+        mkv_start = get_video_start_utc(src_mkv)
+        if mkv_start is None:
+            raise ValueError(f"Cannot read subtitle from {src_mkv}")
+        mkv_start_utcs[uri] = mkv_start
+
+    # Calculate target UTC range for each MKV based on its own start time
+    def get_target_range(mkv_start: int) -> tuple[int, int]:
+        return mkv_start + int(start * NS), mkv_start + int((start + duration) * NS)
 
     dst_mcap.parent.mkdir(parents=True, exist_ok=True)
     dst_mkvs: dict[str, Path] = {}
-    cut_start_utc: int = 0
-    cut_end_utc: int = 0
 
-    # Try increasing margins until we cover the target range
+    # Try increasing margins until we cover the target range for all MKVs
     for try_margin in [0.5, 1.0, 2.0, 3.0, 5.0, 8.0, 10.0, 15.0, 20.0]:
         dst_mkvs.clear()
         all_covered = True
+        cut_ranges: list[tuple[int, int]] = []  # (cut_start, cut_end) for each MKV
 
         for uri, src_mkv in src_mkvs.items():
+            mkv_start = mkv_start_utcs[uri]
+            target_start, target_end = get_target_range(mkv_start)
+
             dst_mkv = namer(src_mkv, dst_mcap)
             cut_mkv(src_mkv, dst_mkv, start, duration, try_margin)
 
@@ -209,12 +215,18 @@ def trim_recording(
                 break
 
             dst_mkvs[uri] = dst_mkv
-            cut_start_utc, cut_end_utc = cut_start, cut_end
+            cut_ranges.append((cut_start, cut_end))
 
         if all_covered and dst_mkvs:
-            # Check if actual margin exceeds max_margin
-            actual_before = (target_start - cut_start_utc) / NS
-            actual_after = (cut_end_utc - target_end) / NS
+            # Use the intersection of all cut ranges for mcap
+            cut_start_utc = max(r[0] for r in cut_ranges)
+            cut_end_utc = min(r[1] for r in cut_ranges)
+
+            # Calculate actual margins based on first MKV's target (for user feedback)
+            first_uri = next(iter(src_mkvs.keys()))
+            first_target_start, first_target_end = get_target_range(mkv_start_utcs[first_uri])
+            actual_before = (first_target_start - cut_start_utc) / NS
+            actual_after = (cut_end_utc - first_target_end) / NS
             actual_margin = max(actual_before, actual_after)
 
             if actual_margin > max_margin:
