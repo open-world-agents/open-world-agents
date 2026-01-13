@@ -1491,6 +1491,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#owl-mcap-trim" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        trim
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1968,6 +1979,17 @@
     <span class="md-ellipsis">
       
         subtitle
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#owl-mcap-trim" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        trim
       
     </span>
   </a>
@@ -2494,6 +2516,54 @@ messages would be removed, preventing accidental over-sanitization. Use
 <td>integer</td>
 <td>Video height (ASS only)</td>
 <td><code>1080</code></td>
+</tr>
+<tr>
+<td><code>--help</code></td>
+<td>boolean</td>
+<td>Show this message and exit.</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
+<h5 id="owl-mcap-trim">owl mcap trim<a class="headerlink" href="#owl-mcap-trim" title="Permanent link">&para;</a></h5>
+<p>Trim mcap recording and referenced MKV files to a specific time range.</p>
+<p><strong>Usage:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>owl mcap trim [OPTIONS] INPUT_MCAP OUTPUT_MCAP
+</code></pre></div>
+<p><strong>Options:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--start</code></td>
+<td>float</td>
+<td>Start time in seconds</td>
+<td>_required</td>
+</tr>
+<tr>
+<td><code>--duration</code></td>
+<td>float</td>
+<td>Duration in seconds</td>
+<td>_required</td>
+</tr>
+<tr>
+<td><code>--max-margin</code></td>
+<td>float</td>
+<td>Maximum allowed extra content beyond [start, start+duration] in seconds. Due to video keyframe constraints, the output may include extra frames. If extra content exceeds this limit, the operation fails to protect privacy.</td>
+<td><code>5.0</code></td>
+</tr>
+<tr>
+<td><code>--auto-subtitle</code></td>
+<td>boolean</td>
+<td>Automatically generate and embed UTC timestamps as subtitles into MKV files that are missing subtitle tracks. This modifies the original MKV file (with backup protection).</td>
+<td><code>False</code></td>
 </tr>
 <tr>
 <td><code>--help</code></td>
