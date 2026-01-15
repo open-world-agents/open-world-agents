@@ -119,11 +119,11 @@ class TestCutMcap:
 
             cut_mcap(src_mcap, dst_mcap, start_utc=1000, end_utc=3000, uri_map={})
 
-        # All 3 messages should be written with adjusted timestamps
+        # All 3 messages should be written with original UTC timestamps preserved
         assert len(written_messages) == 3
-        assert written_messages[0][2] == 0  # 1000 - 1000
-        assert written_messages[1][2] == 1000  # 2000 - 1000
-        assert written_messages[2][2] == 2000  # 3000 - 1000
+        assert written_messages[0][2] == 1000  # Original timestamp preserved
+        assert written_messages[1][2] == 2000  # Original timestamp preserved
+        assert written_messages[2][2] == 3000  # Original timestamp preserved
 
     def test_rewrites_screen_message_uri(self, tmp_path):
         """Test that cut_mcap rewrites media_ref URIs for screen messages."""

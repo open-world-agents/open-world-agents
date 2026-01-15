@@ -259,25 +259,30 @@ def cut_mkv(src: Path, dst: Path, start: float, duration: float, margin: float) 
 
 
 def cut_mcap(src: Path, dst: Path, start_utc: int, end_utc: int, uri_map: dict[str, str]) -> dict[str, int]:
-    """Filter mcap messages by UTC range and rewrite media_ref URIs."""
+    """Filter mcap messages by UTC range and rewrite media_ref URIs.
+
+    Note: Message timestamps (log_time, publish_time) are preserved as absolute UTC values.
+    Only the media_ref.pts_ns is adjusted to be relative to the trimmed video's start.
+    """
     stats = {"total": 0, "screen": 0}
 
     with OWAMcapReader(src) as reader:
         with OWAMcapWriter(dst) as writer:
             for msg in reader.iter_messages(start_time=start_utc, end_time=end_utc):
-                new_timestamp = msg.timestamp - start_utc
-
                 if msg.topic == "screen":
                     screen: ScreenCaptured = msg.decoded
                     if screen.media_ref:
                         old_uri = screen.media_ref.uri
                         new_uri = uri_map.get(old_uri, old_uri)
+                        # pts_ns should be relative to the trimmed video's start (0-based)
                         new_pts = (screen.utc_ns or msg.timestamp) - start_utc
                         screen.media_ref = MediaRef(uri=new_uri, pts_ns=new_pts)
-                    writer.write_message(screen, topic=msg.topic, timestamp=new_timestamp)
+                    # Keep original UTC timestamp for the message
+                    writer.write_message(screen, topic=msg.topic, timestamp=msg.timestamp)
                     stats["screen"] += 1
                 else:
-                    writer.write_message(msg.decoded, topic=msg.topic, timestamp=new_timestamp)
+                    # Keep original UTC timestamp for the message
+                    writer.write_message(msg.decoded, topic=msg.topic, timestamp=msg.timestamp)
                 stats["total"] += 1
 
     return stats
