@@ -166,10 +166,10 @@ def test_trim_file_not_found(tmp_path, cli_runner):
             "trim",
             str(tmp_path / "nonexistent.mcap"),
             str(tmp_path / "output.mcap"),
-            "--start",
+            "--video-start",
             "10",
-            "--duration",
-            "30",
+            "--video-end",
+            "40",
         ],
     )
     assert result.exit_code == 1
@@ -189,7 +189,7 @@ def test_trim_success(tmp_path, cli_runner):
             {"video.mkv": tmp_path / "output.mkv"},  # dst_mkvs
         )
         result = cli_runner.invoke(
-            mcap_app, ["trim", str(input_mcap), str(output_mcap), "--start", "10", "--duration", "30"]
+            mcap_app, ["trim", str(input_mcap), str(output_mcap), "--video-start", "10", "--video-end", "40"]
         )
 
     assert result.exit_code == 0
@@ -213,7 +213,17 @@ def test_trim_with_custom_max_margin(tmp_path, cli_runner):
         )
         result = cli_runner.invoke(
             mcap_app,
-            ["trim", str(input_mcap), str(output_mcap), "--start", "10", "--duration", "30", "--max-margin", "10.0"],
+            [
+                "trim",
+                str(input_mcap),
+                str(output_mcap),
+                "--video-start",
+                "10",
+                "--video-end",
+                "40",
+                "--max-margin",
+                "10.0",
+            ],
         )
         mock_trim.assert_called_once()
         assert mock_trim.call_args[1]["max_margin"] == 10.0
@@ -230,7 +240,7 @@ def test_trim_error_handling(tmp_path, cli_runner):
     with patch("owa.cli.mcap.trim.trim_recording") as mock_trim:
         mock_trim.side_effect = ValueError("No MKV files found")
         result = cli_runner.invoke(
-            mcap_app, ["trim", str(input_mcap), str(output_mcap), "--start", "10", "--duration", "30"]
+            mcap_app, ["trim", str(input_mcap), str(output_mcap), "--video-start", "10", "--video-end", "40"]
         )
 
     assert result.exit_code == 1
@@ -383,7 +393,7 @@ def test_trim_missing_subtitle_error(tmp_path, cli_runner):
     with patch("owa.cli.mcap.trim.trim_recording") as mock_trim:
         mock_trim.side_effect = MissingSubtitleError(tmp_path / "video.mkv")
         result = cli_runner.invoke(
-            mcap_app, ["trim", str(input_mcap), str(output_mcap), "--start", "10", "--duration", "30"]
+            mcap_app, ["trim", str(input_mcap), str(output_mcap), "--video-start", "10", "--video-end", "40"]
         )
 
     assert result.exit_code == 1
@@ -405,7 +415,7 @@ def test_trim_with_auto_subtitle(tmp_path, cli_runner):
         )
         result = cli_runner.invoke(
             mcap_app,
-            ["trim", str(input_mcap), str(output_mcap), "--start", "10", "--duration", "30", "--auto-subtitle"],
+            ["trim", str(input_mcap), str(output_mcap), "--video-start", "10", "--video-end", "40", "--auto-subtitle"],
         )
         mock_trim.assert_called_once()
         assert mock_trim.call_args[1]["auto_subtitle"] is True
@@ -424,7 +434,7 @@ def test_trim_range_exceeds_video_duration(tmp_path, cli_runner):
             "Requested range [10s, 100s] exceeds video duration.\n       Video 'video.mkv' covers: 0s to 35.0s"
         )
         result = cli_runner.invoke(
-            mcap_app, ["trim", str(input_mcap), str(output_mcap), "--start", "10", "--duration", "90"]
+            mcap_app, ["trim", str(input_mcap), str(output_mcap), "--video-start", "10", "--video-end", "100"]
         )
 
     assert result.exit_code == 1
@@ -441,7 +451,7 @@ def test_trim_negative_start_time(tmp_path, cli_runner):
     with patch("owa.cli.mcap.trim.trim_recording") as mock_trim:
         mock_trim.side_effect = ValueError("Invalid start time: -5s. Start time cannot be negative.")
         result = cli_runner.invoke(
-            mcap_app, ["trim", str(input_mcap), str(output_mcap), "--start", "-5", "--duration", "30"]
+            mcap_app, ["trim", str(input_mcap), str(output_mcap), "--video-start", "-5", "--video-end", "25"]
         )
 
     assert result.exit_code == 1

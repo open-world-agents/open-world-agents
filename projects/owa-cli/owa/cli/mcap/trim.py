@@ -302,7 +302,7 @@ def trim_recording(
     Args:
         src_mcap: Source mcap file path
         dst_mcap: Destination mcap file path
-        start: Start time in seconds (relative to recording start)
+        start: Start time in seconds relative to video PTS (video timeline from 0).
         duration: Duration in seconds
         mkv_namer: Function (src_mkv, dst_mcap) -> dst_mkv. If None, uses default naming.
         max_margin: Maximum allowed extra content beyond [start, start+duration].
@@ -415,15 +415,84 @@ def trim_recording(
     raise RuntimeError("Could not cover target range even with large margins")
 
 
+def convert_mcap_to_video_time(src_mcap: Path, mcap_time: float, auto_subtitle: bool = False) -> float:
+    """
+    Convert MCAP-relative time to video PTS-relative time.
+
+    Args:
+        src_mcap: Source mcap file path
+        mcap_time: Time in seconds relative to MCAP recording start
+        auto_subtitle: If True, auto-generate subtitles if missing
+
+    Returns:
+        Time in seconds relative to video PTS (video timeline from 0)
+
+    Raises:
+        ValueError: If no MKV files found in mcap
+        MissingSubtitleError: If subtitle is missing and auto_subtitle is False
+    """
+    src_mkvs = find_all_mkvs(src_mcap)
+    if not src_mkvs:
+        raise ValueError(f"No MKV files found in {src_mcap}")
+
+    # Get first MKV's start UTC
+    first_uri, first_mkv = next(iter(src_mkvs.items()))
+    ensure_subtitle(src_mcap, first_mkv, first_uri, auto_subtitle)
+
+    mkv_start_utc = get_video_start_utc(first_mkv)
+    if mkv_start_utc is None:
+        raise MissingSubtitleError(first_mkv)
+
+    # Get MCAP start UTC
+    with OWAMcapReader(src_mcap) as reader:
+        mcap_start_utc = reader.start_time
+
+    # Target UTC = mcap_start_utc + mcap_time (in ns)
+    target_utc = mcap_start_utc + int(mcap_time * NS)
+
+    # video_time = (target_utc - mkv_start_utc) in seconds
+    return (target_utc - mkv_start_utc) / NS
+
+
 def trim(
     input_mcap: Annotated[Path, typer.Argument(help="Input mcap file")],
     output_mcap: Annotated[Path, typer.Argument(help="Output mcap file path")],
-    start: Annotated[float, typer.Option(help="Start time in seconds")],
-    duration: Annotated[float, typer.Option(help="Duration in seconds")],
+    video_start: Annotated[
+        float | None,
+        typer.Option(
+            "--video-start",
+            help="Start time in seconds relative to video PTS (video's own timeline starting from 0). "
+            "Must be used with --video-end. Mutually exclusive with --mcap-start/--mcap-end.",
+        ),
+    ] = None,
+    video_end: Annotated[
+        float | None,
+        typer.Option(
+            "--video-end",
+            help="End time in seconds relative to video PTS. "
+            "Must be used with --video-start. Mutually exclusive with --mcap-start/--mcap-end.",
+        ),
+    ] = None,
+    mcap_start: Annotated[
+        float | None,
+        typer.Option(
+            "--mcap-start",
+            help="Start time in seconds relative to MCAP recording start. "
+            "Must be used with --mcap-end. Mutually exclusive with --video-start/--video-end.",
+        ),
+    ] = None,
+    mcap_end: Annotated[
+        float | None,
+        typer.Option(
+            "--mcap-end",
+            help="End time in seconds relative to MCAP recording start. "
+            "Must be used with --mcap-start. Mutually exclusive with --video-start/--video-end.",
+        ),
+    ] = None,
     max_margin: Annotated[
         float,
         typer.Option(
-            help="Maximum allowed extra content beyond [start, start+duration] in seconds. "
+            help="Maximum allowed extra content beyond the specified range in seconds. "
             "Due to video keyframe constraints, the output may include extra frames. "
             "If extra content exceeds this limit, the operation fails to protect privacy."
         ),
@@ -439,25 +508,76 @@ def trim(
     ] = False,
 ) -> None:
     """Trim mcap recording and referenced MKV files to a specific time range."""
+    # Validate option groups
+    has_video = video_start is not None or video_end is not None
+    has_mcap = mcap_start is not None or mcap_end is not None
+
+    if has_video and has_mcap:
+        console.print(
+            "[red]Error: --video-start/--video-end and --mcap-start/--mcap-end are mutually exclusive.[/red]"
+        )
+        raise typer.Exit(1)
+
+    if not has_video and not has_mcap:
+        console.print(
+            "[red]Error: Either (--video-start, --video-end) or (--mcap-start, --mcap-end) must be specified.[/red]"
+        )
+        raise typer.Exit(1)
+
+    if has_video:
+        if video_start is None or video_end is None:
+            console.print("[red]Error: Both --video-start and --video-end must be specified together.[/red]")
+            raise typer.Exit(1)
+        time_base = "video"
+        start_value = video_start
+        end_value = video_end
+    else:
+        if mcap_start is None or mcap_end is None:
+            console.print("[red]Error: Both --mcap-start and --mcap-end must be specified together.[/red]")
+            raise typer.Exit(1)
+        time_base = "mcap"
+        start_value = mcap_start
+        end_value = mcap_end
+
+    if end_value <= start_value:
+        console.print(f"[red]Error: End time ({end_value}s) must be greater than start time ({start_value}s).[/red]")
+        raise typer.Exit(1)
+
     if not input_mcap.exists():
         console.print(f"[red]Error: Input file not found: {input_mcap}[/red]")
         raise typer.Exit(1)
 
     console.print(f"Input: {input_mcap}", highlight=False)
-    console.print(f"Trim range: [{start}s, {start + duration}s] (max-margin: {max_margin}s)")
+    console.print(f"Trim range: [{start_value}s, {end_value}s] ({time_base} time, max-margin: {max_margin}s)")
 
     try:
+        # Convert mcap time to video time if needed
+        if time_base == "mcap":
+            video_start_time = convert_mcap_to_video_time(input_mcap, start_value, auto_subtitle)
+            video_end_time = convert_mcap_to_video_time(input_mcap, end_value, auto_subtitle)
+        else:
+            video_start_time = start_value
+            video_end_time = end_value
+
+        duration = video_end_time - video_start_time
+
         (before, after), src_mkvs, dst_mkvs = trim_recording(
-            input_mcap, output_mcap, start, duration, max_margin=max_margin, auto_subtitle=auto_subtitle
+            input_mcap,
+            output_mcap,
+            start=video_start_time,
+            duration=duration,
+            max_margin=max_margin,
+            auto_subtitle=auto_subtitle,
         )
     except (MissingSubtitleError, ValueError, RuntimeError) as e:
         console.print(f"[red]Error: {e}[/red]")
         raise typer.Exit(1)
 
-    actual_start = start - before
-    actual_end = start + duration + after
+    actual_start = start_value - before
+    actual_end = end_value + after
     console.print(
-        f"Actual range: [{actual_start:.1f}s, {actual_end:.1f}s] (margin: before={before:.1f}s, after={after:.1f}s)"
+        f"Actual range: [{actual_start:.1f}s, {actual_end:.1f}s] "
+        f"({time_base} time, margin: before={before:.1f}s, after={after:.1f}s)"
     )
     console.print("Output:")
     console.print(f"  {input_mcap} -> {output_mcap}", highlight=False)
