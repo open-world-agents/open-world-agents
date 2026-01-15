@@ -440,8 +440,8 @@ def convert_mcap_to_video_time(src_mcap: Path, mcap_time: float, auto_subtitle: 
     if not src_mkvs:
         raise ValueError(f"No MKV files found in {src_mcap}")
 
-    # Get first MKV's start UTC
-    first_uri, first_mkv = next(iter(src_mkvs.items()))
+    # Get first MKV's start UTC (sorted for deterministic behavior)
+    first_uri, first_mkv = sorted(src_mkvs.items())[0]
     ensure_subtitle(src_mcap, first_mkv, first_uri, auto_subtitle)
 
     mkv_start_utc = get_video_start_utc(first_mkv)
@@ -530,19 +530,17 @@ def trim(
         raise typer.Exit(1)
 
     if has_video:
-        if video_start is None or video_end is None:
-            console.print("[red]Error: Both --video-start and --video-end must be specified together.[/red]")
-            raise typer.Exit(1)
         time_base = "video"
-        start_value = video_start
-        end_value = video_end
-    else:
-        if mcap_start is None or mcap_end is None:
-            console.print("[red]Error: Both --mcap-start and --mcap-end must be specified together.[/red]")
-            raise typer.Exit(1)
+        start_value, end_value = video_start, video_end
+        start_name, end_name = "--video-start", "--video-end"
+    else:  # has_mcap
         time_base = "mcap"
-        start_value = mcap_start
-        end_value = mcap_end
+        start_value, end_value = mcap_start, mcap_end
+        start_name, end_name = "--mcap-start", "--mcap-end"
+
+    if start_value is None or end_value is None:
+        console.print(f"[red]Error: Both {start_name} and {end_name} must be specified together.[/red]")
+        raise typer.Exit(1)
 
     if end_value <= start_value:
         console.print(f"[red]Error: End time ({end_value}s) must be greater than start time ({start_value}s).[/red]")
