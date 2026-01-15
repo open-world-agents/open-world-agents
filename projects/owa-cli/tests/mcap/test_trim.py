@@ -183,7 +183,7 @@ def test_trim_success(tmp_path, cli_runner):
     output_mcap = tmp_path / "output.mcap"
 
     with (
-        patch("owa.cli.mcap.trim.convert_video_to_mcap_time", side_effect=lambda *args, **kwargs: args[1]),
+        patch("owa.cli.mcap.trim.get_video_to_mcap_offset", return_value=0),
         patch("owa.cli.mcap.trim.trim_recording") as mock_trim,
     ):
         mock_trim.return_value = (
@@ -209,7 +209,7 @@ def test_trim_with_custom_max_margin(tmp_path, cli_runner):
     output_mcap = tmp_path / "output.mcap"
 
     with (
-        patch("owa.cli.mcap.trim.convert_video_to_mcap_time", side_effect=lambda *args, **kwargs: args[1]),
+        patch("owa.cli.mcap.trim.get_video_to_mcap_offset", return_value=0),
         patch("owa.cli.mcap.trim.trim_recording") as mock_trim,
     ):
         mock_trim.return_value = (
@@ -244,7 +244,7 @@ def test_trim_error_handling(tmp_path, cli_runner):
     output_mcap = tmp_path / "output.mcap"
 
     with (
-        patch("owa.cli.mcap.trim.convert_video_to_mcap_time", side_effect=lambda *args, **kwargs: args[1]),
+        patch("owa.cli.mcap.trim.get_video_to_mcap_offset", return_value=0),
         patch("owa.cli.mcap.trim.trim_recording") as mock_trim,
     ):
         mock_trim.side_effect = ValueError("No MKV files found")
@@ -400,7 +400,7 @@ def test_trim_missing_subtitle_error(tmp_path, cli_runner):
     output_mcap = tmp_path / "output.mcap"
 
     with (
-        patch("owa.cli.mcap.trim.convert_video_to_mcap_time", side_effect=lambda *args, **kwargs: args[1]),
+        patch("owa.cli.mcap.trim.get_video_to_mcap_offset", return_value=0),
         patch("owa.cli.mcap.trim.trim_recording") as mock_trim,
     ):
         mock_trim.side_effect = MissingSubtitleError(tmp_path / "video.mkv")
@@ -420,7 +420,7 @@ def test_trim_with_auto_subtitle(tmp_path, cli_runner):
     output_mcap = tmp_path / "output.mcap"
 
     with (
-        patch("owa.cli.mcap.trim.convert_video_to_mcap_time", side_effect=lambda *args, **kwargs: args[1]),
+        patch("owa.cli.mcap.trim.get_video_to_mcap_offset", return_value=0),
         patch("owa.cli.mcap.trim.trim_recording") as mock_trim,
     ):
         mock_trim.return_value = (
@@ -445,7 +445,7 @@ def test_trim_range_exceeds_video_duration(tmp_path, cli_runner):
     output_mcap = tmp_path / "output.mcap"
 
     with (
-        patch("owa.cli.mcap.trim.convert_video_to_mcap_time", side_effect=lambda *args, **kwargs: args[1]),
+        patch("owa.cli.mcap.trim.get_video_to_mcap_offset", return_value=0),
         patch("owa.cli.mcap.trim.trim_recording") as mock_trim,
     ):
         mock_trim.side_effect = ValueError(
@@ -467,7 +467,7 @@ def test_trim_negative_start_time(tmp_path, cli_runner):
     output_mcap = tmp_path / "output.mcap"
 
     with (
-        patch("owa.cli.mcap.trim.convert_video_to_mcap_time", side_effect=lambda *args, **kwargs: args[1]),
+        patch("owa.cli.mcap.trim.get_video_to_mcap_offset", return_value=0),
         patch("owa.cli.mcap.trim.trim_recording") as mock_trim,
     ):
         mock_trim.side_effect = ValueError("Invalid start time: -5s. Start time cannot be negative.")

@@ -434,20 +434,21 @@ def trim_recording(
     raise RuntimeError("Could not cover target range even with large margins")
 
 
-def convert_video_to_mcap_time(src_mcap: Path, video_time: float, auto_subtitle: bool = False) -> float:
+def get_video_to_mcap_offset(src_mcap: Path, auto_subtitle: bool = False) -> float:
     """
-    Convert video PTS-relative time to MCAP-relative time.
+    Get the time offset to convert video PTS time to MCAP time.
+
+    mcap_time = video_time + offset
 
     This function only works when there's exactly one MKV file in the MCAP.
     For multiple MKV files, video time is ambiguous.
 
     Args:
         src_mcap: Source mcap file path
-        video_time: Time in seconds relative to video PTS (video timeline from 0)
         auto_subtitle: If True, auto-generate subtitles if missing
 
     Returns:
-        Time in seconds relative to MCAP recording start
+        Offset in seconds: (mkv_start_utc - mcap_start_utc) / NS
 
     Raises:
         ValueError: If no MKV files or multiple MKV files found in mcap
@@ -474,11 +475,7 @@ def convert_video_to_mcap_time(src_mcap: Path, video_time: float, auto_subtitle:
     with OWAMcapReader(src_mcap) as reader:
         mcap_start_utc = reader.start_time
 
-    # Target UTC = mkv_start_utc + video_time (in ns)
-    target_utc = mkv_start_utc + int(video_time * NS)
-
-    # mcap_time = (target_utc - mcap_start_utc) in seconds
-    return (target_utc - mcap_start_utc) / NS
+    return (mkv_start_utc - mcap_start_utc) / NS
 
 
 def trim(
@@ -578,8 +575,9 @@ def trim(
     try:
         # Convert video time to mcap time if needed
         if time_base == "video":
-            mcap_start_time = convert_video_to_mcap_time(input_mcap, start_value, auto_subtitle)
-            mcap_end_time = convert_video_to_mcap_time(input_mcap, end_value, auto_subtitle)
+            offset = get_video_to_mcap_offset(input_mcap, auto_subtitle)
+            mcap_start_time = start_value + offset
+            mcap_end_time = end_value + offset
         else:
             mcap_start_time = start_value
             mcap_end_time = end_value
