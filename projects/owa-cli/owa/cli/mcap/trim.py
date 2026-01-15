@@ -291,8 +291,8 @@ def cut_mcap(src: Path, dst: Path, start_utc: int, end_utc: int, uri_map: dict[s
 def trim_recording(
     src_mcap: Path,
     dst_mcap: Path,
-    start: float,
-    duration: float,
+    mcap_start: float,
+    mcap_end: float,
     mkv_namer: MkvNamer | None = None,
     max_margin: float = 5.0,
     auto_subtitle: bool = False,
@@ -307,10 +307,10 @@ def trim_recording(
     Args:
         src_mcap: Source mcap file path
         dst_mcap: Destination mcap file path
-        start: Start time in seconds relative to video PTS (video timeline from 0).
-        duration: Duration in seconds
+        mcap_start: Start time in seconds relative to MCAP recording start.
+        mcap_end: End time in seconds relative to MCAP recording start.
         mkv_namer: Function (src_mkv, dst_mcap) -> dst_mkv. If None, uses default naming.
-        max_margin: Maximum allowed extra content beyond [start, start+duration].
+        max_margin: Maximum allowed extra content beyond [mcap_start, mcap_end].
                     If the output contains frames further than this, raises an error.
                     This is important for privacy protection.
         auto_subtitle: If True, automatically generate and embed subtitles for MKVs
@@ -318,8 +318,8 @@ def trim_recording(
 
     Returns:
         ((actual_before, actual_after), src_mkvs, dst_mkvs) where:
-        - actual_before: extra seconds included before start
-        - actual_after: extra seconds included after end
+        - actual_before: extra seconds included before mcap_start
+        - actual_after: extra seconds included after mcap_end
         - src_mkvs: {uri: src_path}
         - dst_mkvs: {uri: dst_path}
 
@@ -327,6 +327,10 @@ def trim_recording(
         MissingSubtitleError: If subtitle is missing and auto_subtitle is False.
         RuntimeError: If the output would contain content beyond max_margin from the target range.
     """
+    duration = mcap_end - mcap_start
+    if duration <= 0:
+        raise ValueError(f"mcap_end ({mcap_end}s) must be greater than mcap_start ({mcap_start}s).")
+
     # Find all MKVs referenced in the mcap
     src_mkvs = find_all_mkvs(src_mcap)
     if not src_mkvs:
@@ -339,29 +343,37 @@ def trim_recording(
     for uri, src_mkv in src_mkvs.items():
         ensure_subtitle(src_mcap, src_mkv, uri, auto_subtitle)
 
-    # Get each MKV's start UTC
+    # Get MCAP start UTC
+    with OWAMcapReader(src_mcap) as reader:
+        mcap_start_utc = reader.start_time
+
+    # Calculate target UTC range from MCAP-relative times
+    target_start_utc = mcap_start_utc + int(mcap_start * NS)
+    target_end_utc = mcap_start_utc + int(mcap_end * NS)
+
+    # Get each MKV's start UTC and calculate video-relative times
     mkv_start_utcs: dict[str, int] = {}
+    mkv_video_starts: dict[str, float] = {}  # video PTS start for each MKV
     for uri, src_mkv in src_mkvs.items():
         mkv_start = get_video_start_utc(src_mkv)
         if mkv_start is None:
-            # This should not happen after ensure_subtitle, but handle it anyway
             raise MissingSubtitleError(src_mkv)
         mkv_start_utcs[uri] = mkv_start
+        # Convert MCAP target time to video PTS time for this MKV
+        mkv_video_starts[uri] = (target_start_utc - mkv_start) / NS
 
-    # Calculate target UTC range for each MKV based on its own start time
-    def get_target_range(mkv_start: int) -> tuple[int, int]:
-        return mkv_start + int(start * NS), mkv_start + int((start + duration) * NS)
-
-    # Validate requested range against video duration
+    # Validate requested range against each video's duration
     for uri, src_mkv in src_mkvs.items():
         video_duration = get_duration(src_mkv)
-        requested_end = start + duration
-        if start < 0:
-            raise ValueError(f"Invalid start time: {start}s. Start time cannot be negative.")
-        if requested_end > video_duration:
+        video_start = mkv_video_starts[uri]
+        video_end = video_start + duration
+        if video_start < 0:
+            raise ValueError(f"Invalid time range: starts {-video_start:.1f}s before video '{uri}' begins.")
+        if video_end > video_duration:
             raise ValueError(
-                f"Requested range [{start}s, {requested_end}s] exceeds video duration.\n"
-                f"       Video '{src_mkv.name}' covers: 0s to {video_duration:.1f}s"
+                f"Requested range exceeds video duration for '{uri}'.\n"
+                f"       Video covers: 0s to {video_duration:.1f}s (video PTS), "
+                f"but requested ends at {video_end:.1f}s"
             )
 
     dst_mcap.parent.mkdir(parents=True, exist_ok=True)
@@ -371,20 +383,24 @@ def trim_recording(
     for try_margin in [0.5, 1.0, 2.0, 3.0, 5.0, 8.0, 10.0, 15.0, 20.0]:
         dst_mkvs.clear()
         all_covered = True
-        cut_ranges: list[tuple[int, int]] = []  # (cut_start, cut_end) for each MKV
+        cut_ranges: list[tuple[int, int]] = []  # (cut_start_utc, cut_end_utc) for each MKV
 
         for uri, src_mkv in src_mkvs.items():
-            mkv_start = mkv_start_utcs[uri]
-            target_start, target_end = get_target_range(mkv_start)
+            video_start = mkv_video_starts[uri]
 
             dst_mkv = namer(src_mkv, dst_mcap)
-            cut_mkv(src_mkv, dst_mkv, start, duration, try_margin)
+            cut_mkv(src_mkv, dst_mkv, video_start, duration, try_margin)
 
             cut_start = get_video_start_utc(dst_mkv)
             if cut_start is None:
                 all_covered = False
                 break
             cut_end = cut_start + int(get_duration(dst_mkv) * NS)
+
+            # Check if cut covers the target UTC range
+            mkv_start = mkv_start_utcs[uri]
+            target_start = mkv_start + int(video_start * NS)
+            target_end = mkv_start + int((video_start + duration) * NS)
 
             if not (cut_start <= target_start and cut_end >= target_end):
                 all_covered = False
@@ -398,11 +414,9 @@ def trim_recording(
             cut_start_utc = max(r[0] for r in cut_ranges)
             cut_end_utc = min(r[1] for r in cut_ranges)
 
-            # Calculate actual margins based on first MKV's target (for user feedback)
-            first_uri = next(iter(src_mkvs.keys()))
-            first_target_start, first_target_end = get_target_range(mkv_start_utcs[first_uri])
-            actual_before = (first_target_start - cut_start_utc) / NS
-            actual_after = (cut_end_utc - first_target_end) / NS
+            # Calculate actual margins (in MCAP time)
+            actual_before = (target_start_utc - cut_start_utc) / NS
+            actual_after = (cut_end_utc - target_end_utc) / NS
             actual_margin = max(actual_before, actual_after)
 
             if actual_margin > max_margin:
@@ -420,43 +434,51 @@ def trim_recording(
     raise RuntimeError("Could not cover target range even with large margins")
 
 
-def convert_mcap_to_video_time(src_mcap: Path, mcap_time: float, auto_subtitle: bool = False) -> float:
+def convert_video_to_mcap_time(src_mcap: Path, video_time: float, auto_subtitle: bool = False) -> float:
     """
-    Convert MCAP-relative time to video PTS-relative time.
+    Convert video PTS-relative time to MCAP-relative time.
+
+    This function only works when there's exactly one MKV file in the MCAP.
+    For multiple MKV files, video time is ambiguous.
 
     Args:
         src_mcap: Source mcap file path
-        mcap_time: Time in seconds relative to MCAP recording start
+        video_time: Time in seconds relative to video PTS (video timeline from 0)
         auto_subtitle: If True, auto-generate subtitles if missing
 
     Returns:
-        Time in seconds relative to video PTS (video timeline from 0)
+        Time in seconds relative to MCAP recording start
 
     Raises:
-        ValueError: If no MKV files found in mcap
+        ValueError: If no MKV files or multiple MKV files found in mcap
         MissingSubtitleError: If subtitle is missing and auto_subtitle is False
     """
     src_mkvs = find_all_mkvs(src_mcap)
     if not src_mkvs:
         raise ValueError(f"No MKV files found in {src_mcap}")
+    if len(src_mkvs) > 1:
+        raise ValueError(
+            f"Cannot use video time with multiple MKV files ({len(src_mkvs)} found). "
+            "Use --mcap-start/--mcap-end instead."
+        )
 
-    # Get first MKV's start UTC (sorted for deterministic behavior)
-    first_uri, first_mkv = sorted(src_mkvs.items())[0]
-    ensure_subtitle(src_mcap, first_mkv, first_uri, auto_subtitle)
+    # Get the single MKV's start UTC
+    uri, mkv = next(iter(src_mkvs.items()))
+    ensure_subtitle(src_mcap, mkv, uri, auto_subtitle)
 
-    mkv_start_utc = get_video_start_utc(first_mkv)
+    mkv_start_utc = get_video_start_utc(mkv)
     if mkv_start_utc is None:
-        raise MissingSubtitleError(first_mkv)
+        raise MissingSubtitleError(mkv)
 
     # Get MCAP start UTC
     with OWAMcapReader(src_mcap) as reader:
         mcap_start_utc = reader.start_time
 
-    # Target UTC = mcap_start_utc + mcap_time (in ns)
-    target_utc = mcap_start_utc + int(mcap_time * NS)
+    # Target UTC = mkv_start_utc + video_time (in ns)
+    target_utc = mkv_start_utc + int(video_time * NS)
 
-    # video_time = (target_utc - mkv_start_utc) in seconds
-    return (target_utc - mkv_start_utc) / NS
+    # mcap_time = (target_utc - mcap_start_utc) in seconds
+    return (target_utc - mcap_start_utc) / NS
 
 
 def trim(
@@ -554,21 +576,19 @@ def trim(
     console.print(f"Trim range: [{start_value}s, {end_value}s] ({time_base} time, max-margin: {max_margin}s)")
 
     try:
-        # Convert mcap time to video time if needed
-        if time_base == "mcap":
-            video_start_time = convert_mcap_to_video_time(input_mcap, start_value, auto_subtitle)
-            video_end_time = convert_mcap_to_video_time(input_mcap, end_value, auto_subtitle)
+        # Convert video time to mcap time if needed
+        if time_base == "video":
+            mcap_start_time = convert_video_to_mcap_time(input_mcap, start_value, auto_subtitle)
+            mcap_end_time = convert_video_to_mcap_time(input_mcap, end_value, auto_subtitle)
         else:
-            video_start_time = start_value
-            video_end_time = end_value
-
-        duration = video_end_time - video_start_time
+            mcap_start_time = start_value
+            mcap_end_time = end_value
 
         (before, after), src_mkvs, dst_mkvs = trim_recording(
             input_mcap,
             output_mcap,
-            start=video_start_time,
-            duration=duration,
+            mcap_start=mcap_start_time,
+            mcap_end=mcap_end_time,
             max_margin=max_margin,
             auto_subtitle=auto_subtitle,
         )
