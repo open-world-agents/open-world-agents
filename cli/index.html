@@ -3420,21 +3420,33 @@ messages would be removed, preventing accidental over-sanitization. Use
 </thead>
 <tbody>
 <tr>
-<td><code>--start</code></td>
+<td><code>--video-start</code></td>
 <td>float</td>
-<td>Start time in seconds</td>
-<td>_required</td>
+<td>Start time in seconds relative to video PTS (video's own timeline starting from 0). Must be used with --video-end. Mutually exclusive with --mcap-start/--mcap-end.</td>
+<td>None</td>
 </tr>
 <tr>
-<td><code>--duration</code></td>
+<td><code>--video-end</code></td>
 <td>float</td>
-<td>Duration in seconds</td>
-<td>_required</td>
+<td>End time in seconds relative to video PTS. Must be used with --video-start. Mutually exclusive with --mcap-start/--mcap-end.</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>--mcap-start</code></td>
+<td>float</td>
+<td>Start time in seconds relative to MCAP recording start. Must be used with --mcap-end. Mutually exclusive with --video-start/--video-end.</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>--mcap-end</code></td>
+<td>float</td>
+<td>End time in seconds relative to MCAP recording start. Must be used with --mcap-start. Mutually exclusive with --video-start/--video-end.</td>
+<td>None</td>
 </tr>
 <tr>
 <td><code>--max-margin</code></td>
 <td>float</td>
-<td>Maximum allowed extra content beyond [start, start+duration] in seconds. Due to video keyframe constraints, the output may include extra frames. If extra content exceeds this limit, the operation fails to protect privacy.</td>
+<td>Maximum allowed extra content beyond the specified range in seconds. Due to video keyframe constraints, the output may include extra frames. If extra content exceeds this limit, the operation fails to protect privacy.</td>
 <td><code>5.0</code></td>
 </tr>
 <tr>
