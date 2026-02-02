@@ -14,10 +14,8 @@ class IntervalExtractorConfig:
     The kwargs are passed to the constructor of the specified class.
     """
 
-    class_name: str = "InactivityFilter"
-    kwargs: Dict[str, Any] = field(
-        default_factory=lambda: {"screen_inactivity_threshold": 1.0, "input_inactivity_threshold": 5.0}
-    )
+    class_name: str = "All"
+    kwargs: Dict[str, Any] = field(default_factory=lambda: {})
 
     def create_extractor(self):
         """Create the interval extractor instance from configuration."""
