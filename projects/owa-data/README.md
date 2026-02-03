@@ -120,6 +120,8 @@ python scripts/event_to_binned.py \
 
 ## Programmatic Usage
 
+> **Building custom pipelines?** See [ARCHITECTURE.md](ARCHITECTURE.md) for the full API reference — high-level functions (`build_event_dataset`, `build_fsl_dataset`) and low-level components (IntervalExtractor, EventResampler, EventEncoder, Tokenization).
+
 ### Event Tokenization
 
 The `owa.data.tokenization` module converts MCAP events to/from token sequences for VLM training.
