@@ -56,13 +56,13 @@ def prepare_model_for_events(
 
         if apply_semantic_init:
             # Determine encoder type from encoder class name
-            encoder_type = type(encoder).__name__.lower()
-            if "factorized" in encoder_type:
+            encoder_type_str = type(encoder).__name__.lower()
+            encoder_type = None
+            if "factorized" in encoder_type_str:
                 encoder_type = "factorized"
-            elif "hierarchical" in encoder_type:
+            elif "hierarchical" in encoder_type_str:
                 encoder_type = "hierarchical"
-            else:
-                encoder_type = "factorized"  # default
 
-            apply_semantic_initialization(tokenizer, model, encoder_type)
-            logger.info(f"Applied semantic initialization for {encoder_type} encoder")
+            if encoder_type:
+                apply_semantic_initialization(tokenizer, model, encoder_type)
+                logger.info(f"Applied semantic initialization for {encoder_type} encoder")

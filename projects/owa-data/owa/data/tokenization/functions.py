@@ -196,7 +196,7 @@ def decode_episode(
 def tokenize_event_dataset(
     ctx: EventTokenizationContext,
     event_dataset: "Dataset",
-    map_kwargs: dict = None,
+    map_kwargs: dict | None = None,
 ) -> "Dataset":
     """Tokenize an entire event dataset.
 
