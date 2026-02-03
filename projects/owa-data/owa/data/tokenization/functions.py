@@ -69,7 +69,8 @@ def tokenize_event(
     # Encode message to text using EventEncoder
     encoded_text, images = ctx.encoder.encode(mcap_msg)
 
-    # Replace fake placeholder with actual image token pattern
+    # Replace fake image placeholder with prefix + repeated real image tokens + suffix
+    # EventEncoder outputs fake_image_placeholder, we convert to real image tokens here
     encoded_text = encoded_text.replace(
         ctx.image_config.fake_placeholder,
         ctx.image_config.pattern,
@@ -111,7 +112,8 @@ def decode_event(
         "This method expects image tokens are excluded since they are treated as -100 in labels."
     )
 
-    # Convert empty image pattern back to placeholder
+    # Convert repeated image token sequences back to fake_image_placeholder
+    # Pattern: prefix + suffix (image tokens excluded as -100) -> fake_image_placeholder
     empty_pattern = f"{ctx.image_config.prefix}{ctx.image_config.suffix}"
     text = text.replace(empty_pattern, ctx.image_config.fake_placeholder)
 
@@ -165,25 +167,33 @@ def decode_episode(
     else:
         text = ctx.tokenizer.decode(input_ids_or_text, skip_special_tokens=False)
 
-    # Parse events between <EVENT_START> and <EVENT_END>
+    # Parse all events between <EVENT_START> and <EVENT_END> tokens
     event_strings = re.findall(r"<EVENT_START>.*?<EVENT_END>", text)
 
+    # Initialize previous timestamp and timestamp bias for modular arithmetic handling
     previous_timestamp = float("-inf")
     timestamp_bias = 0
 
     for event_string in event_strings:
         try:
-            # Convert image pattern back to placeholder
+            # Convert repeated image token sequences back to fake_image_placeholder
+            # Pattern: prefix + (image_token * length) + suffix -> fake_image_placeholder
             processed = event_string.replace(
                 f"{ctx.image_config.prefix}{ctx.image_config.suffix}",
                 ctx.image_config.fake_placeholder,
             )
             event = ctx.encoder.decode(processed)
 
+            # Handle timestamp adjustment for modular arithmetic
+            # Timestamps use modular encoding, so we need to detect wraparound
             if adjust_timestamp:
                 timestamp_range = ctx.encoder.config.timestamp_range
+
+                # Adjust timestamp if it's smaller than the previous one (modular wraparound)
                 if event.timestamp < previous_timestamp:
                     timestamp_bias += timestamp_range
+
+                # Apply timestamp bias to get absolute timestamp
                 event.timestamp += timestamp_bias
 
             yield event

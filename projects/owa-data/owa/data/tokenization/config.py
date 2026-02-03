@@ -41,5 +41,11 @@ class ImageTokenConfig:
 
     @property
     def vocab_tokens(self) -> set[str]:
-        """Get the set of tokens that need to be added to tokenizer vocab."""
+        """Get the set of tokens that need to be added to tokenizer vocab.
+
+        Note: fake_placeholder is NOT included as it's not a real token in the vocab.
+        It's an internal placeholder used by EventEncoder that gets replaced with
+        the actual image token pattern during tokenization.
+        """
+        # TODO: prefix/suffix can be composed of multiple tokens, may need parsing
         return {self.prefix, self.token, self.suffix}
