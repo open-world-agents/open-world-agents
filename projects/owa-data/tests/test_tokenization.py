@@ -11,6 +11,7 @@ Tests the refactored tokenization module with:
 
 from dataclasses import FrozenInstanceError
 
+import numpy as np
 import orjson
 import pytest
 from transformers import AutoTokenizer
@@ -205,8 +206,6 @@ class TestTokenizationFunctions:
         )
 
         result = tokenize_event(ctx, msg, return_dict=False)
-
-        import numpy as np
 
         assert isinstance(result, np.ndarray)
         assert len(result) > 0
