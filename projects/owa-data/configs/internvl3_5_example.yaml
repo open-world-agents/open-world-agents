@@ -9,14 +9,13 @@ event_to_fsl_config:
   # Model configuration
   tokenizer_name: "OpenGVLab/InternVL3_5-1B-HF"
 
-  # Episode tokenizer configuration to override (optional). Defaults are determined from tokenizer_name
-  episode_tokenize_config:
-    encoder_type: "factorized"  # Options: "hierarchical", "factorized"
-  #   fake_image_placeholder: "<fake_image_placeholder>"
-  #   image_token_prefix: "<img>"
-  #   image_token: "<IMG_CONTEXT>"
-  #   image_token_length: 256
-  #   image_token_suffix: "</img>"
+  # Tokenization configuration (optional). Defaults are auto-detected from tokenizer_name
+  encoder_type: "factorized"  # Options: "hierarchical", "factorized"
+  # image_token_config:
+  #   prefix: "<img>"
+  #   token: "<IMG_CONTEXT>"
+  #   length: 256
+  #   suffix: "</img>"
 
   # FSL dataset configuration
   fsl_dataset:

@@ -9,14 +9,13 @@ event_to_fsl_config:
   # Model configuration
   tokenizer_name: "HuggingFaceTB/SmolVLM2-256M-Video-Instruct"
 
-  # Episode tokenizer configuration to override (optional). Defaults are determined from tokenizer_name
-  episode_tokenize_config:
-    encoder_type: "factorized"  # Options: "hierarchical", "factorized"
-  #   fake_image_placeholder: "<fake_image_placeholder>"
-  #   image_token_prefix: "<fake_token_around_image><global-img>"
-  #   image_token: "<image>"
-  #   image_token_length: 64
-  #   image_token_suffix: "<fake_token_around_image>"
+  # Tokenization configuration (optional). Defaults are auto-detected from tokenizer_name
+  encoder_type: "factorized"  # Options: "hierarchical", "factorized"
+  # image_token_config:
+  #   prefix: "<fake_token_around_image><global-img>"
+  #   token: "<image>"
+  #   length: 64
+  #   suffix: "<fake_token_around_image>"
 
   # FSL dataset configuration
   fsl_dataset:
