@@ -118,7 +118,42 @@ python scripts/event_to_binned.py \
 
 **When to use:** If your training code expects state-action pairs similar to [RLDS](https://github.com/google-research/rlds) or [LeRobot](https://github.com/huggingface/lerobot).
 
-## Dataset Transforms
+## Programmatic Usage
+
+### Event Tokenization
+
+The `owa.data.tokenization` module converts MCAP events to/from token sequences for VLM training.
+
+```python
+from owa.data.tokenization import (
+    ImageTokenConfig, EventTokenizationContext,
+    expand_tokenizer_for_events, tokenize_event, decode_episode
+)
+from owa.data.encoders import create_encoder
+
+# Setup (once, with side effects)
+encoder = create_encoder("factorized")
+image_config = ImageTokenConfig(prefix="<img>", token="<IMG_CONTEXT>", length=256, suffix="</img>")
+expand_tokenizer_for_events(tokenizer, encoder, image_config)
+
+# Create immutable context for tokenization
+ctx = EventTokenizationContext(encoder, tokenizer, image_config)
+
+# Encode: McapMessage → TokenizedEvent
+result = tokenize_event(ctx, mcap_msg)
+print(result["token_ids"])  # List[int]
+
+# Decode: token IDs → McapMessages
+for msg in decode_episode(ctx, result["token_ids"]):
+    print(msg.topic, msg.timestamp)
+```
+
+**Design:**
+- `expand_tokenizer_for_events()` — Side-effect function, mutates tokenizer (call once)
+- `EventTokenizationContext` — Immutable container, validates tokenizer has required tokens
+- `tokenize_event()`, `decode_episode()` — Pure functions, no side effects
+
+### Dataset Transforms
 
 Raw datasets contain binary MCAP messages. Transforms convert them to training-ready format on-the-fly using HuggingFace's `set_transform()`.
 
