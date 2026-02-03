@@ -217,6 +217,6 @@ result = tokenize_event(ctx, mcap_msg)  # Returns TokenizedEvent dict
 
 **TokenizedEvent format:**
 ```python
-{"text": str, "images": list, "token_ids": list, "total_token_count": int}
+{"text": str, "images": list, "token_ids": list[int], "total_token_count": int}
 ```
 
