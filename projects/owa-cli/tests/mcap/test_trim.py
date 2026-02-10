@@ -113,8 +113,8 @@ class TestCutMcap:
             patch("owa.cli.mcap.trim.OWAMcapWriter") as mock_writer,
         ):
             mock_reader.return_value.__enter__.return_value.iter_messages.return_value = [msg1, msg2, msg3]
-            mock_writer.return_value.__enter__.return_value.write_message.side_effect = (
-                lambda msg, topic, timestamp: written_messages.append((msg, topic, timestamp))
+            mock_writer.return_value.__enter__.return_value.write_message.side_effect = lambda msg, topic, timestamp: (
+                written_messages.append((msg, topic, timestamp))
             )
 
             cut_mcap(src_mcap, dst_mcap, start_utc=1000, end_utc=3000, uri_map={})
@@ -145,8 +145,8 @@ class TestCutMcap:
             patch("owa.cli.mcap.trim.OWAMcapWriter") as mock_writer,
         ):
             mock_reader.return_value.__enter__.return_value.iter_messages.return_value = [screen_msg]
-            mock_writer.return_value.__enter__.return_value.write_message.side_effect = (
-                lambda msg, topic, timestamp: written_messages.append((msg, topic, timestamp))
+            mock_writer.return_value.__enter__.return_value.write_message.side_effect = lambda msg, topic, timestamp: (
+                written_messages.append((msg, topic, timestamp))
             )
 
             cut_mcap(src_mcap, dst_mcap, start_utc=1000, end_utc=3000, uri_map={"old_video.mkv": "new_video.mkv"})
