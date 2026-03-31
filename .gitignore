@@ -2,6 +2,10 @@
 # CUSTOM IGNORES FOR THIS PROJECT
 # ========================================
 
+# oh-my-something
+.omc
+.omx
+
 /tmp/
 wandb/
 
