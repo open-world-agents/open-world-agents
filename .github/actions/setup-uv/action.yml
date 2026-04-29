@@ -11,7 +11,8 @@ runs:
   steps:
     - name: Install the latest version of uv
       id: setup-uv
-      uses: astral-sh/setup-uv@v7
+      # v8 dropped major-tag publishing (supply-chain hardening); pin to a full version. dependabot bumps this.
+      uses: astral-sh/setup-uv@v8.1.0
       with:
         version: "latest"
         enable-cache: true

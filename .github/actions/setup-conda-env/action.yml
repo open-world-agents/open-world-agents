@@ -34,7 +34,7 @@ runs:
 
     - name: Cache conda packages (Linux)
       if: inputs.os == 'linux'
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       env:
         CACHE_NUMBER: ${{ inputs.cache-number }}
       with:
@@ -43,7 +43,7 @@ runs:
 
     - name: Cache conda packages (Windows)
       if: inputs.os == 'windows'
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       env:
         CACHE_NUMBER: ${{ inputs.cache-number }}
       with:
@@ -53,7 +53,7 @@ runs:
 
     - name: Setup Miniforge (Linux)
       if: inputs.os == 'linux'
-      uses: conda-incubator/setup-miniconda@v3
+      uses: conda-incubator/setup-miniconda@v4
       with:
         miniforge-version: latest
         mamba-version: "*"
@@ -65,7 +65,7 @@ runs:
 
     - name: Setup Miniforge (Windows)
       if: inputs.os == 'windows'
-      uses: conda-incubator/setup-miniconda@v3
+      uses: conda-incubator/setup-miniconda@v4
       with:
         miniforge-version: latest
         mamba-version: "*"
@@ -76,7 +76,7 @@ runs:
 
     - name: Cache conda environment
       if: inputs.enable-env-cache == 'true'
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         enableCrossOsArchive: ${{ inputs.os == 'windows' }}
         path: ${{ env.CONDA }}/envs

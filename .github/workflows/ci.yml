@@ -13,7 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: astral-sh/ruff-action@v3
+      # v4 dropped major-tag publishing; pin to a full version. dependabot bumps this.
+      - uses: astral-sh/ruff-action@v4.0.0
       - run: ruff check --fix
       - run: ruff format --check --diff
 
@@ -68,7 +69,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v8.1.0
 
       - name: Install Dependencies
         run: |
