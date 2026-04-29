@@ -30,13 +30,15 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Virtual Environment
-        uses: ./.github/actions/setup-venv
+      - name: Setup uv with Python 3.11 venv
+        uses: astral-sh/setup-uv@v8.1.0
         with:
           python-version: '3.11'
+          activate-environment: true
+          enable-cache: true
 
-      - name: Setup uv
-        uses: ./.github/actions/setup-uv
+      - name: Install virtual-uv
+        run: uv pip install virtual-uv
 
       - name: Install Dependencies
         run: vuv install --extra docs
@@ -113,9 +115,10 @@ jobs:
           environment-file: 'projects/owa-env-gst/environment.yml'
 
       - name: Setup uv
-        uses: ./.github/actions/setup-uv
-        with:
-          show-uv-cache-info: 'true'
+        uses: astral-sh/setup-uv@v8.1.0
+
+      - name: Install virtual-uv
+        run: uv pip install virtual-uv
 
       - name: Install dependencies
         run: vuv install --dev
