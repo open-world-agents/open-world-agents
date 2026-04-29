@@ -148,37 +148,6 @@ def _display_all_plugins_overview(plugins_data: dict, show_components: bool, sho
         _display_plugins_tree(plugins_data, show_components, show_details)
 
 
-def _sort_components(components: list, sort_by: str) -> list:
-    """Sort components based on the specified criteria."""
-    if sort_by == "namespace":
-        return sorted(components, key=lambda x: (x.split("/")[0], x.split("/", 1)[1]))
-    elif sort_by == "name":
-        return sorted(components, key=lambda x: x.split("/", 1)[1] if "/" in x else x)
-    elif sort_by == "type":
-        # This doesn't apply to single-type lists, so fall back to namespace
-        return sorted(components, key=lambda x: (x.split("/")[0], x.split("/", 1)[1]))
-    return components
-
-
-def _display_components_tree(component_type: str, components: list, details: bool):
-    """Display components in tree format."""
-    icon = {"callables": "📞", "listeners": "👂", "runnables": "🏃"}
-    tree = Tree(f"{icon.get(component_type, '�')} {component_type.title()} ({len(components)})")
-
-    if details:
-        comp_info = get_component_info(component_type)
-        for comp_name in components:
-            info = comp_info.get(comp_name, {})
-            status = "✅ loaded" if info.get("loaded", False) else "⏳ lazy"
-            import_path = info.get("import_path", "unknown")
-            tree.add(f"{comp_name} [{status}] ({import_path})")
-    else:
-        for comp_name in components:
-            tree.add(comp_name)
-
-    console.print(tree)
-
-
 def _display_components_tree_detailed(components: dict, show_details: bool):
     """Display components in detailed tree format."""
     icons = {"callables": "📞", "listeners": "👂", "runnables": "🏃"}
@@ -232,34 +201,6 @@ def _display_components_table_detailed(components: dict, show_details: bool):
                 table.add_row(comp_name, comp_type, status, import_path)
             else:
                 table.add_row(comp_name, comp_type)
-
-    console.print(table)
-
-
-def _display_components_table(component_type: str, components: list, details: bool):
-    """Display components in table format."""
-    table = Table(title=f"{component_type.title()} Components")
-    table.add_column("Component", style="cyan")
-    table.add_column("Namespace", style="green")
-    table.add_column("Name", style="yellow")
-
-    if details:
-        table.add_column("Status", style="blue")
-        table.add_column("Import Path", style="magenta")
-        comp_info = get_component_info(component_type)
-
-    for comp_name in components:
-        parts = comp_name.split("/", 1)
-        namespace = parts[0]
-        name = parts[1] if len(parts) > 1 else ""
-
-        if details:
-            info = comp_info.get(comp_name, {})
-            status = "Loaded" if info.get("loaded", False) else "Lazy"
-            import_path = info.get("import_path", "unknown")
-            table.add_row(comp_name, namespace, name, status, import_path)
-        else:
-            table.add_row(comp_name, namespace, name)
 
     console.print(table)
 

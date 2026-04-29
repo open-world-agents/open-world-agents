@@ -1,8 +1,11 @@
 from enum import StrEnum
+from typing import TYPE_CHECKING
 
 import line_profiler
 import torch
-from transformers import ProcessorMixin
+
+if TYPE_CHECKING:
+    from transformers import ProcessorMixin
 
 
 class ModelType(StrEnum):

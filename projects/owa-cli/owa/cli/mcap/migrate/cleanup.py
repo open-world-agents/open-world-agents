@@ -115,37 +115,6 @@ def find_backup_files_by_pattern(patterns: List[str], console: Console) -> List[
     return backup_infos
 
 
-def find_all_backup_files(directories: List[Path], console: Console) -> List[BackupFileInfo]:
-    """
-    Find all backup files in the specified directories.
-
-    Args:
-        directories: List of directories to search
-        console: Rich console for output
-
-    Returns:
-        List of BackupFileInfo objects
-    """
-    patterns = []
-
-    for directory in directories:
-        if directory.is_file():
-            # Single file - check if it's a backup or find its backup
-            if directory.name.endswith(".mcap.backup"):
-                patterns.append(str(directory))
-            elif directory.suffix == ".mcap":
-                patterns.append(str(directory))
-            else:
-                console.print(f"[yellow]Skipping non-MCAP file: {directory}[/yellow]")
-        elif directory.is_dir():
-            # Directory - find all backup files recursively
-            patterns.append(str(directory / "**" / "*.mcap.backup"))
-        else:
-            console.print(f"[yellow]Path not found: {directory}[/yellow]")
-
-    return find_backup_files_by_pattern(patterns, console)
-
-
 def display_cleanup_summary(backup_infos: List[BackupFileInfo], console: Console) -> None:
     """
     Display a summary table of backup files to be cleaned up.
