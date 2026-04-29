@@ -191,10 +191,10 @@ def cleanup(
     and removes them after confirmation. Use --dry-run to preview what would be deleted.
 
     Examples:
-        owl mcap migrate cleanup                              # Clean all backup files in current directory tree
-        owl mcap migrate cleanup "*.mcap.backup"             # Clean backup files in current directory only
-        owl mcap migrate cleanup "/path/to/backups/**/*.mcap.backup"  # Clean backups under a specific directory
-        owl mcap migrate cleanup file.mcap                    # Clean backup for specific MCAP file
+        owl mcap migrate cleanup                                      # Clean all backup files in current directory tree
+        owl mcap migrate cleanup "*.mcap.backup"                      # Clean backup files in current directory only
+        owl mcap migrate cleanup "/path/to/backups/**/*.mcap.backup"  # Clean all backup files recursively under a specific directory
+        owl mcap migrate cleanup file.mcap                            # Clean backup for specific MCAP file
     """
     # Set default patterns if none provided
     if patterns is None:
