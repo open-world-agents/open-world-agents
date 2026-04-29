@@ -13,7 +13,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      # v4 dropped major-tag publishing; pin to a full version. dependabot bumps this.
       - uses: astral-sh/ruff-action@v4.0.0
       - run: ruff check --fix
       - run: ruff format --check --diff
