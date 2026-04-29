@@ -13,10 +13,13 @@ dependencies = [
     "opencv-python",
     "owa-core==0.6.5",
     "owa-msgs==0.6.5",
-    # https://github.com/pygobject/pygobject-stubs/issues/273
-    "pygobject-stubs<2.17",
+    "pygobject-stubs",
     "tqdm",
 ]
+
+[tool.uv]
+# https://github.com/pygobject/pygobject-stubs/issues/273
+override-dependencies = ["pygobject; sys_platform == 'never'"]
 
 [tool.uv.sources]
 owa-core = { path = "../owa-core", editable = true }
