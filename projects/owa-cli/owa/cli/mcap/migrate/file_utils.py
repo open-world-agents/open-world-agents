@@ -69,36 +69,6 @@ def detect_mcap_version(file_path: Path) -> str:
         return "unknown"
 
 
-def get_file_info(file_path: Path) -> tuple[Optional[int], Optional[datetime], str]:
-    """
-    Get comprehensive file information.
-
-    Args:
-        file_path: Path to the file
-
-    Returns:
-        Tuple of (size_bytes, modified_datetime, version)
-        Any value can be None/"unknown" if detection fails
-    """
-    size = None
-    modified = None
-    version = "unknown"
-
-    try:
-        if file_path.exists():
-            stat = file_path.stat()
-            size = stat.st_size
-            modified = datetime.fromtimestamp(stat.st_mtime)
-
-            # Only try version detection for MCAP files
-            if file_path.suffix == ".mcap":
-                version = detect_mcap_version(file_path)
-    except Exception:
-        pass
-
-    return size, modified, version
-
-
 def create_file_info_table(table_type: str = "rollback") -> Table:
     """
     Create a standardized table for displaying file information.
