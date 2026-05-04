@@ -4,12 +4,12 @@ from typing import Union
 from loguru import logger
 from transformers import AutoTokenizer
 
-from owa.data.collator import ModelType, detect_model_type
 from owa.data.datasets import Dataset, DatasetDict, DatasetStage
 from owa.data.encoders import create_encoder
 from owa.data.tokenization import (
     EventTokenizationContext,
     ImageTokenConfig,
+    get_image_config,
     expand_tokenizer_for_events,
     tokenize_event_dataset,
 )
@@ -37,29 +37,10 @@ class EventToFSLConfig:
 
 
 def _get_image_config_for_model(model_name_or_path: str, config: EventToFSLConfig) -> ImageTokenConfig:
-    """Get ImageTokenConfig based on model type or explicit config."""
-    # If explicitly provided, use it
+    """Get ImageTokenConfig from explicit config or auto-detect from model type."""
     if config.image_token_config is not None:
         return config.image_token_config
-
-    # Otherwise, detect from model type
-    model_type = detect_model_type(model_name_or_path)
-
-    if model_type == ModelType.INTERNVL:
-        return ImageTokenConfig(
-            prefix="<img>",
-            token="<IMG_CONTEXT>",
-            length=256,
-            suffix="</img>",
-        )
-    else:
-        # SmolVLM2 and other models
-        return ImageTokenConfig(
-            prefix="<fake_token_around_image><global-img>",
-            token="<image>",
-            length=64,
-            suffix="<fake_token_around_image>",
-        )
+    return get_image_config(model_name_or_path)
 
 
 def build_fsl_dataset(
