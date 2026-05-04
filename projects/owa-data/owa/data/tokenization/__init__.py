@@ -7,7 +7,7 @@ Clean separation of concerns:
 - tokenize_event, decode_episode, ...: Pure functions (no side effects)
 """
 
-from .config import ImageTokenConfig
+from .config import ImageTokenConfig, get_image_config
 from .context import EventTokenizationContext
 from .functions import (
     TokenizedEvent,
@@ -22,6 +22,7 @@ from .preparation import expand_tokenizer_for_events, prepare_model_for_events
 __all__ = [
     # Config
     "ImageTokenConfig",
+    "get_image_config",
     # Context
     "EventTokenizationContext",
     # Types

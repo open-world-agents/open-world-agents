@@ -49,3 +49,28 @@ class ImageTokenConfig:
         """
         # TODO: prefix/suffix can be composed of multiple tokens, may need parsing
         return {self.prefix, self.token, self.suffix}
+
+
+def get_image_config(model_name_or_path: str) -> ImageTokenConfig:
+    """Create an ImageTokenConfig based on the model type.
+
+    Detects whether the model is InternVL or SmolVLM and returns
+    the appropriate image token configuration.
+    """
+    from owa.data.collator import ModelType, detect_model_type
+
+    model_type = detect_model_type(model_name_or_path)
+    if model_type == ModelType.INTERNVL:
+        return ImageTokenConfig(
+            prefix="<img>",
+            token="<IMG_CONTEXT>",
+            length=256,
+            suffix="</img>",
+        )
+    else:
+        return ImageTokenConfig(
+            prefix="<fake_token_around_image><global-img>",
+            token="<image>",
+            length=64,
+            suffix="<fake_token_around_image>",
+        )
