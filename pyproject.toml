@@ -38,6 +38,10 @@ dev = [
     "virtual-uv>=0.1.4",
 ]
 
+[tool.uv]
+# https://github.com/pygobject/pygobject-stubs/issues/273
+override-dependencies = ["pygobject; sys_platform == 'never'"]
+
 [tool.uv.sources]
 mcap-owa-support = { path = "projects/mcap-owa-support", editable = true }
 owa-cli = { path = "projects/owa-cli", editable = true }

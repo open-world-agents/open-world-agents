@@ -55,11 +55,9 @@ class OWAMcapReader:
             response = requests.get(file_path, stream=True)
             response.raise_for_status()  # Raise exception for HTTP errors
             self._file = io.BytesIO(response.content)
-            self._is_network_path = True
         else:
             # Handle local file path
             self._file = open(file_path, "rb")
-            self._is_network_path = False
 
         self.reader: McapReader = make_reader(self._file, decoder_factories=[DecoderFactory(decode_args=decode_args)])
         self.decode_args = decode_args  # TODO: merge with decoded_message in McapReader.iter_decoded_messages

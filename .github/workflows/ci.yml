@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: astral-sh/ruff-action@v3
+      - uses: astral-sh/ruff-action@v4.0.0
       - run: ruff check --fix
       - run: ruff format --check --diff
 
@@ -26,19 +26,15 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
 
-      - name: Setup Virtual Environment
-        uses: ./.github/actions/setup-venv
+      - name: Setup uv with Python 3.11 venv
+        uses: astral-sh/setup-uv@v8.1.0
         with:
           python-version: '3.11'
-
-      - name: Setup uv
-        uses: ./.github/actions/setup-uv
+          activate-environment: true
 
       - name: Install Dependencies
-        run: vuv install --extra docs
+        run: uv sync --extra docs
 
       - name: Install EnvPlugins
         run: uv pip install -e projects/owa-env-example
@@ -68,7 +64,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v8.1.0
 
       - name: Install Dependencies
         run: |
@@ -112,12 +108,13 @@ jobs:
           environment-file: 'projects/owa-env-gst/environment.yml'
 
       - name: Setup uv
-        uses: ./.github/actions/setup-uv
-        with:
-          show-uv-cache-info: 'true'
+        uses: astral-sh/setup-uv@v8.1.0
+
+      - name: Bridge conda env to uv (so --active picks up $CONDA_PREFIX)
+        run: echo "VIRTUAL_ENV=$CONDA_PREFIX" >> $GITHUB_ENV
 
       - name: Install dependencies
-        run: vuv install --dev
+        run: uv sync --active --inexact --dev
 
       - run: mkdir coverage
 

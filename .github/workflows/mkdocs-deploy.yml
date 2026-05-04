@@ -23,16 +23,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Virtual Environment
-        uses: ./.github/actions/setup-venv
+      - name: Setup uv with Python 3.11 venv
+        uses: astral-sh/setup-uv@v8.1.0
         with:
           python-version: '3.11'
-
-      - name: Setup uv
-        uses: ./.github/actions/setup-uv
+          activate-environment: true
 
       - name: Install Dependencies
-        run: vuv install --extra docs
+        run: uv sync --extra docs
 
       - name: Install EnvPlugins
         run: uv pip install -e projects/owa-env-example
@@ -43,8 +41,8 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Build MkDocs
-        run: vuv run mkdocs build
+        run: mkdocs build
 
       - name: Deploy to GitHub Pages
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: vuv run mkdocs gh-deploy
+        run: mkdocs gh-deploy
