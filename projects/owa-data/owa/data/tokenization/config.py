@@ -60,5 +60,8 @@ def get_image_config(model_name_or_path: str) -> ImageTokenConfig:
         return ImageTokenConfig(prefix="<img>", token="<IMG_CONTEXT>", length=256, suffix="</img>")
     else:
         return ImageTokenConfig(
-            prefix="<fake_token_around_image><global-img>", token="<image>", length=64, suffix="<fake_token_around_image>"
+            prefix="<fake_token_around_image><global-img>",
+            token="<image>",
+            length=64,
+            suffix="<fake_token_around_image>",
         )
