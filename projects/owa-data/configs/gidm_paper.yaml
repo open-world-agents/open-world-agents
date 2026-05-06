@@ -1,0 +1,17 @@
+# Configuration used for the Generalist-IDM in the D2E paper (ICLR 2026)
+# Paper: https://arxiv.org/abs/2510.05684
+
+event_to_fsl_config:
+  tokenizer_name: "OpenGVLab/InternVL3-1B-hf"
+  encoder_type: "factorized"
+
+  fsl_dataset:
+    pad_token_id: 0
+    max_sequence_length: 8192
+    include_samples_without_images: false
+    action_topics: ["keyboard", "mouse/raw"]
+    skip_first_t_seconds_for_action: null
+    time_shift_seconds_for_action: 0.1  # τ = 100ms (NEP-τ)
+
+  num_proc: 32
+  fsl_workers: 4

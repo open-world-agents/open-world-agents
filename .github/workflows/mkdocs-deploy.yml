@@ -1,0 +1,48 @@
+name: Deploy MkDocs Site
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types:
+      - opened
+      - synchronize
+
+permissions:
+  contents: write
+
+jobs:
+  mkdocs-deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup uv with Python 3.11 venv
+        uses: astral-sh/setup-uv@v8.1.0
+        with:
+          python-version: '3.11'
+          activate-environment: true
+
+      - name: Install Dependencies
+        run: uv sync --extra docs
+
+      - name: Install EnvPlugins
+        run: uv pip install -e projects/owa-env-example
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Build MkDocs
+        run: mkdocs build
+
+      - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: mkdocs gh-deploy

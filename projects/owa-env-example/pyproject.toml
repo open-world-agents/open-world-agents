@@ -1,0 +1,28 @@
+[project]
+name = "owa-env-example"
+version = "0.1.0"
+description = "Example environment plugin for Open World Agents"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = [
+    "loguru",
+    "owa-core>=0.6.2",
+]
+
+# entry points for plugin discovery
+[project.entry-points."owa.env.plugins"]
+example = "owa.env.plugins.example:plugin_spec"
+
+[tool.uv.sources]
+owa-core = { path = "../owa-core", editable = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["owa"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

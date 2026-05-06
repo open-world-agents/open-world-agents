@@ -1,0 +1,39 @@
+services:
+  tritonserver:
+    build: .
+    # shm_size/ulimits: same configuration from https://docs.nvidia.com/deeplearning/triton-inference-server/user-guide/docs/tutorials/Quick_Deploy/HuggingFaceTransformers/README.html#step-3-launch-the-triton-inference-server
+    shm_size: "1g"
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+      - "8002:8002"
+    volumes:
+      - ./model_repository:/app/models
+      - ${DATA_DIR}:${DATA_DIR}
+    environment:
+      - VIDEO_BACKEND=pyav
+    stdin_open: true
+    tty: true
+    healthcheck:
+      test: [ "CMD", "sh", "-c", "curl -m 1 -L -s -o /dev/null -w '%{http_code}' http://localhost:8000/v2/health/ready | grep -q '^200$'" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        # CPU Strategy: Match CPU count with instance_group count (1:1 ratio)
+        limits:
+          cpus: '32.0' # 2x of reservation to leave margin
+          memory: 32G
+        reservations:
+          cpus: '16.0' # Same as instace_group count
+          memory: 16G
+        # GPU support (uncomment if needed)
+        #   devices:
+        #     - driver: "nvidia"
+        #       count: all
+        #       capabilities: [gpu]

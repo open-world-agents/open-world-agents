@@ -1,0 +1,606 @@
+"""
+Trim mcap recording and all referenced MKV videos to a specific time range.
+
+Due to ffmpeg copy mode's keyframe constraints, the output may include extra frames
+before/after the requested range. Use --max-margin to control the allowed tolerance.
+"""
+
+import re
+import subprocess
+from collections.abc import Callable
+from pathlib import Path
+from typing import Annotated
+
+import typer
+from mediaref import MediaRef
+
+from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
+from owa.core.utils.backup import BackupContext
+from owa.msgs.desktop.screen import ScreenCaptured
+
+from ..console import console
+
+NS = 1_000_000_000
+
+
+class MissingSubtitleError(ValueError):
+    """Raised when a video file is missing the required subtitle track."""
+
+    def __init__(self, mkv_path: Path):
+        self.mkv_path = mkv_path
+        super().__init__(
+            f"No subtitle track found in '{mkv_path}'.\n"
+            "       The trim command requires embedded UTC timestamps in subtitle track.\n\n"
+            "Hint: Use --auto-subtitle to automatically generate and embed subtitles."
+        )
+
+
+# Type alias for MKV naming function: (src_mkv, dst_mcap) -> dst_mkv
+MkvNamer = Callable[[Path, Path], Path]
+
+
+def generate_utc_srt(mcap_path: Path, mkv_uri: str) -> str:
+    """
+    Generate SRT subtitle containing UTC timestamps from MCAP screen messages.
+
+    Each subtitle entry contains the UTC nanosecond timestamp at that video PTS,
+    which enables accurate time synchronization during trim operations.
+
+    Args:
+        mcap_path: Path to the MCAP file
+        mkv_uri: The MKV URI referenced in screen messages
+
+    Returns:
+        SRT format string with UTC timestamps
+    """
+    entries: list[tuple[int, int]] = []  # (pts_ns, utc_ns)
+
+    with OWAMcapReader(mcap_path) as reader:
+        for msg in reader.iter_messages(topics=["screen"]):
+            screen: ScreenCaptured = msg.decoded
+            if screen.media_ref and screen.media_ref.uri == mkv_uri:
+                pts_ns = screen.media_ref.pts_ns
+                utc_ns = screen.utc_ns or msg.timestamp
+                if pts_ns is not None:
+                    entries.append((pts_ns, utc_ns))
+
+    if not entries:
+        raise ValueError(f"No screen messages found for MKV '{mkv_uri}' in {mcap_path}")
+
+    # Sort by PTS and deduplicate
+    entries = sorted(set(entries), key=lambda x: x[0])
+
+    def format_srt_time(ns: int) -> str:
+        """Format nanoseconds as SRT timestamp (HH:MM:SS,mmm)."""
+        total_ms = ns // 1_000_000
+        h = total_ms // 3600000
+        m = (total_ms % 3600000) // 60000
+        s = (total_ms % 60000) // 1000
+        ms = total_ms % 1000
+        return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
+
+    srt_lines = []
+    for i, (pts_ns, utc_ns) in enumerate(entries, 1):
+        start = format_srt_time(pts_ns)
+        # End time: next entry's PTS or 1 second after start
+        if i < len(entries):
+            end = format_srt_time(entries[i][0])
+        else:
+            end = format_srt_time(pts_ns + NS)
+        srt_lines.append(f"{i}\n{start} --> {end}\n{utc_ns}\n")
+
+    return "\n".join(srt_lines)
+
+
+def embed_subtitle(mkv_path: Path, srt_content: str) -> None:
+    """
+    Embed SRT subtitle into MKV file using ffmpeg.
+
+    Uses BackupContext for safe operation - original file is backed up
+    and restored if any error occurs.
+
+    Args:
+        mkv_path: Path to the MKV file
+        srt_content: SRT format subtitle content
+    """
+    with BackupContext(mkv_path, console=console) as _ctx:
+        # Create temporary SRT file
+        srt_path = mkv_path.with_suffix(".srt.tmp")
+        try:
+            srt_path.write_text(srt_content, encoding="utf-8")
+
+            # Create temporary output file
+            tmp_output = mkv_path.with_suffix(".mkv.tmp")
+
+            # Mux subtitle into MKV
+            result = subprocess.run(
+                [
+                    "ffmpeg",
+                    "-v",
+                    "error",
+                    "-y",
+                    "-i",
+                    str(mkv_path),
+                    "-i",
+                    str(srt_path),
+                    "-c",
+                    "copy",
+                    "-c:s",
+                    "srt",
+                    str(tmp_output),
+                ],
+                capture_output=True,
+                text=True,
+            )
+
+            if result.returncode != 0:
+                raise RuntimeError(f"ffmpeg failed to embed subtitle: {result.stderr}")
+
+            # Replace original with muxed file
+            tmp_output.replace(mkv_path)
+
+        finally:
+            # Clean up temporary files
+            srt_path.unlink(missing_ok=True)
+            tmp_output = mkv_path.with_suffix(".mkv.tmp")
+            if tmp_output.exists():
+                tmp_output.unlink()
+
+
+def ensure_subtitle(mcap_path: Path, mkv_path: Path, mkv_uri: str, auto_subtitle: bool) -> None:
+    """
+    Ensure the MKV has embedded subtitle. Generate and embed if needed.
+
+    Args:
+        mcap_path: Path to the MCAP file
+        mkv_path: Path to the MKV file
+        mkv_uri: The MKV URI referenced in screen messages
+        auto_subtitle: If True, auto-generate and embed subtitle when missing
+
+    Raises:
+        MissingSubtitleError: If subtitle is missing and auto_subtitle is False
+    """
+    if get_video_start_utc(mkv_path) is not None:
+        return  # Subtitle already exists
+
+    if not auto_subtitle:
+        raise MissingSubtitleError(mkv_path)
+
+    console.print(f"[yellow]Generating UTC subtitle for {mkv_path.name}...[/yellow]")
+    srt_content = generate_utc_srt(mcap_path, mkv_uri)
+
+    console.print(f"[yellow]Embedding subtitle into {mkv_path.name}...[/yellow]")
+    embed_subtitle(mkv_path, srt_content)
+
+    console.print(f"[green]Subtitle embedded successfully into {mkv_path.name}[/green]")
+
+
+def default_mkv_namer(src_mkvs: dict[str, Path], dst_mcap: Path) -> MkvNamer:
+    """Default naming: single MKV uses mcap stem, multiple MKVs use original stem + _cut."""
+    if len(src_mkvs) == 1:
+        return lambda _src_mkv, dst: dst.with_suffix(".mkv")
+    return lambda src_mkv, dst: dst.parent / f"{src_mkv.stem}_cut.mkv"
+
+
+def find_all_mkvs(mcap_path: Path) -> dict[str, Path]:
+    """Find all unique MKV files referenced in mcap. Returns {uri: resolved_path}."""
+    mkvs: dict[str, Path] = {}
+    with OWAMcapReader(mcap_path) as reader:
+        for msg in reader.iter_messages(topics=["screen"]):
+            screen: ScreenCaptured = msg.decoded
+            if screen.media_ref and screen.media_ref.uri:
+                uri = screen.media_ref.uri
+                if uri not in mkvs:
+                    for p in [mcap_path.parent / uri, Path(uri)]:
+                        if p.exists():
+                            mkvs[uri] = p.resolve()
+                            break
+    return mkvs
+
+
+def get_video_start_utc(mkv: Path) -> int | None:
+    """Get UTC corresponding to video PTS 0 from subtitle."""
+    r = subprocess.run(
+        ["ffmpeg", "-v", "error", "-i", str(mkv), "-map", "0:s:0", "-f", "srt", "-"], capture_output=True, text=True
+    )
+    if r.returncode != 0:
+        return None
+    for i, line in enumerate(lines := r.stdout.strip().split("\n")):
+        if line.strip().isdigit() and i + 2 < len(lines):
+            if m := re.match(r"(\d+):(\d+):(\d+),(\d+)", lines[i + 1]):
+                h, mi, s, ms = map(int, m.groups())
+                pts_ns = int((h * 3600 + mi * 60 + s + ms / 1000) * NS)
+                if lines[i + 2].strip().isdigit():
+                    return int(lines[i + 2].strip()) - pts_ns
+    return None
+
+
+def get_duration(mkv: Path) -> float:
+    """Get video duration in seconds."""
+    r = subprocess.run(
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-select_streams",
+            "v:0",
+            "-show_entries",
+            "format=duration",
+            "-of",
+            "csv=p=0",
+            str(mkv),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    return float(r.stdout.strip())
+
+
+def cut_mkv(src: Path, dst: Path, start: float, duration: float, margin: float) -> None:
+    """Cut mkv using ffmpeg copy mode."""
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-v",
+            "error",
+            "-y",
+            "-ss",
+            str(max(0, start - margin)),
+            "-i",
+            str(src),
+            "-t",
+            str(duration + 2 * margin),
+            "-c",
+            "copy",
+            str(dst),
+        ],
+        check=True,
+    )
+
+
+def cut_mcap(src: Path, dst: Path, start_utc: int, end_utc: int, uri_map: dict[str, str]) -> dict[str, int]:
+    """Filter mcap messages by UTC range and rewrite media_ref URIs.
+
+    Note: Message timestamps (log_time, publish_time) are preserved as absolute UTC values.
+    Only the media_ref.pts_ns is adjusted to be relative to the trimmed video's start.
+    """
+    stats = {"total": 0, "screen": 0}
+
+    with OWAMcapReader(src) as reader:
+        with OWAMcapWriter(dst) as writer:
+            for msg in reader.iter_messages(start_time=start_utc, end_time=end_utc):
+                if msg.topic == "screen":
+                    screen: ScreenCaptured = msg.decoded
+                    if screen.media_ref:
+                        old_uri = screen.media_ref.uri
+                        new_uri = uri_map.get(old_uri, old_uri)
+                        # pts_ns should be relative to the trimmed video's start (0-based)
+                        new_pts = (screen.utc_ns or msg.timestamp) - start_utc
+                        screen.media_ref = MediaRef(uri=new_uri, pts_ns=new_pts)
+                    # Keep original UTC timestamp for the message
+                    writer.write_message(screen, topic=msg.topic, timestamp=msg.timestamp)
+                    stats["screen"] += 1
+                else:
+                    # Keep original UTC timestamp for the message
+                    writer.write_message(msg.decoded, topic=msg.topic, timestamp=msg.timestamp)
+                stats["total"] += 1
+
+    return stats
+
+
+def trim_recording(
+    src_mcap: Path,
+    dst_mcap: Path,
+    mcap_start: float,
+    mcap_end: float,
+    mkv_namer: MkvNamer | None = None,
+    max_margin: float = 5.0,
+    auto_subtitle: bool = False,
+) -> tuple[tuple[float, float], dict[str, Path], dict[str, Path]]:
+    """
+    Trim mcap recording and all referenced MKV files.
+
+    Due to ffmpeg copy mode's keyframe constraints, the output video may include
+    extra frames before/after the requested range. This function ensures that
+    extra content stays within max_margin seconds.
+
+    Args:
+        src_mcap: Source mcap file path
+        dst_mcap: Destination mcap file path
+        mcap_start: Start time in seconds relative to MCAP recording start.
+        mcap_end: End time in seconds relative to MCAP recording start.
+        mkv_namer: Function (src_mkv, dst_mcap) -> dst_mkv. If None, uses default naming.
+        max_margin: Maximum allowed extra content beyond [mcap_start, mcap_end].
+                    If the output contains frames further than this, raises an error.
+                    This is important for privacy protection.
+        auto_subtitle: If True, automatically generate and embed subtitles for MKVs
+                       that are missing subtitle tracks.
+
+    Returns:
+        ((actual_before, actual_after), src_mkvs, dst_mkvs) where:
+        - actual_before: extra seconds included before mcap_start
+        - actual_after: extra seconds included after mcap_end
+        - src_mkvs: {uri: src_path}
+        - dst_mkvs: {uri: dst_path}
+
+    Raises:
+        MissingSubtitleError: If subtitle is missing and auto_subtitle is False.
+        RuntimeError: If the output would contain content beyond max_margin from the target range.
+    """
+    duration = mcap_end - mcap_start
+    if duration <= 0:
+        raise ValueError(f"mcap_end ({mcap_end}s) must be greater than mcap_start ({mcap_start}s).")
+
+    # Find all MKVs referenced in the mcap
+    src_mkvs = find_all_mkvs(src_mcap)
+    if not src_mkvs:
+        raise ValueError(f"No MKV files found in {src_mcap}")
+
+    # Use default namer if not provided
+    namer = mkv_namer or default_mkv_namer(src_mkvs, dst_mcap)
+
+    # Ensure all MKVs have subtitles (auto-generate if requested)
+    for uri, src_mkv in src_mkvs.items():
+        ensure_subtitle(src_mcap, src_mkv, uri, auto_subtitle)
+
+    # Get MCAP start UTC
+    with OWAMcapReader(src_mcap) as reader:
+        mcap_start_utc = reader.start_time
+
+    # Calculate target UTC range from MCAP-relative times
+    target_start_utc = mcap_start_utc + int(mcap_start * NS)
+    target_end_utc = mcap_start_utc + int(mcap_end * NS)
+
+    # Get each MKV's start UTC and calculate video-relative times
+    mkv_start_utcs: dict[str, int] = {}
+    mkv_video_starts: dict[str, float] = {}  # video PTS start for each MKV
+    for uri, src_mkv in src_mkvs.items():
+        mkv_start = get_video_start_utc(src_mkv)
+        if mkv_start is None:
+            raise MissingSubtitleError(src_mkv)
+        mkv_start_utcs[uri] = mkv_start
+        # Convert MCAP target time to video PTS time for this MKV
+        mkv_video_starts[uri] = (target_start_utc - mkv_start) / NS
+
+    # Validate requested range against each video's duration
+    for uri, src_mkv in src_mkvs.items():
+        video_duration = get_duration(src_mkv)
+        video_start = mkv_video_starts[uri]
+        video_end = video_start + duration
+        if video_start < 0:
+            raise ValueError(f"Invalid time range: starts {-video_start:.1f}s before video '{uri}' begins.")
+        if video_end > video_duration:
+            raise ValueError(
+                f"Requested range exceeds video duration for '{uri}'.\n"
+                f"       Video covers: 0s to {video_duration:.1f}s (video PTS), "
+                f"but requested ends at {video_end:.1f}s"
+            )
+
+    dst_mcap.parent.mkdir(parents=True, exist_ok=True)
+    dst_mkvs: dict[str, Path] = {}
+
+    # Try increasing margins until we cover the target range for all MKVs
+    for try_margin in [0.5, 1.0, 2.0, 3.0, 5.0, 8.0, 10.0, 15.0, 20.0]:
+        dst_mkvs.clear()
+        all_covered = True
+        cut_ranges: list[tuple[int, int]] = []  # (cut_start_utc, cut_end_utc) for each MKV
+
+        for uri, src_mkv in src_mkvs.items():
+            video_start = mkv_video_starts[uri]
+
+            dst_mkv = namer(src_mkv, dst_mcap)
+            cut_mkv(src_mkv, dst_mkv, video_start, duration, try_margin)
+
+            cut_start = get_video_start_utc(dst_mkv)
+            if cut_start is None:
+                all_covered = False
+                break
+            cut_end = cut_start + int(get_duration(dst_mkv) * NS)
+
+            # Check if cut covers the target UTC range
+            mkv_start = mkv_start_utcs[uri]
+            target_start = mkv_start + int(video_start * NS)
+            target_end = mkv_start + int((video_start + duration) * NS)
+
+            if not (cut_start <= target_start and cut_end >= target_end):
+                all_covered = False
+                break
+
+            dst_mkvs[uri] = dst_mkv
+            cut_ranges.append((cut_start, cut_end))
+
+        if all_covered and dst_mkvs:
+            # Use the intersection of all cut ranges for mcap
+            cut_start_utc = max(r[0] for r in cut_ranges)
+            cut_end_utc = min(r[1] for r in cut_ranges)
+
+            # Calculate actual margins (in MCAP time)
+            actual_before = (target_start_utc - cut_start_utc) / NS
+            actual_after = (cut_end_utc - target_end_utc) / NS
+            actual_margin = max(actual_before, actual_after)
+
+            if actual_margin > max_margin:
+                raise RuntimeError(
+                    f"Privacy violation: output contains {actual_margin:.1f}s of extra content "
+                    f"(max allowed: {max_margin}s). "
+                    f"Before: {actual_before:.1f}s, After: {actual_after:.1f}s"
+                )
+
+            # Build uri_map for cut_mcap (old_uri -> new_filename)
+            uri_map = {uri: dst.name for uri, dst in dst_mkvs.items()}
+            cut_mcap(src_mcap, dst_mcap, cut_start_utc, cut_end_utc, uri_map)
+            return (actual_before, actual_after), src_mkvs, dst_mkvs
+
+    raise RuntimeError("Could not cover target range even with large margins")
+
+
+def get_video_to_mcap_offset(src_mcap: Path, auto_subtitle: bool = False) -> float:
+    """
+    Get the time offset to convert video PTS time to MCAP time.
+
+    mcap_time = video_time + offset
+
+    This function only works when there's exactly one MKV file in the MCAP.
+    For multiple MKV files, video time is ambiguous.
+
+    Args:
+        src_mcap: Source mcap file path
+        auto_subtitle: If True, auto-generate subtitles if missing
+
+    Returns:
+        Offset in seconds: (mkv_start_utc - mcap_start_utc) / NS
+
+    Raises:
+        ValueError: If no MKV files or multiple MKV files found in mcap
+        MissingSubtitleError: If subtitle is missing and auto_subtitle is False
+    """
+    src_mkvs = find_all_mkvs(src_mcap)
+    if not src_mkvs:
+        raise ValueError(f"No MKV files found in {src_mcap}")
+    if len(src_mkvs) > 1:
+        raise ValueError(
+            f"Cannot use video time with multiple MKV files ({len(src_mkvs)} found). "
+            "Use --mcap-start/--mcap-end instead."
+        )
+
+    # Get the single MKV's start UTC
+    uri, mkv = next(iter(src_mkvs.items()))
+    ensure_subtitle(src_mcap, mkv, uri, auto_subtitle)
+
+    mkv_start_utc = get_video_start_utc(mkv)
+    if mkv_start_utc is None:
+        raise MissingSubtitleError(mkv)
+
+    # Get MCAP start UTC
+    with OWAMcapReader(src_mcap) as reader:
+        mcap_start_utc = reader.start_time
+
+    return (mkv_start_utc - mcap_start_utc) / NS
+
+
+def trim(
+    input_mcap: Annotated[Path, typer.Argument(help="Input mcap file")],
+    output_mcap: Annotated[Path, typer.Argument(help="Output mcap file path")],
+    video_start: Annotated[
+        float | None,
+        typer.Option(
+            "--video-start",
+            help="Start time in seconds relative to video PTS (video's own timeline starting from 0). "
+            "Must be used with --video-end. Mutually exclusive with --mcap-start/--mcap-end.",
+        ),
+    ] = None,
+    video_end: Annotated[
+        float | None,
+        typer.Option(
+            "--video-end",
+            help="End time in seconds relative to video PTS. "
+            "Must be used with --video-start. Mutually exclusive with --mcap-start/--mcap-end.",
+        ),
+    ] = None,
+    mcap_start: Annotated[
+        float | None,
+        typer.Option(
+            "--mcap-start",
+            help="Start time in seconds relative to MCAP recording start. "
+            "Must be used with --mcap-end. Mutually exclusive with --video-start/--video-end.",
+        ),
+    ] = None,
+    mcap_end: Annotated[
+        float | None,
+        typer.Option(
+            "--mcap-end",
+            help="End time in seconds relative to MCAP recording start. "
+            "Must be used with --mcap-start. Mutually exclusive with --video-start/--video-end.",
+        ),
+    ] = None,
+    max_margin: Annotated[
+        float,
+        typer.Option(
+            help="Maximum allowed extra content beyond the specified range in seconds. "
+            "Due to video keyframe constraints, the output may include extra frames. "
+            "If extra content exceeds this limit, the operation fails to protect privacy."
+        ),
+    ] = 5.0,
+    auto_subtitle: Annotated[
+        bool,
+        typer.Option(
+            "--auto-subtitle",
+            help="Automatically generate and embed UTC timestamps as subtitles "
+            "into MKV files that are missing subtitle tracks. "
+            "This modifies the original MKV file (with backup protection).",
+        ),
+    ] = False,
+) -> None:
+    """Trim mcap recording and referenced MKV files to a specific time range."""
+    # Validate option groups
+    has_video = video_start is not None or video_end is not None
+    has_mcap = mcap_start is not None or mcap_end is not None
+
+    if has_video and has_mcap:
+        console.print(
+            "[red]Error: --video-start/--video-end and --mcap-start/--mcap-end are mutually exclusive.[/red]"
+        )
+        raise typer.Exit(1)
+
+    if not has_video and not has_mcap:
+        console.print(
+            "[red]Error: Either (--video-start, --video-end) or (--mcap-start, --mcap-end) must be specified.[/red]"
+        )
+        raise typer.Exit(1)
+
+    if has_video:
+        time_base = "video"
+        start_value, end_value = video_start, video_end
+        start_name, end_name = "--video-start", "--video-end"
+    else:  # has_mcap
+        time_base = "mcap"
+        start_value, end_value = mcap_start, mcap_end
+        start_name, end_name = "--mcap-start", "--mcap-end"
+
+    if start_value is None or end_value is None:
+        console.print(f"[red]Error: Both {start_name} and {end_name} must be specified together.[/red]")
+        raise typer.Exit(1)
+
+    if end_value <= start_value:
+        console.print(f"[red]Error: End time ({end_value}s) must be greater than start time ({start_value}s).[/red]")
+        raise typer.Exit(1)
+
+    if not input_mcap.exists():
+        console.print(f"[red]Error: Input file not found: {input_mcap}[/red]")
+        raise typer.Exit(1)
+
+    console.print(f"Input: {input_mcap}", highlight=False)
+    console.print(f"Trim range: [{start_value}s, {end_value}s] ({time_base} time, max-margin: {max_margin}s)")
+
+    try:
+        # Convert video time to mcap time if needed
+        if time_base == "video":
+            offset = get_video_to_mcap_offset(input_mcap, auto_subtitle)
+            mcap_start_time = start_value + offset
+            mcap_end_time = end_value + offset
+        else:
+            mcap_start_time = start_value
+            mcap_end_time = end_value
+
+        (before, after), src_mkvs, dst_mkvs = trim_recording(
+            input_mcap,
+            output_mcap,
+            mcap_start=mcap_start_time,
+            mcap_end=mcap_end_time,
+            max_margin=max_margin,
+            auto_subtitle=auto_subtitle,
+        )
+    except (MissingSubtitleError, ValueError, RuntimeError) as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
+
+    actual_start = start_value - before
+    actual_end = end_value + after
+    console.print(
+        f"Actual range: [{actual_start:.1f}s, {actual_end:.1f}s] "
+        f"({time_base} time, margin: before={before:.1f}s, after={after:.1f}s)"
+    )
+    console.print("Output:")
+    console.print(f"  {input_mcap} -> {output_mcap}", highlight=False)
+    for uri in src_mkvs:
+        console.print(f"  {src_mkvs[uri]} -> {dst_mkvs[uri]}", highlight=False)

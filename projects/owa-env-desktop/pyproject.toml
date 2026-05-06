@@ -1,0 +1,38 @@
+[project]
+name = "owa-env-desktop"
+version = "0.6.5"
+description = "Desktop environment plugin for Open World Agents with mouse, keyboard, and window control"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = [
+    "bettercam ; sys_platform == 'win32'",
+    "evdev<1.9.2 ; sys_platform == 'linux'",
+    "loguru",
+    "numpy>=2.0",
+    "owa-core==0.6.5",
+    "owa-msgs==0.6.5",
+    "pygetwindow ; sys_platform == 'win32'",
+    "pynput>=1.8.0",
+    "pyobjc-framework-ApplicationServices>=10.1 ; sys_platform == 'darwin'",
+    "pyobjc-framework-Quartz>=10.1 ; sys_platform == 'darwin'",
+    "pywin32>=307 ; sys_platform == 'win32'",
+]
+
+[tool.uv.sources]
+owa-core = { path = "../owa-core", editable = true }
+owa-msgs = { path = "../owa-msgs", editable = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["owa"]
+
+# entry points for plugin discovery
+[project.entry-points."owa.env.plugins"]
+desktop = "owa.env.plugins.desktop:plugin_spec"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

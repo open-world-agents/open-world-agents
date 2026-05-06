@@ -1,0 +1,36 @@
+{
+    "data": [
+        {
+            "video_path": [
+                "/mnt/raid12/datasets/owa/mcaps/super-hexagon/expert-jy-1.mkv"
+            ],
+            "time_sec": [
+                0.0
+            ]
+        },
+        {
+            "video_path": [
+                "/mnt/raid12/datasets/owa/mcaps/super-hexagon/expert-jy-1.mkv"
+            ],
+            "time_sec": [
+                0.25
+            ]
+        },
+        {
+            "video_path": [
+                "/mnt/raid12/datasets/owa/mcaps/super-hexagon/expert-jy-1.mkv"
+            ],
+            "time_sec": [
+                0.49
+            ]
+        },
+        {
+            "video_path": [
+                "/mnt/raid12/datasets/owa/mcaps/super-hexagon/expert-jy-1.mkv"
+            ],
+            "time_sec": [
+                0.51
+            ]
+        }
+    ]
+}

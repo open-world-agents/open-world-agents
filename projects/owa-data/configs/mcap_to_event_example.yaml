@@ -1,0 +1,29 @@
+# Example configuration for raw MCAP to event dataset conversion
+
+# Required paths
+# input_dir: /configure-via-CLI
+# output_dir: /configure-via-CLI
+
+# McapToEvent configuration
+mcap_to_event_config:
+  # Rate limiting per topic (Hz)
+  rate_settings:
+    "mouse/raw": 20.0
+    "screen": 20.0
+    "keyboard": 0.0 # set to non-zero value to turn on KeyboardUniformResampler
+
+  # Topics to keep (if null, all topics are kept)
+  keep_topics:
+    - "screen"
+    - "keyboard"
+    - "mouse/raw"
+
+  # Number of worker processes for parallel file processing
+  num_workers: 4
+
+  # Interval extractor configuration
+  interval_extractor_config:
+    class_name: "InactivityFilter"
+    kwargs:
+      screen_inactivity_threshold: 1.0
+      input_inactivity_threshold: 5.0

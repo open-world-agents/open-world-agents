@@ -1,0 +1,9 @@
+name: owa
+
+channels:
+  - open-world-agents
+  - conda-forge
+
+dependencies:
+  - python=3.11
+  - open-world-agents::gstreamer-bundle
