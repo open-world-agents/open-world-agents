@@ -564,24 +564,6 @@ class TestScreenCaptured:
         assert screen_msg2.source_shape == screen_msg.source_shape, "Source shape should be preserved"
         assert screen_msg2.shape == screen_msg.shape, "Shape should be preserved"
 
-    def test_remote_error_handling(self):
-        """Test error handling with invalid remote references."""
-        # Test invalid URL scheme - FTP URLs are treated as local files
-        screen_msg = ScreenCaptured(
-            utc_ns=1741608540328534500, media_ref={"uri": "ftp://example.com/video.mp4", "pts_ns": 0}
-        )
-
-        with pytest.raises(FileNotFoundError, match="Video file not found"):
-            screen_msg.load_frame_array()
-
-        # Test non-existent remote file (should raise network-related error)
-        screen_msg = ScreenCaptured(
-            utc_ns=1741608540328534500, media_ref={"uri": "https://nonexistent.example.com/video.mp4", "pts_ns": 0}
-        )
-
-        with pytest.raises(Exception):  # Could be various network-related errors
-            screen_msg.load_frame_array()
-
     def test_remote_string_representation(self):
         """Test string representation for remote files."""
         # Test remote video

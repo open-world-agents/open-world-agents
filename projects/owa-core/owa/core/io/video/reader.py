@@ -1,6 +1,5 @@
 import enum
 import gc
-import warnings
 from dataclasses import dataclass
 from fractions import Fraction
 from typing import Generator, Optional
@@ -46,8 +45,6 @@ class VideoReader:
         self.video_path = video_path
         self.container = av.open(self.video_path, "r")
         self._metadata = self._extract_metadata()
-
-            )
 
     def _extract_metadata(self) -> VideoStreamMetadata:
         """Extract video stream metadata from container."""

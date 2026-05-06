@@ -309,5 +309,3 @@ def test_video_reader_url_schemes(url_type, test_url):
         # Should not fail due to URL scheme validation
         assert "Unsupported URL scheme" not in str(e)
         # Any other error (like "not a video file") is acceptable for this test
-
-
