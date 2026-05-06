@@ -231,9 +231,8 @@ class FSLTransform:
             # Process with image processor if available
             if self.image_processor is not None:
                 # NOTE: SmolVLMImageProcessor is 2x slower in batched setting. WOW!
-                assert self.image_processor.is_fast, "Expected fast image processor"
                 image_processor_cls_name = self.image_processor.__class__.__name__
-                if image_processor_cls_name == "SmolVLMImageProcessorFast":
+                if image_processor_cls_name in ("SmolVLMImageProcessorFast", "SmolVLMImageProcessor"):
                     pixel_values = []
                     for image in all_images:
                         processed = self.image_processor(image, return_tensors="pt")  # 100ms / image
@@ -243,7 +242,9 @@ class FSLTransform:
                         torch.stack(pixel_values) if pixel_values else torch.empty(0, 3, 512, 512)
                     )
                 elif image_processor_cls_name in (
+                    "GotOcr2ImageProcessor",
                     "GotOcr2ImageProcessorFast",
+                    "SmolVLMLikeGotOcr2ImageProcessor",
                     "SmolVLMLikeGotOcr2ImageProcessorFast",
                 ):
                     # NOTE: InternVLImageProcessor is bit faster in batched setting
@@ -256,7 +257,7 @@ class FSLTransform:
                             pixel_values = pixel_values.squeeze(0)
                     else:
                         # NOTE: InternVL3 expectes (448, 448) while SmolVLM2 expects (512, 512)
-                        if image_processor_cls_name == "SmolVLMLikeGotOcr2ImageProcessorFast":
+                        if image_processor_cls_name in ("SmolVLMLikeGotOcr2ImageProcessor", "SmolVLMLikeGotOcr2ImageProcessorFast"):
                             pixel_values = torch.empty(0, 3, 512, 512)
                         else:
                             pixel_values = torch.empty(0, 3, 448, 448)
