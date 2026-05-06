@@ -213,7 +213,7 @@ class FSLTransform:
             all_images = []
             for img in image_msgs:
                 try:
-                    pil_image = img.to_pil_image(keep_av_open=True)
+                    pil_image = img.to_pil_image()
                     all_images.append(pil_image)
                 except Exception as e:
                     if len(all_images) == 0:

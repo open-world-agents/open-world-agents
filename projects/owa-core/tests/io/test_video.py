@@ -309,23 +309,3 @@ def test_video_reader_url_schemes(url_type, test_url):
         # Should not fail due to URL scheme validation
         assert "Unsupported URL scheme" not in str(e)
         # Any other error (like "not a video file") is acceptable for this test
-
-
-@pytest.mark.network
-def test_video_reader_keep_av_open_with_urls():
-    """Test keep_av_open parameter works with URLs."""
-    test_url = "https://httpbingo.org/status/200"
-
-    try:
-        # Test with keep_av_open=True
-        with VideoReader(test_url, keep_av_open=True) as reader:
-            assert reader.keep_av_open is True
-            assert isinstance(reader.video_path, str)
-
-        # Test with keep_av_open=False (default)
-        with VideoReader(test_url, keep_av_open=False) as reader:
-            assert reader.keep_av_open is False
-            assert isinstance(reader.video_path, str)
-
-    except Exception as e:
-        pytest.skip(f"Keep AV open test skipped due to network issue: {e}")
