@@ -257,7 +257,10 @@ class FSLTransform:
                             pixel_values = pixel_values.squeeze(0)
                     else:
                         # NOTE: InternVL3 expectes (448, 448) while SmolVLM2 expects (512, 512)
-                        if image_processor_cls_name in ("SmolVLMLikeGotOcr2ImageProcessor", "SmolVLMLikeGotOcr2ImageProcessorFast"):
+                        if image_processor_cls_name in (
+                            "SmolVLMLikeGotOcr2ImageProcessor",
+                            "SmolVLMLikeGotOcr2ImageProcessorFast",
+                        ):
                             pixel_values = torch.empty(0, 3, 512, 512)
                         else:
                             pixel_values = torch.empty(0, 3, 448, 448)
