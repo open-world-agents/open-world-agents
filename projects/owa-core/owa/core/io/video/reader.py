@@ -36,22 +36,17 @@ class BatchDecodingStrategy(enum.StrEnum):
 class VideoReader:
     """PyAV-based video reader with caching support for local files and URLs."""
 
-    def __init__(self, video_path: PathLike, *, keep_av_open: bool = False):
+    def __init__(self, video_path: PathLike):
         """
         Initialize video reader.
 
         Args:
             video_path: Input video file path or URL (HTTP/HTTPS)
-            keep_av_open: Keep AV container open in cache
         """
         self.video_path = video_path
         self.container = av.open(self.video_path, "r")
         self._metadata = self._extract_metadata()
 
-        if not keep_av_open:
-            warnings.warn(
-                "Support for keep_av_open moved to mediaref. Current VideoReader does not support it.",
-                DeprecationWarning,
             )
 
     def _extract_metadata(self) -> VideoStreamMetadata:

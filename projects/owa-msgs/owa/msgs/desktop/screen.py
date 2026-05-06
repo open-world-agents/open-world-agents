@@ -75,7 +75,7 @@ class ScreenCaptured(OWAMessage):
         return super().model_dump_json(**kwargs)
 
     # Core methods
-    def load_frame_array(self, *, keep_av_open: bool = False) -> np.ndarray:
+    def load_frame_array(self) -> np.ndarray:
         """Load frame data from media reference as BGRA numpy array."""
         if self.frame_arr is not None:
             return self.frame_arr
@@ -107,19 +107,19 @@ class ScreenCaptured(OWAMessage):
         self.media_ref = MediaRef(uri=data_uri)
         return self
 
-    def to_rgb_array(self, *, keep_av_open: bool = False) -> np.ndarray:
+    def to_rgb_array(self) -> np.ndarray:
         """Return frame as RGB numpy array."""
-        bgra_array = self.load_frame_array(keep_av_open=keep_av_open)
+        bgra_array = self.load_frame_array()
         return cv2.cvtColor(bgra_array, cv2.COLOR_BGRA2RGB)
 
-    def to_pil_image(self, *, keep_av_open: bool = False):
+    def to_pil_image(self):
         """Convert frame to PIL Image."""
         try:
             from PIL import Image
         except ImportError as e:
             raise ImportError("Pillow required for PIL conversion") from e
 
-        rgb_array = self.to_rgb_array(keep_av_open=keep_av_open)
+        rgb_array = self.to_rgb_array()
         return Image.fromarray(rgb_array)
 
     def resolve_relative_path(self, mcap_path: str, **kwargs) -> Self:
