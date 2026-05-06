@@ -45,14 +45,14 @@ def main():
         # processor.image_processor = AutoImageProcessor.from_pretrained(
         #     args.model, use_fast=True, do_image_splitting=False
         # )
-        from owa.agent.models.smolvlm import SmolVLMLikeGotOcr2ImageProcessorFast
+        from owa.agent.models.smolvlm import SmolVLMLikeGotOcr2ImageProcessor
 
-        processor.image_processor = SmolVLMLikeGotOcr2ImageProcessorFast.from_pretrained(
+        processor.image_processor = SmolVLMLikeGotOcr2ImageProcessor.from_pretrained(
             "OpenGVLab/InternVL3-1B-hf", crop_to_patches=False
         )
         assert processor.image_processor.crop_to_patches is False, "Failed to disable multi-crop"
-        assert processor.image_processor.__class__.__name__ == "SmolVLMLikeGotOcr2ImageProcessorFast", (
-            f"Expected SmolVLMLikeGotOcr2ImageProcessorFast, got {processor.image_processor.__class__}"
+        assert processor.image_processor.__class__.__name__ == "SmolVLMLikeGotOcr2ImageProcessor", (
+            f"Expected SmolVLMLikeGotOcr2ImageProcessor, got {processor.image_processor.__class__}"
         )
         print("Configured SmolVLM processor(image_processor patched to InternVL) with multi-crop disabled")
 

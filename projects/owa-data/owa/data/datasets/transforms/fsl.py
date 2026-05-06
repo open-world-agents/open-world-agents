@@ -243,24 +243,18 @@ class FSLTransform:
                     )
                 elif image_processor_cls_name in (
                     "GotOcr2ImageProcessor",
-                    "GotOcr2ImageProcessorFast",
                     "SmolVLMLikeGotOcr2ImageProcessor",
-                    "SmolVLMLikeGotOcr2ImageProcessorFast",
                 ):
-                    # NOTE: InternVLImageProcessor is bit faster in batched setting
                     if all_images:
                         processed = self.image_processor(all_images, return_tensors="pt")
                         pixel_values = processed["pixel_values"]
-                        # NOTE: SmolVLMImageProcessor returns [batch, max_num_images, 3, height, width]
+                        # SmolVLMImageProcessor returns [batch, max_num_images, 3, height, width]
                         # while InternVL's ImageProcessor returns [num_images, 3, height, width]
                         if pixel_values.dim() == 5:  # [1, num_images, 3, height, width]
                             pixel_values = pixel_values.squeeze(0)
                     else:
-                        # NOTE: InternVL3 expectes (448, 448) while SmolVLM2 expects (512, 512)
-                        if image_processor_cls_name in (
-                            "SmolVLMLikeGotOcr2ImageProcessor",
-                            "SmolVLMLikeGotOcr2ImageProcessorFast",
-                        ):
+                        # InternVL3 expects (448, 448) while SmolVLM2 expects (512, 512)
+                        if image_processor_cls_name == "SmolVLMLikeGotOcr2ImageProcessor":
                             pixel_values = torch.empty(0, 3, 512, 512)
                         else:
                             pixel_values = torch.empty(0, 3, 448, 448)
