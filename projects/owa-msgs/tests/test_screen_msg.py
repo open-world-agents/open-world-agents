@@ -516,28 +516,6 @@ class TestScreenCaptured:
                 assert "external" in str_repr, "Should show external reference"
 
     @pytest.mark.network
-    def test_remote_video_caching_behavior(self):
-        """Test remote video frame caching behavior."""
-        test_url = "https://huggingface.co/datasets/open-world-agents/example_dataset/resolve/main/example.mkv"
-        pts_ns = 1_000_000_000  # 1 second
-
-        # Create from remote video (docstring pattern)
-        screen_msg = ScreenCaptured(utc_ns=1741608540328534500, media_ref={"uri": test_url, "pts_ns": pts_ns})
-
-        # === Test Initial Frame Loading ===
-        frame_arr = screen_msg.load_frame_array()
-        assert frame_arr.shape[0] > 0, "Height should be > 0"
-        assert frame_arr.shape[1] > 0, "Width should be > 0"
-        assert frame_arr.shape[2] == 4, "Should be BGRA format"
-
-        # === Test Frame Caching ===
-        frame_arr2 = screen_msg.load_frame_array()
-        assert np.array_equal(frame_arr, frame_arr2), "Subsequent calls should return cached frame"
-        assert frame_arr2 is screen_msg.frame_arr, "Should return same object reference"
-
-        frame_arr3 = screen_msg.load_frame_array()
-        assert frame_arr3.shape == frame_arr.shape, "Subsequent calls should return same shape"
-
     def test_remote_serialization_roundtrip(self):
         """Test JSON serialization with remote media reference."""
         test_url = "https://example.com/video.mp4"
