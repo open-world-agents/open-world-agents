@@ -84,7 +84,7 @@ class ScreenCaptured(OWAMessage):
             raise ValueError("No media reference available for loading")
 
         # Load using mediaref package
-        self.frame_arr = self.media_ref.to_ndarray(format="bgra", keep_av_open=keep_av_open)
+        self.frame_arr = self.media_ref.to_ndarray(format="bgra")
 
         # Update shape
         h, w = self.frame_arr.shape[:2]
