@@ -515,7 +515,6 @@ class TestScreenCaptured:
             else:
                 assert "external" in str_repr, "Should show external reference"
 
-    @pytest.mark.network
     def test_remote_serialization_roundtrip(self):
         """Test JSON serialization with remote media reference."""
         test_url = "https://example.com/video.mp4"
