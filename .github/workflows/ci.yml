@@ -28,7 +28,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Setup uv with Python 3.11 venv
-        uses: astral-sh/setup-uv@v8.1.0
+        uses: astral-sh/setup-uv@v8.2.0
         with:
           python-version: '3.11'
           activate-environment: true
@@ -64,7 +64,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@v8.1.0
+        uses: astral-sh/setup-uv@v8.2.0
 
       - name: Install Dependencies
         run: |
@@ -108,7 +108,7 @@ jobs:
           environment-file: 'projects/owa-env-gst/environment.yml'
 
       - name: Setup uv
-        uses: astral-sh/setup-uv@v8.1.0
+        uses: astral-sh/setup-uv@v8.2.0
 
       - name: Bridge conda env to uv (so --active picks up $CONDA_PREFIX)
         run: echo "VIRTUAL_ENV=$CONDA_PREFIX" >> $GITHUB_ENV
