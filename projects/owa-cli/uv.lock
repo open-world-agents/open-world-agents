@@ -889,7 +889,7 @@ wheels = [
 
 [[package]]
 name = "owa-cli"
-version = "0.6.5"
+version = "0.6.6"
 source = { editable = "." }
 dependencies = [
     { name = "loguru" },
@@ -930,7 +930,7 @@ requires-dist = [
 
 [[package]]
 name = "owa-core"
-version = "0.6.5"
+version = "0.6.6"
 source = { editable = "../owa-core" }
 dependencies = [
     { name = "av" },
@@ -953,7 +953,7 @@ requires-dist = [
 
 [[package]]
 name = "owa-msgs"
-version = "0.6.5"
+version = "0.6.6"
 source = { editable = "../owa-msgs" }
 dependencies = [
     { name = "annotated-types" },
