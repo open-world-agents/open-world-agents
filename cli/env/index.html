@@ -1923,37 +1923,6 @@
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>owl env [OPTIONS] COMMAND [ARGS]...
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--install-completion</code></td>
-<td>boolean</td>
-<td>Install completion for the current shell.</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--show-completion</code></td>
-<td>boolean</td>
-<td>Show completion for the current shell, to copy it or customize the installation.</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h5 id="owl-env-docs">owl env docs<a class="headerlink" href="#owl-env-docs" title="Permanent link">&para;</a></h5>
 <p>Validate plugin documentation quality and show statistics.</p>
 <p>Always validates documentation and returns meaningful exit codes:
@@ -1963,241 +1932,21 @@
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>owl env docs [OPTIONS] [PLUGIN_NAMESPACE]
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--strict</code></td>
-<td>boolean</td>
-<td>Enable strict mode (100% coverage + 100% quality)</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--min-coverage-pass</code></td>
-<td>float</td>
-<td>Minimum coverage for PASS status</td>
-<td><code>0.8</code></td>
-</tr>
-<tr>
-<td><code>--min-coverage-fail</code></td>
-<td>float</td>
-<td>Minimum coverage to avoid FAIL status</td>
-<td><code>0.6</code></td>
-</tr>
-<tr>
-<td><code>--min-quality-pass</code></td>
-<td>float</td>
-<td>Minimum good quality ratio for PASS status</td>
-<td><code>0.6</code></td>
-</tr>
-<tr>
-<td><code>--min-quality-fail</code></td>
-<td>float</td>
-<td>Minimum good quality ratio to avoid FAIL status</td>
-<td><code>0.0</code></td>
-</tr>
-<tr>
-<td><code>--output-format</code></td>
-<td>text</td>
-<td>Output format: table or json</td>
-<td><code>table</code></td>
-</tr>
-<tr>
-<td><code>--by-type</code></td>
-<td>boolean</td>
-<td>Group statistics by component type (table format only)</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h5 id="owl-env-list">owl env list<a class="headerlink" href="#owl-env-list" title="Permanent link">&para;</a></h5>
 <p>List environment plugins and components.</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>owl env list [OPTIONS] [NAMESPACES]...
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--components</code>, <code>-c</code></td>
-<td>boolean</td>
-<td>Show individual components</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--details</code>, <code>-d</code></td>
-<td>boolean</td>
-<td>Show import paths and load status</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--table</code></td>
-<td>boolean</td>
-<td>Display in table format</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--type</code>, <code>-t</code></td>
-<td>text</td>
-<td>Filter by component type (callables/listeners/runnables)</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--search</code>, <code>-s</code></td>
-<td>text</td>
-<td>Search components by name pattern</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--inspect</code></td>
-<td>text</td>
-<td>Inspect specific component (show docstring/signature)</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h5 id="owl-env-search">owl env search<a class="headerlink" href="#owl-env-search" title="Permanent link">&para;</a></h5>
 <p>Search for components across all plugins using pattern matching.</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>owl env search [OPTIONS] PATTERN
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--type</code>, <code>-t</code></td>
-<td>text</td>
-<td>Filter by component type</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--namespace</code>, <code>-n</code></td>
-<td>text</td>
-<td>Filter by namespace</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--case-sensitive</code>, <code>-c</code></td>
-<td>boolean</td>
-<td>Case sensitive search</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--details</code>, <code>-d</code></td>
-<td>boolean</td>
-<td>Show detailed component information</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--table</code></td>
-<td>boolean</td>
-<td>Display results in table format</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--limit</code>, <code>-l</code></td>
-<td>integer</td>
-<td>Limit number of results</td>
-<td><code>50</code></td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h5 id="owl-env-stats">owl env stats<a class="headerlink" href="#owl-env-stats" title="Permanent link">&para;</a></h5>
 <p>Show comprehensive statistics about the plugin ecosystem.</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>owl env stats [OPTIONS]
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--detailed</code>, <code>-d</code></td>
-<td>boolean</td>
-<td>Show detailed statistics</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--by-namespace</code>, <code>-n</code></td>
-<td>boolean</td>
-<td>Group statistics by namespace</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--by-type</code>, <code>-t</code></td>
-<td>boolean</td>
-<td>Group statistics by component type</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--loaded-only</code>, <code>-l</code></td>
-<td>boolean</td>
-<td>Show statistics for loaded components only</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--namespaces</code></td>
-<td>boolean</td>
-<td>Show available namespaces</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h5 id="owl-env-validate">owl env validate<a class="headerlink" href="#owl-env-validate" title="Permanent link">&para;</a></h5>
 <p>Validate a plugin specification from YAML file or entry point.</p>
 <p>This command can validate plugin specifications in two ways:</p>
@@ -2209,37 +1958,6 @@
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>owl env validate [OPTIONS] SPEC_INPUT
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--check-imports</code> / <code>--no-check-imports</code></td>
-<td>boolean</td>
-<td>Validate that component import paths are accessible</td>
-<td><code>True</code></td>
-</tr>
-<tr>
-<td><code>--verbose</code>, <code>-v</code></td>
-<td>boolean</td>
-<td>Show detailed validation information</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h2 id="related-documentation">Related Documentation<a class="headerlink" href="#related-documentation" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../../env/guide/">Environment Guide</a> - Environment system overview</li>

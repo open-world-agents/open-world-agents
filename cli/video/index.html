@@ -1883,85 +1883,11 @@
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>owl video [OPTIONS] COMMAND [ARGS]...
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--install-completion</code></td>
-<td>boolean</td>
-<td>Install completion for the current shell.</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--show-completion</code></td>
-<td>boolean</td>
-<td>Show completion for the current shell, to copy it or customize the installation.</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h5 id="owl-video-probe">owl video probe<a class="headerlink" href="#owl-video-probe" title="Permanent link">&para;</a></h5>
 <p>Analyze frame types and patterns in a video file</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>owl video probe [OPTIONS] VIDEO_PATH
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--detailed</code>, <code>-d</code></td>
-<td>boolean</td>
-<td>Show detailed frame information</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--frames</code>, <code>-f</code></td>
-<td>boolean</td>
-<td>Show intervals in frames instead of seconds</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--max-frames</code>, <code>-m</code></td>
-<td>integer</td>
-<td>Maximum frames to show in pattern visualization</td>
-<td><code>200</code></td>
-</tr>
-<tr>
-<td><code>--max-gops</code>, <code>-g</code></td>
-<td>integer</td>
-<td>Maximum GOPs to analyze in detail</td>
-<td><code>3</code></td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h5 id="owl-video-transcode">owl video transcode<a class="headerlink" href="#owl-video-transcode" title="Permanent link">&para;</a></h5>
 <p>Transcode video files with professional encoding settings.</p>
 <p>Options:
@@ -1991,115 +1917,11 @@ owa video transcode input.mkv output.mkv --dry-run
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>owl video transcode [OPTIONS] INPUT_PATH OUTPUT_PATH
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--fps</code>, <code>-f</code></td>
-<td>float</td>
-<td>Target FPS</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--width</code>, <code>-w</code></td>
-<td>integer</td>
-<td>Target width</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--height</code>, <code>-h</code></td>
-<td>integer</td>
-<td>Target height</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--codec</code>, <code>-c</code></td>
-<td>text</td>
-<td>Video codec</td>
-<td><code>libx264</code></td>
-</tr>
-<tr>
-<td><code>--crf</code></td>
-<td>integer</td>
-<td>Quality (0-51, lower=better)</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--keyint</code>, <code>-k</code></td>
-<td>integer</td>
-<td>Keyframe interval</td>
-<td><code>30</code></td>
-</tr>
-<tr>
-<td><code>--min-keyint</code></td>
-<td>integer</td>
-<td>Min keyframe interval</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--scenecut</code></td>
-<td>integer</td>
-<td>Scene cut threshold (0=disable, default: 0)</td>
-<td><code>0</code></td>
-</tr>
-<tr>
-<td><code>--dry-run</code></td>
-<td>boolean</td>
-<td>Show command only</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h5 id="owl-video-vfr-to-cfr">owl video vfr-to-cfr<a class="headerlink" href="#owl-video-vfr-to-cfr" title="Permanent link">&para;</a></h5>
 <p>Convert MKV files with Variable Frame Rate (VFR) to Constant Frame Rate (CFR).</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>owl video vfr-to-cfr [OPTIONS] PATH
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--workers</code>, <code>-w</code></td>
-<td>integer</td>
-<td>Maximum number of parallel conversions</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--dry-run</code></td>
-<td>boolean</td>
-<td>Show what would be done without actually converting files</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h2 id="related-documentation">Related Documentation<a class="headerlink" href="#related-documentation" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../../data/getting-started/recording-data/">Recording Data</a> - How OWA generates video files</li>

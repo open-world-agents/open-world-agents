@@ -2045,151 +2045,21 @@
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>owl mcap [OPTIONS] COMMAND [ARGS]...
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--install-completion</code></td>
-<td>boolean</td>
-<td>Install completion for the current shell.</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--show-completion</code></td>
-<td>boolean</td>
-<td>Show completion for the current shell, to copy it or customize the installation.</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h5 id="owl-mcap-cat">owl mcap cat<a class="headerlink" href="#owl-mcap-cat" title="Permanent link">&para;</a></h5>
 <p>Print messages from an <code>.mcap</code> file in a readable format.</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>owl mcap cat [OPTIONS] MCAP_PATH
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--pretty</code> / <code>--no-pretty</code></td>
-<td>boolean</td>
-<td>Pretty print JSON output</td>
-<td><code>True</code></td>
-</tr>
-<tr>
-<td><code>--topics</code></td>
-<td>text</td>
-<td>Topics to include (space-separated or multiple --topics flags)</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--exclude</code></td>
-<td>text</td>
-<td>Topics to exclude (space-separated or multiple --exclude flags)</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--start-time</code></td>
-<td>integer</td>
-<td>Start time in seconds</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--end-time</code></td>
-<td>integer</td>
-<td>End time in seconds</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--n</code></td>
-<td>integer</td>
-<td>Number of messages to print</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h5 id="owl-mcap-info">owl mcap info<a class="headerlink" href="#owl-mcap-info" title="Permanent link">&para;</a></h5>
 <p>Display information about the .mcap file(s). Shows detailed info for single file, summary for multiple files.</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>owl mcap info [OPTIONS] MCAP_PATHS...
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--force-upgrade</code></td>
-<td>boolean</td>
-<td>Force upgrade mcap CLI to latest version</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h5 id="owl-mcap-migrate">owl mcap migrate<a class="headerlink" href="#owl-mcap-migrate" title="Permanent link">&para;</a></h5>
 <p>MCAP migration commands with rollback and cleanup support.</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>owl mcap migrate [OPTIONS] COMMAND [ARGS]...
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h6 id="owl-mcap-migrate-cleanup">owl mcap migrate cleanup<a class="headerlink" href="#owl-mcap-migrate-cleanup" title="Permanent link">&para;</a></h6>
 <p>Clean up MCAP backup files.</p>
 <p>This command finds backup files (.mcap.backup) using the specified patterns
@@ -2202,43 +2072,6 @@ and removes them after confirmation. Use --dry-run to preview what would be dele
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>owl mcap migrate cleanup [OPTIONS] [PATTERNS]...
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--dry-run</code></td>
-<td>boolean</td>
-<td>Show what would be deleted without actually deleting</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--yes</code>, <code>-y</code></td>
-<td>boolean</td>
-<td>Skip confirmation prompt</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--verbose</code>, <code>-v</code></td>
-<td>boolean</td>
-<td>Show detailed cleanup information</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h6 id="owl-mcap-migrate-rollback">owl mcap migrate rollback<a class="headerlink" href="#owl-mcap-migrate-rollback" title="Permanent link">&para;</a></h6>
 <p>Rollback MCAP files from their backup files.</p>
 <p>This command finds backup files (.mcap.backup) corresponding to the specified
@@ -2247,91 +2080,11 @@ are removed after successful rollback.</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>owl mcap migrate rollback [OPTIONS] FILES...
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--yes</code>, <code>-y</code></td>
-<td>boolean</td>
-<td>Skip confirmation prompt</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--verbose</code>, <code>-v</code></td>
-<td>boolean</td>
-<td>Show detailed rollback information</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h6 id="owl-mcap-migrate-run">owl mcap migrate run<a class="headerlink" href="#owl-mcap-migrate-run" title="Permanent link">&para;</a></h6>
 <p>Migrate MCAP files to the highest reachable version with automatic version detection.</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>owl mcap migrate run [OPTIONS] FILES...
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--target</code>, <code>-t</code></td>
-<td>text</td>
-<td>Target version (default: highest reachable)</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--dry-run</code></td>
-<td>boolean</td>
-<td>Show what would be migrated without making changes</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--verbose</code>, <code>-v</code></td>
-<td>boolean</td>
-<td>Show detailed migration information</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--keep-backups</code> / <code>--no-backups</code></td>
-<td>boolean</td>
-<td>Keep backup files after migration</td>
-<td><code>True</code></td>
-</tr>
-<tr>
-<td><code>--yes</code>, <code>-y</code></td>
-<td>boolean</td>
-<td>Skip confirmation prompt</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h5 id="owl-mcap-rename-uri">owl mcap rename-uri<a class="headerlink" href="#owl-mcap-rename-uri" title="Permanent link">&para;</a></h5>
 <p>Rename URIs in mediaref fields of screen topic events in MCAP files.</p>
 <p>This command processes MCAP files to set all URIs in the mediaref fields
@@ -2344,55 +2097,6 @@ file paths or URLs when media files have been moved or renamed.</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>owl mcap rename-uri [OPTIONS] FILES...
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--uri</code></td>
-<td>text</td>
-<td>URI to use for all screen topic events</td>
-<td>_required</td>
-</tr>
-<tr>
-<td><code>--dry-run</code></td>
-<td>boolean</td>
-<td>Show what would be changed without making modifications</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--verbose</code>, <code>-v</code></td>
-<td>boolean</td>
-<td>Show detailed processing information</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--yes</code>, <code>-y</code></td>
-<td>boolean</td>
-<td>Skip confirmation prompt</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--keep-backups</code> / <code>--no-backups</code></td>
-<td>boolean</td>
-<td>Keep backup files after processing</td>
-<td><code>True</code></td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h5 id="owl-mcap-sanitize">owl mcap sanitize<a class="headerlink" href="#owl-mcap-sanitize" title="Permanent link">&para;</a></h5>
 <p>Sanitize MCAP files by keeping only events when a specific window is active.</p>
 <p>This command filters MCAP files to retain only the events that occurred when
@@ -2410,181 +2114,16 @@ messages would be removed, preventing accidental over-sanitization. Use
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>owl mcap sanitize [OPTIONS] FILES...
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--keep-window</code></td>
-<td>text</td>
-<td>Window name to keep events for</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--auto-detect-window</code></td>
-<td>boolean</td>
-<td>Auto-detect the most frequent window to keep</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--exact</code> / <code>--substring</code></td>
-<td>boolean</td>
-<td>Use exact window name matching (default: substring)</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--dry-run</code></td>
-<td>boolean</td>
-<td>Show what would be changed without making modifications</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--verbose</code>, <code>-v</code></td>
-<td>boolean</td>
-<td>Show detailed sanitization information</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--yes</code>, <code>-y</code></td>
-<td>boolean</td>
-<td>Skip confirmation prompt</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--keep-backups</code> / <code>--no-backups</code></td>
-<td>boolean</td>
-<td>Keep backup files after sanitization</td>
-<td><code>True</code></td>
-</tr>
-<tr>
-<td><code>--max-removal-ratio</code></td>
-<td>float range (between <code>0.0</code> and <code>1.0</code>)</td>
-<td>Maximum ratio of messages that can be removed (0.0-1.0). Safety feature to prevent accidental over-sanitization.</td>
-<td><code>0.2</code></td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h5 id="owl-mcap-subtitle">owl mcap subtitle<a class="headerlink" href="#owl-mcap-subtitle" title="Permanent link">&para;</a></h5>
 <p>Generate subtitle file from MCAP recording for playback verification.</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>owl mcap subtitle [OPTIONS] INPUT_FILE
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--output</code>, <code>-o</code></td>
-<td>path</td>
-<td>Output file path</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--format</code>, <code>-f</code></td>
-<td>choice (<code>srt</code> &#x7C; <code>ass</code>)</td>
-<td>Output format</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--width</code></td>
-<td>integer</td>
-<td>Video width (ASS only)</td>
-<td><code>1920</code></td>
-</tr>
-<tr>
-<td><code>--height</code></td>
-<td>integer</td>
-<td>Video height (ASS only)</td>
-<td><code>1080</code></td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h5 id="owl-mcap-trim">owl mcap trim<a class="headerlink" href="#owl-mcap-trim" title="Permanent link">&para;</a></h5>
 <p>Trim mcap recording and referenced MKV files to a specific time range.</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>owl mcap trim [OPTIONS] INPUT_MCAP OUTPUT_MCAP
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--video-start</code></td>
-<td>float</td>
-<td>Start time in seconds relative to video PTS (video's own timeline starting from 0). Must be used with --video-end. Mutually exclusive with --mcap-start/--mcap-end.</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--video-end</code></td>
-<td>float</td>
-<td>End time in seconds relative to video PTS. Must be used with --video-start. Mutually exclusive with --mcap-start/--mcap-end.</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--mcap-start</code></td>
-<td>float</td>
-<td>Start time in seconds relative to MCAP recording start. Must be used with --mcap-end. Mutually exclusive with --video-start/--video-end.</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--mcap-end</code></td>
-<td>float</td>
-<td>End time in seconds relative to MCAP recording start. Must be used with --mcap-start. Mutually exclusive with --video-start/--video-end.</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--max-margin</code></td>
-<td>float</td>
-<td>Maximum allowed extra content beyond the specified range in seconds. Due to video keyframe constraints, the output may include extra frames. If extra content exceeds this limit, the operation fails to protect privacy.</td>
-<td><code>5.0</code></td>
-</tr>
-<tr>
-<td><code>--auto-subtitle</code></td>
-<td>boolean</td>
-<td>Automatically generate and embed UTC timestamps as subtitles into MKV files that are missing subtitle tracks. This modifies the original MKV file (with backup protection).</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h2 id="related-documentation">Related Documentation<a class="headerlink" href="#related-documentation" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../../data/technical-reference/format-guide/">OWAMcap Format Guide</a> - Format specification</li>

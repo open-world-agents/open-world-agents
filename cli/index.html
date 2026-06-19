@@ -2577,73 +2577,11 @@
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>owl [OPTIONS] COMMAND [ARGS]...
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--silent</code>, <code>-s</code></td>
-<td>boolean</td>
-<td>Suppress non-essential output</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--no-update-check</code></td>
-<td>boolean</td>
-<td>Skip version update check</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--install-completion</code></td>
-<td>boolean</td>
-<td>Install completion for the current shell.</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--show-completion</code></td>
-<td>boolean</td>
-<td>Show completion for the current shell, to copy it or customize the installation.</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h4 id="owl-env">owl env<a class="headerlink" href="#owl-env" title="Permanent link">&para;</a></h4>
 <p>Environment plugin management commands</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>owl env [OPTIONS] COMMAND [ARGS]...
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h5 id="owl-env-docs">owl env docs<a class="headerlink" href="#owl-env-docs" title="Permanent link">&para;</a></h5>
 <p>Validate plugin documentation quality and show statistics.</p>
 <p>Always validates documentation and returns meaningful exit codes:
@@ -2653,241 +2591,21 @@
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>owl env docs [OPTIONS] [PLUGIN_NAMESPACE]
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--strict</code></td>
-<td>boolean</td>
-<td>Enable strict mode (100% coverage + 100% quality)</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--min-coverage-pass</code></td>
-<td>float</td>
-<td>Minimum coverage for PASS status</td>
-<td><code>0.8</code></td>
-</tr>
-<tr>
-<td><code>--min-coverage-fail</code></td>
-<td>float</td>
-<td>Minimum coverage to avoid FAIL status</td>
-<td><code>0.6</code></td>
-</tr>
-<tr>
-<td><code>--min-quality-pass</code></td>
-<td>float</td>
-<td>Minimum good quality ratio for PASS status</td>
-<td><code>0.6</code></td>
-</tr>
-<tr>
-<td><code>--min-quality-fail</code></td>
-<td>float</td>
-<td>Minimum good quality ratio to avoid FAIL status</td>
-<td><code>0.0</code></td>
-</tr>
-<tr>
-<td><code>--output-format</code></td>
-<td>text</td>
-<td>Output format: table or json</td>
-<td><code>table</code></td>
-</tr>
-<tr>
-<td><code>--by-type</code></td>
-<td>boolean</td>
-<td>Group statistics by component type (table format only)</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h5 id="owl-env-list">owl env list<a class="headerlink" href="#owl-env-list" title="Permanent link">&para;</a></h5>
 <p>List environment plugins and components.</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>owl env list [OPTIONS] [NAMESPACES]...
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--components</code>, <code>-c</code></td>
-<td>boolean</td>
-<td>Show individual components</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--details</code>, <code>-d</code></td>
-<td>boolean</td>
-<td>Show import paths and load status</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--table</code></td>
-<td>boolean</td>
-<td>Display in table format</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--type</code>, <code>-t</code></td>
-<td>text</td>
-<td>Filter by component type (callables/listeners/runnables)</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--search</code>, <code>-s</code></td>
-<td>text</td>
-<td>Search components by name pattern</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--inspect</code></td>
-<td>text</td>
-<td>Inspect specific component (show docstring/signature)</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h5 id="owl-env-search">owl env search<a class="headerlink" href="#owl-env-search" title="Permanent link">&para;</a></h5>
 <p>Search for components across all plugins using pattern matching.</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>owl env search [OPTIONS] PATTERN
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--type</code>, <code>-t</code></td>
-<td>text</td>
-<td>Filter by component type</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--namespace</code>, <code>-n</code></td>
-<td>text</td>
-<td>Filter by namespace</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--case-sensitive</code>, <code>-c</code></td>
-<td>boolean</td>
-<td>Case sensitive search</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--details</code>, <code>-d</code></td>
-<td>boolean</td>
-<td>Show detailed component information</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--table</code></td>
-<td>boolean</td>
-<td>Display results in table format</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--limit</code>, <code>-l</code></td>
-<td>integer</td>
-<td>Limit number of results</td>
-<td><code>50</code></td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h5 id="owl-env-stats">owl env stats<a class="headerlink" href="#owl-env-stats" title="Permanent link">&para;</a></h5>
 <p>Show comprehensive statistics about the plugin ecosystem.</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>owl env stats [OPTIONS]
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--detailed</code>, <code>-d</code></td>
-<td>boolean</td>
-<td>Show detailed statistics</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--by-namespace</code>, <code>-n</code></td>
-<td>boolean</td>
-<td>Group statistics by namespace</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--by-type</code>, <code>-t</code></td>
-<td>boolean</td>
-<td>Group statistics by component type</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--loaded-only</code>, <code>-l</code></td>
-<td>boolean</td>
-<td>Show statistics for loaded components only</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--namespaces</code></td>
-<td>boolean</td>
-<td>Show available namespaces</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h5 id="owl-env-validate">owl env validate<a class="headerlink" href="#owl-env-validate" title="Permanent link">&para;</a></h5>
 <p>Validate a plugin specification from YAML file or entry point.</p>
 <p>This command can validate plugin specifications in two ways:</p>
@@ -2899,175 +2617,26 @@
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>owl env validate [OPTIONS] SPEC_INPUT
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--check-imports</code> / <code>--no-check-imports</code></td>
-<td>boolean</td>
-<td>Validate that component import paths are accessible</td>
-<td><code>True</code></td>
-</tr>
-<tr>
-<td><code>--verbose</code>, <code>-v</code></td>
-<td>boolean</td>
-<td>Show detailed validation information</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h4 id="owl-mcap">owl mcap<a class="headerlink" href="#owl-mcap" title="Permanent link">&para;</a></h4>
 <p>MCAP file management commands</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>owl mcap [OPTIONS] COMMAND [ARGS]...
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h5 id="owl-mcap-cat">owl mcap cat<a class="headerlink" href="#owl-mcap-cat" title="Permanent link">&para;</a></h5>
 <p>Print messages from an <code>.mcap</code> file in a readable format.</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>owl mcap cat [OPTIONS] MCAP_PATH
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--pretty</code> / <code>--no-pretty</code></td>
-<td>boolean</td>
-<td>Pretty print JSON output</td>
-<td><code>True</code></td>
-</tr>
-<tr>
-<td><code>--topics</code></td>
-<td>text</td>
-<td>Topics to include (space-separated or multiple --topics flags)</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--exclude</code></td>
-<td>text</td>
-<td>Topics to exclude (space-separated or multiple --exclude flags)</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--start-time</code></td>
-<td>integer</td>
-<td>Start time in seconds</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--end-time</code></td>
-<td>integer</td>
-<td>End time in seconds</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--n</code></td>
-<td>integer</td>
-<td>Number of messages to print</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h5 id="owl-mcap-info">owl mcap info<a class="headerlink" href="#owl-mcap-info" title="Permanent link">&para;</a></h5>
 <p>Display information about the .mcap file(s). Shows detailed info for single file, summary for multiple files.</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>owl mcap info [OPTIONS] MCAP_PATHS...
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--force-upgrade</code></td>
-<td>boolean</td>
-<td>Force upgrade mcap CLI to latest version</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h5 id="owl-mcap-migrate">owl mcap migrate<a class="headerlink" href="#owl-mcap-migrate" title="Permanent link">&para;</a></h5>
 <p>MCAP migration commands with rollback and cleanup support.</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>owl mcap migrate [OPTIONS] COMMAND [ARGS]...
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h6 id="owl-mcap-migrate-cleanup">owl mcap migrate cleanup<a class="headerlink" href="#owl-mcap-migrate-cleanup" title="Permanent link">&para;</a></h6>
 <p>Clean up MCAP backup files.</p>
 <p>This command finds backup files (.mcap.backup) using the specified patterns
@@ -3080,43 +2649,6 @@ and removes them after confirmation. Use --dry-run to preview what would be dele
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>owl mcap migrate cleanup [OPTIONS] [PATTERNS]...
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--dry-run</code></td>
-<td>boolean</td>
-<td>Show what would be deleted without actually deleting</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--yes</code>, <code>-y</code></td>
-<td>boolean</td>
-<td>Skip confirmation prompt</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--verbose</code>, <code>-v</code></td>
-<td>boolean</td>
-<td>Show detailed cleanup information</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h6 id="owl-mcap-migrate-rollback">owl mcap migrate rollback<a class="headerlink" href="#owl-mcap-migrate-rollback" title="Permanent link">&para;</a></h6>
 <p>Rollback MCAP files from their backup files.</p>
 <p>This command finds backup files (.mcap.backup) corresponding to the specified
@@ -3125,91 +2657,11 @@ are removed after successful rollback.</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>owl mcap migrate rollback [OPTIONS] FILES...
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--yes</code>, <code>-y</code></td>
-<td>boolean</td>
-<td>Skip confirmation prompt</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--verbose</code>, <code>-v</code></td>
-<td>boolean</td>
-<td>Show detailed rollback information</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h6 id="owl-mcap-migrate-run">owl mcap migrate run<a class="headerlink" href="#owl-mcap-migrate-run" title="Permanent link">&para;</a></h6>
 <p>Migrate MCAP files to the highest reachable version with automatic version detection.</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>owl mcap migrate run [OPTIONS] FILES...
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--target</code>, <code>-t</code></td>
-<td>text</td>
-<td>Target version (default: highest reachable)</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--dry-run</code></td>
-<td>boolean</td>
-<td>Show what would be migrated without making changes</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--verbose</code>, <code>-v</code></td>
-<td>boolean</td>
-<td>Show detailed migration information</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--keep-backups</code> / <code>--no-backups</code></td>
-<td>boolean</td>
-<td>Keep backup files after migration</td>
-<td><code>True</code></td>
-</tr>
-<tr>
-<td><code>--yes</code>, <code>-y</code></td>
-<td>boolean</td>
-<td>Skip confirmation prompt</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h5 id="owl-mcap-rename-uri">owl mcap rename-uri<a class="headerlink" href="#owl-mcap-rename-uri" title="Permanent link">&para;</a></h5>
 <p>Rename URIs in mediaref fields of screen topic events in MCAP files.</p>
 <p>This command processes MCAP files to set all URIs in the mediaref fields
@@ -3222,55 +2674,6 @@ file paths or URLs when media files have been moved or renamed.</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>owl mcap rename-uri [OPTIONS] FILES...
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--uri</code></td>
-<td>text</td>
-<td>URI to use for all screen topic events</td>
-<td>_required</td>
-</tr>
-<tr>
-<td><code>--dry-run</code></td>
-<td>boolean</td>
-<td>Show what would be changed without making modifications</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--verbose</code>, <code>-v</code></td>
-<td>boolean</td>
-<td>Show detailed processing information</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--yes</code>, <code>-y</code></td>
-<td>boolean</td>
-<td>Skip confirmation prompt</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--keep-backups</code> / <code>--no-backups</code></td>
-<td>boolean</td>
-<td>Keep backup files after processing</td>
-<td><code>True</code></td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h5 id="owl-mcap-sanitize">owl mcap sanitize<a class="headerlink" href="#owl-mcap-sanitize" title="Permanent link">&para;</a></h5>
 <p>Sanitize MCAP files by keeping only events when a specific window is active.</p>
 <p>This command filters MCAP files to retain only the events that occurred when
@@ -3288,331 +2691,36 @@ messages would be removed, preventing accidental over-sanitization. Use
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>owl mcap sanitize [OPTIONS] FILES...
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--keep-window</code></td>
-<td>text</td>
-<td>Window name to keep events for</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--auto-detect-window</code></td>
-<td>boolean</td>
-<td>Auto-detect the most frequent window to keep</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--exact</code> / <code>--substring</code></td>
-<td>boolean</td>
-<td>Use exact window name matching (default: substring)</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--dry-run</code></td>
-<td>boolean</td>
-<td>Show what would be changed without making modifications</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--verbose</code>, <code>-v</code></td>
-<td>boolean</td>
-<td>Show detailed sanitization information</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--yes</code>, <code>-y</code></td>
-<td>boolean</td>
-<td>Skip confirmation prompt</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--keep-backups</code> / <code>--no-backups</code></td>
-<td>boolean</td>
-<td>Keep backup files after sanitization</td>
-<td><code>True</code></td>
-</tr>
-<tr>
-<td><code>--max-removal-ratio</code></td>
-<td>float range (between <code>0.0</code> and <code>1.0</code>)</td>
-<td>Maximum ratio of messages that can be removed (0.0-1.0). Safety feature to prevent accidental over-sanitization.</td>
-<td><code>0.2</code></td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h5 id="owl-mcap-subtitle">owl mcap subtitle<a class="headerlink" href="#owl-mcap-subtitle" title="Permanent link">&para;</a></h5>
 <p>Generate subtitle file from MCAP recording for playback verification.</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>owl mcap subtitle [OPTIONS] INPUT_FILE
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--output</code>, <code>-o</code></td>
-<td>path</td>
-<td>Output file path</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--format</code>, <code>-f</code></td>
-<td>choice (<code>srt</code> &#x7C; <code>ass</code>)</td>
-<td>Output format</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--width</code></td>
-<td>integer</td>
-<td>Video width (ASS only)</td>
-<td><code>1920</code></td>
-</tr>
-<tr>
-<td><code>--height</code></td>
-<td>integer</td>
-<td>Video height (ASS only)</td>
-<td><code>1080</code></td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h5 id="owl-mcap-trim">owl mcap trim<a class="headerlink" href="#owl-mcap-trim" title="Permanent link">&para;</a></h5>
 <p>Trim mcap recording and referenced MKV files to a specific time range.</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>owl mcap trim [OPTIONS] INPUT_MCAP OUTPUT_MCAP
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--video-start</code></td>
-<td>float</td>
-<td>Start time in seconds relative to video PTS (video's own timeline starting from 0). Must be used with --video-end. Mutually exclusive with --mcap-start/--mcap-end.</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--video-end</code></td>
-<td>float</td>
-<td>End time in seconds relative to video PTS. Must be used with --video-start. Mutually exclusive with --mcap-start/--mcap-end.</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--mcap-start</code></td>
-<td>float</td>
-<td>Start time in seconds relative to MCAP recording start. Must be used with --mcap-end. Mutually exclusive with --video-start/--video-end.</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--mcap-end</code></td>
-<td>float</td>
-<td>End time in seconds relative to MCAP recording start. Must be used with --mcap-start. Mutually exclusive with --video-start/--video-end.</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--max-margin</code></td>
-<td>float</td>
-<td>Maximum allowed extra content beyond the specified range in seconds. Due to video keyframe constraints, the output may include extra frames. If extra content exceeds this limit, the operation fails to protect privacy.</td>
-<td><code>5.0</code></td>
-</tr>
-<tr>
-<td><code>--auto-subtitle</code></td>
-<td>boolean</td>
-<td>Automatically generate and embed UTC timestamps as subtitles into MKV files that are missing subtitle tracks. This modifies the original MKV file (with backup protection).</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h4 id="owl-messages">owl messages<a class="headerlink" href="#owl-messages" title="Permanent link">&para;</a></h4>
 <p>Message registry management commands</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>owl messages [OPTIONS] COMMAND [ARGS]...
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h5 id="owl-messages-list">owl messages list<a class="headerlink" href="#owl-messages-list" title="Permanent link">&para;</a></h5>
 <p>List and search message types</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>owl messages list [OPTIONS] [MESSAGE_TYPES]...
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--domain</code>, <code>-d</code></td>
-<td>text</td>
-<td>Filter by domain (e.g., 'desktop')</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--search</code>, <code>-s</code></td>
-<td>text</td>
-<td>Search message types by pattern</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>--output-format</code></td>
-<td>text</td>
-<td>Output format: table, json, yaml</td>
-<td><code>table</code></td>
-</tr>
-<tr>
-<td><code>--verbose</code>, <code>-v</code></td>
-<td>boolean</td>
-<td>Show detailed information</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--case-sensitive</code>, <code>-c</code></td>
-<td>boolean</td>
-<td>Case sensitive search</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--limit</code>, <code>-l</code></td>
-<td>integer</td>
-<td>Limit number of results</td>
-<td><code>50</code></td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h5 id="owl-messages-show">owl messages show<a class="headerlink" href="#owl-messages-show" title="Permanent link">&para;</a></h5>
 <p>Show detailed information about a specific message type</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>owl messages show [OPTIONS] MESSAGE_TYPE
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--output-format</code></td>
-<td>text</td>
-<td>Output format: rich, json, schema</td>
-<td><code>rich</code></td>
-</tr>
-<tr>
-<td><code>--example</code>, <code>-e</code></td>
-<td>boolean</td>
-<td>Show usage example</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h5 id="owl-messages-validate">owl messages validate<a class="headerlink" href="#owl-messages-validate" title="Permanent link">&para;</a></h5>
 <p>Validate message registry and definitions</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>owl messages validate [OPTIONS]
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>--verbose</code>, <code>-v</code></td>
-<td>boolean</td>
-<td>Show detailed validation results</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>--help</code></td>
-<td>boolean</td>
-<td>Show this message and exit.</td>
-<td><code>False</code></td>
-</tr>
-</tbody>
-</table>
 <h2 id="common-workflows">Common Workflows<a class="headerlink" href="#common-workflows" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="c1"># Record and analyze data</span>
 <a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>ocap<span class="w"> </span>my-session
