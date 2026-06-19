@@ -12,7 +12,7 @@ jobs:
   ruff:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: astral-sh/ruff-action@v4.0.0
       - run: ruff check --fix
       - run: ruff format --check --diff
@@ -25,7 +25,7 @@ jobs:
         shell: bash -el {0}
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup uv with Python 3.11 venv
         uses: astral-sh/setup-uv@v8.2.0
@@ -61,7 +61,7 @@ jobs:
         shell: bash -el {0}
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install the latest version of uv
         uses: astral-sh/setup-uv@v8.2.0
@@ -97,7 +97,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Conda Environment
         uses: ./.github/actions/setup-conda-env
@@ -146,7 +146,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-python@v6
         with:
@@ -188,7 +188,7 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Download coverage data
         uses: actions/download-artifact@v8
