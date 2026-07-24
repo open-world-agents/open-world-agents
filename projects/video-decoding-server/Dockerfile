@@ -27,9 +27,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 
 # Install dependencies
 RUN --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    vuv install --frozen --no-install-project
+    vuv install --no-install-project
 
 # ======================= Copy the model repository =======================
 
