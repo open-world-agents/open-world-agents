@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../images/owa-logo.jpg">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -2589,17 +2589,17 @@
 - 1: Documentation issues found (warnings or failures)
 - 2: Command error (invalid arguments, plugin not found, etc.)</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>owl env docs [OPTIONS] [PLUGIN_NAMESPACE]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>owl env docs [OPTIONS] [plugin_namespace]
 </code></pre></div>
 <h5 id="owl-env-list">owl env list<a class="headerlink" href="#owl-env-list" title="Permanent link">&para;</a></h5>
 <p>List environment plugins and components.</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>owl env list [OPTIONS] [NAMESPACES]...
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>owl env list [OPTIONS] [namespaces]...
 </code></pre></div>
 <h5 id="owl-env-search">owl env search<a class="headerlink" href="#owl-env-search" title="Permanent link">&para;</a></h5>
 <p>Search for components across all plugins using pattern matching.</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>owl env search [OPTIONS] PATTERN
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>owl env search [OPTIONS] {pattern}
 </code></pre></div>
 <h5 id="owl-env-stats">owl env stats<a class="headerlink" href="#owl-env-stats" title="Permanent link">&para;</a></h5>
 <p>Show comprehensive statistics about the plugin ecosystem.</p>
@@ -2615,7 +2615,7 @@
 </ol>
 <p>The command automatically detects the input type and validates accordingly.</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>owl env validate [OPTIONS] SPEC_INPUT
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>owl env validate [OPTIONS] {spec_input}
 </code></pre></div>
 <h4 id="owl-mcap">owl mcap<a class="headerlink" href="#owl-mcap" title="Permanent link">&para;</a></h4>
 <p>MCAP file management commands</p>
@@ -2625,12 +2625,12 @@
 <h5 id="owl-mcap-cat">owl mcap cat<a class="headerlink" href="#owl-mcap-cat" title="Permanent link">&para;</a></h5>
 <p>Print messages from an <code>.mcap</code> file in a readable format.</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>owl mcap cat [OPTIONS] MCAP_PATH
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>owl mcap cat [OPTIONS] {mcap_path}
 </code></pre></div>
 <h5 id="owl-mcap-info">owl mcap info<a class="headerlink" href="#owl-mcap-info" title="Permanent link">&para;</a></h5>
 <p>Display information about the .mcap file(s). Shows detailed info for single file, summary for multiple files.</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>owl mcap info [OPTIONS] MCAP_PATHS...
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>owl mcap info [OPTIONS] {mcap_paths}...
 </code></pre></div>
 <h5 id="owl-mcap-migrate">owl mcap migrate<a class="headerlink" href="#owl-mcap-migrate" title="Permanent link">&para;</a></h5>
 <p>MCAP migration commands with rollback and cleanup support.</p>
@@ -2647,7 +2647,7 @@ and removes them after confirmation. Use --dry-run to preview what would be dele
     owl mcap migrate cleanup "/path/to/backups/</em><em>/</em>.mcap.backup"  # Clean all backup files recursively under a specific directory
     owl mcap migrate cleanup file.mcap                            # Clean backup for specific MCAP file</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>owl mcap migrate cleanup [OPTIONS] [PATTERNS]...
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>owl mcap migrate cleanup [OPTIONS] [patterns]...
 </code></pre></div>
 <h6 id="owl-mcap-migrate-rollback">owl mcap migrate rollback<a class="headerlink" href="#owl-mcap-migrate-rollback" title="Permanent link">&para;</a></h6>
 <p>Rollback MCAP files from their backup files.</p>
@@ -2655,12 +2655,12 @@ and removes them after confirmation. Use --dry-run to preview what would be dele
 MCAP files and restores the original files from the backups. The backup files
 are removed after successful rollback.</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>owl mcap migrate rollback [OPTIONS] FILES...
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>owl mcap migrate rollback [OPTIONS] {files}...
 </code></pre></div>
 <h6 id="owl-mcap-migrate-run">owl mcap migrate run<a class="headerlink" href="#owl-mcap-migrate-run" title="Permanent link">&para;</a></h6>
 <p>Migrate MCAP files to the highest reachable version with automatic version detection.</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>owl mcap migrate run [OPTIONS] FILES...
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>owl mcap migrate run [OPTIONS] {files}...
 </code></pre></div>
 <h5 id="owl-mcap-rename-uri">owl mcap rename-uri<a class="headerlink" href="#owl-mcap-rename-uri" title="Permanent link">&para;</a></h5>
 <p>Rename URIs in mediaref fields of screen topic events in MCAP files.</p>
@@ -2672,7 +2672,7 @@ file paths or URLs when media files have been moved or renamed.</p>
     owl mcap rename-uri *.mcap --uri "/new/path/video.mp4"
     owl mcap rename-uri data.mcap --uri "http://new.com/video" --dry-run</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>owl mcap rename-uri [OPTIONS] FILES...
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>owl mcap rename-uri [OPTIONS] {files}...
 </code></pre></div>
 <h5 id="owl-mcap-sanitize">owl mcap sanitize<a class="headerlink" href="#owl-mcap-sanitize" title="Permanent link">&para;</a></h5>
 <p>Sanitize MCAP files by keeping only events when a specific window is active.</p>
@@ -2689,17 +2689,17 @@ messages would be removed, preventing accidental over-sanitization. Use
     owl mcap sanitize data.mcap --keep-window "App" --max-removal-ratio 0.95
     owl mcap sanitize recording.mcap --auto-detect-window</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>owl mcap sanitize [OPTIONS] FILES...
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>owl mcap sanitize [OPTIONS] {files}...
 </code></pre></div>
 <h5 id="owl-mcap-subtitle">owl mcap subtitle<a class="headerlink" href="#owl-mcap-subtitle" title="Permanent link">&para;</a></h5>
 <p>Generate subtitle file from MCAP recording for playback verification.</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>owl mcap subtitle [OPTIONS] INPUT_FILE
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>owl mcap subtitle [OPTIONS] {input_file}
 </code></pre></div>
 <h5 id="owl-mcap-trim">owl mcap trim<a class="headerlink" href="#owl-mcap-trim" title="Permanent link">&para;</a></h5>
 <p>Trim mcap recording and referenced MKV files to a specific time range.</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>owl mcap trim [OPTIONS] INPUT_MCAP OUTPUT_MCAP
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>owl mcap trim [OPTIONS] {input_mcap} {output_mcap}
 </code></pre></div>
 <h4 id="owl-messages">owl messages<a class="headerlink" href="#owl-messages" title="Permanent link">&para;</a></h4>
 <p>Message registry management commands</p>
@@ -2709,12 +2709,12 @@ messages would be removed, preventing accidental over-sanitization. Use
 <h5 id="owl-messages-list">owl messages list<a class="headerlink" href="#owl-messages-list" title="Permanent link">&para;</a></h5>
 <p>List and search message types</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>owl messages list [OPTIONS] [MESSAGE_TYPES]...
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>owl messages list [OPTIONS] [message_types]...
 </code></pre></div>
 <h5 id="owl-messages-show">owl messages show<a class="headerlink" href="#owl-messages-show" title="Permanent link">&para;</a></h5>
 <p>Show detailed information about a specific message type</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>owl messages show [OPTIONS] MESSAGE_TYPE
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>owl messages show [OPTIONS] {message_type}
 </code></pre></div>
 <h5 id="owl-messages-validate">owl messages validate<a class="headerlink" href="#owl-messages-validate" title="Permanent link">&para;</a></h5>
 <p>Validate message registry and definitions</p>
@@ -2829,7 +2829,7 @@ messages would be removed, preventing accidental over-sanitization. Use
       <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.top", "search.suggest", "search.highlight", "content.tabs.link", "content.code.annotation", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
       
         <script src="../termynal.js"></script>
       
