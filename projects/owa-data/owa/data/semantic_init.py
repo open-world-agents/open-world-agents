@@ -59,7 +59,7 @@ def _initialize_token_with_semantic(
             input_embeddings = model.get_input_embeddings()
             semantic_embedding = input_embeddings.weight.data[semantic_token_ids].mean(dim=0)
             input_embeddings.weight.data[token_idx] = semantic_embedding
-    except Exception:  # noqa: BLE001
+    except Exception:
         logger.warning(f"Failed to initialize token {token}")
 
 

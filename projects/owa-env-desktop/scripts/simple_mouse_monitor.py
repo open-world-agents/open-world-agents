@@ -92,6 +92,8 @@ def update_movement_buffer_and_velocity(movement_buffer, current_time, dx=None, 
 
 def on_raw_mouse(event: RawMouseEvent):
     """Raw mouse event handler."""
+    global verbose_mode, raw_total, raw_velocity_data
+
     with stats_lock:
         stats["raw_count"] += 1
 
@@ -122,6 +124,8 @@ def on_raw_mouse(event: RawMouseEvent):
 
 def on_std_mouse(event: MouseEvent):
     """Standard mouse event handler."""
+    global verbose_mode, std_total, std_velocity_data
+
     with stats_lock:
         stats["std_count"] += 1
 
@@ -199,7 +203,7 @@ def toggle_verbose():
 
 def toggle_summary():
     """Toggle summary mode - periodic dx/dy totals."""
-    global summary_mode, summary_start_time
+    global summary_mode, summary_start_time, summary_start_raw, summary_start_std, raw_total, std_total
 
     summary_mode = not summary_mode
     if summary_mode:

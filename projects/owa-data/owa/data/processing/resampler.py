@@ -3,6 +3,7 @@
 import warnings
 from abc import ABC, abstractmethod
 from collections import deque
+from typing import List
 
 from mcap_owa.highlevel import McapMessage
 from owa.core.time import TimeUnits
@@ -24,6 +25,7 @@ class EventResampler(ABC):
         Args:
             mcap_msg: The MCAP message containing the event data to be processed.
         """
+        pass
 
     @abstractmethod
     def step(self, now: int) -> None:
@@ -32,14 +34,16 @@ class EventResampler(ABC):
         Args:
             now: Current timestamp in nanoseconds. Must be monotonically increasing.
         """
+        pass
 
     @abstractmethod
-    def pop_events(self) -> list[McapMessage]:
+    def pop_events(self) -> List[McapMessage]:
         """Retrieve and remove all ready events from the resampler.
 
         Returns:
             List of processed MCAP messages ready for output. Safe to call multiple times.
         """
+        pass
 
 
 class DropResampler(EventResampler):
@@ -66,7 +70,7 @@ class DropResampler(EventResampler):
         while self.input_queue and self.input_queue[0].timestamp <= now:
             self.output_queue.append(self.input_queue.popleft())
 
-    def pop_events(self) -> list[McapMessage]:
+    def pop_events(self) -> List[McapMessage]:
         """Return all ready events and clear the output queue."""
         events = self.output_queue
         self.output_queue = []
@@ -118,7 +122,7 @@ class KeyboardUniformResampler(EventResampler):
         # Combine and sort all events
         self.output_queue.extend(sorted(ready_events + synthetic_events, key=lambda x: x.timestamp))
 
-    def _create_events(self, until_now: int) -> list[McapMessage]:
+    def _create_events(self, until_now: int) -> List[McapMessage]:
         """Generate synthetic press events for keys that are currently held down."""
 
         events = []
@@ -150,7 +154,7 @@ class KeyboardUniformResampler(EventResampler):
 
         return events
 
-    def pop_events(self) -> list[McapMessage]:
+    def pop_events(self) -> List[McapMessage]:
         """Return all processed events and clear the output queue."""
         events = self.output_queue
         self.output_queue = []
@@ -177,7 +181,7 @@ class PassThroughResampler(EventResampler):
         while self.input_queue and self.input_queue[0].timestamp <= now:
             self.output_queue.append(self.input_queue.popleft())
 
-    def pop_events(self) -> list[McapMessage]:
+    def pop_events(self) -> List[McapMessage]:
         """Return all ready events and clear the output queue."""
         events = self.output_queue
         self.output_queue = []
@@ -248,7 +252,7 @@ class MouseAggregationResampler(EventResampler):
         while self.input_queue and self.input_queue[0].timestamp <= now:
             self.output_queue.append(self.input_queue.popleft())
 
-    def pop_events(self) -> list[McapMessage]:
+    def pop_events(self) -> List[McapMessage]:
         """Return all ready events and clear the output queue."""
         events = self.output_queue
         self.output_queue = []
@@ -301,7 +305,7 @@ class EventResamplerDict(dict):
         for resampler in self.values():
             resampler.step(now)
 
-    def pop_events(self) -> list[McapMessage]:
+    def pop_events(self) -> List[McapMessage]:
         """Return all ready events from all resamplers."""
         events = []
         for resampler in self.values():

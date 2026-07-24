@@ -5,7 +5,7 @@ import os
 import time
 import warnings
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, List, Optional
 
 import line_profiler
 import numpy as np
@@ -138,7 +138,7 @@ class FSLTransformConfig:
     """
 
     load_images: bool = True
-    mcap_root_directory: str | None = None
+    mcap_root_directory: Optional[str] = None
     pad_token_id: int = 0
     use_batch_decoding: str = "owa"
 
@@ -147,7 +147,7 @@ class FSLTransformConfig:
 class FSLTransform:
     """Clean, modular FSL transform class."""
 
-    def __init__(self, config: FSLTransformConfig | None = None, image_processor: Any = None, **kwargs):
+    def __init__(self, config: Optional[FSLTransformConfig] = None, image_processor: Any = None, **kwargs):
         """Initialize FSL transform with configuration."""
         if config is None:
             config = FSLTransformConfig()
@@ -215,7 +215,7 @@ class FSLTransform:
                 try:
                     pil_image = img.to_pil_image()
                     all_images.append(pil_image)
-                except Exception as e:  # noqa: BLE001
+                except Exception as e:
                     if len(all_images) == 0:
                         warnings.warn(f"Failed to load first image: {e}. Using black placeholder.")
                         placeholder = Image.new("RGB", (448, 448), color="black")
@@ -269,18 +269,18 @@ class FSLTransform:
 
         return results
 
-    def _preload_images_parallel(self, image_msgs: list[ScreenCaptured]) -> None:
+    def _preload_images_parallel(self, image_msgs: List[ScreenCaptured]) -> None:
         """Preload images in parallel with error handling."""
         with concurrent.futures.ThreadPoolExecutor() as executor:
             futures = [executor.submit(img.to_pil_image) for img in image_msgs]
             for idx, future in enumerate(futures):
                 try:
                     future.result(timeout=30)
-                except Exception as e:  # noqa: BLE001
+                except Exception as e:
                     image_msgs[idx].frame_arr = np.zeros((512, 512, 3), dtype=np.uint8)
                     warnings.warn(f"Failed to load image at index {idx}: {e}. Using placeholder.", UserWarning)
 
-    def _batch_decode_images(self, image_msgs: list[ScreenCaptured]) -> None:
+    def _batch_decode_images(self, image_msgs: List[ScreenCaptured]) -> None:
         """Batch decode images using mediaref's batch_decode API."""
         if not image_msgs:
             return
@@ -326,12 +326,12 @@ class FSLTransform:
                     )
                     image_msgs[img_idx].frame_arr = frame_bgra
 
-            except Exception:  # noqa: BLE001
+            except Exception:
                 logger.exception(f"Batch decoding failed for {video_path}. Falling back to individual decoding.")
 
 
 def create_fsl_transform(
-    image_processor=None, load_images: bool = True, mcap_root_directory: str | None = None, **kwargs
+    image_processor=None, load_images: bool = True, mcap_root_directory: Optional[str] = None, **kwargs
 ):
     """Create FSL transform - maintains backward compatibility.
 

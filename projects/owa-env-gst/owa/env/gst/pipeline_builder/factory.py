@@ -1,3 +1,5 @@
+from typing import Optional
+
 from ..utils import framerate_float_to_str
 from .element import Element
 
@@ -25,11 +27,11 @@ class ElementFactory:
         *,
         show_cursor: bool = True,
         fps: float = 60.0,
-        window_name: str | None = None,
-        monitor_idx: int | None = None,
-        width: int | None = None,
-        height: int | None = None,
-        additional_properties: dict | None = None,
+        window_name: Optional[str] = None,
+        monitor_idx: Optional[int] = None,
+        width: Optional[int] = None,
+        height: Optional[int] = None,
+        additional_properties: Optional[dict] = None,
     ):
         """https://gstreamer.freedesktop.org/documentation/d3d11/d3d11screencapturesrc.html?gi-language=python"""
         properties = {
@@ -67,7 +69,7 @@ class ElementFactory:
         )
 
     @staticmethod
-    def wasapi2src(*, window_name: str | None = None):
+    def wasapi2src(*, window_name: Optional[str] = None):
         """https://gstreamer.freedesktop.org/documentation/wasapi2/wasapi2src.html"""
         properties = {
             "do-timestamp": "true",

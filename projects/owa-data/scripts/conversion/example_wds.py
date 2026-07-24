@@ -12,7 +12,7 @@ shard_size = 1000  # number of samples per shard
 allowed_extensions = [".mcap", ".jsonl", ".mp4"]  # Add other extensions if needed
 
 # Collect base names
-basenames = sorted({f.stem for f in input_dir.glob("*") if f.is_file() and f.suffix in allowed_extensions})
+basenames = sorted(set(f.stem for f in input_dir.glob("*") if f.is_file() and f.suffix in allowed_extensions))
 shard_writer = wds.ShardWriter(output_pattern, maxcount=shard_size)
 
 for idx, base in enumerate(tqdm(basenames)):

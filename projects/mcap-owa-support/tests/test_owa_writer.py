@@ -22,7 +22,7 @@ def test_write_messages():
     # Suppress warnings only for mock message creation
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UserWarning)
-        string_messages = [String(data=f"string message {i}") for i in range(10)]
+        string_messages = [String(data=f"string message {i}") for i in range(0, 10)]
 
     output = BytesIO()
     writer = OWAWriter(output=output)

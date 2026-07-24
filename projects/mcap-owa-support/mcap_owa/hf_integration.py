@@ -69,7 +69,7 @@ class McapMessageFeature:
                 "message_type": value["message_type"],
             }
         else:
-            raise TypeError(f"Expected McapMessage or dict, got {type(value)}")
+            raise ValueError(f"Expected McapMessage or dict, got {type(value)}")
 
     def decode_example(self, value: dict, token_per_repo_id=None) -> Union["McapMessage", dict]:
         """

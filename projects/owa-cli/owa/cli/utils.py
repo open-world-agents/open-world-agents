@@ -1,4 +1,5 @@
 import os
+import sys
 
 import requests
 from packaging.version import parse as parse_version
@@ -7,11 +8,14 @@ from rich import print
 
 def get_local_version(package_name: str = "owa.cli") -> str:
     """Get the version of the locally installed package."""
-    from importlib.metadata import version
+    if sys.version_info >= (3, 8):
+        from importlib.metadata import version
+    else:
+        from importlib_metadata import version
 
     try:
         __version__ = version(package_name)
-    except Exception:  # noqa: BLE001
+    except Exception:
         __version__ = "unknown"
 
     return __version__
@@ -73,7 +77,7 @@ def check_for_update(
     except requests.RequestException as e:
         if not silent:
             print(f"[bold red]⚠ Error:[/bold red] Unable to check for updates. Request failed: {e}")
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         if not silent:
             print(f"[bold red]⚠ Error:[/bold red] Unable to check for updates. An unexpected error occurred: {e}")
     return False

@@ -1,6 +1,6 @@
 import gc
 from fractions import Fraction
-from typing import Any, Self
+from typing import Any, Dict, Optional, Union
 
 import av
 import numpy as np
@@ -27,7 +27,7 @@ class VideoWriter:
         - Design Reference: https://pytorch.org/vision/stable/generated/torchvision.io.read_video.html
     """
 
-    def __init__(self, video_path: PathLike, fps: float | None = None, vfr: bool = False, **kwargs):
+    def __init__(self, video_path: PathLike, fps: Optional[float] = None, vfr: bool = False, **kwargs):
         """
         Initialize video writer.
 
@@ -70,10 +70,10 @@ class VideoWriter:
 
     def write_frame(
         self,
-        frame: av.VideoFrame | np.ndarray,
-        pts: int | SECOND_TYPE | None = None,
+        frame: Union[av.VideoFrame, np.ndarray],
+        pts: Optional[Union[int, SECOND_TYPE]] = None,
         pts_unit: PTSUnit = "pts",
-    ) -> dict[str, Any]:
+    ) -> Dict[str, Any]:
         """Write frame to video with optional timestamp."""
         global _CALLED_TIMES
         _CALLED_TIMES += 1
@@ -148,7 +148,7 @@ class VideoWriter:
         self.container.close()
         self._closed = True
 
-    def __enter__(self) -> Self:
+    def __enter__(self) -> "VideoWriter":
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:

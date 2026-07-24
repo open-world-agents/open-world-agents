@@ -1,6 +1,6 @@
 import argparse
 import time
-from collections.abc import Callable
+from typing import Callable
 
 import numpy as np
 from mediaref.video_decoder import PyAVVideoDecoder, TorchCodecVideoDecoder
@@ -74,7 +74,7 @@ def main():
 
         print(f"{pattern_name}")
         benchmark(lambda: f(T))
-        print()
+        print("")
 
     benchmark_pattern(T1, "Two dense clusters")
     benchmark_pattern(T2, "Single dense cluster")

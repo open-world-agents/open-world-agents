@@ -26,13 +26,19 @@ class TransitionStates(StrEnum):
 class NodeException(Exception):
     """Base exception class for Node errors."""
 
+    pass
+
 
 class InvalidStateTransitionError(NodeException):
     """Raised when an invalid state transition is attempted."""
 
+    pass
+
 
 class LifecycleError(NodeException):
     """Raised when a lifecycle method fails."""
+
+    pass
 
 
 class Node:
@@ -47,7 +53,7 @@ class Node:
         try:
             if not self.on_configure(*args, **kwargs):
                 raise LifecycleError("Configuration failed.")
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             print(f"Error in on_configure: {e}")
             self.handle_error()
             return False
@@ -61,7 +67,7 @@ class Node:
         try:
             if not self.on_activate(*args, **kwargs):
                 raise LifecycleError("Activation failed.")
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             print(f"Error in on_activate: {e}")
             self.handle_error()
             return False
@@ -75,7 +81,7 @@ class Node:
         try:
             if not self.on_deactivate(*args, **kwargs):
                 raise LifecycleError("Deactivation failed.")
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             print(f"Error in on_deactivate: {e}")
             self.handle_error()
             return False
@@ -89,7 +95,7 @@ class Node:
         try:
             if not self.on_cleanup(*args, **kwargs):
                 raise LifecycleError("Cleanup failed.")
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             print(f"Error in on_cleanup: {e}")
             self.handle_error()
             return False
@@ -102,7 +108,7 @@ class Node:
             try:
                 if not self.on_shutdown(*args, **kwargs):
                     raise LifecycleError("Shutdown failed.")
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 print(f"Error in on_shutdown: {e}")
                 self.handle_error()
                 return False
@@ -123,7 +129,7 @@ class Node:
                 self.state = NodeStates.UNCONFIGURED
             else:
                 self.state = NodeStates.FINALIZED
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             print(f"Error in on_error: {e}")
             self.state = NodeStates.FINALIZED
 

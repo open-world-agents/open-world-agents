@@ -7,12 +7,13 @@ in MCAP files, with automatic backup and rollback capabilities for data safety.
 
 import shutil
 from pathlib import Path
-from typing import Annotated
+from typing import List
 
 import typer
 from mediaref import MediaRef
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
+from typing_extensions import Annotated
 
 from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
 from owa.core.utils.backup import BackupContext
@@ -151,7 +152,7 @@ def rename_uri_in_mcap_file(
 
 
 def rename_uri(
-    files: Annotated[list[Path], typer.Argument(help="MCAP files to process (supports glob patterns)")],
+    files: Annotated[List[Path], typer.Argument(help="MCAP files to process (supports glob patterns)")],
     uri: Annotated[str, typer.Option("--uri", help="URI to use for all screen topic events")],
     dry_run: Annotated[
         bool, typer.Option("--dry-run", help="Show what would be changed without making modifications")
@@ -256,7 +257,7 @@ def rename_uri(
                 else:
                     failed_operations += 1
 
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 console.print(f"[red]✗ {file_path.name}: {e}[/red]")
                 failed_operations += 1
 

@@ -1,3 +1,4 @@
+# ruff: noqa: E402
 # To suppress the warning for E402, waiting for https://github.com/astral-sh/ruff/issues/3711
 import gi
 
@@ -9,10 +10,6 @@ from loguru import logger
 # Initialize GStreamer
 if not Gst.is_initialized():
     Gst.init(None)
-
-
-class GstLifecycleError(Exception):
-    """Raised when a GStreamer pipeline lifecycle operation fails."""
 
 
 # by default, common gstreamer element uses 1 second value. so timoeut must be > 1 seconds.
@@ -30,7 +27,7 @@ def try_set_state(pipeline: Gst.Pipeline, state: Gst.State, timeout: float = 3.0
         timeout: Timeout duration in seconds
 
     Raises:
-        GstLifecycleError: If state change fails
+        Exception: If state change fails
     """
     bus = pipeline.get_bus()
 
@@ -46,7 +43,7 @@ def try_set_state(pipeline: Gst.Pipeline, state: Gst.State, timeout: float = 3.0
         if msg:
             err, debug = msg.parse_error()
             logger.error(f"Failed to set pipeline to {state} state: {err} ({debug})")
-        raise GstLifecycleError(f"Failed to set pipeline to {state} state")
+        raise Exception(f"Failed to set pipeline to {state} state")
     elif ret == Gst.StateChangeReturn.ASYNC:
         wait_for_message(pipeline, Gst.MessageType.ASYNC_DONE, timeout=timeout)
     return ret
@@ -62,10 +59,10 @@ def wait_for_message(pipeline: Gst.Pipeline, message: Gst.MessageType, timeout: 
         timeout: Timeout duration in seconds
 
     Raises:
-        GstLifecycleError: If message is not received within the timeout
+        Exception: If message is not received within the timeout
     """
     bus = pipeline.get_bus()
     msg = bus.timed_pop_filtered(Gst.SECOND * timeout, message)
     if not msg:
-        raise GstLifecycleError(f"Failed to get {message} message within {timeout} seconds")
+        raise Exception(f"Failed to get {message} message within {timeout} seconds")
     return msg

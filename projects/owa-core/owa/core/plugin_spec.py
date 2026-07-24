@@ -3,6 +3,7 @@
 
 import re
 from pathlib import Path
+from typing import Dict, Optional, Union
 
 import yaml
 from pydantic import BaseModel, field_validator
@@ -23,8 +24,8 @@ class PluginSpec(BaseModel):
     namespace: str
     version: str
     description: str
-    author: str | None = None
-    components: dict[str, dict[str, str]]
+    author: Optional[str] = None
+    components: Dict[str, Dict[str, str]]
 
     model_config = {
         "extra": "forbid",  # Don't allow extra fields
@@ -48,7 +49,7 @@ class PluginSpec(BaseModel):
 
     @field_validator("components")
     @classmethod
-    def validate_component_names(cls, v: dict[str, dict[str, str]]) -> dict[str, dict[str, str]]:
+    def validate_component_names(cls, v: Dict[str, Dict[str, str]]) -> Dict[str, Dict[str, str]]:
         """
         Validate component names according to OEP-0003 rules.
 
@@ -57,7 +58,7 @@ class PluginSpec(BaseModel):
         - Examples: "screen_capture", "mouse.click", "omnimodal.recorder"
         """
         for component_type, components in v.items():
-            for name in components:
+            for name in components.keys():
                 # Check allowed characters: alphanumeric, underscores, dots
                 if not re.match(r"^[a-zA-Z0-9_.]+$", name):
                     raise ValueError(
@@ -74,7 +75,7 @@ class PluginSpec(BaseModel):
             ValueError: If unsupported component types are found
         """
         supported_types = {"callables", "listeners", "runnables"}
-        for component_type in self.components:
+        for component_type in self.components.keys():
             if component_type not in supported_types:
                 raise ValueError(f"Unsupported component type '{component_type}'. Supported types: {supported_types}")
 
@@ -91,9 +92,9 @@ class PluginSpec(BaseModel):
         if component_type not in self.components:
             return []
 
-        return [f"{self.namespace}/{name}" for name in self.components[component_type]]
+        return [f"{self.namespace}/{name}" for name in self.components[component_type].keys()]
 
-    def get_import_path(self, component_type: str, name: str) -> str | None:
+    def get_import_path(self, component_type: str, name: str) -> Optional[str]:
         """
         Get the import path for a specific component.
 
@@ -110,7 +111,7 @@ class PluginSpec(BaseModel):
         return self.components[component_type].get(name)
 
     @classmethod
-    def from_yaml(cls, yaml_path: str | Path) -> "PluginSpec":
+    def from_yaml(cls, yaml_path: Union[str, Path]) -> "PluginSpec":
         """
         Load a PluginSpec from a YAML file.
 
@@ -136,11 +137,11 @@ class PluginSpec(BaseModel):
             raise yaml.YAMLError(f"Invalid YAML in {yaml_path}: {e}")
 
         if not isinstance(data, dict):
-            raise TypeError(f"YAML file must contain a dictionary, got {type(data)}")
+            raise ValueError(f"YAML file must contain a dictionary, got {type(data)}")
 
         return cls(**data)
 
-    def to_yaml(self, yaml_path: str | Path) -> None:
+    def to_yaml(self, yaml_path: Union[str, Path]) -> None:
         """
         Save the PluginSpec to a YAML file.
 

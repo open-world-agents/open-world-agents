@@ -110,7 +110,7 @@ def _show_rich_format(console: Console, message_type: str, message_class, show_e
         schema_syntax = Syntax(schema_json, "json", theme="monokai", line_numbers=True)
         console.print(Panel(schema_syntax, title="JSON Schema", border_style="green", expand=False))
 
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         console.print(f"[red]Error getting schema: {e}[/red]")
 
     # Usage example
@@ -201,7 +201,7 @@ def _show_json_format(message_type: str, message_class) -> None:
 
     try:
         info["schema"] = message_class.get_schema()
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         info["schema_error"] = str(e)
 
     print(json.dumps(info, indent=2))
@@ -212,6 +212,6 @@ def _show_schema_format(message_type: str, message_class) -> None:
     try:
         schema = message_class.get_schema()
         print(json.dumps(schema, indent=2))
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         typer.echo(f"Error getting schema: {e}", err=True)
         raise typer.Exit(1)

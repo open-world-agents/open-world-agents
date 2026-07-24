@@ -1,3 +1,4 @@
+# ruff: noqa: E402
 # To suppress the warning for E402, waiting for https://github.com/astral-sh/ruff/issues/3711
 import gi
 
@@ -26,14 +27,14 @@ def get_frame_time_ns(sample: Gst.Sample, pipeline: Gst.Pipeline) -> dict:
     pts = sample.get_buffer().pts
 
     if pts == Gst.CLOCK_TIME_NONE:
-        return {"frame_time_ns": time.time_ns(), "latency": 0}
+        return dict(frame_time_ns=time.time_ns(), latency=0)
 
     clock = pipeline.get_clock()
     # https://gstreamer.freedesktop.org/documentation/application-development/advanced/clocks.html?gi-language=c#clock-runningtime
     # says running-time = absolute-time - base-time
     elapsed = clock.get_time() - pipeline.get_base_time()
     latency = elapsed - pts
-    return {"frame_time_ns": time.time_ns() - latency, "latency": latency}
+    return dict(frame_time_ns=time.time_ns() - latency, latency=latency)
 
 
 def sample_to_ndarray(sample: Gst.Sample) -> np.ndarray:

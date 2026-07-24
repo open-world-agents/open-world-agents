@@ -7,7 +7,7 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Annotated
+from typing import List, Optional
 
 import orjson
 import typer
@@ -49,7 +49,7 @@ class VerificationResult:
     success: bool
     error: str = ""
     message: str = ""
-    found_old_schemas: list[str] | None = None
+    found_old_schemas: Optional[List[str]] = None
 
 
 # JSON output format validation
@@ -93,7 +93,7 @@ def validate_migration_output(data: dict, verbose: bool = False) -> bool:
                     print("Validation failed: Failure output should have changes_made=0", file=sys.stderr)
                 return False
             return True
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         if verbose:
             print(f"Validation failed with exception: {e}", file=sys.stderr)
         return False
@@ -130,7 +130,7 @@ def validate_verification_output(data: dict, verbose: bool = False) -> bool:
                     print("Validation failed: Missing or invalid 'error' field for failure", file=sys.stderr)
                 return False
             return True
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         if verbose:
             print(f"Validation failed with exception: {e}", file=sys.stderr)
         return False
@@ -146,19 +146,9 @@ class ScriptMigrator:
 
     def migrate(self, file_path: Path, verbose: bool) -> MigrationResult:
         """Execute the standalone migration script."""
-        cmd = [
-            "uv",
-            "run",
-            str(self.script_path),
-            "migrate",
-            str(file_path),
-            "--output-format",
-            "json",
-        ]
+        cmd = ["uv", "run", str(self.script_path), "migrate", str(file_path), "--output-format", "json"]
 
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, encoding="utf-8", env=_get_subprocess_env(), check=False
-        )
+        result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", env=_get_subprocess_env())
 
         # First, try to parse JSON output regardless of return code
         json_output = None
@@ -234,23 +224,15 @@ class ScriptMigrator:
                 error=error_msg,
             )
 
-    def verify_migration(self, file_path: Path, backup_path: Path | None, verbose: bool = False) -> VerificationResult:
+    def verify_migration(
+        self, file_path: Path, backup_path: Optional[Path], verbose: bool = False
+    ) -> VerificationResult:
         """Verify migration by running the script with verify command."""
-        cmd = [
-            "uv",
-            "run",
-            str(self.script_path),
-            "verify",
-            str(file_path),
-            "--output-format",
-            "json",
-        ]
+        cmd = ["uv", "run", str(self.script_path), "verify", str(file_path), "--output-format", "json"]
         if backup_path:
             cmd.extend(["--backup-path", str(backup_path)])
 
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, encoding="utf-8", env=_get_subprocess_env(), check=False
-        )
+        result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", env=_get_subprocess_env())
 
         # Try to parse JSON output regardless of return code for better error reporting
         json_output = None
@@ -318,7 +300,7 @@ class MigrationOrchestrator:
 
     def __init__(self) -> None:
         """Initialize the orchestrator."""
-        self.script_migrators: list[ScriptMigrator] = []
+        self.script_migrators: List[ScriptMigrator] = []
         self.current_version = mcap_owa_version
         self._discover_script_migrators()
 
@@ -343,11 +325,11 @@ class MigrationOrchestrator:
             with OWAMcapReader(file_path) as reader:
                 file_version = reader.file_version
                 return file_version if file_version and file_version != "unknown" else self.current_version
-        except Exception:  # noqa: BLE001
+        except Exception:
             print(f"Failed to detect version for {file_path}", file=sys.stderr)
             return "unknown"
 
-    def get_migration_path(self, from_version: str, to_version: str) -> list[ScriptMigrator]:
+    def get_migration_path(self, from_version: str, to_version: str) -> List[ScriptMigrator]:
         """Get the sequence of migrators needed to go from one version to another."""
         if from_version == to_version:
             return []
@@ -363,7 +345,7 @@ class MigrationOrchestrator:
                     range_start = Version(migrator.from_version)
                     range_end = Version(migrator.to_version)
                     migration_ranges.append((range_start, range_end, migrator))
-                except Exception:  # noqa: BLE001, S112
+                except Exception:
                     continue
 
             migration_ranges.sort(key=lambda x: x[0])
@@ -390,11 +372,11 @@ class MigrationOrchestrator:
 
             return path
 
-        except Exception:  # noqa: BLE001
+        except Exception:
             # Fallback to exact matching
             return self._get_migration_path_exact(from_version, to_version)
 
-    def _get_migration_path_exact(self, from_version: str, to_version: str) -> list[ScriptMigrator]:
+    def _get_migration_path_exact(self, from_version: str, to_version: str) -> List[ScriptMigrator]:
         """Fallback method for exact version matching when version parsing fails."""
         migration_graph = {migrator.from_version: migrator for migrator in self.script_migrators}
 
@@ -429,7 +411,7 @@ class MigrationOrchestrator:
                     range_start = Version(migrator.from_version)
                     range_end = Version(migrator.to_version)
                     migration_ranges.append((range_start, range_end, migrator))
-                except Exception:  # noqa: BLE001, S112
+                except Exception:
                     continue
 
             migration_ranges.sort(key=lambda x: x[0])
@@ -450,7 +432,7 @@ class MigrationOrchestrator:
 
             return str(current_ver)
 
-        except Exception:  # noqa: BLE001
+        except Exception:
             # Fallback to exact matching
             migration_graph = {migrator.from_version: migrator for migrator in self.script_migrators}
             current = from_version
@@ -462,11 +444,11 @@ class MigrationOrchestrator:
     def migrate_file(
         self,
         file_path: Path,
-        target_version: str | None = None,
+        target_version: Optional[str] = None,
         console: Console = None,
         verbose: bool = False,
         keep_backup: bool = True,
-    ) -> list[MigrationResult]:
+    ) -> List[MigrationResult]:
         """Migrate a single file through all necessary steps."""
         if console is None:
             console = Console()
@@ -529,8 +511,8 @@ class MigrationOrchestrator:
 
 
 def detect_files_needing_migration(
-    file_paths: list[Path], console: Console, target_version_explicit: bool, target_version: str | None
-) -> list[FileVersionInfo]:
+    file_paths: List[Path], console: Console, target_version_explicit: bool, target_version: Optional[str]
+) -> List[FileVersionInfo]:
     """Detect all files that need migration."""
     orchestrator = MigrationOrchestrator()
 
@@ -568,7 +550,7 @@ def detect_files_needing_migration(
 
                 file_infos.append(FileVersionInfo(file_path, detected_version, needs_migration, file_target_version))
 
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 console.print(f"[red]Error analyzing {file_path}: {e}[/red]")
 
             progress.update(task, advance=1)
@@ -579,15 +561,15 @@ def detect_files_needing_migration(
 def _check_uv_available() -> bool:
     """Check if uv is available in the system."""
     try:
-        result = subprocess.run(["uv", "--version"], capture_output=True, text=True, check=False)
+        result = subprocess.run(["uv", "--version"], capture_output=True, text=True)
         return result.returncode == 0
     except FileNotFoundError:
         return False
 
 
 def migrate(
-    files: Annotated[list[Path], typer.Argument(help="MCAP files to migrate")],
-    target_version: str | None = typer.Option(
+    files: List[Path] = typer.Argument(..., help="MCAP files to migrate"),
+    target_version: Optional[str] = typer.Option(
         None, "--target", "-t", help="Target version (default: highest reachable)"
     ),
     dry_run: bool = typer.Option(False, "--dry-run", help="Show what would be migrated without making changes"),
@@ -674,7 +656,7 @@ def migrate(
             else:
                 failed_migrations += 1
 
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             console.print(f"[red]Unexpected error: {e}[/red]")
             failed_migrations += 1
 

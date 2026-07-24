@@ -74,14 +74,11 @@ Mouse, keyboard, window control, and screen capture for desktop automation.
     from owa.core import LISTENERS
     from owa.msgs.desktop.keyboard import KeyboardEvent
 
-
     def on_key(event: KeyboardEvent):
         print(f"Key {event.event_type}: {event.vk}")
 
-
     def on_mouse(event):
         print(f"Mouse: {event.event_type} at {event.x}, {event.y}")
-
 
     # Monitor events
     with LISTENERS["desktop/keyboard"]().configure(callback=on_key).session:

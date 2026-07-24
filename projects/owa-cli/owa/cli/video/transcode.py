@@ -1,5 +1,6 @@
 import subprocess
 from pathlib import Path
+from typing import Optional
 
 import typer
 
@@ -7,14 +8,14 @@ import typer
 def build_ffmpeg_cmd(
     input_path: Path,
     output_path: Path,
-    fps: float | None = None,
-    width: int | None = None,
-    height: int | None = None,
+    fps: Optional[float] = None,
+    width: Optional[int] = None,
+    height: Optional[int] = None,
     codec: str = "libx264",
-    crf: int | None = None,
+    crf: Optional[int] = None,
     keyint: int = 30,
-    min_keyint: int | None = None,
-    scenecut: int | None = 0,
+    min_keyint: Optional[int] = None,
+    scenecut: Optional[int] = 0,
 ) -> list[str]:
     """Build FFmpeg command with optimized settings for video compatibility."""
     cmd = ["ffmpeg", "-i", str(input_path)]
@@ -78,14 +79,14 @@ def build_ffmpeg_cmd(
 def transcode(
     input_path: Path,
     output_path: Path,
-    fps: float | None = None,
-    width: int | None = None,
-    height: int | None = None,
+    fps: Optional[float] = None,
+    width: Optional[int] = None,
+    height: Optional[int] = None,
     codec: str = "libx264",
-    crf: int | None = None,
+    crf: Optional[int] = None,
     keyint: int = 30,
-    min_keyint: int | None = None,
-    scenecut: int | None = 0,
+    min_keyint: Optional[int] = None,
+    scenecut: Optional[int] = 0,
     dry_run: bool = False,
 ) -> str:
     """Execute video transcoding with specified parameters."""
@@ -107,14 +108,14 @@ def transcode(
 def main(
     input_path: str = typer.Argument(..., help="Input video file"),
     output_path: str = typer.Argument(..., help="Output video file"),
-    fps: float | None = typer.Option(None, "--fps", "-f", help="Target FPS"),
-    width: int | None = typer.Option(None, "--width", "-w", help="Target width"),
-    height: int | None = typer.Option(None, "--height", "-h", help="Target height"),
+    fps: Optional[float] = typer.Option(None, "--fps", "-f", help="Target FPS"),
+    width: Optional[int] = typer.Option(None, "--width", "-w", help="Target width"),
+    height: Optional[int] = typer.Option(None, "--height", "-h", help="Target height"),
     codec: str = typer.Option("libx264", "--codec", "-c", help="Video codec"),
-    crf: int | None = typer.Option(None, "--crf", help="Quality (0-51, lower=better)"),
+    crf: Optional[int] = typer.Option(None, "--crf", help="Quality (0-51, lower=better)"),
     keyint: int = typer.Option(30, "--keyint", "-k", help="Keyframe interval"),
-    min_keyint: int | None = typer.Option(None, "--min-keyint", help="Min keyframe interval"),
-    scenecut: int | None = typer.Option(0, "--scenecut", help="Scene cut threshold (0=disable, default: 0)"),
+    min_keyint: Optional[int] = typer.Option(None, "--min-keyint", help="Min keyframe interval"),
+    scenecut: Optional[int] = typer.Option(0, "--scenecut", help="Scene cut threshold (0=disable, default: 0)"),
     dry_run: bool = typer.Option(False, "--dry-run", help="Show command only"),
 ):
     """

@@ -1,5 +1,5 @@
 from fractions import Fraction
-from typing import Literal
+from typing import Literal, Union
 
-SECOND_TYPE = float | Fraction
+SECOND_TYPE = Union[float, Fraction]
 PTSUnit = Literal["pts", "sec"]

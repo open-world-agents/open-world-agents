@@ -52,17 +52,15 @@ def test_detect_system():
 
 
 def test_detect_system_unsupported_os():
-    with patch("platform.system", return_value="FreeBSD"), pytest.raises(RuntimeError, match="Unsupported OS"):
-        detect_system()
+    with patch("platform.system", return_value="FreeBSD"):
+        with pytest.raises(RuntimeError, match="Unsupported OS"):
+            detect_system()
 
 
 def test_detect_system_unsupported_arch():
-    with (
-        patch("platform.system", return_value="Linux"),
-        patch("platform.machine", return_value="mips"),
-        pytest.raises(RuntimeError, match="Unsupported architecture"),
-    ):
-        detect_system()
+    with patch("platform.system", return_value="Linux"), patch("platform.machine", return_value="mips"):
+        with pytest.raises(RuntimeError, match="Unsupported architecture"):
+            detect_system()
 
 
 def test_get_mcap_info(test_data_dir, suppress_mcap_warnings):

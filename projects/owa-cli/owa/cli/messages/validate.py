@@ -39,7 +39,7 @@ def validate_messages(
         all_messages = dict(MESSAGES.items())
         results["total_messages"] = len(all_messages)
         console.print(f"✓ Registry loaded successfully: {len(all_messages)} message types found")
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         console.print(f"[red]✗ Failed to load message registry: {e}[/red]")
         results["errors"].append(f"Registry loading failed: {e}")
         raise typer.Exit(1)
@@ -89,7 +89,7 @@ def validate_messages(
                 elif "properties" not in schema:
                     issues.append("Schema missing properties")
                     status = "⚠ Warning"
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 issues.append(f"Schema error: {e}")
                 status = "✗ Invalid"
 
@@ -104,7 +104,7 @@ def validate_messages(
                     issues.append("Instantiation test skipped (requires parameters)")
                     if status == "✓ Valid":
                         status = "⚠ Partial"
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 issues.append(f"Instantiation test failed: {e}")
                 if status == "✓ Valid":
                     status = "⚠ Warning"
@@ -119,7 +119,7 @@ def validate_messages(
             else:
                 results["valid_messages"] += 1
 
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             issues.append(f"Validation error: {e}")
             status = "✗ Error"
             results["invalid_messages"] += 1
@@ -129,9 +129,10 @@ def validate_messages(
         issues_str = "; ".join(issues) if issues else ""
         validation_table.add_row(message_type, status, issues_str)
 
-        if verbose and issues:
-            for issue in issues:
-                console.print(f"  [dim]- {issue}[/dim]")
+        if verbose:
+            if issues:
+                for issue in issues:
+                    console.print(f"  [dim]- {issue}[/dim]")
 
     console.print(validation_table)
 

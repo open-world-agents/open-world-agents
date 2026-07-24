@@ -1,6 +1,6 @@
 import re
 import sys
-from typing import Annotated
+from typing import List, Optional
 
 import typer
 from rich.table import Table
@@ -12,15 +12,15 @@ from ..console import console
 
 
 def list_env(
-    namespaces: Annotated[list[str] | None, typer.Argument(help="Plugin namespace(s) to show")] = None,
+    namespaces: Optional[List[str]] = typer.Argument(None, help="Plugin namespace(s) to show"),
     components: bool = typer.Option(False, "--components", "-c", help="Show individual components"),
     details: bool = typer.Option(False, "--details", "-d", help="Show import paths and load status"),
     table: bool = typer.Option(False, "--table", help="Display in table format"),
-    type_filter: str | None = typer.Option(
+    type_filter: Optional[str] = typer.Option(
         None, "--type", "-t", help="Filter by component type (callables/listeners/runnables)"
     ),
-    search: str | None = typer.Option(None, "--search", "-s", help="Search components by name pattern"),
-    inspect: str | None = typer.Option(
+    search: Optional[str] = typer.Option(None, "--search", "-s", help="Search components by name pattern"),
+    inspect: Optional[str] = typer.Option(
         None, "--inspect", help="Inspect specific component (show docstring/signature)"
     ),
 ):
@@ -58,12 +58,12 @@ def list_env(
 
 
 def _display_plugins(
-    namespaces: list[str] | None,
+    namespaces: Optional[List[str]],
     show_components: bool,
     show_details: bool,
     table_format: bool,
-    type_filter: str | None,
-    search: str | None,
+    type_filter: Optional[str],
+    search: Optional[str],
 ):
     """Main display logic for plugins."""
     # Collect plugin data
@@ -84,7 +84,7 @@ def _display_plugins(
         _display_all_plugins_overview(plugins_data, show_components, show_details, table_format)
 
 
-def _collect_plugin_data(namespaces: list[str] | None, type_filter: str | None, search: str | None) -> dict:
+def _collect_plugin_data(namespaces: Optional[List[str]], type_filter: Optional[str], search: Optional[str]) -> dict:
     """Collect and filter plugin data efficiently."""
     plugins = {}
     comp_types = [type_filter] if type_filter else ["callables", "listeners", "runnables"]
@@ -375,7 +375,7 @@ def _inspect_component(namespace: str, component_name: str):
         tree.add("📝 Documentation: None")
 
     # Show signature for callables
-    if comp_type_found == "callables" and callable(component):
+    if comp_type_found == "callables" and hasattr(component, "__call__"):
         try:
             import inspect
 

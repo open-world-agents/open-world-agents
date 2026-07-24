@@ -1,7 +1,6 @@
 import io
 import warnings
-from collections.abc import Callable
-from typing import Any, TypeAlias
+from typing import Any, Callable, TypeAlias
 
 import orjson
 
@@ -64,7 +63,7 @@ def create_message_decoder(message_type: str, fallback: bool = False) -> DecodeF
                     f"Failed to decode message of type {message_type}: {e}. Falling back to dictionary decoding."
                 )
                 return dict_decoder(message_data)
-            raise
+            raise e
 
     return decoder
 

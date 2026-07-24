@@ -173,20 +173,18 @@ class TestPluginDiscovery:
             },
         )
 
-        with (
-            patch("owa.core.plugin_discovery.CALLABLES", isolated_registries["callables"]),
-            patch("owa.core.plugin_discovery.LISTENERS", isolated_registries["listeners"]),
-            patch("owa.core.plugin_discovery.RUNNABLES", isolated_registries["runnables"]),
-        ):
-            discovery._register_plugin_components("test_plugin", plugin_spec)
+        with patch("owa.core.plugin_discovery.CALLABLES", isolated_registries["callables"]):
+            with patch("owa.core.plugin_discovery.LISTENERS", isolated_registries["listeners"]):
+                with patch("owa.core.plugin_discovery.RUNNABLES", isolated_registries["runnables"]):
+                    discovery._register_plugin_components("test_plugin", plugin_spec)
 
-            # Check that all components were registered as lazy imports
-            assert "test/add" in isolated_registries["callables"]
-            assert "test/timer" in isolated_registries["listeners"]
-            assert "test/worker" in isolated_registries["runnables"]
-            assert isinstance(isolated_registries["callables"].data["test/add"], ImportString)
-            assert isinstance(isolated_registries["listeners"].data["test/timer"], ImportString)
-            assert isinstance(isolated_registries["runnables"].data["test/worker"], ImportString)
+                    # Check that all components were registered as lazy imports
+                    assert "test/add" in isolated_registries["callables"]
+                    assert "test/timer" in isolated_registries["listeners"]
+                    assert "test/worker" in isolated_registries["runnables"]
+                    assert isinstance(isolated_registries["callables"].data["test/add"], ImportString)
+                    assert isinstance(isolated_registries["listeners"].data["test/timer"], ImportString)
+                    assert isinstance(isolated_registries["runnables"].data["test/worker"], ImportString)
 
     def test_register_plugin_components_empty_components(self, isolated_registries):
         """Test registering plugin with empty components."""

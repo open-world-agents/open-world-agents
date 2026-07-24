@@ -8,8 +8,7 @@ bypassing Windows pointer acceleration and screen resolution limits.
 import sys
 import threading
 import time
-from collections.abc import Callable
-from typing import ClassVar
+from typing import Callable, Optional
 
 from loguru import logger
 
@@ -35,7 +34,7 @@ if sys.platform == "win32":
 
     # Windows structures
     class RAWINPUTDEVICE(Structure):
-        _fields_: ClassVar[list[tuple[str, object]]] = [
+        _fields_ = [
             ("usUsagePage", wintypes.USHORT),
             ("usUsage", wintypes.USHORT),
             ("dwFlags", wintypes.DWORD),
@@ -43,7 +42,7 @@ if sys.platform == "win32":
         ]
 
     class RAWINPUTHEADER(Structure):
-        _fields_: ClassVar[list[tuple[str, object]]] = [
+        _fields_ = [
             ("dwType", wintypes.DWORD),
             ("dwSize", wintypes.DWORD),
             ("hDevice", wintypes.HANDLE),
@@ -51,19 +50,19 @@ if sys.platform == "win32":
         ]
 
     class RAWMOUSE_BUTTONS(Structure):
-        _fields_: ClassVar[list[tuple[str, object]]] = [
+        _fields_ = [
             ("usButtonFlags", wintypes.USHORT),
             ("usButtonData", wintypes.USHORT),
         ]
 
     class RAWMOUSE_BUTTONS_UNION(Union):
-        _fields_: ClassVar[list[tuple[str, object]]] = [
+        _fields_ = [
             ("ulButtons", wintypes.ULONG),
             ("Buttons", RAWMOUSE_BUTTONS),
         ]
 
     class RAWMOUSE(Structure):
-        _fields_: ClassVar[list[tuple[str, object]]] = [
+        _fields_ = [
             ("usFlags", wintypes.USHORT),
             ("ButtonsUnion", RAWMOUSE_BUTTONS_UNION),
             ("ulRawButtons", wintypes.ULONG),
@@ -73,13 +72,13 @@ if sys.platform == "win32":
         ]
 
     class RAWINPUT_DATA(Union):
-        _fields_: ClassVar[list[tuple[str, object]]] = [
+        _fields_ = [
             ("mouse", RAWMOUSE),
             # We only need mouse data for this implementation
         ]
 
     class RAWINPUT(Structure):
-        _fields_: ClassVar[list[tuple[str, object]]] = [
+        _fields_ = [
             ("header", RAWINPUTHEADER),
             ("data", RAWINPUT_DATA),
         ]
@@ -178,10 +177,10 @@ if sys.platform == "win32":
         """
 
         def __init__(self):
-            self.hwnd: int | None = None
-            self.callback: Callable[[RawMouseEvent], None] | None = None
+            self.hwnd: Optional[int] = None
+            self.callback: Optional[Callable[[RawMouseEvent], None]] = None
             self.running = False
-            self.thread: threading.Thread | None = None
+            self.thread: Optional[threading.Thread] = None
             self._stop_event = threading.Event()
 
         def register_callback(self, callback: Callable[[RawMouseEvent], None]) -> None:
@@ -210,7 +209,7 @@ if sys.platform == "win32":
                 self.thread.start()
                 logger.debug("Raw input capture started")
                 return True
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 logger.error(f"Failed to start raw input capture: {e}")
                 self.running = False
                 return False
@@ -247,7 +246,7 @@ if sys.platform == "win32":
                 # Message loop
                 self._message_loop()
 
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 logger.error(f"Error in raw input capture loop: {e}")
             finally:
                 self._cleanup()
@@ -299,7 +298,7 @@ if sys.platform == "win32":
                     return False
 
                 return True
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 logger.error(f"Error creating window: {e}")
                 return False
 
@@ -319,7 +318,7 @@ if sys.platform == "win32":
 
                 logger.debug("Raw input device registered successfully")
                 return True
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 logger.error(f"Error registering raw input: {e}")
                 return False
 
@@ -354,7 +353,7 @@ if sys.platform == "win32":
                 if raw_input.header.dwType == RIM_TYPEMOUSE:
                     self._process_mouse_data(raw_input)
 
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 logger.error(f"Error handling raw input: {e}")
 
         def _process_mouse_data(self, raw_input) -> None:
@@ -377,7 +376,7 @@ if sys.platform == "win32":
                 if self.callback:
                     self.callback(event)
 
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 logger.error(f"Error processing mouse data: {e}")
 
         def _message_loop(self) -> None:
@@ -399,7 +398,7 @@ if sys.platform == "win32":
             if self.hwnd:
                 try:
                     DestroyWindow(self.hwnd)
-                except Exception as e:  # noqa: BLE001
+                except Exception as e:
                     logger.error(f"Error destroying window: {e}")
                 self.hwnd = None
 

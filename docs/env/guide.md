@@ -18,7 +18,6 @@ OWA's Environment provides three types of components for building real-time agen
         def on_event(data):
             print(f"Event: {data}")
 
-
         listener = LISTENERS["desktop/keyboard"]().configure(callback=on_event)
         with listener.session:
             input("Press Enter to stop...")
@@ -69,11 +68,9 @@ from owa.core import CALLABLES, LISTENERS, RUNNABLES
     current_time = CALLABLES["std/time_ns"]()
     print(f"Current time: {current_time}")
 
-
     # Periodic callback using context manager
     def on_tick():
         print(f"Tick: {CALLABLES['std/time_ns']()}")
-
 
     tick = LISTENERS["std/tick"]().configure(callback=on_tick, interval=1)
     with tick.session:
@@ -86,20 +83,18 @@ from owa.core import CALLABLES, LISTENERS, RUNNABLES
     from owa.msgs.desktop.keyboard import KeyboardEvent
 
     # Screen capture and window management
-    screen = CALLABLES["desktop/screen.capture"]()
+    screen = CALLABLES['desktop/screen.capture']()
     print(f"Screen size: {screen.shape}")
 
-    active_window = CALLABLES["desktop/window.get_active_window"]()
+    active_window = CALLABLES['desktop/window.get_active_window']()
     print(f"Active window: {active_window}")
 
     # Mouse control
     CALLABLES["desktop/mouse.click"]("left", 2)  # Double-click
 
-
     # Keyboard monitoring
     def on_key(event: KeyboardEvent):
         print(f"Key {event.event_type}: {event.vk}")
-
 
     with LISTENERS["desktop/keyboard"]().configure(callback=on_key).session:
         input("Press Enter to stop monitoring...")
@@ -110,14 +105,16 @@ from owa.core import CALLABLES, LISTENERS, RUNNABLES
     from owa.core import RUNNABLES
     import cv2
 
-
     # Real-time screen capture with GStreamer
     def process_frame(frame):
         cv2.imshow("Screen", frame.frame_arr)
         cv2.waitKey(1)
 
-
-    screen = LISTENERS["gst/screen"]().configure(callback=process_frame, fps=60, show_cursor=True)
+    screen = LISTENERS["gst/screen"]().configure(
+        callback=process_frame,
+        fps=60,
+        show_cursor=True
+    )
 
     with screen.session:
         input("Press Enter to stop capture...")
@@ -251,8 +248,8 @@ OWA provides centralized message definitions with automatic discovery:
 from owa.core import MESSAGES
 
 # Access message classes
-KeyboardEvent = MESSAGES["desktop/KeyboardEvent"]
-MouseEvent = MESSAGES["desktop/MouseEvent"]
+KeyboardEvent = MESSAGES['desktop/KeyboardEvent']
+MouseEvent = MESSAGES['desktop/MouseEvent']
 
 # Create instances
 event = KeyboardEvent(event_type="press", vk=65, timestamp=1234567890)

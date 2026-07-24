@@ -21,6 +21,7 @@ class IntervalExtractor(ABC):
         Given a Path to an MCAP file, return an Intervals object containing
         valid (start, end) timestamp pairs according to this extractor's logic.
         """
+        pass
 
     def filter_by_duration(self, intervals: Intervals, min_duration: int) -> Intervals:
         """
@@ -236,12 +237,9 @@ class InactivityFilter(IntervalExtractor):
                 last_activity_time = mcap_msg.timestamp
 
         # After the loop, if there's an open interval, close it
-        if (
-            current_interval_start is not None
-            and last_activity_time is not None
-            and current_interval_start < last_activity_time
-        ):
-            activity_intervals.add((current_interval_start, last_activity_time))
+        if current_interval_start is not None and last_activity_time is not None:
+            if current_interval_start < last_activity_time:
+                activity_intervals.add((current_interval_start, last_activity_time))
 
         return activity_intervals
 

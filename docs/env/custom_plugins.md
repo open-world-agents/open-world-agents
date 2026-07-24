@@ -100,7 +100,6 @@ Functions for immediate results:
 def get_weather(city: str) -> dict:
     return {"city": city, "temp": 25, "condition": "sunny"}
 
-
 # Usage: CALLABLES["myplugin/weather"]("New York")
 ```
 
@@ -109,7 +108,6 @@ Event monitoring with callbacks (inherits from Runnable):
 
 ```python
 from owa.core import Listener
-
 
 class FileWatcher(Listener):
     def on_configure(self, callback, watch_folder, **kwargs):
@@ -130,7 +128,6 @@ Background processes with start/stop control:
 
 ```python
 from owa.core import Runnable
-
 
 class DataCollector(Runnable):
     def on_configure(self, output_file, interval=60, **kwargs):
@@ -164,8 +161,8 @@ plugin_spec = PluginSpec(
         },
         "runnables": {
             "data_collector": "owa.env.myplugin.workers:DataCollector",
-        },
-    },
+        }
+    }
 )
 ```
 
@@ -355,7 +352,6 @@ class MyRunnable(Runnable):
         ```python
         # ✅ Correct structure
         from owa.core import Listener
-
 
         class MyListener(Listener):  # Must inherit
             def on_configure(self, callback, **kwargs):  # Must implement

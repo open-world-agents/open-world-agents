@@ -34,10 +34,10 @@ should normally be unconstrained. A fixed `exclude-newer` timestamp makes resolu
 repeatable without turning the versions that happened to be locked into compatibility
 requirements.
 
-Do not add a constraint merely to avoid migrating to a new tool release. In particular,
-when a Ruff upgrade enables or changes a lint rule, fix the affected code. Change
-`ruff.toml` only when the repository is making an intentional, version-independent
-lint policy decision.
+Do not add a dependency constraint merely to avoid a new tool release. Keep the
+repository's Ruff rule set explicit and version-independent; newly bundled rules are
+not adopted implicitly during a dependency refresh. When the behavior of an already
+selected rule changes, prefer fixing the affected code over constraining Ruff.
 
 ---
 

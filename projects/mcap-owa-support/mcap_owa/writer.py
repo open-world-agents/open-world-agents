@@ -1,8 +1,7 @@
 import time
 from io import BufferedWriter, BytesIO
 from pathlib import Path
-from types import TracebackType
-from typing import IO, Any
+from typing import IO, Any, Dict, Optional, Union
 
 import mcap
 import orjson
@@ -55,7 +54,7 @@ class Writer:
 
     def __init__(
         self,
-        output: str | IO[Any] | BufferedWriter | Path,
+        output: Union[str, IO[Any], BufferedWriter, Path],
         chunk_size: int = 1024 * 1024,
         compression: CompressionType = CompressionType.ZSTD,
         enable_crcs: bool = True,
@@ -69,8 +68,8 @@ class Writer:
             compression=compression,
             enable_crcs=enable_crcs,
         )
-        self.__schema_ids: dict[str, int] = {}
-        self.__channel_ids: dict[str, int] = {}
+        self.__schema_ids: Dict[str, int] = {}
+        self.__channel_ids: Dict[str, int] = {}
         self._writer.start(profile="owa", library=_library_identifier())
         self.__finished = False
 
@@ -86,8 +85,8 @@ class Writer:
         self,
         topic: str,
         message: Any,
-        log_time: int | None = None,
-        publish_time: int | None = None,
+        log_time: Optional[int] = None,
+        publish_time: Optional[int] = None,
         sequence: int = 0,
     ):
         """
@@ -158,10 +157,5 @@ class Writer:
     def __enter__(self):
         return self
 
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc: BaseException | None,
-        traceback: TracebackType | None,
-    ):
+    def __exit__(self, exc_: Any, exc_type_: Any, tb_: Any):
         self.finish()

@@ -1,6 +1,4 @@
 import copy
-import functools
-import operator
 from collections import defaultdict
 from dataclasses import dataclass, field
 
@@ -55,7 +53,7 @@ def _process_batch_to_sequences(batch: dict[str, list], rank: int, *, config: FS
                     for i, val in enumerate(items[key])
                     if (items["topic"][i] not in config.action_topics or items["timestamp_ns"][i] >= skip_threshold)
                 ]
-                for key in items
+                for key in items.keys()
             }
             info["skipped_action_events"] += before_skip - len(items["timestamp_ns"])
 
@@ -72,9 +70,9 @@ def _process_batch_to_sequences(batch: dict[str, list], rank: int, *, config: FS
 
         info["total_events"] += len(items["timestamp_ns"])
 
-        tokens = functools.reduce(operator.iadd, items["token_ids"], [])
+        tokens = sum(items["token_ids"], [])
         texts = "".join(items["text"])
-        images = functools.reduce(operator.iadd, items["images"], [])
+        images = sum(items["images"], [])
         episode_path = items["episode_path"][0]
 
         info["total_tokens"] += len(tokens)
@@ -131,8 +129,8 @@ def _process_batch_to_sequences(batch: dict[str, list], rank: int, *, config: FS
             current_tokens_count = 0
             current_episode_path = None
 
-        for key, value in item.items():
-            items.setdefault(key, []).append(value)
+        for key in item.keys():
+            items.setdefault(key, []).append(item[key])
         current_episode_path = item["episode_path"]
         current_tokens_count += len(item["token_ids"])
 
@@ -170,7 +168,7 @@ def _process_batch_to_sequences(batch: dict[str, list], rank: int, *, config: FS
 
 def precompute_fsl_dataset(
     tokenized_dataset: Dataset,
-    config: FSLDatasetConfig | None = None,
+    config: FSLDatasetConfig = FSLDatasetConfig(),
     num_workers: int = 4,
     batch_size: int = 65536,
     **kwargs,
@@ -188,8 +186,6 @@ def precompute_fsl_dataset(
     Returns:
         Pre-computed FSL dataset
     """
-    if config is None:
-        config = FSLDatasetConfig()
     config = FSLDatasetConfig(**{**config.__dict__, **kwargs})
     logger.info(
         f"Pre-computing FSL sequences using datasets.map with batch_size={batch_size:,}, num_workers={num_workers}"

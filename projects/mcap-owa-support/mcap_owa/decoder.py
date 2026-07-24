@@ -1,3 +1,5 @@
+from typing import Optional
+
 from mcap.decoder import DecoderFactory as McapDecoderFactory
 from mcap.records import Schema
 from mcap.well_known import MessageEncoding, SchemaEncoding
@@ -7,16 +9,14 @@ from .types import DecodeArgs
 
 
 class DecoderFactory(McapDecoderFactory):
-    def __init__(self, *, decode_args: DecodeArgs = None):
+    def __init__(self, *, decode_args: DecodeArgs = {}):
         """Initialize the decoder factory.
 
         :param decode_args: Dictionary of decode arguments (return_dict, return_dict_on_failure)
         """
-        if decode_args is None:
-            decode_args = {}
         self.decode_args = {"return_dict": False, "return_dict_on_failure": False, **decode_args}
 
-    def decoder_for(self, message_encoding: str, schema: Schema | None):
+    def decoder_for(self, message_encoding: str, schema: Optional[Schema]):
         if message_encoding != MessageEncoding.JSON or schema is None or schema.encoding != SchemaEncoding.JSONSchema:
             return None
 

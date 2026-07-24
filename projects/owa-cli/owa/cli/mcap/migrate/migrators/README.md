@@ -69,12 +69,24 @@ Each migrator **MUST** implement exactly two commands with the following standar
 ```python
 @app.command()
 def migrate(
-    input_file: Path = typer.Argument(..., help="Input MCAP file path"),
-    output_file: Optional[Path] = typer.Argument(
-        None, help="Output MCAP file path (defaults to in-place modification)"
+    input_file: Path = typer.Argument(
+        ...,
+        help="Input MCAP file path"
     ),
-    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose logging output"),
-    output_format: str = typer.Option("text", "--output-format", help="Output format: 'text' or 'json'"),
+    output_file: Optional[Path] = typer.Argument(
+        None,
+        help="Output MCAP file path (defaults to in-place modification)"
+    ),
+    verbose: bool = typer.Option(
+        False,
+        "--verbose", "-v",
+        help="Enable verbose logging output"
+    ),
+    output_format: str = typer.Option(
+        "text",
+        "--output-format",
+        help="Output format: 'text' or 'json'"
+    ),
 ) -> None:
     """
     Migrate MCAP file from source version to target version.
@@ -90,9 +102,19 @@ def migrate(
 ```python
 @app.command()
 def verify(
-    file_path: Path = typer.Argument(..., help="MCAP file path to verify"),
-    backup_path: Optional[Path] = typer.Option(None, help="Reference backup file path (optional)"),
-    output_format: str = typer.Option("text", "--output-format", help="Output format: 'text' or 'json'"),
+    file_path: Path = typer.Argument(
+        ...,
+        help="MCAP file path to verify"
+    ),
+    backup_path: Optional[Path] = typer.Option(
+        None,
+        help="Reference backup file path (optional)"
+    ),
+    output_format: str = typer.Option(
+        "text",
+        "--output-format",
+        help="Output format: 'text' or 'json'"
+    ),
 ) -> None:
     """
     Verify migration completeness and data integrity.

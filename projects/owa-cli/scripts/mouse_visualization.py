@@ -1,10 +1,10 @@
 from pathlib import Path
-from typing import Annotated
 
 import cv2
 import numpy as np
 import typer
 from tqdm import tqdm
+from typing_extensions import Annotated
 
 from mcap_owa.highlevel import OWAMcapReader
 from owa.core.io.video import VideoWriter

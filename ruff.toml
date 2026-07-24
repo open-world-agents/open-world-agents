@@ -4,8 +4,14 @@ exclude = [
 
 line-length = 119
 
+[lint]
+select = ["E4", "E7", "E9", "F"]
+
 [lint.isort]
 known-first-party = [
     "mcap_owa",
     "owa",
 ]
+
+[format]
+exclude = ["*.md"]

@@ -33,7 +33,7 @@ import shutil
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Annotated
+from typing import Optional
 
 import orjson
 import typer
@@ -89,10 +89,10 @@ def has_legacy_raw_mouse_event(data: dict) -> bool:
 
 @app.command()
 def migrate(
-    input_file: Annotated[Path, typer.Argument(help="Input MCAP file path")],
-    output_file: Annotated[
-        Path | None, typer.Argument(help="Output MCAP file path (defaults to in-place modification)")
-    ] = None,
+    input_file: Path = typer.Argument(..., help="Input MCAP file path"),
+    output_file: Optional[Path] = typer.Argument(
+        None, help="Output MCAP file path (defaults to in-place modification)"
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose logging output"),
     output_format: str = typer.Option("text", "--output-format", help="Output format: 'text' or 'json'"),
 ) -> None:
@@ -179,7 +179,7 @@ def migrate(
     except Exception as e:
         # Reraise typer.Exit exceptions to prevent printing duplicate error messages
         if isinstance(e, typer.Exit):
-            raise
+            raise e
 
         if output_format == "json":
             result = {
@@ -198,8 +198,8 @@ def migrate(
 
 @app.command()
 def verify(
-    file_path: Annotated[Path, typer.Argument(help="MCAP file path to verify")],
-    backup_path: Annotated[Path | None, typer.Option(help="Reference backup file path (optional)")] = None,
+    file_path: Path = typer.Argument(..., help="MCAP file path to verify"),
+    backup_path: Optional[Path] = typer.Option(None, help="Reference backup file path (optional)"),
     output_format: str = typer.Option("text", "--output-format", help="Output format: 'text' or 'json'"),
 ) -> None:
     """
@@ -287,7 +287,7 @@ def verify(
     except Exception as e:
         # Reraise typer.Exit exceptions to prevent printing duplicate error messages
         if isinstance(e, typer.Exit):
-            raise
+            raise e
 
         if output_format == "json":
             result = {"success": False, "error": str(e)}
@@ -320,10 +320,10 @@ class VerificationResult:
     """Result of migration verification."""
 
     success: bool
-    error: str | None = None
-    message_count_match: bool | None = None
-    file_size_diff_percent: float | None = None
-    topics_match: bool | None = None
+    error: Optional[str] = None
+    message_count_match: Optional[bool] = None
+    file_size_diff_percent: Optional[float] = None
+    topics_match: Optional[bool] = None
 
 
 def get_file_stats(file_path: Path) -> FileStats:
@@ -398,7 +398,7 @@ def verify_migration_integrity(
 
         return result
 
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         return VerificationResult(success=False, error=f"Error during integrity verification: {e}")
 
 

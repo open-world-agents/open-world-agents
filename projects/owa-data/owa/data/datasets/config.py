@@ -1,6 +1,7 @@
 """Dataset configuration classes."""
 
 from enum import StrEnum
+from typing import Optional
 
 from datasets.utils.typing import PathLike
 from pydantic import BaseModel
@@ -23,11 +24,11 @@ class DatasetConfig(BaseModel):
 
     # Core fields
     stage: DatasetStage = DatasetStage.UNKNOWN
-    mcap_root_directory: str | None = None
+    mcap_root_directory: Optional[str] = None
 
     # Common configuration fields
-    mcap_to_event_config: EasyDict | None = None
-    event_to_fsl_config: EasyDict | None = None
+    mcap_to_event_config: Optional[EasyDict] = None
+    event_to_fsl_config: Optional[EasyDict] = None
 
     def to_json(self, path: PathLike) -> None:
         """Save configuration to JSON file."""

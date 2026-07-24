@@ -30,10 +30,8 @@ Core utilities and timing functions for OWA agents.
     from owa.core import LISTENERS
     import time
 
-
     def on_tick():
         print(f"Tick: {CALLABLES['std/time_ns']()}")
-
 
     # Using context manager (recommended)
     tick = LISTENERS["std/tick"]().configure(callback=on_tick, interval=1)

@@ -11,7 +11,7 @@ StringLike.register(str)
 
 
 class Element(StringLike):
-    def __init__(self, factory_name: str, properties: dict | None = None):
+    def __init__(self, factory_name: str, properties: dict = None):
         self.factory_name = factory_name
         self.properties = properties or {}
 

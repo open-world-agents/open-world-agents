@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Test for owa.data.datasets - focuses on essential functionality and configuration sanity.
 """

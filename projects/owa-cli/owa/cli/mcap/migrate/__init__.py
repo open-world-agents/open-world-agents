@@ -26,12 +26,12 @@ app.command(name="cleanup")(cleanup)
 migrate = app
 
 __all__ = [
-    "MigrationOrchestrator",
-    "MigrationResult",
-    "ScriptMigrator",
-    "app",
-    "detect_files_needing_migration",
     "migrate",
+    "app",
+    "MigrationOrchestrator",
+    "ScriptMigrator",
+    "MigrationResult",
+    "detect_files_needing_migration",
     "validate_migration_output",
     "validate_verification_output",
 ]

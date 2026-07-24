@@ -18,6 +18,7 @@ import json
 import os
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
+from typing import Optional, Union
 
 from rich import print
 from tqdm import tqdm
@@ -66,7 +67,9 @@ MOUSE_BUTTON_FLAGS = {
 }
 
 
-def vpt_generate_target_list_file(vpt_folder_path: Path, vpt_media_ext: str, target_list_file: str | os.PathLike):
+def vpt_generate_target_list_file(
+    vpt_folder_path: Path, vpt_media_ext: str, target_list_file: Union[str, os.PathLike]
+):
     """Filter VPT files with valid jsonl files paired with media files and are 5 minutes long."""
     media_stems = {f.stem for f in vpt_folder_path.iterdir() if f.suffix == vpt_media_ext and f.is_file()}
     jsonl_files = sorted(
@@ -85,7 +88,7 @@ def vpt_generate_target_list_file(vpt_folder_path: Path, vpt_media_ext: str, tar
         try:
             if len(file_path.read_text().splitlines()) == VPT_EXPECTED_TICKS:
                 target_files.append(file_path)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             print(f"Error reading {file_path}: {e}")
 
     print(f"Found {len(target_files)} valid target files")
@@ -127,7 +130,7 @@ def handle_keyboard_events(writer, current_keys: list, keyboard_state: set, time
 
 def handle_mouse_events(writer, tick_data: dict, button_state: set, timestamp: int):
     """Handle mouse movement and button events."""
-    dx, dy = round(tick_data["mouse"]["dx"]), round(tick_data["mouse"]["dy"])
+    dx, dy = int(round(tick_data["mouse"]["dx"])), int(round(tick_data["mouse"]["dy"]))
 
     # Handle mouse movement
     if dx != 0 or dy != 0:
@@ -163,7 +166,7 @@ def process_single_file(jsonl_file_path, vpt_media_ext):
         lines = jsonl_file_path.read_text().strip().splitlines()
         assert len(lines) == VPT_EXPECTED_TICKS, f"Expected {VPT_EXPECTED_TICKS} lines, got {len(lines)}"
         ticks = [json.loads(line) for line in lines]
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         print(f"Error reading {jsonl_file_path}: {e}")
         return
 
@@ -197,7 +200,7 @@ def process_single_file(jsonl_file_path, vpt_media_ext):
             handle_mouse_events(writer, tick, button_state, log_time)
 
 
-def main(vpt_folder_path: Path, vpt_media_ext: str, vpt_target_list_file: str, max_workers: int | None = None):
+def main(vpt_folder_path: Path, vpt_media_ext: str, vpt_target_list_file: str, max_workers: Optional[int] = None):
     """Main function to convert VPT files to OWAMcap format."""
     max_workers = max_workers or 50
     print(f"Using {max_workers} worker processes.")
@@ -223,7 +226,7 @@ def main(vpt_folder_path: Path, vpt_media_ext: str, vpt_target_list_file: str, m
                 try:
                     future.result()
                     print(f"Successfully converted {file_path}")
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:
                     print(f"Error converting {file_path}: {exc}")
                 finally:
                     pbar.update(1)

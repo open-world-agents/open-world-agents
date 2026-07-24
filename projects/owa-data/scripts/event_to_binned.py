@@ -2,7 +2,7 @@
 """Convert event dataset to binned dataset format."""
 
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Any, Dict, List
 
 import typer
 from datasets import Dataset as HFDataset
@@ -19,8 +19,8 @@ app = typer.Typer(add_completion=False)
 
 
 def aggregate_events_to_bins(
-    events: list[dict[str, Any]], fps: float, filter_empty_actions: bool = False
-) -> list[dict[str, Any]]:
+    events: List[Dict[str, Any]], fps: float, filter_empty_actions: bool = False
+) -> List[Dict[str, Any]]:
     """Aggregate events into time bins at the specified FPS."""
     if not events:
         return []
@@ -68,8 +68,8 @@ def aggregate_events_to_bins(
 
 @app.command()
 def main(
-    input_dir: Annotated[Path, typer.Option("--input-dir", help="Input event dataset directory")],
-    output_dir: Annotated[Path, typer.Option("--output-dir", help="Output binned dataset directory")],
+    input_dir: Path = typer.Option(..., "--input-dir", help="Input event dataset directory"),
+    output_dir: Path = typer.Option(..., "--output-dir", help="Output binned dataset directory"),
     fps: float = typer.Option(10.0, "--fps", help="Global FPS for bins"),
     filter_empty_actions: bool = typer.Option(False, "--filter-empty-actions", help="Filter out bins with no actions"),
 ):
@@ -169,7 +169,7 @@ def main(
 
     # Save dataset
     final_dataset = (
-        DatasetDict(processed_datasets) if len(processed_datasets) > 1 else next(iter(processed_datasets.values()))
+        DatasetDict(processed_datasets) if len(processed_datasets) > 1 else list(processed_datasets.values())[0]
     )
 
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -182,8 +182,8 @@ def main(
         for split_name, ds in processed_datasets.items():
             print(f"  {split_name}: {len(ds):,} entries")
     else:
-        split_name = next(iter(processed_datasets.keys()))
-        ds = next(iter(processed_datasets.values()))
+        split_name = list(processed_datasets.keys())[0]
+        ds = list(processed_datasets.values())[0]
         print(f"Saved {len(ds):,} binned entries ({split_name})")
 
 

@@ -1,4 +1,5 @@
 from collections import Counter
+from typing import Dict, List
 
 import typer
 from rich.table import Table
@@ -45,7 +46,7 @@ def show_stats(
         _show_overview_stats(all_data, detailed)
 
 
-def _collect_component_data() -> list[dict]:
+def _collect_component_data() -> List[Dict]:
     """Collect comprehensive data about all components."""
     all_data = []
 
@@ -75,7 +76,7 @@ def _collect_component_data() -> list[dict]:
     return all_data
 
 
-def _show_overview_stats(all_data: list[dict], detailed: bool):
+def _show_overview_stats(all_data: List[Dict], detailed: bool):
     """Show overall statistics overview."""
     total_components = len(all_data)
     loaded_components = sum(1 for item in all_data if item["loaded"])
@@ -116,7 +117,7 @@ def _show_overview_stats(all_data: list[dict], detailed: bool):
         _show_detailed_tables(all_data)
 
 
-def _show_namespace_stats(all_data: list[dict], detailed: bool):
+def _show_namespace_stats(all_data: List[Dict], detailed: bool):
     """Show statistics grouped by namespace."""
     namespace_data = {}
 
@@ -159,7 +160,7 @@ def _show_namespace_stats(all_data: list[dict], detailed: bool):
     console.print(table)
 
 
-def _show_type_stats(all_data: list[dict], detailed: bool):
+def _show_type_stats(all_data: List[Dict], detailed: bool):
     """Show statistics grouped by component type."""
     type_data = {}
 
@@ -220,7 +221,7 @@ def _show_type_stats(all_data: list[dict], detailed: bool):
                 console.print(f"  {namespace}: {count} components")
 
 
-def _show_detailed_tables(all_data: list[dict]):
+def _show_detailed_tables(all_data: List[Dict]):
     """Show additional detailed tables."""
     console.print("\n")
 

@@ -59,9 +59,10 @@ class TestBackupContext:
         test_file.write_bytes(original_content)
 
         backup_path = BackupContext.find_backup_path(test_file)
-        with pytest.raises(ValueError), BackupContext(test_file, console=console):
-            test_file.write_bytes(b"modified content")
-            raise ValueError("Test exception")
+        with pytest.raises(ValueError):
+            with BackupContext(test_file, console=console):
+                test_file.write_bytes(b"modified content")
+                raise ValueError("Test exception")
 
         # File should be restored, backup deleted
         assert test_file.read_bytes() == original_content
@@ -100,11 +101,9 @@ class TestBackupContext:
         console = Console()
         nonexistent_file = tmp_path / "nonexistent.mcap"
 
-        with (
-            pytest.raises(FileNotFoundError, match="File not found"),
-            BackupContext(nonexistent_file, console=console),
-        ):
-            pass
+        with pytest.raises(FileNotFoundError, match="File not found"):
+            with BackupContext(nonexistent_file, console=console):
+                pass
 
     def test_backup_already_exists_error(self, tmp_path):
         """Test context when backup file already exists."""
@@ -116,11 +115,9 @@ class TestBackupContext:
         backup_path = BackupContext.find_backup_path(test_file)
         backup_path.write_bytes(b"existing backup")
 
-        with (
-            pytest.raises(FileExistsError, match="Backup file already exists"),
-            BackupContext(test_file, console=console),
-        ):
-            pass
+        with pytest.raises(FileExistsError, match="Backup file already exists"):
+            with BackupContext(test_file, console=console):
+                pass
 
     @patch("owa.core.utils.backup.BackupContext.rollback_from_backup")
     def test_rollback_failure_during_exception(self, mock_rollback, tmp_path):
@@ -132,9 +129,10 @@ class TestBackupContext:
         # Make rollback fail
         mock_rollback.side_effect = OSError("Rollback failed")
 
-        with pytest.raises(OSError, match="Rollback failed"), BackupContext(test_file, console=console):
-            test_file.write_bytes(b"modified content")
-            raise ValueError("Original exception")
+        with pytest.raises(OSError, match="Rollback failed"):
+            with BackupContext(test_file, console=console):
+                test_file.write_bytes(b"modified content")
+                raise ValueError("Original exception")
 
     @patch("owa.core.utils.backup.BackupContext.rollback_from_backup")
     def test_exception_chaining_preserves_original_context(self, mock_rollback, tmp_path):
@@ -277,9 +275,10 @@ class TestBackupContext:
         with BackupContext(test_file, console=console, backup_suffix=".outer"):
             test_file.write_bytes(b"outer modification")
 
-            with pytest.raises(ValueError), BackupContext(test_file, console=console, backup_suffix=".inner"):
-                test_file.write_bytes(b"inner modification")
-                raise ValueError("Inner exception")
+            with pytest.raises(ValueError):
+                with BackupContext(test_file, console=console, backup_suffix=".inner"):
+                    test_file.write_bytes(b"inner modification")
+                    raise ValueError("Inner exception")
 
             # After inner exception, file should be restored to outer state
             assert test_file.read_bytes() == b"outer modification"

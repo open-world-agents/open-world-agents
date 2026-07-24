@@ -7,14 +7,14 @@ providing comprehensive documentation quality checks for plugin components.
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import cast
+from typing import Dict, List, Union, cast
 
 import griffe
 
 from ..plugin_discovery import get_plugin_discovery
 
 # Type alias for griffe objects that we work with
-GriffeObject = griffe.Object | griffe.Function | griffe.Class | griffe.Module | griffe.Attribute | griffe.Alias
+GriffeObject = Union[griffe.Object, griffe.Function, griffe.Class, griffe.Module, griffe.Attribute, griffe.Alias]
 
 
 class PluginStatus(Enum):
@@ -31,7 +31,7 @@ class ComponentValidationResult:
 
     component: str
     quality_grade: str  # "good", "acceptable", "poor", "skipped"
-    improvements: list[str]  # Issues that need improvement
+    improvements: List[str]  # Issues that need improvement
 
 
 @dataclass
@@ -43,7 +43,7 @@ class PluginValidationResult:
     total: int  # total components (excluding skipped)
     good_quality: int  # only good quality components
     skipped: int  # components with @skip-quality-check
-    components: list[ComponentValidationResult]
+    components: List[ComponentValidationResult]
 
     @property
     def coverage(self) -> float:
@@ -79,7 +79,7 @@ class PluginValidationResult:
         return self.get_status()
 
     @property
-    def all_improvements(self) -> list[str]:
+    def all_improvements(self) -> List[str]:
         """Get all improvement issues across all components."""
         issues = []
         for comp in self.components:
@@ -99,7 +99,7 @@ class DocumentationValidator:
     def __init__(self):
         self.plugin_discovery = get_plugin_discovery()
 
-    def validate_all_plugins(self) -> dict[str, PluginValidationResult]:
+    def validate_all_plugins(self) -> Dict[str, PluginValidationResult]:
         """
         Validate documentation for all discovered plugins.
 
@@ -108,7 +108,7 @@ class DocumentationValidator:
         """
         results = {}
 
-        for plugin_name in self.plugin_discovery.discovered_plugins:
+        for plugin_name in self.plugin_discovery.discovered_plugins.keys():
             results[plugin_name] = self.validate_plugin(plugin_name)
 
         return results
@@ -157,7 +157,7 @@ class DocumentationValidator:
 
                     component_results.append(result)
 
-                except Exception as e:  # noqa: BLE001
+                except Exception as e:
                     # Component failed to load
                     result = ComponentValidationResult(
                         component=full_name,

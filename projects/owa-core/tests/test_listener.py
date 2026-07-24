@@ -305,6 +305,7 @@ class TestListenerProcess:
         class MinimalProcessListener(ListenerProcess):
             def loop(self):
                 """Loop without parameters."""
+                pass
 
         listener = MinimalProcessListener()
         listener.configure(callback=lambda: None)
@@ -336,16 +337,17 @@ class TestListenerProcess:
                 )
             return original_signature(func)
 
-        with patch("inspect.signature", side_effect=mock_signature), patch.object(listener, "loop") as mock_loop:
-            listener.run()
-            mock_loop.assert_called_once()
-            # Check that stop_event was passed
-            _args, kwargs = mock_loop.call_args
-            assert "stop_event" in kwargs
-            # Check that it's a multiprocessing Event-like object
-            stop_event = kwargs["stop_event"]
-            assert hasattr(stop_event, "is_set")
-            assert hasattr(stop_event, "set")
+        with patch("inspect.signature", side_effect=mock_signature):
+            with patch.object(listener, "loop") as mock_loop:
+                listener.run()
+                mock_loop.assert_called_once()
+                # Check that stop_event was passed
+                args, kwargs = mock_loop.call_args
+                assert "stop_event" in kwargs
+                # Check that it's a multiprocessing Event-like object
+                stop_event = kwargs["stop_event"]
+                assert hasattr(stop_event, "is_set")
+                assert hasattr(stop_event, "set")
 
 
 class TestListenerAlias:
@@ -381,7 +383,7 @@ class TestListenerErrorHandling:
             def loop(self, stop_event, callback):
                 try:
                     callback("test_data")
-                except Exception:  # noqa: BLE001
+                except Exception:
                     self.error_occurred = True
                     # Continue running despite callback error
 

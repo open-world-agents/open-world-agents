@@ -3,10 +3,10 @@
 from collections import namedtuple
 from enum import Enum
 from pathlib import Path
-from typing import Annotated
 
 import typer
 from tqdm import tqdm
+from typing_extensions import Annotated
 
 from mcap_owa.highlevel import OWAMcapReader
 from owa.env.desktop.constants import VK
@@ -139,7 +139,7 @@ def get_key_label(vk: int) -> str:
         if vk_enum in VK_TO_LABEL:
             return VK_TO_LABEL[vk_enum]
         name = vk_enum.name
-        return name.removeprefix("KEY_")
+        return name[4:] if name.startswith("KEY_") else name
     except ValueError:
         return f"?{vk}"
 

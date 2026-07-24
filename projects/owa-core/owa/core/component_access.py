@@ -1,14 +1,14 @@
 # ================ Enhanced Component Access API ================================
 # Provides flexible component access functions with namespace support
 
-from typing import Any
+from typing import Any, Dict, List, Optional
 
 from lazyregistry import ImportString, Registry
 
 from .registry import CALLABLES, LISTENERS, RUNNABLES
 
 
-def get_component(component_type: str, namespace: str | None = None, name: str | None = None) -> Any:
+def get_component(component_type: str, namespace: Optional[str] = None, name: Optional[str] = None) -> Any:
     """
     Flexible component access with multiple patterns.
 
@@ -48,14 +48,14 @@ def get_component(component_type: str, namespace: str | None = None, name: str |
     else:
         # Get all components
         all_components = {}
-        for component_name in registry:
+        for component_name in registry.keys():
             component = registry.get(component_name)
             if component is not None:
                 all_components[component_name] = component
         return all_components
 
 
-def get_namespace_components(registry: Registry, namespace: str) -> dict[str, Any]:
+def get_namespace_components(registry: Registry, namespace: str) -> Dict[str, Any]:
     """
     Get all components in a namespace as a dictionary.
 
@@ -69,7 +69,7 @@ def get_namespace_components(registry: Registry, namespace: str) -> dict[str, An
     prefix = f"{namespace}/"
     components = {}
 
-    for full_name in registry:
+    for full_name in registry.keys():
         if full_name.startswith(prefix):
             component_name = full_name[len(prefix) :]  # Remove namespace prefix
             components[component_name] = registry[full_name]
@@ -77,7 +77,7 @@ def get_namespace_components(registry: Registry, namespace: str) -> dict[str, An
     return components
 
 
-def list_components(component_type: str | None = None, namespace: str | None = None) -> dict[str, list[str]]:
+def list_components(component_type: Optional[str] = None, namespace: Optional[str] = None) -> Dict[str, List[str]]:
     """
     List available components with optional filtering.
 
@@ -116,7 +116,7 @@ def list_components(component_type: str | None = None, namespace: str | None = N
     return result
 
 
-def get_registry(component_type: str) -> Registry | None:
+def get_registry(component_type: str) -> Optional[Registry]:
     """
     Get the appropriate registry for component type.
 
@@ -134,7 +134,7 @@ def get_registry(component_type: str) -> Registry | None:
     return registries.get(component_type)
 
 
-def get_component_info(component_type: str, namespace: str | None = None) -> dict[str, dict[str, Any]]:
+def get_component_info(component_type: str, namespace: Optional[str] = None) -> Dict[str, Dict[str, Any]]:
     """
     Get detailed information about components without loading them.
 
@@ -150,7 +150,7 @@ def get_component_info(component_type: str, namespace: str | None = None) -> dic
         return {}
 
     info = {}
-    for name in registry:
+    for name in registry.keys():
         if namespace and not name.startswith(f"{namespace}/"):
             continue
 

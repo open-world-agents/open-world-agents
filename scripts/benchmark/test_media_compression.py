@@ -16,10 +16,10 @@ Example:
 """
 
 import json
-import sys
 import tempfile
 import time
 from pathlib import Path
+from typing import Dict, List, Tuple
 
 import cv2
 import numpy as np
@@ -29,7 +29,7 @@ try:
     from owa.core.io import VideoReader, VideoWriter
 except ImportError:
     print("Error: owa-core not available. Please install owa-core package.")
-    sys.exit(1)
+    exit(1)
 
 
 def format_file_size(size_bytes: int) -> str:
@@ -82,8 +82,8 @@ class CompressionBenchmark:
         """
         self.video_path = Path(video_path)
         self.max_frames = max_frames
-        self.frames: list[np.ndarray] = []
-        self.video_info: dict = {}
+        self.frames: List[np.ndarray] = []
+        self.video_info: Dict = {}
 
     def load_frames(self) -> None:
         """Load frames from the video file."""
@@ -104,18 +104,20 @@ class CompressionBenchmark:
             }
 
             # Load frames
-            for frame_count, frame in enumerate(tqdm(reader.read_frames(), desc="Loading frames")):
+            frame_count = 0
+            for frame in tqdm(reader.read_frames(), desc="Loading frames"):
                 if frame_count >= self.max_frames:
                     break
 
                 # Convert to RGB numpy array
                 rgb_array = frame.to_ndarray(format="rgb24")
                 self.frames.append(rgb_array)
+                frame_count += 1
 
         print(f"Loaded {len(self.frames)} frames")
         print(f"Video info: {self.video_info['width']}x{self.video_info['height']} @ {self.video_info['fps']:.2f} FPS")
 
-    def benchmark_raw_storage(self) -> tuple[int, float]:
+    def benchmark_raw_storage(self) -> Tuple[int, float]:
         """Benchmark raw frame storage (uncompressed)."""
         print("\n=== Raw Storage Benchmark ===")
 
@@ -133,7 +135,7 @@ class CompressionBenchmark:
 
         return total_size, elapsed_time
 
-    def benchmark_jpeg_compression(self, quality: int = 85) -> tuple[int, float]:
+    def benchmark_jpeg_compression(self, quality: int = 85) -> Tuple[int, float]:
         """Benchmark JPEG compression."""
         print(f"\n=== JPEG Compression Benchmark (Quality: {quality}) ===")
 
@@ -152,7 +154,7 @@ class CompressionBenchmark:
 
         return total_size, elapsed_time
 
-    def benchmark_png_compression(self) -> tuple[int, float]:
+    def benchmark_png_compression(self) -> Tuple[int, float]:
         """Benchmark PNG compression."""
         print("\n=== PNG Compression Benchmark ===")
 
@@ -171,7 +173,7 @@ class CompressionBenchmark:
 
         return total_size, elapsed_time
 
-    def benchmark_h265_compression(self, crf: int = 23) -> tuple[int, float]:
+    def benchmark_h265_compression(self, crf: int = 23) -> Tuple[int, float]:
         """Benchmark H.265 video compression using VideoWriter."""
         print(f"\n=== H.265 Video Compression Benchmark (CRF: {crf}) ===")
 
@@ -208,7 +210,7 @@ class CompressionBenchmark:
         """Get the size of the original video file."""
         return self.video_path.stat().st_size
 
-    def run_full_benchmark(self) -> dict:
+    def run_full_benchmark(self) -> Dict:
         """Run all compression benchmarks and return results."""
         print(f"Starting compression benchmark for {self.video_path}")
         print(f"Processing {len(self.frames)} frames")
@@ -285,14 +287,14 @@ class CompressionBenchmark:
                     "compression_ratio": raw_size / h265_size,
                     "frames": frames_processed,
                 }
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 print(f"Warning: H.265 CRF {crf} benchmark failed: {e}")
                 results[f"h265_crf{crf}"] = {"size": 0, "time": 0.0, "compression_ratio": 0.0, "error": str(e)}
 
         return results
 
 
-def print_results_table(results: dict) -> None:
+def print_results_table(results: Dict) -> None:
     """Print benchmark results in a formatted table."""
     print("\n" + "=" * 80)
     print("COMPRESSION BENCHMARK RESULTS")
@@ -368,7 +370,7 @@ def print_results_table(results: dict) -> None:
             print(f"\nFull video: Original H.265 is {full_savings:.1f}% smaller than estimated raw")
 
 
-def save_results_to_json(results: dict, output_path: str) -> None:
+def save_results_to_json(results: Dict, output_path: str) -> None:
     """Save benchmark results to JSON file."""
     output_file = Path(output_path)
 
@@ -455,10 +457,10 @@ Examples:
     except KeyboardInterrupt:
         print("\nBenchmark interrupted by user")
         return 1
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         print(f"Error running benchmark: {e}")
         return 1
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    exit(main())

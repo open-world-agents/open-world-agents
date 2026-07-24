@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional
 
 from loguru import logger
 
@@ -49,10 +50,10 @@ class SubprocessRecorder(SubprocessRunner):
         enable_fpsdisplaysink: bool = True,
         show_cursor: bool = True,
         fps: float = 60,
-        window_name: str | None = None,
-        audio_window_name: str | None = None,
-        monitor_idx: int | None = None,
-        additional_properties: dict | None = None,
+        window_name: Optional[str] = None,
+        audio_window_name: Optional[str] = None,
+        monitor_idx: Optional[int] = None,
+        additional_properties: Optional[dict] = None,
     ) -> None:
         """
         Prepare the GStreamer pipeline command for subprocess recording.

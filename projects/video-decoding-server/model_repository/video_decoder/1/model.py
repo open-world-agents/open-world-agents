@@ -8,7 +8,7 @@ import gc
 import json
 import os
 import traceback
-from collections.abc import Generator
+from typing import Generator, Tuple
 
 import numpy as np
 import triton_python_backend_utils as pb_utils
@@ -40,10 +40,6 @@ class Logger:
 logger = Logger()
 
 
-class FrameExtractionError(Exception):
-    """Raised when a requested video frame cannot be decoded."""
-
-
 def get_frame_cv2(video_path, time_sec):
     """Extract frame using OpenCV."""
     import cv2
@@ -55,7 +51,7 @@ def get_frame_cv2(video_path, time_sec):
     ret, frame = cap.read()
     cap.release()
     if not ret:
-        raise FrameExtractionError(f"Failed to capture frame at time: {time_sec}")
+        raise Exception(f"Failed to capture frame at time: {time_sec}")
     return cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
 
@@ -68,7 +64,7 @@ def get_frame_pyav(video_path, time_sec):
         for frame in container.decode(video=0):
             if frame.pts * frame.time_base >= time_sec:
                 return np.asarray(frame.to_rgb().to_image())
-    raise FrameExtractionError(f"Failed to capture frame at time: {time_sec}")
+    raise Exception(f"Failed to capture frame at time: {time_sec}")
 
 
 def get_frame_torchcodec(video_path, time_sec):
@@ -135,7 +131,7 @@ class TritonPythonModel:
         max_batch_size = self.model_config.get("max_batch_size", 0)
         logger.info(f"Video decoder initialized with max_batch_size: {max_batch_size}, backend: {backend}")
 
-    def _process_request(self, request) -> Generator[tuple[str, float], None, None]:
+    def _process_request(self, request) -> Generator[Tuple[str, float], None, None]:
         """Extract video path and timestamp from a single request."""
         video_path_tensor = pb_utils.get_input_tensor_by_name(request, "video_path")
         time_sec_tensor = pb_utils.get_input_tensor_by_name(request, "time_sec")
@@ -170,8 +166,8 @@ class TritonPythonModel:
                     frames.append(frame_array)
                 frames = np.stack(frames, axis=0)
                 responses.append(self._create_response(frames))
-            except Exception as e:  # noqa: BLE001
-                error_msg = f"Failed to process request: {e!s}"
+            except Exception as e:
+                error_msg = f"Failed to process request: {str(e)}"
                 responses.append(self._create_error_response(error_msg))
                 logger.error(f"Error processing request:\n{traceback.format_exc()}")
 

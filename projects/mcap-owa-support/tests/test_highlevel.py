@@ -57,7 +57,7 @@ def test_write_and_read_messages(temp_mcap_file):
         event = MockKeyboardEvent(event_type="press", vk=1)
 
     with OWAMcapWriter(file_path) as writer:
-        for i in range(10):
+        for i in range(0, 10):
             publish_time = i
             writer.write_message(event, topic=topic, timestamp=publish_time)
 

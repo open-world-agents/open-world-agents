@@ -39,7 +39,6 @@ OWA's Environment provides three types of components for real-time agent interac
     def on_key(event):
         print(f"Key pressed: {event.vk}")
 
-
     listener = LISTENERS["desktop/keyboard"]().configure(callback=on_key)
     with listener.session:
         input("Press Enter to stop...")

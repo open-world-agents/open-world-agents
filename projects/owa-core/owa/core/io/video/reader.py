@@ -1,9 +1,8 @@
 import enum
 import gc
-from collections.abc import Generator
 from dataclasses import dataclass
 from fractions import Fraction
-from typing import Self
+from typing import Generator, Optional
 
 import av
 
@@ -88,7 +87,7 @@ class VideoReader:
         return self._metadata
 
     def read_frames(
-        self, start_pts: SECOND_TYPE = 0.0, end_pts: SECOND_TYPE | None = None, fps: float | None = None
+        self, start_pts: SECOND_TYPE = 0.0, end_pts: Optional[SECOND_TYPE] = None, fps: Optional[float] = None
     ) -> Generator[av.VideoFrame, None, None]:
         """Yield frames between start_pts and end_pts in seconds."""
         global _CALLED_TIMES
@@ -229,7 +228,7 @@ class VideoReader:
         """Release container reference."""
         self.container.close()
 
-    def __enter__(self) -> Self:
+    def __enter__(self) -> "VideoReader":
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:

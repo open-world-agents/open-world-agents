@@ -1,5 +1,4 @@
-from collections.abc import Iterator
-from typing import Any
+from typing import Any, Iterator, List, Optional, Tuple, Union
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -49,9 +48,9 @@ class Intervals(BaseModel):
     All operations automatically normalize (merge overlapping intervals).
     """
 
-    intervals: list[Interval] = Field(default_factory=list)
+    intervals: List[Interval] = Field(default_factory=list)
 
-    def __init__(self, intervals: list[Interval | tuple[int, int]] | None = None, **kwargs: Any):
+    def __init__(self, intervals: Optional[List[Union[Interval, Tuple[int, int]]]] = None, **kwargs: Any):
         """
         Initialize with a list of Interval objects or (start, end) tuples.
 
@@ -88,7 +87,7 @@ class Intervals(BaseModel):
         """Create Intervals containing a single interval from start to end."""
         return cls([(start, end)])
 
-    def to_tuples(self) -> list[tuple[int, int]]:
+    def to_tuples(self) -> List[Tuple[int, int]]:
         """Convert to a list of (start, end) tuples."""
         return [(interval.start, interval.end) for interval in self.intervals]
 
@@ -138,7 +137,7 @@ class Intervals(BaseModel):
             else:
                 i += 1
 
-    def add(self, interval: Interval | tuple[int, int]) -> "Intervals":
+    def add(self, interval: Union[Interval, Tuple[int, int]]) -> "Intervals":
         """
         Add an interval and normalize.
 

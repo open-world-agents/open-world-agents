@@ -9,7 +9,7 @@ No decorators needed - registration happens via plugin_spec.
 """
 
 import threading
-from collections.abc import Callable
+from typing import Callable
 
 from loguru import logger
 
@@ -51,7 +51,7 @@ class ExampleListener(Listener):
             # Call the user's callback
             try:
                 callback(event_data)
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 # Log error but continue running
                 logger.error(f"Error in callback: {e}")
 
@@ -68,7 +68,7 @@ class ExampleTimerListener(Listener):
     This demonstrates a one-shot listener that stops after triggering once.
     """
 
-    def on_configure(self, *, delay: float = 5.0, callback: Callable[[], None] | None = None):
+    def on_configure(self, *, delay: float = 5.0, callback: Callable[[], None] = None):
         """
         Configure the timer.
 
@@ -92,5 +92,5 @@ class ExampleTimerListener(Listener):
             # Timer expired (not stopped), call the callback
             try:
                 callback()
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 logger.error(f"Error in timer callback: {e}")

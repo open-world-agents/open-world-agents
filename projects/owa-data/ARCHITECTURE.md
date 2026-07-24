@@ -127,7 +127,6 @@ Extracts valid time intervals from MCAP files.
 
 ```python
 from owa.data.interval import All, InactivityFilter
-
 extractor = All() & InactivityFilter()
 ```
 
@@ -154,7 +153,6 @@ Adjusts event sampling rate to reduce token count.
 
 ```python
 from owa.data.processing import create_resampler
-
 resampler = create_resampler(topic="mouse/raw", min_interval_ns=100_000_000)
 ```
 
@@ -186,7 +184,6 @@ Mouse:    <EVENT_START><MOUSE><T0_0><T1_5><T2_0><MOVE><SIGN_PLUS><D0_1>...<EVENT
 
 ```python
 from owa.data.encoders import create_encoder
-
 encoder = create_encoder("factorized")
 ```
 
@@ -207,10 +204,8 @@ Converts EventEncoder output to final token IDs.
 
 ```python
 from owa.data.tokenization import (
-    ImageTokenConfig,
-    EventTokenizationContext,
-    expand_tokenizer_for_events,
-    tokenize_event,
+    ImageTokenConfig, EventTokenizationContext,
+    expand_tokenizer_for_events, tokenize_event
 )
 
 image_config = ImageTokenConfig(prefix="<img>", token="<IMG_CONTEXT>", length=256, suffix="</img>")

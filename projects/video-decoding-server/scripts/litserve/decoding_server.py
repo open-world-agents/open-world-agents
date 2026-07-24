@@ -13,10 +13,6 @@ import litserve as ls
 import numpy as np
 
 
-class FrameExtractionError(Exception):
-    """Raised when a requested video frame cannot be decoded."""
-
-
 def get_frame_pyav(video_path, time_sec):
     """Extract frame using PyAV."""
     import av
@@ -26,7 +22,7 @@ def get_frame_pyav(video_path, time_sec):
         for frame in container.decode(video=0):
             if frame.pts * frame.time_base >= time_sec:
                 return np.asarray(frame.to_rgb().to_image())
-    raise FrameExtractionError(f"Failed to capture frame at time: {time_sec}")
+    raise Exception(f"Failed to capture frame at time: {time_sec}")
 
 
 # TODO: batch decoding with torchcodec/PyNvVideoCodec

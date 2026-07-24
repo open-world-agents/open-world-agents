@@ -24,7 +24,7 @@ NOTE: These migrators are locked, separate script with separate dependency sets.
 
 import importlib
 from pathlib import Path
-from typing import Annotated
+from typing import Optional
 
 import orjson
 import typer
@@ -37,10 +37,10 @@ app = typer.Typer(help="MCAP Migration: v0.3.0 → v0.3.2")
 
 @app.command()
 def migrate(
-    input_file: Annotated[Path, typer.Argument(help="Input MCAP file")],
-    output_file: Annotated[
-        Path | None, typer.Argument(help="Output MCAP file (optional, defaults to overwriting input)")
-    ] = None,
+    input_file: Path = typer.Argument(..., help="Input MCAP file"),
+    output_file: Optional[Path] = typer.Argument(
+        None, help="Output MCAP file (optional, defaults to overwriting input)"
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed information"),
     output_format: str = typer.Option("text", "--output-format", help="Output format: text or json"),
 ) -> None:
@@ -51,7 +51,7 @@ def migrate(
         console.print(f"[red]Input file not found: {input_file}[/red]")
         raise typer.Exit(1)
 
-    if input_file.suffix != ".mcap":
+    if not input_file.suffix == ".mcap":
         console.print(f"[red]Input file must be an MCAP file: {input_file}[/red]")
         raise typer.Exit(1)
 
@@ -95,7 +95,7 @@ def migrate(
         else:
             console.print(f"[green]✓ Migration completed: {changes_made} changes made[/green]")
 
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         if output_format == "json":
             result = {
                 "success": False,
@@ -112,8 +112,8 @@ def migrate(
 
 @app.command()
 def verify(
-    file_path: Annotated[Path, typer.Argument(help="MCAP file to verify")],
-    backup_path: Annotated[Path | None, typer.Option(help="Backup file path (for reference)")] = None,
+    file_path: Path = typer.Argument(..., help="MCAP file to verify"),
+    backup_path: Optional[Path] = typer.Option(None, help="Backup file path (for reference)"),
     output_format: str = typer.Option("text", "--output-format", help="Output format: text or json"),
 ) -> None:
     """Verify that pressed_vk_list fields are gone."""
@@ -146,7 +146,7 @@ def verify(
     except Exception as e:
         # Reraise typer.Exit exceptions to prevent printing duplicate error messages
         if isinstance(e, typer.Exit):
-            raise
+            raise e
 
         if output_format == "json":
             result = {"success": False, "error": str(e)}

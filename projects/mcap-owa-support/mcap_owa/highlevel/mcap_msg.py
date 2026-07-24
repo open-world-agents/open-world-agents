@@ -30,16 +30,14 @@ class McapMessage(BaseModel, Generic[T]):
     # Non-serialized decode configuration
     model_config = {"extra": "forbid"}
 
-    def __init__(self, *, decode_args: DecodeArgs = None, **data):
-        if decode_args is None:
-            decode_args = {}
+    def __init__(self, *, decode_args: DecodeArgs = {}, **data):
         super().__init__(**data)
         # Store decode parameters as private attributes (not serialized)
         self._decode_args = {"return_dict": False, "return_dict_on_failure": False, **decode_args}
 
     @classmethod
     def from_mcap_primitives(
-        cls, schema: Schema, channel: Channel, message: Message, *, decode_args: DecodeArgs = None
+        cls, schema: Schema, channel: Channel, message: Message, *, decode_args: DecodeArgs = {}
     ) -> "McapMessage":
         """
         Create a McapMessage from MCAP primitive objects.
@@ -53,8 +51,6 @@ class McapMessage(BaseModel, Generic[T]):
         Returns:
             McapMessage instance
         """
-        if decode_args is None:
-            decode_args = {}
         return cls(
             topic=channel.topic,
             timestamp=message.log_time,

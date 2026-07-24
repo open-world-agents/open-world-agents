@@ -18,23 +18,23 @@ logger.disable("owa.core")
 auto_discover_plugins()
 
 __all__ = [
-    # Global registries
-    "CALLABLES",
-    "LISTENERS",
-    # Message registry
-    "MESSAGES",
-    "RUNNABLES",
-    # Messages
-    "BaseMessage",
     # Core components
     "Callable",
     "Listener",
-    "OWAMessage",
     "Runnable",
+    # Messages
+    "BaseMessage",
+    "OWAMessage",
+    # Message registry
+    "MESSAGES",
+    # Plugin system
+    "get_plugin_discovery",
     # Component access API
     "get_component",
     "get_component_info",
-    # Plugin system
-    "get_plugin_discovery",
     "list_components",
+    # Global registries
+    "CALLABLES",
+    "LISTENERS",
+    "RUNNABLES",
 ]

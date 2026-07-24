@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Unified test suite for both HierarchicalEventEncoder and FactorizedEventEncoder.
 
@@ -209,7 +210,7 @@ class TestBothEncoders:
             message_type="desktop/KeyboardEvent",
         )
 
-        encoded, _images = encoder.encode(msg)
+        encoded, images = encoder.encode(msg)
 
         if encoder_type == "factorized":
             # Factorized should use VK tokens
@@ -227,7 +228,7 @@ class TestBothEncoders:
             message_type="desktop/RawMouseEvent",
         )
 
-        encoded, _images = encoder.encode(msg)
+        encoded, images = encoder.encode(msg)
 
         if encoder_type == "factorized":
             # Factorized should use SIGN tokens
@@ -281,11 +282,11 @@ class TestBothEncoders:
                 # Should issue warning and work (with clamping)
                 with pytest.warns(UserWarning, match=r"Mouse delta value .* is outside valid range"):
                     encoded, images = encoder.encode(msg)
-                decoded = encoder.decode(encoded, images)
-                result = orjson.loads(decoded.message)
-                # Values should be clamped to valid range
-                assert min_delta <= result["last_x"] <= max_delta, f"[{encoder_type}] X not clamped properly"
-                assert min_delta <= result["last_y"] <= max_delta, f"[{encoder_type}] Y not clamped properly"
+                    decoded = encoder.decode(encoded, images)
+                    result = orjson.loads(decoded.message)
+                    # Values should be clamped to valid range
+                    assert min_delta <= result["last_x"] <= max_delta, f"[{encoder_type}] X not clamped properly"
+                    assert min_delta <= result["last_y"] <= max_delta, f"[{encoder_type}] Y not clamped properly"
 
     def test_invalid_token_errors(self, encoder, encoder_type):
         """Both encoders should handle invalid token formats appropriately."""

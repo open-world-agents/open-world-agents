@@ -1,9 +1,11 @@
 """Dataset discovery utilities."""
 
+from typing import List
+
 from huggingface_hub import list_datasets as hf_list_datasets
 
 
-def list_datasets(format_filter: str = "OWA") -> list[str]:
+def list_datasets(format_filter: str = "OWA") -> List[str]:
     """
     List available OWA datasets on HuggingFace Hub.
 
@@ -33,6 +35,6 @@ def list_datasets(format_filter: str = "OWA") -> list[str]:
         results = hf_list_datasets(filter=format_filter)
         # Return repo_ids only
         return [ds.id for ds in results]
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         print(f"Warning: Could not list datasets from HuggingFace Hub: {e}")
         return []

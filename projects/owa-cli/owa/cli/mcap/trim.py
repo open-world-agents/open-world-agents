@@ -131,7 +131,6 @@ def embed_subtitle(mkv_path: Path, srt_content: str) -> None:
                 ],
                 capture_output=True,
                 text=True,
-                check=False,
             )
 
             if result.returncode != 0:
@@ -202,19 +201,17 @@ def find_all_mkvs(mcap_path: Path) -> dict[str, Path]:
 def get_video_start_utc(mkv: Path) -> int | None:
     """Get UTC corresponding to video PTS 0 from subtitle."""
     r = subprocess.run(
-        ["ffmpeg", "-v", "error", "-i", str(mkv), "-map", "0:s:0", "-f", "srt", "-"],
-        capture_output=True,
-        text=True,
-        check=False,
+        ["ffmpeg", "-v", "error", "-i", str(mkv), "-map", "0:s:0", "-f", "srt", "-"], capture_output=True, text=True
     )
     if r.returncode != 0:
         return None
     for i, line in enumerate(lines := r.stdout.strip().split("\n")):
-        if line.strip().isdigit() and i + 2 < len(lines) and (m := re.match(r"(\d+):(\d+):(\d+),(\d+)", lines[i + 1])):
-            h, mi, s, ms = map(int, m.groups())
-            pts_ns = int((h * 3600 + mi * 60 + s + ms / 1000) * NS)
-            if lines[i + 2].strip().isdigit():
-                return int(lines[i + 2].strip()) - pts_ns
+        if line.strip().isdigit() and i + 2 < len(lines):
+            if m := re.match(r"(\d+):(\d+):(\d+),(\d+)", lines[i + 1]):
+                h, mi, s, ms = map(int, m.groups())
+                pts_ns = int((h * 3600 + mi * 60 + s + ms / 1000) * NS)
+                if lines[i + 2].strip().isdigit():
+                    return int(lines[i + 2].strip()) - pts_ns
     return None
 
 
@@ -235,7 +232,6 @@ def get_duration(mkv: Path) -> float:
         ],
         capture_output=True,
         text=True,
-        check=False,
     )
     return float(r.stdout.strip())
 
@@ -270,23 +266,24 @@ def cut_mcap(src: Path, dst: Path, start_utc: int, end_utc: int, uri_map: dict[s
     """
     stats = {"total": 0, "screen": 0}
 
-    with OWAMcapReader(src) as reader, OWAMcapWriter(dst) as writer:
-        for msg in reader.iter_messages(start_time=start_utc, end_time=end_utc):
-            if msg.topic == "screen":
-                screen: ScreenCaptured = msg.decoded
-                if screen.media_ref:
-                    old_uri = screen.media_ref.uri
-                    new_uri = uri_map.get(old_uri, old_uri)
-                    # pts_ns should be relative to the trimmed video's start (0-based)
-                    new_pts = (screen.utc_ns or msg.timestamp) - start_utc
-                    screen.media_ref = MediaRef(uri=new_uri, pts_ns=new_pts)
-                # Keep original UTC timestamp for the message
-                writer.write_message(screen, topic=msg.topic, timestamp=msg.timestamp)
-                stats["screen"] += 1
-            else:
-                # Keep original UTC timestamp for the message
-                writer.write_message(msg.decoded, topic=msg.topic, timestamp=msg.timestamp)
-            stats["total"] += 1
+    with OWAMcapReader(src) as reader:
+        with OWAMcapWriter(dst) as writer:
+            for msg in reader.iter_messages(start_time=start_utc, end_time=end_utc):
+                if msg.topic == "screen":
+                    screen: ScreenCaptured = msg.decoded
+                    if screen.media_ref:
+                        old_uri = screen.media_ref.uri
+                        new_uri = uri_map.get(old_uri, old_uri)
+                        # pts_ns should be relative to the trimmed video's start (0-based)
+                        new_pts = (screen.utc_ns or msg.timestamp) - start_utc
+                        screen.media_ref = MediaRef(uri=new_uri, pts_ns=new_pts)
+                    # Keep original UTC timestamp for the message
+                    writer.write_message(screen, topic=msg.topic, timestamp=msg.timestamp)
+                    stats["screen"] += 1
+                else:
+                    # Keep original UTC timestamp for the message
+                    writer.write_message(msg.decoded, topic=msg.topic, timestamp=msg.timestamp)
+                stats["total"] += 1
 
     return stats
 

@@ -1,11 +1,8 @@
 import functools
 import io
-import os
 import re
 import warnings
-from collections.abc import Iterable, Iterator
-from contextlib import ExitStack
-from pathlib import Path
+from typing import Iterable, Iterator, Optional
 
 import requests
 from mcap.reader import McapReader, make_reader
@@ -28,7 +25,7 @@ class OWAMcapReader:
     in an MCAP file, with support for both local filesystem paths and remote HTTP/HTTPS URLs.
     """
 
-    def __init__(self, file_path: PathLike, *, decode_args: DecodeArgs = None):
+    def __init__(self, file_path: PathLike, *, decode_args: DecodeArgs = {}):
         """
         Initialize an OWA MCAP reader.
 
@@ -50,20 +47,17 @@ class OWAMcapReader:
                            - {"return_dict_on_failure": True}: Typed with fallback (robust)
                            - {"return_dict": True, "return_dict_on_failure": True}: Always dict (redundant)
         """
-        if decode_args is None:
-            decode_args = {}
         self.file_path = file_path
-        self._resources = ExitStack()
 
         # Check if the path is a URL or local file
-        if isinstance(file_path, str) and (file_path.startswith(("http://", "https://"))):
+        if isinstance(file_path, str) and (file_path.startswith("http://") or file_path.startswith("https://")):
             # Handle network path (URL)
-            with requests.get(file_path, stream=True) as response:
-                response.raise_for_status()  # Raise exception for HTTP errors
-                self._file = self._resources.enter_context(io.BytesIO(response.content))
+            response = requests.get(file_path, stream=True)
+            response.raise_for_status()  # Raise exception for HTTP errors
+            self._file = io.BytesIO(response.content)
         else:
             # Handle local file path
-            self._file = self._resources.enter_context(Path(os.fsdecode(file_path)).open("rb"))  # noqa: SIM115
+            self._file = open(file_path, "rb")
 
         self.reader: McapReader = make_reader(self._file, decoder_factories=[DecoderFactory(decode_args=decode_args)])
         self.decode_args = decode_args  # TODO: merge with decoded_message in McapReader.iter_decoded_messages
@@ -97,7 +91,7 @@ class OWAMcapReader:
         """Close the file and release resources."""
         if not self.__finished:
             self.__finished = True
-            self._resources.close()
+            self._file.close()
 
     @functools.cached_property
     def topics(self) -> list[str]:
@@ -151,9 +145,9 @@ class OWAMcapReader:
 
     def iter_messages(
         self,
-        topics: Iterable[str] | None = None,
-        start_time: int | None = None,
-        end_time: int | None = None,
+        topics: Optional[Iterable[str]] = None,
+        start_time: Optional[int] = None,
+        end_time: Optional[int] = None,
         log_time_order: bool = True,
         reverse: bool = False,
     ) -> Iterator[McapMessage]:

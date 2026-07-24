@@ -7,7 +7,7 @@ discovered through the OWA message registry system.
 
 import re
 import sys
-from typing import Annotated
+from typing import List, Optional
 
 import typer
 from rich.console import Console
@@ -22,9 +22,9 @@ except ImportError:
 
 
 def list_messages(
-    message_types: Annotated[list[str] | None, typer.Argument(help="Specific message type(s) to show")] = None,
-    domain: str | None = typer.Option(None, "--domain", "-d", help="Filter by domain (e.g., 'desktop')"),
-    search: str | None = typer.Option(None, "--search", "-s", help="Search message types by pattern"),
+    message_types: Optional[List[str]] = typer.Argument(None, help="Specific message type(s) to show"),
+    domain: Optional[str] = typer.Option(None, "--domain", "-d", help="Filter by domain (e.g., 'desktop')"),
+    search: Optional[str] = typer.Option(None, "--search", "-s", help="Search message types by pattern"),
     format: str = typer.Option("table", "--output-format", help="Output format: table, json, yaml"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed information"),
     case_sensitive: bool = typer.Option(False, "--case-sensitive", "-c", help="Case sensitive search"),
@@ -49,7 +49,7 @@ def list_messages(
     # Get all message types
     try:
         all_messages = dict(MESSAGES.items())
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         typer.echo(f"Error loading messages: {e}", err=True)
         raise typer.Exit(1)
 
@@ -143,7 +143,7 @@ def _output_table(console: Console, messages: dict, verbose: bool) -> None:
                 properties_str = ", ".join(properties[:5])  # Limit to first 5
                 if len(properties) > 5:
                     properties_str += f" (+{len(properties) - 5} more)"
-            except Exception:  # noqa: BLE001
+            except Exception:
                 properties_str = "N/A"
 
             row.extend([module, properties_str])
@@ -170,7 +170,7 @@ def _output_json(messages: dict, verbose: bool) -> None:
             try:
                 schema = message_class.get_schema()
                 info["schema"] = schema
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 info["schema_error"] = str(e)
 
         output[message_type] = info
@@ -198,7 +198,7 @@ def _output_yaml(messages: dict, verbose: bool) -> None:
             try:
                 schema = message_class.get_schema()
                 info["schema"] = schema
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 info["schema_error"] = str(e)
 
         output[message_type] = info

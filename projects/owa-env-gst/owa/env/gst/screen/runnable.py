@@ -49,7 +49,7 @@ class ScreenCapture(ScreenListener):
             self.queue.append(frame)
             self._event.set()
 
-        super().on_configure(*args, callback=on_frame, **kwargs)
+        super().on_configure(callback=on_frame, *args, **kwargs)
         return self
 
     def grab(self) -> ScreenCaptured:
