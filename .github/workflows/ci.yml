@@ -13,9 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/ruff-action@v4.1.0
-      - run: ruff check --fix
-      - run: ruff format --check --diff
+      - uses: astral-sh/setup-uv@v9.0.0
+      - run: uv run --only-dev ruff check --fix
+      - run: uv run --only-dev ruff format --check --diff
 
   validate-docs:
     runs-on: ubuntu-latest
