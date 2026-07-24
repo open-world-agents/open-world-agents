@@ -140,7 +140,7 @@ def validate_verification_output(data: dict, verbose: bool = False) -> bool:
 class ScriptMigrator:
     """Represents a standalone migration script."""
 
-    python_version = "3.13"
+    python_version = "3.11"
     script_path: Path
     from_version: str
     to_version: str
