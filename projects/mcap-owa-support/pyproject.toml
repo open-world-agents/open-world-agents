@@ -14,9 +14,6 @@ dependencies = [
     "requests>=2.32.2",
 ]
 
-[tool.uv]
-exclude-newer = "2026-07-24T00:00:00Z"
-
 [tool.uv.sources]
 owa-core = { path = "../owa-core", editable = true }
 

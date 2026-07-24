@@ -14,9 +14,6 @@ dependencies = [
     "pyyaml>=6.0",
 ]
 
-[tool.uv]
-exclude-newer = "2026-07-24T00:00:00Z"
-
 # entry points for plugin discovery
 [project.entry-points."owa.env.plugins"]
 std = "owa.env.plugins.std:plugin_spec"

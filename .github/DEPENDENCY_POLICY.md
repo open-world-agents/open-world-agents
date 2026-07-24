@@ -23,16 +23,16 @@ constraint is warranted only when the optional feature relies on an API introduc
 a particular version or a known-bad release must be excluded. Do not copy the version
 that happened to be current when the dependency was added into a lower bound.
 
-The `docs` extra intentionally leaves its direct dependencies unconstrained. The
-repository-wide `exclude-newer` cutoff bounds the versions that may be resolved.
+The root `docs` extra intentionally leaves its direct dependencies unconstrained. The
+root environment's `exclude-newer` cutoff bounds the versions that may be resolved.
 
 ### Dependency groups
 
 Groups in `[dependency-groups]` are local development inputs, not part of the
 published package's runtime compatibility contract. Direct development requirements
-should normally be unconstrained. A fixed `exclude-newer` timestamp makes resolution
-repeatable without turning the versions that happened to be locked into compatibility
-requirements.
+should normally be unconstrained. In cutoff-managed application environments, a fixed
+`exclude-newer` timestamp makes resolution repeatable without turning the versions
+that happened to be locked into compatibility requirements.
 
 Do not add a dependency constraint merely to avoid a new tool release. Keep the
 repository's Ruff rule set explicit and version-independent; newly bundled rules are
@@ -49,8 +49,8 @@ selected rule changes, prefer fixing the affected code over constraining Ruff.
 | **Required API** | `>=X.Y.Z` | `pydantic>=2.0` | Minimum version that provides the API in use |
 | **Known-bad releases** | Narrow exclusion/range | `evdev<1.9.2` | Documented incompatibility |
 | **Stable runtime API** | No constraint | `loguru` | No known compatibility boundary |
-| **Optional feature** | No constraint by default | `mkdocs` | `exclude-newer` bounds resolution |
-| **Development group** | No constraint by default | `pytest` | `exclude-newer` bounds resolution |
+| **Optional feature** | No constraint by default | `mkdocs` | The invoking environment owns resolution |
+| **Development group** | No constraint by default | `pytest` | Local environment policy bounds resolution |
 
 ---
 
@@ -95,7 +95,7 @@ selected rule changes, prefer fixing the affected code over constraining Ruff.
 ### Optional and Development Dependencies
 
 The direct packages in the `docs` extra and `dev` dependency group have no version
-constraints. Their resolution window is bounded by `exclude-newer`.
+constraints. Their root-environment resolution window is bounded by `exclude-newer`.
 
 ### Special Cases
 
@@ -103,26 +103,30 @@ constraints. Their resolution window is bounded by `exclude-newer`.
 
 ---
 
-## Reproducible Resolution and Dependency Cooldown
+## Application Resolution and Dependency Cooldown
 
-Every project sets the same fixed RFC 3339 timestamp in its `pyproject.toml`:
+The root and independently managed application environments use the same fixed RFC
+3339 timestamp:
 
 ```toml
 [tool.uv]
 exclude-newer = "2026-07-24T00:00:00Z"
 ```
 
-The cutoff, rather than a direct-dependency lower bound or the incidental contents of
-a lockfile, defines the repository's reproducible resolution horizon. It also creates
-a review point before newly uploaded distributions enter the dependency graph,
-reducing exposure to fresh supply-chain compromises.
+This applies to the root project, `owa-cli`, `owa-data`, and
+`video-decoding-server`—the environments that previously committed lockfiles. The
+cutoff, rather than a direct-dependency lower bound or the incidental contents of a
+lockfile, defines their reproducible resolution horizon. It also creates a review
+point before newly uploaded distributions enter the dependency graph, reducing
+exposure to fresh supply-chain compromises.
 
-`uv.lock` files are intentionally not committed. Local and CI environments resolve
-against the cutoff so that the declared dependency policy, rather than an incidental
-lockfile snapshot, remains the source of truth.
+Library subprojects that already ignore `uv.lock` do not set `exclude-newer`. A
+published library should leave the resolution horizon to its downstream application
+or invoking development environment instead of imposing the repository's cutoff.
 
-Advance the timestamp only as part of an intentional dependency update. Review the
-full resolution diff and run the relevant checks before committing the new cutoff.
+The cutoff-managed environments do not commit `uv.lock`. Advance their timestamps
+only as part of an intentional dependency update, review the full resolution diff,
+and run the relevant checks before committing the new cutoff.
 
 ---
 
@@ -135,8 +139,10 @@ full resolution diff and run the relevant checks before committing the new cutof
 3. For runtime and optional dependencies, add the weakest constraint justified by an
    API or compatibility boundary. For dependency groups, default to no constraint.
 4. Document every non-first-party constraint in this file.
-5. Set or intentionally advance `exclude-newer`, resolve dependencies, and migrate
-   code or configuration for the resulting versions.
+5. In a cutoff-managed environment, set or intentionally advance `exclude-newer`.
+   Library subprojects without a cutoff inherit the invoking environment's resolution
+   policy. Resolve dependencies and migrate code or configuration for the resulting
+   versions.
 6. Run the relevant checks:
    - Runtime: `uv run pytest`
    - Documentation: `uv run --extra docs mkdocs build`
@@ -150,12 +156,12 @@ full resolution diff and run the relevant checks before committing the new cutof
 uv run scripts/release/main.py version 0.7.0
 
 # Third-party
-# First advance the shared exclude-newer timestamp in every pyproject.toml.
+# First advance exclude-newer in the cutoff-managed environments.
 uv sync --upgrade-package <package>
 uv sync --upgrade  # all packages
 ```
 
 Do not retain an obsolete direct-dependency lower bound as a substitute for the
-repository's `exclude-newer` policy. If a newly resolved release is incompatible,
-either migrate to its API or document the concrete incompatibility before adding a
-constraint.
+application environment's `exclude-newer` policy. If a newly resolved release is
+incompatible, either migrate to its API or document the concrete incompatibility
+before adding a constraint.

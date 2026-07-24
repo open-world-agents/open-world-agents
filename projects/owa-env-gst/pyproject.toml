@@ -18,7 +18,6 @@ dependencies = [
 ]
 
 [tool.uv]
-exclude-newer = "2026-07-24T00:00:00Z"
 # https://github.com/pygobject/pygobject-stubs/issues/273
 override-dependencies = ["pygobject; sys_platform == 'never'"]
 
