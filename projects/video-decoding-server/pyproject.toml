@@ -11,3 +11,6 @@ dependencies = [
     "opencv-python-headless",
     "pillow>=9.4.0",
 ]
+
+[tool.uv]
+exclude-newer = "2026-07-24T00:00:00Z"

@@ -7,7 +7,7 @@ license = { text = "MIT" }
 requires-python = ">=3.11"
 dependencies = [
     "annotated-types",
-    "mediaref>=1.1.0",
+    "mediaref>=1.1.1",
     "numpy>=2.0",
     "opencv-python",
     "owa-core==0.6.6",
@@ -24,6 +24,9 @@ dependencies = [
 "desktop/PointerBallisticsConfig" = "owa.msgs.desktop.mouse:PointerBallisticsConfig"
 "desktop/WindowInfo" = "owa.msgs.desktop.window:WindowInfo"
 "desktop/ScreenCaptured" = "owa.msgs.desktop.screen:ScreenCaptured"
+
+[tool.uv]
+exclude-newer = "2026-07-24T00:00:00Z"
 
 [tool.uv.sources]
 owa-core = { path = "../owa-core", editable = true }

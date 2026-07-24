@@ -19,6 +19,9 @@ dependencies = [
     "pywin32>=307 ; sys_platform == 'win32'",
 ]
 
+[tool.uv]
+exclude-newer = "2026-07-24T00:00:00Z"
+
 [tool.uv.sources]
 owa-core = { path = "../owa-core", editable = true }
 owa-msgs = { path = "../owa-msgs", editable = true }
