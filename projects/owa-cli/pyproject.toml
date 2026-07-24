@@ -8,7 +8,7 @@ requires-python = ">=3.11"
 dependencies = [
     "loguru",
     "mcap-owa-support==0.6.6",
-    "mediaref>=1.1.0",
+    "mediaref>=1.1.1",
     "numpy>=2.0",
     "opencv-python",
     "orjson",
@@ -22,6 +22,9 @@ dependencies = [
     "tqdm",
     "typer>=0.20.0",
 ]
+
+[tool.uv]
+exclude-newer = "2026-07-24T00:00:00Z"
 
 [tool.uv.sources]
 owa-core = { path = "../owa-core", editable = true }
