@@ -140,15 +140,28 @@ def validate_verification_output(data: dict, verbose: bool = False) -> bool:
 class ScriptMigrator:
     """Represents a standalone migration script."""
 
+    python_version = "3.13"
     script_path: Path
     from_version: str
     to_version: str
 
     def migrate(self, file_path: Path, verbose: bool) -> MigrationResult:
         """Execute the standalone migration script."""
-        cmd = ["uv", "run", str(self.script_path), "migrate", str(file_path), "--output-format", "json"]
+        cmd = [
+            "uv",
+            "run",
+            "--python",
+            self.python_version,
+            str(self.script_path),
+            "migrate",
+            str(file_path),
+            "--output-format",
+            "json",
+        ]
 
-        result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", env=_get_subprocess_env())
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, encoding="utf-8", env=_get_subprocess_env(), check=False
+        )
 
         # First, try to parse JSON output regardless of return code
         json_output = None
@@ -224,15 +237,25 @@ class ScriptMigrator:
                 error=error_msg,
             )
 
-    def verify_migration(
-        self, file_path: Path, backup_path: Optional[Path], verbose: bool = False
-    ) -> VerificationResult:
+    def verify_migration(self, file_path: Path, backup_path: Path | None, verbose: bool = False) -> VerificationResult:
         """Verify migration by running the script with verify command."""
-        cmd = ["uv", "run", str(self.script_path), "verify", str(file_path), "--output-format", "json"]
+        cmd = [
+            "uv",
+            "run",
+            "--python",
+            self.python_version,
+            str(self.script_path),
+            "verify",
+            str(file_path),
+            "--output-format",
+            "json",
+        ]
         if backup_path:
             cmd.extend(["--backup-path", str(backup_path)])
 
-        result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", env=_get_subprocess_env())
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, encoding="utf-8", env=_get_subprocess_env(), check=False
+        )
 
         # Try to parse JSON output regardless of return code for better error reporting
         json_output = None
