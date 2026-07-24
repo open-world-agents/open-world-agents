@@ -1,4 +1,3 @@
-# ruff: noqa: E402
 # To suppress the warning for E402, waiting for https://github.com/astral-sh/ruff/issues/3711
 import gi
 

@@ -1,10 +1,9 @@
 import datetime
 import json
 from pathlib import Path
-from typing import List, Optional
+from typing import Annotated
 
 import typer
-from typing_extensions import Annotated
 
 from mcap_owa.highlevel import OWAMcapReader
 from owa.core.time import TimeUnits
@@ -12,7 +11,7 @@ from owa.core.time import TimeUnits
 
 def format_timestamp(ns):
     """Convert nanoseconds since epoch to a human-readable string with timezone awareness."""
-    dt = datetime.datetime.fromtimestamp(ns / TimeUnits.SECOND, datetime.timezone.utc)
+    dt = datetime.datetime.fromtimestamp(ns / TimeUnits.SECOND, datetime.UTC)
     return dt.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]  # Trim to milliseconds
 
 
@@ -20,14 +19,14 @@ def cat(
     mcap_path: Annotated[Path, typer.Argument(help="Path to the input .mcap file")],
     pretty: Annotated[bool, typer.Option(help="Pretty print JSON output")] = True,
     topics: Annotated[
-        Optional[List[str]], typer.Option(help="Topics to include (space-separated or multiple --topics flags)")
+        list[str] | None, typer.Option(help="Topics to include (space-separated or multiple --topics flags)")
     ] = None,
     exclude: Annotated[
-        Optional[List[str]], typer.Option(help="Topics to exclude (space-separated or multiple --exclude flags)")
+        list[str] | None, typer.Option(help="Topics to exclude (space-separated or multiple --exclude flags)")
     ] = None,
-    start_time: Annotated[int, typer.Option(help="Start time in seconds")] = None,
-    end_time: Annotated[int, typer.Option(help="End time in seconds")] = None,
-    n: Annotated[int, typer.Option(help="Number of messages to print")] = None,
+    start_time: Annotated[int | None, typer.Option(help="Start time in seconds")] = None,
+    end_time: Annotated[int | None, typer.Option(help="End time in seconds")] = None,
+    n: Annotated[int | None, typer.Option(help="Number of messages to print")] = None,
 ):
     """
     Print messages from an `.mcap` file in a readable format.

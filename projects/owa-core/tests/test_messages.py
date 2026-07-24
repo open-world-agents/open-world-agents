@@ -53,9 +53,11 @@ class TestMessageRegistry:
         """Test KeyError when accessing non-existent message."""
         registry = MessageRegistry()
 
-        with patch("owa.core.messages.entry_points", side_effect=mock_entry_points_factory([])):
-            with pytest.raises(KeyError):
-                registry["nonexistent/Message"]
+        with (
+            patch("owa.core.messages.entry_points", side_effect=mock_entry_points_factory([])),
+            pytest.raises(KeyError),
+        ):
+            registry["nonexistent/Message"]
 
     def test_contains_operator(self, mock_entry_points_factory, create_mock_entry_point):
         """Test 'in' operator for checking message existence."""

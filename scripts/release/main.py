@@ -14,24 +14,15 @@ OWA Release Manager - CLI tool for managing OWA package releases.
 
 import os
 import subprocess
-import sys
+
+# Use tomllib for Python 3.11+, tomli for older versions
+import tomllib
 from pathlib import Path
-from typing import List, Set
 
 import typer
 from packaging.requirements import Requirement
 from rich.console import Console
 from rich.panel import Panel
-
-# Use tomllib for Python 3.11+, tomli for older versions
-if sys.version_info >= (3, 11):
-    import tomllib
-else:
-    try:
-        import tomli as tomllib
-    except ImportError:
-        raise ImportError("tomli is required for Python < 3.11. Install with: pip install tomli")
-
 
 app = typer.Typer(help="OWA Release Manager - A tool for managing OWA package releases")
 console = Console()
@@ -59,7 +50,7 @@ FIRST_PARTY_PACKAGES = {
 }
 
 
-def get_package_dirs() -> List[Path]:
+def get_package_dirs() -> list[Path]:
     """List all project directories."""
     return [Path(p) for p in PROJECTS]
 
@@ -75,7 +66,7 @@ def get_package_name(package_dir: Path) -> str:
     return data.get("project", {}).get("name", "")
 
 
-def get_first_party_dependencies(package_dir: Path) -> Set[str]:
+def get_first_party_dependencies(package_dir: Path) -> set[str]:
     """Get first-party dependencies from pyproject.toml."""
     pyproject_file = package_dir / "pyproject.toml"
     if not pyproject_file.exists():
@@ -95,21 +86,25 @@ def get_first_party_dependencies(package_dir: Path) -> Set[str]:
     return dependencies
 
 
-def run_git_command(command: List[str], verbose: bool = False) -> str:
+def run_git_command(command: list[str], verbose: bool = False) -> str:
     """Run a git command."""
     if verbose:
         console.print(f"[dim]$ git {' '.join(command)}[/dim]")
-    result = subprocess.run(["git"] + command, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    result = subprocess.run(
+        ["git"] + command, capture_output=True, text=True, encoding="utf-8", errors="replace", check=False
+    )
     if result.returncode != 0:
         raise RuntimeError(f"Git command failed: {result.stderr}")
     return result.stdout.strip()
 
 
-def run_command(command: List[str], cwd: Path | None = None, verbose: bool = False) -> str:
+def run_command(command: list[str], cwd: Path | None = None, verbose: bool = False) -> str:
     """Run a shell command."""
     if verbose:
         console.print(f"[dim]$ {' '.join(command)}[/dim]")
-    result = subprocess.run(command, capture_output=True, text=True, cwd=cwd, encoding="utf-8", errors="replace")
+    result = subprocess.run(
+        command, capture_output=True, text=True, cwd=cwd, encoding="utf-8", errors="replace", check=False
+    )
     if result.returncode != 0:
         raise RuntimeError(f"Command failed: {result.stderr}")
     return result.stdout.strip()
@@ -135,8 +130,7 @@ def version(
     6. Optionally creates git tag if --tag is specified (requires --commit)
     7. Optionally pushes changes if --push is specified
     """
-    if value.startswith("v"):
-        value = value[1:]
+    value = value.removeprefix("v")
 
     # Validate arguments
     if tag and not commit:

@@ -7,7 +7,7 @@ ensuring consistency across different encoding strategies.
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List, Literal, Optional, Set, Tuple, Union, overload
+from typing import Literal, overload
 
 from mcap_owa.highlevel import McapMessage
 from owa.msgs.desktop.screen import ScreenCaptured
@@ -23,7 +23,7 @@ class BaseEventEncoder(ABC):
     """Abstract base class for all event encoders."""
 
     @abstractmethod
-    def encode(self, mcap_message: McapMessage) -> Tuple[str, List[ScreenCaptured]]:
+    def encode(self, mcap_message: McapMessage) -> tuple[str, list[ScreenCaptured]]:
         """
         Encode a single McapMessage object to the encoder's format.
 
@@ -37,10 +37,9 @@ class BaseEventEncoder(ABC):
             InvalidInputError: If the input is invalid
             UnsupportedInputError: If the input is valid but encoder does not support it
         """
-        pass
 
     @abstractmethod
-    def decode(self, encoded_data: str, images: Optional[List[ScreenCaptured]] = None) -> McapMessage:
+    def decode(self, encoded_data: str, images: list[ScreenCaptured] | None = None) -> McapMessage:
         """
         Decode encoded data back to McapMessage format.
 
@@ -55,9 +54,8 @@ class BaseEventEncoder(ABC):
             InvalidTokenError: If the token is invalid
             UnsupportedTokenError: If the token is valid but decoder does not support it
         """
-        pass
 
-    def encode_batch(self, mcap_messages: List[McapMessage]) -> Tuple[List[str], List[List[ScreenCaptured]]]:
+    def encode_batch(self, mcap_messages: list[McapMessage]) -> tuple[list[str], list[list[ScreenCaptured]]]:
         """Encode a batch of McapMessage objects."""
         all_tokens, all_images = [], []
         for message in mcap_messages:
@@ -69,28 +67,28 @@ class BaseEventEncoder(ABC):
     @overload
     def decode_batch(
         self,
-        encoded_batch: List[str],
-        all_images: Optional[List[List[ScreenCaptured]]] = None,
+        encoded_batch: list[str],
+        all_images: list[list[ScreenCaptured]] | None = None,
         *,
         suppress_errors: Literal[False] = False,
-    ) -> List[McapMessage]: ...
+    ) -> list[McapMessage]: ...
 
     @overload
     def decode_batch(
         self,
-        encoded_batch: List[str],
-        all_images: Optional[List[List[ScreenCaptured]]] = None,
+        encoded_batch: list[str],
+        all_images: list[list[ScreenCaptured]] | None = None,
         *,
         suppress_errors: Literal[True],
-    ) -> List[Optional[McapMessage]]: ...
+    ) -> list[McapMessage | None]: ...
 
     def decode_batch(
         self,
-        encoded_batch: List[str],
-        all_images: Optional[List[List[ScreenCaptured]]] = None,
+        encoded_batch: list[str],
+        all_images: list[list[ScreenCaptured]] | None = None,
         *,
         suppress_errors: bool = False,
-    ) -> Union[List[McapMessage], List[Optional[McapMessage]]]:
+    ) -> list[McapMessage] | list[McapMessage | None]:
         """
         Decode a batch of encoded data.
 
@@ -112,13 +110,12 @@ class BaseEventEncoder(ABC):
             for data, images in zip(encoded_batch, all_images):
                 try:
                     results.append(self.decode(data, images))
-                except Exception:
+                except Exception:  # noqa: BLE001
                     results.append(None)
             return results
         else:
             return [self.decode(data, images) for data, images in zip(encoded_batch, all_images)]
 
     @abstractmethod
-    def get_vocab(self) -> Set[str]:
+    def get_vocab(self) -> set[str]:
         """Get all tokens in the vocabulary."""
-        pass

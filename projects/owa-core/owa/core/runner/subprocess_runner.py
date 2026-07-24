@@ -9,7 +9,6 @@ both Windows and Unix-like systems with platform-specific optimizations.
 import os
 import signal
 import subprocess
-from typing import List, Optional, Union
 
 from loguru import logger
 
@@ -84,7 +83,7 @@ class SubprocessRunner(RunnableThread):
     ```
     """
 
-    def on_configure(self, subprocess_args: Union[List[str], str], stop_signal: Optional[int] = None) -> None:
+    def on_configure(self, subprocess_args: list[str] | str, stop_signal: int | None = None) -> None:
         """
         Configure the subprocess runner with command arguments.
 
@@ -94,7 +93,7 @@ class SubprocessRunner(RunnableThread):
             stop_signal: Signal to send when stopping the process. Defaults to
                         CTRL_BREAK_EVENT on Windows, SIGINT on Unix-like systems.
         """
-        self._process: Optional[subprocess.Popen] = None
+        self._process: subprocess.Popen | None = None
         self.subprocess_args = subprocess_args
 
         # Set default stop signal based on platform if not provided
@@ -162,12 +161,12 @@ class SubprocessRunner(RunnableThread):
                 # If graceful termination fails, forcefully kill the process
                 self._process.kill()
                 logger.error("SubprocessRunner was killed forcefully because of timeout.")
-            except Exception:
+            except Exception:  # noqa: BLE001
                 # Catch and log any unexpected exceptions during cleanup
                 import traceback
 
                 traceback.print_exc()
-                pass  # Continue cleanup despite errors
+                # Continue cleanup despite errors
 
         # Inform about the termination status
         if rt == 0:

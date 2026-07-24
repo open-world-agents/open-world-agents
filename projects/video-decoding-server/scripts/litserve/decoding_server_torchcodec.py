@@ -30,7 +30,6 @@ import base64
 import gc
 import threading
 from pathlib import Path
-from typing import Dict, Union
 
 import cv2
 import litserve as ls
@@ -49,12 +48,12 @@ class VideoDecoderCache:
         Args:
             max_size: Maximum number of decoders to cache
         """
-        self._cache: Dict[str, VideoDecoder] = {}
+        self._cache: dict[str, VideoDecoder] = {}
         self._lock = threading.RLock()
         self.max_size = max_size
         self.device = device
 
-    def get_decoder(self, video_path: Union[str, Path]) -> VideoDecoder:
+    def get_decoder(self, video_path: str | Path) -> VideoDecoder:
         """Get or create a cached decoder for the given video path.
 
         Args:

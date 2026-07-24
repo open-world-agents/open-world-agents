@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 def get_current_time() -> str:
     # return time.time_ns()
-    return str(datetime.datetime.fromtimestamp(time.time_ns() / 1e9))
+    return str(datetime.datetime.fromtimestamp(time.time_ns() / 1e9, tz=datetime.UTC))
 
 
 def main():

@@ -267,10 +267,11 @@ class TestGetComponentEdgeCases:
         """Test get_component when registry.get returns None."""
         test_registry = isolated_registries["callables"]
 
-        with patch("owa.core.component_access.CALLABLES", test_registry):
-            # Test with non-existent component
-            with pytest.raises(KeyError, match="Component 'nonexistent/component' not found"):
-                get_component("callables", namespace="nonexistent", name="component")
+        with (
+            patch("owa.core.component_access.CALLABLES", test_registry),
+            pytest.raises(KeyError, match="Component 'nonexistent/component' not found"),
+        ):
+            get_component("callables", namespace="nonexistent", name="component")
 
 
 class TestListComponentsEdgeCases:
@@ -283,18 +284,20 @@ class TestListComponentsEdgeCases:
         isolated_registries["listeners"]["example/listener"] = "time:sleep"
         isolated_registries["runnables"]["example/runnable"] = "time:sleep"
 
-        with patch("owa.core.component_access.CALLABLES", isolated_registries["callables"]):
-            with patch("owa.core.component_access.LISTENERS", isolated_registries["listeners"]):
-                with patch("owa.core.component_access.RUNNABLES", isolated_registries["runnables"]):
-                    result = list_components()
+        with (
+            patch("owa.core.component_access.CALLABLES", isolated_registries["callables"]),
+            patch("owa.core.component_access.LISTENERS", isolated_registries["listeners"]),
+            patch("owa.core.component_access.RUNNABLES", isolated_registries["runnables"]),
+        ):
+            result = list_components()
 
-                    assert "callables" in result
-                    assert "listeners" in result
-                    assert "runnables" in result
+            assert "callables" in result
+            assert "listeners" in result
+            assert "runnables" in result
 
-                    assert "example/add" in result["callables"]
-                    assert "example/listener" in result["listeners"]
-                    assert "example/runnable" in result["runnables"]
+            assert "example/add" in result["callables"]
+            assert "example/listener" in result["listeners"]
+            assert "example/runnable" in result["runnables"]
 
     def test_list_components_with_none_registry(self):
         """Test list_components when registry is None."""

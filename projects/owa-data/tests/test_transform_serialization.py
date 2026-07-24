@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Test serialization of dataset transforms in owa.data."""
 
 import pickle
@@ -40,7 +39,7 @@ def can_serialize_with_either(obj):
     try:
         pickle.dumps(obj)
         successful_methods.append("pickle")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         errors["pickle"] = e
 
     # Try dill if available
@@ -48,7 +47,7 @@ def can_serialize_with_either(obj):
         try:
             dill.dumps(obj)
             successful_methods.append("dill")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             errors["dill"] = e
 
     return successful_methods, errors
@@ -148,7 +147,7 @@ class TestTransformSerialization:
         transform_with_mock = FSLTransform(config=config, image_processor=mock_processor)
 
         # Should fail with pickle due to Mock object
-        with pytest.raises(Exception):
+        with pytest.raises((pickle.PicklingError, AttributeError, TypeError)):
             pickle.dumps(transform_with_mock)
 
         # Test 2: None config should work (uses default)

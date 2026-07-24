@@ -1,12 +1,12 @@
 """Desktop screen capture message definitions."""
 
 from pathlib import Path
-from typing import Optional, Self, Tuple, cast
+from typing import ClassVar, Self, cast
 
 import cv2
 import numpy as np
 from mediaref import DataURI, MediaRef
-from pydantic import Field, model_validator
+from pydantic import ConfigDict, Field, model_validator
 from pydantic.json_schema import SkipJsonSchema
 
 from owa.core.message import OWAMessage
@@ -36,18 +36,18 @@ class ScreenCaptured(OWAMessage):
 
     _type = "desktop/ScreenCaptured"
 
-    model_config = {"arbitrary_types_allowed": True, "extra": "forbid"}
+    model_config: ClassVar[ConfigDict] = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
 
     # Essential fields only
-    utc_ns: Optional[int] = Field(default=None, description="Time since epoch as nanoseconds")
-    source_shape: Optional[Tuple[int, int]] = Field(
+    utc_ns: int | None = Field(default=None, description="Time since epoch as nanoseconds")
+    source_shape: tuple[int, int] | None = Field(
         default=None, description="Original source dimensions before any processing (width, height)"
     )
-    shape: Optional[Tuple[int, int]] = Field(
+    shape: tuple[int, int] | None = Field(
         default=None, description="Current frame dimensions after any processing (width, height)"
     )
-    media_ref: Optional[MediaRef] = Field(default=None, description="Structured media reference")
-    frame_arr: SkipJsonSchema[Optional[np.ndarray]] = Field(
+    media_ref: MediaRef | None = Field(default=None, description="Structured media reference")
+    frame_arr: SkipJsonSchema[np.ndarray | None] = Field(
         default=None, exclude=True, description="BGRA frame as numpy array (in-memory only)"
     )
 
@@ -94,7 +94,7 @@ class ScreenCaptured(OWAMessage):
 
         return self.frame_arr
 
-    def embed_as_data_uri(self, format: str = "png", quality: Optional[int] = None) -> Self:
+    def embed_as_data_uri(self, format: str = "png", quality: int | None = None) -> Self:
         """Embed current frame_arr as data URI in media_ref."""
         if self.frame_arr is None:
             raise ValueError("No frame_arr available to embed")

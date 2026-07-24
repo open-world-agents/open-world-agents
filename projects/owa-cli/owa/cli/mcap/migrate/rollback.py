@@ -7,9 +7,9 @@ typically used when a migration fails or needs to be undone.
 
 # Removed shutil import - using BackupContext methods
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import List, Optional
+from typing import Annotated
 
 import typer
 from rich.console import Console
@@ -32,15 +32,15 @@ class BackupInfo:
     backup_path: Path
     backup_exists: bool
     original_exists: bool
-    backup_size: Optional[int] = None
-    backup_modified: Optional[datetime] = None
-    original_size: Optional[int] = None
-    original_modified: Optional[datetime] = None
-    original_version: Optional[str] = None
-    backup_version: Optional[str] = None
+    backup_size: int | None = None
+    backup_modified: datetime | None = None
+    original_size: int | None = None
+    original_modified: datetime | None = None
+    original_version: str | None = None
+    backup_version: str | None = None
 
 
-def find_backup_files(file_paths: List[Path], console: Console) -> List[BackupInfo]:
+def find_backup_files(file_paths: list[Path], console: Console) -> list[BackupInfo]:
     """
     Find backup files corresponding to the given MCAP files.
 
@@ -54,7 +54,7 @@ def find_backup_files(file_paths: List[Path], console: Console) -> List[BackupIn
     backup_infos = []
 
     for file_path in file_paths:
-        if not file_path.suffix == ".mcap":
+        if file_path.suffix != ".mcap":
             console.print(f"[yellow]Skipping non-MCAP file: {file_path}[/yellow]")
             continue
 
@@ -74,9 +74,9 @@ def find_backup_files(file_paths: List[Path], console: Console) -> List[BackupIn
             try:
                 stat = backup_path.stat()
                 backup_info.backup_size = stat.st_size
-                backup_info.backup_modified = datetime.fromtimestamp(stat.st_mtime)
+                backup_info.backup_modified = datetime.fromtimestamp(stat.st_mtime, tz=UTC)
                 backup_info.backup_version = detect_mcap_version(backup_path)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 console.print(f"[yellow]Warning: Could not read backup info for {backup_path}: {e}[/yellow]")
 
         # Get original file information if it exists
@@ -84,9 +84,9 @@ def find_backup_files(file_paths: List[Path], console: Console) -> List[BackupIn
             try:
                 stat = file_path.stat()
                 backup_info.original_size = stat.st_size
-                backup_info.original_modified = datetime.fromtimestamp(stat.st_mtime)
+                backup_info.original_modified = datetime.fromtimestamp(stat.st_mtime, tz=UTC)
                 backup_info.original_version = detect_mcap_version(file_path)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 console.print(f"[yellow]Warning: Could not read original file info for {file_path}: {e}[/yellow]")
 
         backup_infos.append(backup_info)
@@ -94,7 +94,7 @@ def find_backup_files(file_paths: List[Path], console: Console) -> List[BackupIn
     return backup_infos
 
 
-def display_rollback_summary(backup_infos: List[BackupInfo], console: Console) -> List[BackupInfo]:
+def display_rollback_summary(backup_infos: list[BackupInfo], console: Console) -> list[BackupInfo]:
     """
     Display a summary table of files that can be rolled back.
 
@@ -140,7 +140,7 @@ def display_rollback_summary(backup_infos: List[BackupInfo], console: Console) -
 
 
 def rollback(
-    files: List[Path] = typer.Argument(..., help="MCAP files to rollback from backup"),
+    files: Annotated[list[Path], typer.Argument(help="MCAP files to rollback from backup")],
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation prompt"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed rollback information"),
 ) -> None:
@@ -198,7 +198,7 @@ def rollback(
             BackupContext.rollback_from_backup(info.original_path, info.backup_path, console, delete_backup=True)
             successful_rollbacks += 1
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             console.print(f"[red]Rollback failed: {e}[/red]")
             failed_rollbacks += 1
 

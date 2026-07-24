@@ -88,7 +88,7 @@ class ResourceUsageMonitor:
                 pynvml.nvmlInit()
                 # By default, only look at GPU 0
                 self.gpu_handle = pynvml.nvmlDeviceGetHandleByIndex(0)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 self.gpu_handle = None
 
     def start(self):
@@ -117,7 +117,7 @@ class ResourceUsageMonitor:
                 try:
                     util = pynvml.nvmlDeviceGetUtilizationRates(self.gpu_handle)
                     gpu_percent = util.gpu
-                except Exception:
+                except Exception:  # noqa: BLE001, S110
                     pass
 
             # Fallbacks if something is missing
@@ -176,7 +176,7 @@ class ResourceUsageMonitor:
 # Screen Capture Routines
 ###############################################################################
 
-owa_args = dict(fps=240, window_name=None, monitor_idx=None)
+owa_args = {"fps": 240, "window_name": None, "monitor_idx": None}
 
 
 def capture_owa_runnable():
@@ -362,7 +362,7 @@ def run_benchmark(name, func):
     monitor.start()
     try:
         result = func()
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         monitor.stop()
         print(f"Error in {name} capture: {e}")
         return
@@ -376,7 +376,7 @@ def run_benchmark(name, func):
     print(f"    Avg Memory (MB): {avg_mem:.2f}")
     if PYNVML_AVAILABLE:
         print(f"    Avg GPU Usage (%): {avg_gpu:.2f}")
-    print("")
+    print()
     return result, avg_cpu, avg_mem, avg_gpu
 
 

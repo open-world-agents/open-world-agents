@@ -5,14 +5,13 @@ Simple client for video frame extraction using Triton Inference Server.
 
 import argparse
 import sys
-from typing import Tuple
 
 import cv2
 import numpy as np
 import tritonclient.http as httpclient
 
 
-def extract_frame(requests: Tuple[str, float], server_url: str = "127.0.0.1:8000") -> np.ndarray:
+def extract_frame(requests: tuple[str, float], server_url: str = "127.0.0.1:8000") -> np.ndarray:
     """
     Extract a frame from video at specified time.
 
@@ -69,7 +68,7 @@ def main():
             cv2.imwrite(args.output, frame_bgr)
             print(f"Frame saved to: {args.output}")
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"Error: {e}")
         sys.exit(1)
 

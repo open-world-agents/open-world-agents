@@ -21,33 +21,35 @@ from typing import Optional, List
 from pydantic import Field, validator
 import time
 
+
 class TemperatureReading(OWAMessage):
     _type = "sensors/TemperatureReading"
 
-    temperature: float          # Temperature in Celsius
+    temperature: float  # Temperature in Celsius
     humidity: float = Field(..., ge=0, le=100)  # Relative humidity (0-100%)
-    location: str              # Sensor location identifier
+    location: str  # Sensor location identifier
     timestamp: Optional[int] = Field(default_factory=time.time_ns)  # Unix timestamp in nanoseconds
 
-    @validator('temperature')
+    @validator("temperature")
     def validate_temperature(cls, v):
         if v < -273.15:  # Absolute zero check
-            raise ValueError('Temperature cannot be below absolute zero')
+            raise ValueError("Temperature cannot be below absolute zero")
         return v
+
 
 class GameEvent(OWAMessage):
     _type = "gaming/PlayerAction"
 
-    action_type: str           # "move", "attack", "interact"
-    player_id: str            # Unique player identifier
+    action_type: str  # "move", "attack", "interact"
+    player_id: str  # Unique player identifier
     coordinates: List[float] = Field(..., min_items=3, max_items=3)  # [x, y, z] world coordinates
-    metadata: dict = {}        # Additional action-specific data
+    metadata: dict = {}  # Additional action-specific data
 
-    @validator('action_type')
+    @validator("action_type")
     def validate_action_type(cls, v):
-        allowed_actions = {'move', 'attack', 'interact', 'idle'}
+        allowed_actions = {"move", "attack", "interact", "idle"}
         if v not in allowed_actions:
-            raise ValueError(f'action_type must be one of {allowed_actions}')
+            raise ValueError(f"action_type must be one of {allowed_actions}")
         return v
 ```
 
@@ -84,15 +86,11 @@ from mcap_owa.highlevel import OWAMcapWriter, OWAMcapReader
 from owa.core import MESSAGES
 
 # Access your custom message through the registry
-TemperatureReading = MESSAGES['sensors/TemperatureReading']
+TemperatureReading = MESSAGES["sensors/TemperatureReading"]
 
 # Write custom messages to MCAP
 with OWAMcapWriter("sensor_data.mcap") as writer:
-    reading = TemperatureReading(
-        temperature=23.5,
-        humidity=65.2,
-        location="office_desk"
-    )
+    reading = TemperatureReading(temperature=23.5, humidity=65.2, location="office_desk")
     writer.write_message(reading, topic="temperature", timestamp=reading.timestamp)
 
 # Read custom messages from MCAP

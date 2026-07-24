@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Test suite for FactorizedEventEncoder.
 
@@ -230,7 +229,7 @@ class TestFidelity:
             message_type="desktop/KeyboardEvent",
         )
 
-        encoded, images = encoder.encode(msg)
+        encoded, _images = encoder.encode(msg)
 
         # Should contain VK_65 token for A key
         assert "<VK_65>" in encoded, f"Expected <VK_65> token in encoded string: {encoded}"
@@ -244,7 +243,7 @@ class TestFidelity:
             message_type="desktop/RawMouseEvent",
         )
 
-        encoded, images = encoder.encode(msg)
+        encoded, _images = encoder.encode(msg)
 
         # Should contain MB tokens for button flags
         assert any(f"<MB_{i}>" in encoded for i in range(16)), f"Expected MB tokens in encoded string: {encoded}"
@@ -258,7 +257,7 @@ class TestFidelity:
             message_type="desktop/RawMouseEvent",
         )
 
-        encoded, images = encoder.encode(msg)
+        encoded, _images = encoder.encode(msg)
 
         # Should contain SIGN tokens for signed values
         assert "<SIGN_MINUS>" in encoded, f"Expected <SIGN_MINUS> token in encoded string: {encoded}"
@@ -314,11 +313,11 @@ class TestFidelity:
                 # Should issue warning and work (with clamping)
                 with pytest.warns(UserWarning, match=r"Mouse delta value .* is outside valid range"):
                     encoded, images = encoder.encode(msg)
-                    decoded = encoder.decode(encoded, images)
-                    result = orjson.loads(decoded.message)
-                    # Values should be clamped to valid range
-                    assert min_delta <= result["last_x"] <= max_delta
-                    assert min_delta <= result["last_y"] <= max_delta
+                decoded = encoder.decode(encoded, images)
+                result = orjson.loads(decoded.message)
+                # Values should be clamped to valid range
+                assert min_delta <= result["last_x"] <= max_delta
+                assert min_delta <= result["last_y"] <= max_delta
 
     def test_invalid_token_errors(self, encoder):
         """Test that invalid token formats raise appropriate errors."""
@@ -465,11 +464,11 @@ class TestEdgeCases:
                 # Should warn for out-of-range mouse deltas and work (with clamping)
                 with pytest.warns(UserWarning, match=r"Mouse delta value .* is outside valid range"):
                     encoded, images = encoder.encode(msg)
-                    decoded = encoder.decode(encoded, images)
-                    result = orjson.loads(decoded.message)
-                    # Values should be clamped to valid range
-                    assert min_delta <= result["last_x"] <= max_delta
-                    assert min_delta <= result["last_y"] <= max_delta
+                decoded = encoder.decode(encoded, images)
+                result = orjson.loads(decoded.message)
+                # Values should be clamped to valid range
+                assert min_delta <= result["last_x"] <= max_delta
+                assert min_delta <= result["last_y"] <= max_delta
 
         # Test cases with invalid button_flags (should still raise ValueError)
         invalid_button_cases = [

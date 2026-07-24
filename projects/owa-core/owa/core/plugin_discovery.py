@@ -2,7 +2,6 @@
 # Implements automatic plugin discovery and registration using Python entry points
 
 from importlib.metadata import EntryPoint, entry_points
-from typing import Dict, Optional, Union
 
 from loguru import logger
 
@@ -21,8 +20,8 @@ class PluginDiscovery:
     ENTRY_POINT_GROUP = "owa.env.plugins"
 
     def __init__(self):
-        self.discovered_plugins: Dict[str, PluginSpec] = {}
-        self.failed_plugins: Dict[str, str] = {}  # plugin_name -> error_message
+        self.discovered_plugins: dict[str, PluginSpec] = {}
+        self.failed_plugins: dict[str, str] = {}  # plugin_name -> error_message
 
     def discover_plugins(self) -> None:
         """
@@ -38,7 +37,7 @@ class PluginDiscovery:
         for ep in discovered_eps:
             try:
                 self._load_plugin_spec(ep)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.error(f"Failed to load plugin '{ep.name}': {e}")
                 self.failed_plugins[ep.name] = str(e)
 
@@ -94,7 +93,7 @@ class PluginDiscovery:
             try:
                 registered_count = self._register_plugin_components(plugin_name, plugin_spec)
                 total_registered += registered_count
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.error(f"Failed to register components for plugin '{plugin_name}': {e}")
                 self.failed_plugins[plugin_name] = str(e)
 
@@ -140,7 +139,7 @@ class PluginDiscovery:
         logger.info(f"Registered {registered_count} components for plugin '{plugin_name}'")
         return registered_count
 
-    def get_plugin_info(self, plugin_name: Optional[Union[str, list[str]]] = None) -> tuple[Dict, Dict]:
+    def get_plugin_info(self, plugin_name: str | list[str] | None = None) -> tuple[dict, dict]:
         """
         Get information about discovered plugins.
 

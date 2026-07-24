@@ -7,14 +7,13 @@ to avoid code duplication and ensure consistency.
 
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 from rich.table import Table
 
 from mcap_owa.highlevel import OWAMcapReader
 
 
-def format_file_size(size_bytes: Optional[int]) -> str:
+def format_file_size(size_bytes: int | None) -> str:
     """
     Format file size in human-readable format.
 
@@ -35,7 +34,7 @@ def format_file_size(size_bytes: Optional[int]) -> str:
         return f"{size_bytes / (1024 * 1024):.1f} MB"
 
 
-def format_datetime(dt: Optional[datetime]) -> str:
+def format_datetime(dt: datetime | None) -> str:
     """
     Format datetime in consistent format.
 
@@ -65,7 +64,7 @@ def detect_mcap_version(file_path: Path) -> str:
         with OWAMcapReader(file_path) as reader:
             file_version = reader.file_version
             return file_version if file_version and file_version != "unknown" else "unknown"
-    except Exception:
+    except Exception:  # noqa: BLE001
         return "unknown"
 
 

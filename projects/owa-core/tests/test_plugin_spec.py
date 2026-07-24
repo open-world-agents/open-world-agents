@@ -195,7 +195,7 @@ class TestPluginSpecYAML:
         # Non-dictionary YAML content
         non_dict_yaml_file = tmp_path / "non_dict.yaml"
         non_dict_yaml_file.write_text(yaml.dump(["not", "a", "dictionary"]))
-        with pytest.raises(ValueError, match="YAML file must contain a dictionary"):
+        with pytest.raises(TypeError, match="YAML file must contain a dictionary"):
             PluginSpec.from_yaml(str(non_dict_yaml_file))
 
     def test_to_yaml_success(self, tmp_path):
@@ -260,20 +260,26 @@ class TestPluginSpecEntryPoint:
             PluginSpec.from_entry_point("invalid_format_without_colon")
 
         # Import error
-        with patch("importlib.import_module", side_effect=ImportError("Module not found")):
-            with pytest.raises(ImportError, match="Cannot import module"):
-                PluginSpec.from_entry_point("nonexistent.module:plugin_spec")
+        with (
+            patch("importlib.import_module", side_effect=ImportError("Module not found")),
+            pytest.raises(ImportError, match="Cannot import module"),
+        ):
+            PluginSpec.from_entry_point("nonexistent.module:plugin_spec")
 
         # Missing attribute
         mock_module = Mock()
         del mock_module.plugin_spec
-        with patch("importlib.import_module", return_value=mock_module):
-            with pytest.raises(AttributeError, match="Object .* not found in module"):
-                PluginSpec.from_entry_point("test.module:plugin_spec")
+        with (
+            patch("importlib.import_module", return_value=mock_module),
+            pytest.raises(AttributeError, match="Object .* not found in module"),
+        ):
+            PluginSpec.from_entry_point("test.module:plugin_spec")
 
         # Wrong object type
         mock_module = Mock()
         mock_module.plugin_spec = "not a PluginSpec instance"
-        with patch("importlib.import_module", return_value=mock_module):
-            with pytest.raises(TypeError, match="Object .* must be a PluginSpec instance"):
-                PluginSpec.from_entry_point("test.module:plugin_spec")
+        with (
+            patch("importlib.import_module", return_value=mock_module),
+            pytest.raises(TypeError, match="Object .* must be a PluginSpec instance"),
+        ):
+            PluginSpec.from_entry_point("test.module:plugin_spec")

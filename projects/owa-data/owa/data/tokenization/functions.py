@@ -8,7 +8,8 @@ They require an EventTokenizationContext that contains all necessary dependencie
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Iterator, List, Literal, TypedDict, Union, overload
+from collections.abc import Iterator
+from typing import TYPE_CHECKING, Literal, TypedDict, overload
 
 import numpy as np
 import numpy.typing as npt
@@ -27,8 +28,8 @@ class TokenizedEvent(TypedDict):
     """Result of tokenizing a single event."""
 
     text: str
-    images: List[ScreenCaptured]
-    token_ids: List[int]
+    images: list[ScreenCaptured]
+    token_ids: list[int]
     total_token_count: int
 
 
@@ -55,7 +56,7 @@ def tokenize_event(
     mcap_msg: McapMessage,
     *,
     return_dict: bool = True,
-) -> Union[TokenizedEvent, npt.NDArray[np.int64]]:
+) -> TokenizedEvent | npt.NDArray[np.int64]:
     """Tokenize a single McapMessage to token IDs.
 
     Args:
@@ -139,7 +140,7 @@ def tokenize_episode(
 
 def decode_episode(
     ctx: EventTokenizationContext,
-    input_ids_or_text: Union[List[int], npt.NDArray[np.int64], str],
+    input_ids_or_text: list[int] | npt.NDArray[np.int64] | str,
     *,
     skip_invalid: bool = True,
     adjust_timestamp: bool = True,
@@ -198,16 +199,16 @@ def decode_episode(
 
             yield event
             previous_timestamp = event.timestamp
-        except Exception as e:
+        except Exception:
             if not skip_invalid:
-                raise e
+                raise
 
 
 def tokenize_event_dataset(
     ctx: EventTokenizationContext,
-    event_dataset: "Dataset",
+    event_dataset: Dataset,
     map_kwargs: dict | None = None,
-) -> "Dataset":
+) -> Dataset:
     """Tokenize an entire event dataset.
 
     Args:
@@ -224,7 +225,7 @@ def tokenize_event_dataset(
         map_kwargs = {"num_proc": 32}
 
     if not isinstance(event_dataset, Dataset):
-        raise ValueError(f"Expected Dataset from `owa.data.datasets`, got {type(event_dataset)}")
+        raise TypeError(f"Expected Dataset from `owa.data.datasets`, got {type(event_dataset)}")
 
     def process_event(event):
         mcap_message = McapMessage.model_validate_json(event["mcap_message"])

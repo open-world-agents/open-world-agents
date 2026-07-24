@@ -9,7 +9,7 @@ BaseMessage interface to ensure consistent serialization and schema handling.
 import io
 import warnings
 from abc import ABC, abstractmethod
-from typing import Any, ClassVar, Dict, Self
+from typing import Any, ClassVar, Self
 
 from pydantic import BaseModel, model_validator
 from pydantic.fields import ModelPrivateAttr
@@ -34,7 +34,6 @@ class BaseMessage(ABC):
         Args:
             buffer: Binary buffer to write the serialized message to
         """
-        pass
 
     @classmethod
     @abstractmethod
@@ -48,18 +47,16 @@ class BaseMessage(ABC):
         Returns:
             Deserialized message instance
         """
-        pass
 
     @classmethod
     @abstractmethod
-    def get_schema(cls) -> Dict[str, Any]:
+    def get_schema(cls) -> dict[str, Any]:
         """
         Get the JSON schema for this message type.
 
         Returns:
             JSON schema dictionary
         """
-        pass
 
 
 # TODO: define message with https://github.com/jcrist/msgspec
@@ -102,7 +99,7 @@ class OWAMessage(BaseModel, BaseMessage):
         return cls.model_validate_json(buffer.read())
 
     @classmethod
-    def get_schema(cls) -> Dict[str, Any]:
+    def get_schema(cls) -> dict[str, Any]:
         """
         Get the JSON schema for this message type.
 

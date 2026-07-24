@@ -7,7 +7,6 @@ quality and provides statistics with proper exit codes for CI/CD integration.
 
 import json
 import sys
-from typing import Optional
 
 import typer
 from rich.table import Table
@@ -19,7 +18,7 @@ from ..console import console
 
 
 def docs(
-    plugin_namespace: Optional[str] = typer.Argument(None, help="Specific plugin namespace (optional)"),
+    plugin_namespace: str | None = typer.Argument(None, help="Specific plugin namespace (optional)"),
     strict: bool = typer.Option(False, "--strict", help="Enable strict mode (100% coverage + 100% quality)"),
     min_coverage_pass: float = typer.Option(0.8, "--min-coverage-pass", help="Minimum coverage for PASS status"),
     min_coverage_fail: float = typer.Option(0.6, "--min-coverage-fail", help="Minimum coverage to avoid FAIL status"),
@@ -83,7 +82,7 @@ def docs(
         # Exit with appropriate code
         sys.exit(0 if all_pass else 1)
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         console.print(f"[red]❌ ERROR: {e}[/red]")
         sys.exit(2)
 

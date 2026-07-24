@@ -4,10 +4,13 @@ import shutil
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Optional
 
 import typer
 from tqdm import tqdm
+
+
+class VideoConversionError(Exception):
+    """Raised when a VFR-to-CFR conversion cannot be completed safely."""
 
 
 def is_vfr(file_path: Path) -> bool:
@@ -88,24 +91,24 @@ def convert_to_cfr(file_path: Path, dry_run: bool = False) -> str:
 
     try:
         if backup_file.exists():
-            raise Exception(f"Backup file already exists: {backup_file}")
+            raise VideoConversionError(f"Backup file already exists: {backup_file}")
 
         cmd.append(str(temp_file))
         subprocess.run(cmd, capture_output=True, text=True, check=True)
 
         if not temp_file.exists() or temp_file.stat().st_size < 1000:
-            raise Exception("Output file missing or too small")
+            raise VideoConversionError("Output file missing or too small")
 
         shutil.copy2(file_path, backup_file)
         shutil.move(str(temp_file), str(file_path))
 
         if not file_path.exists() or file_path.stat().st_size < 1000:
-            raise Exception("File replacement failed")
+            raise VideoConversionError("File replacement failed")
 
         backup_file.unlink(missing_ok=True)
         return f"Successfully converted '{file_path.name}' to CFR"
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         if backup_file.exists() and (not file_path.exists() or file_path.stat().st_size < 1000):
             shutil.move(str(backup_file), str(file_path))
             return f"Error converting '{file_path.name}': {e} (restored from backup)"
@@ -139,7 +142,7 @@ def process_file(file_path: Path, dry_run: bool = False):
         print(f"'{file_path.name}' is already using CFR. No conversion needed.")
 
 
-def process_directory(directory_path: Path, max_workers: Optional[int] = None, dry_run: bool = False):
+def process_directory(directory_path: Path, max_workers: int | None = None, dry_run: bool = False):
     """Process all .mkv files in directory recursively."""
     if not directory_path.is_dir():
         print(f"Error: '{directory_path}' is not a valid directory")
@@ -164,25 +167,27 @@ def process_directory(directory_path: Path, max_workers: Optional[int] = None, d
 
     # Convert files
     desc = "Analyzing conversions (dry run)" if dry_run else "Converting to CFR"
-    with tqdm(total=len(vfr_files), desc=desc, unit="file") as pbar:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            future_to_file = {executor.submit(convert_to_cfr, file, dry_run): file for file in vfr_files}
+    with (
+        tqdm(total=len(vfr_files), desc=desc, unit="file") as pbar,
+        concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor,
+    ):
+        future_to_file = {executor.submit(convert_to_cfr, file, dry_run): file for file in vfr_files}
 
-            for future in concurrent.futures.as_completed(future_to_file):
-                file = future_to_file[future]
-                try:
-                    result = future.result()
-                    pbar.set_postfix_str(f"{'Analyzed' if dry_run else 'Completed'} {file.name}")
-                    print(result)
-                except Exception as e:
-                    print(f"Error processing '{file.name}': {e}")
-                finally:
-                    pbar.update(1)
+        for future in concurrent.futures.as_completed(future_to_file):
+            file = future_to_file[future]
+            try:
+                result = future.result()
+                pbar.set_postfix_str(f"{'Analyzed' if dry_run else 'Completed'} {file.name}")
+                print(result)
+            except Exception as e:  # noqa: BLE001
+                print(f"Error processing '{file.name}': {e}")
+            finally:
+                pbar.update(1)
 
 
 def main(
     path: str = typer.Argument(..., help="Path to MKV file or directory containing MKV files"),
-    workers: Optional[int] = typer.Option(None, "--workers", "-w", help="Maximum number of parallel conversions"),
+    workers: int | None = typer.Option(None, "--workers", "-w", help="Maximum number of parallel conversions"),
     dry_run: bool = typer.Option(False, "--dry-run", help="Show what would be done without actually converting files"),
 ):
     """Convert MKV files with Variable Frame Rate (VFR) to Constant Frame Rate (CFR)."""

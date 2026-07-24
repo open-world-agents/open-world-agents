@@ -161,8 +161,9 @@ OWA provides standardized message types through the `owa-msgs` package for consi
         _type = "desktop/KeyboardEvent"
 
         event_type: str  # "press" or "release"
-        vk: int         # Virtual key code (e.g., 65 for 'A')
+        vk: int  # Virtual key code (e.g., 65 for 'A')
         timestamp: int  # Event timestamp
+
 
     # Example: User presses the 'A' key
     KeyboardEvent(event_type="press", vk=65, timestamp=1234567890)
@@ -181,6 +182,7 @@ OWA provides standardized message types through the `owa-msgs` package for consi
 
         buttons: List[int]  # List of currently pressed virtual key codes
 
+
     # Example: No keys currently pressed
     KeyboardState(buttons=[])
     ```
@@ -191,9 +193,10 @@ OWA provides standardized message types through the `owa-msgs` package for consi
         _type = "desktop/MouseEvent"
 
         event_type: str  # "move", "click", "scroll", "drag"
-        x: int          # Screen X coordinate
-        y: int          # Screen Y coordinate
-        button: Optional[str] = None    # "left", "right", "middle"
+        x: int  # Screen X coordinate
+        y: int  # Screen Y coordinate
+        button: Optional[str] = None  # "left", "right", "middle"
+
 
     # Example: Mouse click at position (100, 200)
     MouseEvent(event_type="click", x=100, y=200, button="left")
@@ -204,9 +207,10 @@ OWA provides standardized message types through the `owa-msgs` package for consi
     class MouseState(OWAMessage):
         _type = "desktop/MouseState"
 
-        x: int                    # Current mouse X coordinate
-        y: int                    # Current mouse Y coordinate
-        buttons: List[str] = []   # Currently pressed mouse buttons
+        x: int  # Current mouse X coordinate
+        y: int  # Current mouse Y coordinate
+        buttons: List[str] = []  # Currently pressed mouse buttons
+
 
     # Example: Mouse at position with no buttons pressed
     MouseState(x=1594, y=1112, buttons=[])
@@ -234,11 +238,11 @@ OWA provides standardized message types through the `owa-msgs` package for consi
     class ScreenCaptured(OWAMessage):
         _type = "desktop/ScreenCaptured"
 
-        utc_ns: Optional[int] = None                    # System timestamp (nanoseconds)
+        utc_ns: Optional[int] = None  # System timestamp (nanoseconds)
         source_shape: Optional[Tuple[int, int]] = None  # Original (width, height)
-        shape: Optional[Tuple[int, int]] = None         # Current (width, height)
-        media_ref: Optional[MediaRef] = None            # URI or file path reference
-        frame_arr: Optional[np.ndarray] = None          # In-memory BGRA array (excluded from JSON)
+        shape: Optional[Tuple[int, int]] = None  # Current (width, height)
+        media_ref: Optional[MediaRef] = None  # URI or file path reference
+        frame_arr: Optional[np.ndarray] = None  # In-memory BGRA array (excluded from JSON)
     ```
 
     !!! tip "Working with ScreenCaptured Messages"
@@ -249,15 +253,13 @@ OWA provides standardized message types through the `owa-msgs` package for consi
     class WindowInfo(OWAMessage):
         _type = "desktop/WindowInfo"
 
-        title: str              # Window title text
-        rect: List[int]         # [x, y, width, height]
-        hWnd: Optional[int]     # Windows handle (platform-specific)
+        title: str  # Window title text
+        rect: List[int]  # [x, y, width, height]
+        hWnd: Optional[int]  # Windows handle (platform-specific)
+
 
     # Example: Browser window
-    WindowInfo(
-        title="GitHub - Open World Agents - Chrome",
-        rect=[100, 50, 1200, 800]
-    )
+    WindowInfo(title="GitHub - Open World Agents - Chrome", rect=[100, 50, 1200, 800])
     ```
 
 ## Working with OWAMcap
@@ -286,7 +288,7 @@ OWAMcap's key advantage is efficient media handling through external media refer
     from owa.core import MESSAGES
     import numpy as np
 
-    ScreenCaptured = MESSAGES['desktop/ScreenCaptured']
+    ScreenCaptured = MESSAGES["desktop/ScreenCaptured"]
 
     # File paths (absolute/relative) - works for images and videos
     screen_msg = ScreenCaptured(media_ref={"uri": "/absolute/path/image.png"})
@@ -324,18 +326,16 @@ OWAMcap's key advantage is efficient media handling through external media refer
     ```python
     # IMPORTANT: For MCAP files, resolve relative paths first
     # The OWA recorder saves media paths relative to the MCAP file location
-    ScreenCaptured = MESSAGES['desktop/ScreenCaptured']
-    screen_msg = ScreenCaptured(
-        media_ref={"uri": "relative/video.mkv", "pts_ns": 123456789}
-    )
+    ScreenCaptured = MESSAGES["desktop/ScreenCaptured"]
+    screen_msg = ScreenCaptured(media_ref={"uri": "relative/video.mkv", "pts_ns": 123456789})
 
     # Must resolve external paths before loading from MCAP files
     screen_msg.resolve_relative_path("/path/to/data.mcap")
 
     # Lazy loading: Frame data is loaded on-demand when these methods are called
-    rgb_array = screen_msg.to_rgb_array()        # RGB numpy array (most common)
-    pil_image = screen_msg.to_pil_image()        # PIL Image object
-    bgra_array = screen_msg.load_frame_array()   # Raw BGRA array (native format)
+    rgb_array = screen_msg.to_rgb_array()  # RGB numpy array (most common)
+    pil_image = screen_msg.to_pil_image()  # PIL Image object
+    bgra_array = screen_msg.load_frame_array()  # Raw BGRA array (native format)
 
     # Check if frame data is loaded (lazy loading means it starts as None)
     if screen_msg.frame_arr is not None:
@@ -373,15 +373,13 @@ OWAMcap's key advantage is efficient media handling through external media refer
     from mcap_owa.highlevel import OWAMcapWriter
     from owa.core import MESSAGES
 
-    ScreenCaptured = MESSAGES['desktop/ScreenCaptured']
-    MouseEvent = MESSAGES['desktop/MouseEvent']
+    ScreenCaptured = MESSAGES["desktop/ScreenCaptured"]
+    MouseEvent = MESSAGES["desktop/MouseEvent"]
 
     with OWAMcapWriter("output.mcap") as writer:
         # Write screen capture
         screen_msg = ScreenCaptured(
-            utc_ns=1234567890,
-            media_ref={"uri": "video.mkv", "pts_ns": 1234567890},
-            shape=(1920, 1080)
+            utc_ns=1234567890, media_ref={"uri": "video.mkv", "pts_ns": 1234567890}, shape=(1920, 1080)
         )
         writer.write_message(screen_msg, topic="screen", timestamp=1234567890)
 
@@ -395,7 +393,7 @@ OWAMcap's key advantage is efficient media handling through external media refer
     # Time range filtering
     with OWAMcapReader("session.mcap") as reader:
         start_time = reader.start_time + 1_000_000_000  # Skip first second
-        end_time = reader.start_time + 10_000_000_000   # First 10 seconds
+        end_time = reader.start_time + 10_000_000_000  # First 10 seconds
 
         for msg in reader.iter_messages(start_time=start_time, end_time=end_time):
             print(f"Message in range: {msg.topic}")

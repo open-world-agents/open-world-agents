@@ -100,7 +100,7 @@ class TestMessageSystemIntegration:
     def test_domain_based_naming_convention(self):
         """Test that domain-based naming convention is properly implemented."""
         # All desktop messages should use domain/MessageType format
-        desktop_messages = [name for name in MESSAGES.keys() if name.startswith("desktop/")]
+        desktop_messages = [name for name in MESSAGES if name.startswith("desktop/")]
 
         assert len(desktop_messages) >= 4
 

@@ -1,6 +1,5 @@
 import re
 import sys
-from typing import Optional
 
 import typer
 from rich.table import Table
@@ -13,8 +12,8 @@ from ..console import console
 
 def search_components(
     pattern: str = typer.Argument(..., help="Search pattern (regex supported)"),
-    component_type: Optional[str] = typer.Option(None, "--type", "-t", help="Filter by component type"),
-    namespace: Optional[str] = typer.Option(None, "--namespace", "-n", help="Filter by namespace"),
+    component_type: str | None = typer.Option(None, "--type", "-t", help="Filter by component type"),
+    namespace: str | None = typer.Option(None, "--namespace", "-n", help="Filter by namespace"),
     case_sensitive: bool = typer.Option(False, "--case-sensitive", "-c", help="Case sensitive search"),
     details: bool = typer.Option(False, "--details", "-d", help="Show detailed component information"),
     table_format: bool = typer.Option(False, "--table", help="Display results in table format"),

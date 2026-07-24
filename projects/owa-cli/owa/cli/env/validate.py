@@ -79,12 +79,12 @@ def _validate_component_imports(spec: PluginSpec) -> list[str]:
                         errors.append(f"{component_type}/{name}: Object '{object_name}' is not callable")
 
                 except ImportError as e:
-                    errors.append(f"{component_type}/{name}: Module '{module_path}' could not be imported - {str(e)}")
+                    errors.append(f"{component_type}/{name}: Module '{module_path}' could not be imported - {e!s}")
                 except AttributeError as e:
-                    errors.append(f"{component_type}/{name}: Object '{object_name}' not accessible - {str(e)}")
+                    errors.append(f"{component_type}/{name}: Object '{object_name}' not accessible - {e!s}")
 
-            except Exception as e:
-                errors.append(f"{component_type}/{name}: Import validation failed - {str(e)}")
+            except Exception as e:  # noqa: BLE001
+                errors.append(f"{component_type}/{name}: Import validation failed - {e!s}")
 
     return errors
 
@@ -217,14 +217,14 @@ def validate_plugin(
             sys.exit(0)
 
     except FileNotFoundError as e:
-        console.print(f"[red]Error: {str(e)}[/red]")
+        console.print(f"[red]Error: {e!s}[/red]")
         sys.exit(1)
     except yaml.YAMLError as e:
-        console.print(f"[red]Error: Invalid YAML - {str(e)}[/red]")
+        console.print(f"[red]Error: Invalid YAML - {e!s}[/red]")
         sys.exit(1)
     except (ImportError, AttributeError, TypeError) as e:
-        console.print(f"[red]Error: Entry point validation failed - {str(e)}[/red]")
+        console.print(f"[red]Error: Entry point validation failed - {e!s}[/red]")
         sys.exit(1)
-    except Exception as e:
-        console.print(f"[red]Error: Plugin specification validation failed - {str(e)}[/red]")
+    except Exception as e:  # noqa: BLE001
+        console.print(f"[red]Error: Plugin specification validation failed - {e!s}[/red]")
         sys.exit(1)

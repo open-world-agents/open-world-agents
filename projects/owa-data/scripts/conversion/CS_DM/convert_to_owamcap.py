@@ -19,7 +19,7 @@
 import time
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Dict, List, Optional, Set, Tuple
+from typing import Annotated
 
 import cv2
 import h5py
@@ -69,7 +69,7 @@ MOUSE_BUTTONS = {
 }
 
 
-def decode_actions(action_vector: np.ndarray) -> Dict:
+def decode_actions(action_vector: np.ndarray) -> dict:
     """Decode 51-dimensional action vector."""
     # Keys (indices 0-10)
     key_names = ["w", "a", "s", "d", "space", "ctrl", "shift", "1", "2", "3", "r"]
@@ -127,7 +127,7 @@ def decode_actions(action_vector: np.ndarray) -> Dict:
     }
 
 
-def handle_keyboard_events(writer: OWAMcapWriter, current_keys: List[str], keyboard_state: Set[str], timestamp: int):
+def handle_keyboard_events(writer: OWAMcapWriter, current_keys: list[str], keyboard_state: set[str], timestamp: int):
     """Handle keyboard press/release events using state-change approach."""
     # Release keys not in current frame
     for key in list(keyboard_state):
@@ -145,7 +145,7 @@ def handle_keyboard_events(writer: OWAMcapWriter, current_keys: List[str], keybo
             writer.write_message(event, topic="keyboard", timestamp=timestamp)
 
 
-def handle_mouse_events(writer: OWAMcapWriter, action: Dict, button_state: Set[str], timestamp: int):
+def handle_mouse_events(writer: OWAMcapWriter, action: dict, button_state: set[str], timestamp: int):
     """Handle mouse movement and button events using state-change approach."""
     # Handle mouse movement
     if action["mouse_dx"] != 0 or action["mouse_dy"] != 0:
@@ -181,7 +181,7 @@ def handle_mouse_events(writer: OWAMcapWriter, action: Dict, button_state: Set[s
             writer.write_message(event, topic="mouse/raw", timestamp=timestamp)
 
 
-def create_video_from_frames(frames: List[np.ndarray], output_path: Path, video_format: str = "mkv") -> None:
+def create_video_from_frames(frames: list[np.ndarray], output_path: Path, video_format: str = "mkv") -> None:
     """Create video file from frames."""
     if not frames:
         raise ValueError("No frames provided")
@@ -195,12 +195,12 @@ def create_video_from_frames(frames: List[np.ndarray], output_path: Path, video_
             writer.write_frame(frame)
 
 
-def load_hdf5_data(hdf5_path: Path, max_frames: Optional[int] = None) -> Tuple[List[np.ndarray], List[Dict]]:
+def load_hdf5_data(hdf5_path: Path, max_frames: int | None = None) -> tuple[list[np.ndarray], list[dict]]:
     """Load frames and actions from HDF5 file."""
     frames, actions = [], []
 
     with h5py.File(hdf5_path, "r") as f:
-        frame_keys = [k for k in f.keys() if k.startswith("frame_") and k.endswith("_x")]
+        frame_keys = [k for k in f if k.startswith("frame_") and k.endswith("_x")]
         num_frames = min(len(frame_keys), max_frames) if max_frames else len(frame_keys)
 
         if num_frames == 0:
@@ -227,7 +227,7 @@ def load_hdf5_data(hdf5_path: Path, max_frames: Optional[int] = None) -> Tuple[L
 
 
 def convert_hdf5_to_owamcap(
-    hdf5_path: Path, output_dir: Path, storage_mode: str = "external_mkv", max_frames: Optional[int] = None
+    hdf5_path: Path, output_dir: Path, storage_mode: str = "external_mkv", max_frames: int | None = None
 ) -> Path:
     """Convert HDF5 file to OWAMcap format."""
     if not hdf5_path.exists():
@@ -247,8 +247,8 @@ def convert_hdf5_to_owamcap(
         create_video_from_frames(frames, video_path, video_format)
 
     # Create MCAP file
-    keyboard_state: Set[str] = set()
-    button_state: Set[str] = set()
+    keyboard_state: set[str] = set()
+    button_state: set[str] = set()
     with OWAMcapWriter(str(mcap_path)) as writer:
         last_window_time = -1
 
@@ -288,14 +288,14 @@ def convert_hdf5_to_owamcap(
     return mcap_path
 
 
-def convert_single_file(args_tuple: Tuple[Path, Path, str, Optional[int]]) -> Tuple[bool, Path, Optional[str]]:
+def convert_single_file(args_tuple: tuple[Path, Path, str, int | None]) -> tuple[bool, Path, str | None]:
     """Wrapper function for parallel processing of a single HDF5 file."""
     hdf5_path, output_dir, storage_mode, max_frames = args_tuple
 
     try:
         mcap_path = convert_hdf5_to_owamcap(hdf5_path, output_dir, storage_mode, max_frames)
         return True, mcap_path, None
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         # Cleanup files on failure
         mcap_path = output_dir / f"{hdf5_path.stem}.mcap"
         video_extensions = [".mp4", ".mkv"]
@@ -311,7 +311,7 @@ def convert_single_file(args_tuple: Tuple[Path, Path, str, Optional[int]]) -> Tu
         return False, hdf5_path, str(e)
 
 
-def find_hdf5_files(input_dir: Path, subset: Optional[str] = None) -> List[Path]:
+def find_hdf5_files(input_dir: Path, subset: str | None = None) -> list[Path]:
     """Find HDF5 files in the input directory."""
     if subset:
         subset_dir = input_dir / f"dataset_{subset}"
@@ -322,8 +322,8 @@ def find_hdf5_files(input_dir: Path, subset: Optional[str] = None) -> List[Path]
 
 
 def process_files_parallel(
-    hdf5_files: List[Path], output_dir: Path, storage_mode: str, max_frames: Optional[int], workers: int
-) -> Tuple[List[Path], List[Tuple[Path, str]]]:
+    hdf5_files: list[Path], output_dir: Path, storage_mode: str, max_frames: int | None, workers: int
+) -> tuple[list[Path], list[tuple[Path, str]]]:
     """Process HDF5 files in parallel using joblib."""
     conversion_tasks = [
         delayed(convert_single_file)((hdf5_file, output_dir, storage_mode, max_frames)) for hdf5_file in hdf5_files
@@ -370,10 +370,10 @@ class Subset(str, Enum):
 def convert(
     input_dir: Annotated[Path, typer.Argument(help="Input directory containing HDF5 files")],
     output_dir: Annotated[Path, typer.Argument(help="Output directory for OWAMcap files")],
-    max_files: Annotated[Optional[int], typer.Option(help="Maximum number of files to convert")] = None,
-    max_frames: Annotated[Optional[int], typer.Option(help="Maximum frames per file to convert")] = None,
+    max_files: Annotated[int | None, typer.Option(help="Maximum number of files to convert")] = None,
+    max_frames: Annotated[int | None, typer.Option(help="Maximum frames per file to convert")] = None,
     storage_mode: Annotated[StorageMode, typer.Option(help="How to store screen frames")] = StorageMode.external_mkv,
-    subset: Annotated[Optional[Subset], typer.Option(help="Convert specific subset only")] = None,
+    subset: Annotated[Subset | None, typer.Option(help="Convert specific subset only")] = None,
     workers: Annotated[int, typer.Option(help="Number of parallel workers")] = 4,
 ):
     """Convert CS:GO HDF5 files to OWAMcap format."""
@@ -462,7 +462,7 @@ def verify(output_dir: Annotated[Path, typer.Argument(help="Output directory con
                     else:
                         invalid_files.append((mcap_file.name, duration_s, screen_mouse_count))
 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 invalid_files.append((mcap_file.name, f"ERROR: {e}"))
 
     typer.echo(f"✅ Valid: {valid_files}/{len(mcap_files)} ({valid_files / len(mcap_files) * 100:.1f}%)")

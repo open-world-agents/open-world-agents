@@ -1,10 +1,9 @@
 import enum
-from typing import Union
 
 from pynput.keyboard import Key, KeyCode
 
 
-def key_to_vk(key: Union[Key, KeyCode, None]) -> int:
+def key_to_vk(key: Key | KeyCode | None) -> int:
     """Converts a pynput key to a virtual key code.
 
     The key parameter passed to callbacks is a `pynput.keyboard.Key` for special keys,

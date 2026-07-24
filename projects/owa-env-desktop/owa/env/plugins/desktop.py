@@ -16,7 +16,7 @@ def _get_package_version() -> str:
 
     try:
         return version("owa-env-desktop")
-    except Exception:
+    except Exception:  # noqa: BLE001
         return "unknown"
 
 

@@ -20,8 +20,8 @@ The recommended way to access messages is through the global registry:
 from owa.core import MESSAGES
 
 # Access message classes by type name
-KeyboardEvent = MESSAGES['desktop/KeyboardEvent']
-MouseEvent = MESSAGES['desktop/MouseEvent']
+KeyboardEvent = MESSAGES["desktop/KeyboardEvent"]
+MouseEvent = MESSAGES["desktop/MouseEvent"]
 
 # Create message instances
 event = KeyboardEvent(event_type="press", vk=65)

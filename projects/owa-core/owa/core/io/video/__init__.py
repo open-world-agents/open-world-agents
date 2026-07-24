@@ -9,4 +9,4 @@ from .reader import BatchDecodingStrategy, VideoReader
 from .typing import SECOND_TYPE, PTSUnit
 from .writer import VideoWriter
 
-__all__ = ["BatchDecodingStrategy", "VideoReader", "VideoWriter", "SECOND_TYPE", "PTSUnit"]
+__all__ = ["SECOND_TYPE", "BatchDecodingStrategy", "PTSUnit", "VideoReader", "VideoWriter"]

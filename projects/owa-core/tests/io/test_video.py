@@ -257,7 +257,7 @@ def test_video_reader_remote_url(test_url, expected_frame_shape):
 
             assert frame_count > 0, "Should read at least one frame from remote video"
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         # If network is unavailable, skip the test
         pytest.skip(f"Network test skipped due to error: {e}")
 
@@ -286,7 +286,7 @@ def test_video_reader_container_caching_with_urls():
         # The test passes if no exceptions are raised during container creation/caching
         assert True, "Container caching mechanism works with URLs"
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         # If the URL doesn't work, that's fine - we're testing the caching mechanism
         pytest.skip(f"URL caching test skipped due to network/URL issue: {e}")
 
@@ -305,7 +305,7 @@ def test_video_reader_url_schemes(url_type, test_url):
         # This will likely fail at PyAV level since these aren't video files,
         # but our URL validation should pass
         VideoReader(test_url)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         # Should not fail due to URL scheme validation
         assert "Unsupported URL scheme" not in str(e)
         # Any other error (like "not a video file") is acceptable for this test

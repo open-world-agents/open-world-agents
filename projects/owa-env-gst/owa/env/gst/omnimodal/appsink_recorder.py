@@ -1,4 +1,3 @@
-# ruff: noqa: E402
 # To suppress the warning for E402, waiting for https://github.com/astral-sh/ruff/issues/3711
 
 import gi
@@ -7,8 +6,9 @@ gi.require_version("Gst", "1.0")
 
 
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from gi.repository import Gst
 from loguru import logger

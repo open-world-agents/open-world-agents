@@ -1,6 +1,7 @@
+from typing import Annotated
+
 import pygetwindow as gw
 import typer
-from typing_extensions import Annotated
 
 from owa.core.registry import CALLABLES
 
@@ -55,7 +56,7 @@ def resize(
         win.resizeTo(width, height)
         typer.echo(f"Successfully resized '{window_name}' to {width}x{height}")
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         typer.echo(f"Error: {e}")
         raise typer.Exit(1)
 

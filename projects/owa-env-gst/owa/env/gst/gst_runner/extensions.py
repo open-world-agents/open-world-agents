@@ -1,4 +1,3 @@
-# ruff: noqa: E402
 # To suppress the warning for E402, waiting for https://github.com/astral-sh/ruff/issues/3711
 import gi
 
@@ -129,4 +128,4 @@ class FPSDisplayExtension:
         fpsdisplaysink.set_property("signal-fps-measurements", True)
 
 
-__all__ = ["AppsinkExtension", "SeekExtension", "FPSDisplayExtension"]
+__all__ = ["AppsinkExtension", "FPSDisplayExtension", "SeekExtension"]

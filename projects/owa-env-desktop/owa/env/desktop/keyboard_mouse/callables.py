@@ -1,6 +1,6 @@
 import sys
 import time
-from typing import Any, Dict, Literal, overload
+from typing import Any, Literal, overload
 
 from pynput.keyboard import Controller as KeyboardController
 from pynput.mouse import Button
@@ -242,7 +242,7 @@ def get_pointer_ballistics_config() -> PointerBallisticsConfig:
 
     try:
         return PointerBallisticsConfig(**_get_mouse_registry_values())
-    except Exception:
+    except Exception:  # noqa: BLE001
         return PointerBallisticsConfig()  # Return default values
 
 
@@ -265,14 +265,14 @@ def _get_mouse_registry_values() -> dict:
 
 
 @overload
-def get_keyboard_repeat_timing(*, return_seconds: Literal[True] = True) -> Dict[str, float]: ...
+def get_keyboard_repeat_timing(*, return_seconds: Literal[True] = True) -> dict[str, float]: ...
 
 
 @overload
-def get_keyboard_repeat_timing(*, return_seconds: Literal[False]) -> Dict[str, int]: ...
+def get_keyboard_repeat_timing(*, return_seconds: Literal[False]) -> dict[str, int]: ...
 
 
-def get_keyboard_repeat_timing(*, return_seconds: bool = True) -> Dict[str, float] | Dict[str, int]:
+def get_keyboard_repeat_timing(*, return_seconds: bool = True) -> dict[str, float] | dict[str, int]:
     """
     Get Windows keyboard repeat delay and repeat rate settings.
 

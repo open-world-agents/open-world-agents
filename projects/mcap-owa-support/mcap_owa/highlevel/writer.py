@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Union, overload
+from typing import overload
 
 from owa.core import OWAMessage
 
@@ -12,13 +12,13 @@ class OWAMcapWriter(_Writer):
     """
 
     @overload
-    def write_message(self, message: McapMessage, topic: Optional[str] = None, timestamp: Optional[int] = None): ...
+    def write_message(self, message: McapMessage, topic: str | None = None, timestamp: int | None = None): ...
 
     @overload
     def write_message(self, message: OWAMessage, topic: str, timestamp: int): ...
 
     def write_message(  # type: ignore[override]
-        self, message: Union[McapMessage, OWAMessage], topic: Optional[str] = None, timestamp: Optional[int] = None
+        self, message: McapMessage | OWAMessage, topic: str | None = None, timestamp: int | None = None
     ):
         """
         Write a message to the MCAP stream.
@@ -42,7 +42,7 @@ class OWAMcapWriter(_Writer):
 
         super().write_message(topic=topic, message=message, log_time=timestamp)
 
-    def write_metadata(self, name: str, data: Dict[str, str]):
+    def write_metadata(self, name: str, data: dict[str, str]):
         """
         Write metadata to the MCAP stream.
 

@@ -83,8 +83,10 @@ For live agent interactions (not just recording), use OWA's environment framewor
     ```python
     from owa.core import LISTENERS
 
+
     def on_key(event):
         print(f"Key pressed: {event.vk}")
+
 
     listener = LISTENERS["desktop/keyboard"]().configure(callback=on_key)
     ```

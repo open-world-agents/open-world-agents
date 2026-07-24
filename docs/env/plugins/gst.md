@@ -51,15 +51,13 @@ Not only does `owa.env.gst` **achieve higher FPS**, but it also maintains **lowe
     from owa.core import LISTENERS
     import cv2
 
+
     def process_frame(frame):
         cv2.imshow("Screen Capture", frame.frame_arr)
         cv2.waitKey(1)
 
-    screen = LISTENERS["gst/screen"]().configure(
-        callback=process_frame,
-        fps=60,
-        show_cursor=True
-    )
+
+    screen = LISTENERS["gst/screen"]().configure(callback=process_frame, fps=60, show_cursor=True)
 
     with screen.session:
         input("Press Enter to stop")
@@ -68,9 +66,10 @@ Not only does `owa.env.gst` **achieve higher FPS**, but it also maintains **lowe
 === "Performance Monitoring"
     ```python
     def process_with_metrics(frame, metrics):
-        print(f"FPS: {metrics.fps:.2f}, Latency: {metrics.latency*1000:.2f}ms")
+        print(f"FPS: {metrics.fps:.2f}, Latency: {metrics.latency * 1000:.2f}ms")
         cv2.imshow("Screen", frame.frame_arr)
         cv2.waitKey(1)
+
 
     screen = LISTENERS["gst/screen"]().configure(callback=process_with_metrics)
     ```

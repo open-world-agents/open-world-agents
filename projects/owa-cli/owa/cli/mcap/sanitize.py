@@ -9,21 +9,20 @@ capabilities for data safety.
 import shutil
 from collections import Counter
 from pathlib import Path
-from typing import List, Optional
+from typing import Annotated
 
 import typer
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
-from typing_extensions import Annotated
 
-import owa.core.utils.tempfile as tempfile
 from mcap_owa.highlevel import OWAMcapReader, OWAMcapWriter
+from owa.core.utils import tempfile
 from owa.core.utils.backup import BackupContext
 
 from ..console import console
 
 
-def auto_detect_most_frequent_window(file_path: Path, console: Console) -> Optional[str]:
+def auto_detect_most_frequent_window(file_path: Path, console: Console) -> str | None:
     """
     Auto-detect the most frequent window title in an MCAP file.
 
@@ -216,8 +215,8 @@ def sanitize_mcap_file(
 
 
 def sanitize(
-    files: Annotated[List[Path], typer.Argument(help="MCAP files to sanitize (supports glob patterns)")],
-    keep_window: Annotated[Optional[str], typer.Option("--keep-window", help="Window name to keep events for")] = None,
+    files: Annotated[list[Path], typer.Argument(help="MCAP files to sanitize (supports glob patterns)")],
+    keep_window: Annotated[str | None, typer.Option("--keep-window", help="Window name to keep events for")] = None,
     auto_detect_window: Annotated[
         bool, typer.Option("--auto-detect-window", help="Auto-detect the most frequent window to keep")
     ] = False,
@@ -376,7 +375,7 @@ def sanitize(
                 else:
                     failed_sanitizations += 1
 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 console.print(f"[red]✗ {file_path.name}: {e}[/red]")
                 failed_sanitizations += 1
 

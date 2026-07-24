@@ -1,5 +1,5 @@
 import platform
-from typing import Callable
+from collections.abc import Callable
 
 from owa.msgs.desktop.window import WindowInfo
 

@@ -13,7 +13,7 @@ import random
 import threading
 import time
 from pathlib import Path
-from typing import Dict, List, NamedTuple, Tuple, Union
+from typing import NamedTuple
 
 import cv2
 import numpy as np
@@ -28,7 +28,7 @@ class RequestResult(NamedTuple):
 
 
 def extract_frames_api(
-    requests: Union[Tuple[Union[str, Path], float], List[Tuple[Union[str, Path], float]]],
+    requests: tuple[str | Path, float] | list[tuple[str | Path, float]],
     client: httpclient.InferenceServerClient,
 ) -> RequestResult:
     """
@@ -80,7 +80,7 @@ def extract_frames_api(
     return RequestResult(latency, total_response_size)
 
 
-def get_video_durations(video_paths: List[Path]) -> Dict[Path, float]:
+def get_video_durations(video_paths: list[Path]) -> dict[Path, float]:
     """Compute the duration (in seconds) of each video."""
     durations = {}
     for path in video_paths:
@@ -110,8 +110,8 @@ class BenchmarkMetrics(NamedTuple):
 
 
 def multiprocess_worker(
-    video_paths: List[Path],
-    durations: Dict[Path, float],
+    video_paths: list[Path],
+    durations: dict[Path, float],
     server_url: str,
     duration_seconds: float,
     result_queue: mp.Queue,
@@ -144,24 +144,24 @@ def multiprocess_worker(
                 # Only count results that completed before end_time
                 if time.perf_counter() < end_time:
                     local_results.append(result)
-            except Exception:
+            except Exception:  # noqa: BLE001, S110
                 # Skip failed requests
                 pass
 
         # Put all results from this worker into the queue
         result_queue.put(local_results)
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         # Put error information in queue for debugging
         result_queue.put(f"Worker {worker_id} error: {e}")
 
 
 def threading_worker(
-    video_paths: List[Path],
-    durations: Dict[Path, float],
+    video_paths: list[Path],
+    durations: dict[Path, float],
     server_url: str,
     end_time: float,
-    results: List[RequestResult],
+    results: list[RequestResult],
     lock: threading.Lock,
 ) -> None:
     """
@@ -180,14 +180,14 @@ def threading_worker(
             if time.perf_counter() < end_time:
                 with lock:
                     results.append(result)
-        except Exception:
+        except Exception:  # noqa: BLE001, S110
             # Skip failed requests
             pass
 
 
 def run_benchmark(
-    video_paths: List[Path],
-    durations: Dict[Path, float],
+    video_paths: list[Path],
+    durations: dict[Path, float],
     server_url: str,
     concurrency: int,
     duration_seconds: float,
@@ -215,8 +215,8 @@ def run_benchmark(
 
 
 def _run_multiprocess_benchmark(
-    video_paths: List[Path],
-    durations: Dict[Path, float],
+    video_paths: list[Path],
+    durations: dict[Path, float],
     server_url: str,
     concurrency: int,
     duration_seconds: float,
@@ -257,14 +257,14 @@ def _run_multiprocess_benchmark(
 
 
 def _run_threading_benchmark(
-    video_paths: List[Path],
-    durations: Dict[Path, float],
+    video_paths: list[Path],
+    durations: dict[Path, float],
     server_url: str,
     concurrency: int,
     duration_seconds: float,
 ) -> BenchmarkMetrics:
     """Run benchmark using threading (legacy mode)."""
-    results: List[RequestResult] = []
+    results: list[RequestResult] = []
     lock = threading.Lock()
     end_time = time.perf_counter() + duration_seconds
 
@@ -284,7 +284,7 @@ def _run_threading_benchmark(
     return _calculate_metrics(results, duration_seconds)
 
 
-def _calculate_metrics(results: List[RequestResult], duration_seconds: float) -> BenchmarkMetrics:
+def _calculate_metrics(results: list[RequestResult], duration_seconds: float) -> BenchmarkMetrics:
     """Calculate benchmark metrics from results."""
     latencies = [r.latency for r in results]
     total_bytes = sum(r.response_size for r in results)
@@ -401,7 +401,7 @@ def main() -> None:
                 f"{metrics.throughput:>7.1f} r/s | {metrics.bitrate_mbps:>6.1f} Mbps | "
                 f"{metrics.p95_ms:>8.1f} ms | {metrics.p99_ms:>8.1f} ms"
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"{concurrency:>11} | ERROR: {e}")
 
 

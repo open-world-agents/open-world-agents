@@ -1,10 +1,9 @@
 """Utility functions for transforms."""
 
 import os
-from typing import Optional
 
 
-def resolve_episode_path(episode_path: str, mcap_root_directory: Optional[str] = None) -> str:
+def resolve_episode_path(episode_path: str, mcap_root_directory: str | None = None) -> str:
     """Resolve episode path, raising error if relative path needs mcap_root_directory."""
     if not episode_path or os.path.isabs(episode_path):
         return episode_path

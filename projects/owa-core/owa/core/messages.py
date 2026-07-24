@@ -5,8 +5,8 @@ This module implements the message registry system for centralized message manag
 providing automatic discovery of message types through Python entry points.
 """
 
+from collections.abc import ItemsView, Iterator, KeysView, ValuesView
 from importlib.metadata import entry_points
-from typing import Dict, ItemsView, Iterator, KeysView, Type, ValuesView
 
 from .message import BaseMessage
 
@@ -26,7 +26,7 @@ class MessageRegistry:
     """
 
     def __init__(self):
-        self._messages: Dict[str, Type[BaseMessage]] = {}
+        self._messages: dict[str, type[BaseMessage]] = {}
         self._loaded = False
 
     def _load_messages(self) -> None:
@@ -43,13 +43,13 @@ class MessageRegistry:
                     print(f"Warning: Message {entry_point.name} does not inherit from BaseMessage")
                     continue
                 self._messages[entry_point.name] = message_class
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 # Log warning but continue loading other messages
                 print(f"Warning: Failed to load message {entry_point.name}: {e}")
 
         self._loaded = True
 
-    def __getitem__(self, key: str) -> Type[BaseMessage]:
+    def __getitem__(self, key: str) -> type[BaseMessage]:
         """Get a message class by its type name."""
         self._load_messages()
         return self._messages[key]
@@ -59,7 +59,7 @@ class MessageRegistry:
         self._load_messages()
         return key in self._messages
 
-    def get(self, key: str, default: Type[BaseMessage] | None = None) -> Type[BaseMessage] | None:
+    def get(self, key: str, default: type[BaseMessage] | None = None) -> type[BaseMessage] | None:
         """Get a message class by its type name, returning default if not found."""
         self._load_messages()
         return self._messages.get(key, default)
@@ -69,12 +69,12 @@ class MessageRegistry:
         self._load_messages()
         return self._messages.keys()
 
-    def values(self) -> ValuesView[Type[BaseMessage]]:
+    def values(self) -> ValuesView[type[BaseMessage]]:
         """Get all registered message classes."""
         self._load_messages()
         return self._messages.values()
 
-    def items(self) -> ItemsView[str, Type[BaseMessage]]:
+    def items(self) -> ItemsView[str, type[BaseMessage]]:
         """Get all (name, class) pairs."""
         self._load_messages()
         return self._messages.items()

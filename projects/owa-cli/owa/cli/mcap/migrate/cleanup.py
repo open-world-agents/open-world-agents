@@ -7,9 +7,9 @@ created during migration operations.
 
 import glob
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import List, Optional
+from typing import Annotated
 
 import typer
 from rich.console import Console
@@ -32,16 +32,16 @@ class BackupFileInfo:
 
     backup_path: Path
     original_path: Path
-    backup_size: Optional[int] = None
-    backup_modified: Optional[datetime] = None
+    backup_size: int | None = None
+    backup_modified: datetime | None = None
     original_exists: bool = False
-    original_size: Optional[int] = None
-    original_modified: Optional[datetime] = None
-    backup_version: Optional[str] = None
-    original_version: Optional[str] = None
+    original_size: int | None = None
+    original_modified: datetime | None = None
+    backup_version: str | None = None
+    original_version: str | None = None
 
 
-def find_backup_files_by_pattern(patterns: List[str], console: Console) -> List[BackupFileInfo]:
+def find_backup_files_by_pattern(patterns: list[str], console: Console) -> list[BackupFileInfo]:
     """
     Find backup files using glob patterns.
 
@@ -73,7 +73,7 @@ def find_backup_files_by_pattern(patterns: List[str], console: Console) -> List[
 
             all_backup_paths.update(backup_paths)
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             console.print(f"[yellow]Warning: Error processing pattern '{pattern}': {e}[/yellow]")
 
     # Convert to BackupFileInfo objects
@@ -94,9 +94,9 @@ def find_backup_files_by_pattern(patterns: List[str], console: Console) -> List[
         try:
             stat = backup_path.stat()
             backup_info.backup_size = stat.st_size
-            backup_info.backup_modified = datetime.fromtimestamp(stat.st_mtime)
+            backup_info.backup_modified = datetime.fromtimestamp(stat.st_mtime, tz=UTC)
             backup_info.backup_version = detect_mcap_version(backup_path)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             console.print(f"[yellow]Warning: Could not read backup file info for {backup_path}: {e}[/yellow]")
 
         # Check if original file exists and get its info
@@ -105,9 +105,9 @@ def find_backup_files_by_pattern(patterns: List[str], console: Console) -> List[
             try:
                 stat = original_path.stat()
                 backup_info.original_size = stat.st_size
-                backup_info.original_modified = datetime.fromtimestamp(stat.st_mtime)
+                backup_info.original_modified = datetime.fromtimestamp(stat.st_mtime, tz=UTC)
                 backup_info.original_version = detect_mcap_version(original_path)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 console.print(f"[yellow]Warning: Could not read original file info for {original_path}: {e}[/yellow]")
 
         backup_infos.append(backup_info)
@@ -115,7 +115,7 @@ def find_backup_files_by_pattern(patterns: List[str], console: Console) -> List[
     return backup_infos
 
 
-def display_cleanup_summary(backup_infos: List[BackupFileInfo], console: Console) -> None:
+def display_cleanup_summary(backup_infos: list[BackupFileInfo], console: Console) -> None:
     """
     Display a summary table of backup files to be cleaned up.
 
@@ -176,10 +176,12 @@ def display_cleanup_summary(backup_infos: List[BackupFileInfo], console: Console
 
 
 def cleanup(
-    patterns: Optional[List[str]] = typer.Argument(
-        None,
-        help="Patterns to search for backup files (default: all .mcap.backup files in current directory and subdirectories)",
-    ),
+    patterns: Annotated[
+        list[str] | None,
+        typer.Argument(
+            help="Patterns to search for backup files (default: all .mcap.backup files in current directory and subdirectories)"
+        ),
+    ] = None,
     dry_run: bool = typer.Option(False, "--dry-run", help="Show what would be deleted without actually deleting"),
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation prompt"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed cleanup information"),
@@ -241,7 +243,7 @@ def cleanup(
             if verbose:
                 console.print(f"[green]Deleted: {info.backup_path}[/green]")
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             console.print(f"[red]Failed to delete {info.backup_path}: {e}[/red]")
             failed_deletions += 1
 

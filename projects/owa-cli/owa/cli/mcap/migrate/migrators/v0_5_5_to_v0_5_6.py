@@ -33,7 +33,7 @@ import shutil
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Annotated
 
 import orjson
 import typer
@@ -71,7 +71,7 @@ def migrate_pointer_ballistics_metadata(metadata: dict) -> dict:
         try:
             binary_data = base64.b64decode(smooth_x)
             migrated_metadata["SmoothMouseXCurve"] = binary_data.hex()
-        except Exception:
+        except Exception:  # noqa: BLE001
             # If conversion fails, use default
             migrated_metadata["SmoothMouseXCurve"] = DEFAULT_SMOOTH_MOUSE_X_CURVE
 
@@ -84,7 +84,7 @@ def migrate_pointer_ballistics_metadata(metadata: dict) -> dict:
         try:
             binary_data = base64.b64decode(smooth_y)
             migrated_metadata["SmoothMouseYCurve"] = binary_data.hex()
-        except Exception:
+        except Exception:  # noqa: BLE001
             # If conversion fails, use default
             migrated_metadata["SmoothMouseYCurve"] = DEFAULT_SMOOTH_MOUSE_Y_CURVE
 
@@ -119,10 +119,10 @@ def has_legacy_pointer_ballistics_metadata(metadata: dict) -> bool:
 
 @app.command()
 def migrate(
-    input_file: Path = typer.Argument(..., help="Input MCAP file path"),
-    output_file: Optional[Path] = typer.Argument(
-        None, help="Output MCAP file path (defaults to in-place modification)"
-    ),
+    input_file: Annotated[Path, typer.Argument(help="Input MCAP file path")],
+    output_file: Annotated[
+        Path | None, typer.Argument(help="Output MCAP file path (defaults to in-place modification)")
+    ] = None,
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose logging output"),
     output_format: str = typer.Option("text", "--output-format", help="Output format: 'text' or 'json'"),
 ) -> None:
@@ -218,7 +218,7 @@ def migrate(
     except Exception as e:
         # Reraise typer.Exit exceptions to prevent printing duplicate error messages
         if isinstance(e, typer.Exit):
-            raise e
+            raise
 
         if output_format == "json":
             result = {
@@ -237,8 +237,8 @@ def migrate(
 
 @app.command()
 def verify(
-    file_path: Path = typer.Argument(..., help="MCAP file path to verify"),
-    backup_path: Optional[Path] = typer.Option(None, help="Reference backup file path (optional)"),
+    file_path: Annotated[Path, typer.Argument(help="MCAP file path to verify")],
+    backup_path: Annotated[Path | None, typer.Option(help="Reference backup file path (optional)")] = None,
     output_format: str = typer.Option("text", "--output-format", help="Output format: 'text' or 'json'"),
 ) -> None:
     """
@@ -263,10 +263,11 @@ def verify(
 
         with OWAMcapReader(file_path) as reader:
             for metadata_record in reader.iter_metadata():
-                if metadata_record.name == "pointer_ballistics_config":
-                    if has_legacy_pointer_ballistics_metadata(metadata_record.metadata):
-                        legacy_found = True
-                        break
+                if metadata_record.name == "pointer_ballistics_config" and has_legacy_pointer_ballistics_metadata(
+                    metadata_record.metadata
+                ):
+                    legacy_found = True
+                    break
 
         # Perform integrity verification if backup is provided
         integrity_verified = True
@@ -329,7 +330,7 @@ def verify(
     except Exception as e:
         # Reraise typer.Exit exceptions to prevent printing duplicate error messages
         if isinstance(e, typer.Exit):
-            raise e
+            raise
 
         if output_format == "json":
             result = {"success": False, "error": str(e)}
@@ -362,10 +363,10 @@ class VerificationResult:
     """Result of migration verification."""
 
     success: bool
-    error: Optional[str] = None
-    message_count_match: Optional[bool] = None
-    file_size_diff_percent: Optional[float] = None
-    topics_match: Optional[bool] = None
+    error: str | None = None
+    message_count_match: bool | None = None
+    file_size_diff_percent: float | None = None
+    topics_match: bool | None = None
 
 
 def get_file_stats(file_path: Path) -> FileStats:
@@ -440,7 +441,7 @@ def verify_migration_integrity(
 
         return result
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return VerificationResult(success=False, error=f"Error during integrity verification: {e}")
 
 

@@ -2,7 +2,6 @@
 
 import json
 import posixpath
-from typing import Optional
 
 import fsspec
 from datasets.utils.file_utils import url_to_fs
@@ -45,7 +44,7 @@ def load_config_from_path(config_path: str, fs: fsspec.AbstractFileSystem) -> di
     return config_data
 
 
-def resolve_dataset_path_and_config(dataset_path: PathLike, storage_options: Optional[dict] = None) -> tuple:
+def resolve_dataset_path_and_config(dataset_path: PathLike, storage_options: dict | None = None) -> tuple:
     """
     Resolve dataset path and load config, supporting both local and remote filesystems.
 

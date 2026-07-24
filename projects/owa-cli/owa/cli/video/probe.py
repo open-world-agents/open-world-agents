@@ -4,7 +4,6 @@ import statistics
 import subprocess
 from collections import Counter
 from pathlib import Path
-from typing import Dict, List
 
 import plotext as plt
 import typer
@@ -28,7 +27,7 @@ def get_frame_data(video_path: str):
         video_path,
     ]
 
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True, check=False)
 
     # Parse the output to find all frame types
     frames = []
@@ -50,7 +49,7 @@ def get_frame_data(video_path: str):
     return sorted(frames, key=lambda x: x["timestamp"])
 
 
-def get_video_info(video_path: str) -> Dict:
+def get_video_info(video_path: str) -> dict:
     """Get comprehensive video information"""
     cmd = [
         "ffprobe",
@@ -65,7 +64,7 @@ def get_video_info(video_path: str) -> Dict:
         video_path,
     ]
 
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True, check=False)
 
     try:
         data = json.loads(result.stdout)
@@ -89,7 +88,7 @@ def get_video_info(video_path: str) -> Dict:
         return {"codec": "unknown", "resolution": "unknown", "fps": 0, "duration": 0}
 
 
-def visualize_frame_pattern(frames: List[Dict], max_frames: int = 120):
+def visualize_frame_pattern(frames: list[dict], max_frames: int = 120):
     """Display a visual representation of frame patterns in terminal"""
     # Create a frame type sequence for visualization
     sequence = [frame["type"] for frame in frames]
@@ -125,7 +124,7 @@ def visualize_frame_pattern(frames: List[Dict], max_frames: int = 120):
     typer.echo(legend)
 
 
-def visualize_frame_distribution(frames: List[Dict]):
+def visualize_frame_distribution(frames: list[dict]):
     """Visualize the distribution of frame types using plotext"""
     frame_types = [frame["type"] for frame in frames]
     counts = Counter(frame_types)
@@ -151,7 +150,7 @@ def visualize_frame_distribution(frames: List[Dict]):
     plt.show()
 
 
-def visualize_gop_structure(frames: List[Dict], max_gops: int = 3):
+def visualize_gop_structure(frames: list[dict], max_gops: int = 3):
     """Visualize the GOP (Group of Pictures) structure"""
     # Find I-frames to identify GOP boundaries
     gop_starts = [i for i, frame in enumerate(frames) if frame["type"] == "I"]
@@ -183,7 +182,7 @@ def visualize_gop_structure(frames: List[Dict], max_gops: int = 3):
         typer.echo(f"  Composition: {frame_counts}")
 
 
-def analyze_iframe_intervals(frames: List[Dict], fps: float, frame_count: bool = False):
+def analyze_iframe_intervals(frames: list[dict], fps: float, frame_count: bool = False):
     """Analyze I-frame intervals and return statistics"""
     # Extract only I-frames
     iframes = [frame for frame in frames if frame["type"] == "I"]

@@ -1,7 +1,5 @@
 """Event transform for OWA datasets."""
 
-from typing import Optional
-
 from mcap_owa.highlevel import McapMessage
 from owa.data.encoders import create_encoder
 
@@ -9,7 +7,7 @@ from .utils import resolve_episode_path
 
 
 def create_event_transform(
-    encoder_type: str = "factorized", load_images: bool = True, mcap_root_directory: Optional[str] = None
+    encoder_type: str = "factorized", load_images: bool = True, mcap_root_directory: str | None = None
 ):
     """Create transform for EVENT stage."""
 

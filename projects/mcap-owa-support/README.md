@@ -11,7 +11,8 @@ from owa.core.message import OWAMessage
 from owa.core import MESSAGES
 
 # Access message types through the global registry
-KeyboardEvent = MESSAGES['desktop/KeyboardEvent']
+KeyboardEvent = MESSAGES["desktop/KeyboardEvent"]
+
 
 class String(OWAMessage):
     _type = "std_msgs/String"
@@ -21,7 +22,7 @@ class String(OWAMessage):
 def main():
     with tempfile.TemporaryDirectory() as tmpdir:
         file_path = tmpdir + "/output.mcap"
-        
+
         # Writing messages to an OWAMcap file
         with OWAMcapWriter(file_path) as writer:
             for i in range(0, 10):

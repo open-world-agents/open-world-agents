@@ -1,7 +1,7 @@
 """Configuration classes for interval extractors."""
 
 from dataclasses import dataclass, field
-from typing import Any, Dict
+from typing import Any
 
 from . import selector
 
@@ -15,7 +15,7 @@ class IntervalExtractorConfig:
     """
 
     class_name: str = "All"
-    kwargs: Dict[str, Any] = field(default_factory=lambda: {})
+    kwargs: dict[str, Any] = field(default_factory=dict)
 
     def create_extractor(self):
         """Create the interval extractor instance from configuration."""

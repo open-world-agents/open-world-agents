@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 TESTING PRIORITIES:
 ==================
@@ -274,11 +273,11 @@ class TestFidelity:
                 # Should issue warning and work (with clamping)
                 with pytest.warns(UserWarning, match=r"Mouse delta value .* is outside valid range"):
                     encoded, images = encoder.encode(msg)
-                    decoded = encoder.decode(encoded, images)
-                    result = orjson.loads(decoded.message)
-                    # Values should be clamped to valid range
-                    assert min_delta <= result["last_x"] <= max_delta
-                    assert min_delta <= result["last_y"] <= max_delta
+                decoded = encoder.decode(encoded, images)
+                result = orjson.loads(decoded.message)
+                # Values should be clamped to valid range
+                assert min_delta <= result["last_x"] <= max_delta
+                assert min_delta <= result["last_y"] <= max_delta
 
     def test_invalid_token_errors(self, encoder):
         """Test that invalid token formats raise appropriate errors."""
@@ -434,11 +433,11 @@ class TestEdgeCases:
                 # Should warn for out-of-range mouse deltas and work (with clamping)
                 with pytest.warns(UserWarning, match=r"Mouse delta value .* is outside valid range"):
                     encoded, images = encoder.encode(msg)
-                    decoded = encoder.decode(encoded, images)
-                    result = orjson.loads(decoded.message)
-                    # Values should be clamped to valid range
-                    assert min_delta <= result["last_x"] <= max_delta
-                    assert min_delta <= result["last_y"] <= max_delta
+                decoded = encoder.decode(encoded, images)
+                result = orjson.loads(decoded.message)
+                # Values should be clamped to valid range
+                assert min_delta <= result["last_x"] <= max_delta
+                assert min_delta <= result["last_y"] <= max_delta
 
         # Test cases with invalid button_flags (should still raise ValueError)
         invalid_button_cases = [

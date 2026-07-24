@@ -20,20 +20,20 @@ from .functions import (
 from .preparation import expand_tokenizer_for_events, prepare_model_for_events
 
 __all__ = [
-    # Config
-    "ImageTokenConfig",
-    "get_image_config",
     # Context
     "EventTokenizationContext",
+    # Config
+    "ImageTokenConfig",
     # Types
     "TokenizedEvent",
+    "decode_episode",
+    "decode_event",
     # Preparation (side-effect functions)
     "expand_tokenizer_for_events",
+    "get_image_config",
     "prepare_model_for_events",
+    "tokenize_episode",
     # Tokenization (pure functions)
     "tokenize_event",
-    "decode_event",
-    "tokenize_episode",
-    "decode_episode",
     "tokenize_event_dataset",
 ]

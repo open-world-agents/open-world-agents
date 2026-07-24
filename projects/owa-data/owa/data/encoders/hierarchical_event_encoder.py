@@ -2,7 +2,6 @@ import re
 import warnings
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Optional, Set, Tuple
 
 from mcap_owa.highlevel.mcap_msg import McapMessage
 from owa.core.time import TimeUnits
@@ -41,19 +40,19 @@ class HierarchicalEventEncoderConfig(BaseEventEncoderConfig):
 
     # Timestamp encoding bases: [16, 10, 10] = 1600 total units
     # Range: 0 to 15.99 seconds in 10ms increments
-    timestamp_bases: List[int] = field(default_factory=lambda: [16, 10, 10])
+    timestamp_bases: list[int] = field(default_factory=lambda: [16, 10, 10])
 
     # Mouse delta encoding bases: [20, 10, 10] = 2000 total values
     # With sign bit [2, 20, 10, 10] = 4000 total, range: -2000 to +1999 pixels
     # Accommodates large mouse movements (-1000+ per tick)
-    mouse_delta_bases: List[int] = field(default_factory=lambda: [20, 10, 10])
+    mouse_delta_bases: list[int] = field(default_factory=lambda: [20, 10, 10])
 
     # Mouse scroll encoding bases: [10] = 10 total values
     # With sign bit [2, 10] = 20 total, range: -10 to +9 scroll units
     # Each unit represents 120 (WHEEL_DELTA) in button_data
-    mouse_scroll_bases: List[int] = field(default_factory=lambda: [10])
+    mouse_scroll_bases: list[int] = field(default_factory=lambda: [10])
 
-    def _signed_range(self, bases: List[int]) -> Tuple[int, int]:
+    def _signed_range(self, bases: list[int]) -> tuple[int, int]:
         """Calculate signed range from bases."""
         total_range = 1
         for base in bases:
@@ -70,17 +69,17 @@ class HierarchicalEventEncoderConfig(BaseEventEncoderConfig):
         return total_range * self.timestamp_unit_ns
 
     @property
-    def mouse_delta_range(self) -> Tuple[int, int]:
+    def mouse_delta_range(self) -> tuple[int, int]:
         """Calculate valid mouse delta range from bases."""
         return self._signed_range(self.mouse_delta_bases)
 
     @property
-    def mouse_scroll_range(self) -> Tuple[int, int]:
+    def mouse_scroll_range(self) -> tuple[int, int]:
         """Calculate valid mouse scroll range from bases."""
         return self._signed_range(self.mouse_scroll_bases)
 
 
-def quantize_to_digits(value: int, bases: List[int]) -> List[int]:
+def quantize_to_digits(value: int, bases: list[int]) -> list[int]:
     """
     Quantize an integer to multi-level digits using modulo operations.
 
@@ -113,7 +112,7 @@ def quantize_to_digits(value: int, bases: List[int]) -> List[int]:
     return digits
 
 
-def digits_to_value(digits: List[int], bases: List[int], *, signed: bool | None = None) -> int:
+def digits_to_value(digits: list[int], bases: list[int], *, signed: bool | None = None) -> int:
     """
     Reconstruct integer from digits.
 
@@ -159,7 +158,7 @@ def digits_to_value(digits: List[int], bases: List[int], *, signed: bool | None 
     return encoded_value
 
 
-def _generate_vocab() -> Set[str]:
+def _generate_vocab() -> set[str]:
     """
     Generate the hierarchical token vocabulary.
 
@@ -196,7 +195,7 @@ def _extract_digit(token: str) -> int:
 class HierarchicalEventEncoder(BaseEventEncoder):
     """Hierarchical event encoder: <EVENT_START><TYPE><TIMESTAMP><DATA><EVENT_END>"""
 
-    def __init__(self, config: Optional[HierarchicalEventEncoderConfig] = None, **kwargs):
+    def __init__(self, config: HierarchicalEventEncoderConfig | None = None, **kwargs):
         if config is None:
             config = HierarchicalEventEncoderConfig()
         # Merge config with any keyword overrides
@@ -217,19 +216,19 @@ class HierarchicalEventEncoder(BaseEventEncoder):
                 raise InvalidInputError(f"{name} base {max(bases)} produces digits > 255")
 
     @property
-    def vocab(self) -> Set[str]:
+    def vocab(self) -> set[str]:
         return _generate_vocab()
 
     # ============================================================================
     # TIMESTAMP ENCODING/DECODING
     # ============================================================================
 
-    def _encode_timestamp(self, timestamp_ns: int) -> List[str]:
+    def _encode_timestamp(self, timestamp_ns: int) -> list[str]:
         """Encode timestamp as tokens."""
         units = timestamp_ns // self.config.timestamp_unit_ns
         return [f"<{d}>" for d in quantize_to_digits(units, self.config.timestamp_bases)]
 
-    def _decode_timestamp(self, tokens: List[str]) -> int:
+    def _decode_timestamp(self, tokens: list[str]) -> int:
         """Decode timestamp tokens back to nanoseconds."""
         digits = [_extract_digit(token) for token in tokens]
         units = digits_to_value(digits, self.config.timestamp_bases)
@@ -239,11 +238,11 @@ class HierarchicalEventEncoder(BaseEventEncoder):
     # KEYBOARD ENCODING/DECODING
     # ============================================================================
 
-    def _encode_keyboard_data(self, event: KeyboardEvent) -> List[str]:
+    def _encode_keyboard_data(self, event: KeyboardEvent) -> list[str]:
         """Encode keyboard data: [<vk>, <action>]"""
         return [f"<{event.vk}>", f"<{event.event_type}>"]
 
-    def _decode_keyboard_data(self, tokens: List[str]) -> KeyboardEvent:
+    def _decode_keyboard_data(self, tokens: list[str]) -> KeyboardEvent:
         """Decode keyboard data tokens."""
         if len(tokens) != 2:
             raise InvalidTokenError(f"Expected 2 keyboard tokens, got {len(tokens)}")
@@ -265,7 +264,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
     # MOUSE ENCODING/DECODING
     # ============================================================================
 
-    def _encode_mouse_data(self, event: RawMouseEvent) -> List[str]:
+    def _encode_mouse_data(self, event: RawMouseEvent) -> list[str]:
         """Encode mouse data: movement + flags + optional scroll."""
         # Validate mouse delta range and clamp values without modifying input
         min_delta, max_delta = self.config.mouse_delta_range
@@ -321,7 +320,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
 
         return tokens
 
-    def _decode_mouse_data(self, tokens: List[str]) -> RawMouseEvent:
+    def _decode_mouse_data(self, tokens: list[str]) -> RawMouseEvent:
         """Decode mouse data tokens."""
         # Calculate minimum required tokens: deltas + button flags
         delta_tokens_needed = len(self.config.mouse_delta_bases) * 2 + 2  # *2 for dx/dy, +2 for sign bits
@@ -354,7 +353,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
             last_x=dx, last_y=dy, button_flags=RawMouseEvent.ButtonFlags(button_flags), button_data=button_data
         )
 
-    def _decode_mouse_deltas(self, delta_tokens: List[str]) -> Tuple[int, int]:
+    def _decode_mouse_deltas(self, delta_tokens: list[str]) -> tuple[int, int]:
         """Decode quantized mouse deltas from interleaved token pairs."""
         expected = len(self.config.mouse_delta_bases) * 2 + 2  # *2 for dx/dy, +2 for sign bits
 
@@ -370,7 +369,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
     # MAIN ENCODE/DECODE METHODS
     # ============================================================================
 
-    def encode(self, mcap_message: McapMessage) -> Tuple[str, List[ScreenCaptured]]:
+    def encode(self, mcap_message: McapMessage) -> tuple[str, list[ScreenCaptured]]:
         """Encode message to: <EVENT_START><TYPE><TIMESTAMP><DATA><EVENT_END>"""
         try:
             # Use decoded message directly
@@ -397,7 +396,7 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         else:
             raise UnsupportedInputError(f"Unsupported topic: {mcap_message.topic}")
 
-    def decode(self, encoded_data: str, images: Optional[List[ScreenCaptured]] = None) -> McapMessage:
+    def decode(self, encoded_data: str, images: list[ScreenCaptured] | None = None) -> McapMessage:
         """Decode: <EVENT_START><TYPE><TIMESTAMP><DATA><EVENT_END>"""
         # Validate and parse token structure
         if not (
@@ -455,6 +454,6 @@ class HierarchicalEventEncoder(BaseEventEncoder):
         else:
             raise UnsupportedTokenError(f"Unknown event type: {event_type}")
 
-    def get_vocab(self) -> Set[str]:
+    def get_vocab(self) -> set[str]:
         """Get all tokens in the vocabulary."""
         return _generate_vocab()

@@ -16,10 +16,7 @@ def _should_auto_discover() -> bool:
         True if auto-discovery should run, False otherwise
     """
     # Allow disabling auto-discovery via environment variable
-    if os.environ.get("OWA_DISABLE_AUTO_DISCOVERY", "").lower() in ("1", "true", "yes"):
-        return False
-
-    return True
+    return os.environ.get("OWA_DISABLE_AUTO_DISCOVERY", "").lower() not in ("1", "true", "yes")
 
 
 def auto_discover_plugins() -> None:
@@ -35,7 +32,7 @@ def auto_discover_plugins() -> None:
 
     try:
         discover_and_register_plugins()
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.warning(f"Auto-discovery failed: {e}")
         # Don't raise - allow the application to continue without plugins
 

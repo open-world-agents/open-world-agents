@@ -15,12 +15,12 @@ from loguru import logger
 try:
     # if os is windows
     if platform.system() == "Windows":
-        subprocess.run(["gst-inspect-1.0.exe", "d3d11"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        subprocess.run(["gst-inspect-1.0.exe", "d3d11"], check=True, capture_output=True)
     elif platform.system() == "Linux":
-        subprocess.run(["gst-inspect-1.0", "ximagesrc"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        subprocess.run(["gst-inspect-1.0", "ximagesrc"], check=True, capture_output=True)
     elif platform.system() == "Darwin":
-        subprocess.run(["gst-inspect-1.0", "avfvideosrc"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-except Exception as e:  # noqa: F841
+        subprocess.run(["gst-inspect-1.0", "avfvideosrc"], check=True, capture_output=True)
+except Exception as e:  # noqa: BLE001, F841
     logger.warning(
         "GStreamer is not properly installed or not in PATH. "
         "Please run `conda install open-world-agents::gstreamer-bundle`"
@@ -33,4 +33,4 @@ os.environ["GST_PLUGIN_PATH"] = os.path.join(os.path.dirname(os.path.abspath(__f
 from . import pipeline_builder
 from .gst_runner import GstPipelineRunner
 
-__all__ = ["pipeline_builder", "GstPipelineRunner"]
+__all__ = ["GstPipelineRunner", "pipeline_builder"]

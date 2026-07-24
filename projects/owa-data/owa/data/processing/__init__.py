@@ -5,10 +5,10 @@ from .mcap_to_event import McapToEventConfig, build_event_dataset
 from .resampler import EventResamplerDict, create_resampler
 
 __all__ = [
+    "EventResamplerDict",
     "EventToFSLConfig",
-    "build_fsl_dataset",
     "McapToEventConfig",
     "build_event_dataset",
-    "EventResamplerDict",
+    "build_fsl_dataset",
     "create_resampler",
 ]

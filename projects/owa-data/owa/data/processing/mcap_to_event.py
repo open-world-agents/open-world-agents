@@ -1,8 +1,9 @@
 import warnings
+from collections.abc import Callable, Generator
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, Dict, Generator, List, Optional, cast
+from typing import cast
 
 from datasets import Dataset as HFDataset
 from datasets import Features, Value
@@ -18,8 +19,8 @@ from owa.data.processing.resampler import EventResamplerDict
 class McapToEventConfig:
     """Configuration for MCAP to events conversion."""
 
-    rate_settings: Dict[str, float]  # Mapping from topic to desired rate (Hz) for resampling
-    keep_topics: Optional[List[str]] = None  # Optional list of topics to keep. If None, all topics are kept
+    rate_settings: dict[str, float]  # Mapping from topic to desired rate (Hz) for resampling
+    keep_topics: list[str] | None = None  # Optional list of topics to keep. If None, all topics are kept
     num_workers: int = 4  # Number of worker processes for parallel file processing
     interval_extractor_config: IntervalExtractorConfig = field(default_factory=IntervalExtractorConfig)
 
@@ -27,8 +28,8 @@ class McapToEventConfig:
 def _mcap_to_events(
     episode_path: str,
     config: McapToEventConfig,
-    mcap_root_directory: Optional[str] = None,
-) -> List[Dict]:
+    mcap_root_directory: str | None = None,
+) -> list[dict]:
     """
     Process MCAP file with resampling.
 
@@ -40,7 +41,7 @@ def _mcap_to_events(
     Returns:
         List of event dictionaries containing processed events
     """
-    events: List[Dict] = []
+    events: list[dict] = []
     interval_extractor = config.interval_extractor_config.create_extractor()
     valid_intervals = interval_extractor.extract_intervals(Path(episode_path))
 
@@ -82,11 +83,11 @@ def _mcap_to_events(
 
 
 def _yield_events(
-    episode_paths: List[str],
+    episode_paths: list[str],
     config: McapToEventConfig,
-    mcap_root_directory: Optional[str] = None,
-    on_error: Optional[Callable[[str, BaseException], None]] = None,
-) -> Generator[Dict, None, None]:
+    mcap_root_directory: str | None = None,
+    on_error: Callable[[str, BaseException], None] | None = None,
+) -> Generator[dict, None, None]:
     """
     Generator function that yields event examples by processing each raw events file
     in parallel using multiple processes. Events within same mcap file is grouped together.
@@ -111,7 +112,7 @@ def _yield_events(
                 try:
                     events = future.result()
                     yield from events
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     if on_error:
                         on_error(fp, e)
                     else:
@@ -123,7 +124,7 @@ def _yield_events(
 
 
 def build_event_dataset(
-    episode_paths: List[Path], *, config: McapToEventConfig, mcap_root_directory: Optional[str] = None
+    episode_paths: list[Path], *, config: McapToEventConfig, mcap_root_directory: str | None = None
 ) -> Dataset:
     """
     Create a Hugging Face event dataset from the given MCAP file paths by streaming

@@ -5,12 +5,11 @@ import subprocess
 import sys
 import urllib.request
 from pathlib import Path
-from typing import List
+from typing import Annotated
 
 import requests
 import typer
 from packaging.version import parse as parse_version
-from typing_extensions import Annotated
 
 from mcap_owa.highlevel import OWAMcapReader
 
@@ -84,7 +83,7 @@ def format_size(bytes_size: int) -> str:
         return f"{bytes_size / (1024 * 1024 * 1024):.1f} GiB"
 
 
-def print_summary(file_infos: List[dict]) -> None:
+def print_summary(file_infos: list[dict]) -> None:
     """Print summary of multiple MCAP files."""
     if not file_infos:
         console.print("No valid MCAP files found.")
@@ -173,14 +172,14 @@ def detect_system():
 def get_local_mcap_version(mcap_executable: Path) -> str:
     """Get the version of the local mcap CLI binary."""
     try:
-        result = subprocess.run([mcap_executable, "version"], text=True, capture_output=True, timeout=10)
+        result = subprocess.run([mcap_executable, "version"], text=True, capture_output=True, timeout=10, check=False)
         if result.returncode == 0:
             # Parse version from output like "v0.0.53"
             version = result.stdout.strip()
             if version.startswith("v") and re.match(r"v\d+\.\d+\.\d+", version):
                 return version
         return "unknown"
-    except (subprocess.TimeoutExpired, FileNotFoundError, Exception):
+    except (subprocess.TimeoutExpired, FileNotFoundError, Exception):  # noqa: BLE001
         return "unknown"
 
 
@@ -205,7 +204,7 @@ def get_latest_mcap_cli_version() -> str:
                 return version
 
         return CURRENT_MCAP_CLI_VERSION  # Fallback to current version
-    except (requests.RequestException, Exception):
+    except (requests.RequestException, Exception):  # noqa: BLE001
         return CURRENT_MCAP_CLI_VERSION  # Fallback to current version
 
 
@@ -225,7 +224,7 @@ def should_upgrade_mcap(mcap_executable: Path, force: bool = False) -> bool:
 
     try:
         return parse_version(latest_version.lstrip("v")) > parse_version(local_version.lstrip("v"))
-    except Exception:
+    except Exception:  # noqa: BLE001
         return False  # If version parsing fails, don't upgrade
 
 
@@ -288,7 +287,7 @@ def download_mcap_cli(bin_dir: Path, force_upgrade: bool = False):
 
 
 def info(
-    mcap_paths: Annotated[List[Path], typer.Argument(help="Path(s) to the input .mcap file(s)")],
+    mcap_paths: Annotated[list[Path], typer.Argument(help="Path(s) to the input .mcap file(s)")],
     force_upgrade: Annotated[
         bool, typer.Option("--force-upgrade", help="Force upgrade mcap CLI to latest version")
     ] = False,
@@ -309,7 +308,9 @@ def info(
 
     if len(mcap_paths) == 1:
         # Single file: show detailed info (original behavior)
-        result = subprocess.run([mcap_executable, "info", str(mcap_paths[0])], text=True, capture_output=True)
+        result = subprocess.run(
+            [mcap_executable, "info", str(mcap_paths[0])], text=True, capture_output=True, check=False
+        )
 
         if result.returncode == 0:
             console.print(result.stdout)
@@ -325,7 +326,7 @@ def info(
             try:
                 file_info = get_mcap_info(mcap_path)
                 file_infos.append(file_info)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 errors.append(f"Error processing {mcap_path}: {e}")
 
         # Print any errors

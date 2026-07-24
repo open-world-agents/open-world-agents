@@ -63,10 +63,10 @@ Now let's load the processed datasets and verify everything works.
 ```python
 from owa.data.datasets import load_from_disk
 
-event_dataset = load_from_disk('./data/event-dataset')
-print(f'Event Dataset stage: {event_dataset.stage}')
+event_dataset = load_from_disk("./data/event-dataset")
+print(f"Event Dataset stage: {event_dataset.stage}")
 
-event_dataset.auto_set_transform(stage='event', encoder_type='hierarchical', load_images=True)
+event_dataset.auto_set_transform(stage="event", encoder_type="hierarchical", load_images=True)
 for sample in event_dataset.take(3):
     print(sample)
 ```
@@ -76,10 +76,10 @@ for sample in event_dataset.take(3):
 ```python
 from owa.data.datasets import load_from_disk
 
-fsl_dataset = load_from_disk('./data/fsl-dataset')
-print(f'FSL Dataset stage: {fsl_dataset.stage}')
+fsl_dataset = load_from_disk("./data/fsl-dataset")
+print(f"FSL Dataset stage: {fsl_dataset.stage}")
 
-fsl_dataset.auto_set_transform(stage='fsl', load_images=True)
+fsl_dataset.auto_set_transform(stage="fsl", load_images=True)
 for sample in fsl_dataset.take(3):
     print(sample)
 ```

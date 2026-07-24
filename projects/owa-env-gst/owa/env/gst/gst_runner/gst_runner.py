@@ -1,4 +1,3 @@
-# ruff: noqa: E402
 # To suppress the warning for E402, waiting for https://github.com/astral-sh/ruff/issues/3711
 import gi
 
@@ -16,6 +15,10 @@ from ..utils import try_set_state
 # Initialize GStreamer
 if not Gst.is_initialized():
     Gst.init(None)
+
+
+class GstElementIterationError(Exception):
+    """Raised when GStreamer elements cannot be enumerated."""
 
 
 def on_message(bus: Gst.Bus, message: Gst.Message, loop: GLib.MainLoop):
@@ -113,11 +116,11 @@ class BaseGstPipelineRunner(Runnable):
                 elif res == Gst.IteratorResult.DONE:
                     break
                 elif res == Gst.IteratorResult.ERROR:
-                    raise Exception("Error iterating over sink elements")
+                    raise GstElementIterationError("Error iterating over sink elements")
                 elif res == Gst.IteratorResult.RESUME:
                     continue
         except Exception as e:
-            raise Exception(f"Error while iterating sink elements: {e}")
+            raise GstElementIterationError(f"Error while iterating sink elements: {e}") from e
 
         if not elements:
             logger.warning(f"No {name} found in pipeline.")

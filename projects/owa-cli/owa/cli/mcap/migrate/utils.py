@@ -7,7 +7,6 @@ by comparing them with their backup counterparts.
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 from mcap_owa.highlevel import OWAMcapReader
 
@@ -27,10 +26,10 @@ class VerificationResult:
     """Result of migration verification."""
 
     success: bool
-    error: Optional[str] = None
-    message_count_match: Optional[bool] = None
-    file_size_diff_percent: Optional[float] = None
-    topics_match: Optional[bool] = None
+    error: str | None = None
+    message_count_match: bool | None = None
+    file_size_diff_percent: float | None = None
+    topics_match: bool | None = None
 
 
 def get_file_stats(file_path: Path) -> FileStats:
@@ -105,5 +104,5 @@ def verify_migration_integrity(
 
         return result
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return VerificationResult(success=False, error=f"Error during integrity verification: {e}")

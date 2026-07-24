@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import Union
 
 from loguru import logger
 from transformers import AutoTokenizer
@@ -9,8 +8,8 @@ from owa.data.encoders import create_encoder
 from owa.data.tokenization import (
     EventTokenizationContext,
     ImageTokenConfig,
-    get_image_config,
     expand_tokenizer_for_events,
+    get_image_config,
     tokenize_event_dataset,
 )
 
@@ -43,9 +42,7 @@ def _get_image_config_for_model(model_name_or_path: str, config: EventToFSLConfi
     return get_image_config(model_name_or_path)
 
 
-def build_fsl_dataset(
-    event_dataset: Union[Dataset, DatasetDict], *, config: EventToFSLConfig
-) -> Union[Dataset, DatasetDict]:
+def build_fsl_dataset(event_dataset: Dataset | DatasetDict, *, config: EventToFSLConfig) -> Dataset | DatasetDict:
     """
     Convert event dataset to FSL (Fixed Sequence Length) dataset format.
 
@@ -123,7 +120,7 @@ def build_fsl_dataset(
 
     # Combine into DatasetDict if multiple splits
     final_dataset = (
-        DatasetDict(processed_datasets) if len(processed_datasets) > 1 else list(processed_datasets.values())[0]
+        DatasetDict(processed_datasets) if len(processed_datasets) > 1 else next(iter(processed_datasets.values()))
     )
 
     # Log summary
@@ -133,8 +130,8 @@ def build_fsl_dataset(
         for split_name, ds in processed_datasets.items():
             logger.info(f"  {split_name}: {len(ds):,} sequences")
     else:
-        split_name = list(processed_datasets.keys())[0]
-        ds = list(processed_datasets.values())[0]
+        split_name = next(iter(processed_datasets.keys()))
+        ds = next(iter(processed_datasets.values()))
         logger.info(f"Created {len(ds):,} FSL sequences ({split_name})")
 
     logger.info("FSL dataset creation completed successfully!")

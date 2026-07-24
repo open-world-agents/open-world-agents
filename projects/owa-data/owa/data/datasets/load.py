@@ -1,5 +1,4 @@
 import posixpath
-from typing import Optional, Union
 
 import fsspec
 from datasets import config
@@ -15,8 +14,8 @@ def load_dataset(path: str):
 
 # Copied from: https://github.com/huggingface/datasets/blob/main/src/datasets/load.py#L1429-L1476
 def load_from_disk(
-    dataset_path: PathLike, keep_in_memory: Optional[bool] = None, storage_options: Optional[dict] = None
-) -> Union[Dataset, DatasetDict]:
+    dataset_path: PathLike, keep_in_memory: bool | None = None, storage_options: dict | None = None
+) -> Dataset | DatasetDict:
     """
     Loads a dataset that was previously saved using [`~Dataset.save_to_disk`] from a dataset directory, or
     from a filesystem using any implementation of `fsspec.spec.AbstractFileSystem`.

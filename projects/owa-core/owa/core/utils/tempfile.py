@@ -8,21 +8,20 @@ on Windows by handling file locking issues.
 import tempfile as _tempfile
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Optional
 
 
 @contextmanager
 def NamedTemporaryFile(
     mode: str = "w+b",
     buffering: int = -1,
-    encoding: Optional[str] = None,
-    newline: Optional[str] = None,
-    suffix: Optional[str] = None,
-    prefix: Optional[str] = None,
-    dir: Optional[str] = None,
+    encoding: str | None = None,
+    newline: str | None = None,
+    suffix: str | None = None,
+    prefix: str | None = None,
+    dir: str | None = None,
     delete: bool = True,
     *,
-    errors: Optional[str] = None,
+    errors: str | None = None,
 ):
     """
     Create a named temporary file with cross-platform compatibility.
@@ -51,7 +50,7 @@ def NamedTemporaryFile(
         See: https://stackoverflow.com/a/23212515
     """
     # Create temporary file with delete=False + .close() to avoid Windows locking issues
-    temp_file = _tempfile.NamedTemporaryFile(
+    with _tempfile.NamedTemporaryFile(
         mode=mode,
         buffering=buffering,
         encoding=encoding,
@@ -61,8 +60,8 @@ def NamedTemporaryFile(
         dir=dir,
         delete=False,
         errors=errors,
-    )
-    temp_file.close()
+    ) as temp_file:
+        pass
 
     try:
         yield temp_file

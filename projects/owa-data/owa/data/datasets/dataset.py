@@ -3,7 +3,6 @@
 import json
 import posixpath
 from pathlib import Path
-from typing import Optional, Union
 
 import fsspec
 from datasets import Dataset as HFDataset
@@ -43,17 +42,17 @@ class OWADatasetMixin:
         self.owa_config.stage = value
 
     @property
-    def mcap_root_directory(self) -> Optional[str]:
+    def mcap_root_directory(self) -> str | None:
         """Get the MCAP root directory."""
         return self.owa_config.mcap_root_directory
 
     @mcap_root_directory.setter
-    def mcap_root_directory(self, value: Optional[str]):
+    def mcap_root_directory(self, value: str | None):
         """Set the MCAP root directory."""
         self.owa_config.mcap_root_directory = value
 
     def auto_set_transform(
-        self, stage: Optional[str] = None, mcap_root_directory: Optional[str] = None, **kwargs
+        self, stage: str | None = None, mcap_root_directory: str | None = None, **kwargs
     ) -> DatasetStage:
         """Set appropriate transform for a dataset based on its stage."""
         stage = stage or self.stage
@@ -66,7 +65,7 @@ class OWADatasetMixin:
         return stage
 
     def auto_with_transform(
-        self, stage: Optional[str] = None, mcap_root_directory: Optional[str] = None, **kwargs
+        self, stage: str | None = None, mcap_root_directory: str | None = None, **kwargs
     ) -> "Dataset | DatasetDict":
         """Set appropriate transform for a dataset based on its stage."""
         stage = stage or self.stage
@@ -112,7 +111,7 @@ class Dataset(HFDataset, OWADatasetMixin):
             self.owa_config.to_json(config_path)
 
     @staticmethod
-    def load_from_disk(dataset_path: PathLike, storage_options: Optional[dict] = None, **kwargs) -> "Dataset":  # type: ignore[override]
+    def load_from_disk(dataset_path: PathLike, storage_options: dict | None = None, **kwargs) -> "Dataset":  # type: ignore[override]
         hf_kwargs = kwargs.copy()
         if storage_options:
             hf_kwargs["storage_options"] = storage_options
@@ -134,7 +133,7 @@ class DatasetDict(HFDatasetDict, OWADatasetMixin):
     """
 
     @property
-    def owa_config(self) -> Optional[DatasetConfig]:  # type: ignore[override]
+    def owa_config(self) -> DatasetConfig | None:  # type: ignore[override]
         """Get the current dataset config."""
         if not self:
             return None
@@ -143,10 +142,10 @@ class DatasetDict(HFDatasetDict, OWADatasetMixin):
     def save_to_disk(
         self,
         dataset_dict_path: PathLike,
-        max_shard_size: Optional[Union[str, int]] = None,
-        num_shards: Optional[dict[str, int]] = None,
-        num_proc: Optional[int] = None,
-        storage_options: Optional[dict] = None,
+        max_shard_size: str | int | None = None,
+        num_shards: dict[str, int] | None = None,
+        num_proc: int | None = None,
+        storage_options: dict | None = None,
     ) -> None:
         # Call parent save_to_disk
         super().save_to_disk(dataset_dict_path, max_shard_size, num_shards, num_proc, storage_options)
@@ -162,8 +161,8 @@ class DatasetDict(HFDatasetDict, OWADatasetMixin):
     @staticmethod
     def load_from_disk(
         dataset_dict_path: PathLike,
-        keep_in_memory: Optional[bool] = None,
-        storage_options: Optional[dict] = None,
+        keep_in_memory: bool | None = None,
+        storage_options: dict | None = None,
     ) -> "DatasetDict":
         """
         Load a dataset that was previously saved using [`save_to_disk`] from a filesystem using `fsspec.spec.AbstractFileSystem`.

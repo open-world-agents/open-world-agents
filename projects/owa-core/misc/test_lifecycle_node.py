@@ -215,34 +215,22 @@ class FailingNode(Node):
         self.fail_error = fail_error
 
     def on_configure(self):
-        if self.fail_configure:
-            return False
-        return True
+        return not self.fail_configure
 
     def on_activate(self):
-        if self.fail_activate:
-            return False
-        return True
+        return not self.fail_activate
 
     def on_deactivate(self):
-        if self.fail_deactivate:
-            return False
-        return True
+        return not self.fail_deactivate
 
     def on_cleanup(self):
-        if self.fail_cleanup:
-            return False
-        return True
+        return not self.fail_cleanup
 
     def on_shutdown(self):
-        if self.fail_shutdown:
-            return False
-        return True
+        return not self.fail_shutdown
 
     def on_error(self):
-        if self.fail_error:
-            return False
-        return True
+        return not self.fail_error
 
 
 class TestNodeErrorHandling:

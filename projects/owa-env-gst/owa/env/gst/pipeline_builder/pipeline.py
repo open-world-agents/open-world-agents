@@ -11,8 +11,6 @@ NOTE: If your desktop suffer with resource consumption, you may try h264 instead
 BUG: using mfaacenc along with nvd3d11h265enc causes a crash
 """
 
-from typing import Optional
-
 from .element import Element
 from .factory import ElementFactory
 
@@ -27,12 +25,12 @@ def appsink_recorder_pipeline(
     enable_fpsdisplaysink: bool = True,
     show_cursor: bool = True,
     fps: float = 60,
-    window_name: Optional[str] = None,
-    audio_window_name: Optional[str] = None,
-    monitor_idx: Optional[int] = None,
-    width: Optional[int] = None,
-    height: Optional[int] = None,
-    additional_properties: Optional[dict] = None,
+    window_name: str | None = None,
+    audio_window_name: str | None = None,
+    monitor_idx: int | None = None,
+    width: int | None = None,
+    height: int | None = None,
+    additional_properties: dict | None = None,
 ) -> str:
     """Construct a GStreamer pipeline for screen capturing.
     Args:
@@ -95,12 +93,12 @@ def subprocess_recorder_pipeline(
     enable_fpsdisplaysink: bool = True,
     show_cursor: bool = True,
     fps: float = 60,
-    window_name: Optional[str] = None,
-    audio_window_name: Optional[str] = None,
-    monitor_idx: Optional[int] = None,
-    width: Optional[int] = None,
-    height: Optional[int] = None,
-    additional_properties: Optional[dict] = None,
+    window_name: str | None = None,
+    audio_window_name: str | None = None,
+    monitor_idx: int | None = None,
+    width: int | None = None,
+    height: int | None = None,
+    additional_properties: dict | None = None,
 ) -> str:
     """Construct a GStreamer pipeline for screen capturing.
     Args:
@@ -153,11 +151,11 @@ def subprocess_recorder_pipeline(
 def screen_capture_pipeline(
     show_cursor: bool = True,
     fps: float = 60,
-    window_name: Optional[str] = None,
-    monitor_idx: Optional[int] = None,
-    width: Optional[int] = None,
-    height: Optional[int] = None,
-    additional_properties: Optional[dict] = None,
+    window_name: str | None = None,
+    monitor_idx: int | None = None,
+    width: int | None = None,
+    height: int | None = None,
+    additional_properties: dict | None = None,
 ) -> str:
     """
     Construct a GStreamer pipeline for screen capturing with appsink.

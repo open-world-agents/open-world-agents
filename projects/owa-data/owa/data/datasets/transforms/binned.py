@@ -1,7 +1,5 @@
 """Binned transform for OWA datasets."""
 
-from typing import Optional
-
 from mcap_owa.highlevel import McapMessage
 from owa.data.encoders import create_encoder
 
@@ -13,14 +11,14 @@ def create_binned_transform(
     encoder_type: str = "factorized",
     load_images: bool = True,
     encode_actions: bool = True,
-    mcap_root_directory: Optional[str] = None,
+    mcap_root_directory: str | None = None,
 ):
     """Create transform for BINNED stage."""
 
     def transform_batch(batch):
         encoder = create_encoder(encoder_type) if encode_actions else None
         episode_paths = [resolve_episode_path(path, mcap_root_directory) for path in batch.get("episode_path", [])]
-        batch_size = len(batch[list(batch.keys())[0]])
+        batch_size = len(batch[next(iter(batch.keys()))])
         state, actions = [], []
         for i in range(batch_size):
             _state, _action = [], []

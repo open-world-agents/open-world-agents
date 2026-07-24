@@ -160,7 +160,6 @@ class ListenerThread(ListenerMixin, RunnableThread):
             callback (Callable): The function to call when an event is detected.
                                 If this argument is not present, the loop will be called without it.
         """
-        pass
 
 
 class ListenerProcess(ListenerMixin, RunnableProcess):
@@ -201,7 +200,6 @@ class ListenerProcess(ListenerMixin, RunnableProcess):
             callback (Callable): The function to call when an event is detected.
                                 If this argument is not present, the loop will be called without it.
         """
-        pass
 
 
 # Default implementation is thread-based for better compatibility and easier use

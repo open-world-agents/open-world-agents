@@ -2,7 +2,6 @@ import re
 import warnings
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Optional, Set, Tuple
 
 from mcap_owa.highlevel.mcap_msg import McapMessage
 from owa.core.time import TimeUnits
@@ -33,12 +32,12 @@ class EventToken(str, Enum):
     SIGN_MINUS = "<SIGN_MINUS>"
 
 
-def _generate_keyboard_tokens() -> Set[str]:
+def _generate_keyboard_tokens() -> set[str]:
     """Generate keyboard-specific VK code tokens."""
     return {f"<VK_{i}>" for i in range(256)}
 
 
-def _generate_mouse_button_tokens() -> Set[str]:
+def _generate_mouse_button_tokens() -> set[str]:
     """Generate mouse-specific button flag tokens."""
     return {f"<MB_{i}>" for i in range(16)}  # Hex digits 0-15 for button flags
 
@@ -53,19 +52,19 @@ class FactorizedEventEncoderConfig(BaseEventEncoderConfig):
 
     # Timestamp encoding bases: [10, 10, 10] = 1000 total units
     # Range: 0 to 9.99 seconds in 10ms increments
-    timestamp_bases: List[int] = field(default_factory=lambda: [10, 10, 10])
+    timestamp_bases: list[int] = field(default_factory=lambda: [10, 10, 10])
 
     # Mouse delta encoding bases: [2, 10, 10, 10] = 2000 total values
     # With sign token [SIGN_PLUS/MINUS, 2, 10, 10, 10] = 2000 total, range: -1999 to +1999 pixels
     # Accommodates large mouse movements while using only digits 0-9
-    mouse_delta_bases: List[int] = field(default_factory=lambda: [2, 10, 10, 10])
+    mouse_delta_bases: list[int] = field(default_factory=lambda: [2, 10, 10, 10])
 
     # Mouse scroll encoding bases: [10] = 10 total values
     # With sign token [SIGN_PLUS/MINUS, 10] = 20 total, range: -9 to +9 scroll units
     # Each unit represents 120 (WHEEL_DELTA) in button_data
-    mouse_scroll_bases: List[int] = field(default_factory=lambda: [10])
+    mouse_scroll_bases: list[int] = field(default_factory=lambda: [10])
 
-    def _signed_range(self, bases: List[int]) -> Tuple[int, int]:
+    def _signed_range(self, bases: list[int]) -> tuple[int, int]:
         """Calculate signed range from bases with separate sign tokens."""
         # Calculate magnitude range (0 to total_range-1)
         total_range = 1
@@ -85,17 +84,17 @@ class FactorizedEventEncoderConfig(BaseEventEncoderConfig):
         return total_range * self.timestamp_unit_ns
 
     @property
-    def mouse_delta_range(self) -> Tuple[int, int]:
+    def mouse_delta_range(self) -> tuple[int, int]:
         """Calculate valid mouse delta range from bases."""
         return self._signed_range(self.mouse_delta_bases)
 
     @property
-    def mouse_scroll_range(self) -> Tuple[int, int]:
+    def mouse_scroll_range(self) -> tuple[int, int]:
         """Calculate valid mouse scroll range from bases."""
         return self._signed_range(self.mouse_scroll_bases)
 
 
-def quantize_to_digits(value: int, bases: List[int]) -> List[int]:
+def quantize_to_digits(value: int, bases: list[int]) -> list[int]:
     """
     Quantize an integer to multi-level digits using modulo operations.
 
@@ -128,7 +127,7 @@ def quantize_to_digits(value: int, bases: List[int]) -> List[int]:
     return digits
 
 
-def digits_to_value(digits: List[int], bases: List[int]) -> int:
+def digits_to_value(digits: list[int], bases: list[int]) -> int:
     """
     Reconstruct integer from digits.
 
@@ -158,7 +157,7 @@ def digits_to_value(digits: List[int], bases: List[int]) -> int:
     return encoded_value
 
 
-def _generate_vocab() -> Set[str]:
+def _generate_vocab() -> set[str]:
     """
     Generate the factorized token vocabulary.
 
@@ -200,7 +199,7 @@ def _extract_digit(token: str) -> int:
 class FactorizedEventEncoder(BaseEventEncoder):
     """Factorized event encoder: <EVENT_START><TYPE><TIMESTAMP><DATA><EVENT_END>"""
 
-    def __init__(self, config: Optional[FactorizedEventEncoderConfig] = None, **kwargs):
+    def __init__(self, config: FactorizedEventEncoderConfig | None = None, **kwargs):
         if config is None:
             config = FactorizedEventEncoderConfig()
         # Merge config with any keyword overrides
@@ -221,19 +220,19 @@ class FactorizedEventEncoder(BaseEventEncoder):
                 raise InvalidInputError(f"{name} base {max(bases)} produces digits > 9, which is not supported.")
 
     @property
-    def vocab(self) -> Set[str]:
+    def vocab(self) -> set[str]:
         return _generate_vocab()
 
     # ============================================================================
     # TIMESTAMP ENCODING/DECODING
     # ============================================================================
 
-    def _encode_timestamp(self, timestamp_ns: int) -> List[str]:
+    def _encode_timestamp(self, timestamp_ns: int) -> list[str]:
         """Encode timestamp as tokens."""
         units = timestamp_ns // self.config.timestamp_unit_ns
         return [f"<{d}>" for d in quantize_to_digits(units, self.config.timestamp_bases)]
 
-    def _decode_timestamp(self, tokens: List[str]) -> int:
+    def _decode_timestamp(self, tokens: list[str]) -> int:
         """Decode timestamp tokens back to nanoseconds."""
         digits = [_extract_digit(token) for token in tokens]
         units = digits_to_value(digits, self.config.timestamp_bases)
@@ -243,11 +242,11 @@ class FactorizedEventEncoder(BaseEventEncoder):
     # KEYBOARD ENCODING/DECODING
     # ============================================================================
 
-    def _encode_keyboard_data(self, event: KeyboardEvent) -> List[str]:
+    def _encode_keyboard_data(self, event: KeyboardEvent) -> list[str]:
         """Encode keyboard data: [<VK_vk>, <action>]"""
         return [f"<VK_{event.vk}>", f"<{event.event_type}>"]
 
-    def _decode_keyboard_data(self, tokens: List[str]) -> KeyboardEvent:
+    def _decode_keyboard_data(self, tokens: list[str]) -> KeyboardEvent:
         """Decode keyboard data tokens."""
         if len(tokens) != 2:
             raise InvalidTokenError(f"Expected 2 keyboard tokens, got {len(tokens)}")
@@ -273,7 +272,7 @@ class FactorizedEventEncoder(BaseEventEncoder):
     # MOUSE ENCODING/DECODING
     # ============================================================================
 
-    def _encode_mouse_data(self, event: RawMouseEvent) -> List[str]:
+    def _encode_mouse_data(self, event: RawMouseEvent) -> list[str]:
         """Encode mouse data: movement + flags + optional scroll."""
         # Validate mouse delta range and clamp values without modifying input
         min_delta, max_delta = self.config.mouse_delta_range
@@ -354,7 +353,7 @@ class FactorizedEventEncoder(BaseEventEncoder):
 
         return tokens
 
-    def _decode_mouse_data(self, tokens: List[str]) -> RawMouseEvent:
+    def _decode_mouse_data(self, tokens: list[str]) -> RawMouseEvent:
         """Decode mouse data tokens."""
         # Calculate minimum required tokens: deltas + button flags
         delta_tokens_needed = (
@@ -408,7 +407,7 @@ class FactorizedEventEncoder(BaseEventEncoder):
             last_x=dx, last_y=dy, button_flags=RawMouseEvent.ButtonFlags(button_flags), button_data=button_data
         )
 
-    def _decode_mouse_deltas(self, delta_tokens: List[str]) -> Tuple[int, int]:
+    def _decode_mouse_deltas(self, delta_tokens: list[str]) -> tuple[int, int]:
         """Decode quantized mouse deltas from sequential sign + magnitude tokens."""
         # Expected format: <dx_sign><dx_digits...><dy_sign><dy_digits...>
         num_magnitude_digits = len(self.config.mouse_delta_bases)
@@ -452,7 +451,7 @@ class FactorizedEventEncoder(BaseEventEncoder):
     # MAIN ENCODE/DECODE METHODS
     # ============================================================================
 
-    def encode(self, mcap_message: McapMessage) -> Tuple[str, List[ScreenCaptured]]:
+    def encode(self, mcap_message: McapMessage) -> tuple[str, list[ScreenCaptured]]:
         """Encode message to: <EVENT_START><TYPE><TIMESTAMP><DATA><EVENT_END>"""
         try:
             # Use decoded message directly
@@ -479,7 +478,7 @@ class FactorizedEventEncoder(BaseEventEncoder):
         else:
             raise UnsupportedInputError(f"Unsupported topic: {mcap_message.topic}")
 
-    def decode(self, encoded_data: str, images: Optional[List[ScreenCaptured]] = None) -> McapMessage:
+    def decode(self, encoded_data: str, images: list[ScreenCaptured] | None = None) -> McapMessage:
         """Decode: <EVENT_START><TYPE><TIMESTAMP><DATA><EVENT_END>"""
         # Validate and parse token structure
         if not (
@@ -537,6 +536,6 @@ class FactorizedEventEncoder(BaseEventEncoder):
         else:
             raise UnsupportedTokenError(f"Unknown event type: {event_type}")
 
-    def get_vocab(self) -> Set[str]:
+    def get_vocab(self) -> set[str]:
         """Get all tokens in the vocabulary."""
         return _generate_vocab()

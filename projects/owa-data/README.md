@@ -128,8 +128,11 @@ The `owa.data.tokenization` module converts MCAP events to/from token sequences 
 
 ```python
 from owa.data.tokenization import (
-    ImageTokenConfig, EventTokenizationContext,
-    expand_tokenizer_for_events, tokenize_event, decode_episode
+    ImageTokenConfig,
+    EventTokenizationContext,
+    expand_tokenizer_for_events,
+    tokenize_event,
+    decode_episode,
 )
 from owa.data.encoders import create_encoder
 

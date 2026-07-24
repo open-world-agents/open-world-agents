@@ -39,9 +39,9 @@ def test_decord():
 """
 on Windows 11 with i7-14700, 4070 Ti Super
 
-  1.14 seconds - projects\owa-env-gst\benchmark_video_reader.py:22 - test_decord
-  3.14 seconds - projects\owa-env-gst\benchmark_video_reader.py:15 - test_av
-  3.95 seconds - projects\owa-env-gst\benchmark_video_reader.py:8 - test_gst
+  1.14 seconds - projects\\owa-env-gst\benchmark_video_reader.py:22 - test_decord
+  3.14 seconds - projects\\owa-env-gst\benchmark_video_reader.py:15 - test_av
+  3.95 seconds - projects\\owa-env-gst\benchmark_video_reader.py:8 - test_gst
 
 on DGX H100, cpus=16 gpus=0
 
